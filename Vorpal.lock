@@ -1,0 +1,73 @@
+lockfile = 1
+
+[[sources]]
+name = "cargo"
+path = "https://static.rust-lang.org/dist/cargo-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "7d1c4502f6bf524ec48b8eb5efc1b07f72b1d69c30ae93a5b042bf6bf57a14a1"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "clippy"
+path = "https://static.rust-lang.org/dist/clippy-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "67c1c94ce876d9086ce8ca6d13f31df1c6113229278bdbb0ff6de2cd7ef3a4de"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "gh"
+path = "https://github.com/cli/cli/releases/download/v2.69.0/gh_2.69.0_macOS_arm64.zip"
+includes = []
+excludes = []
+digest = "f9d97acb8bc92eca98e2e1ab608050972e4c55dfa4a31001a63a0ce30ee4b545"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "protoc"
+path = "https://github.com/protocolbuffers/protobuf/releases/download/v25.4/protoc-25.4-osx-aarch_64.zip"
+includes = []
+excludes = []
+digest = "d105abb1c1d2c024f29df884f0592f1307984d63aeb10f0e61ccb94aee2c2feb"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rust-analyzer"
+path = "https://static.rust-lang.org/dist/rust-analyzer-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "bdacf7a56e68f16781550b581d3fab39df89f5ad2a1019741489c1ee651849e6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rust-src"
+path = "https://static.rust-lang.org/dist/rust-src-1.89.0.tar.gz"
+includes = []
+excludes = []
+digest = "aedb6a3777ffe9665a4f619066bb49840e9fe81119b7f105b9f03792d5d337c6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rust-std"
+path = "https://static.rust-lang.org/dist/rust-std-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "e3b376ad76bdb4bd1202ceb30e11b27f0fb68afb3b4b70bd832dfb49e0872adc"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rustc"
+path = "https://static.rust-lang.org/dist/rustc-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "17066000a01f87d67f18ca241471cb3935b3612d3e358a4350360c5b0e9f1f35"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rustfmt"
+path = "https://static.rust-lang.org/dist/rustfmt-1.89.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "752b960aaf6106256aab29996697a858ed9e04dc3da46440195d4e403cfb918b"
+platform = "aarch64-darwin"

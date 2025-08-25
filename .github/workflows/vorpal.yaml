@@ -1,0 +1,36 @@
+name: vorpal
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        artifact:
+          - devenv
+          - userenv
+        runner:
+          - macos-latest
+          - macos-latest-large
+          - ubuntu-latest
+          - ubuntu-latest-arm64
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ALT-F4-LLC/setup-vorpal-action@main
+        with:
+          registry-backend: s3
+          registry-backend-s3-bucket: altf4llc-vorpal-registry
+          use-local-build: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - run: |
+          vorpal artifact make '${{ matrix.artifact }}' .

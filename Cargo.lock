@@ -1320,7 +1320,8 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-sdk"
 version = "0.1.0-rc.1"
-source = "git+https://github.com/ALT-F4-LLC/vorpal.git?branch=feature%2Fsupport-symlinks#1470383c11bc97cab497ba1efed0bd4cbcdde023"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "788c4f967722156c34f08651fb540c82b439d6b5877de5c72ddc6fd4730e1a15"
 dependencies = [
  "anyhow",
  "clap",

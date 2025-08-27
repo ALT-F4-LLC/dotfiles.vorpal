@@ -17,8 +17,6 @@ jobs:
         runner:
           - macos-latest
           - macos-latest-large
-          - ubuntu-latest
-          - ubuntu-latest-arm64
     steps:
       - uses: actions/checkout@v5
 

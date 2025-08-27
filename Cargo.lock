@@ -203,9 +203,9 @@ checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "clap"
-version = "4.5.45"
+version = "4.5.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fc0e74a703892159f5ae7d3aac52c8e6c392f5ae5f359c70b5881d60aaac318"
+checksum = "2c5e4fcf9c21d2e544ca1ee9d8552de13019a42aa7dbf32747fa7aaf1df76e57"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -213,9 +213,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.44"
+version = "4.5.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3e7f4214277f3c7aa526a59dd3fbe306a370daee1f8b7b8c987069cd8e888a8"
+checksum = "fecb53a0e6fcfb055f686001bc2e2592fa527efaf38dbe81a6a9563562e57d41"
 dependencies = [
  "anstream",
  "anstyle",
@@ -281,6 +281,7 @@ name = "dotfiles"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "indoc",
  "tokio",
  "vorpal-sdk",
 ]
@@ -1318,9 +1319,8 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vorpal-sdk"
-version = "0.1.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2eeec36c5fdfaf4495408c6373bcd00db84f684ffa4d1bd58c766aa2faf9635"
+version = "0.1.0-rc.1"
+source = "git+https://github.com/ALT-F4-LLC/vorpal.git?branch=feature%2Fsupport-symlinks#1470383c11bc97cab497ba1efed0bd4cbcdde023"
 dependencies = [
  "anyhow",
  "clap",

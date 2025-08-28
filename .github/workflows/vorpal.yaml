@@ -12,8 +12,8 @@ jobs:
     strategy:
       matrix:
         artifact:
-          - devenv
-          - userenv
+          - dev
+          - user
         runner:
           - macos-latest
           - macos-latest-large

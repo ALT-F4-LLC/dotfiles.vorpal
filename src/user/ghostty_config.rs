@@ -1,7 +1,7 @@
-use crate::make;
+use crate::file::FileBuilder;
 use anyhow::Result;
 use indoc::formatdoc;
-use vorpal_sdk::context::ConfigContext;
+use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 pub struct GhosttyConfigBuilder {
     background_opacity: f32,
@@ -9,17 +9,19 @@ pub struct GhosttyConfigBuilder {
     font_size: u8,
     macos_option_as_alt: bool,
     name: String,
+    systems: Vec<ArtifactSystem>,
     theme: String,
 }
 
 impl GhosttyConfigBuilder {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             background_opacity: 1.0,
             font_family: "".to_string(),
             font_size: 13,
             macos_option_as_alt: false,
             name: name.to_string(),
+            systems,
             theme: "tokyonight".to_string(),
         }
     }
@@ -50,24 +52,23 @@ impl GhosttyConfigBuilder {
     }
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        make::build_file(
-            context,
-            &self.name,
-            formatdoc! {"
-                background-opacity = {background_opacity}
-                font-family = {font_family}
-                font-size = {font_size}
-                macos-option-as-alt = {macos_option_as_alt}
-                theme = {theme}
-            ",
-                background_opacity = self.background_opacity,
-                font_family = self.font_family.as_str(),
-                font_size = self.font_size,
-                macos_option_as_alt = self.macos_option_as_alt,
-                theme = self.theme
-            }
-            .as_str(),
-        )
-        .await
+        let content = formatdoc! {"
+            background-opacity = {background_opacity}
+            font-family = {font_family}
+            font-size = {font_size}
+            macos-option-as-alt = {macos_option_as_alt}
+            theme = {theme}
+        ",
+            background_opacity = self.background_opacity,
+            font_family = self.font_family.as_str(),
+            font_size = self.font_size,
+            macos_option_as_alt = self.macos_option_as_alt,
+            theme = self.theme
+        };
+
+        FileBuilder::new(&self.name, self.systems)
+            .with_content(content.as_str())
+            .build(context)
+            .await
     }
 }

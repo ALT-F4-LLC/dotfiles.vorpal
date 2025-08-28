@@ -1,7 +1,7 @@
-use crate::make;
+use crate::file::FileBuilder;
 use anyhow::Result;
 use indoc::formatdoc;
-use vorpal_sdk::context::ConfigContext;
+use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 fn format_yaml_list(colors: &[String]) -> String {
     colors
@@ -13,6 +13,7 @@ fn format_yaml_list(colors: &[String]) -> String {
 
 pub struct K9sSkinBuilder {
     name: String,
+    systems: Vec<ArtifactSystem>,
     // Body colors
     body_fg_color: String,
     body_bg_color: String,
@@ -80,9 +81,10 @@ pub struct K9sSkinBuilder {
 }
 
 impl K9sSkinBuilder {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             name: name.to_string(),
+            systems,
             // Body colors
             body_fg_color: "#f8f8f2".to_string(),
             body_bg_color: "default".to_string(),
@@ -438,10 +440,7 @@ impl K9sSkinBuilder {
     }
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        make::build_file(
-            context,
-            &self.name,
-            formatdoc! {r#"
+        let content = formatdoc! {r#"
                 k9s:
                   # General K9s styles
                   body:
@@ -521,67 +520,69 @@ impl K9sSkinBuilder {
                         fgColor: '{views_logs_indicator_fg_color}'
                         bgColor: '{views_logs_indicator_bg_color}'
             "#,
-                body_fg_color = self.body_fg_color,
-                body_bg_color = self.body_bg_color,
-                body_logo_color = self.body_logo_color,
-                prompt_fg_color = self.prompt_fg_color,
-                prompt_bg_color = self.prompt_bg_color,
-                prompt_suggest_color = self.prompt_suggest_color,
-                info_fg_color = self.info_fg_color,
-                info_section_color = self.info_section_color,
-                dialog_fg_color = self.dialog_fg_color,
-                dialog_bg_color = self.dialog_bg_color,
-                dialog_button_fg_color = self.dialog_button_fg_color,
-                dialog_button_bg_color = self.dialog_button_bg_color,
-                dialog_button_focus_fg_color = self.dialog_button_focus_fg_color,
-                dialog_button_focus_bg_color = self.dialog_button_focus_bg_color,
-                dialog_label_fg_color = self.dialog_label_fg_color,
-                dialog_field_fg_color = self.dialog_field_fg_color,
-                frame_border_fg_color = self.frame_border_fg_color,
-                frame_border_focus_color = self.frame_border_focus_color,
-                frame_menu_fg_color = self.frame_menu_fg_color,
-                frame_menu_key_color = self.frame_menu_key_color,
-                frame_menu_num_key_color = self.frame_menu_num_key_color,
-                frame_crumbs_fg_color = self.frame_crumbs_fg_color,
-                frame_crumbs_bg_color = self.frame_crumbs_bg_color,
-                frame_crumbs_active_color = self.frame_crumbs_active_color,
-                frame_status_new_color = self.frame_status_new_color,
-                frame_status_modify_color = self.frame_status_modify_color,
-                frame_status_add_color = self.frame_status_add_color,
-                frame_status_error_color = self.frame_status_error_color,
-                frame_status_highlight_color = self.frame_status_highlight_color,
-                frame_status_kill_color = self.frame_status_kill_color,
-                frame_status_completed_color = self.frame_status_completed_color,
-                frame_title_fg_color = self.frame_title_fg_color,
-                frame_title_bg_color = self.frame_title_bg_color,
-                frame_title_highlight_color = self.frame_title_highlight_color,
-                frame_title_counter_color = self.frame_title_counter_color,
-                frame_title_filter_color = self.frame_title_filter_color,
-                views_charts_bg_color = self.views_charts_bg_color,
-                charts_default_dial_colors = format_yaml_list(&self.views_charts_default_dial_colors),
-                charts_default_chart_colors = format_yaml_list(&self.views_charts_default_chart_colors),
-                views_table_fg_color = self.views_table_fg_color,
-                views_table_bg_color = self.views_table_bg_color,
-                views_table_cursor_fg_color = self.views_table_cursor_fg_color,
-                views_table_cursor_bg_color = self.views_table_cursor_bg_color,
-                views_table_header_fg_color = self.views_table_header_fg_color,
-                views_table_header_bg_color = self.views_table_header_bg_color,
-                views_table_header_sorter_color = self.views_table_header_sorter_color,
-                views_xray_fg_color = self.views_xray_fg_color,
-                views_xray_bg_color = self.views_xray_bg_color,
-                views_xray_cursor_color = self.views_xray_cursor_color,
-                views_xray_graphic_color = self.views_xray_graphic_color,
-                views_xray_show_icons = self.views_xray_show_icons,
-                views_yaml_key_color = self.views_yaml_key_color,
-                views_yaml_colon_color = self.views_yaml_colon_color,
-                views_yaml_value_color = self.views_yaml_value_color,
-                views_logs_fg_color = self.views_logs_fg_color,
-                views_logs_bg_color = self.views_logs_bg_color,
-                views_logs_indicator_fg_color = self.views_logs_indicator_fg_color,
-                views_logs_indicator_bg_color = self.views_logs_indicator_bg_color,
-            }
-            .as_str(),
-        )
-        .await
+            body_fg_color = self.body_fg_color,
+            body_bg_color = self.body_bg_color,
+            body_logo_color = self.body_logo_color,
+            prompt_fg_color = self.prompt_fg_color,
+            prompt_bg_color = self.prompt_bg_color,
+            prompt_suggest_color = self.prompt_suggest_color,
+            info_fg_color = self.info_fg_color,
+            info_section_color = self.info_section_color,
+            dialog_fg_color = self.dialog_fg_color,
+            dialog_bg_color = self.dialog_bg_color,
+            dialog_button_fg_color = self.dialog_button_fg_color,
+            dialog_button_bg_color = self.dialog_button_bg_color,
+            dialog_button_focus_fg_color = self.dialog_button_focus_fg_color,
+            dialog_button_focus_bg_color = self.dialog_button_focus_bg_color,
+            dialog_label_fg_color = self.dialog_label_fg_color,
+            dialog_field_fg_color = self.dialog_field_fg_color,
+            frame_border_fg_color = self.frame_border_fg_color,
+            frame_border_focus_color = self.frame_border_focus_color,
+            frame_menu_fg_color = self.frame_menu_fg_color,
+            frame_menu_key_color = self.frame_menu_key_color,
+            frame_menu_num_key_color = self.frame_menu_num_key_color,
+            frame_crumbs_fg_color = self.frame_crumbs_fg_color,
+            frame_crumbs_bg_color = self.frame_crumbs_bg_color,
+            frame_crumbs_active_color = self.frame_crumbs_active_color,
+            frame_status_new_color = self.frame_status_new_color,
+            frame_status_modify_color = self.frame_status_modify_color,
+            frame_status_add_color = self.frame_status_add_color,
+            frame_status_error_color = self.frame_status_error_color,
+            frame_status_highlight_color = self.frame_status_highlight_color,
+            frame_status_kill_color = self.frame_status_kill_color,
+            frame_status_completed_color = self.frame_status_completed_color,
+            frame_title_fg_color = self.frame_title_fg_color,
+            frame_title_bg_color = self.frame_title_bg_color,
+            frame_title_highlight_color = self.frame_title_highlight_color,
+            frame_title_counter_color = self.frame_title_counter_color,
+            frame_title_filter_color = self.frame_title_filter_color,
+            views_charts_bg_color = self.views_charts_bg_color,
+            charts_default_dial_colors = format_yaml_list(&self.views_charts_default_dial_colors),
+            charts_default_chart_colors = format_yaml_list(&self.views_charts_default_chart_colors),
+            views_table_fg_color = self.views_table_fg_color,
+            views_table_bg_color = self.views_table_bg_color,
+            views_table_cursor_fg_color = self.views_table_cursor_fg_color,
+            views_table_cursor_bg_color = self.views_table_cursor_bg_color,
+            views_table_header_fg_color = self.views_table_header_fg_color,
+            views_table_header_bg_color = self.views_table_header_bg_color,
+            views_table_header_sorter_color = self.views_table_header_sorter_color,
+            views_xray_fg_color = self.views_xray_fg_color,
+            views_xray_bg_color = self.views_xray_bg_color,
+            views_xray_cursor_color = self.views_xray_cursor_color,
+            views_xray_graphic_color = self.views_xray_graphic_color,
+            views_xray_show_icons = self.views_xray_show_icons,
+            views_yaml_key_color = self.views_yaml_key_color,
+            views_yaml_colon_color = self.views_yaml_colon_color,
+            views_yaml_value_color = self.views_yaml_value_color,
+            views_logs_fg_color = self.views_logs_fg_color,
+            views_logs_bg_color = self.views_logs_bg_color,
+            views_logs_indicator_fg_color = self.views_logs_indicator_fg_color,
+            views_logs_indicator_bg_color = self.views_logs_indicator_bg_color,
+        };
+
+        FileBuilder::new(&self.name, self.systems)
+            .with_content(content.as_str())
+            .build(context)
+            .await
     }
 }

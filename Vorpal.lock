@@ -25,6 +25,22 @@ digest = "f9d97acb8bc92eca98e2e1ab608050972e4c55dfa4a31001a63a0ce30ee4b545"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "libevent"
+path = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
+includes = []
+excludes = []
+digest = "22fdbe5a18db114046227ccde47cc8fbe11fa9ee2170b235f949275a161853ee"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "ncurses"
+path = "https://invisible-island.net/archives/ncurses/ncurses-6.5.tar.gz"
+includes = []
+excludes = []
+digest = "aab234a3b7a22e2632151fbe550cb36e371d3ee5318a633ee43af057f9f112fb"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "protoc"
 path = "https://github.com/protocolbuffers/protobuf/releases/download/v25.4/protoc-25.4-osx-aarch_64.zip"
 includes = []
@@ -70,4 +86,12 @@ path = "https://static.rust-lang.org/dist/rustfmt-1.89.0-aarch64-apple-darwin.ta
 includes = []
 excludes = []
 digest = "752b960aaf6106256aab29996697a858ed9e04dc3da46440195d4e403cfb918b"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "tmux"
+path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
+includes = []
+excludes = []
+digest = "70691bfbbe623d25d99561192dfb52211ca7e1fa120271c57ae56fe24ca97521"
 platform = "aarch64-darwin"

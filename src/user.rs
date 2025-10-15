@@ -2,6 +2,7 @@ use crate::{file::FileBuilder, get_output_path};
 use anyhow::Result;
 use ghostty_config::GhosttyConfigBuilder;
 use k9s_skin::K9sSkinBuilder;
+use vorpal_artifacts::artifact::tmux;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
     artifact::{gh, userenv},
@@ -28,6 +29,7 @@ impl UserEnvBuilder {
         // Dependencies
 
         let github_cli = gh::build(context).await?;
+        let tmux = tmux::build(context).await?;
 
         // Configuration files
 
@@ -138,7 +140,7 @@ impl UserEnvBuilder {
         // User environment
 
         userenv::UserEnvBuilder::new(&self.name, self.systems)
-            .with_artifacts(vec![github_cli, ghostty_config, k9s_skin, markdown_vim])
+            .with_artifacts(vec![github_cli, ghostty_config, k9s_skin, markdown_vim, tmux])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),

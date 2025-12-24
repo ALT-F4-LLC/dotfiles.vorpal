@@ -1,4 +1,4 @@
-use crate::file::FileBuilder;
+use crate::file::File;
 use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
@@ -11,7 +11,7 @@ fn format_yaml_list(colors: &[String]) -> String {
         .join("")
 }
 
-pub struct K9sSkinBuilder {
+pub struct K9sSkin {
     name: String,
     systems: Vec<ArtifactSystem>,
     // Body colors
@@ -80,7 +80,7 @@ pub struct K9sSkinBuilder {
     views_logs_indicator_bg_color: String,
 }
 
-impl K9sSkinBuilder {
+impl K9sSkin {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             name: name.to_string(),
@@ -580,7 +580,7 @@ impl K9sSkinBuilder {
             views_logs_indicator_bg_color = self.views_logs_indicator_bg_color,
         };
 
-        FileBuilder::new(&self.name, self.systems)
+        File::new(&self.name, self.systems)
             .with_content(content.as_str())
             .build(context)
             .await

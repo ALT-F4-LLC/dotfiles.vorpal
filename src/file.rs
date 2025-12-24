@@ -2,17 +2,17 @@ use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
-    artifact::{step, ArtifactBuilder},
+    artifact::{step, Artifact},
     context::ConfigContext,
 };
 
-pub struct FileBuilder {
+pub struct File {
     name: String,
     content: String,
     systems: Vec<ArtifactSystem>,
 }
 
-impl FileBuilder {
+impl File {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             name: name.to_string(),
@@ -43,7 +43,7 @@ impl FileBuilder {
 
         let step = step::shell(context, vec![], vec![], step_script, vec![]).await?;
 
-        ArtifactBuilder::new(&self.name, vec![step], self.systems)
+        Artifact::new(&self.name, vec![step], self.systems)
             .build(context)
             .await
     }

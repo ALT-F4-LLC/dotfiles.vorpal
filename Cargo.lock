@@ -1259,7 +1259,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-artifacts"
 version = "0.1.0-rc.0"
-source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#7f309ae320246e11a47b1f7fea97db28db041247"
+source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#059b7c2a6d4fe17e3f7c20199a4b044dc3090c5c"
 dependencies = [
  "anyhow",
  "indoc",
@@ -1493,6 +1493,6 @@ checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
 
 [[package]]
 name = "zmij"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e404bcd8afdaf006e529269d3e85a743f9480c3cef60034d77860d02964f3ba"
+checksum = "f1dccf46b25b205e4bebe1d5258a991df1cc17801017a845cb5b3fe0269781aa"

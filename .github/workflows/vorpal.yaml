@@ -31,4 +31,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - run: |
-          vorpal artifact make '${{ matrix.artifact }}' .
+          vorpal artifact make '${{ matrix.artifact }}'

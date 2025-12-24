@@ -1,25 +1,21 @@
-use crate::{file::FileBuilder, get_output_path};
+use crate::{file::File, get_output_path};
 use anyhow::Result;
-use ghostty_config::GhosttyConfigBuilder;
-use k9s_skin::K9sSkinBuilder;
+use ghostty_config::GhosttyConfig;
+use k9s_skin::K9sSkin;
 use vorpal_artifacts::artifact::tmux;
-use vorpal_sdk::{
-    api::artifact::ArtifactSystem,
-    artifact::{gh, userenv},
-    context::ConfigContext,
-};
+use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, artifact::gh, context::ConfigContext};
 
 mod ghostty_config;
 mod k9s_skin;
 
-pub struct UserEnvBuilder {
+pub struct UserEnvironment {
     name: String,
     systems: Vec<ArtifactSystem>,
 }
 
-impl UserEnvBuilder {
+impl UserEnvironment {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
-        UserEnvBuilder {
+        UserEnvironment {
             name: name.to_string(),
             systems,
         }
@@ -35,18 +31,19 @@ impl UserEnvBuilder {
 
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
 
-        let ghostty_config =
-            GhosttyConfigBuilder::new(ghostty_config_name.as_str(), self.systems.clone())
-                .with_background_opacity(0.95)
-                .with_font_family("GeistMono NFM")
-                .with_font_size(18)
-                .with_macos_option_as_alt(true)
-                .with_theme("TokyoNight")
-                .build(context)
-                .await?;
+        let ghostty_config = GhosttyConfig::new(ghostty_config_name.as_str(), self.systems.clone())
+            .with_background_opacity(0.95)
+            .with_font_family("GeistMono NFM")
+            .with_font_size(18)
+            .with_macos_option_as_alt(true)
+            .with_theme("TokyoNight")
+            .build(context)
+            .await?;
 
-        let ghosty_config_path =
-            format!("{}/{ghostty_config_name}", get_output_path(&ghostty_config));
+        let ghosty_config_path = format!(
+            "{}/{ghostty_config_name}",
+            get_output_path("library", &ghostty_config)
+        );
 
         // Define TokyoNight color palette
         let background = "default";
@@ -64,7 +61,7 @@ impl UserEnvBuilder {
 
         let k9s_skin_name = format!("{}-k9s-skin", &self.name);
 
-        let k9s_skin = K9sSkinBuilder::new(k9s_skin_name.as_str(), self.systems.clone())
+        let k9s_skin = K9sSkin::new(k9s_skin_name.as_str(), self.systems.clone())
             .with_body_bg_color(background)
             .with_body_fg_color(foreground)
             .with_body_logo_color(purple)
@@ -126,20 +123,23 @@ impl UserEnvBuilder {
             .build(context)
             .await?;
 
-        let k9s_skin_path = format!("{}/{k9s_skin_name}", get_output_path(&k9s_skin));
+        let k9s_skin_path = format!("{}/{k9s_skin_name}", get_output_path("library", &k9s_skin));
 
         let markdown_vim_name = format!("{}-markdown-vim", &self.name);
 
-        let markdown_vim = FileBuilder::new(markdown_vim_name.as_str(), self.systems.clone())
+        let markdown_vim = File::new(markdown_vim_name.as_str(), self.systems.clone())
             .with_content("setlocal wrap")
             .build(context)
             .await?;
 
-        let markdown_vim_path = format!("{}/{markdown_vim_name}", get_output_path(&markdown_vim));
+        let markdown_vim_path = format!(
+            "{}/{markdown_vim_name}",
+            get_output_path("library", &markdown_vim)
+        );
 
         // User environment
 
-        userenv::UserEnvBuilder::new(&self.name, self.systems)
+        artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![github_cli, ghostty_config, k9s_skin, markdown_vim, tmux])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),

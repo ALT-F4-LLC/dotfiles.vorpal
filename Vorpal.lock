@@ -34,10 +34,10 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "ncurses"
-path = "https://invisible-island.net/archives/ncurses/ncurses-6.5.tar.gz"
+path = "https://invisible-mirror.net/archives/ncurses/current/ncurses-6.5-20250809.tgz"
 includes = []
 excludes = []
-digest = "aab234a3b7a22e2632151fbe550cb36e371d3ee5318a633ee43af057f9f112fb"
+digest = "e67077219f4e56cc6cc56958104a9271871ef65ef7985081aced1fd5024f9f47"
 platform = "aarch64-darwin"
 
 [[sources]]

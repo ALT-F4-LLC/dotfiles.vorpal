@@ -1,9 +1,9 @@
-use crate::file::FileBuilder;
+use crate::file::File;
 use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
-pub struct GhosttyConfigBuilder {
+pub struct GhosttyConfig {
     background_opacity: f32,
     font_family: String,
     font_size: u8,
@@ -13,7 +13,7 @@ pub struct GhosttyConfigBuilder {
     theme: String,
 }
 
-impl GhosttyConfigBuilder {
+impl GhosttyConfig {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             background_opacity: 1.0,
@@ -66,7 +66,7 @@ impl GhosttyConfigBuilder {
             theme = self.theme
         };
 
-        FileBuilder::new(&self.name, self.systems)
+        File::new(&self.name, self.systems)
             .with_content(content.as_str())
             .build(context)
             .await

@@ -18,7 +18,7 @@ jobs:
           - macos-latest
           - macos-latest-large
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ALT-F4-LLC/setup-vorpal-action@main
         with:

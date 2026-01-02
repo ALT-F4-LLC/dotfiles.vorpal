@@ -3,7 +3,12 @@ use anyhow::Result;
 use ghostty_config::GhosttyConfig;
 use k9s_skin::K9sSkin;
 use vorpal_artifacts::artifact::tmux;
-use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, artifact::gh, context::ConfigContext};
+use vorpal_sdk::{
+    api::artifact::ArtifactSystem,
+    artifact,
+    artifact::{gh, gopls},
+    context::ConfigContext,
+};
 
 mod ghostty_config;
 mod k9s_skin;
@@ -25,6 +30,7 @@ impl UserEnvironment {
         // Dependencies
 
         let github_cli = gh::build(context).await?;
+        let gopls = gopls::build(context).await?;
         let tmux = tmux::build(context).await?;
 
         // Configuration files
@@ -140,7 +146,14 @@ impl UserEnvironment {
         // User environment
 
         artifact::UserEnvironment::new(&self.name, self.systems)
-            .with_artifacts(vec![github_cli, ghostty_config, k9s_skin, markdown_vim, tmux])
+            .with_artifacts(vec![
+                ghostty_config,
+                github_cli,
+                gopls,
+                k9s_skin,
+                markdown_vim,
+                tmux,
+            ])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),

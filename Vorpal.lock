@@ -25,6 +25,22 @@ digest = "f9d97acb8bc92eca98e2e1ab608050972e4c55dfa4a31001a63a0ce30ee4b545"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "go"
+path = "https://go.dev/dl/go1.24.2.darwin-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "5380e02cdfe2b254af7c3306671fbacc0bfefeb3a9684b502e4af3ad5db917e7"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "gopls"
+path = "https://go.googlesource.com/tools/+archive/refs/tags/v0.29.0.tar.gz"
+includes = []
+excludes = []
+digest = "b4faf133f053f372cfe8ea3189bf035d19ca1661cb3ac1e7cd34a465de5641c2"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "libevent"
 path = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
 includes = []

@@ -1,7 +1,8 @@
 use crate::{file::File, get_output_path};
 use anyhow::Result;
-use ghostty_config::GhosttyConfig;
-use k9s_skin::K9sSkin;
+use claude_code::ClaudeCode;
+use ghostty::GhosttyConfig;
+use k9s::K9sSkin;
 use vorpal_artifacts::artifact::tmux;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -10,8 +11,9 @@ use vorpal_sdk::{
     context::ConfigContext,
 };
 
-mod ghostty_config;
-mod k9s_skin;
+mod claude_code;
+mod ghostty;
+mod k9s;
 
 pub struct UserEnvironment {
     name: String,
@@ -35,6 +37,23 @@ impl UserEnvironment {
 
         // Configuration files
 
+        let claude_code_config_name = format!("{}-claude-code", &self.name);
+
+        let claude_code_config =
+            ClaudeCode::new(claude_code_config_name.as_str(), self.systems.clone())
+                .with_attribution_commit("")
+                .with_attribution_pr("")
+                .with_permission_allow("Bash(cargo check:*)")
+                .with_permission_allow("Bash(cargo test:*)")
+                .with_permission_allow("Bash(cat:*)")
+                .build(context)
+                .await?;
+
+        let claude_code_config_path = format!(
+            "{}/{claude_code_config_name}",
+            get_output_path("library", &claude_code_config)
+        );
+
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
 
         let ghostty_config = GhosttyConfig::new(ghostty_config_name.as_str(), self.systems.clone())
@@ -52,6 +71,7 @@ impl UserEnvironment {
         );
 
         // Define TokyoNight color palette
+
         let background = "default";
         let comment = "#6272a4";
         let current_line = "#44475a";
@@ -147,6 +167,7 @@ impl UserEnvironment {
 
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
+                claude_code_config,
                 ghostty_config,
                 github_cli,
                 gopls,
@@ -161,6 +182,7 @@ impl UserEnvironment {
             ])
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
+                (claude_code_config_path.as_str(), "$HOME/.config/claude/settings.json"),
                 (ghosty_config_path.as_str(), "$HOME/.config/ghostty/config"),
                 (k9s_skin_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

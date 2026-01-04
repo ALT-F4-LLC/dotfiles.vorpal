@@ -8,15 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest
     strategy:
       matrix:
         artifact:
           - dev
           - user
-        runner:
-          - macos-latest
-          - macos-latest-large
     steps:
       - uses: actions/checkout@v5
 
@@ -30,5 +27,9 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - run: |
-          vorpal artifact make '${{ matrix.artifact }}'
+      - run: vorpal build '${{ matrix.artifact }}'
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ${{ runner.arch }}-${{ runner.os }}-vorpal-lock
+          path: Vorpal.lock

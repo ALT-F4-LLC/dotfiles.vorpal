@@ -10,7 +10,7 @@ jobs:
   build-dev:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ALT-F4-LLC/setup-vorpal-action@main
         with:
@@ -38,7 +38,7 @@ jobs:
         artifact:
           - user
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: ALT-F4-LLC/setup-vorpal-action@main
         with:

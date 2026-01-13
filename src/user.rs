@@ -41,11 +41,14 @@ impl UserEnvironment {
 
         let claude_code_config =
             ClaudeCode::new(claude_code_config_name.as_str(), self.systems.clone())
+                .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
                 .with_attribution_pr("")
+                .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_permission_allow("Bash(cargo check:*)")
                 .with_permission_allow("Bash(cargo test:*)")
                 .with_permission_allow("Bash(cat:*)")
+                .with_permission_allow("WebSearch")
                 .build(context)
                 .await?;
 
@@ -182,7 +185,7 @@ impl UserEnvironment {
             ])
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
-                (claude_code_config_path.as_str(), "$HOME/.config/claude/settings.json"),
+                (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

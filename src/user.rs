@@ -183,7 +183,7 @@ impl UserEnvironment {
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
                 (claude_code_config_path.as_str(), "$HOME/.config/claude/settings.json"),
-                (ghosty_config_path.as_str(), "$HOME/.config/ghostty/config"),
+                (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
             ])

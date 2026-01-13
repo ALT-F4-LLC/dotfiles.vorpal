@@ -3,6 +3,7 @@ use anyhow::Result;
 use claude_code::ClaudeCode;
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
+use opencode::Opencode;
 use vorpal_artifacts::artifact::tmux;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -14,6 +15,7 @@ use vorpal_sdk::{
 mod claude_code;
 mod ghostty;
 mod k9s;
+mod opencode;
 
 pub struct UserEnvironment {
     name: String,
@@ -55,6 +57,54 @@ impl UserEnvironment {
         let claude_code_config_path = format!(
             "{}/{claude_code_config_name}",
             get_output_path("library", &claude_code_config)
+        );
+
+        let opencode_config_name = format!("{}-opencode", &self.name);
+
+        // Build bash permission rules
+        let mut bash_permissions = std::collections::HashMap::new();
+        bash_permissions.insert("*".to_string(), opencode::PermissionAction::Ask);
+        bash_permissions.insert("cat*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("echo*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("file*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("find*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("git branch*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("git log*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("grep*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("head*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("ls*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("sort*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("test*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("tree*".to_string(), opencode::PermissionAction::Allow);
+        bash_permissions.insert("wc*".to_string(), opencode::PermissionAction::Allow);
+
+        let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
+            .with_schema("https://opencode.ai/config.json")
+            .with_autoupdate(opencode::AutoUpdate::Boolean(false))
+            .with_theme("tokyonight")
+            .with_permission_bash(opencode::PermissionRule::Object(bash_permissions))
+            .with_permission_edit(opencode::PermissionRule::Simple(
+                opencode::PermissionAction::Ask,
+            ))
+            .with_permission_glob(opencode::PermissionRule::Simple(
+                opencode::PermissionAction::Allow,
+            ))
+            .with_permission_list(opencode::PermissionRule::Simple(
+                opencode::PermissionAction::Allow,
+            ))
+            .with_permission_lsp(opencode::PermissionRule::Simple(
+                opencode::PermissionAction::Allow,
+            ))
+            .with_permission_read(opencode::PermissionRule::Simple(
+                opencode::PermissionAction::Allow,
+            ))
+            .with_permission_webfetch(opencode::PermissionAction::Allow)
+            .build(context)
+            .await?;
+
+        let opencode_config_path = format!(
+            "{}/{opencode_config_name}",
+            get_output_path("library", &opencode_config)
         );
 
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
@@ -176,6 +226,7 @@ impl UserEnvironment {
                 gopls,
                 k9s_skin,
                 markdown_vim,
+                opencode_config,
                 tmux,
             ])
             .with_environments(vec![
@@ -189,6 +240,7 @@ impl UserEnvironment {
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
+                (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
             ])
             .build(context)
             .await

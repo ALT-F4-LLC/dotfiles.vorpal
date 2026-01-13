@@ -180,31 +180,37 @@ impl ClaudeCode {
 
     // Core settings builder methods
 
+    #[allow(dead_code)]
     pub fn with_model(mut self, model: &str) -> Self {
         self.model = Some(model.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_output_style(mut self, style: &str) -> Self {
         self.output_style = Some(style.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_api_key_helper(mut self, helper: &str) -> Self {
         self.api_key_helper = Some(helper.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_cleanup_period_days(mut self, days: u32) -> Self {
         self.cleanup_period_days = Some(days);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_env(mut self, key: &str, value: &str) -> Self {
         self.env.insert(key.to_string(), value.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_env_vars(mut self, vars: HashMap<String, String>) -> Self {
         self.env = vars;
         self
@@ -212,11 +218,13 @@ impl ClaudeCode {
 
     // Authentication builder methods
 
+    #[allow(dead_code)]
     pub fn with_force_login_method(mut self, method: &str) -> Self {
         self.force_login_method = Some(method.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_force_login_org_uuid(mut self, uuid: &str) -> Self {
         self.force_login_org_uuid = Some(uuid.to_string());
         self
@@ -224,11 +232,13 @@ impl ClaudeCode {
 
     // Permissions builder methods
 
+    #[allow(dead_code)]
     pub fn with_permissions(mut self, permissions: Permissions) -> Self {
         self.permissions = Some(permissions);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_permission_allow(mut self, rule: &str) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
         perms.allow.push(rule.to_string());
@@ -236,6 +246,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_permission_ask(mut self, rule: &str) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
         perms.ask.push(rule.to_string());
@@ -243,6 +254,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_permission_deny(mut self, rule: &str) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
         perms.deny.push(rule.to_string());
@@ -250,6 +262,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_permission_additional_directories(mut self, dirs: Vec<String>) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
         perms.additional_directories = dirs;
@@ -257,6 +270,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_permission_default_mode(mut self, mode: &str) -> Self {
         let mut perms = self.permissions.unwrap_or_default();
         perms.default_mode = Some(mode.to_string());
@@ -266,11 +280,13 @@ impl ClaudeCode {
 
     // Sandbox builder methods
 
+    #[allow(dead_code)]
     pub fn with_sandbox(mut self, sandbox: Sandbox) -> Self {
         self.sandbox = Some(sandbox);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_sandbox_enabled(mut self, enabled: bool) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         sandbox.enabled = Some(enabled);
@@ -278,6 +294,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_sandbox_auto_allow_bash(mut self, auto_allow: bool) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         sandbox.auto_allow_bash_if_sandboxed = Some(auto_allow);
@@ -285,6 +302,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_sandbox_excluded_commands(mut self, commands: Vec<String>) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         sandbox.excluded_commands = commands;
@@ -292,6 +310,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_sandbox_network_allow_unix_sockets(mut self, allow: bool) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         let mut network = sandbox.network.unwrap_or_default();
@@ -301,6 +320,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_sandbox_network_allow_local_binding(mut self, allow: bool) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         let mut network = sandbox.network.unwrap_or_default();
@@ -312,11 +332,13 @@ impl ClaudeCode {
 
     // Attribution builder methods
 
+    #[allow(dead_code)]
     pub fn with_attribution(mut self, attribution: Attribution) -> Self {
         self.attribution = Some(attribution);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_attribution_commit(mut self, commit: &str) -> Self {
         let mut attr = self.attribution.unwrap_or_default();
         attr.commit = Some(commit.to_string());
@@ -324,6 +346,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_attribution_pr(mut self, pr: &str) -> Self {
         let mut attr = self.attribution.unwrap_or_default();
         attr.pr = Some(pr.to_string());
@@ -331,6 +354,7 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_include_co_authored_by(mut self, enabled: bool) -> Self {
         self.include_co_authored_by = Some(enabled);
         self
@@ -338,26 +362,31 @@ impl ClaudeCode {
 
     // MCP Servers builder methods
 
+    #[allow(dead_code)]
     pub fn with_enable_all_project_mcp_servers(mut self, enabled: bool) -> Self {
         self.enable_all_project_mcp_servers = Some(enabled);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_enabled_mcpjson_server(mut self, server: &str) -> Self {
         self.enabled_mcpjson_servers.push(server.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_disabled_mcpjson_server(mut self, server: &str) -> Self {
         self.disabled_mcpjson_servers.push(server.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_allowed_mcp_server(mut self, rule: McpServerRule) -> Self {
         self.allowed_mcp_servers.push(rule);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_denied_mcp_server(mut self, rule: McpServerRule) -> Self {
         self.denied_mcp_servers.push(rule);
         self
@@ -365,37 +394,44 @@ impl ClaudeCode {
 
     // Additional Features builder methods
 
+    #[allow(dead_code)]
     pub fn with_company_announcements(mut self, announcements: Vec<String>) -> Self {
         self.company_announcements = announcements;
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_company_announcement(mut self, announcement: &str) -> Self {
         self.company_announcements.push(announcement.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_hook(mut self, hook_name: &str, command: &str) -> Self {
         self.hooks
             .insert(hook_name.to_string(), command.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_status_line(mut self, command: &str) -> Self {
         self.status_line = Some(command.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_file_suggestion(mut self, command: &str) -> Self {
         self.file_suggestion = Some(command.to_string());
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_enabled_plugin(mut self, plugin: &str, enabled: bool) -> Self {
         self.enabled_plugins.insert(plugin.to_string(), enabled);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_always_thinking_enabled(mut self, enabled: bool) -> Self {
         self.always_thinking_enabled = Some(enabled);
         self

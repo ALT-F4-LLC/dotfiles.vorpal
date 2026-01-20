@@ -63,14 +63,6 @@ pub enum McpType {
     Remote,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-#[deprecated(note = "Always uses stretch layout")]
-pub enum LayoutConfig {
-    Auto,
-    Stretch,
-}
-
 // ============================================================================
 // Nested Configuration Structures
 // ============================================================================
@@ -316,12 +308,12 @@ pub enum PermissionRule {
 #[serde(untagged)]
 pub enum PermissionConfig {
     Simple(PermissionAction),
-    Detailed(PermissionDetailedConfig),
+    Detailed(PermissionDetailed),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
-pub struct PermissionDetailedConfig {
+pub struct PermissionDetailed {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read: Option<PermissionRule>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -368,9 +360,6 @@ pub struct AgentConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prompt: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Use 'permission' field instead")]
-    pub tools: Option<HashMap<String, bool>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -384,10 +373,6 @@ pub struct AgentConfig {
     pub color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub steps: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Use 'steps' field instead")]
-    #[serde(rename = "maxSteps")]
-    pub max_steps: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permission: Option<PermissionConfig>,
 }
@@ -691,9 +676,6 @@ pub struct Opencode {
     #[serde(skip_serializing_if = "Option::is_none")]
     share: Option<ShareMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Use 'share' field instead")]
-    autoshare: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     autoupdate: Option<AutoUpdate>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     disabled_providers: Vec<String>,
@@ -707,16 +689,10 @@ pub struct Opencode {
     default_agent: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     username: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Use 'agent' field instead")]
-    mode: Option<HashMap<String, AgentConfig>>,
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     agent: HashMap<String, AgentConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     permission: Option<PermissionConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Use 'permission' field instead")]
-    tools: Option<HashMap<String, bool>>,
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     provider: HashMap<String, ProviderConfig>,
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
@@ -728,9 +704,6 @@ pub struct Opencode {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     instructions: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[deprecated(note = "Always uses stretch layout")]
-    layout: Option<LayoutConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     enterprise: Option<EnterpriseConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     compaction: Option<CompactionConfig>,
@@ -741,40 +714,36 @@ pub struct Opencode {
 impl Opencode {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
-            name: name.to_string(),
-            systems,
-            schema: None,
-            theme: None,
-            keybinds: None,
-            log_level: None,
-            tui: None,
-            server: None,
-            command: HashMap::new(),
-            watcher: None,
-            plugin: Vec::new(),
-            snapshot: None,
-            share: None,
-            autoshare: None,
+            agent: HashMap::new(),
             autoupdate: None,
+            command: HashMap::new(),
+            compaction: None,
+            default_agent: None,
             disabled_providers: Vec::new(),
             enabled_providers: Vec::new(),
-            model: None,
-            small_model: None,
-            default_agent: None,
-            username: None,
-            mode: None,
-            agent: HashMap::new(),
-            permission: None,
-            tools: None,
-            provider: HashMap::new(),
-            mcp: HashMap::new(),
-            formatter: None,
-            lsp: None,
-            instructions: Vec::new(),
-            layout: None,
             enterprise: None,
-            compaction: None,
             experimental: None,
+            formatter: None,
+            instructions: Vec::new(),
+            keybinds: None,
+            log_level: None,
+            lsp: None,
+            mcp: HashMap::new(),
+            model: None,
+            name: name.to_string(),
+            permission: None,
+            plugin: Vec::new(),
+            provider: HashMap::new(),
+            schema: None,
+            server: None,
+            share: None,
+            small_model: None,
+            snapshot: None,
+            systems,
+            theme: None,
+            tui: None,
+            username: None,
+            watcher: None,
         }
     }
 
@@ -809,13 +778,6 @@ impl Opencode {
     #[allow(dead_code)]
     pub fn with_share(mut self, mode: ShareMode) -> Self {
         self.share = Some(mode);
-        self
-    }
-
-    #[allow(dead_code)]
-    #[deprecated(note = "Use with_share instead")]
-    pub fn with_autoshare(mut self, enabled: bool) -> Self {
-        self.autoshare = Some(enabled);
         self
     }
 
@@ -1771,7 +1733,7 @@ impl Opencode {
     pub fn with_permission_read(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.read = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1782,7 +1744,7 @@ impl Opencode {
     pub fn with_permission_edit(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.edit = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1793,7 +1755,7 @@ impl Opencode {
     pub fn with_permission_glob(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.glob = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1804,7 +1766,7 @@ impl Opencode {
     pub fn with_permission_grep(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.grep = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1815,7 +1777,7 @@ impl Opencode {
     pub fn with_permission_list(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.list = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1826,7 +1788,7 @@ impl Opencode {
     pub fn with_permission_bash(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.bash = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1837,7 +1799,7 @@ impl Opencode {
     pub fn with_permission_task(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.task = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1848,7 +1810,7 @@ impl Opencode {
     pub fn with_permission_external_directory(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.external_directory = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1859,7 +1821,7 @@ impl Opencode {
     pub fn with_permission_todowrite(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.todowrite = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1870,7 +1832,7 @@ impl Opencode {
     pub fn with_permission_todoread(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.todoread = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1881,7 +1843,7 @@ impl Opencode {
     pub fn with_permission_question(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.question = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1892,7 +1854,7 @@ impl Opencode {
     pub fn with_permission_webfetch(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.webfetch = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1903,7 +1865,7 @@ impl Opencode {
     pub fn with_permission_websearch(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.websearch = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1914,7 +1876,7 @@ impl Opencode {
     pub fn with_permission_codesearch(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.codesearch = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1925,7 +1887,7 @@ impl Opencode {
     pub fn with_permission_lsp(mut self, rule: PermissionRule) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.lsp = Some(rule);
         self.permission = Some(PermissionConfig::Detailed(config));
@@ -1936,11 +1898,31 @@ impl Opencode {
     pub fn with_permission_doom_loop(mut self, action: PermissionAction) -> Self {
         let mut config = match self.permission {
             Some(PermissionConfig::Detailed(c)) => c,
-            _ => PermissionDetailedConfig::default(),
+            _ => PermissionDetailed::default(),
         };
         config.doom_loop = Some(action);
         self.permission = Some(PermissionConfig::Detailed(config));
         self
+    }
+
+    /// Helper method to configure bash permissions with multiple command patterns
+    ///
+    /// # Example
+    /// ```
+    /// Opencode::new("config", systems)
+    ///     .with_bash_permissions(vec![
+    ///         ("*", PermissionAction::Ask),
+    ///         ("cat*", PermissionAction::Allow),
+    ///         ("git log*", PermissionAction::Allow),
+    ///     ])
+    /// ```
+    #[allow(dead_code)]
+    pub fn with_bash_permissions(self, perms: Vec<(&str, PermissionAction)>) -> Self {
+        let mut bash_permissions = HashMap::new();
+        for (cmd, action) in perms {
+            bash_permissions.insert(cmd.to_string(), action);
+        }
+        self.with_permission_bash(PermissionRule::Object(bash_permissions))
     }
 
     // ========================================================================
@@ -2207,35 +2189,6 @@ impl Opencode {
         hook.session_completed.push(command);
         experimental.hook = Some(hook);
         self.experimental = Some(experimental);
-        self
-    }
-
-    // ========================================================================
-    // Deprecated Field Builder Methods
-    // ========================================================================
-
-    #[allow(dead_code)]
-    #[deprecated(note = "Use with_agent instead")]
-    pub fn with_mode(mut self, name: &str, config: AgentConfig) -> Self {
-        let mut modes = self.mode.unwrap_or_default();
-        modes.insert(name.to_string(), config);
-        self.mode = Some(modes);
-        self
-    }
-
-    #[allow(dead_code)]
-    #[deprecated(note = "Use with_permission instead")]
-    pub fn with_tools(mut self, tool: &str, enabled: bool) -> Self {
-        let mut tools = self.tools.unwrap_or_default();
-        tools.insert(tool.to_string(), enabled);
-        self.tools = Some(tools);
-        self
-    }
-
-    #[allow(dead_code)]
-    #[deprecated(note = "Always uses stretch layout")]
-    pub fn with_layout(mut self, layout: LayoutConfig) -> Self {
-        self.layout = Some(layout);
         self
     }
 

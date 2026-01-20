@@ -3,7 +3,6 @@ use vorpal_sdk::api::artifact::{
     ArtifactSystem::{Aarch64Darwin, Aarch64Linux, X8664Darwin, X8664Linux},
 };
 
-pub mod dev;
 pub mod file;
 pub mod user;
 

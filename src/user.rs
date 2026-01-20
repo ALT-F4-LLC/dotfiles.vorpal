@@ -3,12 +3,12 @@ use anyhow::Result;
 use claude_code::ClaudeCode;
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
-use opencode::Opencode;
-use vorpal_artifacts::artifact::tmux;
+use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
+use vorpal_artifacts::artifact::tmux::Tmux;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
     artifact,
-    artifact::{gh, gopls},
+    artifact::{gh::Gh, git::Git, gopls::Gopls},
     context::ConfigContext,
 };
 
@@ -33,9 +33,10 @@ impl UserEnvironment {
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         // Dependencies
 
-        let github_cli = gh::build(context).await?;
-        let gopls = gopls::build(context).await?;
-        let tmux = tmux::build(context).await?;
+        let gh = Gh::new().build(context).await?;
+        let git = Git::new().build(context).await?;
+        let gopls = Gopls::new().build(context).await?;
+        let tmux = Tmux::new().build(context).await?;
 
         // Configuration files
 
@@ -47,9 +48,19 @@ impl UserEnvironment {
                 .with_attribution_commit("")
                 .with_attribution_pr("")
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
+                .with_permission_allow("Bash(cargo build:*)")
                 .with_permission_allow("Bash(cargo check:*)")
                 .with_permission_allow("Bash(cargo test:*)")
                 .with_permission_allow("Bash(cat:*)")
+                .with_permission_allow("Bash(curl:*)")
+                .with_permission_allow("Bash(find:*)")
+                .with_permission_allow("Bash(grep:*)")
+                .with_permission_allow("Bash(sort:*)")
+                .with_permission_allow("Bash(tar:*)")
+                .with_permission_allow("Bash(test:*)")
+                .with_permission_allow("Bash(tree:*)")
+                .with_permission_allow("Bash(vorpal build:*)")
+                .with_permission_allow("Bash(xargs:*)")
                 .with_permission_allow("WebSearch")
                 .build(context)
                 .await?;
@@ -61,44 +72,32 @@ impl UserEnvironment {
 
         let opencode_config_name = format!("{}-opencode", &self.name);
 
-        // Build bash permission rules
-        let mut bash_permissions = std::collections::HashMap::new();
-        bash_permissions.insert("*".to_string(), opencode::PermissionAction::Ask);
-        bash_permissions.insert("cat*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("echo*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("file*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("find*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("git branch*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("git log*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("grep*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("head*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("ls*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("sort*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("test*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("tree*".to_string(), opencode::PermissionAction::Allow);
-        bash_permissions.insert("wc*".to_string(), opencode::PermissionAction::Allow);
-
         let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
             .with_schema("https://opencode.ai/config.json")
-            .with_autoupdate(opencode::AutoUpdate::Boolean(false))
+            .with_autoupdate(AutoUpdate::Boolean(false))
             .with_theme("tokyonight")
-            .with_permission_bash(opencode::PermissionRule::Object(bash_permissions))
-            .with_permission_edit(opencode::PermissionRule::Simple(
-                opencode::PermissionAction::Ask,
-            ))
-            .with_permission_glob(opencode::PermissionRule::Simple(
-                opencode::PermissionAction::Allow,
-            ))
-            .with_permission_list(opencode::PermissionRule::Simple(
-                opencode::PermissionAction::Allow,
-            ))
-            .with_permission_lsp(opencode::PermissionRule::Simple(
-                opencode::PermissionAction::Allow,
-            ))
-            .with_permission_read(opencode::PermissionRule::Simple(
-                opencode::PermissionAction::Allow,
-            ))
-            .with_permission_webfetch(opencode::PermissionAction::Allow)
+            .with_bash_permissions(vec![
+                ("*", PermissionAction::Ask),
+                ("cat*", PermissionAction::Allow),
+                ("echo*", PermissionAction::Allow),
+                ("file*", PermissionAction::Allow),
+                ("find*", PermissionAction::Allow),
+                ("git branch*", PermissionAction::Allow),
+                ("git log*", PermissionAction::Allow),
+                ("grep*", PermissionAction::Allow),
+                ("head*", PermissionAction::Allow),
+                ("ls*", PermissionAction::Allow),
+                ("sort*", PermissionAction::Allow),
+                ("test*", PermissionAction::Allow),
+                ("tree*", PermissionAction::Allow),
+                ("wc*", PermissionAction::Allow),
+            ])
+            .with_permission_edit(PermissionRule::Simple(PermissionAction::Ask))
+            .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
+            .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
+            .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
+            .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
+            .with_permission_webfetch(PermissionAction::Allow)
             .build(context)
             .await?;
 
@@ -222,7 +221,8 @@ impl UserEnvironment {
             .with_artifacts(vec![
                 claude_code_config,
                 ghostty_config,
-                github_cli,
+                git,
+                gh,
                 gopls,
                 k9s_skin,
                 markdown_vim,

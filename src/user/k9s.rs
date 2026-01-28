@@ -1,4 +1,4 @@
-use crate::file::File;
+use crate::file::FileCreate;
 use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
@@ -580,8 +580,7 @@ impl K9sSkin {
             views_logs_indicator_bg_color = self.views_logs_indicator_bg_color,
         };
 
-        File::new(&self.name, self.systems)
-            .with_content(content.as_str())
+        FileCreate::new(content.as_str(), &self.name, self.systems)
             .build(context)
             .await
     }

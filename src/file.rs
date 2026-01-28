@@ -2,28 +2,29 @@ use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
-    artifact::{step, Artifact},
+    artifact::{step, Artifact, ArtifactSource},
     context::ConfigContext,
 };
 
-pub struct File {
-    name: String,
+pub struct FileCreate {
     content: String,
+    name: String,
     systems: Vec<ArtifactSystem>,
 }
 
-impl File {
-    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
+pub struct FileDownload {
+    name: String,
+    path: String,
+    systems: Vec<ArtifactSystem>,
+}
+
+impl FileCreate {
+    pub fn new(content: &str, name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
+            content: content.to_string(),
             name: name.to_string(),
-            content: String::new(),
             systems,
         }
-    }
-
-    pub fn with_content(mut self, content: &str) -> Self {
-        self.content = content.to_string();
-        self
     }
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
@@ -44,6 +45,35 @@ impl File {
         let step = step::shell(context, vec![], vec![], step_script, vec![]).await?;
 
         Artifact::new(&self.name, vec![step], self.systems)
+            .build(context)
+            .await
+    }
+}
+
+impl FileDownload {
+    pub fn new(name: &str, path: &str, systems: Vec<ArtifactSystem>) -> Self {
+        Self {
+            name: name.to_string(),
+            path: path.to_string(),
+            systems,
+        }
+    }
+
+    pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
+        let source = ArtifactSource::new(self.name.as_str(), self.path.as_str()).build();
+
+        let step_script = formatdoc! {"
+            pushd source/{name}
+
+            cp -rv . $VORPAL_OUTPUT/.
+        ",
+            name = self.name,
+        };
+
+        let step = step::shell(context, vec![], vec![], step_script, vec![]).await?;
+
+        Artifact::new(&self.name, vec![step], self.systems)
+            .with_sources(vec![source])
             .build(context)
             .await
     }

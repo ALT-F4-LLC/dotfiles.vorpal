@@ -1,7 +1,7 @@
-use crate::file::File;
+use crate::file::FileCreate;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 // Supporting types for nested configuration structures
@@ -84,8 +84,8 @@ pub struct ClaudeCode {
     api_key_helper: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     cleanup_period_days: Option<u32>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    env: HashMap<String, String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    env: BTreeMap<String, String>,
 
     // Authentication
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -122,14 +122,14 @@ pub struct ClaudeCode {
     // Additional Features
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     company_announcements: Vec<String>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    hooks: HashMap<String, String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    hooks: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     status_line: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     file_suggestion: Option<String>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    enabled_plugins: HashMap<String, bool>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    enabled_plugins: BTreeMap<String, bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     always_thinking_enabled: Option<bool>,
 }
@@ -145,7 +145,7 @@ impl ClaudeCode {
             output_style: None,
             api_key_helper: None,
             cleanup_period_days: None,
-            env: HashMap::new(),
+            env: BTreeMap::new(),
 
             // Authentication
             force_login_method: None,
@@ -170,10 +170,10 @@ impl ClaudeCode {
 
             // Additional Features
             company_announcements: Vec::new(),
-            hooks: HashMap::new(),
+            hooks: BTreeMap::new(),
             status_line: None,
             file_suggestion: None,
-            enabled_plugins: HashMap::new(),
+            enabled_plugins: BTreeMap::new(),
             always_thinking_enabled: None,
         }
     }
@@ -211,7 +211,7 @@ impl ClaudeCode {
     }
 
     #[allow(dead_code)]
-    pub fn with_env_vars(mut self, vars: HashMap<String, String>) -> Self {
+    pub fn with_env_vars(mut self, vars: BTreeMap<String, String>) -> Self {
         self.env = vars;
         self
     }
@@ -437,16 +437,11 @@ impl ClaudeCode {
         self
     }
 
-    // Build method - generates JSON configuration
-
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        // Serialize to pretty JSON
         let json_content = serde_json::to_string_pretty(&self)
             .map_err(|e| anyhow::anyhow!("Failed to serialize Claude Code settings: {}", e))?;
 
-        // Use existing File pattern
-        File::new(&self.name, self.systems)
-            .with_content(&json_content)
+        FileCreate::new(&json_content, &self.name, self.systems)
             .build(context)
             .await
     }

@@ -1,4 +1,4 @@
-use crate::file::File;
+use crate::file::FileCreate;
 use anyhow::Result;
 use indoc::formatdoc;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
@@ -66,8 +66,7 @@ impl GhosttyConfig {
             theme = self.theme
         };
 
-        File::new(&self.name, self.systems)
-            .with_content(content.as_str())
+        FileCreate::new(content.as_str(), &self.name, self.systems)
             .build(context)
             .await
     }

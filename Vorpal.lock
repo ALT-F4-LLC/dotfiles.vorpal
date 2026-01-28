@@ -1,6 +1,22 @@
 lockfile = 1
 
 [[sources]]
+name = "bat"
+path = "https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "3abca7df1be4d52ef37ccd22f0b01da87f149f4ca1f74633d53deba87d98b078"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "beads"
+path = "https://github.com/steveyegge/beads/releases/download/v0.47.1/beads_0.47.1_darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "de65e35a1cc0dad8a438c57011e40153abf7a42a29b1edde5f1a33981c0dc919"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "cargo"
 path = "https://static.rust-lang.org/dist/cargo-1.89.0-aarch64-apple-darwin.tar.gz"
 includes = []
@@ -14,6 +30,30 @@ path = "https://static.rust-lang.org/dist/clippy-1.89.0-aarch64-apple-darwin.tar
 includes = []
 excludes = []
 digest = "67c1c94ce876d9086ce8ca6d13f31df1c6113229278bdbb0ff6de2cd7ef3a4de"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "direnv"
+path = "https://github.com/direnv/direnv/releases/download/v2.37.1/direnv.darwin-arm64"
+includes = []
+excludes = []
+digest = "8204ab746effc28aa1dd329c50b585e86ff322607f255bea09e2bd654b4fcdb8"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "doppler"
+path = "https://github.com/DopplerHQ/cli/releases/download/3.75.1/doppler_3.75.1_macOS_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "cc2860da598bb056f8f1a11a781f56ddf194ab3b2b5976a881b93465ec0d2274"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "fd"
+path = "https://github.com/sharkdp/fd/releases/download/v10.2.0/fd-v10.2.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "0908501901ff99232aa75a18bf9409e80dae10742dc3759a67249bca5a459490"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -49,6 +89,46 @@ digest = "b4faf133f053f372cfe8ea3189bf035d19ca1661cb3ac1e7cd34a465de5641c2"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "jj"
+path = "https://github.com/jj-vcs/jj/releases/download/v0.37.0/jj-v0.37.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "1550c0eb485b0887aa2bfbc1b071836773d3c53459b2fa0bba8b8a4ce68c4523"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "jq"
+path = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-macos-arm64"
+includes = []
+excludes = []
+digest = "718c0fbb8f728c4b62cac2e65dba61cbdf2eed5e7eff38681097ec7b04dd815a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "k9s"
+path = "https://github.com/derailed/k9s/releases/download/v0.50.18/k9s_Darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "c27c31b3c2caab9209b54d9e5e61cbd8c39a112c84e076c3a1f6c376fa05e1b3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "kubectl"
+path = "https://dl.k8s.io/release/v1.35.0/bin/darwin/arm64/kubectl"
+includes = []
+excludes = []
+digest = "d1f8429a0744371b107f4d1a6259f6468f5ceaebb3bd209edf0a811820a2cc2d"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "lazygit"
+path = "https://github.com/jesseduffield/lazygit/releases/download/v0.44.1/lazygit_0.44.1_Darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "42dd9183e9692a5a73ad4dfa109f06e67c1c7cd172afdb3d66a1fc4a5ee4c892"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "libevent"
 path = "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz"
 includes = []
@@ -65,11 +145,43 @@ digest = "e67077219f4e56cc6cc56958104a9271871ef65ef7985081aced1fd5024f9f47"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "nnn"
+path = "https://github.com/jarun/nnn/archive/refs/tags/v5.1.tar.gz"
+includes = []
+excludes = []
+digest = "a0a9e0cff52847ffdd91673adc7dffbda2177e67a87d7fdba5717c898ea0518f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "pkg-config"
+path = "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
+includes = []
+excludes = []
+digest = "db043f5df7971d9bf97a81c75a46c4656e1a6235c05edad48d11a9314df5363f"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "protoc"
 path = "https://github.com/protocolbuffers/protobuf/releases/download/v25.4/protoc-25.4-osx-aarch_64.zip"
 includes = []
 excludes = []
 digest = "d105abb1c1d2c024f29df884f0592f1307984d63aeb10f0e61ccb94aee2c2feb"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "readline"
+path = "https://ftpmirror.gnu.org/readline/readline-8.2.tar.gz"
+includes = []
+excludes = []
+digest = "bd548669e2e324cf1450a04897779301c20f6ccb161f2f6ede7584cab56ce83f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "ripgrep"
+path = "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "eb0c1779060a651e1288e5a3a6f3d5e3460a2955b64f9d71feefa444ceb52b54"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -118,4 +230,12 @@ path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
 includes = []
 excludes = []
 digest = "70691bfbbe623d25d99561192dfb52211ca7e1fa120271c57ae56fe24ca97521"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "user-bat-theme"
+path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/heads/main/extras/sublime/tokyonight_night.tmTheme"
+includes = []
+excludes = []
+digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
 platform = "aarch64-darwin"

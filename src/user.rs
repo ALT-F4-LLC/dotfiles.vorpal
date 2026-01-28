@@ -1,10 +1,17 @@
-use crate::{file::File, get_output_path};
+use crate::{
+    file::{FileCreate, FileDownload},
+    get_output_path,
+};
 use anyhow::Result;
+use bat::BatConfig;
 use claude_code::ClaudeCode;
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
-use vorpal_artifacts::artifact::tmux::Tmux;
+use vorpal_artifacts::artifact::{
+    bat::Bat, beads::Beads, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj, jq::Jq, k9s::K9s,
+    kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
+};
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
     artifact,
@@ -12,6 +19,7 @@ use vorpal_sdk::{
     context::ConfigContext,
 };
 
+mod bat;
 mod claude_code;
 mod ghostty;
 mod k9s;
@@ -33,15 +41,49 @@ impl UserEnvironment {
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         // Dependencies
 
+        let bat = Bat::new().build(context).await?;
+        let beads = Beads::new().build(context).await?;
+        let direnv = Direnv::new().build(context).await?;
+        let doppler = Doppler::new().build(context).await?;
+        let fd = Fd::new().build(context).await?;
         let gh = Gh::new().build(context).await?;
         let git = Git::new().build(context).await?;
         let gopls = Gopls::new().build(context).await?;
+        let jj = Jj::new().build(context).await?;
+        let jq = Jq::new().build(context).await?;
+        let k9s = K9s::new().build(context).await?;
+        let kubectl = Kubectl::new().build(context).await?;
+        let lazygit = Lazygit::new().build(context).await?;
+        let nnn = Nnn::new().build(context).await?;
+        let ripgrep = Ripgrep::new().build(context).await?;
         let tmux = Tmux::new().build(context).await?;
 
         // Configuration files
 
-        let claude_code_config_name = format!("{}-claude-code", &self.name);
+        let bat_theme_name = format!("{}-bat-theme", &self.name);
+        let bat_theme = FileDownload::new(
+            bat_theme_name.as_str(),
+            "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/heads/main/extras/sublime/tokyonight_night.tmTheme",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+        let bat_theme_path = format!(
+            "{}/tokyonight_night.tmTheme",
+            get_output_path("library", &bat_theme)
+        );
 
+        let bat_config_name = format!("{}-bat-config", &self.name);
+        let bat_config = BatConfig::new(bat_config_name.as_str(), self.systems.clone())
+            .with_theme("tokyonight")
+            .build(context)
+            .await?;
+        let bat_config_path = format!(
+            "{}/{bat_config_name}",
+            get_output_path("library", &bat_config)
+        );
+
+        let claude_code_config_name = format!("{}-claude-code", &self.name);
         let claude_code_config =
             ClaudeCode::new(claude_code_config_name.as_str(), self.systems.clone())
                 .with_always_thinking_enabled(true)
@@ -64,14 +106,12 @@ impl UserEnvironment {
                 .with_permission_allow("WebSearch")
                 .build(context)
                 .await?;
-
         let claude_code_config_path = format!(
             "{}/{claude_code_config_name}",
             get_output_path("library", &claude_code_config)
         );
 
         let opencode_config_name = format!("{}-opencode", &self.name);
-
         let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
             .with_schema("https://opencode.ai/config.json")
             .with_autoupdate(AutoUpdate::Boolean(false))
@@ -100,14 +140,12 @@ impl UserEnvironment {
             .with_permission_webfetch(PermissionAction::Allow)
             .build(context)
             .await?;
-
         let opencode_config_path = format!(
             "{}/{opencode_config_name}",
             get_output_path("library", &opencode_config)
         );
 
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
-
         let ghostty_config = GhosttyConfig::new(ghostty_config_name.as_str(), self.systems.clone())
             .with_background_opacity(0.95)
             .with_font_family("GeistMono NFM")
@@ -116,7 +154,6 @@ impl UserEnvironment {
             .with_theme("TokyoNight")
             .build(context)
             .await?;
-
         let ghosty_config_path = format!(
             "{}/{ghostty_config_name}",
             get_output_path("library", &ghostty_config)
@@ -138,8 +175,7 @@ impl UserEnvironment {
         let yellow = "#f1fa8c";
 
         let k9s_skin_name = format!("{}-k9s-skin", &self.name);
-
-        let k9s_skin = K9sSkin::new(k9s_skin_name.as_str(), self.systems.clone())
+        let k9s_skin_config = K9sSkin::new(k9s_skin_name.as_str(), self.systems.clone())
             .with_body_bg_color(background)
             .with_body_fg_color(foreground)
             .with_body_logo_color(purple)
@@ -200,46 +236,67 @@ impl UserEnvironment {
             .with_views_yaml_value_color(foreground)
             .build(context)
             .await?;
-
-        let k9s_skin_path = format!("{}/{k9s_skin_name}", get_output_path("library", &k9s_skin));
+        let k9s_skin_config_path = format!(
+            "{}/{k9s_skin_name}",
+            get_output_path("library", &k9s_skin_config)
+        );
 
         let markdown_vim_name = format!("{}-markdown-vim", &self.name);
-
-        let markdown_vim = File::new(markdown_vim_name.as_str(), self.systems.clone())
-            .with_content("setlocal wrap")
-            .build(context)
-            .await?;
-
-        let markdown_vim_path = format!(
+        let markdown_vim_config = FileCreate::new(
+            "setlocal wrap",
+            markdown_vim_name.as_str(),
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+        let markdown_vim_config_path = format!(
             "{}/{markdown_vim_name}",
-            get_output_path("library", &markdown_vim)
+            get_output_path("library", &markdown_vim_config)
         );
 
         // User environment
 
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
+                // Dependencies
+                bat,
+                beads,
+                direnv,
+                doppler,
+                fd,
+                gh,
+                git,
+                gopls,
+                jj,
+                jq,
+                k9s,
+                kubectl,
+                lazygit,
+                nnn,
+                ripgrep,
+                tmux,
+                // Dependencies configurations
+                bat_config,
+                bat_theme,
                 claude_code_config,
                 ghostty_config,
-                git,
-                gh,
-                gopls,
-                k9s_skin,
-                markdown_vim,
+                k9s_skin_config,
+                markdown_vim_config,
                 opencode_config,
-                tmux,
             ])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),
-                "PATH=$GOPATH/bin:$HOME/.vorpal/bin:/Applications/VMware\\ Fusion.app/Contents/Library:$PATH".to_string(),
+                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
             ])
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
+                (bat_config_path.as_str(), "$HOME/.config/bat/config"),
+                (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
-                (k9s_skin_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
-                (markdown_vim_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
+                (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
+                (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
                 (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
             ])
             .build(context)

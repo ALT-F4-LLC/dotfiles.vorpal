@@ -1,8 +1,8 @@
-use crate::file::File;
+use crate::file::FileCreate;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 // ============================================================================
@@ -301,7 +301,7 @@ pub struct WatcherConfig {
 #[serde(untagged)]
 pub enum PermissionRule {
     Simple(PermissionAction),
-    Object(HashMap<String, PermissionAction>),
+    Object(BTreeMap<String, PermissionAction>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -368,7 +368,7 @@ pub struct AgentConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub options: Option<HashMap<String, Value>>,
+    pub options: Option<BTreeMap<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -442,9 +442,9 @@ pub struct ModelConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub options: Option<HashMap<String, Value>>,
+    pub options: Option<BTreeMap<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub headers: Option<HashMap<String, String>>,
+    pub headers: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -483,8 +483,8 @@ pub struct ProviderConfig {
     pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub npm: Option<String>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub models: HashMap<String, ModelConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub models: BTreeMap<String, ModelConfig>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub whitelist: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -500,7 +500,7 @@ pub struct McpLocalConfig {
     pub mcp_type: McpType,
     pub command: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub environment: Option<HashMap<String, String>>,
+    pub environment: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -527,7 +527,7 @@ pub struct McpRemoteConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub headers: Option<HashMap<String, String>>,
+    pub headers: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth: Option<OAuthConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -556,7 +556,7 @@ pub struct FormatterEnabledConfig {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub command: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub environment: Option<HashMap<String, String>>,
+    pub environment: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub extensions: Vec<String>,
 }
@@ -565,7 +565,7 @@ pub struct FormatterEnabledConfig {
 #[serde(untagged)]
 pub enum LspConfigMap {
     Disabled(bool), // false
-    Enabled(HashMap<String, LspServerConfig>),
+    Enabled(BTreeMap<String, LspServerConfig>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -577,7 +577,7 @@ pub struct LspServerConfig {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub extensions: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub env: Option<HashMap<String, String>>,
+    pub env: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub initialization: Option<Value>,
 }
@@ -603,14 +603,14 @@ pub struct CompactionConfig {
 pub struct HookCommand {
     pub command: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub environment: Option<HashMap<String, String>>,
+    pub environment: Option<BTreeMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct HookConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub file_edited: Option<HashMap<String, Vec<HookCommand>>>,
+    pub file_edited: Option<BTreeMap<String, Vec<HookCommand>>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub session_completed: Vec<HookCommand>,
 }
@@ -665,8 +665,8 @@ pub struct Opencode {
     tui: Option<TuiConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     server: Option<ServerConfig>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    command: HashMap<String, CommandConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    command: BTreeMap<String, CommandConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     watcher: Option<WatcherConfig>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -689,16 +689,16 @@ pub struct Opencode {
     default_agent: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     username: Option<String>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    agent: HashMap<String, AgentConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    agent: BTreeMap<String, AgentConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     permission: Option<PermissionConfig>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    provider: HashMap<String, ProviderConfig>,
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    mcp: HashMap<String, McpConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    provider: BTreeMap<String, ProviderConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    mcp: BTreeMap<String, McpConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    formatter: Option<HashMap<String, FormatterConfig>>,
+    formatter: Option<BTreeMap<String, FormatterConfig>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     lsp: Option<LspConfigMap>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -714,9 +714,9 @@ pub struct Opencode {
 impl Opencode {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
-            agent: HashMap::new(),
+            agent: BTreeMap::new(),
             autoupdate: None,
-            command: HashMap::new(),
+            command: BTreeMap::new(),
             compaction: None,
             default_agent: None,
             disabled_providers: Vec::new(),
@@ -728,12 +728,12 @@ impl Opencode {
             keybinds: None,
             log_level: None,
             lsp: None,
-            mcp: HashMap::new(),
+            mcp: BTreeMap::new(),
             model: None,
             name: name.to_string(),
             permission: None,
             plugin: Vec::new(),
-            provider: HashMap::new(),
+            provider: BTreeMap::new(),
             schema: None,
             server: None,
             share: None,
@@ -1918,7 +1918,7 @@ impl Opencode {
     /// ```
     #[allow(dead_code)]
     pub fn with_bash_permissions(self, perms: Vec<(&str, PermissionAction)>) -> Self {
-        let mut bash_permissions = HashMap::new();
+        let mut bash_permissions = BTreeMap::new();
         for (cmd, action) in perms {
             bash_permissions.insert(cmd.to_string(), action);
         }
@@ -2067,7 +2067,7 @@ impl Opencode {
     pub fn with_lsp(mut self, name: &str, config: LspServerConfig) -> Self {
         let mut lsp_map = match self.lsp {
             Some(LspConfigMap::Enabled(map)) => map,
-            _ => HashMap::new(),
+            _ => BTreeMap::new(),
         };
         lsp_map.insert(name.to_string(), config);
         self.lsp = Some(LspConfigMap::Enabled(lsp_map));
@@ -2197,13 +2197,10 @@ impl Opencode {
     // ========================================================================
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        // Serialize to pretty JSON
         let json_content = serde_json::to_string_pretty(&self)
             .map_err(|e| anyhow::anyhow!("Failed to serialize Opencode settings: {}", e))?;
 
-        // Use existing File pattern
-        File::new(&self.name, self.systems)
-            .with_content(&json_content)
+        FileCreate::new(&json_content, &self.name, self.systems)
             .build(context)
             .await
     }

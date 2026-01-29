@@ -9,8 +9,8 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    bat::Bat, beads::Beads, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj, jq::Jq, k9s::K9s,
-    kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
+    awscli2::Awscli2, bat::Bat, beads::Beads, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj,
+    jq::Jq, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -41,6 +41,7 @@ impl UserEnvironment {
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         // Dependencies
 
+        let awscli2 = Awscli2::new().build(context).await?;
         let bat = Bat::new().build(context).await?;
         let beads = Beads::new().build(context).await?;
         let direnv = Direnv::new().build(context).await?;
@@ -259,6 +260,7 @@ impl UserEnvironment {
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
                 // Dependencies
+                awscli2,
                 bat,
                 beads,
                 direnv,

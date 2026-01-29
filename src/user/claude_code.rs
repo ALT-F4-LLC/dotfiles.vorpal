@@ -6,6 +6,20 @@ use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
 
 // Supporting types for nested configuration structures
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookCommand {
+    pub command: String,
+    #[serde(rename = "type")]
+    pub hook_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matcher: Option<String>,
+    pub hooks: Vec<HookCommand>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Permissions {
@@ -123,7 +137,7 @@ pub struct ClaudeCode {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     company_announcements: Vec<String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
-    hooks: BTreeMap<String, String>,
+    hooks: BTreeMap<String, Vec<HookConfig>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     status_line: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -407,9 +421,25 @@ impl ClaudeCode {
     }
 
     #[allow(dead_code)]
-    pub fn with_hook(mut self, hook_name: &str, command: &str) -> Self {
+    pub fn with_hook(
+        mut self,
+        hook_name: &str,
+        matcher: Option<&str>,
+        command: &str,
+        hook_type: &str,
+    ) -> Self {
+        let hook_command = HookCommand {
+            command: command.to_string(),
+            hook_type: hook_type.to_string(),
+        };
+        let hook_config = HookConfig {
+            matcher: matcher.map(|m| m.to_string()),
+            hooks: vec![hook_command],
+        };
         self.hooks
-            .insert(hook_name.to_string(), command.to_string());
+            .entry(hook_name.to_string())
+            .or_insert_with(Vec::new)
+            .push(hook_config);
         self
     }
 

@@ -90,6 +90,7 @@ impl UserEnvironment {
                 .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
                 .with_attribution_pr("")
+                .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_hook("PreCompact", None, "bd prime", "command")
                 .with_hook("SessionStart", None, "bd prime", "command")
@@ -98,6 +99,7 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(bd list:*)")
                 .with_permission_allow("Bash(bd ready:*)")
                 .with_permission_allow("Bash(bd show:*)")
+                .with_permission_allow("Bash(bd stats:*)")
                 .with_permission_allow("Bash(bd update:*)")
                 .with_permission_allow("Bash(cargo build:*)")
                 .with_permission_allow("Bash(cargo check:*)")
@@ -105,12 +107,20 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(cat:*)")
                 .with_permission_allow("Bash(curl:*)")
                 .with_permission_allow("Bash(find:*)")
+                .with_permission_allow("Bash(go build:*)")
+                .with_permission_allow("Bash(go test:*)")
                 .with_permission_allow("Bash(grep:*)")
+                .with_permission_allow("Bash(make build:*)")
+                .with_permission_allow("Bash(make lint:*)")
+                .with_permission_allow("Bash(make test:*)")
+                .with_permission_allow("Bash(make:*)")
                 .with_permission_allow("Bash(sort:*)")
                 .with_permission_allow("Bash(tar:*)")
                 .with_permission_allow("Bash(test:*)")
                 .with_permission_allow("Bash(tree:*)")
                 .with_permission_allow("Bash(vorpal build:*)")
+                .with_permission_allow("Bash(vorpal inspect:*)")
+                .with_permission_allow("Bash(wc:*)")
                 .with_permission_allow("Bash(xargs:*)")
                 .with_permission_allow("WebSearch")
                 .build(context)
@@ -124,7 +134,6 @@ impl UserEnvironment {
         let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
             .with_schema("https://opencode.ai/config.json")
             .with_autoupdate(AutoUpdate::Boolean(false))
-            .with_theme("tokyonight")
             .with_bash_permissions(vec![
                 ("*", PermissionAction::Ask),
                 ("cat*", PermissionAction::Allow),
@@ -147,6 +156,7 @@ impl UserEnvironment {
             .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
             .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
             .with_permission_webfetch(PermissionAction::Allow)
+            .with_theme("tokyonight")
             .build(context)
             .await?;
         let opencode_config_path = format!(

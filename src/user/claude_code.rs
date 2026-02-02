@@ -438,7 +438,7 @@ impl ClaudeCode {
         };
         self.hooks
             .entry(hook_name.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hook_config);
         self
     }

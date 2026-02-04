@@ -2,72 +2,56 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-This is a Rust-based dotfiles and configuration management system using Vorpal for artifact-based builds. It generates and manages user environment configurations across multiple platforms (macOS/Linux, ARM/Intel).
+This is a Vorpal dotfiles configuration project for TheAltF4Stream. It uses the Vorpal SDK to declaratively define and deploy user environment artifacts (CLI tools, configuration files, symlinks) across multiple systems (aarch64-darwin, aarch64-linux, x86_64-darwin, x86_64-linux).
 
-## Build Commands
+## Build & Run Commands
 
 ```bash
-vorpal build 'dev'   # Build dev environment (Rust toolchain + protoc)
-vorpal build 'user'  # Build user environment (tools + configs)
-cargo build          # Standard Rust build
-cargo check          # Check compilation
-cargo test           # Run tests
+# Build the project (compiles the Vorpal artifact definition)
+cargo build
+
+# Run the Vorpal configuration (builds and deploys artifacts)
+vorpal build
+
+# Inspect built artifacts
+vorpal inspect
 ```
 
 ## Architecture
 
-**Entry Point:** `src/vorpal.rs` - Builds two environments:
-- `dev`: Development tools (Rust toolchain, protoc)
-- `user`: User tools and configurations
+### Entry Point
+- `src/vorpal.rs` - Main entry point. Sets up a `ProjectEnvironment` (dev tools) and `UserEnvironment` (user dotfiles/tools).
 
-**Core Pattern:** Builder pattern with `.with_*()` methods for configuration:
-```rust
-ClaudeCode::new(name, systems)
-    .with_always_thinking_enabled(true)
-    .with_permission_allow("Bash(cargo build:*)")
-    .build(context)
-    .await?
-```
+### Core Modules
+- `src/lib.rs` - Exports `SYSTEMS` constant (all target platforms) and `get_output_path()` helper for artifact store paths.
+- `src/user.rs` - Defines `UserEnvironment` which orchestrates all user-facing artifacts:
+  - CLI tools from `vorpal-artifacts` (awscli2, bat, beads, direnv, doppler, fd, gh, git, gopls, jj, jq, k9s, kubectl, lazygit, nnn, ripgrep, tmux)
+  - Configuration files (bat, claude-code, ghostty, k9s skins, opencode)
+  - Environment variables and symlinks to `$HOME/.config/` locations
+- `src/file.rs` - Two artifact primitives:
+  - `FileCreate` - Creates a file with inline content
+  - `FileDownload` - Downloads a file from a URL
 
-**Key Files:**
-- `src/lib.rs` - Exports and SYSTEMS constant (4 target platforms)
-- `src/user.rs` - UserEnvironment builder, configures all user tools and symlinks
-- `src/file.rs` - FileCreate and FileDownload utilities
-- `src/user/*.rs` - Individual tool configurations (bat, claude_code, ghostty, k9s, opencode)
+### Configuration Builders (src/user/)
+Each module implements a builder pattern with `new()` and chainable `with_*()` methods, serializes to JSON/text, then uses `FileCreate` to produce an artifact:
+- `claude_code.rs` - Claude Code settings.json configuration
+- `ghostty.rs` - Ghostty terminal configuration
+- `k9s.rs` - K9s Kubernetes UI skin configuration
+- `opencode.rs` - OpenCode configuration
+- `bat.rs` - Bat syntax highlighter configuration
 
-**Output:** Artifacts are stored in `/var/lib/vorpal/store/artifact/output/{namespace}/{digest}` and symlinked to standard config locations (e.g., `~/.claude/settings.json`, `~/.config/bat/config`).
+### Key Patterns
+1. **Builder pattern**: All config structs use `new()` + `with_*()` methods for fluent configuration.
+2. **Artifact digests**: Artifacts return a digest string used to construct output paths via `get_output_path("library", &digest)`.
+3. **Symlink mapping**: `UserEnvironment` maps artifact output paths to user home directory locations via `with_symlinks()`.
 
 ## Dependencies
 
-External crates from ALT-F4-LLC:
-- `vorpal-sdk` - Core Vorpal functionality
-- `vorpal-artifacts` - Pre-built tool artifacts (awscli2, bat, k9s, etc.)
-
-## Supported Platforms
-
-Builds target all four systems defined in `SYSTEMS`:
-- aarch64-darwin (ARM macOS)
-- aarch64-linux (ARM Linux)
-- x86_64-darwin (Intel macOS)
-- x86_64-linux (Intel Linux)
+- `vorpal-sdk` (github.com/ALT-F4-LLC/vorpal) - Core SDK for building Vorpal artifacts
+- `vorpal-artifacts` (github.com/ALT-F4-LLC/artifacts.vorpal) - Pre-built artifact definitions for common tools
 
 ## Issue Tracking
 
-This project uses **bd** (beads) for issue tracking:
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
-
-## Session Completion
-
-Work is NOT complete until `git push` succeeds. Mandatory workflow:
-1. Create issues for remaining work
-2. Run quality gates if code changed
-3. Update issue status
-4. Push: `git pull --rebase && bd sync && git push`
+This project uses **beads** (`bd`) for issue tracking. See AGENTS.md for workflow commands.

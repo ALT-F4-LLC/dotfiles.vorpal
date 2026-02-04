@@ -1,5 +1,5 @@
 use crate::{
-    file::{FileCreate, FileDownload},
+    file::{FileCreate, FileDownload, FileSource},
     get_output_path,
 };
 use anyhow::Result;
@@ -283,6 +283,20 @@ impl UserEnvironment {
             get_output_path("library", &markdown_vim_config)
         );
 
+        // Claude agents directory
+        let claude_agents_name = format!("{}-claude-agents", &self.name);
+        let claude_agents = FileSource::new(&claude_agents_name, "agents", self.systems.clone())
+            .build(context)
+            .await?;
+        let claude_agents_path = get_output_path("library", &claude_agents);
+
+        // Claude skills directory
+        let claude_skills_name = format!("{}-claude-skills", &self.name);
+        let claude_skills = FileSource::new(&claude_skills_name, "skills", self.systems.clone())
+            .build(context)
+            .await?;
+        let claude_skills_path = get_output_path("library", &claude_skills);
+
         // User environment
 
         artifact::UserEnvironment::new(&self.name, self.systems)
@@ -308,7 +322,9 @@ impl UserEnvironment {
                 // Dependencies configurations
                 bat_config,
                 bat_theme,
+                claude_agents,
                 claude_code_config,
+                claude_skills,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
@@ -323,7 +339,9 @@ impl UserEnvironment {
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
                 (bat_config_path.as_str(), "$HOME/.config/bat/config"),
                 (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
+                (claude_agents_path.as_str(), "$HOME/.claude/agents"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
+                (claude_skills_path.as_str(), "$HOME/.claude/skills"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

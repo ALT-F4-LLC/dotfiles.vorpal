@@ -131,7 +131,6 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(make lint:*)")
                 .with_permission_allow("Bash(make test:*)")
                 .with_permission_allow("Bash(make:*)")
-                .with_permission_allow("Bash(python3:*)")
                 .with_permission_allow("Bash(sort:*)")
                 .with_permission_allow("Bash(tar:*)")
                 .with_permission_allow("Bash(test:*)")

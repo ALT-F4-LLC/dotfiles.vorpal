@@ -242,7 +242,7 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "user-bat-theme"
-path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/heads/main/extras/sublime/tokyonight_night.tmTheme"
+path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.1/extras/sublime/tokyonight_night.tmTheme"
 includes = []
 excludes = []
 digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"

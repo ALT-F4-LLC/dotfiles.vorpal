@@ -2,5 +2,38 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Group serde ecosystem updates together",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["serde", "serde_json"],
+      "groupName": "serde ecosystem",
+      "groupSlug": "serde"
+    },
+    {
+      "description": "Automerge minor and patch Cargo crate updates (stable crates only)",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "description": "Require manual review for major Cargo crate updates",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track tokyonight.nvim bat theme version from raw GitHub URL",
+      "fileMatch": ["src/user\\.rs"],
+      "matchStrings": [
+        "raw\\.githubusercontent\\.com/(?<depName>folke/tokyonight\\.nvim)/refs/tags/(?<currentValue>v[^/]+)/"
+      ],
+      "datasourceTemplate": "github-releases"
+    }
   ]
 }

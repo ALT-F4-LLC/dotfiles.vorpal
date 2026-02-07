@@ -64,7 +64,7 @@ impl UserEnvironment {
         let bat_theme_name = format!("{}-bat-theme", &self.name);
         let bat_theme = FileDownload::new(
             bat_theme_name.as_str(),
-            "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/heads/main/extras/sublime/tokyonight_night.tmTheme",
+            "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.1/extras/sublime/tokyonight_night.tmTheme",
             self.systems.clone(),
         )
         .build(context)

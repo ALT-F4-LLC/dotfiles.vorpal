@@ -146,6 +146,8 @@ pub struct ClaudeCode {
     enabled_plugins: BTreeMap<String, bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     always_thinking_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fast_mode: Option<bool>,
 }
 
 impl ClaudeCode {
@@ -189,6 +191,7 @@ impl ClaudeCode {
             file_suggestion: None,
             enabled_plugins: BTreeMap::new(),
             always_thinking_enabled: None,
+            fast_mode: None,
         }
     }
 
@@ -464,6 +467,12 @@ impl ClaudeCode {
     #[allow(dead_code)]
     pub fn with_always_thinking_enabled(mut self, enabled: bool) -> Self {
         self.always_thinking_enabled = Some(enabled);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_fast_mode(mut self, enabled: bool) -> Self {
+        self.fast_mode = Some(enabled);
         self
     }
 

@@ -91,6 +91,7 @@ impl UserEnvironment {
                 .with_attribution_commit("")
                 .with_attribution_pr("")
                 .with_fast_mode(true)
+                .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_hook("PreCompact", None, "bd prime", "command")

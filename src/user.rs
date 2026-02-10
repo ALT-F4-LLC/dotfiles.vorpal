@@ -102,6 +102,8 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(cargo update:*)")
                 .with_permission_allow("Bash(cat:*)")
                 .with_permission_allow("Bash(curl:*)")
+                .with_permission_allow("Bash(cue export:*)")
+                .with_permission_allow("Bash(cue vet:*)")
                 .with_permission_allow("Bash(find:*)")
                 .with_permission_allow("Bash(gh pr list:*)")
                 .with_permission_allow("Bash(git add:*)")

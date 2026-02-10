@@ -9,8 +9,8 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bat::Bat, beads::Beads, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj,
-    jq::Jq, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
+    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj, jq::Jq, k9s::K9s,
+    kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -43,7 +43,6 @@ impl UserEnvironment {
 
         let awscli2 = Awscli2::new().build(context).await?;
         let bat = Bat::new().build(context).await?;
-        let beads = Beads::new().build(context).await?;
         let direnv = Direnv::new().build(context).await?;
         let doppler = Doppler::new().build(context).await?;
         let fd = Fd::new().build(context).await?;
@@ -90,26 +89,9 @@ impl UserEnvironment {
                 .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
                 .with_attribution_pr("")
-                .with_fast_mode(true)
-                .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
-                .with_hook("PreCompact", None, "bd prime", "command")
-                .with_hook("SessionStart", None, "bd prime", "command")
-                .with_model("opus")
-                .with_permission_allow("Bash(bd close:*)")
-                .with_permission_allow("Bash(bd create:*)")
-                .with_permission_allow("Bash(bd dep add:*)")
-                .with_permission_allow("Bash(bd dep list:*)")
-                .with_permission_allow("Bash(bd dep tree:*)")
-                .with_permission_allow("Bash(bd deps:*)")
-                .with_permission_allow("Bash(bd list:*)")
-                .with_permission_allow("Bash(bd ready:*)")
-                .with_permission_allow("Bash(bd show:*)")
-                .with_permission_allow("Bash(bd stats:*)")
-                .with_permission_allow("Bash(bd sync:*)")
-                .with_permission_allow("Bash(bd update:*)")
-                .with_permission_allow("Bash(bd:*)")
+                .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
                 .with_permission_allow("Bash(cargo build:*)")
                 .with_permission_allow("Bash(cargo check:*)")
                 .with_permission_allow("Bash(cargo clippy:*)")
@@ -316,7 +298,6 @@ impl UserEnvironment {
                 // Dependencies
                 awscli2,
                 bat,
-                beads,
                 direnv,
                 doppler,
                 fd,

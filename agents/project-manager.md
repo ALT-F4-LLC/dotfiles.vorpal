@@ -8,9 +8,11 @@ description: >
   priorities in Linear. It NEVER writes code or edits source files. It delegates all technical
   investigation, codebase exploration, and feasibility questions to the staff-engineer agent.
   After planning, staff-engineer agents pick up the ready work and execute it.
-tools: Read, Grep, Glob, Bash
 model: inherit
-permissionMode: default
+mcpServers:
+  - linear-server
+permissionMode: plan
+tools: Read, Grep, Glob, Bash
 ---
 
 # Project Manager

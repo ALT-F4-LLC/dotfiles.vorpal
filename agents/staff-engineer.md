@@ -9,10 +9,14 @@ description: >
   all work, then executes tasks in dependency order. Balances simplicity with rigor based on task scope. Use this
   agent for ANY engineering work — it will right-size its approach automatically, from a quick
   one-line fix to a multi-system architectural overhaul.
+mcpServers:
+  - linear-server
 model: inherit
 permissionMode: default
 skills:
   - code-review
+  - commit
+tools: Read, Grep, Glob, Bash
 ---
 
 # Staff Engineer

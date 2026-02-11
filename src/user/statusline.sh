@@ -85,7 +85,7 @@ if [ -n "$AGENT_NAME" ]; then
 fi
 
 # Project directory (folder icon)
-OUT="${OUT} 📁 ${BOLD}${DIR_NAME}${RESET}"
+OUT="${OUT} ${DIM}|${RESET} 📁 ${BOLD}${DIR_NAME}${RESET}"
 
 # Git info (branch icon)
 if [ -n "$PROJECT_DIR" ]; then

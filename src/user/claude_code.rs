@@ -78,6 +78,16 @@ pub struct McpServerRule {
     pub server_url: Option<String>,
 }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatusLine {
+    #[serde(rename = "type")]
+    pub status_type: String,
+    pub command: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub padding: Option<u32>,
+}
+
 // Main ClaudeCode configuration struct
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,7 +149,7 @@ pub struct ClaudeCode {
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     hooks: BTreeMap<String, Vec<HookConfig>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    status_line: Option<String>,
+    status_line: Option<StatusLine>,
     #[serde(skip_serializing_if = "Option::is_none")]
     file_suggestion: Option<String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
@@ -448,7 +458,19 @@ impl ClaudeCode {
 
     #[allow(dead_code)]
     pub fn with_status_line(mut self, command: &str) -> Self {
-        self.status_line = Some(command.to_string());
+        self.status_line = Some(StatusLine {
+            status_type: "command".to_string(),
+            command: command.to_string(),
+            padding: None,
+        });
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_status_line_padding(mut self, padding: u32) -> Self {
+        if let Some(ref mut sl) = self.status_line {
+            sl.padding = Some(padding);
+        }
         self
     }
 

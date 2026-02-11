@@ -8,6 +8,7 @@ use vorpal_sdk::{
 
 pub struct FileCreate {
     content: String,
+    executable: bool,
     name: String,
     systems: Vec<ArtifactSystem>,
 }
@@ -22,12 +23,20 @@ impl FileCreate {
     pub fn new(content: &str, name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             content: content.to_string(),
+            executable: false,
             name: name.to_string(),
             systems,
         }
     }
 
+    pub fn with_executable(mut self, executable: bool) -> Self {
+        self.executable = executable;
+        self
+    }
+
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
+        let chmod_mode = if self.executable { "755" } else { "644" };
+
         let step_script = formatdoc! {"
             #!/bin/bash
             set -euo pipefail
@@ -36,8 +45,9 @@ impl FileCreate {
             {contents}
             EOF
 
-            chmod 644 $VORPAL_OUTPUT/{name}
+            chmod {chmod_mode} $VORPAL_OUTPUT/{name}
         ",
+            chmod_mode = chmod_mode,
             contents = self.content,
             name = self.name,
         };

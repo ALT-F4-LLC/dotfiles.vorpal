@@ -169,7 +169,7 @@ impl UserEnvironment {
                 .with_permission_deny("Read(./**/*.key)")
                 .with_permission_deny("Read(./**/*.pem)")
                 .with_permission_deny("Read(./.env)")
-                .with_permission_deny("Read(./.env.*)")
+                .with_permission_deny("Read(./.env*)")
                 .with_permission_deny("Read(./.secrets/**)")
                 .with_permission_deny("Read(./secrets/**)")
                 .build(context)

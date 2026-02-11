@@ -102,9 +102,9 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(cargo tree:*)")
                 .with_permission_allow("Bash(cargo update:*)")
                 .with_permission_allow("Bash(cat:*)")
-                .with_permission_allow("Bash(curl:*)")
                 .with_permission_allow("Bash(cue export:*)")
                 .with_permission_allow("Bash(cue vet:*)")
+                .with_permission_allow("Bash(curl:*)")
                 .with_permission_allow("Bash(find:*)")
                 .with_permission_allow("Bash(gh pr list:*)")
                 .with_permission_allow("Bash(git add:*)")
@@ -166,6 +166,12 @@ impl UserEnvironment {
                 .with_permission_allow("mcp__linear-server__update_issue")
                 .with_permission_allow("mcp__linear-server__update_milestone")
                 .with_permission_allow("mcp__linear-server__update_project")
+                .with_permission_deny("Read(./**/*.key)")
+                .with_permission_deny("Read(./**/*.pem)")
+                .with_permission_deny("Read(./.env)")
+                .with_permission_deny("Read(./.env.*)")
+                .with_permission_deny("Read(./.secrets/**)")
+                .with_permission_deny("Read(./secrets/**)")
                 .build(context)
                 .await?;
         let claude_code_config_path = format!(

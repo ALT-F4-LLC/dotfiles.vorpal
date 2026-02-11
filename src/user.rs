@@ -172,6 +172,8 @@ impl UserEnvironment {
                 .with_permission_deny("Read(./.env*)")
                 .with_permission_deny("Read(./.secrets/**)")
                 .with_permission_deny("Read(./secrets/**)")
+                .with_permission_default_mode("acceptEdits")
+                .with_status_line("bash ~/.claude/statusline.sh")
                 .build(context)
                 .await?;
         let claude_code_config_path = format!(
@@ -322,6 +324,20 @@ impl UserEnvironment {
             get_output_path("library", &markdown_vim_config)
         );
 
+        // Claude Code status line script
+        let claude_statusline_name = format!("{}-claude-statusline", &self.name);
+        let claude_statusline = FileCreate::new(
+            include_str!("user/statusline.sh"),
+            claude_statusline_name.as_str(),
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+        let claude_statusline_path = format!(
+            "{}/{claude_statusline_name}",
+            get_output_path("library", &claude_statusline)
+        );
+
         // Claude agents directory
         let claude_agents_name = format!("{}-claude-agents", &self.name);
         let claude_agents = FileSource::new(&claude_agents_name, "agents", self.systems.clone())
@@ -363,6 +379,7 @@ impl UserEnvironment {
                 claude_agents,
                 claude_code_config,
                 claude_skills,
+                claude_statusline,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
@@ -380,6 +397,7 @@ impl UserEnvironment {
                 (claude_agents_path.as_str(), "$HOME/.claude/agents"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (claude_skills_path.as_str(), "$HOME/.claude/skills"),
+                (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

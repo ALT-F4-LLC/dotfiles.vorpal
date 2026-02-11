@@ -129,7 +129,7 @@ BAR_EMPTY=""
 for (( i=0; i<FILLED; i++ )); do BAR_FILLED="${BAR_FILLED}▓"; done
 for (( i=0; i<EMPTY; i++ )); do BAR_EMPTY="${BAR_EMPTY}░"; done
 
-OUT="${OUT} ${DIM}|${RESET} ${CTX_COLOR}${BAR_FILLED}${DIM}${BAR_EMPTY}${RESET} ${CTX_COLOR}${CTX_INT}%${RESET}"
+OUT="${OUT} ${DIM}|${RESET} 🧠 ${CTX_COLOR}${BAR_FILLED}${DIM}${BAR_EMPTY}${RESET} ${CTX_COLOR}${CTX_INT}%${RESET}"
 
 # Cost
 COST_FMT=$(printf '$%.2f' "$COST" 2>/dev/null || echo '$0.00')

@@ -174,6 +174,7 @@ impl UserEnvironment {
                 .with_permission_deny("Read(./secrets/**)")
                 .with_permission_default_mode("acceptEdits")
                 .with_status_line("bash ~/.claude/statusline.sh")
+                .with_status_line_padding(2)
                 .build(context)
                 .await?;
         let claude_code_config_path = format!(
@@ -331,6 +332,7 @@ impl UserEnvironment {
             claude_statusline_name.as_str(),
             self.systems.clone(),
         )
+        .with_executable(true)
         .build(context)
         .await?;
         let claude_statusline_path = format!(

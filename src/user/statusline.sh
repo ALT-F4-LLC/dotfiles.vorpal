@@ -77,7 +77,7 @@ get_git_info() {
 OUT=""
 
 # Model name
-OUT="${OUT}${CYAN}${MODEL}${RESET}"
+OUT="${OUT}🤖 ${CYAN}${MODEL}${RESET}"
 
 # Agent name if present
 if [ -n "$AGENT_NAME" ]; then
@@ -133,7 +133,7 @@ OUT="${OUT} ${DIM}|${RESET} 🧠 ${CTX_COLOR}${BAR_FILLED}${DIM}${BAR_EMPTY}${RE
 
 # Cost
 COST_FMT=$(printf '$%.2f' "$COST" 2>/dev/null || echo '$0.00')
-OUT="${OUT} ${DIM}|${RESET} ${COST_FMT}"
+OUT="${OUT} ${DIM}|${RESET} 💰 ${COST_FMT}"
 
 # Duration
 DURATION_SEC=$(( DURATION_MS / 1000 ))
@@ -144,10 +144,10 @@ if [ "$DURATION_MIN" -gt 0 ]; then
 else
     DURATION_FMT="${DURATION_REM}s"
 fi
-OUT="${OUT} ${DIM}|${RESET} ${DURATION_FMT}"
+OUT="${OUT} ${DIM}|${RESET} ⏱️ ${DURATION_FMT}"
 
 # Lines changed
-OUT="${OUT} ${DIM}|${RESET} ${GREEN}+${LINES_ADDED}${RESET} ${RED}-${LINES_REMOVED}${RESET}"
+OUT="${OUT} ${DIM}|${RESET} ✏️ ${GREEN}+${LINES_ADDED}${RESET} ${RED}-${LINES_REMOVED}${RESET}"
 
 # -- Output --
 

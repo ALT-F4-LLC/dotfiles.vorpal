@@ -11,7 +11,7 @@ description: >
 model: inherit
 mcpServers:
   - linear-server
-permissionMode: plan
+permissionMode: dontAsk
 tools: Read, Grep, Glob, Bash
 ---
 

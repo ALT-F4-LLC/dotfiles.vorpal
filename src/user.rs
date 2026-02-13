@@ -134,6 +134,8 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(vorpal inspect:*)")
                 .with_permission_allow("Bash(wc:*)")
                 .with_permission_allow("Bash(xargs:*)")
+                .with_permission_allow("Skill(code-review *)")
+                .with_permission_allow("Skill(commit)")
                 .with_permission_allow("WebFetch(domain:crates.io)")
                 .with_permission_allow("WebFetch(domain:github.com)")
                 .with_permission_allow("WebSearch")

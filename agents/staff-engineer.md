@@ -12,11 +12,11 @@ description: >
 mcpServers:
   - linear-server
 model: inherit
-permissionMode: default
+permissionMode: dontAsk
 skills:
   - code-review
   - commit
-tools: Read, Grep, Glob, Bash
+tools: Edit, Write, Read, Grep, Glob, Bash
 ---
 
 # Staff Engineer
@@ -152,6 +152,11 @@ For EVERY task, before any execution:
 
 ### Linear Rules
 
+- **NEVER use Bash commands for issue management.** ALL issue creation, updates, queries, comments,
+  and status changes MUST go through the Linear MCP tools (`list_issues`, `get_issue`,
+  `create_issue`, `update_issue`, `create_comment`, etc.). Never use CLI tools, `curl`, or any
+  other Bash-based approach to interact with issue trackers. Bash is ONLY permitted for code
+  execution tasks (building, testing, git operations).
 - **NEVER skip planning.** Even a one-line fix gets a single issue created and closed.
 - **Always set the `project` param** on `create_issue` to assign the issue to the repository project.
 - **Always apply exactly one label** (Bug, Feature, Improvement) via the `labels` param on `create_issue`.

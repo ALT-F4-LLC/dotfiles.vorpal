@@ -19,10 +19,11 @@ LINES_REMOVED=$(echo "$DATA" | jq -r '.cost.total_lines_removed // 0')
 INPUT_TOKENS=$(echo "$DATA" | jq -r '.context_window.current_usage.input_tokens // 0')
 CACHE_CREATE=$(echo "$DATA" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0')
 CACHE_READ=$(echo "$DATA" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0')
+OUTPUT_TOKENS=$(echo "$DATA" | jq -r '.context_window.current_usage.output_tokens // 0')
 CTX_SIZE=$(echo "$DATA" | jq -r '.context_window.context_window_size // 200000')
-TOTAL_INPUT=$(( INPUT_TOKENS + CACHE_CREATE + CACHE_READ ))
+TOTAL_TOKENS=$(( INPUT_TOKENS + CACHE_CREATE + CACHE_READ + OUTPUT_TOKENS ))
 if [ "$CTX_SIZE" -gt 0 ] 2>/dev/null; then
-    CTX_USED=$(( (TOTAL_INPUT * 100) / CTX_SIZE ))
+    CTX_USED=$(( (TOTAL_TOKENS * 100) / CTX_SIZE ))
 else
     CTX_USED=0
 fi

@@ -93,14 +93,23 @@ impl UserEnvironment {
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-                .with_env("OTEL_METRICS_EXPORTER", "otlp")
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "http/protobuf")
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics")
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE", "cumulative")
-                .with_env("OTEL_LOGS_EXPORTER", "otlp")
+                .with_env(
+                    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+                    "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
+                )
                 .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "http/protobuf")
-                .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "https://loki.bulbasaur.altf4.domains/otlp/v1/logs")
+                .with_env(
+                    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+                    "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
+                )
+                .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "http/protobuf")
+                .with_env(
+                    "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+                    "cumulative",
+                )
+                .with_env("OTEL_LOGS_EXPORTER", "otlp")
                 .with_env("OTEL_LOGS_EXPORT_INTERVAL", "15000")
+                .with_env("OTEL_METRICS_EXPORTER", "otlp")
                 .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
                 .with_permission_allow("Bash(cargo build:*)")
                 .with_permission_allow("Bash(cargo check:*)")

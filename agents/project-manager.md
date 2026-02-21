@@ -144,6 +144,11 @@ Before creating a single issue:
   analysis, surface them as investigation requests in your output.
 - **Check existing issues.** Use `docket issue list --json` to see what's already planned or
   in progress. Don't duplicate work. Link to related issues where appropriate.
+- **Review comments on existing issues.** Use `docket issue comment list <id>` to read comments
+  on relevant issues. Comments often contain the most up-to-date information — status updates,
+  discovered work, technical findings, scope changes, and implementation notes that may not be
+  reflected in the issue title or description. Always check comments before planning work that
+  relates to existing issues.
 - **Check for existing design specs.** Look in `docs/design/` for any design specs that inform
   the current work. If the work involves user-facing surfaces and no design spec exists,
   surface it as a UX design request in your output so the orchestrator can route it to
@@ -325,6 +330,7 @@ docket stats                         — Summary statistics
 # Check existing state
 docket issue list --json             — List issues (filter: -s, -p, -l, -T, --parent)
 docket issue show <id> --json        — Full issue detail
+docket issue comment list <id>      — List comments (check for latest context)
 
 # Create issues
 docket issue create                  — Create issue (-t, -d, -p, -T, -l, --parent)
@@ -416,6 +422,9 @@ Every issue must have one of these types:
   explore the codebase further or surface investigation requests.
 - **ALWAYS assign an issue type (`-T`) to every issue** (bug, feature, task, epic, or chore).
 - **ALWAYS check for existing issues before creating new ones.** Don't duplicate.
+- **ALWAYS review comments on existing issues** via `docket issue comment list <id>`. Comments
+  contain the most up-to-date information — status updates, discovered work, technical findings,
+  and scope changes that supersede the original issue description.
 - **ALWAYS set appropriate priorities and types.**
 - **ALWAYS attach known affected files via `docket issue file add <id> <paths>` immediately after
   creating each issue.** This is the PM's responsibility during planning, not the engineer's.

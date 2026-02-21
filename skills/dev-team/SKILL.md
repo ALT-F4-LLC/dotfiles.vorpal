@@ -220,6 +220,10 @@ issue and spawn @ux-designer to produce a targeted design spec before continuing
    Description: {full issue description from Docket}
 
    Rules:
+   - BEFORE starting, run `docket issue comment list <id>` via Bash to review all comments
+     on the issue. Comments contain the most up-to-date context — scope changes, technical
+     findings, discovered work, and implementation notes that may supersede the original
+     description. Incorporate this information into your approach.
    - Run `docket issue move <id> in-progress` via Bash to claim the issue
    - Do NOT commit any changes (no git add, no git commit, no git push)
    - Do NOT modify files outside the scope of this issue: {scoped files}
@@ -282,12 +286,15 @@ All issue state lives in Docket. Every agent reads from and writes to the same d
 **Docket CLI commands via Bash**.
 
 - Before spawning agents: run `docket issue list --json` to verify issue state is current
+- Before spawning agents: review comments on relevant issues via `docket issue comment list <id>`
+  — comments contain the most up-to-date context and may supersede original descriptions
 - Each agent runs `docket issue move <id> in-progress` to claim their issue and
   `docket issue close <id>` + `docket issue comment add <id> -m "..."` for completion
 - If an agent discovers unexpected work: it adds a comment to the issue via
   `docket issue comment add` describing the additional work needed — it does NOT create issues
-- Between phases: run `docket board --json` and review agent comments for any discovered work
-  that needs new issues created by the project-manager
+- Between phases: run `docket board --json` and review agent comments (via
+  `docket issue comment list <id>`) for any discovered work that needs new issues created
+  by the project-manager, scope changes, or updated context for upcoming phases
 
 ---
 
@@ -346,6 +353,7 @@ docket stats                         — Summary statistics
 # Check existing state
 docket issue list --json             — List issues (filter: -s, -p, -l, -T, --parent)
 docket issue show <id> --json        — Full issue detail
+docket issue comment list <id>      — List comments (check for latest context)
 
 # Create issues
 docket issue create                  — Create issue (-t, -d, -p, -T, -l, --parent)

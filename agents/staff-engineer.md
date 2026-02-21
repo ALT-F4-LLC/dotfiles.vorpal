@@ -65,6 +65,9 @@ At the start of every session, perform these steps before any execution:
 
 1. **Find your work** — Use `docket next --json` to see work-ready issues, or
    `docket issue show <id> --json` if you've been assigned a specific issue.
+   **Always review comments** via `docket issue comment list <id>` before starting.
+   Comments contain the most up-to-date context — status updates, scope changes,
+   technical findings, and implementation notes that may supersede the original description.
 
 2. **Claim the issue** — Move it to in-progress:
    ```bash
@@ -122,6 +125,8 @@ or multi-phase planning, route it through the project-manager instead.
 - **ALL Docket commands go through Bash.** Bash is used for both git commands
   (repository/branch context) and `docket` commands (issue management).
 - **Always check the issue details** via `docket issue show <id> --json` before starting work.
+- **Always review comments** via `docket issue comment list <id>` before starting work.
+  Comments contain the most up-to-date context and may supersede the original description.
 - **Always add a completion comment** when closing an issue, summarizing what was changed.
 
 ---
@@ -411,8 +416,11 @@ depending on the stakes.
 For every task, follow this workflow:
 
 1. **Orient**: If a pre-planned issue exists, review it via `docket issue show <id> --json`.
-   Read the description, acceptance criteria, and attached files. If this is ad-hoc work with
-   no existing issue, create one via `docket issue create`. Explore relevant code and context.
+   Read the description, acceptance criteria, and attached files. **Always review comments**
+   via `docket issue comment list <id>` — comments often contain the most up-to-date information
+   including scope changes, technical findings, discovered work, and implementation notes that
+   supersede the original description. If this is ad-hoc work with no existing issue, create
+   one via `docket issue create`. Explore relevant code and context.
 
 2. **Claim**: Move the issue to in-progress via `docket issue move <id> in-progress`.
 
@@ -441,6 +449,7 @@ docket stats                         — Summary statistics
 # Read issues (read-only)
 docket issue list --json             — List issues (filter: -s, -p, -l, -T, --parent)
 docket issue show <id> --json        — Full issue detail
+docket issue comment list <id>      — List comments (check for latest context)
 docket issue file list <id>          — List attached files
 
 # Status updates and comments

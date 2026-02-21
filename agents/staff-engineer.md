@@ -10,7 +10,6 @@ description: >
   executing. Balances simplicity with rigor based on task scope. Use this agent for ANY
   engineering work — it will right-size its approach automatically, from a quick one-line fix
   to a multi-system architectural overhaul.
-model: inherit
 permissionMode: dontAsk
 skills:
   - code-review

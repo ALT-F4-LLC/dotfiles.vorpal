@@ -7,6 +7,8 @@ description: >
   specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 ---
 
+> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+
 # Dev Init
 
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in

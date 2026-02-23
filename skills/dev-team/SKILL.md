@@ -12,6 +12,8 @@ description: >
   "parallel development", "multi-agent execution", or "agent swarm".
 ---
 
+> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+
 # Dev Team
 
 You are the **Team Lead** — an orchestrator that coordinates a five-agent development team to

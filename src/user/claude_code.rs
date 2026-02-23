@@ -34,12 +34,16 @@ pub struct Permissions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub disable_bypass_permissions_mode: Option<bool>,
+    pub disable_bypass_permissions_mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SandboxNetwork {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub allowed_domains: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_all_unix_sockets: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_unix_sockets: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -307,6 +311,14 @@ impl ClaudeCode {
         self
     }
 
+    #[allow(dead_code)]
+    pub fn with_permission_disable_bypass_permissions_mode(mut self, value: &str) -> Self {
+        let mut perms = self.permissions.unwrap_or_default();
+        perms.disable_bypass_permissions_mode = Some(value.to_string());
+        self.permissions = Some(perms);
+        self
+    }
+
     // Sandbox builder methods
 
     #[allow(dead_code)]
@@ -343,6 +355,16 @@ impl ClaudeCode {
     pub fn with_sandbox_excluded_commands(mut self, commands: Vec<String>) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         sandbox.excluded_commands = commands;
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sandbox_network_allowed_domains(mut self, domains: Vec<String>) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        let mut network = sandbox.network.unwrap_or_default();
+        network.allowed_domains = domains;
+        sandbox.network = Some(network);
         self.sandbox = Some(sandbox);
         self
     }

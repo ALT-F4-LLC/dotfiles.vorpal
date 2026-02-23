@@ -41,7 +41,7 @@ pub struct Permissions {
 #[serde(rename_all = "camelCase")]
 pub struct SandboxNetwork {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_unix_sockets: Option<bool>,
+    pub allow_unix_sockets: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_local_binding: Option<bool>,
 }
@@ -53,6 +53,8 @@ pub struct Sandbox {
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_allow_bash_if_sandboxed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_unsandboxed_commands: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub excluded_commands: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -330,6 +332,14 @@ impl ClaudeCode {
     }
 
     #[allow(dead_code)]
+    pub fn with_sandbox_allow_unsandboxed_commands(mut self, allow: bool) -> Self {
+        let mut sandbox = self.sandbox.unwrap_or_default();
+        sandbox.allow_unsandboxed_commands = Some(allow);
+        self.sandbox = Some(sandbox);
+        self
+    }
+
+    #[allow(dead_code)]
     pub fn with_sandbox_excluded_commands(mut self, commands: Vec<String>) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         sandbox.excluded_commands = commands;
@@ -338,10 +348,10 @@ impl ClaudeCode {
     }
 
     #[allow(dead_code)]
-    pub fn with_sandbox_network_allow_unix_sockets(mut self, allow: bool) -> Self {
+    pub fn with_sandbox_network_allow_unix_sockets(mut self, sockets: Vec<String>) -> Self {
         let mut sandbox = self.sandbox.unwrap_or_default();
         let mut network = sandbox.network.unwrap_or_default();
-        network.allow_unix_sockets = Some(allow);
+        network.allow_unix_sockets = Some(sockets);
         sandbox.network = Some(network);
         self.sandbox = Some(sandbox);
         self

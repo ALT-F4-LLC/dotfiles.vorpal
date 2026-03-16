@@ -17,27 +17,19 @@ digest = "3abca7df1be4d52ef37ccd22f0b01da87f149f4ca1f74633d53deba87d98b078"
 platform = "aarch64-darwin"
 
 [[sources]]
-name = "beads"
-path = "https://github.com/steveyegge/beads/releases/download/v0.47.1/beads_0.47.1_darwin_arm64.tar.gz"
-includes = []
-excludes = []
-digest = "de65e35a1cc0dad8a438c57011e40153abf7a42a29b1edde5f1a33981c0dc919"
-platform = "aarch64-darwin"
-
-[[sources]]
 name = "cargo"
-path = "https://static.rust-lang.org/dist/cargo-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/cargo-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "7d1c4502f6bf524ec48b8eb5efc1b07f72b1d69c30ae93a5b042bf6bf57a14a1"
+digest = "ad2506123158e906da7e118e4077dfca5995ee120e2693444a3647b7249be808"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "clippy"
-path = "https://static.rust-lang.org/dist/clippy-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/clippy-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "67c1c94ce876d9086ce8ca6d13f31df1c6113229278bdbb0ff6de2cd7ef3a4de"
+digest = "098f2d1d808bc417bfa1dc63419ffedb1781ca65dd780858c0f8f67e9decb57b"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -66,34 +58,34 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "gh"
-path = "https://github.com/cli/cli/releases/download/v2.69.0/gh_2.69.0_macOS_arm64.zip"
+path = "https://github.com/cli/cli/releases/download/v2.87.3/gh_2.87.3_macOS_arm64.zip"
 includes = []
 excludes = []
-digest = "f9d97acb8bc92eca98e2e1ab608050972e4c55dfa4a31001a63a0ce30ee4b545"
+digest = "d126f084c14a7f32dccfde5ede0770e5359a09a6413bed914ef5d0ca09f21236"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "git"
-path = "https://www.kernel.org/pub/software/scm/git/git-2.52.0.tar.gz"
+path = "https://www.kernel.org/pub/software/scm/git/git-2.53.0.tar.gz"
 includes = []
 excludes = []
-digest = "c7811ed4fe8c1c5afcecea15929178c33dcef4fa885086df96cb558cd9466f29"
+digest = "4c08acf32a9dd52cb4f64d1835bade4128af51dd85742245987643cde0aeb9b1"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "go"
-path = "https://go.dev/dl/go1.24.2.darwin-arm64.tar.gz"
+path = "https://go.dev/dl/go1.26.0.darwin-arm64.tar.gz"
 includes = []
 excludes = []
-digest = "5380e02cdfe2b254af7c3306671fbacc0bfefeb3a9684b502e4af3ad5db917e7"
+digest = "83d3ebad7958766647de4d3a8a1b2d3860da607632ac07889085b933e3e97f0f"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "gopls"
-path = "https://go.googlesource.com/tools/+archive/refs/tags/v0.29.0.tar.gz"
+path = "https://go.googlesource.com/tools/+archive/refs/tags/v0.42.0.tar.gz"
 includes = []
 excludes = []
-digest = "b4faf133f053f372cfe8ea3189bf035d19ca1661cb3ac1e7cd34a465de5641c2"
+digest = "411df8f3301010012a491337a4f5fa884fbcc323fe7e9ad75aa470f4bf921c56"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -170,10 +162,10 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "protoc"
-path = "https://github.com/protocolbuffers/protobuf/releases/download/v25.4/protoc-25.4-osx-aarch_64.zip"
+path = "https://github.com/protocolbuffers/protobuf/releases/download/v34.0/protoc-34.0-osx-aarch_64.zip"
 includes = []
 excludes = []
-digest = "d105abb1c1d2c024f29df884f0592f1307984d63aeb10f0e61ccb94aee2c2feb"
+digest = "f45e1434669e1f88fd6f7ebf750388ef3135f5477fd7e34d7531e3c18f4751f3"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -194,42 +186,42 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "rust-analyzer"
-path = "https://static.rust-lang.org/dist/rust-analyzer-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/rust-analyzer-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "bdacf7a56e68f16781550b581d3fab39df89f5ad2a1019741489c1ee651849e6"
+digest = "5389db13945d33e320e4ddb44c558fda83923ceeac0d9931d6deae8ec2373bd6"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "rust-src"
-path = "https://static.rust-lang.org/dist/rust-src-1.89.0.tar.gz"
+path = "https://static.rust-lang.org/dist/rust-src-1.93.1.tar.gz"
 includes = []
 excludes = []
-digest = "aedb6a3777ffe9665a4f619066bb49840e9fe81119b7f105b9f03792d5d337c6"
+digest = "52da4bcd8bd8e2d0ae2635e1503efa8f5838bd18958b983d52336d73896e7172"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "rust-std"
-path = "https://static.rust-lang.org/dist/rust-std-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/rust-std-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "e3b376ad76bdb4bd1202ceb30e11b27f0fb68afb3b4b70bd832dfb49e0872adc"
+digest = "0db6b692d4782e80abd92bd18a1f0797229472c62f40417cdc975fb8f3413ee3"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "rustc"
-path = "https://static.rust-lang.org/dist/rustc-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/rustc-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "17066000a01f87d67f18ca241471cb3935b3612d3e358a4350360c5b0e9f1f35"
+digest = "53c9d5b83e6f2c6b826d29043e36c104a179cc8eeb354424d1799632ec82bd3a"
 platform = "aarch64-darwin"
 
 [[sources]]
 name = "rustfmt"
-path = "https://static.rust-lang.org/dist/rustfmt-1.89.0-aarch64-apple-darwin.tar.gz"
+path = "https://static.rust-lang.org/dist/rustfmt-1.93.1-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
-digest = "752b960aaf6106256aab29996697a858ed9e04dc3da46440195d4e403cfb918b"
+digest = "17b27bfbf46861bc587e5dc0e04fbc32cbd02f9b111867ffc79653261de7796a"
 platform = "aarch64-darwin"
 
 [[sources]]

@@ -3,7 +3,7 @@ use dotfiles::{user::UserEnvironment, SYSTEMS};
 use vorpal_sdk::{
     artifact::{
         get_env_key, protoc::Protoc, rust_toolchain, rust_toolchain::RustToolchain,
-        ProjectEnvironment,
+        DevelopmentEnvironment,
     },
     context::get_context,
 };
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
 
     // Artifact
 
-    ProjectEnvironment::new("dev", SYSTEMS.to_vec())
+    DevelopmentEnvironment::new("dev", SYSTEMS.to_vec())
         .with_artifacts(vec![protoc, rust_toolchain.clone()])
         .with_environments(vec![
             format!("PATH={}", rust_toolchain_bin),

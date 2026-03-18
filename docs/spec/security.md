@@ -1,324 +1,286 @@
-# Security Specification
-
-This document describes the security model, trust boundaries, secret management, and
-authentication/authorization patterns that exist in the dotfiles.vorpal project as of the current
-codebase state. It reflects what is actually implemented, not aspirational goals.
-
+---
+project: "dotfiles.vorpal"
+maturity: "draft"
+last_updated: "2026-03-18"
+updated_by: "@staff-engineer"
+scope: "Security model, trust boundaries, secret management, and permission controls for the dotfiles configuration system"
+owner: "@staff-engineer"
+dependencies:
+  - architecture.md
+  - operations.md
 ---
 
-## 1. Project Security Context
+# Security
 
-This project is a **personal dotfiles configuration system** built on the Vorpal build framework.
-It generates and deploys user environment configurations (shell, editor, terminal, AI coding tools)
-to a developer workstation. The security surface is narrower than a typical web service but has
-distinct concerns around:
+This document describes the security characteristics of the dotfiles.vorpal project as they
+actually exist in the codebase. The project is a declarative dotfiles manager that generates
+configuration files and symlinks -- it does not run services, handle user authentication, or
+process untrusted input at runtime. Its security profile is shaped primarily by supply chain
+trust, CI secret management, filesystem permission boundaries, and the AI agent permission model
+it configures.
 
-- **Supply chain integrity** of downloaded binary artifacts
-- **Secret management** in CI/CD pipelines
-- **AI tool permission boundaries** (Claude Code, Opencode)
-- **Configuration files** deployed to the user's home directory via symlinks
+## Trust Model
 
----
+### Trust Boundaries
 
-## 2. Trust Boundaries
+The system operates across four trust boundaries:
 
-### 2.1 Build-Time Trust Boundary
+1. **Build-time (Vorpal runtime)**: The Rust binary executes as a Vorpal config, producing
+   content-addressed artifacts in `/var/lib/vorpal/store/`. The Vorpal runtime is trusted to
+   execute build steps in isolation and manage the artifact store. Build steps run shell scripts
+   (`set -euo pipefail`) that write to `$VORPAL_OUTPUT` -- the Vorpal runtime controls what this
+   path resolves to.
 
-The Vorpal build system operates as a trusted build orchestrator. It downloads external artifacts
-(binaries, themes, tools) from the internet and assembles them into a user environment. The trust
-boundary is:
+2. **CI environment (GitHub Actions)**: Workflows run on `macos-latest` runners and access AWS
+   credentials via GitHub Secrets for S3-backed artifact registry. The CI boundary is where
+   secrets are most exposed.
 
-- **Trusted**: The Vorpal SDK, vorpal-artifacts library, and this repository's Rust source code.
-  These are compiled and executed locally or in CI.
-- **Semi-trusted**: External binary downloads specified in `Vorpal.lock`. These are pinned by
-  SHA-256 digest, providing integrity verification but not provenance attestation.
-- **Untrusted**: The network transport layer for downloads. Mitigated by HTTPS URLs and digest
-  verification.
+3. **Host filesystem (symlink deployment)**: Built artifacts are symlinked from the Vorpal store
+   into the user's home directory (`~/.claude/`, `~/.config/`, `~/Library/Application Support/`).
+   Once symlinked, configurations are live and affect the behavior of tools that read them.
 
-### 2.2 Runtime Trust Boundary
+4. **AI agent runtime (Claude Code / OpenCode)**: The generated `settings.json` defines
+   permission boundaries for AI coding agents. This is the most security-sensitive output of the
+   project, as it controls what an AI agent can read, write, and execute on the host.
 
-The generated environment runs as the local user on macOS. Configuration files are symlinked from
-the Vorpal store (`/var/lib/vorpal/store/artifact/output/`) into `$HOME/.config/`, `$HOME/.claude/`,
-and `$HOME/Library/Application Support/`. The local user has full read/write access to all deployed
-artifacts.
+### What Is Trusted
 
-### 2.3 CI/CD Trust Boundary
+- The Vorpal SDK and `vorpal-artifacts` crate (pulled from GitHub `main` branch)
+- The Vorpal runtime executing build steps
+- The host user running `vorpal build`
+- GitHub Actions runner environment
+- AWS S3 for artifact registry storage
+- External URLs fetched at build time (e.g., tokyonight theme from GitHub raw content)
 
-GitHub Actions workflows execute builds with access to AWS credentials for the Vorpal registry
-(S3 backend). The CI environment is the most sensitive trust boundary in the project.
+### What Is NOT Trusted
 
----
+- AI agent actions at runtime -- the entire Claude Code permission model exists to constrain
+  what agents can do
+- External theme/asset URLs -- fetched at build time but not cryptographically verified beyond
+  content-addressing in the Vorpal store
 
-## 3. Secret Management
+## Secret Management
 
-### 3.1 CI/CD Secrets (GitHub Actions)
+### Secrets in CI
 
-The workflow at `.github/workflows/vorpal.yaml` uses the following secrets:
+The GitHub Actions workflow (`.github/workflows/vorpal.yaml`) uses two secrets:
 
-| Secret | Source | Purpose |
-|---|---|---|
-| `AWS_ACCESS_KEY_ID` | GitHub Secrets (`${{ secrets.AWS_ACCESS_KEY_ID }}`) | S3 registry authentication |
-| `AWS_SECRET_ACCESS_KEY` | GitHub Secrets (`${{ secrets.AWS_SECRET_ACCESS_KEY }}`) | S3 registry authentication |
-| `AWS_DEFAULT_REGION` | GitHub Variables (`${{ vars.AWS_DEFAULT_REGION }}`) | S3 region configuration |
+| Secret | Purpose | Storage |
+|--------|---------|---------|
+| `AWS_ACCESS_KEY_ID` | S3 artifact registry authentication | GitHub Secrets |
+| `AWS_SECRET_ACCESS_KEY` | S3 artifact registry authentication | GitHub Secrets |
 
-These secrets are passed as environment variables to the `ALT-F4-LLC/setup-vorpal-action@main`
-action. The region is stored as a non-secret variable, which is appropriate since it is not
-sensitive.
+Additionally, `AWS_DEFAULT_REGION` is stored as a GitHub Actions variable (not a secret).
 
-### 3.2 Local Secret Management
+These credentials are passed as environment variables to the `setup-vorpal-action` step and are
+scoped to the CI runner's lifetime.
 
-The project includes **Doppler CLI** as a managed artifact (`Doppler::new().build(context)`),
-indicating that Doppler is the intended secret management solution for the local development
-environment. However, there is no Doppler configuration within this repository itself -- Doppler
-is simply provisioned as a tool in the user environment.
+### Secrets in the Codebase
 
-### 3.3 No Embedded Secrets
+**No secrets are hardcoded in the codebase.** The project does not contain `.env` files, API
+keys, tokens, or credentials in source code. The `.gitignore` excludes `/target` and `/.docket`
+but does not explicitly list `.env` files (there are none to exclude).
 
-The codebase contains **no hardcoded secrets, API keys, or credentials**. The following patterns
-were verified:
+### Secret Management Tools
 
-- No `.env` files exist in the repository
-- `.gitignore` only excludes `/target` (Rust build artifacts)
-- No credential files, private keys, or tokens are committed
-- The `.envrc` file exists but was not inspectable in this review; it likely contains a `use`
-  directive for direnv/Vorpal environment setup
+The user environment includes [Doppler](https://www.doppler.com/) as a managed CLI tool,
+indicating that secrets in the broader development workflow are managed externally via Doppler.
+However, the dotfiles project itself does not configure or consume Doppler secrets -- it only
+ensures the CLI binary is available.
 
-### 3.4 AI Tool API Keys
+### Claude Code API Key Helper
 
-The Claude Code configuration supports an `api_key_helper` field (defined in
-`src/user/claude_code.rs:108`) which allows delegating API key retrieval to an external command
-rather than embedding keys. This field is **not currently used** in the configuration at
-`src/user.rs:87-172` -- Claude Code authentication is handled externally by Anthropic's own
-login flow.
+The `ClaudeCode` configuration struct supports an `api_key_helper` field that can specify an
+external command to retrieve API keys. In the current configuration, this field is **not set**
+(`None`). If used in the future, this would delegate credential retrieval to an external process
+rather than storing keys in configuration.
 
----
+## AI Agent Permission Model
 
-## 4. AI Tool Permission Model
+The most security-significant output of this project is the Claude Code `settings.json`, which
+defines a three-tier permission system controlling what AI agents can do on the host.
 
-The most significant security-relevant code in this project is the **permission configuration for
-AI coding assistants** (Claude Code and Opencode). These tools can execute arbitrary commands, so
-their permission boundaries are critical.
+### Permission Tiers
 
-### 4.1 Claude Code Permissions
+**Allow (auto-approved):**
+- Read-only bash commands: `ls`, `cat`, `head`, `tail`, `find`, `grep`, `rg`, `wc`, `tree`,
+  `sort`, `test`, `jq`
+- Build/test commands: `cargo build/check/clippy/fmt/test/tree/update/search/outdated/run`,
+  `go build/test/vet/doc/list/mod tidy`, `bun run/test`, `npm run build/lint/test`,
+  `yarn build/lint/test`, `npx tsc`, `make`, `gofmt`, `staticcheck`
+- Git read operations: `git diff`, `git log`, `git status`, `git show`, `git remote get-url`,
+  `git add`
+- GitHub read operations: `gh pr diff`, `gh pr list`, `gh pr view`
+- Container read operations: `docker images`, `docker logs`, `docker ps`
+- Project tooling: `vorpal build`, `vorpal inspect`, `docket`, `cue`
+- File operations: `chmod`, `tar`, `xargs`
+- Web fetch: `api.github.com`, `crates.io`, `github.com` domains, plus general `WebSearch`
 
-Defined in `src/user.rs:114-168`, the Claude Code settings configure a permission model with
-three tiers:
+**Ask (requires user approval):**
+- `chown`
+- `git commit`
+- `git push`
+- `rm`
 
-**Allow list** (auto-approved without user prompt):
-- Build/test commands: `cargo build`, `cargo check`, `cargo clippy`, `cargo fmt`, `cargo test`,
-  `go build`, `go test`, `go vet`, `make build`, `make lint`, `make test`
-- Read-only commands: `cat`, `find`, `grep`, `ls`, `sort`, `tree`, `wc`, `xargs`
-- Package management: `cargo search`, `cargo update`, `cargo outdated`, `cargo tree`,
-  `go get`, `go list`, `go mod tidy`
-- VCS: `git add`, `git branch --show-current`, `git remote get-url`, `gh pr list`
-- Build tools: `vorpal build`, `vorpal inspect`, `cue export`, `cue vet`, `curl`, `tar`,
-  `docket`
-- Skills: `Skill(code-review *)`, `Skill(commit)`
-- Web: `WebFetch(domain:crates.io)`, `WebFetch(domain:github.com)`, `WebSearch`
+**Deny (blocked entirely):**
+- Destructive git: `git checkout`, `git reset`
+- Read access to sensitive paths: `.env`, `.env.*`, `.envrc`, `~/.aws/`, `~/.ssh/`,
+  `~/.gnupg/`, `~/.kube/`, `~/.talos/`, `~/.doppler/`, `~/.netrc`, `~/.claude.json`,
+  `~/.claude/`, `~/.codex/`, `~/.gemini/`, `~/.opencode/`, `~/.vorpal/`
+- Write/edit access to: same sensitive paths as above, plus `/Applications/`, `/Library/`,
+  `/System/`, `~/Desktop/`, `~/Downloads/`, `~/Library/`
 
-**Deny list** (blocked regardless of user input):
-- `Read(./**/*.key)` -- private key files
-- `Read(./**/*.pem)` -- certificate/key files
-- `Read(./.env)` -- environment variable files
-- `Read(./.env*)` -- all dotenv variants
-- `Read(./.secrets/**)` -- secrets directory
-- `Read(./secrets/**)` -- alternative secrets directory
+### Sandbox Configuration
 
-**Default mode**: `acceptEdits` -- Claude Code requires user approval for file edits.
+Claude Code sandboxing is **enabled** with the following settings:
 
-**Security observations**:
-- The allow list permits `curl:*` with any arguments, which could be used to exfiltrate data
-  to arbitrary URLs. This is a known tradeoff for developer convenience.
-- `git add:*` is allowed but `git commit` and `git push` are not auto-approved, providing a
-  commit review checkpoint.
-- The deny list correctly prevents reading sensitive file patterns (keys, certs, env files).
-- Sandbox configuration is available in the `ClaudeCode` struct but is **not enabled** in the
-  current configuration.
+- `auto_allow_bash_if_sandboxed`: true -- bash commands run inside the sandbox are auto-approved
+- `allow_unsandboxed_commands`: true -- commands excluded from sandbox can still run (with
+  permission checks)
+- `excluded_commands`: `aws`, `docker`, `gh`, `git` -- these run outside the sandbox because they
+  need network/credential access
+- `network.allow_local_binding`: false -- agents cannot bind local network ports
 
-### 4.2 Opencode Permissions
+### Permission Mode
 
-Defined in `src/user.rs:179-206`, Opencode uses a simpler permission model:
+- `default_mode`: `acceptEdits` -- file edits require explicit user acceptance
+- `disable_bypass_permissions_mode`: `disable` -- agents cannot escalate their own permissions
 
-- **Bash default**: `Ask` (all commands require user approval by default)
-- **Bash allow list**: `cat`, `echo`, `file`, `find`, `git branch`, `git log`, `grep`, `head`,
-  `ls`, `sort`, `test`, `tree`, `wc` -- all read-only operations
-- **Edit**: `Ask` (requires approval)
-- **Glob/List/LSP/Read**: `Allow` (read operations are auto-approved)
-- **WebFetch**: `Allow`
+### Gaps and Observations
 
-Opencode's permission model is **more restrictive** than Claude Code's, requiring explicit user
-approval for any command not in the read-only allow list.
+- **`git add` is in the allow list** while `git commit` requires approval. This means agents can
+  stage files freely but cannot commit without user consent.
+- **`chmod` and `xargs` are auto-allowed.** These are powerful primitives -- `chmod` can change
+  file permissions, and `xargs` can amplify other commands. The sandbox mitigates some risk here.
+- **Sandbox exclusions for `aws`, `docker`, `gh`, `git`** mean these tools run outside the
+  sandbox. The permission tiers (ask/deny) provide the only gate for these commands.
+- **`WebSearch` is broadly allowed** without domain restrictions, meaning agents can fetch
+  arbitrary web content for search purposes.
+
+## OpenCode Permission Model
 
----
+The OpenCode configuration uses a simpler permission model:
+
+- **Default**: all bash commands require approval (`Ask`)
+- **Allow**: read-only commands (`cat`, `echo`, `file`, `find`, `git branch`, `git log`, `grep`,
+  `head`, `ls`, `sort`, `test`, `tree`, `wc`)
+- **Allow**: `Glob`, `List`, `LSP`, `Read`, `WebFetch`
+- **Ask**: `Edit`
 
-## 5. Supply Chain Security
+This is more restrictive than the Claude Code configuration -- no build/test commands are
+auto-approved, and all edits require approval.
 
-### 5.1 Binary Artifact Integrity
+## Build-Time Security
 
-The `Vorpal.lock` file pins every external download by:
+### Shell Script Generation
 
-- **Exact URL**: Each artifact has a specific versioned URL
-- **SHA-256 digest**: Each artifact includes a `digest` field with a hex-encoded SHA-256 hash
-- **Platform specificity**: Artifacts are locked per-platform (`aarch64-darwin`)
+The `FileCreate`, `FileDownload`, and `FileSource` structs in `src/file.rs` generate shell
+scripts that run during `vorpal build`. Key characteristics:
 
-There are **31 digest-verified sources** in `Vorpal.lock`, covering tools such as: awscli2, bat,
-cargo, clippy, direnv, doppler, fd, gh, git, go, gopls, jj, jq, k9s, kubectl, lazygit, libevent,
-ncurses, nnn, pkg-config, protoc, readline, ripgrep, rust-analyzer, rust-src, rust-std, rustc,
-rustfmt, tmux, and the bat theme.
+- All generated scripts use `set -euo pipefail` for strict error handling
+- `FileCreate` uses a heredoc with `'EOF'` (single-quoted) delimiter, which prevents variable
+  expansion in the content -- this is correct and prevents injection via content values
+- `FileDownload` downloads from URLs specified in source code (not user input) -- currently
+  only the tokyonight theme from a pinned GitHub release tag (`v4.14.1`)
+- `FileSource` copies files from the project's own source tree into artifacts
 
-**What this provides**: Integrity verification -- if a download is tampered with in transit or at
-the source, the digest mismatch will fail the build.
+### Content-Addressed Storage
 
-**What this does not provide**:
-- Provenance attestation (no signature verification from upstream maintainers)
-- Reproducibility guarantees (digests are manually or tool-updated, not derived from source)
-- Multi-platform verification (only `aarch64-darwin` is currently locked)
+All artifacts are stored in the Vorpal store at `/var/lib/vorpal/store/artifact/output/{namespace}/{digest}`.
+The digest-based path provides content-addressing, meaning artifacts are immutable once built and
+can be verified by their content hash.
 
-### 5.2 Rust Dependency Management
+### String Interpolation in Shell Scripts
 
-The project depends on two Git-based Rust crates:
+The `name` and `path` fields in `FileCreate`, `FileDownload`, and `FileSource` are interpolated
+into shell scripts via Rust's `formatdoc!` macro. These values originate from string literals in
+the Rust source code (not from external input), so injection risk is low in the current design.
+However, if these structs were ever used with dynamic/external input, the interpolation into shell
+scripts would become an injection vector. There is no shell escaping applied to interpolated
+values.
 
-- `vorpal-artifacts` from `ALT-F4-LLC/artifacts.vorpal.git` (branch: main)
-- `vorpal-sdk` from `ALT-F4-LLC/vorpal.git` (branch: main)
+## Supply Chain
 
-Both are pinned to `branch = "main"` in `Cargo.toml`, meaning they track the latest commit on
-main. The `Cargo.lock` file provides reproducible builds by locking exact commit hashes, but
-any `cargo update` will pull the latest main. These are first-party dependencies within the
-ALT-F4-LLC organization.
+### Direct Dependencies
 
-Third-party crate dependencies include cryptographic libraries (`ring`, `rustls`) which are
-pulled transitively through the Vorpal SDK for TLS communication with the registry.
+| Crate | Risk Notes |
+|-------|-----------|
+| `vorpal-sdk` (0.1.0-alpha.0) | Alpha release from crates.io. Pre-1.0 with breaking changes expected. |
+| `vorpal-artifacts` (git, `main` branch) | Pinned to a branch, not a tag or commit hash. Changes on `main` are pulled automatically. |
+| `anyhow`, `indoc`, `serde`, `serde_json`, `tokio` | Widely-used, well-maintained ecosystem crates. Low supply chain risk. |
 
-### 5.3 Renovate Bot
+### Dependency Update Policy (Renovate)
 
-`renovate.json` configures automated dependency updates with:
+- **Auto-merge**: Minor and patch updates for stable crates (version >= 1.0)
+- **Manual review**: Major updates, all pre-1.0 crate updates
+- Custom tracking for the tokyonight theme URL in `src/user.rs`
 
-- **Automerge** for minor/patch updates on stable crates (version >= 1.0)
-- **Manual review** for major version updates
-- Custom regex tracking for the tokyonight bat theme version
+### Observations
 
-Automerging minor/patch updates is a reasonable balance between freshness and review burden for a
-personal dotfiles project. The `matchCurrentVersion: "!/^0/"` guard correctly excludes pre-1.0
-crates from automerge, since they may have breaking changes in minor versions.
+- **`vorpal-artifacts` tracks `main` branch**: This is a supply chain risk. Any push to the
+  `main` branch of `artifacts.vorpal.git` is automatically incorporated. Since this is an
+  ALT-F4-LLC internal repository, the risk is bounded by organizational trust, but pinning to a
+  specific commit or tag would be more secure.
+- **`vorpal-sdk` at alpha**: The `0.1.0-alpha.0` version signals instability. Breaking changes
+  and security-relevant API changes may occur without major version bumps.
+- **`setup-vorpal-action@main`**: The CI action also tracks `main` branch, not a pinned version.
+  This is a CI supply chain risk -- a compromised action could access AWS secrets.
 
-### 5.4 GitHub Actions Supply Chain
+## Telemetry
 
-The CI workflow uses:
+The Claude Code configuration enables telemetry and sends data to external endpoints:
 
-- `actions/checkout@v6` -- pinned to major version tag
-- `ALT-F4-LLC/setup-vorpal-action@main` -- pinned to branch, first-party action
-- `actions/upload-artifact@v6` -- pinned to major version tag
+| Endpoint | Protocol | Purpose |
+|----------|----------|---------|
+| `https://loki.bulbasaur.altf4.domains/otlp/v1/logs` | HTTP/protobuf | Log export (OTLP) |
+| `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics` | HTTP/protobuf | Metrics export (OTLP) |
 
-**Gap**: Actions are pinned to version tags, not commit SHAs. This is vulnerable to tag
-mutability attacks where a compromised action could republish a tag pointing to malicious code.
-For a personal project this is an accepted risk, but for higher-security environments, SHA
-pinning would be preferred.
+These are ALT-F4-LLC internal observability endpoints. Telemetry is enabled explicitly via
+`CLAUDE_CODE_ENABLE_TELEMETRY=1`. The export interval is 15 seconds for both logs and metrics.
 
----
+**Note**: These endpoints are hardcoded in the Rust source. There is no mechanism to disable
+telemetry without modifying and rebuilding the configuration.
 
-## 6. Build Script Security
+## Filesystem Impact
 
-### 6.1 Shell Script Generation
+The project creates symlinks from the Vorpal store into the user's home directory. The following
+paths are written to (via symlink):
 
-The `FileCreate` struct in `src/file.rs:37-60` generates bash scripts that write file content
-using heredoc syntax:
+- `~/.claude/settings.json` -- AI agent permissions and configuration
+- `~/.claude/agents/` -- Agent persona definitions
+- `~/.claude/skills/` -- Agent skill definitions
+- `~/.claude/statusline.sh` -- Executable shell script
+- `~/.config/bat/config` and `~/.config/bat/themes/`
+- `~/.config/nvim/after/ftplugin/markdown.vim`
+- `~/.config/opencode/opencode.json`
+- `~/Library/Application Support/com.mitchellh.ghostty/config`
+- `~/Library/Application Support/k9s/skins/tokyo_night.yaml`
+- `~/.vorpal/bin/vorpal` -- Symlink to a locally-built Vorpal binary
 
-```bash
-cat << 'EOF' > $VORPAL_OUTPUT/{name}
-{contents}
-EOF
-chmod {chmod_mode} $VORPAL_OUTPUT/{name}
-```
+The `statusline.sh` script is the only executable artifact. It runs as part of Claude Code's
+status line feature and has access to session JSON data passed via stdin. It writes a temporary
+cache file to `/tmp/claude-statusline-git-cache-*` with a 5-second TTL.
 
-The use of a **single-quoted heredoc delimiter** (`'EOF'`) prevents variable expansion within the
-content, which is the correct approach to avoid shell injection when writing arbitrary content.
-All generated scripts use `set -euo pipefail` for strict error handling.
+## Gaps and Recommendations
 
-### 6.2 File Permissions
+### Current Gaps
 
-Generated configuration files default to `644` (read-only for group/other). Executable files
-(like the statusline script) are explicitly set to `755`. This is appropriate.
+1. **No `.env` in `.gitignore`**: While no `.env` files exist today, the `.gitignore` does not
+   exclude them. If a contributor accidentally adds one, it would be committed.
 
----
+2. **Unpinned git dependencies**: `vorpal-artifacts` tracks `main` branch and
+   `setup-vorpal-action` tracks `main`. Both should ideally pin to specific commits or tags.
 
-## 7. Telemetry and Observability Endpoints
+3. **No shell escaping in build scripts**: The `formatdoc!` interpolation in `src/file.rs` does
+   not escape values for shell safety. Currently safe because all inputs are compile-time string
+   literals, but fragile if the API surface expands.
 
-The Claude Code configuration sends telemetry data to external endpoints defined in
-`src/user.rs:94-113`:
+4. **Temp file predictability**: The statusline script writes to `/tmp/claude-statusline-git-cache-{cksum}`
+   which uses a deterministic cache key. On a shared system this could be a symlink attack vector,
+   though the primary target is single-user macOS workstations.
 
-| Data Type | Endpoint | Protocol |
-|---|---|---|
-| Logs | `https://loki.bulbasaur.altf4.domains/otlp/v1/logs` | HTTP/Protobuf |
-| Metrics | `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics` | HTTP/Protobuf |
+5. **No SBOM or dependency audit pipeline**: There is no `cargo audit` or equivalent in CI to
+   detect known vulnerabilities in dependencies.
 
-These are first-party observability endpoints under the `altf4.domains` domain. The OTEL
-configuration enables:
-
-- `CLAUDE_CODE_ENABLE_TELEMETRY=1` -- Claude Code telemetry enabled
-- Log and metric export intervals of 15 seconds
-- Cumulative metrics temporality
-
-**Security consideration**: Telemetry data may include session metadata, cost information, and
-usage patterns. The endpoints use HTTPS, providing transport encryption. Authentication to these
-endpoints is not configured in this codebase -- it may be handled at the network/infrastructure
-level or by Doppler-managed secrets.
-
----
-
-## 8. Filesystem Security Model
-
-### 8.1 Vorpal Store
-
-Artifacts are stored in `/var/lib/vorpal/store/artifact/output/{namespace}/{digest}`. This is a
-system-level directory requiring elevated permissions to modify, providing integrity for built
-artifacts after deployment.
-
-### 8.2 Symlink-Based Deployment
-
-The user environment deploys configuration via symlinks from the Vorpal store into user-writable
-locations. Symlink targets defined in `src/user.rs:388-400` include:
-
-- `$HOME/.config/bat/config`
-- `$HOME/.config/bat/themes/tokyonight.tmTheme`
-- `$HOME/.claude/agents/`
-- `$HOME/.claude/settings.json`
-- `$HOME/.claude/skills/`
-- `$HOME/.claude/statusline.sh`
-- `$HOME/Library/Application Support/com.mitchellh.ghostty/config`
-- `$HOME/Library/Application Support/k9s/skins/tokyo_night.yaml`
-- `$HOME/.config/nvim/after/ftplugin/markdown.vim`
-- `$HOME/.config/opencode/opencode.json`
-- `$HOME/.vorpal/bin/vorpal` (links to a local dev build)
-
-The symlink to `$HOME/.vorpal/bin/vorpal` points to a local Vorpal development build at a
-hardcoded absolute path. This means the `vorpal` binary in the user's PATH is whatever is
-currently compiled in the local Vorpal repository checkout, not a released/verified version.
-
----
-
-## 9. Known Gaps and Risks
-
-| Area | Gap | Severity | Notes |
-|---|---|---|---|
-| GitHub Actions pinning | Actions use version tags, not SHA pins | Low | Acceptable for personal project |
-| Git dependency pinning | Vorpal SDK/artifacts track `branch = "main"` | Low | First-party deps, Cargo.lock provides reproducibility |
-| Claude Code sandbox | Sandbox is not enabled in current configuration | Medium | Would provide OS-level isolation for AI-executed commands |
-| `.gitignore` coverage | Only `/target` is ignored; no `.env`, `*.key`, `*.pem` patterns | Low | No such files exist, but .gitignore is not defensive |
-| Telemetry auth | OTEL endpoints lack visible authentication configuration | Low | Likely handled at infrastructure level |
-| curl permissions | Claude Code allows `curl:*` without restriction | Medium | Could exfiltrate data; tradeoff for developer convenience |
-| Single-platform lock | `Vorpal.lock` only contains `aarch64-darwin` digests | Info | Other platforms declared in code but not yet locked |
-| Provenance | Binary downloads verified by digest only, no signature checking | Low | Standard practice for most package managers |
-
----
-
-## 10. Summary
-
-The project has a reasonable security posture for a personal dotfiles system:
-
-- **Strong**: SHA-256 digest verification for all binary downloads, AI tool deny lists for
-  sensitive files, no embedded secrets, strict shell scripts with `set -euo pipefail`,
-  heredoc quoting to prevent injection.
-- **Adequate**: CI secrets managed via GitHub Secrets, Renovate with guarded automerge,
-  first-party dependency tracking.
-- **Gaps**: No Claude Code sandbox enabled, `.gitignore` is minimal, GitHub Actions not SHA-pinned,
-  `curl:*` allowed without restriction in Claude Code permissions.
+6. **Telemetry cannot be toggled without rebuild**: The OTLP endpoints are hardcoded. A
+   configuration flag or environment variable override would provide more operational flexibility.

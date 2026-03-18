@@ -80,6 +80,30 @@ project's `docs/tdd/` directory (create it if it doesn't exist).
 5. **Save to `docs/tdd/`.** Use a descriptive filename, e.g., `docs/tdd/auth-system-redesign.md`
    or `docs/tdd/database-migration-v2.md`.
 
+Every TDD file MUST begin with YAML frontmatter before any other content:
+
+```yaml
+---
+project: "<repository/directory name>"
+maturity: "<proof-of-concept | draft | experimental | stable>"
+last_updated: "<YYYY-MM-DD>"
+updated_by: "@staff-engineer"
+scope: "<one-liner describing what this TDD covers>"
+owner: "@staff-engineer"
+dependencies:
+  - <relative filename of related TDD or spec, only if logical connection exists>
+---
+```
+
+Field rules:
+- `project`: repository or directory name
+- `maturity`: overall project maturity — helps agents understand where the project is in its lifecycle
+- `last_updated`: date the file is created or updated — must be updated on every edit
+- `updated_by`: the agent role that wrote/updated the file
+- `scope`: concise free-text one-liner
+- `owner`: `@staff-engineer` for TDD files
+- `dependencies`: only include if a real logical connection exists; omit the field entirely if none
+
 ### TDD Format
 
 Every TDD follows this structure. Not every section applies to every design —
@@ -154,6 +178,8 @@ and link between the files.
 If `docs/spec/` exists and your TDD work revealed new findings that impact the project specs —
 architectural decisions, new patterns, security considerations, etc. — update only the specific
 `docs/spec/` files affected. Do not re-read or update spec files unrelated to the current TDD.
+When updating any spec or TDD file, always update the `last_updated` and `updated_by` fields in the
+YAML frontmatter to reflect the current date and your agent role.
 
 ---
 
@@ -461,7 +487,8 @@ and tests inspecting private state.
 If `docs/spec/` exists and your review revealed new findings — architectural patterns, security
 concerns, operational considerations, or anything that should be captured — update only the specific
 `docs/spec/` files impacted by those findings. Do not re-read or update spec files unrelated to
-the current review.
+the current review. When updating any spec file, always update the `last_updated` and `updated_by`
+fields in the YAML frontmatter to reflect the current date and your agent role.
 
 ---
 
@@ -492,7 +519,8 @@ auto-generate specs proactively. You can generate all 7 at once or individual fi
 
 After any work (TDD creation, code review) that reveals the specs are out of date or incomplete.
 Proactively update the relevant spec files when changes impact them — but only the specific files
-affected, not all 7.
+affected, not all 7. When updating any file, always update the `last_updated` and `updated_by`
+fields in its YAML frontmatter.
 
 ### Spec Creation Workflow
 
@@ -501,6 +529,31 @@ affected, not all 7.
 2. **Draft the spec based on what actually exists.** Document the real architecture, real patterns,
    real testing approach — not what you wish existed. Be honest about gaps.
 3. **Save to `docs/spec/<name>.md`.** Create the `docs/spec/` directory if it doesn't exist.
+
+Every spec file MUST begin with YAML frontmatter before any other content:
+
+```yaml
+---
+project: "<repository/directory name>"
+maturity: "<proof-of-concept | draft | experimental | stable>"
+last_updated: "<YYYY-MM-DD>"
+updated_by: "@staff-engineer"
+scope: "<one-liner describing what this document covers>"
+owner: "@staff-engineer"
+dependencies:
+  - <relative filename of related spec, only if logical connection exists>
+---
+```
+
+Field rules:
+- `project`: repository or directory name
+- `maturity`: overall project maturity — helps agents understand where the project is in its lifecycle
+- `last_updated`: date the file is created or updated — must be updated on every edit
+- `updated_by`: the agent role that wrote/updated the file
+- `scope`: concise free-text one-liner
+- `owner`: `@staff-engineer` for spec files
+- `dependencies`: only include if a real logical connection exists; omit the field entirely if none
+
 4. **Generate all 7 or individual files** as requested. When generating all, work through them
    systematically.
 

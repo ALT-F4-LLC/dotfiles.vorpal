@@ -1,260 +1,217 @@
+---
+project: "dotfiles.vorpal"
+maturity: "experimental"
+last_updated: "2026-03-18"
+updated_by: "@staff-engineer"
+scope: "Code review priorities, high-risk areas, and review dimensions for the dotfiles.vorpal project"
+owner: "@staff-engineer"
+dependencies:
+  - security.md
+  - code-quality.md
+---
+
 # Review Strategy
 
-This document describes the code review strategy for the `dotfiles.vorpal` project based on what
-actually exists in the codebase. It identifies areas of high risk, the review dimensions that
-matter most, common pitfalls, and the review workflow in use.
+## Project Profile
 
----
+dotfiles.vorpal is a single-developer declarative dotfiles manager built on the Vorpal build system.
+The entire development environment -- CLI tools, configuration files, themes, and symlinks -- is
+defined as a Rust program that produces reproducible, content-addressed artifacts. The project also
+deploys a Claude Code agent team configuration alongside the dotfiles.
 
-## Project Context
+**Contributor profile:** Single maintainer (Erik Reinert), with Renovate bot handling automated
+dependency updates. No external contributors at this time.
 
-This is a Rust-based dotfiles management project built on the Vorpal SDK. It generates
-configuration artifacts for developer tools (Claude Code, Ghostty, k9s, bat, opencode) and
-provisions a complete user environment with CLI tools and symlinked configs. The project also
-contains an AI agent team system (agents/, skills/) that defines roles and workflows for
-Claude Code agent teams.
+**Change frequency:** ~74 commits total. Most changes are additive -- new tool configurations, new
+permissions, agent definition updates. Destructive refactors are rare.
 
-**Key characteristics that shape review strategy:**
+**CI/CD:** GitHub Actions runs `vorpal build 'dev'` and `vorpal build 'user'` on every push to
+`main` and on pull requests. There are no linting, formatting, or test steps in CI -- the only
+verification is that the Vorpal build succeeds.
 
-- Single contributor (Erik Reinert) with automated dependency updates via Renovate
-- No existing test suite -- zero unit, integration, or end-to-end tests
-- No PR templates, CODEOWNERS, or CONTRIBUTING guidelines
-- No linter configuration (no clippy config, no rustfmt.toml)
-- CI runs `vorpal build` only -- no test, lint, or format checks in CI
-- Two distinct content domains: Rust source code and Markdown agent/skill definitions
-- Configuration-heavy codebase -- most Rust code is builder patterns that generate config files
+## Review Dimension Priorities
 
----
+Dimensions are ranked by relevance to this specific project. The project's primary risk surface is
+not traditional application logic but rather **configuration correctness** and **security
+boundaries** in generated settings files.
 
-## Review Dimensions by Priority
+| Priority | Dimension | Rationale |
+|----------|-----------|-----------|
+| 1 | **Security** | The project generates permission rules, sandbox configurations, and secret management boundaries for Claude Code and other tools. Misconfigured permissions can expose sensitive files or allow unintended shell commands. |
+| 2 | **Correctness** | Generated configurations are deployed directly to the user's home directory via symlinks. A malformed config breaks the user's development environment with no graceful degradation. |
+| 3 | **Operations** | Changes deploy to the host filesystem via Vorpal's content-addressed store. Bad symlink targets or incorrect paths cause silent failures. CI only validates that the build compiles, not that configs are semantically correct. |
+| 4 | **Architecture** | The builder pattern used across all configuration generators should remain consistent. New config generators should follow established patterns. |
+| 5 | **Code Quality** | Important for maintainability of the config generators, but the codebase is small (~1,200 lines of source) and the patterns are repetitive by design. |
+| 6 | **Performance** | Not a meaningful concern. The build runs infrequently and performance is dominated by Vorpal artifact resolution, not this project's code. |
 
-For this specific project, review dimensions are ordered by relevance:
+## High-Risk Areas
 
-### 1. Security (HIGH priority)
+### 1. Claude Code Permissions and Sandbox Configuration
 
-This is the highest-risk dimension because the project directly manages:
+**Files:** `src/user/claude_code.rs`, `src/user.rs` (lines 86-257)
 
-- **Claude Code permissions** (`src/user/claude_code.rs`): The allow/deny permission lists
-  control what an AI agent can execute on the developer's machine. An overly permissive rule
-  (e.g., `Bash(rm:*)`) or a missing deny rule for sensitive paths could have severe consequences.
-- **Secret exposure paths**: Deny rules for `.env*`, `.key`, `.pem`, and `.secrets/` files
-  protect credentials. Any change to these rules requires careful review.
-- **Environment variable injection**: OTEL endpoints, PATH modifications, and tool configurations
-  are embedded in the Rust source. Malicious or incorrect values propagate to the user environment.
-- **Shell script generation**: `FileCreate` embeds content into bash heredocs. Changes to
-  `src/file.rs` must be reviewed for injection risks via the `content` parameter flowing into
-  `cat << 'EOF'` blocks.
-- **External URL references**: The bat theme is downloaded from a raw GitHub URL with a pinned
-  version tag. Changes to download URLs must be verified for supply chain safety.
+This is the highest-risk area in the project. The `ClaudeCode` struct generates `settings.json`
+for Claude Code, which controls:
 
-**Review checklist for security-sensitive changes:**
-- Verify no new `Bash(*)` wildcard permissions are introduced without justification
-- Confirm deny rules still cover `.env*`, `*.key`, `*.pem`, `.secrets/`
-- Check that external URLs point to pinned versions, not branches
-- Inspect shell script content for injection vectors
-- Verify OTEL/telemetry endpoints point to expected infrastructure
+- **Allow/ask/deny permission rules** for bash commands, file read/write/edit, and web access
+- **Sandbox configuration** including excluded commands and network restrictions
+- **Sensitive file deny rules** protecting `.env`, `.ssh`, `.gnupg`, `.kube`, and other credential paths
 
-### 2. Correctness (HIGH priority)
+**What to watch for:**
+- New `with_permission_allow()` calls that grant broad shell access (especially to destructive
+  commands like `rm`, `git reset`, `git checkout`)
+- Removal or weakening of `with_permission_deny()` rules for sensitive paths
+- Changes to sandbox excluded commands (`aws`, `docker`, `gh`, `git` are currently excluded
+  from sandboxing)
+- New environment variable additions to `with_env()` that might contain secrets or telemetry
+  endpoints
+- The ordering of allow/ask/deny rules matters -- later rules may override earlier ones depending
+  on the Claude Code settings resolution
 
-Configuration generation errors are silent and only surface when the user tries to use the
-generated config. There is no test suite to catch regressions.
+**Review approach:** Compare every permission change against the existing deny list. Verify that
+new allow rules do not create a path to bypass existing deny rules. Check that sensitive
+directories remain protected.
 
-**High-risk areas for correctness:**
-- **Serialization logic** in `src/user/claude_code.rs` and `src/user/opencode.rs`: These structs
-  use `serde` with `rename_all`, `skip_serializing_if`, and `untagged` variants. Incorrect serde
-  attributes produce invalid JSON that Claude Code or opencode will reject or silently ignore.
-- **YAML generation** in `src/user/k9s.rs`: The k9s skin uses `formatdoc!` string interpolation
-  for YAML, not a YAML serialization library. Indentation errors or quoting issues produce
-  invalid YAML that k9s will fail to parse.
-- **Symlink paths** in `src/user.rs` (lines 388-399): Incorrect source or target paths in
-  `with_symlinks` cause the user environment to silently miss configurations. Escaped spaces in
-  paths (e.g., `VMware\\ Fusion`) are easy to break.
-- **Agent markdown frontmatter** in `agents/*.md`: The YAML frontmatter (`name`, `description`,
-  `permissionMode`, `tools`, `skills`) must conform to Claude Code's agent schema. Invalid
-  frontmatter silently disables agents.
+### 2. Symlink Targets and Filesystem Paths
 
-**Review checklist for correctness:**
-- For serde changes: verify JSON output matches the target tool's expected schema
-- For `formatdoc!` changes: verify generated output is valid YAML/TOML/config syntax
-- For symlink changes: verify both source artifact path and target home directory path
-- For agent changes: verify frontmatter fields match Claude Code agent schema
+**Files:** `src/user.rs` (lines 473-485)
 
-### 3. Architecture (MEDIUM priority)
+Symlinks map Vorpal store paths to locations in `$HOME`. Incorrect targets can:
 
-The codebase follows a consistent builder pattern with clear module boundaries. Architectural
-review matters when:
+- Overwrite existing user configuration files
+- Point to nonexistent store paths (silent failure)
+- Create symlinks in system directories (though current targets are all under `$HOME`)
 
-- **New tool configurations are added**: Each tool follows the pattern of a struct with builder
-  methods and a `build()` method that calls `FileCreate`. Deviations from this pattern should be
-  flagged.
-- **The Vorpal SDK API changes**: Dependencies on `vorpal-sdk` and `vorpal-artifacts` are
-  git-pinned to `branch = "main"`. SDK API changes can break the build without version bumps.
-  Review dependency updates carefully.
-- **Agent/skill definitions change**: The agent team architecture (team lead, staff-engineer,
-  project-manager, senior-engineer, qa-engineer, ux-designer) has specific role boundaries.
-  Changes that blur these boundaries (e.g., giving senior-engineer the ability to create Docket
-  issues) undermine the system design.
+**What to watch for:**
+- New symlink entries that target paths outside `$HOME`
+- Changes to `get_output_path()` format strings that could break path resolution
+- Symlink targets that conflict with other tools' expected configuration locations
 
-### 4. Operations (MEDIUM priority)
+### 3. Shell Script Generation via `FileCreate`
 
-- **CI workflow** (`.github/workflows/vorpal.yaml`): Changes to the build pipeline, Vorpal
-  setup action, or S3 registry configuration affect whether builds succeed. The workflow uses
-  AWS credentials from secrets.
-- **Renovate configuration** (`renovate.json`): Custom managers track the tokyonight.nvim theme
-  version. Automerge rules allow minor/patch Cargo updates for stable crates (version >= 1.0).
-  Changes to these rules affect the automated dependency update flow.
+**Files:** `src/file.rs`
 
-### 5. Code Quality (LOW priority)
+`FileCreate` writes content into build scripts using heredoc (`cat << 'EOF'`). The content is
+user-controlled (from builder methods) and injected directly into a bash script.
 
-- The codebase has a high volume of `#[allow(dead_code)]` annotations across builder methods in
-  `src/user/claude_code.rs`. This is acceptable -- builder methods are part of the public API
-  surface even if not all are currently called.
-- Heavy use of `String` and `Vec<String>` for domain values (color codes, permission strings,
-  paths) is a pragmatic choice for a configuration generation project. Don't flag this as
-  primitive obsession -- the values are passed through to config files, not used for logic.
-- The k9s skin builder (`src/user/k9s.rs`, ~590 lines) is the largest file by method count.
-  This is inherent to the k9s skin schema, not a code quality issue.
+**What to watch for:**
+- Content that could break the heredoc boundary (e.g., a line containing only `EOF`)
+- Changes to the shell script template that could alter file permissions beyond 644/755
+- The `with_executable(true)` flag grants execute permission -- verify this is intentional for
+  each use
 
-### 6. Performance (NEGLIGIBLE priority)
+### 4. Agent and Skill Definitions
 
-This is a build-time configuration generator. It runs once to produce artifacts, not in a hot
-path. Performance review is not relevant unless someone introduces blocking I/O in an
-inappropriate context or the async build pipeline changes fundamentally.
+**Files:** `agents/*.md`, `skills/*/SKILL.md`
 
----
+These markdown files define the behavior of AI agents deployed to `~/.claude/agents/`. Changes
+here affect how Claude Code agents operate across all projects on the machine.
 
-## Areas of High Risk
+**What to watch for:**
+- Instructions that could cause agents to bypass safety guards (commit without asking, force push,
+  delete files)
+- Scope creep in agent responsibilities that could lead to unintended actions
+- Changes to the "no-commit guard" that was explicitly added in commit `6cc3c77`
+- Skill orchestration changes that could create infinite loops or excessive API usage
 
-### Tier 1: Changes Require Thorough Review
+### 5. External Dependencies and Version Pins
 
-| Area | Files | Risk |
-|---|---|---|
-| Claude Code permissions | `src/user/claude_code.rs`, `src/user.rs` | Controls what AI agents can execute on the host machine |
-| Shell script generation | `src/file.rs`, `src/user/statusline.sh` | Content embedded in heredocs; injection risk |
-| Agent role boundaries | `agents/*.md` | Incorrect permissions or tool grants undermine team safety model |
-| Skill orchestration | `skills/dev-team/SKILL.md` | Incorrect workflow ordering can cause agents to conflict |
+**Files:** `Cargo.toml`, `renovate.json`, `src/user.rs` (theme URL on line 66)
 
-### Tier 2: Changes Require Standard Review
+**What to watch for:**
+- `vorpal-artifacts` is pinned to a git branch (`main`), not a version -- any upstream change
+  is automatically pulled. This is the highest dependency risk.
+- `vorpal-sdk` uses a `0.1.0-alpha.0` version -- pre-release versions may have breaking changes
+- Renovate auto-merges minor/patch updates for stable crates only (version >= 1.0). This is
+  correctly configured but should be monitored.
+- The bat theme URL embeds a specific git tag (`v4.14.1`). Renovate has a custom manager for
+  this, which is good, but the URL is in source code rather than a separate config.
 
-| Area | Files | Risk |
-|---|---|---|
-| User environment composition | `src/user.rs` | Symlink targets, artifact wiring, PATH ordering |
-| Serde-based config generation | `src/user/claude_code.rs`, `src/user/opencode.rs` | Silent serialization errors |
-| YAML template generation | `src/user/k9s.rs` | Indentation/quoting errors in `formatdoc!` |
-| CI pipeline | `.github/workflows/vorpal.yaml` | Build breakage, secret exposure |
-| Dependency management | `Cargo.toml`, `renovate.json` | Git-pinned deps, automerge rules |
+## Common Change Patterns
 
-### Tier 3: Changes Can Be Reviewed Quickly
+Based on commit history, these are the most frequent types of changes:
 
-| Area | Files | Risk |
-|---|---|---|
-| Color/theme values | `src/user/k9s.rs`, `src/user/ghostty.rs` | Cosmetic; low impact |
-| New builder methods (unused) | Any `src/user/*.rs` | API surface expansion; no runtime effect |
-| Agent prose/instructions | `agents/*.md` (non-frontmatter) | Behavioral guidance; no schema impact |
-| Documentation | `README.md`, `docs/**` | No runtime impact |
+### Permission Updates (Most Frequent)
 
----
+Changes to Claude Code allow/ask/deny rules are the most common commit type. Review checklist:
 
-## Most Frequently Changed Files
+- [ ] New `allow` rules are scoped to specific command prefixes (not wildcards)
+- [ ] No existing `deny` rules are removed without explicit justification
+- [ ] `ask` rules are used for destructive operations (`git commit`, `git push`, `rm`, `chown`)
+- [ ] Deny rules cover all three permission types (Read, Write, Edit) for sensitive paths
+- [ ] New web fetch permissions are limited to specific domains
 
-Based on git history (62 total commits):
+### New Tool Configuration Generators
 
-| File | Changes | Review Implication |
-|---|---|---|
-| `src/user.rs` | 34 | Primary integration point; most changes land here. Review symlinks and artifact wiring carefully. |
-| `Cargo.lock` | 17 | Automated dependency updates. Verify no unexpected transitive changes. |
-| `agents/staff-engineer.md` | 9 | Agent role definition under active iteration. Review role boundary changes. |
-| `agents/project-manager.md` | 9 | Agent role definition under active iteration. Review role boundary changes. |
-| `.github/workflows/vorpal.yaml` | 9 | CI pipeline. Review for secret handling and build logic. |
-| `src/user/claude_code.rs` | 7 | Permission model. Security-sensitive -- thorough review always. |
-| `src/user/statusline.sh` | 7 | Shell script. Review for correctness and injection safety. |
-| `Cargo.toml` | 7 | Dependency changes. Check for git-pinned branch changes. |
+Adding support for a new tool (like bat, ghostty, k9s). Review checklist:
 
----
+- [ ] Follows the builder pattern: `new()` -> `with_*()` -> `build()` -> `FileCreate`
+- [ ] Struct lives in its own module under `src/user/`
+- [ ] Tool is added to the `UserEnvironment::build()` dependency chain
+- [ ] Symlink is added mapping store output to the correct config path
+- [ ] The `SYSTEMS` constant is used for cross-platform support (even if only macOS is primary)
 
-## Review Workflow
+### Agent/Skill Definition Changes
 
-### Current State
+- [ ] Changes align with the five-agent team model (staff, senior, PM, QA, UX)
+- [ ] No-commit guard remains intact across all agents
+- [ ] Skill orchestration does not create circular dependencies between agents
 
-There is no formal review process in the codebase. No PR templates, CODEOWNERS, branch
-protection rules, or contribution guidelines exist. The project has a single contributor.
+### Dependency Updates
 
-### Agent-Based Review
+- [ ] Renovate auto-merge rules are respected (manual review for major bumps)
+- [ ] `vorpal-artifacts` branch pin is acknowledged as a risk
+- [ ] Pre-release dependency versions are treated with extra scrutiny
 
-The project defines an agent-based review workflow through the `@staff-engineer` agent role
-and the `dev-team` skill:
+## Gaps and Missing Review Infrastructure
 
-1. **@staff-engineer is the designated reviewer** for all `@senior-engineer` implementation
-   changes.
-2. **Review uses six dimensions**: architecture, security, operations, performance, code quality,
-   and testing -- weighted by relevance to the change.
-3. **Feedback is structured by severity**: blocker, concern, suggestion, question, praise.
-4. **Review output format** is defined in the staff-engineer agent instructions with templates
-   for trivial, small, and medium/large changes.
+### No Automated Checks
 
-This agent-based review is the primary review mechanism for the project. It is triggered as
-part of the dev-team orchestration workflow (plan -> implement -> review -> test).
+- **No `cargo fmt` or `cargo clippy` in CI.** Formatting and lint checks are manual. The
+  `with_permission_allow("Bash(cargo fmt:*)")` and `with_permission_allow("Bash(cargo clippy:*)")`
+  permissions exist for local Claude Code use, but nothing enforces them.
+- **No tests.** The project has zero test files. There are no unit tests for configuration
+  generators, no integration tests for generated output, and no snapshot tests for expected
+  config file contents.
+- **No PR template or CONTRIBUTING guide.** As a single-developer project this is expected, but
+  it means there is no documented review process.
+- **No CODEOWNERS file.** Not needed currently but would be relevant if contributors are added.
+- **No pre-commit hooks.** No `.pre-commit-config.yaml` or git hooks are present in the
+  repository.
 
-### Recommended Review Focus by Change Type
+### No Configuration Validation
 
-| Change Type | Primary Dimensions | Depth |
-|---|---|---|
-| Permission changes (allow/deny rules) | Security | Thorough -- verify every rule |
-| New tool configuration module | Architecture, Correctness | Standard -- verify pattern conformance and output validity |
-| Agent/skill definition changes | Architecture | Standard -- verify role boundaries and workflow ordering |
-| Dependency updates (Cargo) | Security, Operations | Quick for minor/patch; thorough for major or git-pinned |
-| Renovate config changes | Operations | Standard -- verify automerge rules are safe |
-| CI workflow changes | Operations, Security | Standard -- verify secret handling |
-| Color/theme changes | Correctness | Quick -- verify values are valid hex/named colors |
-| Shell script changes | Security, Correctness | Thorough -- verify no injection vectors |
+The build system only verifies that the Rust code compiles and that `vorpal build` succeeds. It
+does not validate that:
 
----
+- Generated JSON files parse correctly (Claude Code settings, OpenCode config)
+- Generated YAML files parse correctly (K9s skin)
+- Generated key-value configs have valid syntax (Ghostty, bat)
+- Symlink targets will resolve at deploy time
+- Permission rules follow the expected Claude Code schema
 
-## Common Pitfalls
+### No Rollback Documentation
 
-These are recurring patterns that reviewers should watch for:
+There is no documented procedure for rolling back a bad configuration deployment. Since Vorpal
+uses content-addressed artifacts, previous versions exist in the store, but the process to
+revert a symlink to a prior artifact is not documented.
 
-1. **Silent config breakage**: Because there are no tests, configuration changes are only
-   validated when the Vorpal build runs or the user loads the config. Reviewers must mentally
-   trace the generated output.
+## Review Workflow Recommendations
 
-2. **Serde rename mismatches**: The `ClaudeCode` struct uses `#[serde(rename_all = "camelCase")]`
-   while the `Opencode` struct uses different conventions. Adding fields to either requires
-   verifying the rename matches the target tool's expected JSON schema.
+### For the Current Single-Developer Setup
 
-3. **Git-pinned dependency drift**: Both `vorpal-sdk` and `vorpal-artifacts` are pinned to
-   `branch = "main"` in `Cargo.toml`. The `Cargo.lock` pins the actual revision, but upstream
-   breaking changes on main can surface unexpectedly. Reviewers should be aware that `cargo
-   update` may pull breaking changes.
+1. **Self-review against this document's checklists** before merging permission or agent changes.
+2. **Use `cargo clippy` and `cargo fmt --check` locally** before pushing, since CI does not
+   enforce them.
+3. **Manually verify generated JSON** after changing `ClaudeCode` or `Opencode` builder calls
+   (e.g., `cargo run` and inspect the output, or add a simple debug print).
+4. **Treat agent definition changes as security-sensitive** -- they control AI behavior across
+   all projects on the machine.
 
-4. **Heredoc content injection**: `FileCreate` uses `cat << 'EOF'` (single-quoted delimiter,
-   which prevents variable expansion). However, the content itself could contain `EOF` on a
-   line by itself, which would prematurely terminate the heredoc. This is unlikely but worth
-   noting for reviewer awareness.
+### If Contributors Are Added
 
-5. **Agent frontmatter schema changes**: Claude Code's agent schema may evolve. If new fields
-   are added to frontmatter or existing fields change meaning, all agent definitions need
-   coordinated updates.
-
-6. **Permission rule ordering**: Claude Code evaluates permission rules in order (allow > deny
-   or vice versa depending on version). Reviewers should verify that deny rules are not
-   accidentally overridden by broader allow rules.
-
----
-
-## Gaps
-
-The following review infrastructure does not exist and represents gaps:
-
-- **No automated linting in CI**: `cargo clippy` and `cargo fmt --check` are not run in the
-  GitHub Actions workflow. Code style issues are caught only by human review.
-- **No test suite**: Zero tests means zero regression detection. Every change must be reviewed
-  with the assumption that there is no safety net.
-- **No PR template**: Contributors (or agents) have no structured prompt for describing changes,
-  testing performed, or risk assessment.
-- **No CODEOWNERS**: No automatic reviewer assignment. The agent workflow handles this through
-  the `@staff-engineer` role, but GitHub-native CODEOWNERS is absent.
-- **No branch protection**: No evidence of required reviews or status checks before merge.
-- **No schema validation for generated configs**: The project generates JSON (Claude Code,
-  opencode) and YAML (k9s) configs but does not validate them against their target schemas.
-  A schema validation step in CI or build would catch configuration errors automatically.
+1. Add `cargo fmt --check` and `cargo clippy` to the GitHub Actions workflow.
+2. Create a PR template with the permission-change checklist from this document.
+3. Require review approval for changes to `src/user/claude_code.rs` and `agents/`.
+4. Add snapshot tests for generated configuration files to catch unintended changes.
+5. Consider adding a CODEOWNERS file routing security-sensitive files to the project owner.

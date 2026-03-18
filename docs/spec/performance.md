@@ -1,297 +1,191 @@
-# Performance Specification
+---
+project: "dotfiles.vorpal"
+maturity: "experimental"
+last_updated: "2026-03-18"
+updated_by: "@staff-engineer"
+scope: "Performance characteristics, build-time behavior, caching strategy, and scaling considerations"
+owner: "@staff-engineer"
+dependencies:
+  - architecture.md
+  - operations.md
+---
 
-> Project: `dotfiles.vorpal` (ALT-F4-LLC/dotfiles.vorpal)
-> Last updated: 2026-02-21
+# Performance
 
 ## Overview
 
-This document describes the performance characteristics, known bottlenecks, caching strategies,
-and scaling considerations for the `dotfiles.vorpal` project as they actually exist in the
-codebase today.
+dotfiles.vorpal is a build-time configuration generator, not a long-running service. Performance
+characteristics are dominated by artifact build times, network downloads, and Vorpal's
+content-addressed store operations. The project itself does minimal compute -- it assembles
+configuration data structures and delegates to the Vorpal SDK for artifact building and caching.
 
-The project is a Rust-based Vorpal configuration that defines a personal development environment
-as code. It is a build-time configuration tool -- not a long-running service -- so performance
-concerns center on build throughput, artifact resolution, and the efficiency of generated
-configuration files rather than runtime latency or request handling.
+## Performance Profile
 
----
+### Build-Time (Primary Concern)
 
-## 1. Runtime Model
+The project runs as a short-lived `vorpal build` invocation. Two top-level artifacts are built:
 
-### Async Runtime
+1. **`dev`** -- Rust toolchain + Protoc. Heavy first-build cost (large downloads), near-instant
+   on cache hit.
+2. **`user`** -- 16 CLI tools + configuration files + symlinks. The bulk of build time.
 
-The application uses **Tokio** with the `rt-multi-thread` feature enabled (`Cargo.toml:15`).
-The entrypoint is annotated with `#[tokio::main]` (`src/vorpal.rs:11`), which spawns a
-multi-threaded runtime. This is appropriate given that the Vorpal SDK performs network I/O
-(artifact fetching, registry communication) and the multi-thread scheduler allows concurrent
-task execution across available CPU cores.
-
-No custom runtime configuration (worker thread count, stack size, etc.) is applied. The runtime
-uses Tokio's defaults, which sets the worker thread count to the number of available CPU cores.
-
-### Execution Model
-
-The build process in `src/vorpal.rs` and `src/user.rs` follows a **sequential async** pattern:
+All artifact builds are **sequential** within the `UserEnvironment::build` method
+(`src/user.rs:41-488`). Each tool artifact is built one-by-one via `await?`:
 
 ```
-context -> protoc -> rust_toolchain -> dev environment -> user environment -> run
+awscli2 -> bat -> direnv -> doppler -> fd -> gh -> git -> gopls -> jj -> jq -> k9s -> kubectl -> lazygit -> nnn -> ripgrep -> tmux
 ```
 
-Within `UserEnvironment::build()` (`src/user.rs:41-403`), all 16 tool artifacts (awscli2, bat,
-direnv, doppler, fd, gh, git, gopls, jj, jq, k9s, kubectl, lazygit, nnn, ripgrep, tmux) are
-built sequentially via individual `.build(context).await?` calls (lines 44-59). Configuration
-artifacts (bat config, claude code config, ghostty config, k9s skin, etc.) are also built
-sequentially afterward (lines 63-348).
+This sequential chain means build time is the **sum** of all individual artifact build times, not
+the maximum. There is no parallel artifact construction within this project's code -- parallelism
+(if any) is delegated to the Vorpal runtime.
 
-**This is the primary performance characteristic of the project**: approximately 30 sequential
-async build operations, each involving potential network I/O to fetch sources and registry
-interactions.
+### Runtime (Negligible)
 
----
+The generated artifacts are static files (config files, symlinks, binaries). They impose zero
+runtime overhead once deployed. The only runtime component is the statusline script
+(`src/user/statusline.sh`), which runs periodically in the Claude Code status bar.
 
-## 2. Caching Strategy
+## Caching Strategy
 
-### Vorpal Registry Cache (S3-backed)
+### Vorpal Content-Addressed Store
 
-The project uses an **S3-backed artifact registry** (`altf4llc-vorpal-registry`) configured in
-the CI workflow (`.github/workflows/vorpal.yaml:17-18`). The Vorpal build system handles
-content-addressable artifact caching via the registry:
+All artifacts are stored in Vorpal's content-addressed store at
+`/var/lib/vorpal/store/artifact/output/{namespace}/{digest}`. Cache hits are determined by content
+hash -- if the artifact inputs haven't changed, the cached output is reused without rebuilding.
 
-- Each artifact is identified by a digest in `Vorpal.lock` (e.g., SHA-256 hashes for each
-  source).
-- When an artifact's digest matches a previously built artifact in the S3 registry, the build
-  can skip re-building and use the cached result.
-- The `Vorpal.lock` file (`Vorpal.lock:1-250`) pins 30+ source artifacts with explicit digests,
-  enabling deterministic and cache-friendly builds.
+This is the primary performance optimization and it is provided entirely by the Vorpal runtime,
+not by this project's code.
 
-This is the project's most significant performance optimization. Rebuilds that hit the registry
-cache avoid re-downloading sources and re-executing build steps entirely.
+### S3 Remote Cache
 
-### Statusline Git Cache
+The CI pipeline and local builds use an S3-backed remote registry (`altf4llc-vorpal-registry`)
+configured via `setup-vorpal-action`. This means:
 
-The Claude Code statusline script (`src/user/statusline.sh:55-88`) implements a **file-based
-TTL cache** for git status information:
+- Artifacts built in CI are available locally without rebuilding
+- Artifacts built locally are available in CI without rebuilding
+- First-time builds on a new machine pull from S3 rather than building from source
 
-- Cache key: checksum of the project directory path.
-- Cache location: `/tmp/claude-statusline-git-cache-${cache_key}`.
-- TTL: **5 seconds** (line 68).
-- Caches branch name, staged file count, and modified file count.
-- Falls back to live `git` commands on cache miss, then writes the result to the cache file.
-
-This prevents repeated expensive `git diff --cached --numstat` and `git diff --numstat` calls
-on every statusline refresh, which would otherwise add noticeable latency to the terminal
-prompt.
-
-### No Application-Level In-Memory Cache
-
-The Rust source code contains no in-memory caching (no `HashMap`-based caches, no `lazy_static`,
-no `once_cell` patterns beyond what the Vorpal SDK may provide internally). This is appropriate
-for a build tool that runs once and exits.
-
----
-
-## 3. Build Performance Characteristics
-
-### Sequential Artifact Builds
-
-The most impactful performance characteristic is that all artifact builds in
-`UserEnvironment::build()` are **strictly sequential**. Each `.build(context).await?` call must
-complete before the next begins. With 16 tool artifacts plus approximately 10 configuration
-artifacts, a cold build involves roughly 26 sequential async operations.
-
-**Why this matters**: Many of these artifacts have no dependency on each other. For example,
-`awscli2`, `bat`, `direnv`, `doppler`, `fd`, and `ripgrep` are independent tools that could
-theoretically be fetched and built in parallel. However, because they all mutate the shared
-`&mut ConfigContext`, parallel builds would require either a different API from the Vorpal SDK
-or internal synchronization.
-
-**Current mitigation**: The S3 registry cache means that warm builds (where artifacts haven't
-changed) are fast regardless of sequentiality, since each build step resolves to a cache hit
-quickly.
-
-### Artifact Source Downloads
-
-The `Vorpal.lock` file references 30+ external source URLs (GitHub releases, language toolchain
-distributions, etc.) totaling significant download volume on cold builds. Sources include:
-
-- Large archives: Rust toolchain components (~100MB+), Go distribution, git source
-- Medium archives: awscli2, tmux, ncurses
-- Small binaries: jq, direnv, kubectl, fd, ripgrep
-
-Download performance is bounded by network bandwidth and the remote server response times. The
-Vorpal framework handles these downloads, and the S3 registry cache eliminates re-downloads for
-unchanged artifacts.
-
-### String Allocation Patterns
-
-The codebase makes heavy use of `String` allocation through `.to_string()`, `format!()`, and
-`.clone()` calls (332 occurrences across 9 source files). This is most pronounced in the builder
-pattern implementations for configuration structs (`K9sSkin`, `ClaudeCode`, `Opencode`,
-`GhosttyConfig`), which convert `&str` parameters to owned `String` values.
-
-This is not a practical concern for this project. The configuration structs are built once during
-a single build invocation and the total memory footprint of string allocations is negligible
-(a few kilobytes of configuration text). Optimizing to `Cow<'a, str>` or string interning would
-add complexity with no measurable benefit.
-
----
-
-## 4. CI/CD Build Performance
-
-### Workflow Structure
-
-The CI pipeline (`.github/workflows/vorpal.yaml`) uses a **two-stage build**:
-
-1. **`build-dev`**: Builds the `dev` artifact (Rust toolchain + protoc).
-2. **`build`**: Depends on `build-dev`, then builds the `user` artifact.
-
-The `build` job cannot start until `build-dev` completes (`needs: [build-dev]`). This creates
-a sequential dependency in CI that adds to total pipeline time.
-
-### Registry Backend
-
-Both CI jobs configure the Vorpal registry with S3 backend:
+Configuration in `.github/workflows/vorpal.yaml`:
 ```yaml
 registry-backend: s3
 registry-backend-s3-bucket: altf4llc-vorpal-registry
 ```
 
-S3 provides durable, low-latency artifact caching for CI. The S3 bucket is in the AWS region
-specified by `AWS_DEFAULT_REGION`, and artifact fetch latency depends on the geographic proximity
-of the CI runner to the S3 region.
+### Vorpal.lock
 
-### CI Runner
+The `Vorpal.lock` file pins exact source URLs and SHA-256 digests for all external downloads
+(30+ entries). This ensures:
 
-Both jobs run on `macos-latest` GitHub Actions runners. The `Vorpal.lock` sources are all pinned
-to `aarch64-darwin`, which means the builds are architecture-specific and cannot benefit from
-cross-platform cache sharing.
+- Reproducible builds across machines
+- Content verification (no re-download if digest matches)
+- The lock file is uploaded as a CI artifact from the `build-dev` job for downstream consumption
 
----
+### Statusline Script Cache
 
-## 5. Generated Configuration Performance
+The statusline script (`src/user/statusline.sh:59-86`) implements a file-based cache for git
+status information:
 
-### Claude Code Configuration
+- Cache key: CRC checksum of the directory path
+- Cache location: `/tmp/claude-statusline-git-cache-{key}`
+- TTL: 5 seconds (checked via file modification time)
+- Purpose: Avoids running `git diff` and `git status` on every status bar refresh
 
-The Claude Code configuration (`src/user/claude_code.rs`, `src/user.rs:86-172`) generates a
-JSON settings file with:
+This is a sensible optimization -- git operations on large repos can take hundreds of milliseconds,
+and the status bar refreshes frequently.
 
-- **OTEL export intervals**: Metrics and logs export interval set to `15000` ms (15 seconds),
-  which is a reasonable balance between observability granularity and overhead.
-- **Telemetry enabled**: `CLAUDE_CODE_ENABLE_TELEMETRY=1` enables telemetry collection, which
-  adds background network I/O during Claude Code sessions.
-- **Permission rules**: 40+ permission rules are defined. The Claude Code runtime evaluates
-  these on each tool invocation. The rules use simple string/glob matching, so evaluation cost
-  is minimal.
+## Known Bottlenecks
 
-### Statusline Script
+### Sequential Artifact Builds
 
-The statusline script (`src/user/statusline.sh`) runs on every prompt refresh. Performance
-considerations:
+The biggest performance bottleneck is the sequential build chain in `UserEnvironment::build`. Each
+of the 16 CLI tool artifacts is awaited sequentially. Independent artifacts (e.g., `bat` and `jq`)
+could theoretically be built in parallel using `tokio::join!` or `futures::join_all`, but:
 
-- **jq invocations**: 9 separate `jq` calls to parse the same JSON input (lines 13-27, 35).
-  Each call forks a new process. This could be consolidated into a single `jq` call extracting
-  all fields at once, but the practical impact is small (a few milliseconds per invocation).
-- **Git cache**: As described in Section 2, git operations are cached with a 5-second TTL.
-- **Progress bar rendering**: The bar construction loop (lines 144-145) uses bash string
-  concatenation in a loop, which is slow for large widths but the bar width is fixed at 10
-  characters.
+- The `ConfigContext` is passed as `&mut`, requiring exclusive access
+- Parallelism would require the Vorpal SDK to support concurrent context operations
+- On cache hit, each build is fast regardless, making this primarily a cold-build concern
 
----
+### Network Downloads on Cold Builds
 
-## 6. Dependency Performance Profile
+Cold builds download 30+ source archives from various URLs (GitHub releases, kernel.org, Go
+downloads, etc.). These are fetched sequentially through the Vorpal SDK. Total download size for
+the `user` artifact on aarch64-darwin is substantial (AWS CLI alone is a large package).
 
-### Direct Dependencies
+### Compilation from Source
 
-| Dependency | Purpose | Performance Relevance |
-|---|---|---|
-| `tokio` (rt-multi-thread) | Async runtime | Multi-threaded executor for concurrent I/O |
-| `serde` + `serde_json` | Serialization | Used for config file generation; fast for small payloads |
-| `anyhow` | Error handling | Zero-cost in success path |
-| `indoc` | String formatting | Compile-time macro; zero runtime cost |
-| `vorpal-sdk` | Build framework | Controls artifact fetching, caching, and build orchestration |
-| `vorpal-artifacts` | Artifact definitions | Provides tool artifact builders (awscli2, bat, etc.) |
+Some artifacts (git, tmux, nnn, gopls) are compiled from source rather than downloaded as
+pre-built binaries. These are the slowest individual builds:
 
-The performance-critical dependency is `vorpal-sdk`, which manages all artifact resolution,
-source downloading, and registry interaction. Its internal caching and network behavior
-dominates build time.
+- **git** -- compiled from `git-2.53.0.tar.gz`
+- **tmux** -- compiled from `tmux-3.5a.tar.gz` with dependencies (libevent, ncurses, readline,
+  pkg-config)
+- **nnn** -- compiled from source
+- **gopls** -- compiled from Go source with the Go toolchain
 
-### Transitive Dependencies
+The Vorpal cache mitigates this after the first successful build.
 
-The `Cargo.lock` includes HTTP/TLS libraries (hyper, rustls, h2, http-body) pulled in
-transitively through the Vorpal SDK. These handle the actual network I/O for artifact
-downloads and registry communication.
+## Async Runtime
 
----
+The project uses Tokio with the `rt-multi-thread` feature (`Cargo.toml:15`). The `#[tokio::main]`
+macro on `src/vorpal.rs:11` sets up the multi-threaded runtime. However, the actual build logic is
+entirely sequential `await` chains -- the multi-threaded runtime is present because the Vorpal SDK
+requires it, not because this project exploits parallelism.
 
-## 7. Known Bottlenecks
+## Memory Characteristics
 
-1. **Sequential artifact builds**: The ~26 sequential `.build(context).await?` calls are the
-   dominant factor in cold build time. This is constrained by the Vorpal SDK's
-   `&mut ConfigContext` API, which requires exclusive mutable access.
+Memory usage is low. The project:
 
-2. **Cold build download volume**: A fully cold build (empty registry cache) must download all
-   30+ source archives specified in `Vorpal.lock`, which involves significant network transfer.
+- Holds configuration structs in memory (small -- strings and enums)
+- Serializes JSON via serde (ClaudeCode config, Opencode config)
+- Generates YAML via string formatting (K9s skin)
+- Delegates heavy work (downloads, compilation, hashing) to Vorpal worker processes
 
-3. **CI two-stage dependency**: The `build` job waits for `build-dev` to complete, adding
-   sequential latency to the CI pipeline even though the `user` artifact build could potentially
-   start preparing independent artifacts earlier.
+The largest in-memory structure is the `ClaudeCode` configuration struct, which holds ~100+
+permission rules as `Vec<String>`. This is trivially small.
 
-4. **Single-platform lock file**: `Vorpal.lock` only contains `aarch64-darwin` sources. Builds
-   on other platforms would require resolving sources at build time rather than using pinned
-   digests.
+## Benchmarking
 
----
+**No benchmarks exist.** There are no `#[bench]` functions, no criterion benchmarks, no build-time
+measurement tooling, and no performance regression tests.
 
-## 8. Benchmarking and Profiling
+This is appropriate for the project's maturity level. The performance-critical path is inside the
+Vorpal runtime (not this project), and build times are dominated by network I/O and compilation --
+neither of which is controlled by this project's code.
 
-### Current State
+## Scaling Considerations
 
-**There is no benchmarking or profiling infrastructure in this project.** No `#[bench]` tests,
-no criterion benchmarks, no flamegraph configuration, and no build-time measurement tooling
-exists.
+### Adding More Artifacts
 
-This is reasonable for the project's nature -- it is a personal dotfiles configuration tool,
-not a performance-sensitive application. Build time is the only meaningful performance metric,
-and it is dominated by external factors (network speed, registry cache hit rate).
+Each new CLI tool added to `UserEnvironment` adds to the sequential build chain. The incremental
+cost is:
 
-### Observability
+- **Pre-built binary**: Download time only (~seconds on cache miss, instant on hit)
+- **Compiled from source**: Compilation time (~minutes on cache miss, instant on hit)
 
-The project configures OpenTelemetry endpoints for Claude Code sessions:
-- Logs: `https://loki.bulbasaur.altf4.domains/otlp/v1/logs`
-- Metrics: `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics`
+The current 16-tool count is manageable. Scaling to 50+ tools would make cold builds noticeably
+slow but would not affect cached builds.
 
-These provide observability into Claude Code usage but do not measure build performance of the
-dotfiles project itself.
+### Multi-Platform Support
 
----
+The `SYSTEMS` constant declares support for 4 platforms (`Aarch64Darwin`, `Aarch64Linux`,
+`X8664Darwin`, `X8664Linux`), but the `Vorpal.lock` currently only contains `aarch64-darwin`
+entries. Building for additional platforms would multiply the number of source downloads and
+compilations needed.
 
-## 9. Scaling Considerations
+### Configuration Generators
 
-This project is a personal dotfiles manager. It does not serve traffic, handle concurrent users,
-or need horizontal scaling. The relevant "scaling" dimensions are:
+The configuration generator structs (ClaudeCode, K9sSkin, Opencode, etc.) are lightweight builders
+that produce string output. They have no performance concerns at any realistic scale. The K9sSkin
+struct is the largest at 50+ fields, but its `build` method is a single `formatdoc!` macro
+invocation.
 
-- **Adding more tools**: Each new tool artifact adds one more sequential build step. Build time
-  grows linearly with the number of artifacts. Currently at ~26 artifacts.
-- **Configuration complexity**: The builder pattern structs (especially `K9sSkin` at 80+ fields
-  and `ClaudeCode` at 40+ fields) grow in source code size but not in runtime cost, since they
-  generate static configuration files.
-- **Cross-platform support**: The `SYSTEMS` constant declares 4 target systems
-  (`Aarch64Darwin`, `Aarch64Linux`, `X8664Darwin`, `X8664Linux`) but `Vorpal.lock` only pins
-  `aarch64-darwin` sources. Supporting additional platforms would multiply the number of source
-  entries in the lock file.
-
----
-
-## 10. Gaps and Recommendations
+## Gaps
 
 | Gap | Impact | Notes |
-|---|---|---|
-| No parallel artifact builds | Moderate | Constrained by Vorpal SDK API (`&mut ConfigContext`); not actionable without SDK changes |
-| No build-time metrics | Low | Would be useful for tracking build performance trends over time |
-| Multiple jq forks in statusline | Low | 9 separate `jq` processes per statusline refresh; could be consolidated into 1 |
-| No Cargo build profile tuning | Low | Default `dev` and `release` profiles are used; no custom `[profile]` configuration in `Cargo.toml` |
-| Single-platform Vorpal.lock | Low | Only `aarch64-darwin` sources are pinned; other platforms would have slower first builds |
-
-None of these gaps represent urgent problems. The project's performance is adequate for its
-purpose as a personal dotfiles configuration tool, with the S3-backed artifact registry providing
-the most impactful caching layer.
+|-----|--------|-------|
+| No parallel artifact builds | Cold build time is sum of all artifacts, not max | Blocked by `&mut ConfigContext` requirement |
+| No build time measurement | Cannot track regressions | Could add timing instrumentation around each `.build()` call |
+| No CI caching of Cargo build artifacts | CI rebuilds the Rust binary every run | `actions/cache` for `target/` directory would help |
+| No download parallelism | Cold builds wait for each download sequentially | Controlled by Vorpal SDK, not this project |
+| Single-platform lock file | Only aarch64-darwin sources are locked | Other platforms declared in `SYSTEMS` but not exercised |

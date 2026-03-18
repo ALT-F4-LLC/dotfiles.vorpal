@@ -98,6 +98,7 @@ Requirements:
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/{filename}`
 - Create the docs/spec/ directory if it doesn't exist
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Do NOT write implementation code — the spec file is the deliverable
 - Do NOT commit any changes
 ```
@@ -114,6 +115,7 @@ Requirements:
 - Examine project structure, entry points, module boundaries, and dependency graph
 - Identify system components, design patterns, integration points, and key architectural decisions
 - Look at package manifests, config files, and directory layout for structure clues
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/architecture.md`
@@ -134,6 +136,7 @@ Requirements:
 - Examine authentication/authorization patterns, secret management, and environment variables
 - Check for .env files, credential handling, API key patterns, and trust boundaries
 - Identify security-relevant dependencies and their configurations
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/security.md`
@@ -154,6 +157,7 @@ Requirements:
 - Check .github/ for CI/CD workflows, Dockerfiles, deployment configs, and infrastructure code
 - Look for monitoring, logging, observability setup, and operational runbooks
 - Identify rollback procedures, release processes, and environment management
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/operations.md`
@@ -174,6 +178,7 @@ Requirements:
 - Look for caching strategies, database queries, connection pooling, and concurrency patterns
 - Identify known bottlenecks, benchmarking tools, and performance-critical paths
 - Check for lazy loading, pagination, batching, and scaling considerations
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/performance.md`
@@ -194,6 +199,7 @@ Requirements:
 - Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings
 - Identify naming conventions, error handling patterns, and design patterns in use
 - Look at existing code style, module organization, and project-specific conventions
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/code-quality.md`
@@ -214,6 +220,7 @@ Requirements:
 - Identify areas of high risk, complex logic, and frequent change
 - Determine which review dimensions matter most for this specific project
 - Look for existing PR templates, review checklists, and contribution guidelines
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/review-strategy.md`
@@ -234,6 +241,7 @@ Requirements:
 - Check for test directories, test runners, test configs, and CI test steps
 - Identify the test pyramid breakdown: unit, integration, e2e, and their proportions
 - Look at coverage tools, test utilities, fixtures, and mocking patterns
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/testing.md`

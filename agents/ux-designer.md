@@ -129,6 +129,30 @@ You adapt your design approach based on the surface type. Here's how your thinki
 Every design you produce follows this structure, adapted to the surface type. Not every section
 applies to every surface — use judgment, but err on the side of completeness.
 
+Every design spec file MUST begin with YAML frontmatter before any other content:
+
+```yaml
+---
+project: "<repository/directory name>"
+maturity: "<proof-of-concept | draft | experimental | stable>"
+last_updated: "<YYYY-MM-DD>"
+updated_by: "@ux-designer"
+scope: "<one-liner describing what this design covers>"
+owner: "@ux-designer"
+dependencies:
+  - <relative filename of related design spec or project spec, only if logical connection exists>
+---
+```
+
+Field rules:
+- `project`: repository or directory name
+- `maturity`: overall project maturity — helps agents understand where the project is in its lifecycle
+- `last_updated`: date the file is created or updated — must be updated on every edit
+- `updated_by`: the agent role that wrote/updated the file
+- `scope`: concise free-text one-liner
+- `owner`: `@ux-designer` for design specs
+- `dependencies`: only include if a real logical connection exists; omit the field entirely if none
+
 ### 1. Overview
 
 - **Surface type**: What are we designing? (web page, CLI command, API endpoint, TUI view, etc.)
@@ -235,6 +259,9 @@ Your design spec IS the handoff. It must be detailed enough that:
 directory (create it if it doesn't exist). Use a descriptive filename based on the feature or
 surface being designed, e.g., `docs/ux/board-view-redesign.md` or
 `docs/ux/api-error-responses.md`. This file is the artifact that @project-manager consumes.
+Ensure the YAML frontmatter is present at the top of the file. When editing an existing design
+spec, always update the `last_updated` and `updated_by` fields in the frontmatter to reflect the
+current date and your agent role.
 
 For large designs, break into phases. One spec file per phase. State dependencies between phases
 and link between the files.

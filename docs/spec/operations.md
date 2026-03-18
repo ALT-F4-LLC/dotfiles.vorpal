@@ -1,300 +1,245 @@
+---
+project: "dotfiles.vorpal"
+maturity: "experimental"
+last_updated: "2026-03-18"
+updated_by: "@staff-engineer"
+scope: "Deployment strategy, CI/CD, artifact registry, observability, and operational concerns for the dotfiles.vorpal project"
+owner: "@staff-engineer"
+dependencies:
+  - architecture.md
+  - security.md
+---
+
 # Operations
 
-> How this project is built, deployed, updated, and operated.
+## Overview
 
-This document describes the operational characteristics of the `dotfiles.vorpal` project as they
-actually exist in the codebase today.
-
----
-
-## Project Overview
-
-This is a **Vorpal-based dotfiles management project** -- a Rust codebase that declaratively defines
-a developer environment as reproducible artifacts. It is not a deployed service; it is a build-time
-configuration system that produces a user environment (tools, configs, symlinks) via the Vorpal
-package manager.
-
-The "deployment target" is a local developer workstation, not a server or cluster.
-
----
+dotfiles.vorpal is a declarative dotfiles manager built on the Vorpal build system. It produces
+content-addressed artifacts that define a complete user development environment (CLI tools,
+configuration files, symlinks). The operational model is fundamentally different from a
+traditional web service -- there is no running server, no database, and no user-facing API. The
+"deployment" is a local build that materializes artifacts into `/var/lib/vorpal/store/` and
+creates symlinks on the host filesystem.
 
 ## Build System
 
 ### Vorpal
 
-The project uses [Vorpal](https://github.com/ALT-F4-LLC/vorpal) as its primary build and package
-management system. Vorpal is a content-addressable artifact build system.
+The project uses [Vorpal](https://github.com/ALT-F4-LLC/vorpal) as its build system and artifact
+manager. Vorpal is configured via two files:
 
-**Configuration files:**
-- `Vorpal.toml` -- Project configuration declaring Rust as the language and `src/`, `Cargo.toml`,
-  `Cargo.lock` as source includes.
-- `Vorpal.lock` -- Lock file pinning all external artifact sources with cryptographic digests
-  (SHA-256). Contains exact versions and URLs for ~30+ tools and dependencies.
+- **`Vorpal.toml`** -- Declares the project language (`rust`) and source includes (`src`,
+  `Cargo.toml`, `Cargo.lock`).
+- **`Vorpal.lock`** -- Lockfile pinning all external source artifacts (CLI tool binaries, Rust
+  toolchain components) to exact versions and SHA-256 digests. This file is generated during
+  builds and uploaded as a CI artifact.
 
-**Build artifacts:**
-- `dev` -- Development environment artifact providing protoc and Rust toolchain for building the
-  project itself.
-- `user` -- User environment artifact containing all developer tools, configuration files, and
-  symlinks for the end-user workstation.
+### Build Targets
 
-**Build commands:**
-- `vorpal build 'dev'` -- Builds the development environment.
-- `vorpal build 'user'` -- Builds the full user environment with all tools and configs.
+The project defines two top-level build targets in `src/vorpal.rs`:
 
-**Artifact store:**
-- Artifacts are stored at `/var/lib/vorpal/store/artifact/output/{namespace}/{digest}`.
-- Content-addressed by digest, enabling reproducibility and caching.
+| Target | Purpose | Dependencies |
+|--------|---------|--------------|
+| `dev` | Development toolchain (Protoc, Rust toolchain) used to build the project itself | None |
+| `user` | Full user environment: 16 CLI tools, configuration files, and filesystem symlinks | None (independent build) |
 
-### Rust / Cargo
+Build order: `vorpal build 'dev'` must succeed before `vorpal build 'user'` can run, because `dev`
+provides the Rust toolchain needed to compile the project.
 
-The underlying language is Rust (edition 2021). The Rust build is orchestrated through Vorpal, not
-directly via `cargo` in CI.
+### Artifact Storage
 
-**Dependencies (from `Cargo.toml`):**
-- `anyhow` -- Error handling
-- `indoc` -- Indented string formatting
-- `serde` / `serde_json` -- Serialization for config file generation
-- `tokio` -- Async runtime (multi-threaded)
-- `vorpal-artifacts` -- Artifact definitions (from `ALT-F4-LLC/artifacts.vorpal.git`)
-- `vorpal-sdk` -- Vorpal SDK for building artifacts (from `ALT-F4-LLC/vorpal.git`)
+- **Local store**: Built artifacts are stored in `/var/lib/vorpal/store/` on the host machine.
+  Artifacts are content-addressed by digest.
+- **Remote registry**: S3-backed remote cache at bucket `altf4llc-vorpal-registry`. This enables
+  artifact sharing between CI and local builds, avoiding redundant compilation.
 
----
+### Build Output
 
-## CI/CD Pipeline
+The `user` build produces symlinks from the host filesystem into the Vorpal store:
 
-### GitHub Actions
+| Store Path | Host Symlink Target |
+|------------|---------------------|
+| bat config artifact | `~/.config/bat/config` |
+| bat Tokyo Night theme | `~/.config/bat/themes/tokyonight.tmTheme` |
+| Claude Code settings | `~/.claude/settings.json` |
+| Agent definitions | `~/.claude/agents/` |
+| Skill definitions | `~/.claude/skills/` |
+| Status line script | `~/.claude/statusline.sh` |
+| Ghostty config | `~/Library/Application Support/com.mitchellh.ghostty/config` |
+| K9s skin | `~/Library/Application Support/k9s/skins/tokyo_night.yaml` |
+| Neovim ftplugin | `~/.config/nvim/after/ftplugin/markdown.vim` |
+| OpenCode config | `~/.config/opencode/opencode.json` |
+| Vorpal binary (debug) | `~/.vorpal/bin/vorpal` |
 
-A single workflow file exists at `.github/workflows/vorpal.yaml`.
+The Vorpal binary symlink points to a local debug build of the Vorpal project at
+`$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal`,
+indicating the developer builds Vorpal from source locally.
+
+## CI/CD
+
+### GitHub Actions Workflow
+
+The project has a single CI workflow at `.github/workflows/vorpal.yaml`.
 
 **Trigger conditions:**
-- `pull_request` -- All pull requests (any branch)
-- `push` to `main` -- Every push to the main branch
+- Push to `main` branch
+- All pull requests
 
 **Jobs:**
 
-#### `build-dev`
-- **Runner:** `macos-latest`
-- **Steps:**
-  1. Checkout repository (`actions/checkout@v6`)
-  2. Setup Vorpal (`ALT-F4-LLC/setup-vorpal-action@main`) with S3 registry backend
-  3. Run `vorpal build 'dev'`
-  4. Upload `Vorpal.lock` as artifact (`actions/upload-artifact@v6`, named
-     `{arch}-{os}-vorpal-lock`)
+| Job | Runner | Steps | Depends On |
+|-----|--------|-------|------------|
+| `build-dev` | `macos-latest` | Checkout, setup Vorpal (nightly), `vorpal build 'dev'`, upload `Vorpal.lock` as artifact | None |
+| `build` | `macos-latest` | Checkout, setup Vorpal (nightly), `vorpal build 'user'` | `build-dev` |
 
-#### `build`
-- **Runner:** `macos-latest`
-- **Depends on:** `build-dev`
-- **Strategy:** Matrix over `artifact: [user]`
-- **Steps:**
-  1. Checkout repository
-  2. Setup Vorpal with S3 registry backend
-  3. Run `vorpal build '${{ matrix.artifact }}'`
+**Key details:**
+- Uses `ALT-F4-LLC/setup-vorpal-action@main` to install Vorpal at `nightly` version.
+- S3 registry backend is configured via `registry-backend: s3` with bucket
+  `altf4llc-vorpal-registry`.
+- AWS credentials are injected from GitHub Secrets (`AWS_ACCESS_KEY_ID`,
+  `AWS_SECRET_ACCESS_KEY`) and Variables (`AWS_DEFAULT_REGION`).
+- The `build` job uses a matrix strategy with a single artifact (`user`), suggesting the matrix
+  may expand in the future.
+- `Vorpal.lock` is uploaded as a GitHub Actions artifact named
+  `${runner.arch}-${runner.os}-vorpal-lock`.
 
-**Registry backend:**
-- Type: S3
-- Bucket: `altf4llc-vorpal-registry`
-- Authentication: AWS credentials via GitHub Secrets (`AWS_ACCESS_KEY_ID`,
-  `AWS_SECRET_ACCESS_KEY`) and Variables (`AWS_DEFAULT_REGION`)
+### What CI Does NOT Do
 
-**Platform coverage:**
-- CI currently runs on `macos-latest` only.
-- The codebase declares support for 4 systems: `Aarch64Darwin`, `Aarch64Linux`, `X8664Darwin`,
-  `X8664Linux` (defined in `src/lib.rs:9`).
-- **Gap:** No Linux CI runners are configured. Linux builds are declared but not validated in CI.
-
-### No CD Pipeline
-
-There is no continuous deployment pipeline. This is expected -- the project produces a local
-developer environment, not a deployed service. The "deployment" is running `vorpal build 'user'`
-on a developer workstation.
-
----
+- **No deployment step.** CI validates that both `dev` and `user` targets build successfully but
+  does not deploy or apply the resulting artifacts. The user must run `vorpal build 'user'`
+  locally to apply changes.
+- **No automated testing.** There are no test steps in the workflow, no `cargo test`, and no test
+  files in the source tree. CI is purely a build validation gate.
+- **No release process.** There are no release tags, no versioning automation, no changelog
+  generation, and no GitHub Releases integration.
+- **No multi-platform CI.** The workflow runs only on `macos-latest`. The codebase declares
+  support for four systems (`Aarch64Darwin`, `Aarch64Linux`, `X8664Darwin`, `X8664Linux`) in
+  `src/lib.rs`, but only macOS is validated in CI.
 
 ## Dependency Management
 
 ### Renovate
 
-Automated dependency updates are configured via `renovate.json`.
+Automated dependency updates are managed by [Renovate](https://docs.renovatebot.com/) via
+`renovate.json`:
 
-**Configuration:**
-- Extends `config:recommended` (Renovate's recommended base config)
-- **Serde ecosystem grouping:** `serde` and `serde_json` Cargo crate updates are grouped together
-- **Automerge policy:**
-  - Minor and patch updates for stable crates (version >= 1.0) are automerged
-  - Major updates require manual review
-- **Custom manager:** Tracks `tokyonight.nvim` bat theme version from raw GitHub URLs in
-  `src/user.rs` via regex extraction from `raw.githubusercontent.com` URLs
+- **Automerge**: Minor and patch updates for stable Cargo crates (version `>= 1.0.0`) are
+  automerged automatically.
+- **Manual review**: Major Cargo crate updates require manual review.
+- **Grouped updates**: `serde` and `serde_json` are grouped into a single PR.
+- **Custom manager**: A regex-based custom manager tracks the `tokyonight.nvim` bat theme version
+  from a raw GitHub URL in `src/user.rs`, using the `github-releases` datasource.
 
 ### Vorpal.lock Pinning
 
-All external tool sources in `Vorpal.lock` are pinned by:
-- Exact version in the download URL
-- SHA-256 digest for integrity verification
-- Platform specification (`aarch64-darwin` for current entries)
-
-**Currently pinned tools (partial list):**
-awscli2, bat, cargo, clippy, direnv, doppler, fd, gh, git, go, gopls, jj, jq, k9s, kubectl,
-lazygit, libevent, ncurses, nnn, pkg-config, protoc, readline, ripgrep, rust-analyzer, rust-src,
-rust-std, rustc, rustfmt, tmux.
-
-**Gap:** Renovate does not currently manage Vorpal.lock entries. Tool version updates in
-Vorpal.lock appear to be manual.
-
----
+All external tool binaries and Rust toolchain components are pinned in `Vorpal.lock` with exact
+versions and SHA-256 digests. This provides full reproducibility -- a given lockfile always
+produces the same artifact set.
 
 ## Observability
 
-### OpenTelemetry (Claude Code)
+### Claude Code OpenTelemetry
 
-The project configures OpenTelemetry (OTEL) environment variables for Claude Code sessions,
-enabling telemetry export to external backends.
+The Claude Code configuration (`src/user.rs`) sets up OpenTelemetry export for logs and metrics:
 
-**Configured endpoints (from `src/user.rs:97-113`):**
+| Signal | Endpoint | Protocol |
+|--------|----------|----------|
+| Logs | `https://loki.bulbasaur.altf4.domains/otlp/v1/logs` | `http/protobuf` |
+| Metrics | `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics` | `http/protobuf` |
 
-| Signal  | Endpoint                                                  | Protocol       |
-|---------|----------------------------------------------------------|----------------|
-| Logs    | `https://loki.bulbasaur.altf4.domains/otlp/v1/logs`     | http/protobuf  |
-| Metrics | `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics`  | http/protobuf  |
-
-**Export intervals:** 15,000ms (15 seconds) for both logs and metrics.
-**Metrics temporality:** Cumulative.
-
-This telemetry covers Claude Code agent session data (usage, costs, context window, duration),
-not the dotfiles build system itself.
+- Telemetry is enabled via `CLAUDE_CODE_ENABLE_TELEMETRY=1`.
+- Both logs and metrics use a 15-second export interval (`OTEL_LOGS_EXPORT_INTERVAL=15000`,
+  `OTEL_METRIC_EXPORT_INTERVAL=15000`).
+- Metrics use cumulative temporality (`OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative`).
+- The endpoints suggest a Grafana stack (Loki for logs, Mimir for metrics) running on the
+  `bulbasaur.altf4.domains` host.
 
 ### Claude Code Status Line
 
-A custom status line script (`src/user/statusline.sh`) provides real-time session observability
-within the terminal. It displays:
-- Model name and agent name
-- Project directory and Git branch status (staged/modified files)
-- Context window usage percentage with color-coded progress bar
-- Session cost (USD)
-- Session duration
-- Lines added/removed
+A custom status line script (`src/user/statusline.sh`) is deployed to `~/.claude/statusline.sh`
+and executed via the Claude Code status bar. This provides at-a-glance operational context during
+development sessions.
 
-Git info is cached in `/tmp/claude-statusline-git-cache-*` with a 5-second TTL.
+### Gaps
 
-### Build System Observability
+- **No tracing.** Only logs and metrics are exported; there is no distributed tracing
+  configuration (no `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`).
+- **No alerting.** There is no alerting configuration in this project. Alerting, if any, would
+  be configured on the receiving Grafana stack, which is outside this project's scope.
+- **No build metrics.** Vorpal build times and artifact cache hit rates are not tracked.
+- **No health checks.** Not applicable -- this project produces static artifacts, not a running
+  service.
 
-**Gap:** No monitoring, alerting, or observability exists for the Vorpal build process itself.
-Build failures are only visible through GitHub Actions workflow status. There are no:
-- Build time tracking or trending
-- Cache hit/miss metrics for the S3 registry
-- Alerting on build failures
-- Artifact size tracking
+## Rollback Strategy
 
----
+### How Rollback Works
+
+Because artifacts are content-addressed and stored in `/var/lib/vorpal/store/`, rollback is
+straightforward:
+
+1. `git checkout <previous-commit>` to get the prior version of the Rust source.
+2. `vorpal build 'user'` to rebuild. If the previous artifacts are still in the local or remote
+   cache, the build will be near-instant (cache hit).
+3. Symlinks are re-pointed to the previous artifact digests.
+
+### Limitations
+
+- There is no automated rollback mechanism. The user must manually check out a previous commit and
+  rebuild.
+- Old artifacts in the local store are not automatically garbage collected. There is no documented
+  retention policy for `/var/lib/vorpal/store/`.
+- If the S3 remote cache has been cleaned or the artifact has been evicted, rollback requires a
+  full rebuild from source.
 
 ## Environment Management
 
-### Developer Workstation Setup
+### Supported Platforms
 
-The `user` artifact produces a complete developer environment via symlinks:
+The code declares support for four platforms in `src/lib.rs`:
 
-| Source (Vorpal artifact output)           | Target (user filesystem)                                         |
-|-------------------------------------------|------------------------------------------------------------------|
-| Local Vorpal debug binary                 | `$HOME/.vorpal/bin/vorpal`                                       |
-| bat config                                | `$HOME/.config/bat/config`                                       |
-| bat theme                                 | `$HOME/.config/bat/themes/tokyonight.tmTheme`                    |
-| Claude Code agents                        | `$HOME/.claude/agents`                                           |
-| Claude Code settings                      | `$HOME/.claude/settings.json`                                    |
-| Claude Code skills                        | `$HOME/.claude/skills`                                           |
-| Claude Code statusline                    | `$HOME/.claude/statusline.sh`                                    |
-| Ghostty config                            | `$HOME/Library/Application Support/com.mitchellh.ghostty/config` |
-| K9s skin                                  | `$HOME/Library/Application Support/k9s/skins/tokyo_night.yaml`   |
-| Markdown vim config                       | `$HOME/.config/nvim/after/ftplugin/markdown.vim`                 |
-| Opencode config                           | `$HOME/.config/opencode/opencode.json`                           |
+| Platform | CI Coverage | Notes |
+|----------|-------------|-------|
+| `aarch64-darwin` | Yes (`macos-latest`) | Primary development platform (Apple Silicon) |
+| `aarch64-linux` | No | Declared but not validated |
+| `x86_64-darwin` | No | Declared but not validated |
+| `x86_64-linux` | No | Declared but not validated |
 
-**Environment variables set:**
-- `EDITOR=nvim`
-- `GOPATH=$HOME/Development/language/go`
-- `PATH` includes VMware Fusion, Go bin, opencode bin, Vorpal bin, and local bin
+### Environment Variables
 
-### direnv
+The `user` build sets these environment variables in the user's shell environment:
 
-The project uses `direnv` for local environment management. The `.envrc` file exists but its
-contents were not accessible during this analysis.
+| Variable | Value |
+|----------|-------|
+| `EDITOR` | `nvim` |
+| `GOPATH` | `$HOME/Development/language/go` |
+| `PATH` | Prepends VMware Fusion, `$GOPATH/bin`, `~/.opencode/bin`, `~/.vorpal/bin`, `~/.local/bin` |
 
----
+### Prerequisites
 
-## Release Process
+- Vorpal runtime must be installed on the host system.
+- AWS credentials must be configured for S3 registry access (both CI and local builds).
+- macOS on Apple Silicon is the primary supported platform.
 
-### Current Process
+## Operational Runbooks
 
-There is no formal release process. The project operates on a trunk-based development model:
+There are no operational runbooks in the project. Given the nature of the project (developer
+dotfiles, not a production service), runbooks are not strictly necessary, but the following
+procedures would be useful to document:
 
-1. Changes are made on feature branches.
-2. Pull requests trigger CI (build-dev + build).
-3. Merges to `main` trigger CI again.
-4. No Git tags or releases exist.
-5. No versioning scheme beyond `Cargo.toml` version `0.1.0`.
+- **How to set up a new machine from scratch**: Install Vorpal, configure AWS credentials, run
+  initial build.
+- **How to debug a failed build**: Common Vorpal build failures, S3 connectivity issues, artifact
+  cache misses.
+- **How to add a new CLI tool**: Pattern for adding a new tool artifact and its symlink.
+- **How to add a new configuration generator**: Pattern for creating a new builder struct.
 
-The "release" is implicit -- merging to `main` means the latest `main` is the current version.
-Users rebuild their environment by running `vorpal build 'user'` against `main`.
+## Gaps and Recommendations
 
-### Rollback
-
-**Rollback strategy:** Git revert or checkout a previous commit, then rebuild with
-`vorpal build 'user'`.
-
-Vorpal's content-addressable store means previous artifact outputs persist locally until cleaned.
-Rolling back to a previous commit and rebuilding should produce identical artifacts thanks to
-digest-pinned sources in `Vorpal.lock`.
-
-**Gap:** No automated rollback mechanism exists. No "last known good" artifact tracking.
-
----
-
-## Infrastructure
-
-### S3 Registry
-
-The Vorpal artifact registry uses AWS S3 as its backend:
-- **Bucket:** `altf4llc-vorpal-registry`
-- **Purpose:** Caching built artifacts to avoid redundant rebuilds
-- **Authentication:** AWS IAM credentials stored as GitHub Secrets
-
-### External Services
-
-| Service                        | Purpose                          | Used By         |
-|--------------------------------|----------------------------------|-----------------|
-| AWS S3                         | Vorpal artifact registry/cache   | CI + local      |
-| Loki (bulbasaur.altf4.domains) | Log aggregation                  | Claude Code     |
-| Mimir (bulbasaur.altf4.domains)| Metrics storage                  | Claude Code     |
-| GitHub                         | Source control, CI, dependency PRs| Everything     |
-
----
-
-## Operational Gaps
-
-The following operational capabilities are absent. This is partially expected given the project
-is a local development environment tool, not a production service.
-
-| Area                        | Status  | Notes                                                   |
-|-----------------------------|---------|----------------------------------------------------------|
-| Linux CI validation         | Missing | Code declares 4 platforms but CI only tests macOS        |
-| Vorpal.lock auto-updates    | Missing | Renovate does not manage Vorpal.lock tool versions       |
-| Build metrics/trending      | Missing | No tracking of build times, cache hit rates, artifact sizes |
-| Automated rollback          | Missing | Manual git revert + rebuild required                     |
-| Health checks               | N/A     | Not applicable (not a running service)                   |
-| Alerting                    | Missing | No alerts on CI failures beyond GitHub defaults          |
-| Runbooks                    | Missing | No operational runbooks exist                            |
-| Disaster recovery           | Minimal | S3 bucket loss would require full artifact rebuilds      |
-| Secret rotation             | Missing | No automated rotation for AWS credentials                |
-| Vorpal.lock integrity CI    | Missing | No CI step validates Vorpal.lock digests match downloads |
-
----
-
-## Commit Convention
-
-The project follows [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat(scope): description    -- New feature
-fix(scope): description     -- Bug fix
-chore(scope): description   -- Maintenance
-```
-
-Common scopes observed: `agents`, `skills`, `user`, `claude-code`, `deps`, `staff-engineer`,
-`vorpal`, `file`.
+| Gap | Impact | Recommendation |
+|-----|--------|----------------|
+| No automated tests in CI | Build correctness is validated only by "does it compile" | Add `cargo test` and `cargo clippy` steps to the CI workflow |
+| No multi-platform CI | Linux and x86_64 platforms are declared but never validated | Add CI matrix for at least `aarch64-linux` if those platforms are intended to work |
+| No release process | No versioning, tagging, or changelog | Consider semver tags and GitHub Releases for tracking environment versions |
+| No artifact garbage collection | Local store grows unbounded | Document or automate a pruning strategy for `/var/lib/vorpal/store/` |
+| No tracing in observability stack | Logs and metrics only | Add `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` if trace-level debugging of Claude Code sessions is desired |
+| No onboarding runbook | New machine setup is undocumented | Write a getting-started guide covering Vorpal installation, AWS credential setup, and first build |

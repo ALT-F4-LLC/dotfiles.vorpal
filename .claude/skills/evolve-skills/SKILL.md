@@ -177,15 +177,34 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
    TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")
    ```
 
-2. **Create Phase 1 tasks** — one `TaskCreate` per target skill:
+2. **Create the Phase 0 task** (documentation research):
    ```
-   TaskCreate(team_name="evolve-skills-{today_date}", title="Review <name>", description="Review and improve <skill-path>/SKILL.md", depends_on=[])
+   TaskCreate(team_name="evolve-skills-{today_date}", title="Docs Research", description="Research latest Claude Code documentation for new capabilities", depends_on=[])
    ```
 
-3. **Create the Phase 2 task** — depends on all Phase 1 tasks:
+3. **Create Phase 1 tasks** — one per target skill, each depends on Phase 0:
+   ```
+   TaskCreate(team_name="evolve-skills-{today_date}", title="Review <name>", description="Review and improve <skill-path>/SKILL.md", depends_on=[<phase_0_task_id>])
+   ```
+
+4. **Create the Phase 2 task** — depends on all Phase 1 tasks:
    ```
    TaskCreate(team_name="evolve-skills-{today_date}", title="Coherence & Renames", description="Cross-skill coherence review and rename execution", depends_on=[<all Phase 1 task IDs>])
    ```
+
+### Phase 0: Documentation Research
+
+Spawn a single `claude-code-guide` teammate to research the latest Claude Code documentation
+for new capabilities, features, or settings relevant to skill evolution:
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+```
+
+Assign the Phase 0 task via `TaskUpdate`. After the teammate completes, capture its findings
+as `{docs_research_findings}` — this is passed to all Phase 1 agents as context.
+
+Wait for Phase 0 to complete before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -272,30 +291,46 @@ The Phase 2 teammate:
 
 After Phase 2 completes:
 
-1. **Shut down all teammates** — send shutdown requests:
-   ```
-   SendMessage(to="review-<name>", message={type: "shutdown_request"})
-   SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})
-   ```
-   Send one `SendMessage` per teammate that was spawned.
-
-2. **Delete the team** to clean up resources:
-   ```
-   TeamDelete(team_name="evolve-skills-{today_date}")
-   ```
-
-3. Run `wc -l` on all target skill files and compare to pre-flight line counts
-4. If any file exceeds 500 lines, perform additional consolidation until it is under 500
-5. Report:
-   - Files modified
-   - Before/after line counts for each skill (e.g., `evolve-skills: 450 → 420`)
-   - Improvements made to each skill
-   - Any renames or coherence fixes applied
-   - Reminder that NO changes have been committed — review with `git diff`
+1. **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})`
+   for each spawned teammate, then **delete the team** via `TeamDelete(team_name="evolve-skills-{today_date}")`.
+2. Run `wc -l` on all target skill files. If any exceed 500 lines, consolidate until under 500.
+3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
+   and reminder that NO changes have been committed — review with `git diff`.
 
 ---
 
 ## Spawning Templates
+
+### Phase 0: @claude-code-guide (Documentation Research)
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+
+Research the latest Claude Code documentation for capabilities relevant to skill evolution.
+
+## Instructions
+
+1. Fetch https://code.claude.com/docs/en/overview via WebFetch
+2. From the overview, identify and fetch key subpages covering: hooks, settings, tools,
+   MCP servers, agent SDK, permissions, CLI features, IDE integrations, and configuration
+3. For each area, note: new capabilities, changed behaviors, deprecated features, new
+   settings or config options
+4. Filter findings for relevance to skill definitions — focus on capabilities skills could
+   leverage, new tool types, settings that affect execution, and patterns authors should know
+
+## Output Format
+
+### New Capabilities
+- <capability>: <relevance to skill evolution>
+### Changed Features
+- <feature>: <what changed and impact on skills>
+### Deprecated / Removed
+- <item>: <migration notes if applicable>
+### New Settings / Configuration
+- <setting>: <what it controls and relevance>
+### Recommendations for Skill Evolution
+- <specific recommendation for how skills should adapt>
+```
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
@@ -324,7 +359,12 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 - Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry.
 - Read docs/spec/ selectively — only files relevant to the skill's domain.
 - Read OTHER skill files — first ~80 lines only. Check both .claude/skills/ and skills/.
+- Review the Claude Code documentation research findings below and consider whether any
+  new capabilities, features, or settings should be reflected in the skill's design.
 - Skip WebFetch — adds latency without value for this task.
+
+## Claude Code Documentation Research
+{docs_research_findings}
 
 ## Content Gate (MANDATORY — applies to ALL additions)
 
@@ -340,7 +380,8 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions:
 
 1. **Skill Design Quality**: Claude Code best practices, frontmatter, argument handling?
 2. **Actionability**: Specific enough for reliable execution?
-3. **Completeness**: Edge cases, error conditions, all workflow paths?
+3. **Completeness**: Edge cases, error conditions, all workflow paths? Are there new Claude
+   Code capabilities (from docs research) the skill should leverage?
 4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value content to trim?
    **Every addition from other dimensions MUST be offset by a removal here.**
 5. **Orchestration Effectiveness**: Proper agent use, parallelism, coordination?
@@ -447,16 +488,11 @@ Standard format (4 sections, max 20 lines) for each skill that received fixes.
     sections (`### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`), stay
     under 20 lines, use `# Changelog: <skill-name>` as H1, and `## YYYY-MM-DD` as H2 with
     no suffixes. No extra sections. The orchestrator normalizes all existing entries each run.
-10. **Enforce the 500-line budget.** After applying all Phase 1 and Phase 2 edits, run
-    `wc -l` on all target skill files and verify every file is under 500 lines. If any file
-    still exceeds 500 lines, the orchestrator MUST perform additional consolidation directly
-    until it is under 500. Report the before/after line counts in the wrap-up.
-11. **Fail loud.** If a teammate fails, report it immediately with details.
-12. **Timeout fallback.** If a Phase 1 teammate times out or is killed, the orchestrator may
-    re-spawn once. After two failures on the same skill, the orchestrator performs the review
-    and applies changes directly.
-13. **Enforce the Content Gate.** The orchestrator MUST reject any Phase 1 recommendation that
-    adds content failing any Content Gate check, even if the agent provides a compelling
-    rationale. This is the primary defense against bloat-then-purge cycles.
-14. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
-    via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.
+10. **Enforce the 500-line budget.** After all edits, verify every skill file is under 500
+    lines via `wc -l`. Consolidate further if needed. Report before/after counts in wrap-up.
+11. **Fail loud.** If a teammate fails, report immediately with details.
+12. **Timeout fallback.** If a Phase 1 teammate times out, re-spawn once. After two failures,
+    the orchestrator performs the review directly.
+13. **Enforce the Content Gate.** Reject any recommendation adding content that fails any gate
+    check, even with a compelling rationale. Primary defense against bloat-then-purge cycles.
+14. **Clean up the team.** Shut down all teammates and delete the team after wrap-up.

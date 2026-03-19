@@ -10,6 +10,7 @@ description: >
   when the user describes work that clearly needs both planning and parallel execution. Also
   trigger when the user references @project-manager and @senior-engineer together, or asks for
   "parallel development", "multi-agent execution", or "agent swarm".
+argument-hint: "[work]"
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**

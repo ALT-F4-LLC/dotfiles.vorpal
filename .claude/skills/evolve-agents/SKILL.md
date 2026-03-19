@@ -10,7 +10,6 @@ description: >
   handles renames, and maintains changelogs. Use when the user wants to evolve, improve, grow,
   or refine agent definitions — including phrases like "evolve agents", "improve agents",
   "grow the team", "refine agent definitions", or "make the agents better".
-disable-model-invocation: true
 argument-hint: "[agent-name]"
 ---
 

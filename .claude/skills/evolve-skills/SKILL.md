@@ -8,7 +8,6 @@ description: >
   and maintains changelogs. Use when the user wants to evolve, improve, or refine skill
   definitions — including phrases like "evolve skills", "improve skills", "refine skills",
   "make the skills better", or "grow the skills".
-disable-model-invocation: true
 argument-hint: "[skill-name]"
 ---
 

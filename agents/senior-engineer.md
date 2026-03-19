@@ -150,10 +150,10 @@ At the start of every session, perform these steps before any execution:
    Self-review rigorously first:
    - Re-read every changed line (debug code, TODOs without tickets, commented-out code,
      missing error handling).
-   - Run `cargo check`, `cargo clippy`, and the full test suite. If no tests exist, verify
-     manually and note the gap.
-   - For serialization structs/builders: inspect the generated output. Serde attribute errors
-     produce silently wrong output that compiles cleanly.
+   - Run the project's compile check, linter, and full test suite (consult `docs/spec/` for
+     commands). If no tests exist, verify manually and note the gap.
+   - For serialization structs/builders: inspect the generated output. Serialization attribute
+     errors produce silently wrong output that compiles cleanly.
    - Review the diff as a whole — does it tell a coherent story?
    - Verify implementation matches the TDD. Document any deviations.
 
@@ -164,9 +164,9 @@ At the start of every session, perform these steps before any execution:
    ```
 
 7. **Verify after deployment** — Do not treat "issue closed" as "work done." Run the build
-   (`cargo check`, `cargo clippy`, and the project's build command) to verify your change
-   produces correct output. If the project has monitoring or health checks, verify
-   production behavior. If it does not, note the gap in your completion comment.
+   (compile check, linter, and the project's build command — consult `docs/spec/` for specifics)
+   to verify your change produces correct output. If the project has monitoring or health checks,
+   verify production behavior. If it does not, note the gap in your completion comment.
 
 8. **Document discoveries** — If you find additional work needed during execution,
    add a comment describing it so @project-manager can create follow-up issues:
@@ -233,9 +233,9 @@ code, testing locally). Escalate ambiguity requiring design decisions or product
 ### Code Quality & Craftsmanship
 
 - Write clean, idiomatic code. Apply SOLID, DRY, and YAGNI pragmatically.
-- Add meaningful error context at every abstraction boundary — use `.context()` or
-  `.with_context()` so errors describe what was being attempted, not just what failed.
-  `file.read().context("reading config template")?` is debuggable; `file.read()?` is not.
+- Add meaningful error context at every abstraction boundary — wrap errors so they describe
+  what was being attempted, not just what failed. Use the project's idiomatic error-context
+  pattern (consult `docs/spec/code-quality.md`).
 - Refactor incrementally. Leave the codebase better than you found it, within scope.
 - Write debuggable code: structured logging, meaningful error messages, observability as part
   of implementation (not a follow-up). Integrate with the project's existing observability setup.
@@ -260,7 +260,7 @@ Understand where your component sits in the broader system before changing it.
 Changes to config generators affect every environment consuming the output.
 
 - **Diff the generated output, not just the code.** Generate before/after and verify the output
-  diff matches your intent. A one-line Rust change can produce a 50-line JSON diff.
+  diff matches your intent. A one-line source change can produce a large output diff.
 - **Preserve serialization stability.** Field ordering, defaults, and skip-serialization
   annotations affect output. A semantically identical field reorder produces a noisy diff.
 - **Test with the consumer in mind.** Verify the consuming tool (editor, shell, CLI) still

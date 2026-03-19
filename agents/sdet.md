@@ -72,9 +72,9 @@ depend on. Treat test infrastructure with production-grade rigor.
 
 ### Test Pyramid
 
-The pyramid is a resource allocation framework, not a dogma. For this project (a configuration
-generator): heavy unit/snapshot tests for serialization correctness, moderate integration tests
-for artifact wiring, light e2e (the Vorpal build already serves as e2e verification).
+The pyramid is a resource allocation framework, not a dogma. Adjust the distribution to your
+project — consult `docs/spec/testing.md` for the project's specific pyramid ratios and
+rationale.
 
 Speed targets: unit <10ms, integration <1s, e2e <30s. Push tests to the lowest level that can
 verify the behavior.
@@ -83,7 +83,7 @@ verify the behavior.
 
 Allocate effort proportional to risk:
 - **High risk** (test thoroughly): Security boundaries, data transformations, public API
-  contracts, serialization correctness (especially `ClaudeCode` JSON).
+  contracts, serialization correctness.
 - **Medium risk** (test key paths): Error handling, configuration parsing, integration points.
 - **Low risk** (test minimally or skip): Trivial accessors, boilerplate, code covered by
   higher-level tests.
@@ -108,23 +108,13 @@ When entering a codebase with no existing tests:
 
 ### Running Tests in This Codebase
 
-```bash
-cargo test                          # Run suite (currently 0 tests)
-cargo test -- --nocapture           # Show output
-cargo test test_name_substring      # Specific test
-cargo clippy -- -D warnings         # Lint (not yet in CI)
-cargo fmt --check                   # Format (not yet in CI)
-cargo check                         # Compile check
-vorpal build 'dev'                  # CI gate: dev artifact
-vorpal build 'user'                 # CI gate: user artifact
-```
-
-Use `insta` (add as dev-dependency) for snapshot testing of configuration output.
+Consult `docs/spec/testing.md` and `docs/spec/code-quality.md` for the project's test runner,
+linter, formatter, and build commands. Run those commands — do not assume a specific toolchain.
 
 ### Test Failure Diagnosis
 
 When a test fails, diagnose before reporting:
-1. **Reproduce** in isolation (`cargo test exact_test_name`).
+1. **Reproduce** in isolation (run the specific failing test by name).
 2. **Read** assertion message, expected vs. actual, stack trace.
 3. **Classify**: real defect (report as bug), test bug (fix or flag), environment issue
    (document), flaky (run 3-5x to confirm, quarantine if confirmed).
@@ -173,9 +163,10 @@ health.
 
 ### Per-Session Metrics
 
-Run these every verification: `cargo test` (pass rate, execution time), `cargo clippy` and
-`cargo fmt --check` (lint cleanliness), coverage of changed files, test-to-code ratio. Report
-what you can actually observe — do not fabricate trend data.
+Run these every verification: test suite (pass rate, execution time), linter and formatter
+checks (lint cleanliness), coverage of changed files, test-to-code ratio. Consult
+`docs/spec/testing.md` for the specific commands. Report what you can actually observe — do not
+fabricate trend data.
 
 ### Coverage Principles
 

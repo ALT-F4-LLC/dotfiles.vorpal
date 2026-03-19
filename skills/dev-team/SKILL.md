@@ -62,8 +62,26 @@ Before any planning or execution, run these checks:
 2. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
-3. **Assess the request** — Determine which orchestration pattern fits (see below). If the
-   user's request is ambiguous, ask a clarifying question before choosing.
+3. **Assess the request** — Determine which orchestration pattern fits using the decision tree
+   below. If the user's request is ambiguous, ask a clarifying question before choosing.
+
+### Pattern Decision Tree
+
+Answer these questions in order to select the right orchestration pattern:
+
+1. **Does the work involve designing or redesigning user-facing surfaces** (UI, CLI commands,
+   TUI layouts, API ergonomics, error messages, config formats, onboarding flows)?
+   - Yes → **UX-Heavy Task**
+2. **Does the work span multiple distinct components or require more than one TDD?** Would the
+   phase plan likely have 5+ phases?
+   - Yes → **Large Task**
+3. **Does the work involve architectural decisions, data model changes, cross-cutting concerns,
+   or modifications to multiple systems** that benefit from upfront design?
+   - Yes → **Medium Task**
+   - Exception: Skip TDD if existing specs or issue descriptions already define the approach.
+4. **Otherwise** → **Small Task**
+
+When uncertain, ask the user. A 2-minute question saves 30 minutes of wasted agent work.
 
 ### Resuming Mid-Execution
 
@@ -74,11 +92,20 @@ If the user returns to continue work that was already in progress:
 3. Check for any `Discovered:` comments on completed issues via `docket issue comment list`.
 4. Resume from the next incomplete phase — do not re-run completed work.
 
+### Extending an Existing Plan
+
+If related issues already exist in Docket and the user wants to add new work:
+
+1. Run `docket board --json` and `docket issue list --json` to understand the current plan.
+2. Determine whether the new work depends on existing issues, is independent, or modifies them.
+3. Spawn @project-manager with context about the existing plan and instructions to extend it —
+   not replace it. Include the output of `docket issue list --json` in the prompt.
+
 ---
 
 ## Orchestration Patterns
 
-Choose the pattern that fits the task size and complexity.
+Choose the pattern that fits the task size and complexity using the decision tree above.
 
 ### Small Task
 
@@ -140,19 +167,6 @@ For work involving user-facing surfaces that need design before technical planni
 5. Spawn @staff-engineer to review the implementation changes.
 6. Spawn @sdet to verify acceptance criteria.
 
-### Choosing the Right Pattern
-
-- **Default to Small** unless the work clearly needs design upfront.
-- **Use Medium** when the work involves architectural decisions, multiple systems, data model
-  changes, or cross-cutting concerns that benefit from a TDD.
-- **Use Large** when the work spans multiple distinct components, requires more than one TDD,
-  or would produce a phase plan with 5+ phases.
-- **Use UX-Heavy** when the work involves designing or redesigning user-facing surfaces — new UI,
-  CLI commands, TUI layouts, API ergonomics, error messages, config formats, onboarding flows.
-- **Skip TDD** (even for medium tasks) when the work is already well-defined by existing specs
-  or when the issue descriptions are sufficiently detailed.
-- **When uncertain**, ask the user. A 2-minute question saves 30 minutes of wasted agent work.
-
 ---
 
 ## Spawning Templates
@@ -192,6 +206,8 @@ Files changed: {run `git diff --stat` and include the output here}
 
 Requirements:
 - Run `git diff` to review all uncommitted changes
+- If `git diff` shows no changes, STOP and report that no changes were found — do not proceed
+  with a review of empty output
 - Evaluate across six dimensions: architecture, security, operations, performance, code quality, testing
 - Check docs/spec/ for project conventions that should be followed
 - Provide actionable feedback structured by severity (blocker, concern, suggestion, praise)
@@ -254,6 +270,7 @@ Use the @senior-engineer agent to complete this issue:
 Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
 Scoped files: {list of files this issue should touch}
+{If Discovered comments exist from prior phases: "Context from prior phases: {relevant Discovered comments}"}
 
 Rules:
 - BEFORE starting, check docs/tdd/, docs/ux/, and docs/spec/ for relevant design and project context
@@ -352,14 +369,24 @@ Rules:
    - Verify all agents reported success
    - Confirm issue statuses in Docket are "done" via `docket board --json`
    - Check for "Discovered:" comments that need attention
+   - If any Discovered comments affect upcoming phases, include them as context in the
+     @senior-engineer prompts for those phases
    - If any agent failed, diagnose before proceeding (see Handling Failures below)
    - Proceed to the next phase
 
 ### Review Phase
 
 10. **Spawn @staff-engineer to review** all implementation changes. Provide the `git diff --stat`
-    output in the prompt so the reviewer can focus on the right files. If blockers are found,
-    route them back to @senior-engineer for fixes, then re-review.
+    output in the prompt so the reviewer can focus on the right files.
+
+    **For large tasks (20+ files changed):** Consider splitting the review. Spawn one
+    @staff-engineer per logical grouping (e.g., by TDD component, by phase, or by directory).
+    Include only the relevant file paths in each review prompt using `git diff -- <paths>`.
+
+    If blockers are found, route them back to @senior-engineer for fixes, then re-review.
+
+    **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
+    to the user with the details rather than continuing to loop.
 
 ### Verification Phase (medium+ tasks)
 
@@ -367,29 +394,15 @@ Rules:
     coverage across all completed work. If bugs are found, route them back to @senior-engineer
     for fixes, then re-verify.
 
+    **Bug-fix loop limit:** If the same bug persists after 2 fix-verify cycles, escalate to the
+    user rather than continuing to loop.
+
 ### Wrap-up
 
 12. **After all phases complete:**
     - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
     - Remind the user that NO changes have been committed — they can review with `git diff`
-
----
-
-## Collision Prevention
-
-This is @project-manager's primary responsibility and the reason phases exist.
-
-**What constitutes a collision:**
-- Two issues that modify the same file
-- Two issues that modify files with tight dependencies (e.g., changing a function signature
-  while another adds calls to it)
-- Two issues that modify the same configuration section
-
-**How to prevent collisions:**
-- The PM lists files each issue will touch in the issue description
-- Issues sharing files go in different phases with `blocked-by` enforcing order
-- When in doubt, serialize — slower is better than merge conflicts
 
 ---
 
@@ -441,6 +454,8 @@ re-analyze file scoping. Retry with corrected phase assignments.
 9. **Maximize parallelism.** Spawn all agents for a phase in the same turn. Never serialize
    work that can safely run in parallel.
 10. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
+11. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
+    stop looping and escalate to the user.
 
 ---
 

@@ -1,5 +1,46 @@
 # Evolve Agents Skill Evolution Log
 
+## 2026-03-19 (third evolution)
+
+### Summary
+Fixed a critical orchestration gap where the resolved date from pre-flight was never propagated
+to spawned agents, and aligned template structure with evolve-skills conventions.
+
+### Changes
+- Added `{today_date}` propagation to Phase 1 spawning template — added "Today's date is
+  {today_date} — use this for changelog entries." to the Context section (previously the
+  pre-flight resolved the date but no template variable delivered it to spawned agents, meaning
+  agents had no way to use a consistent date for changelog entries)
+- Added `{today_date}` propagation to Phase 2 spawning template — added "Today's date is
+  {today_date} — use this for any changelog entries." line (Phase 2 also writes changelog
+  entries for coherence fixes and renames but had no date context)
+- Added "Important" callout to Phase 1 orchestration workflow section reminding the orchestrator
+  to substitute `{today_date}` into templates before dispatching (makes the substitution
+  requirement explicit rather than implied)
+- Strengthened pre-flight step 1 wording — changed from "This date is passed to every spawned
+  agent" to "Store this as `{today_date}`. This value MUST be substituted into every spawning
+  template" (previous wording implied the date was passed but the templates had no mechanism to
+  receive it)
+- Added `Agent: <name>` identifier line to Phase 1 template header — aligns with evolve-skills
+  which has `Skill: <name>` for quick identification of the target
+- Added `{today_date}` to Phase 1 template header's customization list — "Customize `<name>`
+  and `{today_date}` for each" (was only `<name>`)
+- Added "Substitute `{today_date}` (from pre-flight step 1) before dispatching." instruction
+  above Phase 2 template (explicit reminder, consistent with Phase 1 callout)
+- Added spec selectivity guidance to orchestration workflow step 4 — "be selective — only files
+  related to the agent's domain" (aligns with evolve-skills wording and the spawning template's
+  existing selective guidance)
+
+### Dimensions Evaluated
+- **Actionability**: Date propagation was the highest-impact fix — without it, spawned agents
+  could not produce consistently-dated changelog entries, undermining a core skill requirement
+- **Coherence with Other Skills**: `Agent: <name>` header line, `{today_date}` customization
+  list, and spec selectivity language now match evolve-skills conventions
+- **Completeness**: Phase 2 template now receives date context for its changelog writes
+
+### Rename
+No rename -- current name accurately reflects the skill's purpose.
+
 ## 2026-03-19
 
 ### Summary

@@ -1,5 +1,58 @@
 # Dev Init Skill Evolution Log
 
+## 2026-03-19 (second cycle)
+
+### Summary
+Second evolution cycle. Shifted orchestrator responsibilities out of spawned agents, improved
+frontmatter instruction clarity in the spawning template, added content verification to the
+post-spawn check, and passed project name explicitly to agents.
+
+### Changes
+- Moved `mkdir -p docs/spec` from the spawning template into Pre-flight step 3: the orchestrator
+  now creates the output directory once before spawning, rather than having 7 agents each run
+  `mkdir -p` independently. This is a cleaner separation of orchestrator vs. agent responsibilities
+  and avoids 7 redundant shell calls.
+- Added Pre-flight step 2 to resolve the project name via
+  `basename $(git rev-parse --show-toplevel)` and pass it as `{project_name}` to every spawned
+  agent. Previously the template told each agent to "use repository name" but left discovery to
+  each agent independently, risking inconsistency (same problem the first cycle solved for dates).
+- Restructured the frontmatter instruction in the spawning template from a single dense bullet
+  point listing 7 fields inline to a concrete YAML code block that agents can use as a copy
+  template. This significantly reduces the chance of agents producing malformed or inconsistent
+  frontmatter. Sub-bullets explain the fields that require judgment (`maturity`, `dependencies`).
+- Added explicit "Today's date" and "Project name" context lines at the top of the spawning
+  template prompt, making these values immediately visible to the spawned agent rather than
+  buried in a frontmatter instruction.
+- Enhanced Step 3 (Verify) to check file content, not just existence: the orchestrator now runs
+  `head -1 docs/spec/*.md` to confirm every file starts with `---` (YAML frontmatter delimiter),
+  catching malformed output early.
+- Updated Wrap-up to mention flagging malformed output alongside missing files.
+- Added `{project_name}` to the substitution variable list in Execution Step 1 and the Spawning
+  Template header.
+
+### Dimensions Evaluated
+- **Actionability**: Frontmatter YAML template block replaces a dense prose instruction, making
+  agent output more reliable and consistent. Explicit date/project context lines at prompt top
+  improve discoverability.
+- **Orchestration Effectiveness**: Moving `mkdir -p` to orchestrator pre-flight is a proper
+  separation of concerns — orchestrators prepare the environment, agents produce content.
+  Resolving project name centrally eliminates redundant discovery across 7 agents.
+- **Completeness**: Content verification in Step 3 catches malformed output that file-existence
+  checks would miss. This closes a gap where an agent could write a file but produce invalid
+  frontmatter.
+- **Skill Design Quality**: Frontmatter, trigger phrases, and argument handling remain appropriate.
+  No structural changes needed.
+- **Over-Engineering**: No sections removed this cycle — the skill is already lean.
+- **Coherence with Other Skills**: Conventions remain aligned with dev-team and evolve-* skills.
+  No new coherence issues introduced.
+- **Spec Alignment**: Project name resolution aligns with how architecture.md identifies the
+  project. Frontmatter format matches the spec file format documented in the @staff-engineer
+  agent definition.
+- **Rename Consideration**: No rename needed — see below.
+
+### Rename
+No rename — "dev-init" remains the right name. No new arguments for change since first cycle.
+
 ## 2026-03-19
 
 ### Summary

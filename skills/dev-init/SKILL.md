@@ -27,12 +27,17 @@ Before spawning any agents:
 
 1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
    is passed to every spawned agent for consistent `last_updated` frontmatter values.
-2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-3. **If files exist**, ask the user:
+2. **Resolve the project name** — Run `basename $(git rev-parse --show-toplevel)` via Bash to
+   get the repository directory name. This is passed to every spawned agent for consistent
+   `project` frontmatter values.
+3. **Ensure the output directory exists** — Run `mkdir -p docs/spec` via Bash. This is done
+   once by the orchestrator, not by each spawned agent.
+4. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
+5. **If files exist**, ask the user:
    - **Overwrite all** — delete existing files and regenerate everything
    - **Skip existing** — only generate missing spec files
    - **Cancel** — abort the operation
-4. **If no files exist**, proceed directly to execution.
+6. **If no files exist**, proceed directly to execution.
 
 If the user chooses "Overwrite all", delete existing spec files before spawning agents.
 If the user chooses "Skip existing", note which files already exist and only spawn agents for the
@@ -65,8 +70,8 @@ exploration guidance for each — used in the spawning template.
 of the skill — maximum parallelism.
 
 For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` agent
-using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, and
-`{today_date}` from the pre-flight and reference table.
+using the spawning template below, substituting `{filename}`, `{exploration_guidance}`,
+`{today_date}`, and `{project_name}` from the pre-flight and reference table.
 
 ### Step 2: Wait for Completion
 
@@ -75,20 +80,28 @@ not retry automatically.
 
 ### Step 3: Verify
 
-Run `ls docs/spec/` and confirm all expected files exist. Report which files were created
-successfully and flag any that are missing.
+After all agents complete, run verification:
+
+1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
+2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
+   delimiter). Flag any file that does not — it indicates a malformed spec.
+
+Report which files were created successfully and flag any that are missing or malformed.
 
 ---
 
 ## Spawning Template
 
-Use this template for each spec file, substituting `{filename}`, `{exploration_guidance}`, and
-`{today_date}` (from the pre-flight date resolution).
+Use this template for each spec file, substituting `{filename}`, `{exploration_guidance}`,
+`{today_date}`, and `{project_name}` (from the pre-flight steps).
 
 ```
 Use the @staff-engineer agent to generate a project specification:
 
 Generate the `docs/spec/{filename}` project specification file.
+
+Today's date: {today_date}
+Project name: {project_name}
 
 Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
@@ -97,8 +110,22 @@ Requirements:
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/{filename}`
-- Create the docs/spec/ directory if it doesn't exist (run: mkdir -p docs/spec)
-- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated ("{today_date}"), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
+- Begin the file with YAML frontmatter (--- delimited) using this structure:
+  ```yaml
+  ---
+  project: "{project_name}"
+  maturity: "<proof-of-concept|draft|experimental|stable>"
+  last_updated: "{today_date}"
+  updated_by: "@staff-engineer"
+  scope: "<one-liner describing what this spec covers>"
+  owner: "@staff-engineer"
+  dependencies:
+    - <related-spec-filename.md>
+  ---
+  ```
+  - For `maturity`: choose honestly based on your findings about the overall project
+  - For `dependencies`: list related spec filenames ONLY if a logical connection exists —
+    omit the field entirely if none
 - Do NOT write implementation code — the spec file is the deliverable
 - Do NOT commit any changes
 ```
@@ -110,7 +137,7 @@ Requirements:
 After all agents complete and verification passes:
 
 - List all spec files that were created (or skipped)
-- Flag any files that failed to generate
+- Flag any files that failed to generate or have malformed output
 - Remind the user that NO changes have been committed — they can review with `git diff`
 
 ---

@@ -1,5 +1,31 @@
 # Dev Team Skill Evolution Log
 
+## 2026-03-19 (2)
+
+### Summary
+Second evolution cycle. Focused on decision-making actionability (pattern selection was heuristic prose, now a concrete decision tree), feedback loop safety (no escalation limits on review-fix and bug-fix cycles), discovered-context propagation between phases, and edge case handling (empty diff in review, plan extension workflow).
+
+### Changes
+- **Replaced "Choosing the Right Pattern" heuristics with a decision tree**: The previous prose list required the Team Lead to weigh multiple factors simultaneously. Restructured as an ordered question flow under "Pattern Decision Tree" in Pre-flight, so the Team Lead answers sequential yes/no questions to arrive at the correct pattern deterministically.
+- **Added "Extending an Existing Plan" subsection to Pre-flight**: Previously, the skill covered resuming mid-execution but not adding new work to an existing Docket plan. New guidance instructs the Team Lead to inspect the current plan and spawn @project-manager with extension (not replacement) instructions.
+- **Added empty-diff guard to Code Review template**: The @staff-engineer review template now includes "If `git diff` shows no changes, STOP and report that no changes were found." This prevents the reviewer from producing a meaningless review when agents failed silently or changes were accidentally reverted.
+- **Added Discovered comment forwarding in step 9**: After each phase completes, the Team Lead now checks Discovered comments and includes relevant ones as context in subsequent @senior-engineer prompts. Previously, Discovered comments were checked but not propagated forward, meaning later phases could miss context from earlier ones.
+- **Added context line to @senior-engineer template for Discovered comments**: The template now includes an optional `{If Discovered comments exist from prior phases: ...}` line so the Team Lead has a concrete place to inject cross-phase context.
+- **Added review-fix and bug-fix loop limits**: Steps 10 and 11 now include explicit escalation guidance: if the same blocker or bug persists after 2 fix cycles, escalate to the user rather than looping indefinitely. Added corresponding Rule 11: "Escalate loops."
+- **Added large-review splitting guidance in step 10**: For large tasks with 20+ files changed, the Team Lead is now instructed to consider splitting the review across multiple @staff-engineer agents by logical grouping, using `git diff -- <paths>` to scope each review. Prevents context window exhaustion on single-agent reviews.
+- **Removed Collision Prevention section**: This section restated what the @project-manager template and the Handling Failures section already cover (PM lists files, shared files go in different phases, serialize when in doubt). The PM template includes "VERIFY no two issues in the same phase touch the same files" and "List the specific files each issue will modify." The "Agent encounters a file conflict" failure handler covers runtime collisions. Removing the standalone section eliminates ~15 lines of redundancy without losing any guidance.
+
+### Dimensions Evaluated
+- **Actionability**: Drove the pattern decision tree, empty-diff guard, Discovered comment forwarding, and loop escalation limits.
+- **Completeness**: Drove the plan extension workflow and large-review splitting guidance.
+- **Over-Engineering**: Drove removal of the Collision Prevention section (redundant with PM template and failure handlers).
+- **Orchestration Effectiveness**: Drove Discovered comment propagation between phases and review splitting for large tasks.
+- **Coherence with Other Skills**: Verified convention alignment with dev-init, evolve-skills, and evolve-agents. No conflicts found. Consistent commit-notice banner, rule formatting, and template structure across all skills.
+- **Spec Alignment**: Verified against architecture.md (agent team structure accurate) and review-strategy.md (review splitting aligns with the spec's guidance on change size triage). No drift.
+
+### Rename
+No rename -- current name `dev-team` accurately reflects the skill's purpose as the development team orchestrator.
+
 ## 2026-03-19
 
 ### Summary

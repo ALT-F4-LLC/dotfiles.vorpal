@@ -3,7 +3,7 @@ name: dev-team
 description: >
   Orchestrate a software development agent team consisting of @staff-engineer (design + review),
   @project-manager (planning), @ux-designer (UX design), @senior-engineer (implementation), and
-  @qa-engineer (testing). Use this skill whenever the user wants to plan AND execute a body of
+  @sdet (testing). Use this skill whenever the user wants to plan AND execute a body of
   work using the agent team pattern — including feature development, migrations, refactors, bug
   fix batches, or any multi-issue project. Trigger on phrases like "use the agent team", "plan
   and execute", "have the team work on", "spin up engineers", "run the dev team on this", or
@@ -33,8 +33,8 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
    │          │              │              │              │
    ▼          ▼              ▼              ▼              ▼
 ┌────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
-│ @staff │ │ @project   │ │ @ux        │ │ @senior    │ │ @qa        │
-│ engr   │ │ manager    │ │ designer   │ │ engineer   │ │ engineer   │
+│ @staff │ │ @project   │ │ @ux        │ │ @senior    │ │ @sdet      │
+│ engr   │ │ manager    │ │ designer   │ │ engineer   │ │            │
 │        │ │            │ │            │ │            │ │            │
 │ TDDs + │ │ Plans work │ │ UX design  │ │ Implements │ │ Tests +    │
 │ Code   │ │ in Docket  │ │ specs in   │ │ code from  │ │ verifies   │
@@ -94,7 +94,8 @@ queries, comments, status changes, and relationship management all use `docket` 
 - Does NOT create Docket issues — for ad-hoc work, executes directly
 - Does NOT commit changes (no git add, no git commit, no git push)
 
-**@qa-engineer (Testing + Verification):**
+**@sdet (Test Infrastructure + Quality Engineering):**
+- Owns test infrastructure, automation frameworks, and quality tooling
 - Writes and runs tests against acceptance criteria
 - Verifies implementation meets spec requirements
 - Reports bugs as Docket comments on existing issues (never creates issues)
@@ -124,7 +125,7 @@ For bug fixes, config changes, small features, or any work that doesn't need a T
 For features, refactors, or multi-file changes that benefit from upfront design.
 
 ```
-@staff-engineer → @project-manager → @senior-engineer → @staff-engineer → @qa-engineer
+@staff-engineer → @project-manager → @senior-engineer → @staff-engineer → @sdet
     TDD               plan              implement          review           test
 ```
 
@@ -132,14 +133,14 @@ For features, refactors, or multi-file changes that benefit from upfront design.
 2. Spawn @project-manager to decompose the TDD into Docket issues.
 3. Spawn @senior-engineer(s) to implement the issues.
 4. Spawn @staff-engineer to review the implementation changes.
-5. Spawn @qa-engineer to verify acceptance criteria and test coverage.
+5. Spawn @sdet to verify acceptance criteria and test coverage.
 
 ### UX-Heavy Task
 
 For work involving user-facing surfaces that need design before technical planning.
 
 ```
-@ux-designer → @staff-engineer → @project-manager → @senior-engineer → @staff-engineer → @qa-engineer
+@ux-designer → @staff-engineer → @project-manager → @senior-engineer → @staff-engineer → @sdet
    UX spec        TDD               plan              implement          review           test
 ```
 
@@ -148,7 +149,7 @@ For work involving user-facing surfaces that need design before technical planni
 3. Spawn @project-manager to decompose into Docket issues.
 4. Spawn @senior-engineer(s) to implement the issues.
 5. Spawn @staff-engineer to review the implementation changes.
-6. Spawn @qa-engineer to verify acceptance criteria.
+6. Spawn @sdet to verify acceptance criteria.
 
 ### Choosing the Right Pattern
 
@@ -272,10 +273,10 @@ Rules:
 - Remember: ALL Docket commands are Bash commands run via the Bash tool
 ```
 
-### @qa-engineer
+### @sdet
 
 ```
-Use the @qa-engineer agent to verify this work:
+Use the @sdet agent to verify this work:
 
 Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
@@ -331,7 +332,7 @@ Rules:
 
 ### Verification Phase (medium+ tasks)
 
-11. **Spawn @qa-engineer** to verify acceptance criteria and test coverage. If bugs are found,
+11. **Spawn @sdet** to verify acceptance criteria and test coverage. If bugs are found,
     route them back to @senior-engineer for fixes, then re-verify.
 
 ### Wrap-up
@@ -370,7 +371,7 @@ This is @project-manager's primary responsibility and the reason phases exist.
    use comments to report findings, bugs, or discovered work.
 6. **Staff-engineer reviews all implementation changes.** Every @senior-engineer change gets
    reviewed before the work is considered complete.
-7. **QA verification is mandatory for medium+ tasks.** @qa-engineer verifies acceptance criteria
+7. **SDET verification is mandatory for medium+ tasks.** @sdet verifies acceptance criteria
    after implementation and review.
 8. **Route UX work to @ux-designer before design.** When work involves user-facing surfaces,
    get a UX spec before the @staff-engineer produces a TDD.
@@ -381,12 +382,12 @@ This is @project-manager's primary responsibility and the reason phases exist.
 ## Handling Edge Cases
 
 **Task too small for a TDD:** Use the Small Task pattern. Skip @staff-engineer TDD and
-@qa-engineer. Go straight to @project-manager → @senior-engineer → @staff-engineer (review).
+@sdet. Go straight to @project-manager → @senior-engineer → @staff-engineer (review).
 
 **PM identifies only 1 issue:** Still use the workflow. Consistency matters more than overhead.
 
-**QA finds bugs:** @qa-engineer reports bugs as comments on the relevant Docket issue.
-Route the issue back to @senior-engineer for fixes. Re-run @qa-engineer verification after
+**SDET finds bugs:** @sdet reports bugs as comments on the relevant Docket issue.
+Route the issue back to @senior-engineer for fixes. Re-run @sdet verification after
 fixes are applied.
 
 **Agent discovers additional work:** @senior-engineer adds a discovery comment to the Docket
@@ -400,7 +401,7 @@ Retry with corrected scoping.
 @project-manager to revise remaining phases. Resume execution.
 
 **Review finds blockers:** Route blockers back to @senior-engineer for fixes. Re-run
-@staff-engineer review after fixes. Do not proceed to QA until review passes.
+@staff-engineer review after fixes. Do not proceed to SDET verification until review passes.
 
 ---
 

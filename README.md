@@ -56,7 +56,7 @@ The project deploys a five-agent Claude Code development team to `~/.claude/agen
 | **Staff Engineer** | Architecture, technical design documents, code review |
 | **Senior Engineer** | Implementation, code quality, debugging |
 | **Project Manager** | Issue planning, task breakdown, dependency management |
-| **QA Engineer** | Testing, verification, acceptance criteria |
+| **SDET** | Test infrastructure, automation, quality engineering, verification |
 | **UX Designer** | User experience design specs |
 
 Two skills orchestrate the team:

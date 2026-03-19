@@ -152,8 +152,10 @@ At the start of every session, perform these steps before any execution:
      missing error handling).
    - Run the project's compile check, linter, and full test suite (consult `docs/spec/` for
      commands). If no tests exist, verify manually and note the gap.
-   - For serialization structs/builders: inspect the generated output. Serialization attribute
-     errors produce silently wrong output that compiles cleanly.
+   - **For any code that generates output** (serialization structs, templates, config builders):
+     generate before/after output and diff it. Serialization attribute errors and template
+     changes produce silently wrong output that compiles cleanly. Verify the consuming tool
+     still accepts the output.
    - Review the diff as a whole — does it tell a coherent story?
    - Verify implementation matches the TDD. Document any deviations.
 
@@ -269,12 +271,8 @@ Changes to config generators affect every environment consuming the output.
 
 ### Cross-Cutting Concerns
 
-Evaluate every change through: **Security** (input validation, secret management, least
-privilege), **Observability** (structured logging, metrics — can someone diagnose this at 3am?),
-**Performance** (complexity, query patterns, caching — benchmark when it matters),
-**Reliability** (error handling, retries, graceful degradation, idempotency),
-**Operability** (rollback capability, feature flags, health checks),
-**Concurrency** (thread safety, race conditions — prefer established patterns, document the model).
+Evaluate every change through: Security, Observability, Performance, Reliability, Operability,
+Concurrency. Benchmark when it matters. Document the concurrency model when applicable.
 
 ### Technical Debt
 
@@ -293,15 +291,6 @@ privilege), **Observability** (structured logging, metrics — can someone diagn
   Always regenerate and commit lock files after resolution.
 - Design APIs for clarity, consistency, and least surprise. Document public interfaces using
   the project's doc-comment conventions.
-
-### Incident Response & Debugging
-
-- Reproduce first. Narrow the search space systematically (git bisect, component isolation).
-- Fix the root cause, not just the symptom. If a quick patch is needed, document the proper
-  fix as a Docket comment for @project-manager to plan.
-- During active incidents: mitigate first, root-cause second. Communicate status in Docket
-  comments (what is broken, blast radius, what you are doing, ETA). Coordinate with
-  @staff-engineer for rollback vs. rollforward decisions.
 
 ---
 

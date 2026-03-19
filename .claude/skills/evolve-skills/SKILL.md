@@ -24,6 +24,9 @@ Code execution.
 
 You do not edit skill files yourself. You coordinate.
 
+> **Self-evolution note:** When this skill evolves itself, changes to this file take effect on
+> the *next* invocation, not the current one.
+
 ---
 
 ## Argument Handling
@@ -32,7 +35,9 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills found in `.claude/skills/*/SKILL.md`
   and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills dev-team`): Improve only the named skill.
+- **With argument** (`/evolve-skills dev-team`): Improve only the named skill. Match against
+  both `.claude/skills/<arg>/SKILL.md` and `skills/<arg>/SKILL.md`. If no match in either
+  location, inform user and abort.
 
 Resolve targets by listing what exists:
 
@@ -40,7 +45,22 @@ Resolve targets by listing what exists:
 ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null
 ```
 
-If an argument is provided and no matching skill directory exists, inform the user and abort.
+---
+
+## Pre-flight
+
+Before spawning any agents:
+
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
+   is passed to every spawned agent for consistent changelog entries.
+2. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+   to list all discoverable skill files.
+3. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
+   either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
+   and abort.
+4. **If no skill files found at all** — Inform user and abort.
+5. **Check for existing changelogs** — Run `ls docs/changelog/*-skill.md 2>/dev/null` to see
+   which changelogs already exist. Spawned agents will need this information.
 
 ---
 
@@ -121,15 +141,15 @@ Each @staff-engineer:
 1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
 2. Reads the existing changelog in `docs/changelog/<name>-skill.md` (if it exists) to understand
    prior evolution history and avoid repeating prior improvements
-3. Researches Claude Code documentation at https://code.claude.com/docs/en/overview to understand
-   the latest features, tooling, and capabilities (e.g., agent teams, hooks, MCP servers, skills
-   frontmatter options). This ensures evolution decisions are informed by current platform capabilities.
-4. Checks `docs/spec/` for relevant project specifications
+3. Uses WebFetch if available to research Claude Code documentation; if not, proceeds with
+   existing knowledge of Claude Code best practices
+4. Checks `docs/spec/` for relevant project specifications (be selective — only files related
+   to the skill's domain)
 5. Reads the OTHER skill files to understand the current skill ecosystem
 6. Evaluates the skill against ALL 8 dimensions
-6. Applies improvements directly to the skill file
-7. Writes/updates the changelog entry in `docs/changelog/<name>-skill.md`
-8. Reports back with:
+7. Applies improvements directly to the skill file
+8. Writes/updates the changelog entry in `docs/changelog/<name>-skill.md`
+9. Reports back with:
    - Summary of changes made (or "no changes needed" with reasoning)
    - Whether a rename is recommended (and to what name, with reasoning)
    - Any cross-skill coherence issues noticed
@@ -192,11 +212,10 @@ and well-structured for Claude Code execution.
 - This is a self-evolving process. Each run should build on prior improvements.
 - Read docs/changelog/<name>-skill.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
-- Research Claude Code documentation at https://code.claude.com/docs/en/overview to understand
-  the latest features, tooling, and capabilities (e.g., agent teams, hooks, MCP servers, skills
-  frontmatter options). Use WebFetch to read the overview page and follow relevant links for
-  deeper context. This ensures your evaluation and improvements leverage current platform capabilities.
-- Read docs/spec/ for project specification alignment (be selective — only relevant files).
+- Uses WebFetch if available to research Claude Code documentation; if not, proceed with
+  existing knowledge of Claude Code best practices.
+- Read docs/spec/ for project specification alignment (be selective — only files relevant to
+  the skill's domain).
 - Read the OTHER skill files to understand the skill ecosystem and conventions.
   Check both .claude/skills/*/SKILL.md and skills/*/SKILL.md.
 
@@ -292,11 +311,13 @@ Use the @staff-engineer agent to check cross-skill coherence and execute renames
 
 ## Rules
 
-1. **Spawn Phase 1 agents in parallel.** Maximum parallelism for independent reviews.
-2. **Phase 2 runs AFTER all Phase 1 agents complete.** Coherence requires seeing all changes.
-3. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
-4. **Never edit skill files yourself.** You are the orchestrator, not the author.
-5. **Never commit.** No `git add`, no `git commit`, no `git push`.
-6. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-7. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
-8. **Fail loud.** If an agent fails, report it immediately with details.
+1. **Run pre-flight before spawning.** Validate skill files exist and arguments resolve before
+   spending agent resources.
+2. **Spawn Phase 1 agents in parallel.** Maximum parallelism for independent reviews.
+3. **Phase 2 runs AFTER all Phase 1 agents complete.** Coherence requires seeing all changes.
+4. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
+5. **Never edit skill files yourself.** You are the orchestrator, not the author.
+6. **Never commit.** No `git add`, no `git commit`, no `git push`.
+7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
+8. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
+9. **Fail loud.** If an agent fails, report it immediately with details.

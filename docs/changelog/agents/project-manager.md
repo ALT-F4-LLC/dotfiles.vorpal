@@ -3,6 +3,27 @@
 ## 2026-03-19
 
 ### Summary
+Trimmed redundancy across session init, scope negotiation, external deps, and NOT-list. Added Bash tool constraint to prevent shell drift beyond Docket and read-only commands.
+
+### Changes
+- Compressed session initialization from 3 numbered steps to 2, removed `docket config`
+- Removed redundant @sdet NOT entry (boundary already clear from cross-cutting concerns)
+- Added Bash constraint rule: Docket commands and read-only exploration only
+- Removed "cannot spawn sub-agents" platform detail from Exploration section
+- Fixed self-referential re-engagement trigger (agent cannot "re-engage" itself)
+- Folded scope negotiation into real-scope bullet
+- Compressed External Dependencies section
+- [Coherence] Replaced "orchestrator" with "user or team lead" (6 occurrences)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, Role Realism, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added Operating context paragraph to align with the pattern established across all other agents.
 
 ### Changes

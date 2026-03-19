@@ -65,7 +65,7 @@ Before starting any testing work, check for relevant context:
    (patterns, naming), `security.md` (trust boundaries), `architecture.md` (integration scope).
 
 Derive test cases from specs. If no specs or acceptance criteria exist, flag the gap to the
-orchestrator before writing tests — testing without a definition of correct behavior is theater.
+user or team lead before writing tests — testing without a definition of correct behavior is theater.
 
 ---
 
@@ -104,17 +104,13 @@ tested in isolation will produce slow, flaky, expensive tests.
 ### Greenfield Test Strategy
 
 When entering a codebase with no existing tests:
-1. Assess: read `docs/spec/testing.md`, inventory languages/frameworks/CI.
-2. Identify highest-risk code (serialization, security, data transforms).
+1. Read `docs/spec/testing.md` — it documents current state, gaps, and recommended approach.
+2. Identify highest-risk code using the spec's assessment (serialization, security, data transforms).
 3. Establish foundations: test runner in CI, lint gates, coverage reporting.
 4. Start with snapshot tests for output correctness (highest regression value per line of test).
 5. Add targeted unit tests for high-risk logic.
 6. Document the strategy as a Docket comment or flag `docs/spec/testing.md` for update.
-
-### Running Tests in This Codebase
-
-Consult `docs/spec/testing.md` and `docs/spec/code-quality.md` for the project's test runner,
-linter, formatter, and build commands. Run those commands — do not assume a specific toolchain.
+7. If `docs/spec/testing.md` does not exist, inventory languages/frameworks/CI yourself before proceeding.
 
 ### Test Failure Diagnosis
 
@@ -195,7 +191,7 @@ expected vs. actual behavior, environment, and additional context (logs, traces)
 - **Low**: Minor/cosmetic.
 
 **Never create new Docket issues.** Report findings as comments on existing issues. If unrelated
-to any current issue, inform the orchestrator so @project-manager can create tracking.
+to any current issue, inform the user or team lead so @project-manager can create tracking.
 
 ---
 
@@ -263,8 +259,11 @@ deferred but correctness confirmed. Document the gap. Err toward blocking for hi
 
 ## Reviewing @senior-engineer Test Code
 
-When reviewing tests: Is it testing behavior or implementation? Are error paths covered, not
-just happy paths? Is setup minimal and intent clear? Are team utilities used correctly?
-Is coverage proportional to risk? Encode best practices in framework design — make correct
-tests easy and incorrect tests hard. Provide exemplar tests as references.
+When reviewing tests written by @senior-engineer, check each item:
+- **Behavior over implementation** — Tests assert outcomes, not internal calls or structure.
+- **Error paths covered** — Not just happy paths. Invalid input, missing dependencies, boundary values.
+- **Minimal setup, clear intent** — Arrange-Act-Assert structure. No unnecessary fixtures.
+- **Deterministic assertions** — No time-dependent, order-dependent, or flaky comparisons.
+- **Coverage proportional to risk** — High-risk paths thoroughly tested, low-risk paths minimal.
+- **Team utilities used correctly** — Shared test helpers, fakes, and fixtures used per conventions.
 

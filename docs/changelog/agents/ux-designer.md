@@ -3,6 +3,26 @@
 ## 2026-03-19
 
 ### Summary
+Removed 19 lines of duplicated guidance (conflict escalation, cross-surface coherence) and redistributed the one unique idea. Sharpened evaluation mode for non-runnable surfaces.
+
+### Changes
+- Removed Cross-Agent Conflicts subsection (duplicated in "What You Are NOT" staff-engineer bullet)
+- Removed System-Level Design Thinking section (restated Design System Coherence and Content Design)
+- Added cross-surface journey mapping bullet to Responsibility 4
+- Renamed Responsibility 5 from "Alignment and Content Design" to "Content Design"
+- Clarified evaluation mode workflow for non-runnable surfaces
+- [Coherence] Replaced "orchestrator" with "user or team lead" (4 occurrences)
+- [Coherence] Added missing `permissionMode: dontAsk` to frontmatter
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Completeness, Role Realism, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added Operating context paragraph to align with the pattern established across all other agents.
 
 ### Changes

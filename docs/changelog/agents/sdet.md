@@ -3,6 +3,23 @@
 ## 2026-03-19
 
 ### Summary
+Tightened greenfield strategy to reference spec, removed redundant "Running Tests" subsection, replaced prose review section with actionable checklist.
+
+### Changes
+- Updated greenfield strategy to reference `docs/spec/testing.md` as primary input, with fallback for missing specs
+- Removed "Running Tests in This Codebase" subsection (redundant with spec-check section and greenfield strategy)
+- Replaced prose paragraph in "Reviewing @senior-engineer Test Code" with scannable checklist including deterministic assertions check
+- [Coherence] Replaced "orchestrator" with "user or team lead" (2 occurrences)
+
+### Dimensions Evaluated
+Actionability, Consolidation & Trimming, Spec Alignment, Role Realism, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added stateless operating context, removed non-executable human-process sections (Test Planning, Communication Style), compressed Decision-Making Framework to actionable Block/Accept criteria, fixed formatting artifacts.
 
 ### Changes

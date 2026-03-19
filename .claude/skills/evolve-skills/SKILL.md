@@ -3,11 +3,13 @@ name: evolve-skills
 description: >
   Review and improve skill definitions in .claude/skills/*/SKILL.md and skills/*/SKILL.md.
   Evaluates skill design quality, actionability, completeness, orchestration effectiveness,
-  cross-skill coherence, spec alignment, and over-engineering. Can target a specific skill or
-  improve all skills. Directly edits skill files, handles renames with full reference updates,
-  and maintains changelogs. Use when the user wants to evolve, improve, or refine skill
-  definitions — including phrases like "evolve skills", "improve skills", "refine skills",
-  "make the skills better", or "grow the skills".
+  cross-skill coherence, spec alignment, and over-engineering. Enforces a Content Gate that
+  rejects non-actionable, non-executable, or redundant additions before they enter skill files.
+  Enforces a 500-line size budget per skill. Can target a specific skill or improve all skills.
+  Agents propose changes; the orchestrator applies all edits, handles renames, and maintains
+  changelogs. Use when the user wants to evolve, improve, or refine skill definitions —
+  including phrases like "evolve skills", "improve skills", "refine skills", "make the skills
+  better", or "grow the skills".
 argument-hint: "[skill-name]"
 ---
 
@@ -17,14 +19,22 @@ argument-hint: "[skill-name]"
 
 You are the **Skill Evolution Orchestrator** — you coordinate @staff-engineer agents to review
 and improve ALL skill definition files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
-This includes the `evolve-*` skills themselves — self-evolution is expected and intentional. Each
-improvement cycle makes the skills more effective, actionable, and well-structured for Claude
-Code execution.
+This includes the `evolve-*` skills themselves — self-evolution is expected and intentional.
+**Agents never edit files directly.** They produce structured change recommendations that you,
+the orchestrator, apply using the Edit tool. Each improvement cycle makes the skills more
+effective, actionable, and well-structured for Claude Code execution. All additions are
+filtered through the Content Gate to prevent non-actionable content from entering skill files.
 
-You do not edit skill files yourself. You coordinate.
+You are the only one who edits files. Agents read and recommend.
 
 > **Self-evolution note:** When this skill evolves itself, changes to this file take effect on
 > the *next* invocation, not the current one.
+
+> **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** Evolution is about sharpening, not
+> accumulating. Every cycle should leave skill files the same size or smaller. If a file is over
+> 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
+> be added if an equal or greater amount is removed. If a file is under 500 lines, additions are
+> permitted but must be offset by removing low-value content so the file does not grow past 500.
 
 ---
 
@@ -61,47 +71,59 @@ Before spawning any agents:
 4. **If no skill files found at all** — Inform user and abort.
 5. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
+6. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+   and record the line count for each target skill. This determines the evolution mode for each:
+   - **Over 500 lines (TRIM mode)**: The skill's primary objective is consolidation. New content
+     may only be added if an equal or greater number of lines are removed. Communicate the line
+     count and TRIM mode to the spawned agent.
+   - **Under 500 lines (BALANCED mode)**: The skill may add content but must offset additions
+     with removals to stay under 500 lines. Communicate the line count and BALANCED mode.
+   - Include the line count and mode in each agent's spawning prompt (see Phase 1 template).
+
+---
+
+## Content Gate
+
+**Every proposed addition MUST pass ALL checks. Reject content that fails ANY check.**
+
+1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring humans, attending meetings, relationship-building, career development, team building.
+2. **Behavioral** — Does removing it change the skill's output? Reject: general knowledge a capable LLM already has.
+3. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
+4. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
+
+**Never add to skill files:** human social dynamics (1:1s, growing engineers, team morale), communication style (Claude's tone is governed by the system prompt), generic guidelines unrelated to the skill's purpose, decision matrices that restate existing workflows abstractly.
 
 ---
 
 ## Evaluation Dimensions
 
-Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensions:
+Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensions. **Dimensions
+1, 3, and 5 propose additions — all proposed additions must pass the Content Gate above.**
 
-1. **Skill Design Quality** — Does the skill follow Claude Code best practices? Clear trigger
-   phrases in description, proper frontmatter, good argument handling, appropriate use of
-   `disable-model-invocation`, good balance of structure and brevity?
-
-2. **Actionability** — Are instructions specific enough for Claude to execute reliably? Clear
-   phases, concrete spawning templates, defined outputs, consistent results?
-
-3. **Completeness** — Does the skill handle edge cases, error conditions, pre-flight checks?
-   All workflow paths covered from start to wrap-up? Cleanup and reporting included?
-
-4. **Over-Engineering** — Verbose, redundant, or low-value sections? Repeated concepts,
-   generic guidelines, excessive template variations, rules duplicating agent definitions?
-
-5. **Orchestration Effectiveness** — Does the skill use agents effectively? Parallelism
-   maximized, correct agent types, well-structured templates, sequential dependencies
-   respected, clear coordination (what each agent receives and reports back)?
-
-6. **Coherence with Other Skills** — Scope overlaps with other skills? Terminology consistent?
-   Shared conventions followed (commit notice, frontmatter, changelog)? Accurate references?
-
-7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
-
-8. **Rename Consideration** — Should the skill be renamed? Only recommend if compelling —
-   stability has value. Consider naming conventions and clarity of purpose.
+1. **Skill Design Quality** — Claude Code best practices, frontmatter, argument handling,
+   `disable-model-invocation` usage, structure-brevity balance?
+2. **Actionability** — Instructions specific enough for reliable execution? Clear phases,
+   concrete templates, defined outputs?
+3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths?
+4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate?
+5. **Orchestration Effectiveness** — Proper agent use, parallelism, correct types, clear
+   coordination?
+6. **Coherence with Other Skills** — Scope overlaps, terminology, shared conventions,
+   accurate references?
+7. **Spec Alignment** — Alignment with `docs/spec/` project patterns?
+8. **Rename Consideration** — Only if compelling — stability has value.
 
 ---
 
 ## Changelog Format
 
 All changes are tracked in `docs/changelog/skills/<skill-name>.md`. Create the `docs/changelog/skills/`
-directory if it doesn't exist. Each file uses this format:
+directory if it doesn't exist.
+
+**Every changelog file MUST use this exact format — no deviations, no extra sections:**
 
 ```markdown
-# <Skill Name> Skill Evolution Log
+# Changelog: <skill-name>
 
 ## <YYYY-MM-DD>
 
@@ -117,15 +139,30 @@ directory if it doesn't exist. Each file uses this format:
 
 ### Rename
 <if applicable: "Renamed from `<old>` to `<new>`: reasoning">
-<if not applicable: "No rename — current name accurately reflects the skill's purpose.">
+<if not: "No rename.">
 ```
 
+### Strict Changelog Rules
+
+1. **H1 heading**: Exactly `# Changelog: <skill-name>` — kebab-case matching the directory name.
+2. **H2 date heading**: Exactly `## YYYY-MM-DD` — date only, no suffixes or descriptions.
+3. **H3 sections**: Exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`,
+   `### Rename` — in this order, no others.
+4. **Max 20 lines per entry.** No verbose justifications.
+
 When a changelog file already exists, prepend the new entry below the H1 heading so the most
-recent evolution is first. **Read the existing changelog before making changes** — it contains
-the history of prior improvements and helps avoid re-treading the same ground.
+recent evolution is first. **Read only the most recent entry** (first `## <date>` section) in
+the existing changelog to avoid re-treading ground — do NOT read the entire changelog history.
 
 If no meaningful improvements are found for a skill, report that in the changelog entry
 rather than forcing changes. Not every cycle needs to produce edits.
+
+### Changelog Normalization
+
+During **Phase 1**, after applying skill changes, the orchestrator MUST normalize
+`docs/changelog/skills/<name>.md`: fix H1 to `# Changelog: <skill-name>`, strip H2 suffixes,
+rename non-standard H3 headers to the standard four, delete non-standard sections, and truncate
+entries exceeding 20 lines.
 
 ---
 
@@ -167,33 +204,39 @@ After spawning, assign tasks to teammates:
 TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<id>, owner="review-<name>", status="in_progress")
 ```
 
-Each @staff-engineer teammate:
+Each @staff-engineer teammate (read-only — no file edits):
 
 1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
-2. Reads the existing changelog in `docs/changelog/skills/<name>.md` (if it exists) to understand
-   prior evolution history and avoid repeating prior improvements
-3. Uses WebFetch if available to research Claude Code documentation; if not, proceeds with
-   existing knowledge of Claude Code best practices
-4. Checks `docs/spec/` for relevant project specifications (be selective — only files related
-   to the skill's domain)
-5. Reads the OTHER skill files to understand the current skill ecosystem
-6. Evaluates the skill against ALL 8 dimensions
-7. Applies improvements directly to the skill file
-8. Writes/updates the changelog entry in `docs/changelog/skills/<name>.md`
-9. Marks their task completed via `TaskUpdate` and reports back with:
-   - Summary of changes made (or "no changes needed" with reasoning)
-   - Whether a rename is recommended (and to what name, with reasoning)
-   - Any cross-skill coherence issues noticed
+2. Reads ONLY the most recent entry in `docs/changelog/skills/<name>.md` (if it exists) — the
+   first `## <date>` section only, NOT the full history — to avoid repeating the last cycle's changes
+3. Checks `docs/spec/` for relevant project specifications (be selective — only files directly
+   related to the skill's domain; do NOT read all spec files)
+4. Reads the OTHER skill files — but ONLY the first ~80 lines of each to understand the skill
+   ecosystem without consuming excessive context
+5. Evaluates the skill against ALL 8 dimensions
+6. Marks their task completed via `TaskUpdate` and reports back with structured change
+   recommendations including net line change estimates
 
 Teammates go idle between turns — this is normal. Messages from teammates are delivered
 automatically; no polling is needed. The orchestrator receives results as teammates complete.
+
+**After each Phase 1 teammate completes**, the orchestrator:
+
+1. Reviews the teammate's change recommendations **against the Content Gate** — reject any
+   addition that fails any gate check, even if the agent provides a rationale
+2. Applies each approved change to the skill file using the Edit tool
+3. Writes/updates the changelog entry in `docs/changelog/skills/<name>.md`
+4. **Normalizes the entire changelog** for `docs/changelog/skills/<name>.md` — fix the H1 heading,
+   strip H2 suffixes, rename non-standard H3 headers, and delete non-standard sections
+   (see "Changelog Normalization" under Changelog Format)
+5. Tracks rename recommendations and coherence issues for Phase 2
 
 Use `TaskList(team_name="evolve-skills-{today_date}")` to check overall Phase 1 progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 teammates complete, spawn a single @staff-engineer teammate to handle
-coherence and renames:
+After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
+single @staff-engineer teammate (read-only) to review coherence and recommend fixes:
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
@@ -208,16 +251,7 @@ TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<coherence_task_id>, 
 The Phase 2 teammate:
 
 1. Reads ALL skill files (the freshly improved versions)
-2. Executes any renames recommended in Phase 1:
-   - Rename the directory: `mv <old-dir> <new-dir>` (e.g., `mv skills/dev skills/new-name`)
-   - Update the `name:` field in the renamed skill's YAML frontmatter
-   - Search ALL files for references to the old name and update them:
-     - Other skill files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`
-     - Agent files in `agents/*.md`
-     - `README.md`
-     - Any other files that reference the old name
-   - Rename `docs/changelog/skills/<old>.md` to `docs/changelog/skills/<new>.md` (if it exists)
-   - Add a rename entry to the changelog
+2. Verifies any renames recommended in Phase 1 and prepares rename instructions
 3. Checks cross-skill coherence:
    - No scope overlaps — each skill has a distinct purpose
    - Terminology is consistent across all skills
@@ -225,10 +259,14 @@ The Phase 2 teammate:
    - References to agents, directories, and project structure are accurate
    - Spawning templates reference correct agent types
    - Argument handling patterns are consistent
-4. Applies coherence fixes directly to affected skill files
-5. Updates `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
-6. Marks the coherence task completed via `TaskUpdate` and reports:
-   what coherence issues were found and fixed, what renames were executed
+4. Marks the coherence task completed via `TaskUpdate` and reports structured recommendations
+   (see Phase 2 template for format)
+
+**After the Phase 2 teammate completes**, the orchestrator:
+
+1. Executes any renames (`mv`, frontmatter updates, reference updates across codebase)
+2. Applies coherence fixes using the Edit tool
+3. Updates `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
 
 ### Wrap-up & Team Cleanup
 
@@ -246,11 +284,14 @@ After Phase 2 completes:
    TeamDelete(team_name="evolve-skills-{today_date}")
    ```
 
-3. List all files that were modified
-4. Summarize the improvements made to each skill
-5. Note any renames that occurred
-6. Note any coherence fixes applied
-7. Remind the user that NO changes have been committed — they can review with `git diff`
+3. Run `wc -l` on all target skill files and compare to pre-flight line counts
+4. If any file exceeds 500 lines, perform additional consolidation until it is under 500
+5. Report:
+   - Files modified
+   - Before/after line counts for each skill (e.g., `evolve-skills: 450 → 420`)
+   - Improvements made to each skill
+   - Any renames or coherence fixes applied
+   - Reminder that NO changes have been committed — review with `git diff`
 
 ---
 
@@ -258,8 +299,8 @@ After Phase 2 completes:
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
-Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, and `{today_date}`
-(from pre-flight step 1) for each.
+Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
+`{mode}`, and `{today_date}` (from pre-flight) for each.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
@@ -268,112 +309,121 @@ Use the @staff-engineer agent to review and improve a skill definition:
 
 Target: <skill-path>/SKILL.md
 Skill: <name>
+Current size: {line_count} lines
+Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
 
-You are reviewing this skill definition to evolve it — making it more effective, actionable,
-and well-structured for Claude Code execution.
+## Size Budget
+
+Hard limit: 500 lines. **TRIM mode** (over 500): primary objective is consolidation — removals
+must exceed additions. **BALANCED mode** (under 500): additions allowed but offset by removals.
+Every CHANGE adding lines MUST pair with a removal of equal or greater size. Report NET_LINES.
 
 ## Context
 
-- Today's date is {today_date} — use this for changelog entries.
-- This is a self-evolving process. Each run should build on prior improvements.
-- Read docs/changelog/skills/<name>.md (if it exists) to see what was improved before — do NOT
-  repeat the same changes or re-tread ground already covered.
-- Read docs/spec/ for project specification alignment (be selective — only files relevant to
-  the skill's domain).
-- Read the OTHER skill files to understand the skill ecosystem and conventions.
-  Check both .claude/skills/*/SKILL.md and skills/*/SKILL.md.
+- Today's date is {today_date} — use for changelog entries.
+- Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry.
+- Read docs/spec/ selectively — only files relevant to the skill's domain.
+- Read OTHER skill files — first ~80 lines only. Check both .claude/skills/ and skills/.
+- Skip WebFetch — adds latency without value for this task.
+
+## Content Gate (MANDATORY — applies to ALL additions)
+
+Every addition MUST pass ALL checks — reject if ANY fails:
+1. **Executable** — Can Claude do this in a stateless session?
+2. **Behavioral** — Does removing it change the skill's output?
+3. **Non-redundant** — Not already expressed elsewhere in the file?
+4. **Concrete** — A specific action, check, or output format?
 
 ## Your Task
 
-Evaluate <skill-path>/SKILL.md against ALL of these dimensions:
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions:
 
-1. **Skill Design Quality**: Does the skill follow Claude Code best practices? Clear trigger
-   phrases, proper frontmatter, good argument handling, well-structured orchestration?
-
-2. **Actionability**: Are instructions specific enough for Claude to execute reliably?
-   Clear phases, concrete spawning templates, defined outputs, consistent results?
-
-3. **Completeness**: Does the skill handle edge cases, error conditions, pre-flight checks?
-   Are all workflow paths covered from start to wrap-up?
-
-4. **Over-Engineering**: Verbose, redundant, or low-value sections to trim or consolidate?
-
-5. **Orchestration Effectiveness**: Does the skill use agents effectively? Proper parallelism,
-   correct agent types, clear prompts, well-structured coordination?
-
-6. **Coherence with Other Skills**: Scope overlaps? Terminology consistency? Convention
-   alignment? Accurate references?
-
-7. **Spec Alignment**: Alignment with docs/spec/ project patterns and conventions?
-
-8. **Rename Consideration**: Should this skill be renamed to better communicate its purpose?
-   Only recommend if compelling — stability has value.
+1. **Skill Design Quality**: Claude Code best practices, frontmatter, argument handling?
+2. **Actionability**: Specific enough for reliable execution?
+3. **Completeness**: Edge cases, error conditions, all workflow paths?
+4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value content to trim?
+   **Every addition from other dimensions MUST be offset by a removal here.**
+5. **Orchestration Effectiveness**: Proper agent use, parallelism, coordination?
+6. **Coherence with Other Skills**: Scope overlaps, terminology, conventions?
+7. **Spec Alignment**: Alignment with docs/spec/?
+8. **Rename Consideration**: Only if compelling — stability has value.
 
 ## Requirements
 
-- Apply improvements directly to <skill-path>/SKILL.md
-- Maintain the existing file structure and YAML frontmatter format
-- Do NOT remove or weaken existing capabilities that are working well
+- **DO NOT edit any files.** Read-only — analyze and recommend only.
 - Build on strengths — improve, don't rewrite from scratch
-- If no meaningful improvements are needed, report that honestly rather than forcing changes
-- Write/update docs/changelog/skills/<name>.md with a dated entry documenting what changed
-  and why (prepend the new entry below the H1 heading since the file exists)
-- In your final output, report:
-  - Summary of changes made (or "no changes needed" with reasoning)
-  - Whether you recommend a rename (and to what name, with reasoning)
-  - Any cross-skill coherence issues you noticed
-- Do NOT commit any changes
+- If no meaningful improvements needed, report that honestly
+- **Minimize context**: First 80 lines of other skills, relevant specs only.
+
+## Output Format
+
+### Summary
+<1-2 sentence overview — or "No changes needed">
+Net line change: <estimated +/- lines>
+
+### Recommended Changes
+For each change:
+\```
+CHANGE <n>: <short title>
+DIMENSION: <which dimension>
+CONTEXT: <1 sentence>
+NET_LINES: <+N or -N>
+OLD_STRING:
+<exact text to find — copy-paste precision, enough context to be unique>
+NEW_STRING:
+<exact replacement text — use `<REMOVE>` to delete, `<INSERT_AFTER>` to add after anchor>
+\```
+
+### Changelog Entry (under 20 lines, ONLY 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
+
+### Rename Recommendation
+<"No rename" or "Rename to `<new-name>`: <reasoning>">
+
+### Coherence Issues
+<Issues noticed, or "None">
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
-Substitute `{today_date}` (from pre-flight step 1) before spawning.
+Phase 2 uses @staff-engineer (read-only) for cross-cutting coherence review. The orchestrator
+applies all edits. Substitute `{today_date}` before spawning.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
-Use the @staff-engineer agent to check cross-skill coherence and execute renames:
+Use the @staff-engineer agent to check cross-skill coherence and recommend fixes:
 
-Today's date is {today_date} — use this for any changelog entries.
+Today's date is {today_date}.
 
 ## Renames to Execute
-<if renames were recommended, list each: "Rename <old-dir> -> <new-dir>">
-<if no renames: "No renames were recommended.">
+<list recommended renames, or "No renames were recommended.">
 
 ## Phase 1 Coherence Issues
-<list any coherence issues reported by Phase 1 agents, or "None reported.">
+<list issues from Phase 1, or "None reported.">
 
 ## Requirements
 
+- **DO NOT edit any files.** Read-only — the orchestrator applies all changes.
 1. Read ALL skill files in .claude/skills/*/SKILL.md and skills/*/SKILL.md
+2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
+3. Check coherence: no scope overlaps, consistent terminology, accurate references,
+   correct agent types in templates, consistent conventions and argument handling
 
-2. If renames are listed above, execute each one:
-   - Run: mv <old-dir> <new-dir>
-   - Update the `name:` field in the renamed skill's YAML frontmatter
-   - Use Grep to find ALL references to the old name across the codebase
-   - Update references in: .claude/skills/*/SKILL.md, skills/*/SKILL.md, agents/*.md,
-     README.md, and any other files
-   - Rename docs/changelog/skills/<old>.md -> docs/changelog/skills/<new>.md (if it exists)
-   - Add a rename entry to the affected changelog
+## Output Format
 
-3. Check cross-skill coherence across ALL skill files:
-   - No scope overlaps — each skill has a distinct, non-overlapping purpose
-   - Terminology is consistent across all skills (same concepts use same words)
-   - Shared conventions are followed (commit notice, frontmatter, changelog patterns)
-   - References to agents, directories, and project structure are accurate
-   - Spawning templates reference correct agent types and use consistent patterns
-   - Argument handling patterns are consistent where appropriate
+### Renames
+For each: `RENAME: <old-dir> → <new-dir>` with FRONTMATTER_UPDATE, REFERENCES_TO_UPDATE,
+CHANGELOG_RENAME. Or: "No renames needed."
 
-4. Apply coherence fixes directly to affected skill files
+### Coherence Fixes
+For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`.
+Or: "No coherence issues found."
 
-5. Update docs/changelog/skills/<name>.md for any skill that received coherence fixes
+### Changelog Entries
+Standard format (4 sections, max 20 lines) for each skill that received fixes.
 
-6. Report:
-   - What renames were executed (directories renamed, references updated)
-   - What coherence issues were found and fixed
-   - Any remaining issues that could not be resolved automatically
-
-- Do NOT commit any changes
+### Remaining Issues
+<Unresolvable issues, or "None">
 ```
 
 ---
@@ -389,10 +439,24 @@ Today's date is {today_date} — use this for any changelog entries.
 4. **Phase 2 runs AFTER all Phase 1 teammates complete.** Coherence requires seeing all
    changes. Use `TaskList` to verify all Phase 1 tasks are completed before proceeding.
 5. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
-6. **Never edit skill files yourself.** You are the orchestrator, not the author.
+6. **Only the orchestrator edits files.** Spawned teammates are read-only reviewers that
+   produce change recommendations. The orchestrator applies all edits using the Edit tool.
 7. **Never commit.** No `git add`, no `git commit`, no `git push`.
 8. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-9. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
-10. **Fail loud.** If a teammate fails, report it immediately with details.
-11. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
+9. **Changelog is mandatory and strictly formatted.** Every entry MUST use exactly four H3
+    sections (`### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`), stay
+    under 20 lines, use `# Changelog: <skill-name>` as H1, and `## YYYY-MM-DD` as H2 with
+    no suffixes. No extra sections. The orchestrator normalizes all existing entries each run.
+10. **Enforce the 500-line budget.** After applying all Phase 1 and Phase 2 edits, run
+    `wc -l` on all target skill files and verify every file is under 500 lines. If any file
+    still exceeds 500 lines, the orchestrator MUST perform additional consolidation directly
+    until it is under 500. Report the before/after line counts in the wrap-up.
+11. **Fail loud.** If a teammate fails, report it immediately with details.
+12. **Timeout fallback.** If a Phase 1 teammate times out or is killed, the orchestrator may
+    re-spawn once. After two failures on the same skill, the orchestrator performs the review
+    and applies changes directly.
+13. **Enforce the Content Gate.** The orchestrator MUST reject any Phase 1 recommendation that
+    adds content failing any Content Gate check, even if the agent provides a compelling
+    rationale. This is the primary defense against bloat-then-purge cycles.
+14. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
     via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.

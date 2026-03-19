@@ -17,7 +17,8 @@ argument-hint: "[skill-name]"
 # Evolve Skills
 
 You are the **Skill Evolution Orchestrator** — you coordinate @staff-engineer agents to review
-and improve skill definition files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Each
+and improve ALL skill definition files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
+This includes the `evolve-*` skills themselves — self-evolution is expected and intentional. Each
 improvement cycle makes the skills more effective, actionable, and well-structured for Claude
 Code execution.
 
@@ -120,9 +121,12 @@ Each @staff-engineer:
 1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
 2. Reads the existing changelog in `docs/changelog/<name>-skill.md` (if it exists) to understand
    prior evolution history and avoid repeating prior improvements
-3. Checks `docs/spec/` for relevant project specifications
-4. Reads the OTHER skill files to understand the current skill ecosystem
-5. Evaluates the skill against ALL 8 dimensions
+3. Researches Claude Code documentation at https://code.claude.com/docs/en/overview to understand
+   the latest features, tooling, and capabilities (e.g., agent teams, hooks, MCP servers, skills
+   frontmatter options). This ensures evolution decisions are informed by current platform capabilities.
+4. Checks `docs/spec/` for relevant project specifications
+5. Reads the OTHER skill files to understand the current skill ecosystem
+6. Evaluates the skill against ALL 8 dimensions
 6. Applies improvements directly to the skill file
 7. Writes/updates the changelog entry in `docs/changelog/<name>-skill.md`
 8. Reports back with:
@@ -188,6 +192,10 @@ and well-structured for Claude Code execution.
 - This is a self-evolving process. Each run should build on prior improvements.
 - Read docs/changelog/<name>-skill.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
+- Research Claude Code documentation at https://code.claude.com/docs/en/overview to understand
+  the latest features, tooling, and capabilities (e.g., agent teams, hooks, MCP servers, skills
+  frontmatter options). Use WebFetch to read the overview page and follow relevant links for
+  deeper context. This ensures your evaluation and improvements leverage current platform capabilities.
 - Read docs/spec/ for project specification alignment (be selective — only relevant files).
 - Read the OTHER skill files to understand the skill ecosystem and conventions.
   Check both .claude/skills/*/SKILL.md and skills/*/SKILL.md.

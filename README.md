@@ -59,10 +59,14 @@ The project deploys a five-agent Claude Code development team to `~/.claude/agen
 | **SDET** | Test infrastructure, automation, quality engineering, verification |
 | **UX Designer** | User experience design specs |
 
-Two skills orchestrate the team:
+Four skills orchestrate the team:
 
-- **dev-team** -- Coordinates all five agents for planning and executing development work.
-- **dev-init** -- Bootstraps `docs/spec/` project specifications for new repositories.
+| Skill | Location | Purpose |
+|-------|----------|---------|
+| **dev-team** | `skills/dev-team/` | Coordinates all five agents for planning and executing development work |
+| **dev-init** | `skills/dev-init/` | Bootstraps `docs/spec/` project specifications for new repositories |
+| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
+| **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
 
 ## Symlinks
 

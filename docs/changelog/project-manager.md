@@ -1,6 +1,25 @@
 # Changelog: project-manager
 
-## 2026-03-19 — Evolution 3: Operational Maturity, Complexity Tiering, Plan Lifecycle
+## 2026-03-19
+
+### Summary
+Major consolidation from 956 to 390 lines. Collapsed verbose routing templates, compressed issue examples, removed redundant workflow summary, and tightened all sections.
+
+### Changes
+- Collapsed Technical Investigation / UX Design / TDD routing into single "Exploration and Routing" section (-100 lines)
+- Compressed issue creation examples from three verbose blocks to one compact pattern (-42 lines)
+- Removed Planning Workflow Summary ASCII flowchart (duplicated section headings) (-50 lines)
+- Compressed Plan Monitoring templates to concise guidance (-72 lines)
+- Merged Cross-Workstream Coordination into Plan Monitoring
+- Tightened all Core Responsibilities (1-13), Communication, Decision-Making, Anti-Patterns, Rules, CLI Reference
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Role Realism, Boundary Clarity
+
+### Rename
+No rename.
+
+## 2026-03-19
 
 ### Summary
 Third evolution focused on operational maturity — calibrating planning rigor to work complexity,
@@ -28,7 +47,7 @@ stakeholder alignment)
 ### Rename
 No rename — current name accurately reflects the role.
 
-## 2026-03-19 — Coherence Fix: ADRs and Cross-Team Negotiation Routing
+## 2026-03-19
 
 ### Changes
 - Added `docs/tdd/adr/` reference to existing spec checks so ADRs inform planning
@@ -40,7 +59,7 @@ Boundary Clarity (cross-agent coherence)
 ### Rename
 No rename — current name accurately reflects the role.
 
-## 2026-03-19 — Second Evolution
+## 2026-03-19
 
 ### Summary
 
@@ -136,7 +155,7 @@ framing already establish the Staff TPM mental model without requiring a file re
 
 ---
 
-## 2026-03-19 — First Evolution
+## 2026-03-19
 
 ### Summary
 

@@ -3,6 +3,26 @@
 ## 2026-03-19
 
 ### Summary
+Tightened SDET boundary, removed dead "engineering growth" responsibility, compressed redundant passages, added SendMessage to tool list for inter-agent communication.
+
+### Changes
+- Added SendMessage to frontmatter tools for team communication capability
+- Compressed SDET boundary bullet from 5 to 3 lines
+- Removed "engineering growth" from core responsibilities (no backing section)
+- Removed redundant "Omit dependencies" comment from TDD frontmatter template
+- Compressed Handoff section to essential instruction only
+- Trimmed Dependencies/APIs paragraph — removed generic API design advice
+- [Coherence] Replaced "orchestrator" with "user or team lead" (1 occurrence)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Role Realism, Capability Growth, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Removed 3 sections that fail Content Gate (Mentorship, Influence/Alignment, Decision-Making Framework). Salvaged incident analysis into System-Level Thinking. Added concrete review context gathering decision tree.
 
 ### Changes

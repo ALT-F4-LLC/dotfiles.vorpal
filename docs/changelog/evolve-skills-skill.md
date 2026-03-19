@@ -1,5 +1,51 @@
 # Evolve Skills Skill Evolution Log
 
+## 2026-03-19 (cycle 3)
+
+### Summary
+Closed the date passthrough gap in spawning templates and tightened template substitution
+instructions so spawned agents receive all the context they need to produce correct changelog
+entries without re-resolving the date themselves.
+
+### Changes
+- Added `Today's date is {today_date} — use this for changelog entries.` to the Phase 1
+  spawning template Context section (the pre-flight resolves the date and claims it is "passed
+  to every spawned agent" but the template never actually included it — agents had to infer or
+  re-resolve the date independently, risking inconsistency)
+- Added `Today's date: {today_date} (use for any changelog entries)` to the Phase 2 spawning
+  template header (Phase 2 also writes changelog entries for coherence fixes but had no date
+  context, same gap as Phase 1)
+- Updated Phase 1 template header text from "Customize `<name>` and `<skill-path>` for each"
+  to "Substitute `<name>`, `<skill-path>`, and `{today_date}` (from pre-flight step 1) for
+  each" — making the substitution list explicit and complete
+- Added Phase 2 template header: "Substitute `{today_date}` (from pre-flight step 1) before
+  spawning." — parallel guidance to Phase 1
+- Refined pre-flight step 1 wording: added "Store this as `{today_date}`" to name the variable
+  that templates reference, closing the gap between where the date is captured and where it is
+  consumed
+- Removed WebFetch mention from Phase 1 spawning template Context section (the prior evolution
+  added it but it was slightly misplaced as a context bullet — agents already know their own
+  tool availability; the orchestration workflow step 3 retains the guidance for the
+  orchestrator's awareness)
+- Tightened orchestration workflow step 3 wording: "Uses WebFetch if available to research
+  Claude Code skill best practices; if not, proceeds with existing knowledge" (removed
+  redundant "of Claude Code best practices" repetition)
+- Simplified Phase 1 template changelog requirement from conditional "create docs/changelog/
+  directory if needed; if the changelog file exists, prepend..." to direct "prepend the new
+  entry below the H1 heading since the file exists" — the orchestrator already validates
+  changelog existence in pre-flight step 5
+
+### Dimensions Evaluated
+- **Completeness**: Date passthrough was the primary gap — pre-flight captured the date but
+  neither spawning template delivered it to the agent
+- **Actionability**: Explicit substitution variable naming (`{today_date}`) and complete
+  substitution lists in template headers make the orchestrator's job unambiguous
+- **Orchestration Effectiveness**: Both phases now receive all context needed to produce
+  correct, consistent outputs without redundant tool calls
+
+### Rename
+No rename — current name accurately reflects the skill's purpose.
+
 ## 2026-03-19
 
 ### Summary

@@ -51,8 +51,9 @@ ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
-   is passed to every spawned agent for consistent changelog entries.
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+   as `{today_date}`. This value MUST be substituted into every spawning template so agents use
+   a consistent date for changelog entries.
 2. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    to list all discoverable skill files.
 3. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
@@ -196,7 +197,7 @@ After Phase 2 completes:
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
-Spawn one of these per target skill. Customize `<name>` and `<skill-path>` for each.
+Spawn one of these per target skill. Substitute `<name>`, `<skill-path>`, and `{today_date}` (from pre-flight step 1) for each.
 
 ```
 Use the @staff-engineer agent to review and improve a skill definition:
@@ -209,11 +210,10 @@ and well-structured for Claude Code execution.
 
 ## Context
 
+- Today's date is {today_date} — use this for changelog entries.
 - This is a self-evolving process. Each run should build on prior improvements.
 - Read docs/changelog/<name>-skill.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
-- Uses WebFetch if available to research Claude Code documentation; if not, proceed with
-  existing knowledge of Claude Code best practices.
 - Read docs/spec/ for project specification alignment (be selective — only files relevant to
   the skill's domain).
 - Read the OTHER skill files to understand the skill ecosystem and conventions.
@@ -253,8 +253,7 @@ Evaluate <skill-path>/SKILL.md against ALL of these dimensions:
 - Build on strengths — improve, don't rewrite from scratch
 - If no meaningful improvements are needed, report that honestly rather than forcing changes
 - Write/update docs/changelog/<name>-skill.md with a dated entry documenting what changed
-  and why (create docs/changelog/ directory if needed; if the changelog file exists, prepend
-  the new entry below the H1 heading)
+  and why (prepend the new entry below the H1 heading since the file exists)
 - In your final output, report:
   - Summary of changes made (or "no changes needed" with reasoning)
   - Whether you recommend a rename (and to what name, with reasoning)
@@ -264,8 +263,12 @@ Evaluate <skill-path>/SKILL.md against ALL of these dimensions:
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
+Substitute `{today_date}` (from pre-flight step 1) before spawning.
+
 ```
 Use the @staff-engineer agent to check cross-skill coherence and execute renames:
+
+Today's date is {today_date} — use this for any changelog entries.
 
 ## Renames to Execute
 <if renames were recommended, list each: "Rename <old-dir> -> <new-dir>">

@@ -49,8 +49,9 @@ and abort.
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
-   is passed to every spawned agent for consistent changelog entries.
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+   as `{today_date}`. This value MUST be substituted into every spawning template so agents use
+   a consistent date for changelog entries.
 2. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
 3. **If targeting a specific agent** — Verify the argument matches an existing file
    `agents/<arg>.md`. If no match, inform user and abort.
@@ -192,7 +193,8 @@ Each @staff-engineer:
    prior evolution history and avoid repeating prior improvements
 3. Uses WebFetch if available to research Claude Code documentation; if not, proceeds with
    existing knowledge of Claude Code best practices
-4. Checks `docs/spec/` for relevant project specifications
+4. Checks `docs/spec/` for relevant project specifications (be selective — only files related
+   to the agent's domain)
 5. Reads the OTHER agent files in `agents/` to understand the current team structure
 6. Evaluates the agent against ALL 8 dimensions
 7. Applies improvements directly to the agent file
@@ -245,14 +247,15 @@ After Phase 2 completes:
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
-Spawn one of these per target agent. Customize `<name>` for each. Read the target agent file
-`agents/<name>.md` to obtain the role description — do not hardcode role descriptions in this
-template.
+Spawn one of these per target agent. Substitute `<name>` and `{today_date}` (from pre-flight
+step 1) for each. Read the target agent file `agents/<name>.md` to obtain the role description
+— do not hardcode role descriptions in this template.
 
 ```
 Use the @staff-engineer agent to review and improve an agent definition:
 
 Target: agents/<name>.md
+Agent: <name>
 
 Read agents/<name>.md to understand the role this agent defines. You are reviewing this agent
 definition to evolve it — making it more accurately reflect the characteristics of a high-level
@@ -260,12 +263,12 @@ IC in this role at a Fortune 500 or FAANG-scale software company with 100+ devel
 
 ## Context
 
+- Today's date is {today_date} — use this for changelog entries.
 - This is a self-evolving process. Each run should build on prior improvements.
 - Read docs/changelog/<name>.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
-- Uses WebFetch if available to research Claude Code documentation; if not, proceed with
-  existing knowledge of Claude Code best practices.
-- Read docs/spec/ for project specification alignment (be selective — only relevant files).
+- Read docs/spec/ for project specification alignment (be selective — only files related to
+  the agent's domain).
 - Read the OTHER agent files in agents/ to understand team boundaries and structure.
 
 ## Your Task
@@ -316,8 +319,12 @@ Evaluate agents/<name>.md against ALL of these dimensions:
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
+Substitute `{today_date}` (from pre-flight step 1) before spawning.
+
 ```
 Use the @staff-engineer agent to check cross-agent coherence and execute renames:
+
+Today's date is {today_date} — use this for any changelog entries.
 
 ## Renames to Execute
 <if renames were recommended, list each: "Rename agents/<old>.md → agents/<new>.md">

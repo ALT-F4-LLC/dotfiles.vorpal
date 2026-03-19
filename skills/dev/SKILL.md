@@ -25,8 +25,7 @@ The `work` argument is **required** — it describes the work to be done.
 - **With argument** (`/dev implement JWT authentication for the API`): Use the argument as
   `{work}` throughout this skill. Pass it verbatim to agent templates wherever `{work}` appears.
 
-If the argument is too vague to select an orchestration pattern (e.g., `/dev stuff`), ask
-a clarifying question before proceeding.
+If the argument is too vague (e.g., `/dev stuff`), ask a clarifying question before proceeding.
 
 ---
 
@@ -81,7 +80,7 @@ Answer these questions in order to select the right orchestration pattern:
    - Exception: Skip TDD if existing specs or issue descriptions already define the approach.
 4. **Otherwise** → **Small Task**
 
-When uncertain, ask the user. A 2-minute question saves 30 minutes of wasted agent work.
+When uncertain, ask the user.
 
 ### Resuming Mid-Execution
 
@@ -276,6 +275,12 @@ Description: {full issue description from Docket}
 Scoped files: {list of files this issue should touch}
 {If Discovered comments exist from prior phases: "Context from prior phases: {relevant Discovered comments}"}
 
+Team context:
+- A persistent @staff-engineer advisor named "advisor" is available via SendMessage for
+  architectural questions. Consult them before deviating from the TDD or when you encounter
+  decisions not covered by the specs. Do NOT consult for routine implementation decisions.
+{If other senior-engineers in this phase: "- Other @senior-engineer teammates in this phase: {names}. Coordinate via SendMessage if your changes might affect shared interfaces."}
+
 Rules:
 - BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
 - Run `docket issue move {DOCKET-ID} in-progress` via Bash to claim the issue
@@ -296,6 +301,11 @@ Use the @sdet agent to verify this issue:
 
 Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
+
+Team context:
+- Use SendMessage to ask @senior-engineer teammates about implementation intent when
+  acceptance criteria are ambiguous or a test failure could be a test bug vs. a real defect.
+- A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
 
 Rules:
 - BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
@@ -321,6 +331,10 @@ Completed issues:
 
 {If TDD exists: "Reference TDD: docs/tdd/{filename}.md"}
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
+
+Team context:
+- Use SendMessage to ask @senior-engineer teammates about implementation decisions when needed.
+- A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
 
 Rules:
 - Review the full set of changes via `git diff` to understand the complete scope
@@ -359,27 +373,36 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. After spawning,
    assign the design task via `TaskUpdate`. Wait for completion.
-2. **If medium+**: Spawn @staff-engineer teammate to produce a TDD. After spawning, assign
-   the TDD task via `TaskUpdate`. Wait for completion.
+2. **If medium+**: Spawn @staff-engineer teammate **named "advisor"** to produce a TDD. After
+   spawning, assign the TDD task via `TaskUpdate`. Wait for completion.
    **If large**: Spawn multiple @staff-engineer teammates for parallel TDDs if components are
    independent.
+3. **For small tasks** (no TDD phase): Spawn @staff-engineer teammate **named "advisor"**
+   before the implementation phase begins. This advisor persists through implementation and
+   review — do NOT shut it down between phases.
+
+> **Persistent Advisor Pattern:** The @staff-engineer "advisor" teammate stays alive from the
+> design/planning phase through the end of the review phase. Other teammates can SendMessage to
+> "advisor" for real-time architectural guidance. The advisor is NOT re-spawned for review — it
+> transitions from TDD author to advisor to reviewer using SendMessage.
 
 ### Planning Phase
 
-3. **Spawn @project-manager teammate** with the user's request and any spec references.
-   Assign the planning task via `TaskUpdate`.
-4. **Receive the phase plan.** Review it for:
+4. **Spawn @project-manager teammate** with the user's request and any spec references.
+   Assign the planning task via `TaskUpdate`. The PM can SendMessage to "advisor" for
+   architectural clarification during planning.
+5. **Receive the phase plan.** Review it for:
    - File collision risks (two issues touching the same files in one phase)
    - Missing acceptance criteria on any issue
    - Reasonable phase ordering
    If anything looks off, ask the PM to revise.
-5. **If the PM surfaced investigation needs**, spawn @staff-engineer to answer questions,
-   then pass findings back to the PM.
-6. **Present the plan to the user** (for non-trivial work). Get approval before execution.
+6. **If the PM surfaced investigation needs**, send them to the "advisor" via SendMessage
+   rather than spawning a new @staff-engineer.
+7. **Present the plan to the user** (for non-trivial work). Get approval before execution.
 
 ### Implementation Phase
 
-7. **Execute one phase at a time.** Within each phase, spawn one @senior-engineer teammate
+8. **Execute one phase at a time.** Within each phase, spawn one @senior-engineer teammate
    per issue in parallel. After spawning, assign each teammate's task via `TaskUpdate`.
 
    **Spawn all teammates for the current phase in the same turn** to maximize parallelism.
@@ -389,37 +412,42 @@ Before spawning any agents, create an Agent Team to coordinate:
    Teammates go idle between turns — messages are delivered automatically. Monitor progress
    via `TaskList(team_name="dev-{feature-slug}")`.
 
-8. **Wait for all teammates in the phase to complete** before starting the next phase.
+   **Do NOT shut down @senior-engineer teammates after their phase completes** if a
+   verification phase will follow — @sdet may need to SendMessage them about implementation
+   intent.
 
-9. **After each phase completes:**
-   - Verify all teammates reported success
-   - Confirm issue statuses in Docket are "done" via `docket board --json`
-   - Check for "Discovered:" comments that need attention
-   - If any Discovered comments affect upcoming phases, include them as context in the
-     @senior-engineer prompts for those phases
-   - If any teammate failed, diagnose before proceeding (see Handling Failures below)
-   - Proceed to the next phase
+9. **Wait for all teammates in the phase to complete** before starting the next phase.
+
+10. **After each phase completes:**
+    - Verify all teammates reported success
+    - Confirm issue statuses in Docket are "done" via `docket board --json`
+    - Check for "Discovered:" comments that need attention
+    - If any Discovered comments affect upcoming phases, include them as context in the
+      @senior-engineer prompts for those phases
+    - If any teammate failed, diagnose before proceeding (see Handling Failures below)
+    - Proceed to the next phase
 
 ### Review Phase
 
-10. **Spawn @staff-engineer teammate to review** all implementation changes. Assign the review
-    task via `TaskUpdate`. Provide the `git diff --stat` output in the prompt so the reviewer
-    can focus on the right files.
+11. **Send the review request to the persistent "advisor"** via SendMessage rather than
+    spawning a new @staff-engineer. Provide the `git diff --stat` output so the reviewer
+    can focus on the right files. Assign the review task via `TaskUpdate`.
 
-    **For large tasks (20+ files changed):** Consider splitting the review. Spawn one
-    @staff-engineer teammate per logical grouping (e.g., by TDD component, by phase, or by
-    directory). Include only the relevant file paths in each review prompt using
-    `git diff -- <paths>`.
+    **For large tasks (20+ files changed):** The advisor reviews the overall architecture.
+    Consider spawning additional @staff-engineer teammates for parallel file-group reviews
+    using `git diff -- <paths>`.
 
-    If blockers are found, route them back to @senior-engineer for fixes, then re-review.
+    If blockers are found, route them back to @senior-engineer for fixes (the implementation
+    teammates are still alive), then ask the advisor to re-review.
 
     **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
     to the user with the details rather than continuing to loop.
 
 ### Verification Phase (medium+ tasks)
 
-11. **Spawn @sdet teammate using the Full Verification template** to verify acceptance criteria
+12. **Spawn @sdet teammate using the Full Verification template** to verify acceptance criteria
     and test coverage across all completed work. Assign the verification task via `TaskUpdate`.
+    The @sdet can SendMessage to @senior-engineer teammates and the "advisor" for context.
     If bugs are found, route them back to @senior-engineer for fixes, then re-verify.
 
     **Bug-fix loop limit:** If the same bug persists after 2 fix-verify cycles, escalate to the
@@ -427,7 +455,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Wrap-up & Team Cleanup
 
-12. **After all phases complete:**
+13. **After all phases complete:**
     - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
     - **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})` for each
@@ -438,33 +466,23 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ## Handling Failures
 
-**Agent fails to complete:** Check the agent's output for error details. Common causes:
-- File not found — the PM scoped files that don't exist yet (re-order phases)
-- Permission error — sandbox restriction (escalate to user)
-- Docket command failure — database not initialized (run `docket init` and retry)
-Re-spawn the agent with corrected context. Do NOT skip the issue.
+**Agent fails:** Check output for errors (file not found, permissions, Docket not initialized).
+Re-spawn with corrected context. Do NOT skip the issue.
 
-**Agent produces incorrect output:** If a @senior-engineer modifies files outside scope,
-or a @project-manager creates malformed issues, note the problem, correct it manually via
-Docket CLI, and re-spawn if needed.
+**Incorrect output:** If an agent modifies files outside scope or creates malformed issues,
+correct via Docket CLI and re-spawn if needed.
 
-**Review finds blockers:** Route blockers back to @senior-engineer for fixes. Re-run
-@staff-engineer review after fixes. Do not proceed to SDET verification until review passes.
+**Review blockers:** Route back to @senior-engineer for fixes, then re-review. Do not
+proceed to verification until review passes.
 
-**SDET finds bugs:** @sdet reports bugs as comments on the relevant Docket issue.
-Route the issue back to @senior-engineer for fixes. Re-run @sdet verification after
-fixes are applied.
+**SDET finds bugs:** Route back to @senior-engineer via SendMessage (they're still alive),
+then re-verify.
 
-**Agent discovers additional work:** @senior-engineer adds a "Discovered:" comment to the
-Docket issue. You (the team lead) assess whether it needs immediate attention or can be
-planned as follow-up work by @project-manager.
+**Discovered work:** Assess whether it needs immediate attention or follow-up planning.
 
-**Agent encounters a file conflict:** Stop all agents in the current phase. Have the PM
-re-analyze file scoping. Retry with corrected phase assignments.
+**File conflicts:** Stop current phase, have PM re-scope, retry.
 
-**User wants to modify the plan mid-execution:** Pause after the current phase. Re-engage
-@project-manager to revise remaining phases. Resume execution.
-
+**Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.
 ---
 
 ## Rules

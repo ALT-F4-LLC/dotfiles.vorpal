@@ -85,8 +85,8 @@ is a separate artifact with its own dependency graph.
 │   ├── sdet.md
 │   └── ux-designer.md
 ├── skills/                # Claude Code orchestration skills (markdown)
-│   ├── dev-team/SKILL.md
-│   └── dev-init/SKILL.md
+│   ├── dev/SKILL.md
+│   └── specs/SKILL.md
 ├── .claude/skills/        # Additional Claude Code evolution skills
 │   ├── evolve-agents/SKILL.md
 │   └── evolve-skills/SKILL.md
@@ -224,9 +224,9 @@ Five agent personas defined as markdown files in `agents/`:
 
 Two orchestration skills in `skills/`:
 
-- `dev-team` -- Coordinates all five agents for planning and executing development work.
+- `dev` -- Coordinates all five agents for planning and executing development work.
   The Team Lead (skill executor) dispatches to agents based on work type.
-- `dev-init` -- Bootstraps `docs/spec/` by spawning 7 parallel `@staff-engineer` agents to
+- `specs` -- Bootstraps `docs/spec/` by spawning 7 parallel `@staff-engineer` agents to
   generate the seven project specification files.
 
 Two additional evolution skills in `.claude/skills/`:

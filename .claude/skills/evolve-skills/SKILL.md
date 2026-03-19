@@ -35,7 +35,7 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills found in `.claude/skills/*/SKILL.md`
   and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills dev-team`): Improve only the named skill. Match against
+- **With argument** (`/evolve-skills dev`): Improve only the named skill. Match against
   both `.claude/skills/<arg>/SKILL.md` and `skills/<arg>/SKILL.md`. If no match in either
   location, inform user and abort.
 
@@ -132,12 +132,43 @@ rather than forcing changes. Not every cycle needs to produce edits.
 
 ## Orchestration Workflow
 
+### Team Setup
+
+Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
+
+1. **Create the team** using `TeamCreate`:
+   ```
+   TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")
+   ```
+
+2. **Create Phase 1 tasks** — one `TaskCreate` per target skill:
+   ```
+   TaskCreate(team_name="evolve-skills-{today_date}", title="Review <name>", description="Review and improve <skill-path>/SKILL.md", depends_on=[])
+   ```
+
+3. **Create the Phase 2 task** — depends on all Phase 1 tasks:
+   ```
+   TaskCreate(team_name="evolve-skills-{today_date}", title="Coherence & Renames", description="Cross-skill coherence review and rename execution", depends_on=[<all Phase 1 task IDs>])
+   ```
+
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer per target skill. **Spawn all agents in the same turn** to maximize
-parallelism. If targeting a single skill, spawn one.
+Spawn one @staff-engineer teammate per target skill. **Spawn all teammates in the same turn**
+to maximize parallelism. If targeting a single skill, spawn one.
 
-Each @staff-engineer:
+Each teammate is spawned with `team_name` and `name` parameters:
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
+```
+
+After spawning, assign tasks to teammates:
+
+```
+TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<id>, owner="review-<name>", status="in_progress")
+```
+
+Each @staff-engineer teammate:
 
 1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
 2. Reads the existing changelog in `docs/changelog/skills/<name>.md` (if it exists) to understand
@@ -150,18 +181,36 @@ Each @staff-engineer:
 6. Evaluates the skill against ALL 8 dimensions
 7. Applies improvements directly to the skill file
 8. Writes/updates the changelog entry in `docs/changelog/skills/<name>.md`
-9. Reports back with:
+9. Marks their task completed via `TaskUpdate` and reports back with:
    - Summary of changes made (or "no changes needed" with reasoning)
    - Whether a rename is recommended (and to what name, with reasoning)
    - Any cross-skill coherence issues noticed
 
+Teammates go idle between turns — this is normal. Messages from teammates are delivered
+automatically; no polling is needed. The orchestrator receives results as teammates complete.
+
+Use `TaskList(team_name="evolve-skills-{today_date}")` to check overall Phase 1 progress.
+
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
+After ALL Phase 1 teammates complete, spawn a single @staff-engineer teammate to handle
+coherence and renames:
 
-1. Read ALL skill files (the freshly improved versions)
-2. Execute any renames recommended in Phase 1:
-   - Rename the directory: `mv <old-dir> <new-dir>` (e.g., `mv skills/dev-team skills/new-name`)
+```
+Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
+```
+
+Assign the Phase 2 task:
+
+```
+TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
+```
+
+The Phase 2 teammate:
+
+1. Reads ALL skill files (the freshly improved versions)
+2. Executes any renames recommended in Phase 1:
+   - Rename the directory: `mv <old-dir> <new-dir>` (e.g., `mv skills/dev skills/new-name`)
    - Update the `name:` field in the renamed skill's YAML frontmatter
    - Search ALL files for references to the old name and update them:
      - Other skill files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`
@@ -170,26 +219,39 @@ After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
      - Any other files that reference the old name
    - Rename `docs/changelog/skills/<old>.md` to `docs/changelog/skills/<new>.md` (if it exists)
    - Add a rename entry to the changelog
-3. Check cross-skill coherence:
+3. Checks cross-skill coherence:
    - No scope overlaps — each skill has a distinct purpose
    - Terminology is consistent across all skills
    - Shared conventions are followed (commit notice, frontmatter format, changelog patterns)
    - References to agents, directories, and project structure are accurate
    - Spawning templates reference correct agent types
    - Argument handling patterns are consistent
-4. Apply coherence fixes directly to affected skill files
-5. Update `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
-6. Report: what coherence issues were found and fixed, what renames were executed
+4. Applies coherence fixes directly to affected skill files
+5. Updates `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
+6. Marks the coherence task completed via `TaskUpdate` and reports:
+   what coherence issues were found and fixed, what renames were executed
 
-### Wrap-up
+### Wrap-up & Team Cleanup
 
 After Phase 2 completes:
 
-- List all files that were modified
-- Summarize the improvements made to each skill
-- Note any renames that occurred
-- Note any coherence fixes applied
-- Remind the user that NO changes have been committed — they can review with `git diff`
+1. **Shut down all teammates** — send shutdown requests:
+   ```
+   SendMessage(to="review-<name>", message={type: "shutdown_request"})
+   SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})
+   ```
+   Send one `SendMessage` per teammate that was spawned.
+
+2. **Delete the team** to clean up resources:
+   ```
+   TeamDelete(team_name="evolve-skills-{today_date}")
+   ```
+
+3. List all files that were modified
+4. Summarize the improvements made to each skill
+5. Note any renames that occurred
+6. Note any coherence fixes applied
+7. Remind the user that NO changes have been committed — they can review with `git diff`
 
 ---
 
@@ -197,9 +259,12 @@ After Phase 2 completes:
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
-Spawn one of these per target skill. Substitute `<name>`, `<skill-path>`, and `{today_date}` (from pre-flight step 1) for each.
+Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, and `{today_date}`
+(from pre-flight step 1) for each.
 
 ```
+Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to review and improve a skill definition:
 
 Target: <skill-path>/SKILL.md
@@ -266,6 +331,8 @@ Evaluate <skill-path>/SKILL.md against ALL of these dimensions:
 Substitute `{today_date}` (from pre-flight step 1) before spawning.
 
 ```
+Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to check cross-skill coherence and execute renames:
 
 Today's date is {today_date} — use this for any changelog entries.
@@ -316,11 +383,17 @@ Today's date is {today_date} — use this for any changelog entries.
 
 1. **Run pre-flight before spawning.** Validate skill files exist and arguments resolve before
    spending agent resources.
-2. **Spawn Phase 1 agents in parallel.** Maximum parallelism for independent reviews.
-3. **Phase 2 runs AFTER all Phase 1 agents complete.** Coherence requires seeing all changes.
-4. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
-5. **Never edit skill files yourself.** You are the orchestrator, not the author.
-6. **Never commit.** No `git add`, no `git commit`, no `git push`.
-7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-8. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
-9. **Fail loud.** If an agent fails, report it immediately with details.
+2. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
+   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
+3. **Spawn Phase 1 teammates in parallel.** Maximum parallelism for independent reviews.
+   Use `team_name` and `name` parameters when spawning via the `Agent` tool.
+4. **Phase 2 runs AFTER all Phase 1 teammates complete.** Coherence requires seeing all
+   changes. Use `TaskList` to verify all Phase 1 tasks are completed before proceeding.
+5. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
+6. **Never edit skill files yourself.** You are the orchestrator, not the author.
+7. **Never commit.** No `git add`, no `git commit`, no `git push`.
+8. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
+9. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
+10. **Fail loud.** If a teammate fails, report it immediately with details.
+11. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
+    via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.

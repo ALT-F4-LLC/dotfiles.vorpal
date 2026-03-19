@@ -1,15 +1,15 @@
 ---
-name: dev-init
+name: specs
 description: >
   Bootstrap the project specification files in docs/spec/ by spawning 7 @staff-engineer agents in
   parallel. Use this skill when the user wants to initialize, generate, or bootstrap project specs —
-  including phrases like "dev init", "initialize specs", "generate specs", "create project
-  specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
+  including phrases like "specs", "generate specs", "bootstrap specs", "initialize specs", "create
+  project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
 
-# Dev Init
+# Specs
 
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in
 parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify, but you
@@ -17,7 +17,7 @@ never write spec files yourself.
 
 **Scope boundary:** This skill handles initial generation of spec files only. Ongoing maintenance
 and updates to `docs/spec/` are handled by `@staff-engineer` agents during normal TDD and review
-workflows (see `dev-team` skill).
+workflows (see `dev` skill).
 
 ---
 
@@ -64,19 +64,46 @@ exploration guidance for each — used in the spawning template.
 
 ## Execution
 
+### Team Setup
+
+Before spawning any agents, create an Agent Team:
+
+1. **Create the team** using `TeamCreate`:
+   ```
+   TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")
+   ```
+
+2. **Create tasks** — one `TaskCreate` per spec file to generate:
+   ```
+   TaskCreate(team_name="specs-init-{today_date}", title="Generate {filename}", description="Generate docs/spec/{filename} project specification", depends_on=[])
+   ```
+   All tasks are independent (no dependencies).
+
 ### Step 1: Spawn Agents
 
-**Spawn all agents in the SAME turn** using parallel `Task` tool calls. This is the entire point
-of the skill — maximum parallelism.
+**Spawn all agents in the SAME turn** to maximize parallelism. This is the entire point of the
+skill.
 
-For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` agent
+For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate
 using the spawning template below, substituting `{filename}`, `{exploration_guidance}`,
-`{today_date}`, and `{project_name}` from the pre-flight and reference table.
+`{today_date}`, and `{project_name}` from the pre-flight and reference table:
+
+```
+Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")
+```
+
+After spawning, assign tasks to teammates:
+
+```
+TaskUpdate(team_name="specs-init-{today_date}", task_id=<id>, owner="spec-{filename-without-ext}", status="in_progress")
+```
 
 ### Step 2: Wait for Completion
 
-Wait for all spawned agents to complete. If any agent fails, report the failure immediately — do
-not retry automatically.
+Teammates go idle between turns — messages are delivered automatically; no polling is needed.
+Use `TaskList(team_name="specs-init-{today_date}")` to monitor overall progress.
+
+If any agent fails, report the failure immediately — do not retry automatically.
 
 ### Step 3: Verify
 
@@ -96,6 +123,8 @@ Use this template for each spec file, substituting `{filename}`, `{exploration_g
 `{today_date}`, and `{project_name}` (from the pre-flight steps).
 
 ```
+Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to generate a project specification:
 
 Generate the `docs/spec/{filename}` project specification file.
@@ -132,21 +161,27 @@ Requirements:
 
 ---
 
-## Wrap-up
+## Wrap-up & Team Cleanup
 
 After all agents complete and verification passes:
 
 - List all spec files that were created (or skipped)
 - Flag any files that failed to generate or have malformed output
+- **Shut down all teammates** via `SendMessage(to="spec-{filename-without-ext}", message={type: "shutdown_request"})` for each
+- **Delete the team** via `TeamDelete(team_name="specs-init-{today_date}")` to clean up resources
 - Remind the user that NO changes have been committed — they can review with `git diff`
 
 ---
 
 ## Rules
 
-1. **Spawn all agents in the same turn.** Parallelism is the entire point of this skill.
-2. **Never write spec files yourself.** You are the orchestrator, not the author.
-3. **Never commit.** No `git add`, no `git commit`, no `git push`.
-4. **No cross-agent dependencies.** All 7 specs are independent — no task blocks another.
-5. **Respect the user's choice on existing files.** Honor overwrite/skip/cancel decisions.
-6. **Fail loud.** If an agent fails, report it immediately with details.
+1. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
+   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
+2. **Spawn all agents in the same turn.** Parallelism is the entire point of this skill.
+3. **Never write spec files yourself.** You are the orchestrator, not the author.
+4. **Never commit.** No `git add`, no `git commit`, no `git push`.
+5. **No cross-agent dependencies.** All 7 specs are independent — no task blocks another.
+6. **Respect the user's choice on existing files.** Honor overwrite/skip/cancel decisions.
+7. **Fail loud.** If an agent fails, report it immediately with details.
+8. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
+   via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.

@@ -4,7 +4,8 @@ description: >
   Review and improve agent definitions in agents/*.md to more accurately reflect real-world
   high-level IC roles at Fortune 500/FAANG-scale software companies (100+ developers).
   Evaluates role realism, actionability, cross-agent coherence, boundary clarity, spec alignment,
-  and career growth dimensions. Can target a specific agent or improve all agents. Agents
+  career growth, and consolidation dimensions. Enforces a 500-line size budget per agent to
+  prevent unbounded growth. Can target a specific agent or improve all agents. Agents
   propose changes; the orchestrator applies all edits, handles renames, and maintains changelogs.
   Use when the user wants to evolve, improve, grow, or refine agent definitions — including
   phrases like "evolve agents", "improve agents", "grow the team", "refine agent definitions",
@@ -27,6 +28,12 @@ FAANG-scale software companies with 100+ developers. Self-evolution is expected 
 is responsible for its own growth.
 
 You are the only one who edits files. Agents read and recommend.
+
+> **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** Evolution is about sharpening, not
+> accumulating. Every cycle should leave agent files the same size or smaller. If a file is over
+> 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
+> be added if an equal or greater amount is removed. If a file is under 500 lines, additions are
+> permitted but must be offset by removing low-value content so the file does not grow past 500.
 
 ---
 
@@ -61,6 +68,14 @@ Before spawning any agents:
 4. **If no agent files found** — Inform user and abort.
 5. **Check for existing changelogs** — Run `ls docs/changelog/*.md 2>/dev/null` to see which
    changelogs already exist. Spawned agents will need this information.
+6. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
+   target agent. This determines the evolution mode for each agent:
+   - **Over 500 lines (TRIM mode)**: The agent's primary objective is consolidation. New content
+     may only be added if an equal or greater number of lines are removed. Communicate the line
+     count and TRIM mode to the spawned agent.
+   - **Under 500 lines (BALANCED mode)**: The agent may add content but must offset additions
+     with removals to stay under 500 lines. Communicate the line count and BALANCED mode.
+   - Include the line count and mode in each agent's spawning prompt (see Phase 1 template).
 
 ---
 
@@ -110,14 +125,21 @@ engineer at this level would have that are missing from the definition?
 - Missing communication patterns for common scenarios
 - Missing cross-cutting concerns the role should address
 
-### 5. Over-Engineering
+### 5. Consolidation & Trimming (HIGHEST PRIORITY)
 
-Are there sections that are overly verbose, redundant, or add complexity without value?
+**This dimension takes priority over all others.** Agent files degrade when they grow past ~500
+lines — they become slow to process, redundant, and less actionable. Evaluate aggressively:
 
-- Sections that repeat the same concept in different words
-- Guidelines that are too generic to be actionable
-- Frameworks that add bureaucratic overhead without improving outcomes
-- Content that would be better removed or consolidated
+- Sections that repeat the same concept in different words — **merge or delete**
+- Guidelines that are too generic to be actionable — **delete**
+- Frameworks that add bureaucratic overhead without improving outcomes — **delete**
+- Content that could be said in fewer words without losing meaning — **rewrite shorter**
+- Subsections that were added in prior evolutions but haven't proven their value — **delete**
+- Any content that a competent engineer at this level would already know — **delete**
+
+**Every change recommendation in dimensions 1-4 and 6-7 that ADDS content MUST be paired with
+a removal or consolidation of equal or greater size from this dimension.** If you cannot find
+enough to trim, do not add new content.
 
 ### 6. Career Growth
 
@@ -151,10 +173,12 @@ level? Consider:
 ## Changelog Format
 
 All changes are tracked in `docs/changelog/<agent-name>.md`. Create the `docs/changelog/`
-directory if it doesn't exist. Each file uses this format:
+directory if it doesn't exist.
+
+**Every changelog file MUST use this exact format — no deviations, no extra sections:**
 
 ```markdown
-# <Agent Name> Evolution Log
+# Changelog: <agent-name>
 
 ## <YYYY-MM-DD>
 
@@ -170,15 +194,44 @@ directory if it doesn't exist. Each file uses this format:
 
 ### Rename
 <if applicable: "Renamed from `<old>` to `<new>`: reasoning">
-<if not applicable: "No rename — current name accurately reflects the role.">
+<if not: "No rename.">
 ```
 
+### Strict Changelog Rules
+
+1. **H1 heading**: Exactly `# Changelog: <agent-name>` where `<agent-name>` matches the
+   filename (e.g., `# Changelog: staff-engineer` for `docs/changelog/staff-engineer.md`).
+   Not "Evolution Log", not the display name, not title-cased — the exact kebab-case name.
+2. **H2 date heading**: Exactly `## YYYY-MM-DD` — the date only, no suffix, no description,
+   no `— Evolution 3: ...` or `(second evolution)` appended.
+3. **H3 sections**: Exactly these four, in this order: `### Summary`, `### Changes`,
+   `### Dimensions Evaluated`, `### Rename`. No others. Not `### Changes Made`, not
+   `### Rename Recommendation`, not `### What Was Preserved`, not `### Reasoning`, not
+   `### Cross-Agent Coherence Issues Noticed`, not `### What Was NOT Changed`.
+4. **Max 20 lines per entry** (from `## <date>` to the next `##` or end of file).
+5. **No verbose justifications.** The changelog is a concise record, not a design document.
+
 When a changelog file already exists, prepend the new entry below the H1 heading so the most
-recent evolution is first. **Read the existing changelog before making changes** — it contains
-the history of prior improvements and helps avoid re-treading the same ground.
+recent evolution is first. **Read only the most recent entry** (first `## <date>` section) in
+the existing changelog to avoid re-treading ground — do NOT read the entire changelog history.
 
 If no meaningful improvements are found for an agent, report that in the changelog entry
 rather than forcing changes. Not every cycle needs to produce edits.
+
+### Changelog Normalization
+
+During **Phase 1**, after applying agent changes, the orchestrator MUST also normalize
+`docs/changelog/<name>.md` to match the strict format:
+
+1. Fix the H1 heading to `# Changelog: <agent-name>`
+2. Strip suffixes from H2 date headings (e.g., `## 2026-03-19 — Evolution 3: ...` becomes
+   `## 2026-03-19`)
+3. Rename non-standard H3 headers (`### Changes Made` → `### Changes`,
+   `### Rename Recommendation` → `### Rename`)
+4. Delete non-standard sections entirely (`### What Was Preserved`, `### What Was NOT Changed`,
+   `### What Was Removed`, `### Reasoning`, `### Cross-Agent Coherence Issues Noticed`,
+   `### Cross-Agent Coherence Notes`, etc.)
+5. Truncate any entry that exceeds 20 lines
 
 ---
 
@@ -193,21 +246,25 @@ parallelism. If targeting a single agent, spawn one.
 Each self-reviewing agent (read-only — no file edits):
 
 1. Reads the target agent file in `agents/<name>.md`
-2. Reads the existing changelog in `docs/changelog/<name>.md` (if it exists) to understand
-   prior evolution history and avoid repeating prior improvements
+2. Reads ONLY the most recent entry in `docs/changelog/<name>.md` (if it exists) — the first
+   `## <date>` section only, NOT the full history — to avoid repeating the last cycle's changes
 3. Checks `docs/spec/` for relevant project specifications (be selective — only files directly
    related to the agent's domain; do NOT read all spec files)
 4. Reads the OTHER agent files in `agents/` — but ONLY the first ~80 lines of each (frontmatter
    + "What You Are NOT" section) to understand team boundaries without consuming excessive context
-5. Evaluates the agent against ALL 8 dimensions
-6. Reports back with structured change recommendations (see Phase 1 template for format)
+5. Evaluates the agent against ALL 8 dimensions, with dimension 5 (Consolidation & Trimming)
+   taking highest priority — especially if the file is over 500 lines
+6. Reports back with structured change recommendations including net line change estimates
 
 **After each Phase 1 agent completes**, the orchestrator:
 
 1. Reviews the agent's change recommendations
 2. Applies each change to `agents/<name>.md` using the Edit tool
 3. Writes/updates the changelog entry in `docs/changelog/<name>.md`
-4. Tracks rename recommendations and coherence issues for Phase 2
+4. **Normalizes the entire changelog** for `docs/changelog/<name>.md` — fix the H1 heading,
+   strip H2 suffixes, rename non-standard H3 headers, and delete non-standard sections
+   (see "Changelog Normalization" under Changelog Format)
+5. Tracks rename recommendations and coherence issues for Phase 2
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -238,11 +295,14 @@ The Phase 2 agent:
 
 After Phase 2 completes:
 
-- List all files that were modified
-- Summarize the improvements made to each agent
-- Note any renames that occurred
-- Note any coherence fixes applied
-- Remind the user that NO changes have been committed — they can review with `git diff`
+1. Run `wc -l agents/*.md` and compare to pre-flight line counts
+2. If any file exceeds 500 lines, perform additional consolidation until it is under 500
+3. Report:
+   - Files modified
+   - Before/after line counts for each agent (e.g., `staff-engineer.md: 1094 → 480`)
+   - Improvements made to each agent
+   - Any renames or coherence fixes applied
+   - Reminder that NO changes have been committed — review with `git diff`
 
 ---
 
@@ -259,17 +319,33 @@ Use the @<name> agent to review and improve its own agent definition:
 
 Target: agents/<name>.md
 Agent: <name>
+Current size: {line_count} lines
+Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
 
 Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to evolve — making
 your definition more accurately reflect the characteristics of a high-level IC in this role at
 a Fortune 500 or FAANG-scale software company with 100+ developers.
 
+## Size Budget
+
+Your agent file is currently {line_count} lines. The hard limit is 500 lines.
+
+- **If TRIM mode** (over 500): Your PRIMARY objective is consolidation. You MUST recommend
+  removing or shortening enough content to bring the file under 500 lines. New content may
+  only be added if paired with equal or greater removals. Focus dimension 5 (Consolidation
+  & Trimming) above all others.
+- **If BALANCED mode** (under 500): You may add content but MUST offset additions with
+  removals so the file does not exceed 500 lines. Net-zero or net-negative growth only.
+
+**Every CHANGE that adds lines MUST be paired with a CHANGE that removes at least as many.**
+Report the estimated net line change for each recommendation.
+
 ## Context
 
 - Today's date is {today_date} — use this for changelog entries.
 - This is a self-evolving process. Each run should build on prior improvements.
-- Read docs/changelog/<name>.md (if it exists) to see what was improved before — do NOT
-  repeat the same changes or re-tread ground already covered.
+- Read docs/changelog/<name>.md (if it exists) — but ONLY the most recent entry (first
+  `## <date>` section) to see what was last improved. Do NOT read the full changelog.
 - Read docs/spec/ for project specification alignment (be selective — only files directly
   related to the agent's domain; do NOT read all spec files).
 - Read the OTHER agent files in agents/ — but ONLY the first ~80 lines of each (frontmatter
@@ -281,44 +357,35 @@ a Fortune 500 or FAANG-scale software company with 100+ developers.
 Evaluate agents/<name>.md against ALL of these dimensions:
 
 1. **Role Realism**: Does this realistically describe a high-level IC at this role in a
-   100+ developer Fortune 500/FAANG company? Scope of influence, decision authority,
-   cross-team patterns, commonly overlooked responsibilities, how this role operates
-   differently at scale.
+   100+ developer Fortune 500/FAANG company?
 
 2. **Actionability**: Are instructions specific enough for Claude to follow as an AI agent?
-   Concrete workflows, clear outputs, defined steps, consistent results?
 
-3. **Boundary Clarity**: Are boundaries with other team roles clear, complete,
-   non-overlapping? "What You Are NOT" sections, handoff patterns, gray areas, gaps?
+3. **Boundary Clarity**: Are boundaries with other team roles clear and non-overlapping?
 
-4. **Completeness**: Missing responsibilities, competencies, decision-making frameworks,
-   communication patterns, or cross-cutting concerns for this role level?
+4. **Completeness**: Missing responsibilities or competencies for this role level?
 
-5. **Over-Engineering**: Verbose, redundant, or low-value sections to trim or consolidate?
+5. **Consolidation & Trimming (HIGHEST PRIORITY)**: What can be removed, shortened, or
+   merged? Sections that repeat concepts, generic guidelines, bureaucratic frameworks,
+   content a competent engineer would already know. **Every addition from dimensions 1-4
+   and 6-7 MUST be offset by a removal from this dimension.**
 
-6. **Career Growth**: What new expertise, responsibilities, or patterns should this role
-   develop — like an engineer finding new ways to grow?
+6. **Career Growth**: New expertise or patterns this role should develop?
 
-7. **Spec Alignment**: Alignment with docs/spec/ project patterns and conventions?
+7. **Spec Alignment**: Alignment with docs/spec/ project patterns?
 
-8. **Rename Consideration**: Should this agent be renamed to better match industry
-   terminology at Fortune 500/FAANG companies? Only recommend if compelling — stability
-   has value.
+8. **Rename Consideration**: Should this agent be renamed? Only if compelling.
 
 ## Requirements
 
 - **DO NOT edit any files.** You are read-only. Your job is to analyze and recommend.
 - Do NOT use the Edit or Write tools. Do NOT modify agents/<name>.md or any changelog.
 - The orchestrator will apply your recommendations after you report them.
-- Do NOT remove or weaken existing capabilities that are working well
 - Build on strengths — improve, don't rewrite from scratch
 - If no meaningful improvements are needed, report that honestly rather than forcing changes
 - **Minimize context usage**: When reading other agent files for cross-reference, read only the
-  first 80 lines (frontmatter + "What You Are NOT" section) unless you need specific details
-  from deeper in the file. Do NOT read all spec files — only read specs directly relevant to
-  the agent's domain.
-- **Skip WebFetch** — proceed with existing knowledge of Claude Code best practices. WebFetch
-  adds latency and context consumption without sufficient value for this task.
+  first 80 lines. Do NOT read all spec files — only specs relevant to the agent's domain.
+- **Skip WebFetch** — adds latency and context without value for this task.
 
 ## Output Format
 
@@ -326,13 +393,15 @@ Return your recommendations in this exact structure:
 
 ### Summary
 <1-2 sentence overview — or "No changes needed" with reasoning>
+Net line change: <estimated +/- lines>
 
 ### Recommended Changes
 For each change, provide:
 ```
 CHANGE <n>: <short title>
 DIMENSION: <which evaluation dimension drove this>
-CONTEXT: <why this improvement matters>
+CONTEXT: <1 sentence — why this matters>
+NET_LINES: <+N or -N estimated line change>
 OLD_STRING:
 <exact text to find in agents/<name>.md — copy-paste precision, enough context to be unique>
 NEW_STRING:
@@ -343,7 +412,7 @@ If removing text, set NEW_STRING to `<REMOVE>`.
 If adding text (no existing text to replace), use OLD_STRING as the anchor point (the line
 AFTER which the new text should be inserted) and prefix NEW_STRING with `<INSERT_AFTER>`.
 
-### Changelog Entry
+### Changelog Entry (MUST be under 20 lines, ONLY these 4 sections, NO others)
 ```
 ## {today_date}
 
@@ -357,8 +426,9 @@ AFTER which the new text should be inserted) and prefix NEW_STRING with `<INSERT
 <which dimensions drove improvements>
 
 ### Rename
-<if applicable or "No rename — current name accurately reflects the role.">
+<"No rename." or "Renamed from `<old>` to `<new>`: reasoning">
 ```
+Do NOT add sections like "What Was Preserved", "What Was NOT Changed", "Reasoning", etc.
 
 ### Rename Recommendation
 <"No rename" or "Rename to `<new-name>`: <reasoning>">
@@ -433,7 +503,23 @@ REASON: <why this fix is needed>
 Or: "No coherence issues found."
 
 ### Changelog Entries
-For each agent that received coherence fixes, provide the changelog entry text.
+For each agent that received coherence fixes, provide the entry using ONLY this format:
+```
+## {today_date}
+
+### Summary
+<1-2 sentence overview>
+
+### Changes
+- <specific change and why>
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+```
+No extra sections. Max 20 lines per entry.
 
 ### Remaining Issues
 <Any issues that could not be resolved, or "None">
@@ -452,8 +538,15 @@ For each agent that received coherence fixes, provide the changelog entry text.
     change recommendations. The orchestrator applies all edits using the Edit tool.
 6. **Never commit.** No `git add`, no `git commit`, no `git push`.
 7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-8. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
-9. **Fail loud.** If an agent fails, report it immediately with details.
-10. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator may
+8. **Changelog is mandatory and strictly formatted.** Every entry MUST use exactly four H3
+    sections (`### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`), stay
+    under 20 lines, use `# Changelog: <agent-name>` as H1, and `## YYYY-MM-DD` as H2 with
+    no suffixes. No extra sections. The orchestrator normalizes all existing entries each run.
+9. **Enforce the 500-line budget.** After applying all Phase 1 and Phase 2 edits, run
+    `wc -l agents/*.md` and verify every file is under 500 lines. If any file still exceeds
+    500 lines, the orchestrator MUST perform additional consolidation directly until it is
+    under 500. Report the before/after line counts in the wrap-up.
+10. **Fail loud.** If an agent fails, report it immediately with details.
+11. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator may
     re-spawn once. After two failures on the same agent, the orchestrator performs the review
     and applies changes directly.

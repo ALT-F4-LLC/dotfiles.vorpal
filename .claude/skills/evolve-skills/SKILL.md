@@ -60,7 +60,7 @@ Before spawning any agents:
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
    and abort.
 4. **If no skill files found at all** — Inform user and abort.
-5. **Check for existing changelogs** — Run `ls docs/changelog/*-skill.md 2>/dev/null` to see
+5. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
 
 ---
@@ -98,7 +98,7 @@ Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensio
 
 ## Changelog Format
 
-All changes are tracked in `docs/changelog/<skill-name>-skill.md`. Create the `docs/changelog/`
+All changes are tracked in `docs/changelog/skills/<skill-name>.md`. Create the `docs/changelog/skills/`
 directory if it doesn't exist. Each file uses this format:
 
 ```markdown
@@ -140,7 +140,7 @@ parallelism. If targeting a single skill, spawn one.
 Each @staff-engineer:
 
 1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
-2. Reads the existing changelog in `docs/changelog/<name>-skill.md` (if it exists) to understand
+2. Reads the existing changelog in `docs/changelog/skills/<name>.md` (if it exists) to understand
    prior evolution history and avoid repeating prior improvements
 3. Uses WebFetch if available to research Claude Code documentation; if not, proceeds with
    existing knowledge of Claude Code best practices
@@ -149,7 +149,7 @@ Each @staff-engineer:
 5. Reads the OTHER skill files to understand the current skill ecosystem
 6. Evaluates the skill against ALL 8 dimensions
 7. Applies improvements directly to the skill file
-8. Writes/updates the changelog entry in `docs/changelog/<name>-skill.md`
+8. Writes/updates the changelog entry in `docs/changelog/skills/<name>.md`
 9. Reports back with:
    - Summary of changes made (or "no changes needed" with reasoning)
    - Whether a rename is recommended (and to what name, with reasoning)
@@ -168,7 +168,7 @@ After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
      - Agent files in `agents/*.md`
      - `README.md`
      - Any other files that reference the old name
-   - Rename `docs/changelog/<old>-skill.md` to `docs/changelog/<new>-skill.md` (if it exists)
+   - Rename `docs/changelog/skills/<old>.md` to `docs/changelog/skills/<new>.md` (if it exists)
    - Add a rename entry to the changelog
 3. Check cross-skill coherence:
    - No scope overlaps — each skill has a distinct purpose
@@ -178,7 +178,7 @@ After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
    - Spawning templates reference correct agent types
    - Argument handling patterns are consistent
 4. Apply coherence fixes directly to affected skill files
-5. Update `docs/changelog/<name>-skill.md` for any skill that received coherence fixes
+5. Update `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
 6. Report: what coherence issues were found and fixed, what renames were executed
 
 ### Wrap-up
@@ -212,7 +212,7 @@ and well-structured for Claude Code execution.
 
 - Today's date is {today_date} — use this for changelog entries.
 - This is a self-evolving process. Each run should build on prior improvements.
-- Read docs/changelog/<name>-skill.md (if it exists) to see what was improved before — do NOT
+- Read docs/changelog/skills/<name>.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
 - Read docs/spec/ for project specification alignment (be selective — only files relevant to
   the skill's domain).
@@ -252,7 +252,7 @@ Evaluate <skill-path>/SKILL.md against ALL of these dimensions:
 - Do NOT remove or weaken existing capabilities that are working well
 - Build on strengths — improve, don't rewrite from scratch
 - If no meaningful improvements are needed, report that honestly rather than forcing changes
-- Write/update docs/changelog/<name>-skill.md with a dated entry documenting what changed
+- Write/update docs/changelog/skills/<name>.md with a dated entry documenting what changed
   and why (prepend the new entry below the H1 heading since the file exists)
 - In your final output, report:
   - Summary of changes made (or "no changes needed" with reasoning)
@@ -287,7 +287,7 @@ Today's date is {today_date} — use this for any changelog entries.
    - Use Grep to find ALL references to the old name across the codebase
    - Update references in: .claude/skills/*/SKILL.md, skills/*/SKILL.md, agents/*.md,
      README.md, and any other files
-   - Rename docs/changelog/<old>-skill.md -> docs/changelog/<new>-skill.md (if it exists)
+   - Rename docs/changelog/skills/<old>.md -> docs/changelog/skills/<new>.md (if it exists)
    - Add a rename entry to the affected changelog
 
 3. Check cross-skill coherence across ALL skill files:
@@ -300,7 +300,7 @@ Today's date is {today_date} — use this for any changelog entries.
 
 4. Apply coherence fixes directly to affected skill files
 
-5. Update docs/changelog/<name>-skill.md for any skill that received coherence fixes
+5. Update docs/changelog/skills/<name>.md for any skill that received coherence fixes
 
 6. Report:
    - What renames were executed (directories renamed, references updated)

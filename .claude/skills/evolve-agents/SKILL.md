@@ -191,15 +191,15 @@ Each @staff-engineer:
 1. Reads the target agent file in `agents/<name>.md`
 2. Reads the existing changelog in `docs/changelog/<name>.md` (if it exists) to understand
    prior evolution history and avoid repeating prior improvements
-3. Uses WebFetch if available to research Claude Code documentation; if not, proceeds with
-   existing knowledge of Claude Code best practices
-4. Checks `docs/spec/` for relevant project specifications (be selective — only files related
-   to the agent's domain)
-5. Reads the OTHER agent files in `agents/` to understand the current team structure
-6. Evaluates the agent against ALL 8 dimensions
-7. Applies improvements directly to the agent file
-8. Writes/updates the changelog entry in `docs/changelog/<name>.md`
-9. Reports back with:
+3. Checks `docs/spec/` for relevant project specifications (be selective — only files directly
+   related to the agent's domain; do NOT read all spec files)
+4. Reads the OTHER agent files in `agents/` — but ONLY the first ~80 lines of each (frontmatter
+   + "What You Are NOT" section) to understand team boundaries without consuming excessive context
+5. Evaluates the agent against ALL 8 dimensions
+6. Applies improvements directly to the agent file using the **Edit tool** (surgical changes,
+   NOT full file rewrites)
+7. Writes/updates the changelog entry in `docs/changelog/<name>.md`
+8. Reports back with:
    - Summary of changes made (or "no changes needed" with reasoning)
    - Whether a rename is recommended (and to what name, with reasoning)
    - Any cross-agent coherence issues noticed
@@ -267,9 +267,11 @@ IC in this role at a Fortune 500 or FAANG-scale software company with 100+ devel
 - This is a self-evolving process. Each run should build on prior improvements.
 - Read docs/changelog/<name>.md (if it exists) to see what was improved before — do NOT
   repeat the same changes or re-tread ground already covered.
-- Read docs/spec/ for project specification alignment (be selective — only files related to
-  the agent's domain).
-- Read the OTHER agent files in agents/ to understand team boundaries and structure.
+- Read docs/spec/ for project specification alignment (be selective — only files directly
+  related to the agent's domain; do NOT read all spec files).
+- Read the OTHER agent files in agents/ — but ONLY the first ~80 lines of each (frontmatter
+  + "What You Are NOT" section) to understand team boundaries without consuming excessive
+  context.
 
 ## Your Task
 
@@ -303,6 +305,9 @@ Evaluate agents/<name>.md against ALL of these dimensions:
 ## Requirements
 
 - Apply improvements directly to agents/<name>.md
+- **CRITICAL: Use the Edit tool for targeted, surgical changes — NEVER rewrite the entire file
+  with the Write tool.** Agent files can be 50K+ chars. A full Write rewrite risks timeout and
+  context exhaustion. Make multiple small Edit calls instead.
 - Maintain the existing file structure and YAML frontmatter format
 - Do NOT remove or weaken existing capabilities that are working well
 - Build on strengths — improve, don't rewrite from scratch
@@ -310,6 +315,12 @@ Evaluate agents/<name>.md against ALL of these dimensions:
 - Write/update docs/changelog/<name>.md with a dated entry documenting what changed and why
   (create docs/changelog/ directory if needed; if the changelog file exists, prepend the new
   entry below the H1 heading)
+- **Minimize context usage**: When reading other agent files for cross-reference, read only the
+  first 80 lines (frontmatter + "What You Are NOT" section) unless you need specific details
+  from deeper in the file. Do NOT read all spec files — only read specs directly relevant to
+  the agent's domain.
+- **Skip WebFetch** — proceed with existing knowledge of Claude Code best practices. WebFetch
+  adds latency and context consumption without sufficient value for this task.
 - In your final output, report:
   - Summary of changes made (or "no changes needed" with reasoning)
   - Whether you recommend a rename (and to what name, with reasoning)
@@ -381,3 +392,7 @@ Today's date is {today_date} — use this for any changelog entries.
 7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
 8. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
 9. **Fail loud.** If an agent fails, report it immediately with details.
+10. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator applies
+    that agent's improvements directly using targeted Edit calls rather than re-spawning
+    indefinitely. One retry is acceptable; after two failures on the same agent, the
+    orchestrator takes over.

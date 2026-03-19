@@ -1,10 +1,31 @@
 # Changelog: staff-engineer
 
-## 2026-03-19 — Coherence Fix: Test Gap Remediation Deferral
+## 2026-03-19
+
+### Summary
+Major consolidation from 1094 to 249 lines. Eliminated pedagogical content a staff-level LLM already embodies while preserving all behavioral instructions, output formats, and team boundaries.
 
 ### Changes
-- Clarified SDET boundary in "What You Are NOT" to explicitly state that when review identifies
-  test gaps, remediation is deferred to @sdet rather than prescribed by staff-engineer
+- Compressed Code Review from 336 to ~35 lines — removed rubrics, question examples, comment/don't-comment lists, kept workflow, severity taxonomy, output format
+- Compressed TDD format from expanded bullets to compact one-line-per-section reference
+- Removed duplicated YAML frontmatter template from Specs section
+- Merged Influence/Alignment, Incident Analysis, and Communication Style into one compact section
+- Collapsed System-Level Thinking from 94 to ~12 lines
+- Compressed Decision-Making Framework, mentorship, and anti-patterns throughout
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Boundary Clarity, Role Realism
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
+Coherence fix: clarified SDET boundary for test gap remediation deferral.
+
+### Changes
+- Clarified that when review identifies test gaps, remediation is deferred to @sdet
 
 ### Dimensions Evaluated
 Boundary Clarity (cross-agent coherence)
@@ -12,170 +33,52 @@ Boundary Clarity (cross-agent coherence)
 ### Rename
 No rename.
 
-## 2026-03-19 — Evolution 3: Cross-Agent Review, Economic Reasoning, Operational Readiness
+## 2026-03-19
 
 ### Summary
-Added cross-agent review responsibility for non-code artifacts, economic reasoning lenses (cost
-of delay, opportunity cost, TCO) to the decision-making framework, an Observability & Operational
-Readiness section to the TDD format, and a scope creep anti-pattern.
+Added cross-agent review responsibility, economic reasoning lenses, TDD observability section, and scope creep anti-pattern.
 
 ### Changes
-- Added cross-agent review guidance to Responsibility 2 — staff-engineer now has explicit
-  instructions for reviewing @project-manager plans (technical feasibility), @sdet test
-  architecture (coverage strategy), and @ux-designer specs (technical feasibility)
-- Added cost of delay, opportunity cost, and total cost of ownership to Staff-Level Decision
-  Considerations — economic lenses that distinguish staff-level from senior-level leadership
-- Added section 10 (Observability & Operational Readiness) to the TDD format, renumbering
-  Implementation Phases to section 11 — addresses gap where review dimensions treat operations
-  as first-class but TDD format never prompted for operational design
-- Added "Scope creep during design" anti-pattern — prevents expanding TDD scope when codebase
-  exploration reveals adjacent problems
+- Added cross-agent review guidance for @project-manager plans, @sdet architecture, @ux-designer specs
+- Added cost of delay, opportunity cost, TCO to decision considerations
+- Added Observability & Operational Readiness as TDD section 10
+- Added scope creep during design anti-pattern
 
 ### Dimensions Evaluated
-Role Realism (cross-agent review), Completeness (TDD observability section), Career Growth
-(economic reasoning), Spec Alignment (review-strategy.md, operations.md), Actionability
-(all changes produce concrete behavioral differences), Over-Engineering (no sections removed)
+Role Realism, Completeness, Career Growth, Spec Alignment, Actionability
 
 ### Rename
-No rename — current name accurately reflects the role.
+No rename.
 
-## 2026-03-19 — Evolution 2: Cross-Team Negotiation, ADRs, Platform Thinking
+## 2026-03-19
 
 ### Summary
-Added capabilities for cross-team technical negotiation, lightweight Architecture Decision Records (ADRs), and platform thinking at system scale.
+Added cross-team negotiation, ADRs, and platform thinking capabilities.
 
 ### Changes
-- Added **Cross-Team Technical Negotiation** to Influence and Alignment — mediating conflicting technical needs between teams is a core staff-level skill at 100+ developer orgs that was entirely missing
-- Added **Architecture Decision Records (ADRs)** to Architectural Guidance — fills the gap between "too small for a TDD" and "too important to forget"; stored in `docs/tdd/adr/`
-- Added **Platform Thinking** to System-Level Thinking — designing shared capabilities for multiple consumers, defining platform contracts, balancing standardization with autonomy
-- Updated core responsibility count from six to seven (added platform/system-level thinking as distinct)
+- Added Cross-Team Technical Negotiation to Influence and Alignment
+- Added Architecture Decision Records (ADRs) in docs/tdd/adr/
+- Added Platform Thinking to System-Level Thinking
 
 ### Dimensions Evaluated
-Role Realism (cross-team negotiation, platform thinking), Completeness (ADRs), Career Growth (platform ownership)
+Role Realism, Completeness, Career Growth
 
 ### Rename
-No rename — current name accurately reflects the role.
+No rename.
 
-## 2026-03-19 — Coherence Fix: TDD Feedback Loop
+## 2026-03-19
 
-### Changes Made
-- Added acknowledgment in "What You Are NOT" that @senior-engineer provides implementation-level feedback on TDDs, making the feedback loop bidirectional (senior-engineer already documented sending this feedback)
+### Summary
+First evolution adding architectural advisory, boundary clarity, failure analysis, and proactive system health assessment.
+
+### Changes
+- Added Lightweight Architectural Advisory workflow
+- Clarified @sdet and @ux-designer boundaries
+- Replaced human-specific incident leadership with agent-actionable failure analysis
+- Added Proactive System Health Assessment and over-formalizing anti-pattern
 
 ### Dimensions Evaluated
-Boundary Clarity (cross-agent coherence)
+Actionability, Boundary Clarity, Role Realism, Completeness
 
 ### Rename
-No rename — current name accurately reflects the role.
-
-## 2026-03-19 — Evolution 1: Actionability, Boundary Clarity, and Response Spectrum
-
-### Changes Made
-
-**1. Added Lightweight Architectural Advisory (Responsibility 3)**
-
-Merged the former "Design Review" (old Responsibility 3) and the thin "Technical Planning & RFCs"
-section into a new combined "Architectural Guidance & Design Review" responsibility. Added a
-concrete "Lightweight Architectural Advisory" workflow with a defined format for when a question
-needs more than a review comment but less than a full TDD.
-
-**Why:** The original agent had a binary choice: produce a full TDD or say nothing. Real staff
-engineers at FAANG-scale companies spend most of their time giving quick architectural guidance --
-"use approach A because X" -- not writing 10-section design documents. The gap between "skip for
-small tasks" and "produce a TDD" was the most common operating mode with no guidance. The former
-"Technical Planning & RFCs" section (5 bullet points) was redundant with the TDD format and added
-no actionable behavior.
-
-**2. Clarified @sdet boundary in "What You Are NOT" section**
-
-Expanded the SDET boundary from a single sentence to explicitly delineate: staff-engineer evaluates
-test strategy and coverage during code review, but does not own test architecture, test
-infrastructure, or test automation.
-
-**Why:** The original boundary was "You are NOT a SDET. You do not write or run tests." But the
-Code Review section contained extensive testing evaluation guidance (testing pyramid, mocking
-strategy, coverage analysis). This created ambiguity about who owns testing decisions. The
-clarification makes explicit what was implicit: staff-engineer reviews test quality; @sdet owns
-test systems.
-
-**3. Added @ux-designer interaction pattern in Design Review triggers**
-
-Added explicit trigger: "When @ux-designer produces a design spec with technical implications --
-review the technical feasibility and system integration aspects (not the UX decisions, which are
-@ux-designer's domain)."
-
-**Why:** The original had no explicit interaction pattern with @ux-designer beyond "consume their
-specs from docs/ux/". The dev-team skill orchestrates UX-heavy tasks where @staff-engineer follows
-@ux-designer, but the agent definition gave no guidance on what to evaluate in a UX spec. Now it is
-clear: review technical feasibility, not design aesthetics.
-
-**4. Replaced Incident Leadership with actionable Failure Analysis section**
-
-Replaced the "Incident Leadership" section (which described human organizational behaviors like
-"shield engineers from pressure" and "coordinate investigation") with "Incident and Failure
-Analysis" that describes concrete actions an AI agent can take: diagnose root causes, assess blast
-radius, recommend fix categories, update specs, and facilitate postmortems.
-
-**Why:** The original section was well-written for a human staff engineer job description but not
-actionable for an AI agent. "Protect the team" and "communicate status clearly to stakeholders" are
-not behaviors Claude can execute. The replacement retains the same intellectual rigor (systemic
-thinking, root cause analysis, blameless postmortems) but frames it as work the agent actually does:
-reading logs, analyzing diffs, updating documentation, and recommending fixes.
-
-**5. Added Proactive System Health Assessment subsection**
-
-Added concrete triggers for when to surface systemic issues: architectural drift, dependency health,
-build/CI health, and configuration sprawl. Includes guidance on where to surface findings (review,
-TDD, spec update, or direct recommendation).
-
-**Why:** The original "System-Level Thinking" section was aspirational ("maintain a forward-looking
-view of the technical platform") but lacked triggers for when the agent should proactively raise
-concerns. A real staff engineer at scale notices these issues during routine work and raises them
-without being asked. The new subsection gives the agent specific patterns to watch for and specific
-actions to take.
-
-**6. Added "Over-formalizing everything" anti-pattern**
-
-Added anti-pattern: "Not every question needs a TDD. Not every concern needs a spec update. Match
-the formality of your response to the weight of the decision."
-
-**Why:** Complements the new Architectural Advisory capability. Without this anti-pattern, the
-agent's default behavior leans toward producing formal documents for every request, which is the
-opposite of how effective staff engineers operate. They match formality to stakes.
-
-**7. Updated core responsibility count from five to six**
-
-Updated the opening paragraph to reflect six responsibilities (adding architectural guidance as
-distinct from TDD creation).
-
-### What Was Preserved
-
-- Full TDD format and workflow (unchanged)
-- Complete code review section with all six dimensions, severity levels, and output formats
-- Project specifications ownership (seven spec files)
-- Mentorship and technical growth section
-- Influence and alignment section with disagreement resolution
-- Decision-making framework with hierarchy and ambiguity management
-- All existing anti-patterns
-- YAML frontmatter format for all document types
-
-### What Was Removed
-
-- "Technical Planning & RFCs" section (5 bullet points, lines 870-878) — redundant with TDD
-  format and now subsumed by the Architectural Advisory capability
-- Human-specific incident leadership behaviors ("shield engineers from pressure", "communicate
-  status to stakeholders") — replaced with agent-actionable failure analysis
-
-### What Was NOT Changed (Considered but Rejected)
-
-- **Rename**: Considered "principal-engineer" or "tech-lead" but rejected. "Staff engineer" is
-  the most widely recognized title for this role at FAANG companies (Google, Meta, Stripe all
-  use it). The Will Larson archetype reference in the opening paragraph already establishes the
-  scope. Stability of the name across the agent ecosystem outweighs any marginal clarity gain.
-- **Adding technical debt roadmapping as a formal responsibility**: Considered but rejected.
-  The existing Strategic Technical Direction subsection already covers this ("Prioritize technical
-  debt at the org level"). Adding a separate responsibility would over-formalize what is already
-  addressed.
-- **Adding CI/build pipeline ownership**: Considered but rejected. This is covered by the new
-  Proactive System Health Assessment (build/CI health trigger) and by the Operations dimension
-  in code review. Making it a standalone responsibility would blur the boundary with
-  @senior-engineer, who actually modifies CI configuration.
+No rename.

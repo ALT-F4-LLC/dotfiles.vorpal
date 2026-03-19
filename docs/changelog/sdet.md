@@ -1,5 +1,49 @@
 # Changelog: SDET Agent
 
+## 2026-03-19 — Coherence Fix: Staff-Engineer Review and Escalation Bidirectionality
+
+### Changes
+- Added acknowledgment in "What You Are NOT" that @staff-engineer reviews test architecture
+  decisions, framework choices, and coverage strategy for alignment with the system's risk profile
+- Updated bridging note to reflect that @senior-engineer now acknowledges the test coverage
+  escalation protocol
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+
+## 2026-03-19 — Evolution 3: Operational Grounding, Failure Diagnosis, Practical Workflows
+
+### Summary
+Grounded the agent in operational reality by adding concrete test execution commands for this
+Rust codebase, a test failure diagnosis workflow, an ad-hoc verification protocol, actionable
+metrics, snapshot review protocol, and a test coverage escalation handoff with @senior-engineer.
+
+### Changes
+- Added Rust-specific test execution commands (cargo test, clippy, fmt, insta) to the Greenfield
+  Test Strategy section, aligning with docs/spec/testing.md recommendations
+- Added ad-hoc verification workflow for when the orchestrator requests verification without a
+  Docket issue, preventing the agent from blocking on missing issue context
+- Split Test Suite Health Metrics into per-session (measurable now) and trend (requires CI
+  infrastructure) categories, grounding metrics in what an AI agent can actually observe
+- Added test failure diagnosis workflow with a 4-step classify-and-act protocol covering real
+  defects, test bugs, environment issues, and flaky tests
+- Replaced "Quality office hours" (human organizational practice) with "Test design consultation"
+  (actionable agent behavior)
+- Added test coverage escalation protocol defining the handoff when @senior-engineer's tests
+  are insufficient during verification
+- Added snapshot test update review protocol (5-step) for reviewing snapshot changes in a
+  configuration generator project
+
+### Dimensions Evaluated
+Actionability (changes 1, 3, 4), Completeness (changes 2, 4, 7), Spec Alignment (changes 1, 7),
+Role Realism (changes 3, 5), Boundary Clarity (change 6), Over-Engineering (change 5)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 — Coherence Fix: ADR References
 
 ### Changes

@@ -1,5 +1,47 @@
 # UX Designer Evolution Log
 
+## 2026-03-19 — Coherence Fix: Resilient Spec References
+
+### Changes
+- Replaced hardcoded spec filenames (`architecture.md`, `code-quality.md`) with purpose-based
+  references in the Design Spec Workflow, reducing brittleness if spec files are renamed
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+
+## 2026-03-19 — Evolution 3: Migration Experience, Content Design, Strategy Briefs
+
+### Summary
+Added migration/transition experience design as a first-class Staff concern, introduced design
+strategy briefs as a lightweight artifact for org-wide pattern decisions, elevated content design
+from a passing mention to concrete deliverables, added self-validation step to design spec
+workflow, strengthened cross-platform design system guidance, improved mode-selection routing,
+and trimmed frontmatter description for parity with peer agents.
+
+### Changes
+- Added "Migration & Transition Experience Design" subsection — designing how users experience
+  product evolution (deprecations, version migrations, workflow changes) is a top Staff UX
+  responsibility at FAANG scale
+- Added "Design Strategy Briefs" as a lightweight artifact for org-wide pattern decisions
+- Elevated content design collaboration from a single bullet to detailed deliverables
+  (terminology governance, error message copy, empty state copy, microcopy)
+- Added self-validation step (step 6) to Design Spec Workflow — checks specs against success
+  criteria and implementation clarity before handoff
+- Added cross-platform design system expression guidance
+- Added explicit mode-selection routing heuristics to "How You Work"
+- Trimmed frontmatter description from 99 to 62 words for parity with peer agents
+
+### Dimensions Evaluated
+Role Realism (migration experience, design strategy briefs), Actionability (self-validation,
+mode routing), Completeness (content design, cross-platform), Over-Engineering (frontmatter trim),
+Career Growth (design strategy briefs)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 (second evolution)
 
 ### Summary

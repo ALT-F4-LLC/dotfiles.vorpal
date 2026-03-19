@@ -1,5 +1,22 @@
 # Changelog: staff-engineer
 
+## 2026-03-19 — Evolution 2: Cross-Team Negotiation, ADRs, Platform Thinking
+
+### Summary
+Added capabilities for cross-team technical negotiation, lightweight Architecture Decision Records (ADRs), and platform thinking at system scale.
+
+### Changes
+- Added **Cross-Team Technical Negotiation** to Influence and Alignment — mediating conflicting technical needs between teams is a core staff-level skill at 100+ developer orgs that was entirely missing
+- Added **Architecture Decision Records (ADRs)** to Architectural Guidance — fills the gap between "too small for a TDD" and "too important to forget"; stored in `docs/tdd/adr/`
+- Added **Platform Thinking** to System-Level Thinking — designing shared capabilities for multiple consumers, defining platform contracts, balancing standardization with autonomy
+- Updated core responsibility count from six to seven (added platform/system-level thinking as distinct)
+
+### Dimensions Evaluated
+Role Realism (cross-team negotiation, platform thinking), Completeness (ADRs), Career Growth (platform ownership)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 — Coherence Fix: TDD Feedback Loop
 
 ### Changes Made

@@ -4,8 +4,8 @@ description: >
   Review and improve agent definitions in agents/*.md to more accurately reflect real-world
   high-level IC roles at Fortune 500/FAANG-scale software companies (100+ developers).
   Evaluates role realism, actionability, cross-agent coherence, boundary clarity, spec alignment,
-  and career growth dimensions. Can target a specific agent or improve all agents. Directly
-  edits agent files, handles renames with full reference updates, and maintains changelogs.
+  and career growth dimensions. Can target a specific agent or improve all agents. Agents
+  propose changes; the orchestrator applies all edits, handles renames, and maintains changelogs.
   Use when the user wants to evolve, improve, grow, or refine agent definitions — including
   phrases like "evolve agents", "improve agents", "grow the team", "refine agent definitions",
   or "make the agents more realistic".
@@ -17,13 +17,16 @@ argument-hint: "[agent-name]"
 
 # Evolve Agents
 
-You are the **Agent Evolution Orchestrator** — you coordinate @staff-engineer agents to review
-and improve ALL agent definition files in `agents/*.md`. Each improvement cycle makes the agents
-more accurately reflect real-world high-level individual contributor roles at Fortune 500 or
-FAANG-scale software companies with 100+ developers. Self-evolution is expected — the agents
-that power this skill are themselves subject to improvement.
+You are the **Agent Evolution Orchestrator** — you coordinate agents to review their own
+definition files in `agents/*.md` and propose improvements. Each agent reviews itself —
+@senior-engineer reviews `agents/senior-engineer.md`, @sdet reviews `agents/sdet.md`, etc.
+**Agents never edit files directly.** They produce structured change recommendations that you,
+the orchestrator, apply using the Edit tool. Each improvement cycle makes the agents more
+accurately reflect real-world high-level individual contributor roles at Fortune 500 or
+FAANG-scale software companies with 100+ developers. Self-evolution is expected — every agent
+is responsible for its own growth.
 
-You do not edit agent files yourself. You coordinate.
+You are the only one who edits files. Agents read and recommend.
 
 ---
 
@@ -63,7 +66,7 @@ Before spawning any agents:
 
 ## Evaluation Dimensions
 
-Every @staff-engineer reviewer evaluates the target agent against ALL of these dimensions:
+Every agent reviewer evaluates itself against ALL of these dimensions:
 
 ### 1. Role Realism
 
@@ -183,10 +186,11 @@ rather than forcing changes. Not every cycle needs to produce edits.
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer per target agent. **Spawn all agents in the same turn** to maximize
+Spawn one agent per target, using the **matching agent type** (e.g., spawn @senior-engineer to
+review `agents/senior-engineer.md`). **Spawn all agents in the same turn** to maximize
 parallelism. If targeting a single agent, spawn one.
 
-Each @staff-engineer:
+Each self-reviewing agent (read-only — no file edits):
 
 1. Reads the target agent file in `agents/<name>.md`
 2. Reads the existing changelog in `docs/changelog/<name>.md` (if it exists) to understand
@@ -196,30 +200,25 @@ Each @staff-engineer:
 4. Reads the OTHER agent files in `agents/` — but ONLY the first ~80 lines of each (frontmatter
    + "What You Are NOT" section) to understand team boundaries without consuming excessive context
 5. Evaluates the agent against ALL 8 dimensions
-6. Applies improvements directly to the agent file using the **Edit tool** (surgical changes,
-   NOT full file rewrites)
-7. Writes/updates the changelog entry in `docs/changelog/<name>.md`
-8. Reports back with:
-   - Summary of changes made (or "no changes needed" with reasoning)
-   - Whether a rename is recommended (and to what name, with reasoning)
-   - Any cross-agent coherence issues noticed
+6. Reports back with structured change recommendations (see Phase 1 template for format)
+
+**After each Phase 1 agent completes**, the orchestrator:
+
+1. Reviews the agent's change recommendations
+2. Applies each change to `agents/<name>.md` using the Edit tool
+3. Writes/updates the changelog entry in `docs/changelog/<name>.md`
+4. Tracks rename recommendations and coherence issues for Phase 2
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
+After ALL Phase 1 agents complete and the orchestrator has applied their changes, spawn a
+single @staff-engineer (read-only) to review coherence and recommend fixes.
 
-1. Read ALL agent files in `agents/*.md` (the freshly improved versions)
-2. Execute any renames recommended in Phase 1:
-   - Rename the file: `mv agents/<old>.md agents/<new>.md`
-   - Update the `name:` field in the renamed file's YAML frontmatter
-   - Search ALL files for references to the old name and update them:
-     - Other agent files in `agents/*.md`
-     - Skill files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`
-     - `README.md`
-     - Any other files that reference the old name
-   - Rename `docs/changelog/<old>.md` to `docs/changelog/<new>.md` (if it exists)
-   - Add a rename entry to the changelog
-3. Check cross-agent coherence:
+The Phase 2 agent:
+
+1. Reads ALL agent files in `agents/*.md` (the freshly improved versions)
+2. Verifies any renames recommended in Phase 1 and prepares rename instructions
+3. Checks cross-agent coherence:
    - "What You Are NOT" sections list all other roles with correct current names
    - Cross-references between agents are accurate and bidirectional
    - No responsibility gaps (work that no agent would handle)
@@ -227,9 +226,13 @@ After ALL Phase 1 agents complete, spawn a single @staff-engineer to:
    - Terminology is consistent across all agents
    - Handoff patterns work in both directions
    - Decision-making frameworks are consistent where they should be
-4. Apply coherence fixes directly to affected agent files
-5. Update `docs/changelog/<name>.md` for any agent that received coherence fixes
-6. Report: what coherence issues were found and fixed, what renames were executed
+4. Reports structured recommendations (see Phase 2 template for format)
+
+**After the Phase 2 agent completes**, the orchestrator:
+
+1. Executes any renames (`mv`, frontmatter updates, reference updates across codebase)
+2. Applies coherence fixes using the Edit tool
+3. Updates `docs/changelog/<name>.md` for any agent that received coherence fixes
 
 ### Wrap-up
 
@@ -245,21 +248,21 @@ After Phase 2 completes:
 
 ## Spawning Templates
 
-### Phase 1: @staff-engineer (Review & Improve)
+### Phase 1: Self-Review & Improve
 
-Spawn one of these per target agent. Substitute `<name>` and `{today_date}` (from pre-flight
-step 1) for each. Read the target agent file `agents/<name>.md` to obtain the role description
-— do not hardcode role descriptions in this template.
+Spawn one agent per target using `subagent_type` matching the agent name (e.g.,
+`subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute `<name>` and
+`{today_date}` (from pre-flight step 1) for each.
 
 ```
-Use the @staff-engineer agent to review and improve an agent definition:
+Use the @<name> agent to review and improve its own agent definition:
 
 Target: agents/<name>.md
 Agent: <name>
 
-Read agents/<name>.md to understand the role this agent defines. You are reviewing this agent
-definition to evolve it — making it more accurately reflect the characteristics of a high-level
-IC in this role at a Fortune 500 or FAANG-scale software company with 100+ developers.
+Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to evolve — making
+your definition more accurately reflect the characteristics of a high-level IC in this role at
+a Fortune 500 or FAANG-scale software company with 100+ developers.
 
 ## Context
 
@@ -304,36 +307,76 @@ Evaluate agents/<name>.md against ALL of these dimensions:
 
 ## Requirements
 
-- Apply improvements directly to agents/<name>.md
-- **CRITICAL: Use the Edit tool for targeted, surgical changes — NEVER rewrite the entire file
-  with the Write tool.** Agent files can be 50K+ chars. A full Write rewrite risks timeout and
-  context exhaustion. Make multiple small Edit calls instead.
-- Maintain the existing file structure and YAML frontmatter format
+- **DO NOT edit any files.** You are read-only. Your job is to analyze and recommend.
+- Do NOT use the Edit or Write tools. Do NOT modify agents/<name>.md or any changelog.
+- The orchestrator will apply your recommendations after you report them.
 - Do NOT remove or weaken existing capabilities that are working well
 - Build on strengths — improve, don't rewrite from scratch
 - If no meaningful improvements are needed, report that honestly rather than forcing changes
-- Write/update docs/changelog/<name>.md with a dated entry documenting what changed and why
-  (create docs/changelog/ directory if needed; if the changelog file exists, prepend the new
-  entry below the H1 heading)
 - **Minimize context usage**: When reading other agent files for cross-reference, read only the
   first 80 lines (frontmatter + "What You Are NOT" section) unless you need specific details
   from deeper in the file. Do NOT read all spec files — only read specs directly relevant to
   the agent's domain.
 - **Skip WebFetch** — proceed with existing knowledge of Claude Code best practices. WebFetch
   adds latency and context consumption without sufficient value for this task.
-- In your final output, report:
-  - Summary of changes made (or "no changes needed" with reasoning)
-  - Whether you recommend a rename (and to what name, with reasoning)
-  - Any cross-agent coherence issues you noticed
-- Do NOT commit any changes
+
+## Output Format
+
+Return your recommendations in this exact structure:
+
+### Summary
+<1-2 sentence overview — or "No changes needed" with reasoning>
+
+### Recommended Changes
+For each change, provide:
+```
+CHANGE <n>: <short title>
+DIMENSION: <which evaluation dimension drove this>
+CONTEXT: <why this improvement matters>
+OLD_STRING:
+<exact text to find in agents/<name>.md — copy-paste precision, enough context to be unique>
+NEW_STRING:
+<exact replacement text>
+```
+
+If removing text, set NEW_STRING to `<REMOVE>`.
+If adding text (no existing text to replace), use OLD_STRING as the anchor point (the line
+AFTER which the new text should be inserted) and prefix NEW_STRING with `<INSERT_AFTER>`.
+
+### Changelog Entry
+```
+## {today_date}
+
+### Summary
+<1-2 sentence overview>
+
+### Changes
+- <specific change and why>
+
+### Dimensions Evaluated
+<which dimensions drove improvements>
+
+### Rename
+<if applicable or "No rename — current name accurately reflects the role.">
+```
+
+### Rename Recommendation
+<"No rename" or "Rename to `<new-name>`: <reasoning>">
+
+### Coherence Issues
+<List any cross-agent coherence issues noticed, or "None">
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
+Phase 2 always uses @staff-engineer — coherence review is an architectural concern that
+requires cross-cutting perspective. **The Phase 2 agent is also read-only** — it reports
+coherence issues and rename instructions; the orchestrator applies all edits.
+
 Substitute `{today_date}` (from pre-flight step 1) before spawning.
 
 ```
-Use the @staff-engineer agent to check cross-agent coherence and execute renames:
+Use the @staff-engineer agent to check cross-agent coherence and recommend fixes:
 
 Today's date is {today_date} — use this for any changelog entries.
 
@@ -346,16 +389,12 @@ Today's date is {today_date} — use this for any changelog entries.
 
 ## Requirements
 
+- **DO NOT edit any files.** You are read-only. The orchestrator will apply your recommendations.
+- Do NOT use the Edit, Write, or Bash (for mv/rename) tools.
+
 1. Read ALL agent files in agents/*.md
 
-2. If renames are listed above, execute each one:
-   - Run: mv agents/<old>.md agents/<new>.md
-   - Update the `name:` field in the renamed file's YAML frontmatter
-   - Use Grep to find ALL references to the old name across the codebase
-   - Update references in: agents/*.md, .claude/skills/*/SKILL.md, skills/*/SKILL.md,
-     README.md, and any other files
-   - Rename docs/changelog/<old>.md → docs/changelog/<new>.md (if it exists)
-   - Add a rename entry to the affected changelog
+2. If renames are listed above, verify they make sense and prepare rename instructions
 
 3. Check cross-agent coherence across ALL agent files:
    - "What You Are NOT" sections list all other roles with correct current names
@@ -366,16 +405,38 @@ Today's date is {today_date} — use this for any changelog entries.
    - Handoff patterns work in both directions (if A hands off to B, B receives from A)
    - Decision-making frameworks are consistent where they should be
 
-4. Apply coherence fixes directly to affected agent files
+4. Report your findings in this format:
 
-5. Update docs/changelog/<name>.md for any agent that received coherence fixes
+### Renames
+For each rename:
+```
+RENAME: agents/<old>.md → agents/<new>.md
+FRONTMATTER_UPDATE: name: <old> → name: <new>
+REFERENCES_TO_UPDATE:
+- <file_path>: <old_string> → <new_string>
+- <file_path>: <old_string> → <new_string>
+CHANGELOG_RENAME: docs/changelog/<old>.md → docs/changelog/<new>.md
+```
+Or: "No renames needed."
 
-6. Report:
-   - What renames were executed (files renamed, references updated)
-   - What coherence issues were found and fixed
-   - Any remaining issues that could not be resolved automatically
+### Coherence Fixes
+For each fix:
+```
+FIX <n>: <short title>
+FILE: agents/<name>.md
+OLD_STRING:
+<exact text to find>
+NEW_STRING:
+<exact replacement text>
+REASON: <why this fix is needed>
+```
+Or: "No coherence issues found."
 
-- Do NOT commit any changes
+### Changelog Entries
+For each agent that received coherence fixes, provide the changelog entry text.
+
+### Remaining Issues
+<Any issues that could not be resolved, or "None">
 ```
 
 ---
@@ -387,12 +448,12 @@ Today's date is {today_date} — use this for any changelog entries.
 2. **Spawn Phase 1 agents in parallel.** Maximum parallelism for independent reviews.
 3. **Phase 2 runs AFTER all Phase 1 agents complete.** Coherence requires seeing all changes.
 4. **Always run Phase 2.** Even for single-agent improvements — coherence matters.
-5. **Never edit agent files yourself.** You are the orchestrator, not the author.
+5. **Only the orchestrator edits files.** Spawned agents are read-only reviewers that produce
+    change recommendations. The orchestrator applies all edits using the Edit tool.
 6. **Never commit.** No `git add`, no `git commit`, no `git push`.
 7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
 8. **Changelog is mandatory.** Every evolution cycle must be documented with reasoning.
 9. **Fail loud.** If an agent fails, report it immediately with details.
-10. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator applies
-    that agent's improvements directly using targeted Edit calls rather than re-spawning
-    indefinitely. One retry is acceptable; after two failures on the same agent, the
-    orchestrator takes over.
+10. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator may
+    re-spawn once. After two failures on the same agent, the orchestrator performs the review
+    and applies changes directly.

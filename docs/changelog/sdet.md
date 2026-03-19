@@ -1,5 +1,102 @@
 # Changelog: SDET Agent
 
+## 2026-03-19 — Coherence Fix: ADR References
+
+### Changes
+- Added `docs/tdd/adr/` reference to spec check instructions so Architecture Decision Records inform test strategy
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename — current name accurately reflects the role.
+
+## 2026-03-19 — Evolution 2: Planning, Test Intelligence, Cross-Team Coordination
+
+**Reviewed by:** @staff-engineer
+
+### Changes Made
+
+**New Responsibility: Test Planning & Estimation (Responsibility 8)**
+- Added a complete new section covering test effort estimation, test debt management, and
+  incident-driven test gap analysis.
+- Test effort estimation: assess testability early, estimate by risk tier, surface hidden test
+  infrastructure costs, negotiate test scope explicitly when timelines are tight.
+- Test debt management: identify actively, quantify in business terms, propose incremental paydown.
+- Incident-driven test gap analysis: determine if the defect class was testable, specify what
+  test would have caught it, drive regression tests to completion, identify systemic gaps.
+- **Why:** At FAANG scale, test planning is a first-class activity alongside feature planning.
+  SDETs participate in sprint planning, estimate test effort, negotiate scope, and manage test
+  debt as a portfolio. The agent had strong execution guidance but no planning/estimation
+  responsibility — a gap that leads to testing being treated as an afterthought.
+
+**New Section: Test Intelligence & Selection (under Automation Strategy)**
+- Added guidance on change-based test selection, risk-based ordering, and historical failure
+  correlation.
+- **Why:** Running the full test suite on every change is prohibitively expensive at scale. Test
+  selection (running only tests affected by a change) is standard practice at Google, Meta, and
+  other large engineering organizations. This is a key technical capability for an SDET that was
+  absent.
+
+**New Section: Cross-Team Quality Coordination (under Mentorship)**
+- Added guidance on shared test infrastructure ownership, test pattern standardization across
+  teams, and quality office hours.
+- **Why:** At 100+ developers, quality patterns fragment across teams if not actively coordinated.
+  An SDET at this level is responsible for cross-team consistency in testing practices — not just
+  their own team's quality.
+
+**Resolved Boundary Contradiction: Test Code Review**
+- Changed "You are NOT an architect or code reviewer" to "You are NOT an architect or production
+  code reviewer" in the "What You Are NOT" section.
+- Added explicit clarification that the SDET reviews test code written by @senior-engineer for
+  quality, pattern adherence, and risk coverage — distinguishing this from formal production
+  code review owned by @staff-engineer.
+- **Why:** The original "What You Are NOT" section said the SDET does not perform code reviews,
+  but the "Reviewing Test Code" subsection described the SDET reviewing tests. This contradiction
+  could confuse the agent. The fix makes the boundary precise: production code review belongs to
+  @staff-engineer; test code quality assurance belongs to @sdet.
+
+**Removed Duplicate: Test Infrastructure Philosophy**
+- Removed the "Test Infrastructure Philosophy" subsection from "Testing Philosophy" section.
+- **Why:** Its four bullet points (make right thing easy, clear error messages, backward
+  compatibility, performance) were substantively identical to the "Infrastructure Quality
+  Standards" subsection under Responsibility 2. The duplication added no value and consumed
+  context window budget. The content remains in Responsibility 2 where it is more naturally
+  situated.
+
+**Updated YAML Description**
+- Added "test planning and estimation" and "incident-driven test gap analysis" to the frontmatter
+  description. Clarified "does not perform code reviews of production changes" (was "does not
+  perform code reviews").
+
+**Updated Responsibility Count**
+- Changed from seven to eight core responsibilities in the introduction paragraph.
+
+### What Was NOT Changed
+
+- Core testing philosophy principles: all six retained.
+- Decision-making framework: hierarchy and block/accept criteria retained.
+- Communication style: retained in full.
+- Bug reporting format and severity classification: retained.
+- Docket integration: workflow, rules, and session initialization unchanged.
+- Test pyramid decisions, risk-based prioritization, greenfield strategy: all retained from
+  Evolution 1.
+- Cross-cutting quality concerns (security, performance, contract, accessibility, observability,
+  resilience): all retained.
+- Anti-patterns list: all 11 anti-patterns retained.
+
+### Cross-Agent Coherence Notes
+
+- The clarified test code review boundary now aligns cleanly: @staff-engineer owns formal code
+  review of production changes; @sdet owns test code quality assurance. No overlap.
+- The new test planning responsibility does not conflict with @project-manager's planning role:
+  @project-manager decomposes work into issues; @sdet estimates and negotiates the test effort
+  within those issues. The distinction is scope planning vs. effort estimation.
+- The incident-driven test gap analysis complements @staff-engineer's postmortem facilitation
+  responsibility — @staff-engineer drives the systemic analysis; @sdet drives the specific
+  test gap remediation.
+- No rename recommended. "SDET" remains standard at Google, Microsoft, Amazon, and Meta.
+
 ## 2026-03-19 — Evolution 1: Scale Realism, Greenfield Strategy, Environment Ownership
 
 **Reviewed by:** @staff-engineer

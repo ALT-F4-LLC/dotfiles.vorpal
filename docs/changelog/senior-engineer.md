@@ -1,5 +1,78 @@
 # Changelog: senior-engineer
 
+## 2026-03-19 — Coherence Fix: ADRs and Cross-Team Negotiation
+
+### Changes
+- Added `docs/tdd/adr/` reference to spec check instructions so ADRs inform implementation
+- Added cross-team technical negotiation handoff to @staff-engineer when encountering conflicting directions between teams
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename — current name accurately reflects the role.
+
+## 2026-03-19 — Evolution 2: Scope Negotiation, Commit Discipline, Config Safety, and Observability
+
+### Changes Made
+
+**New sections added:**
+
+1. **Negotiate Scope With Data** (Core Operating Principle #4) — Senior engineers at FAANG scale
+   do not merely "push back" on scope; they negotiate with data. Added a full principle covering:
+   quantifying cost of alternatives, identifying minimum viable changes, splitting oversized issues,
+   and saying no with counter-offers. This fills a gap between the existing "Navigate Ambiguity"
+   principle (which addresses unclear requirements) and the anti-pattern list (which says "scope
+   creep" without teaching how to prevent it). Renumbered existing principles 4 and 5 to 5 and 6.
+
+2. **Configuration-as-Code Safety** (Implementation Responsibilities subsection) — Added after
+   Database & Schema Changes. This project is a configuration-as-code system where Rust structs
+   generate JSON, YAML, and key-value config output. The original agent had no guidance specific
+   to the risks of config generator changes: output diffing, serialization stability, consumer
+   verification, and key collision prevention. This is highly aligned with the project's
+   architecture spec and addresses a real gap for this codebase.
+
+3. **Commit Hygiene & Version Control** (new top-level section) — Added after Build & CI Hygiene.
+   The agent writes code and is expected to produce commits, but had zero guidance on commit
+   quality. Added: one logical change per commit, bisectability, commit messages explaining why,
+   separating refactors from behavior changes, and keeping generated files in sync (especially
+   relevant for Cargo.lock and Vorpal.lock). At FAANG scale with 100+ developers, commit
+   discipline directly affects code archaeology and incident response.
+
+**Existing sections enhanced:**
+
+4. **Production Ownership** — Added "Instrument from the start" bullet covering observability-first
+   development: structured logging at decision points, metrics for SLA-bound operations, trace
+   context propagation, and integrating with existing OTEL setup rather than inventing parallel
+   approaches. The project has an OTEL stack (Loki + Mimir) configured in the Claude Code settings;
+   the agent should be aware of observability as a first-class implementation concern.
+
+5. **Self-review step** (Execution Workflow) — Made test suite guidance conditional: if no test
+   suite exists yet, verify manually and note the absence of automated verification in the Docket
+   comment. This aligns with the code-quality spec's observation that the project currently has
+   zero tests.
+
+### What Was NOT Changed
+
+- **Docket workflow**: Unchanged. Already well-structured from Evolution 1.
+- **Core principles 1-3**: Unchanged. Ownership, right-sizing, and ambiguity navigation remain
+  strong.
+- **Decision-Making Framework**: Unchanged. The hierarchy and reversibility subsection are solid.
+- **Communication Style and Anti-Patterns**: Unchanged. Already comprehensive.
+- **Cross-Functional Collaboration and Growing Engineers**: Unchanged. Already enhanced in
+  Evolution 1.
+- **YAML frontmatter**: Unchanged.
+
+### Reasoning
+
+Evolution 1 addressed the broadest gaps (backward compatibility, database safety, CI ownership,
+design participation, technical spikes). Evolution 2 targets the next tier of FAANG-scale senior
+engineer responsibilities: scope negotiation as a concrete skill (not just "push back"), commit
+discipline for large-team collaboration, configuration-as-code safety aligned to this specific
+project's architecture, and observability-first development. These are the patterns that
+distinguish a senior engineer who works well on a team of 10 from one who operates effectively
+in an organization of 100+.
+
 ## 2026-03-19 — Evolution 1: FAANG-Scale Realism and Missing Responsibilities
 
 ### Changes Made

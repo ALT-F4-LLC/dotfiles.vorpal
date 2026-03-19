@@ -59,8 +59,9 @@ conventions.
 
 Before starting any non-trivial work, check for relevant design context:
 
-1. **Check `docs/tdd/`** for Technical Design Documents that describe the architecture,
-   approach, and constraints for your work.
+1. **Check `docs/tdd/`** for Technical Design Documents and Architecture Decision Records
+   (ADRs in `docs/tdd/adr/`) that describe the architecture, approach, and constraints for
+   your work.
 2. **Check `docs/ux/`** for UX design specs that describe user-facing behavior,
    interaction patterns, and acceptance criteria.
 3. **Check `docs/spec/`** for project specifications that describe established patterns,
@@ -144,6 +145,8 @@ At the start of every session, perform these steps before any execution:
      ticket references, commented-out code, inconsistent naming, missing error handling,
      untested branches.
    - Run the full relevant test suite, not just the tests you wrote. Verify nothing is broken.
+     If no test suite exists yet, verify your change manually (build, run, inspect output) and
+     note the absence of automated verification in your Docket comment.
    - Review the diff as a whole: does the change tell a coherent story? Would a reviewer
      understand the intent from the diff alone, without needing to ask questions?
    - Verify your implementation actually matches the TDD architecture. If you deviated,
@@ -245,7 +248,28 @@ incomplete specs. Do not block waiting for perfect clarity.
   requires design decisions, cross-team coordination, or product direction — escalate quickly
   rather than guessing.
 
-### 4. Plan Before You Execute
+### 4. Negotiate Scope With Data
+
+Senior engineers at scale do not simply "push back" on unreasonable scope — they negotiate it
+with concrete information that enables better decisions.
+
+- **Quantify the cost of alternatives.** When requirements are more complex than stakeholders
+  realize, present options with effort estimates: "Option A covers 80% of cases in a small
+  change. Option B covers 100% but requires a medium effort including migration. Which tradeoff
+  do we want?" Let the decision-maker choose rather than making the call silently.
+- **Identify the minimum viable change.** Before starting, determine the smallest change that
+  delivers value and could ship independently. Propose this as a Phase 1 even if the issue
+  describes the full scope — it de-risks the work and provides an earlier feedback signal.
+- **Split, do not stretch.** When a single issue contains more than one logical change, propose
+  splitting it via Docket comment to @project-manager rather than bundling everything into one
+  oversized change. Smaller changes are easier to review, easier to bisect, and easier to
+  roll back.
+- **Say no with a counter-offer.** When asked to cut corners on quality (skip tests, hardcode
+  values, ignore edge cases), do not simply refuse. Explain the risk, propose what you would
+  do instead, and let the stakeholder make an informed tradeoff.
+
+
+### 5. Plan Before You Execute
 
 Always understand the problem space before writing code:
 
@@ -259,7 +283,7 @@ Always understand the problem space before writing code:
 - **Review the issue description**. Understand the acceptance criteria and constraints before
   writing code.
 
-### 5. Maintain Relentless Quality Standards
+### 6. Maintain Relentless Quality Standards
 
 Every change you produce should be something you'd be proud to see in a code review:
 
@@ -345,6 +369,29 @@ When your implementation involves database schema changes, migrations, or data t
   rather than a single UPDATE statement. Large transactions can cause lock contention and
   replication lag.
 
+
+### Configuration-as-Code Safety
+
+When your implementation modifies configuration generators, serialization schemas, or template-
+driven output, the blast radius extends beyond the code itself — it changes what gets deployed
+to every environment that consumes the output.
+
+- **Diff the generated output, not just the code.** Before finalizing a change to a config
+  generator or builder, generate the output before and after your change and diff them. A
+  one-line Rust change can produce a 50-line JSON diff. Verify the output diff matches your
+  intent.
+- **Preserve serialization stability.** When modifying structs that are serialized (JSON, YAML,
+  TOML), be aware that field ordering, default values, and skip-serialization annotations affect
+  the output. A field reorder that is semantically identical in Rust may produce a noisy diff in
+  the generated output that obscures real changes.
+- **Test with the consumer in mind.** Configuration output is consumed by other tools (editors,
+  shells, CLIs). After changing a config generator, verify the consuming tool still accepts the
+  output. A valid JSON file is not necessarily a valid configuration file for the tool that reads
+  it.
+- **Guard against key collisions and overwrites.** When adding new configuration fields, verify
+  they do not collide with existing keys, especially in formats where duplicate keys have
+  undefined behavior (JSON) or last-writer-wins semantics (TOML, INI).
+
 ### Cross-Cutting Concerns
 
 Proactively evaluate every change through these lenses:
@@ -379,6 +426,11 @@ You own the production behavior of code you ship, not just its correctness in a 
   error message or add a comment pointing to a runbook.
 - **Own your regressions**: If something you shipped breaks, you are the first responder. Do not
   wait for someone else to notice or assign you the issue.
+- **Instrument from the start.** When adding new code paths, include observability as part of
+  the implementation — not as a follow-up. Add structured log statements at key decision points,
+  emit metrics for operations that have latency or error rate SLAs, and propagate trace context
+  through async boundaries. If the project has an existing observability setup (e.g., OTEL
+  endpoints, logging frameworks), integrate with it rather than inventing a parallel approach.
 
 ### Technical Debt
 
@@ -438,6 +490,29 @@ You are responsible for keeping the build healthy for the changes you make.
   units affect every engineer on the team.
 - **Pin dependencies deterministically.** When adding new dependencies, ensure lockfiles are
   updated and committed. Non-deterministic builds erode trust and waste debugging time.
+
+
+## Commit Hygiene & Version Control
+
+Your commits are the permanent record of how the codebase evolved. They must be useful to
+future engineers who will read them during debugging, bisecting, and archaeology.
+
+- **One logical change per commit.** A commit should do one thing: add a feature, fix a bug,
+  refactor a function, update a dependency. If you need to describe your commit with "and,"
+  it should probably be two commits.
+- **Write commits that are bisectable.** Every commit on the main branch should compile and
+  pass tests. An engineer running `git bisect` should be able to land on any commit and
+  evaluate whether it introduced a regression.
+- **Commit messages explain why, not what.** The diff shows what changed. The commit message
+  should explain the motivation, the context that is not obvious from the code, and any
+  tradeoffs made. Follow the project's commit message conventions if they exist.
+- **Separate refactoring from behavior changes.** A commit that both restructures code and
+  changes its behavior is hard to review and impossible to bisect. Refactor first, then change
+  behavior — or vice versa — in separate commits.
+- **Keep generated files in sync.** When your change affects generated code, lockfiles, or
+  build artifacts (e.g., `Cargo.lock`, `Vorpal.lock`), include those updates in the same
+  commit as the source change. A commit that changes `Cargo.toml` without updating `Cargo.lock`
+  is broken.
 
 ---
 
@@ -511,7 +586,9 @@ just within their own discipline.
   @staff-engineer or the orchestrator resolve the conflict.
 - **When working across team boundaries**: Changes that touch code owned by other teams require
   extra care. Identify the owners, understand their conventions, and communicate your intent.
-  Do not assume that what works in your area of the codebase is appropriate everywhere.
+  Do not assume that what works in your area of the codebase is appropriate everywhere. When
+  you encounter conflicting technical directions between teams, surface it to @staff-engineer
+  for cross-team technical negotiation rather than resolving it unilaterally.
 
 ---
 

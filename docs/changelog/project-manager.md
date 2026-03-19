@@ -1,5 +1,113 @@
 # Changelog: project-manager
 
+## 2026-03-19 — Coherence Fix: ADRs and Cross-Team Negotiation Routing
+
+### Changes
+- Added `docs/tdd/adr/` reference to existing spec checks so ADRs inform planning
+- Added cross-team technical negotiation routing to @staff-engineer for technical conflicts discovered during planning
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename — current name accurately reflects the role.
+
+## 2026-03-19 — Second Evolution
+
+### Summary
+
+Built on the strong foundation from the first evolution. The first pass elevated the role framing,
+added estimation, cross-workstream coordination, decision framework, retrospective awareness, and
+communication style. This second pass addresses gaps in actionability (exploration guidance),
+program-level thinking (portfolio rollup), risk completeness (integration risks), proactive
+communication, and planning discipline (anti-patterns).
+
+### Changes Made
+
+**1. Added Dual-Altitude Framing (Role Realism)**
+- New paragraph in the intro establishing that a Staff TPM operates at both feature-level
+  (decomposing individual work) and program-level (managing portfolio health across concurrent
+  workstreams). At 100+ developer organizations, TPMs are expected to provide portfolio-level
+  visibility, not just per-feature plans.
+
+**2. Added Codebase Exploration Patterns (Actionability)**
+- New "What to look for during exploration" subsection under "Performing Your Own Exploration"
+  with five concrete patterns: module boundaries, dependency fan-out, test adjacency,
+  configuration surface, and recent change velocity. Previously the guidance was generic
+  ("use Read, Grep, Glob"); now it tells the agent *what signals to look for* and *why each
+  signal matters for planning*.
+
+**3. Added Integration Risks to Risk Assessment (Completeness)**
+- Added "Integration risks" as a fourth risk category in Section 2 (Assess Risks): will this
+  work conflict with other active workstreams? Instructs the agent to check `docket board --json`
+  for in-progress work touching overlapping files. The first evolution added cross-workstream
+  coordination as a section, but the risk assessment step did not explicitly check for integration
+  conflicts during the pre-planning phase.
+
+**4. Added Program-Level Rollup Template (Role Realism, Career Growth)**
+- New "Program-Level Rollup" subsection under Plan Monitoring with a structured template for
+  portfolio-level status reporting across multiple active epics. Includes workstream progress
+  table, cross-workstream risks, resource contention, and recommendations. Produced on-demand,
+  not automatically. This is a key Staff TPM responsibility that was missing — the ability to
+  give leadership a single view across all active work.
+
+**5. Added Planning Anti-Patterns Section (Career Growth, Completeness)**
+- New top-level section with seven anti-patterns: waterfall disguised as agile, phantom precision,
+  scope laundering, dependency theater, single-threaded planning, missing the forest, and
+  gold-plated plans. Other agent definitions (staff-engineer, senior-engineer) have anti-pattern
+  sections. This fills the gap for the PM role and codifies the judgment that distinguishes
+  senior TPMs from junior ones.
+
+**6. Added Proactive Communication Guidance (Role Realism)**
+- New bullet in Communication Style: "Manage up proactively." Staff TPMs do not wait for status
+  requests — they surface at-risk plans immediately with impact and recommendations. This is
+  a distinguishing behavior at the Staff level.
+
+**7. Updated Workflow Summary Diagram (Consistency)**
+- Updated risk assessment step to include "integration risks" alongside technical, dependency,
+  and scope risks, matching the expanded Section 2.
+
+### What Was Preserved
+
+- All first-evolution additions: estimation, cross-workstream coordination, decision framework,
+  retrospective awareness, communication style, status update template.
+- All original content: Docket CLI workflows, decomposition principles, risk framework, scope
+  management, technical investigation needs, UX/TDD design requests, DoR checklist, plan
+  monitoring triggers, issue description guidance, file attachment workflow, rules.
+- YAML frontmatter unchanged.
+
+### Dimensions Evaluated
+
+| Dimension | Assessment |
+|---|---|
+| Role Realism | Improved — dual-altitude framing, program rollup, proactive communication |
+| Actionability | Improved — concrete exploration patterns with specific signals to look for |
+| Boundary Clarity | Maintained — no changes needed, boundaries remain clear |
+| Completeness | Improved — integration risks, anti-patterns, program rollup |
+| Over-Engineering | Monitored — additions are targeted, no redundancy introduced |
+| Career Growth | Improved — anti-patterns section codifies senior judgment; program rollup adds new capability |
+| Spec Alignment | Maintained — already well-aligned |
+| Rename | Not recommended — same reasoning as first evolution applies |
+
+### Rename Recommendation
+
+**No rename recommended.** The reasoning from the first evolution remains valid: "project-manager"
+is deeply wired into all agent definitions, skills, and orchestration. The agent's intro and
+framing already establish the Staff TPM mental model without requiring a file rename.
+
+### Cross-Agent Coherence Issues Noticed
+
+- The boundary between @project-manager and @staff-engineer remains clean and consistent across
+  both definitions.
+- Minor observation: @sdet's "What You Are NOT" section says it "does not create Docket issues"
+  and "reports bugs and quality findings as comments on existing issues." This is consistent with
+  @project-manager being the primary issue creator. No action needed.
+- The @senior-engineer definition correctly states it "may create single ad-hoc tracking issues
+  for unplanned work" — this exception is well-scoped and does not conflict with @project-manager
+  owning the planning function.
+
+---
+
 ## 2026-03-19 — First Evolution
 
 ### Summary

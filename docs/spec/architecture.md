@@ -3,7 +3,7 @@ project: "dotfiles.vorpal"
 maturity: "experimental"
 last_updated: "2026-03-18"
 updated_by: "@staff-engineer"
-scope: "System architecture, component relationships, design patterns, and key architectural decisions"
+scope: "System architecture, component relationships, design patterns, and integration points"
 owner: "@staff-engineer"
 dependencies:
   - operations.md
@@ -12,220 +12,237 @@ dependencies:
 
 # Architecture
 
-## Overview
+## System Overview
 
-dotfiles.vorpal is a declarative dotfiles manager built on the [Vorpal](https://github.com/ALT-F4-LLC/vorpal) build system. Rather than using shell scripts or symlink managers, the entire development environment -- CLI tools, configuration files, themes, and symlinks -- is defined as a Rust program that produces reproducible, content-addressed artifacts through Vorpal's build pipeline.
+dotfiles.vorpal is a declarative dotfiles manager built as a Rust program on top of the
+[Vorpal](https://github.com/ALT-F4-LLC/vorpal) build system. Rather than using shell scripts or
+symlink managers, the entire development environment — CLI tools, configuration files, themes, and
+symlinks — is defined as Rust code that produces reproducible, content-addressed artifacts stored
+in `/var/lib/vorpal/store/`.
 
-The project also deploys a five-agent Claude Code development team configuration (agent personas, skills, and orchestration workflows) alongside the dotfiles.
+The project also serves as a deployment vehicle for a five-agent Claude Code team configuration,
+including agent personas, skills, and orchestration workflows.
 
-## System Architecture
+## Top-Level Artifact Graph
 
-### High-Level Component Diagram
+The build produces two top-level artifacts:
 
 ```
-+-----------------------------------------------------------+
-|                      vorpal.rs (Entry Point)               |
-|  main() -> get_context() -> build dev + user artifacts     |
-+-------------------+-------------------+-------------------+
-                    |                   |
-        +-----------v----+    +---------v-----------+
-        | DevelopmentEnv |    | UserEnvironment     |
-        | ("dev")        |    | ("user")            |
-        +----------------+    +---------------------+
-        | - Protoc       |    | - 16 CLI tools      |
-        | - RustToolchain|    | - 6 config generators|
-        +----------------+    | - agent/skill files  |
-                              | - symlink mappings   |
-                              +----------+----------+
-                                         |
-                    +--------------------+--------------------+
-                    |                    |                    |
-             +------v------+    +-------v------+    +-------v------+
-             | file.rs     |    | user/*.rs    |    | vorpal-      |
-             | FileCreate  |    | Config       |    | artifacts    |
-             | FileDownload|    | Generators   |    | (external)   |
-             | FileSource  |    +--------------+    +--------------+
-             +-------------+
+vorpal build 'dev'   --> DevelopmentEnvironment("dev")
+                           ├── Protoc
+                           └── RustToolchain (cargo, clippy, rustfmt, rust-analyzer, rust-src, rust-std, rustc)
+
+vorpal build 'user'  --> UserEnvironment("user")
+                           ├── 16 CLI tool artifacts (awscli2, bat, direnv, doppler, fd, gh, git, gopls, jj, jq, k9s, kubectl, lazygit, nnn, ripgrep, tmux)
+                           ├── 10 configuration file artifacts (bat config, bat theme, claude code settings, claude agents, claude skills, claude statusline, ghostty config, k9s skin, markdown vim, opencode config)
+                           ├── Environment variables (EDITOR, GOPATH, PATH)
+                           └── 12 symlinks (store paths -> home directory locations)
 ```
 
-### Runtime Flow
+The `dev` artifact is a self-hosting dependency: it provides the Rust toolchain and Protoc needed
+to build this project itself. The `user` artifact is the primary deliverable containing all tools
+and configuration for the end-user environment.
 
-1. **`vorpal.rs::main()`** obtains a `ConfigContext` from `vorpal_sdk::context::get_context()`.
-2. It builds the **`dev`** artifact: a `DevelopmentEnvironment` containing Protoc and the Rust toolchain, used to compile the project itself.
-3. It builds the **`user`** artifact via `UserEnvironment::build()`, which:
-   - Instantiates 16 CLI tool artifacts from `vorpal-artifacts` and `vorpal-sdk` crates.
-   - Generates configuration files (bat, Claude Code, Ghostty, K9s, Neovim, OpenCode) using builder-pattern structs.
-   - Bundles agent definitions and skill definitions from the `agents/` and `skills/` directories as `FileSource` artifacts.
-   - Declares environment variables (`EDITOR`, `GOPATH`, `PATH`).
-   - Declares symlink mappings from Vorpal store paths to home directory locations.
-4. **`context.run()`** executes the Vorpal build pipeline, which content-addresses each artifact, caches results, and creates the declared symlinks.
+## Source Code Structure
 
-### Artifact Store
+```
+src/
+├── vorpal.rs          # Binary entry point (main). Builds dev + user artifacts.
+├── lib.rs             # Library root. Exports file, user modules. Defines SYSTEMS constant and get_output_path().
+├── file.rs            # Generic file artifact primitives: FileCreate, FileDownload, FileSource.
+├── user.rs            # UserEnvironment struct. Orchestrates all user tool and config artifact builds.
+└── user/
+    ├── bat.rs         # BatConfig builder (plain-text config generation)
+    ├── claude_code.rs # ClaudeCode builder (JSON settings.json generation via serde)
+    ├── ghostty.rs     # GhosttyConfig builder (key-value config generation)
+    ├── k9s.rs         # K9sSkin builder (YAML skin generation via formatdoc templates)
+    ├── opencode.rs    # Opencode builder (JSON config generation via serde)
+    └── statusline.sh  # Bash script included via include_str!() for Claude Code status bar
+```
 
-All built artifacts are stored in `/var/lib/vorpal/store/artifact/output/{namespace}/{digest}`. The `get_output_path()` function in `lib.rs` constructs these paths using a `"library"` namespace for configuration artifacts. Digests are content-addressed hashes, making builds reproducible and cacheable.
+### Non-Source Directories
 
-## Component Breakdown
-
-### 1. Entry Point (`src/vorpal.rs`)
-
-Single binary target named `vorpal`. Async entry point using `tokio::main`. Orchestrates both the `dev` and `user` artifact builds sequentially. The `dev` artifact must exist before the project can be compiled (it provides the Rust toolchain), but at runtime both are built in a single invocation.
-
-### 2. Library Root (`src/lib.rs`)
-
-Exports two modules (`file`, `user`), defines the supported platform list (`SYSTEMS`), and provides the `get_output_path()` helper. The `SYSTEMS` constant declares support for four platforms (aarch64-darwin, aarch64-linux, x86_64-darwin, x86_64-linux), though the primary target is aarch64-darwin (Apple Silicon macOS).
-
-### 3. File Abstraction Layer (`src/file.rs`)
-
-Three structs handle all file artifact creation:
-
-| Struct | Purpose | Mechanism |
-|---|---|---|
-| **`FileCreate`** | Generate a file from inline string content | Writes content via a shell step (`cat << 'EOF'`), optionally sets executable bit |
-| **`FileDownload`** | Fetch a file from a URL | Declares an `ArtifactSource` with the URL, copies to output |
-| **`FileSource`** | Bundle local directory contents as an artifact | Declares an `ArtifactSource` pointing at local paths with include filters |
-
-All three use the Vorpal SDK's `Artifact` and `step::shell` primitives to produce content-addressed outputs. They follow a consistent builder pattern: `new()` -> optional `with_*()` methods -> `build(context)`.
-
-### 4. User Environment (`src/user.rs`)
-
-The `UserEnvironment` struct is the orchestrator for the full user environment. Its `build()` method:
-
-- **CLI tool artifacts** (16 total): Each tool is instantiated from either `vorpal_artifacts` (community/pre-built: awscli2, bat, direnv, doppler, fd, jj, jq, k9s, kubectl, lazygit, nnn, ripgrep, tmux) or `vorpal_sdk::artifact` (SDK-provided: gh, git, gopls). All follow the `Tool::new().build(context)` pattern.
-- **Configuration artifacts** (6 generators + 1 download + 1 vim setting): Each config module under `src/user/` produces a file artifact.
-- **Agent and skill bundles**: The `agents/` and `skills/` directories are packaged as `FileSource` artifacts.
-- **Symlink declarations**: 11 symlink mappings connecting Vorpal store paths to home directory locations (`~/.config/bat/config`, `~/.claude/settings.json`, etc.).
-- **Environment variables**: Sets `EDITOR`, `GOPATH`, and an extended `PATH`.
-
-### 5. Configuration Generators (`src/user/*.rs`)
-
-Each generator follows the same pattern: a struct with builder methods that accumulate settings, and a `build()` method that renders the configuration to a string and wraps it in a `FileCreate` artifact.
-
-| Module | Output Format | Key Characteristics |
-|---|---|---|
-| `bat.rs` | Plain text | Simple `--theme=<name>` config |
-| `claude_code.rs` | JSON | Full Claude Code `settings.json` with permissions, sandbox, env vars, plugins, MCP servers, hooks, status line, attribution |
-| `ghostty.rs` | Key-value | Ghostty terminal emulator config (font, opacity, theme) |
-| `k9s.rs` | YAML | K9s Kubernetes UI skin with full Tokyo Night color palette |
-| `opencode.rs` | JSON | OpenCode AI tool config with permissions, keybinds, LSP, agents, themes |
-| `statusline.sh` | Bash script | Included via `include_str!()`, provides Claude Code status bar |
-
-The `claude_code.rs` module is the most complex, modeling the full Claude Code settings schema with typed structs for permissions, sandbox, attribution, MCP servers, hooks, and status line configuration.
-
-### 6. Agent Definitions (`agents/`)
-
-Five markdown files define Claude Code agent personas deployed to `~/.claude/agents/`:
-
-- `staff-engineer.md` -- Architecture, TDDs, code review
-- `senior-engineer.md` -- Implementation, code quality, debugging
-- `project-manager.md` -- Issue planning, task breakdown, dependency management
-- `qa-engineer.md` -- Testing, verification, acceptance criteria
-- `ux-designer.md` -- User experience design specs
-
-### 7. Skill Definitions (`skills/`)
-
-Two skills orchestrate agent collaboration:
-
-- `dev-team/SKILL.md` -- Coordinates all five agents for planning and executing development work
-- `dev-init/SKILL.md` -- Bootstraps `docs/spec/` project specifications for new repositories
-
-## Design Patterns
-
-### Builder Pattern (Pervasive)
-
-Every artifact and configuration struct uses the builder pattern: `Struct::new(name, systems)` followed by `with_*()` chaining and a terminal `build(context)` call. This provides a consistent, composable API across all components.
-
-### Content-Addressed Artifacts
-
-Vorpal content-addresses all build outputs by digest. The `get_output_path("library", &digest)` pattern is used throughout to construct store paths. This enables:
-- **Reproducibility**: Same inputs always produce the same output path.
-- **Caching**: Unchanged artifacts are never rebuilt.
-- **Atomicity**: Symlinks point to immutable store paths.
-
-### Configuration-as-Code
-
-All tool configurations are defined programmatically in Rust rather than as static dotfiles. This enables:
-- Type-checked configuration (compile-time errors for invalid settings).
-- Composability (e.g., reusing color palette variables across K9s, Ghostty).
-- Version-controlled, reviewable changes to tool settings.
-
-### Separation of Concerns
-
-The codebase cleanly separates:
-- **File primitives** (`file.rs`) from **domain logic** (`user.rs`, `user/*.rs`).
-- **Tool artifact acquisition** (delegated to `vorpal-artifacts`/`vorpal-sdk`) from **configuration generation** (local modules).
-- **Build definition** (this crate) from **build execution** (Vorpal runtime).
-
-## External Dependencies
-
-### Build-Time Dependencies
-
-| Crate | Purpose |
-|---|---|
-| `vorpal-sdk` (0.1.0-alpha.0) | Core SDK: context, artifact primitives, step execution, built-in tool artifacts (gh, git, gopls, rust toolchain, protoc) |
-| `vorpal-artifacts` (git: main branch) | Pre-built artifact types for community CLI tools (awscli2, bat, direnv, etc.) |
-| `anyhow` | Error handling with context |
-| `indoc` | Indented string literals for config template rendering |
-| `serde` + `serde_json` | JSON serialization for Claude Code and OpenCode configs |
-| `tokio` | Async runtime (multi-threaded) |
-
-### Runtime Dependencies
-
-| System | Purpose |
-|---|---|
-| **Vorpal runtime** | Executes build steps, manages artifact store, creates symlinks |
-| **S3 remote cache** (`altf4llc-vorpal-registry`) | Stores and retrieves pre-built artifacts |
-| **macOS (aarch64-darwin)** | Primary supported host platform |
-
-### Dependency Management
-
-- Cargo crate updates managed by [Renovate](https://docs.renovatebot.com/) with auto-merge for minor/patch on stable crates (version >= 1.0).
-- Custom Renovate manager tracks the tokyonight.nvim bat theme version from raw GitHub URLs in `src/user.rs`.
-- `vorpal-artifacts` is pinned to `main` branch via git dependency (no versioned releases yet).
+```
+agents/                # Claude Code agent persona markdown files (5 agents)
+skills/                # Claude Code skill definitions
+  ├── dev-team/        #   Multi-agent orchestration skill
+  └── dev-init/        #   Spec bootstrapping skill
+docs/                  # Project documentation
+  └── spec/            #   Project specification files
+```
 
 ## Key Architectural Decisions
 
-### 1. Rust as Configuration Language
+### 1. Dotfiles as a Rust Binary, Not Scripts
 
-The project uses Rust as the configuration language rather than YAML, TOML, or a dedicated DSL. This trades simplicity of authoring for:
-- Compile-time type safety on all configuration values.
-- Full programmatic composability (shared color palettes, conditional logic).
-- IDE support (autocomplete, go-to-definition on builder methods).
+The entire environment is defined as a Rust program compiled to a binary named `vorpal`. The
+`main()` function in `src/vorpal.rs` is the sole entry point. It builds two artifacts sequentially
+by calling into the Vorpal SDK's context system. This gives compile-time type safety for
+configuration generation and leverages Vorpal's content-addressed artifact store for
+reproducibility.
 
-### 2. Single Binary, Two Artifacts
+### 2. Builder Pattern for Configuration Generation
 
-Both `dev` and `user` artifacts are defined in a single `main()` function. The `dev` artifact is a bootstrapping dependency (provides the Rust toolchain to compile this project), while `user` is the actual deliverable. This creates a circular dependency resolved by having Vorpal installed separately on the host.
+Each tool configuration is represented as a Rust struct with a builder-style API:
 
-### 3. Vorpal as Build System
+- `BatConfig::new().with_theme("tokyonight").build(context)`
+- `ClaudeCode::new().with_permission_allow("...").build(context)`
+- `GhosttyConfig::new().with_font_family("...").build(context)`
+- `K9sSkin::new().with_body_fg_color("#f8f8f2").build(context)`
+- `Opencode::new().with_theme("tokyonight").build(context)`
 
-The project delegates all artifact management (fetching, building, caching, symlinking) to Vorpal. The Rust code is purely a build definition -- it describes what to build, not how. This means the project cannot be built or tested without a working Vorpal installation.
+All builders follow the same pattern: construct with `::new(name, systems)`, chain `with_*`
+methods, and finalize with `.build(context)`. The `build()` method serializes the configuration
+to its target format (JSON, YAML, key-value, or plain text) and wraps it in a `FileCreate`
+artifact.
 
-### 4. Git-Pinned Dependency for vorpal-artifacts
+### 3. Three File Artifact Primitives
 
-`vorpal-artifacts` is a git dependency pinned to `main` rather than a versioned crate. This allows rapid iteration but means builds are not fully reproducible across time without the `Cargo.lock` file. The `Vorpal.lock` file provides content-addressed source pinning at the Vorpal level.
+`src/file.rs` provides three reusable file artifact types, each wrapping Vorpal SDK primitives:
 
-### 5. Agent Team as Deployed Artifacts
+| Type | Purpose | Serialization |
+|------|---------|---------------|
+| `FileCreate` | Generate a file from in-memory content | Shell script writes content via heredoc |
+| `FileDownload` | Fetch a file from a URL | Vorpal source downloads, shell copies to output |
+| `FileSource` | Include files from the project source tree | Vorpal source includes, shell copies to output |
 
-Claude Code agent definitions and skills are treated as build artifacts, packaged from local `agents/` and `skills/` directories via `FileSource` and symlinked to `~/.claude/`. This makes agent persona management part of the same build pipeline as tool configuration.
+Each type follows the same pattern: construct shell script steps, create a Vorpal `Artifact`,
+and register it with the build context. `FileCreate` supports an `executable` flag that sets
+`chmod 755` vs `644`.
 
-## Platform Support
+### 4. Content-Addressed Store with Symlinks
 
-The `SYSTEMS` constant declares four platforms, but in practice the project targets **aarch64-darwin** (Apple Silicon macOS). The `Vorpal.lock` file pins all sources to `aarch64-darwin`, and the CI runs exclusively on `macos-latest`. The multi-platform declaration in `SYSTEMS` appears to be aspirational or inherited from Vorpal SDK conventions.
+Artifacts are stored at content-addressed paths under `/var/lib/vorpal/store/artifact/output/`.
+The path format is `{namespace}/{digest}` where namespace is either `library` (for config files)
+or the tool name. The `get_output_path()` function in `lib.rs` generates these paths.
 
-## CI/CD Pipeline
+The `UserEnvironment` registers symlinks that map store paths to user-facing locations like
+`~/.config/bat/config`, `~/.claude/settings.json`, and
+`~/Library/Application Support/com.mitchellh.ghostty/config`. This means the home directory
+contains only symlinks into the immutable store.
 
-GitHub Actions (`.github/workflows/vorpal.yaml`) defines a two-stage pipeline:
+### 5. Multi-Platform Support (Declared, Not Fully Exercised)
 
-1. **`build-dev`**: Checks out code, installs Vorpal (nightly) with S3 registry backend, builds `dev` artifact, uploads `Vorpal.lock` as a build artifact.
-2. **`build`** (depends on `build-dev`): Builds the `user` artifact using the same Vorpal setup.
+The `SYSTEMS` constant in `lib.rs` declares support for four platforms:
 
-Both jobs run on `macos-latest` and use AWS credentials from GitHub Secrets for S3 cache access.
+- `Aarch64Darwin` (macOS Apple Silicon)
+- `Aarch64Linux`
+- `X8664Darwin` (macOS Intel)
+- `X8664Linux`
+
+However, the `Vorpal.lock` file only contains entries for `aarch64-darwin`, and the CI pipeline
+runs only on `macos-latest`. The other three platforms are declared but not currently built or
+tested in CI.
+
+### 6. Agent Team as Deployable Configuration
+
+The Claude Code agent team (5 agents, 2 skills) is defined as markdown files in `agents/` and
+`skills/`, included in the build via `FileSource`, and symlinked to `~/.claude/agents/` and
+`~/.claude/skills/`. The Claude Code settings JSON is generated programmatically by the
+`ClaudeCode` builder, including permissions, sandbox rules, environment variables (OTEL
+telemetry), and plugin configuration.
+
+## Dependency Graph
+
+### Rust Crate Dependencies
+
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `vorpal-sdk` | `0.1.0-alpha.0` | Core Vorpal SDK — build context, artifact types, environment builders, built-in tool artifacts (gh, git, gopls, protoc, rust-toolchain) |
+| `vorpal-artifacts` | git (main branch) | Pre-built artifact types for 13 CLI tools (awscli2, bat, direnv, doppler, fd, jj, jq, k9s, kubectl, lazygit, nnn, ripgrep, tmux) |
+| `anyhow` | `1` | Error handling |
+| `indoc` | `2` | Indented string literals for config templates |
+| `serde` + `serde_json` | `1.0.x` | JSON serialization (ClaudeCode and Opencode configs) |
+| `tokio` | `1` (rt-multi-thread) | Async runtime required by Vorpal SDK |
+
+The split between `vorpal-sdk` (stable release on crates.io) and `vorpal-artifacts` (git
+dependency tracking main branch) is significant: the SDK provides core primitives while the
+artifacts crate provides the community/extended tool catalog. The artifacts crate is pinned to
+the `main` branch, meaning builds track upstream HEAD.
+
+### External Runtime Dependencies
+
+- **Vorpal runtime**: Must be installed on the host. The build expects `vorpal` CLI to be
+  available. A symlink from a local debug build is included in the user environment
+  (`$HOME/.vorpal/bin/vorpal`).
+- **AWS S3**: The CI pipeline uses S3-backed remote caching
+  (`altf4llc-vorpal-registry` bucket) for artifact storage. Requires AWS credentials.
+
+## Build Flow
+
+```
+1. vorpal build 'dev'
+   └── ConfigContext is created via get_context()
+       ├── Protoc::new().build(context)
+       ├── RustToolchain::new().build(context)
+       └── DevelopmentEnvironment::new("dev", SYSTEMS)
+           .with_artifacts([protoc, rust_toolchain])
+           .with_environments([PATH, RUSTUP_HOME, RUSTUP_TOOLCHAIN])
+           .build(context)
+
+2. vorpal build 'user'
+   └── UserEnvironment::new("user", SYSTEMS)
+       ├── Build 16 CLI tool artifacts (each via ToolName::new().build(context))
+       ├── Build 10 configuration file artifacts (each via Builder::new().build(context))
+       ├── Assemble into artifact::UserEnvironment
+       │   .with_artifacts([...all 26 artifacts...])
+       │   .with_environments([EDITOR, GOPATH, PATH])
+       │   .with_symlinks([...12 symlinks...])
+       └── .build(context) -> registers with Vorpal
+```
+
+All artifact builds are `async` and executed sequentially within each phase (tools, then configs,
+then assembly). The Vorpal SDK handles content-addressing, caching, and store management.
+
+## CI/CD Architecture
+
+GitHub Actions workflow (`.github/workflows/vorpal.yaml`):
+
+```
+push/PR to main
+  ├── build-dev (macos-latest)
+  │   ├── checkout
+  │   ├── setup-vorpal-action (nightly, S3 registry)
+  │   ├── vorpal build 'dev'
+  │   └── upload Vorpal.lock artifact
+  │
+  └── build (macos-latest, depends on build-dev)
+      ├── checkout
+      ├── setup-vorpal-action (nightly, S3 registry)
+      └── vorpal build 'user'
+```
+
+The pipeline uses `setup-vorpal-action` to install the Vorpal runtime and configure the S3
+registry backend. The `build-dev` job uploads `Vorpal.lock` as a GitHub Actions artifact, though
+the `build` job does not explicitly download it — it rebuilds from source.
+
+## Dependency Management
+
+[Renovate](https://docs.renovatebot.com/) manages dependency updates with custom configuration:
+
+- **Cargo crates**: Auto-merges minor/patch updates for stable crates (version >= 1.0).
+  Major updates require manual review.
+- **Serde ecosystem**: `serde` and `serde_json` are grouped into a single update PR.
+- **Custom regex manager**: Tracks the `tokyonight.nvim` bat theme version from the raw
+  GitHub URL in `src/user.rs`.
 
 ## Gaps and Limitations
 
-- **No tests**: The project has no unit tests, integration tests, or build verification beyond CI running `vorpal build`. Configuration generators are untested.
-- **No error recovery**: All `build()` calls use `?` propagation with `anyhow`. There is no retry logic, partial build recovery, or graceful degradation.
-- **Single-user design**: The configuration is hardcoded for a single user's preferences (specific tools, Tokyo Night theme, specific font). There is no parameterization or multi-user support.
-- **macOS-only in practice**: Despite declaring four platform targets, only aarch64-darwin is actually supported in the lock file and CI.
-- **Alpha SDK dependency**: `vorpal-sdk` is at `0.1.0-alpha.0`, meaning the API surface is unstable and may change without notice.
-- **No local development story without Vorpal**: The project cannot be built, tested, or validated without a working Vorpal installation. There is no mock or dry-run mode.
-- **Large OpenCode config module**: `src/user/opencode.rs` is notably large with extensive struct definitions, suggesting it may benefit from generation or simplification if the schema stabilizes.
+- **Single-platform CI**: Only `aarch64-darwin` (macOS Apple Silicon) is built and tested in
+  CI, despite four platforms being declared in code.
+- **No tests**: The project has zero test files. Configuration generators are not unit-tested.
+- **Git dependency on vorpal-artifacts**: The `vorpal-artifacts` crate is pinned to `main`
+  branch via git, making builds non-reproducible across time. A version bump in the upstream
+  repo can break this project without notice.
+- **Sequential artifact builds**: All artifacts are built sequentially despite no data
+  dependencies between them. The Vorpal SDK may handle parallelism internally, but the Rust
+  code awaits each build serially.
+- **Vorpal binary self-reference**: The user environment symlinks a local debug build of Vorpal
+  (`$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal`)
+  to `$HOME/.vorpal/bin/vorpal`. This is a development convenience that creates a circular
+  dependency: Vorpal is needed to build the dotfiles, and the dotfiles provide Vorpal.
+- **No rollback mechanism**: There is no documented or automated way to roll back to a previous
+  version of the user environment. The content-addressed store retains old artifacts, but
+  symlinks always point to the latest build output.
+- **vorpal-sdk is alpha**: The SDK is at `0.1.0-alpha.0`, indicating the API surface is
+  unstable and subject to breaking changes.

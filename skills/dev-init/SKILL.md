@@ -15,18 +15,24 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify, but you
 never write spec files yourself.
 
+**Scope boundary:** This skill handles initial generation of spec files only. Ongoing maintenance
+and updates to `docs/spec/` are handled by `@staff-engineer` agents during normal TDD and review
+workflows (see `dev-team` skill).
+
 ---
 
 ## Pre-flight
 
-Before spawning any agents, check for existing spec files:
+Before spawning any agents:
 
-1. Run `ls docs/spec/` to check for existing files.
-2. **If files exist**, ask the user:
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
+   is passed to every spawned agent for consistent `last_updated` frontmatter values.
+2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
+3. **If files exist**, ask the user:
    - **Overwrite all** — delete existing files and regenerate everything
    - **Skip existing** — only generate missing spec files
    - **Cancel** — abort the operation
-3. **If no files exist**, proceed directly to execution.
+4. **If no files exist**, proceed directly to execution.
 
 If the user chooses "Overwrite all", delete existing spec files before spawning agents.
 If the user chooses "Skip existing", note which files already exist and only spawn agents for the
@@ -39,15 +45,15 @@ missing ones.
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-| Spec File | Task Subject | Exploration Guidance |
-|---|---|---|
-| `architecture.md` | Generate architecture spec | Examine project structure, entry points, module boundaries, and dependency graph. Identify system components, design patterns, integration points, and key architectural decisions. Look at package manifests, config files, and directory layout for structure clues. |
-| `security.md` | Generate security spec | Examine authentication/authorization patterns, secret management, and environment variables. Check for .env files, credential handling, API key patterns, and trust boundaries. Identify security-relevant dependencies and their configurations. |
-| `operations.md` | Generate operations spec | Check .github/ for CI/CD workflows, Dockerfiles, deployment configs, and infrastructure code. Look for monitoring, logging, observability setup, and operational runbooks. Identify rollback procedures, release processes, and environment management. |
-| `performance.md` | Generate performance spec | Look for caching strategies, database queries, connection pooling, and concurrency patterns. Identify known bottlenecks, benchmarking tools, and performance-critical paths. Check for lazy loading, pagination, batching, and scaling considerations. |
-| `code-quality.md` | Generate code-quality spec | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. |
-| `review-strategy.md` | Generate review-strategy spec | Identify areas of high risk, complex logic, and frequent change. Determine which review dimensions matter most for this specific project. Look for existing PR templates, review checklists, and contribution guidelines. |
-| `testing.md` | Generate testing spec | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. |
+| Spec File | Exploration Guidance |
+|---|---|
+| `architecture.md` | Examine project structure, entry points, module boundaries, and dependency graph. Identify system components, design patterns, integration points, and key architectural decisions. Look at package manifests, config files, and directory layout for structure clues. |
+| `security.md` | Examine authentication/authorization patterns, secret management, and environment variables. Check for .env files, credential handling, API key patterns, and trust boundaries. Identify security-relevant dependencies and their configurations. |
+| `operations.md` | Check .github/ for CI/CD workflows, Dockerfiles, deployment configs, and infrastructure code. Look for monitoring, logging, observability setup, and operational runbooks. Identify rollback procedures, release processes, and environment management. |
+| `performance.md` | Look for caching strategies, database queries, connection pooling, and concurrency patterns. Identify known bottlenecks, benchmarking tools, and performance-critical paths. Check for lazy loading, pagination, batching, and scaling considerations. |
+| `code-quality.md` | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. |
+| `review-strategy.md` | Identify areas of high risk, complex logic, and frequent change. Determine which review dimensions matter most for this specific project. Look for existing PR templates, review checklists, contribution guidelines, and CI quality gates. |
+| `testing.md` | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. Be honest if no tests exist. |
 
 ---
 
@@ -59,7 +65,8 @@ exploration guidance for each — used in the spawning template.
 of the skill — maximum parallelism.
 
 For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` agent
-using the spawning template below, substituting the spec-specific values from the reference table.
+using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, and
+`{today_date}` from the pre-flight and reference table.
 
 ### Step 2: Wait for Completion
 
@@ -75,8 +82,8 @@ successfully and flag any that are missing.
 
 ## Spawning Template
 
-Use this template for each spec file, substituting `{filename}`, `{task_subject}`, and
-`{exploration_guidance}` from the Spec File Reference table above.
+Use this template for each spec file, substituting `{filename}`, `{exploration_guidance}`, and
+`{today_date}` (from the pre-flight date resolution).
 
 ```
 Use the @staff-engineer agent to generate a project specification:
@@ -86,11 +93,12 @@ Generate the `docs/spec/{filename}` project specification file.
 Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
 - {exploration_guidance}
+- Check docs/tdd/ for any existing technical design documents that inform this spec
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/{filename}`
-- Create the docs/spec/ directory if it doesn't exist
-- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated (today's date YYYY-MM-DD), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
+- Create the docs/spec/ directory if it doesn't exist (run: mkdir -p docs/spec)
+- Begin the file with YAML frontmatter (--- delimited) containing: project (use repository name), maturity (proof-of-concept|draft|experimental|stable — overall project maturity, choose honestly based on findings), last_updated ("{today_date}"), updated_by ("@staff-engineer"), scope (one-liner summary), owner ("@staff-engineer"), and dependencies (list of related spec filenames ONLY if a logical connection exists — omit the field entirely if none)
 - Do NOT write implementation code — the spec file is the deliverable
 - Do NOT commit any changes
 ```

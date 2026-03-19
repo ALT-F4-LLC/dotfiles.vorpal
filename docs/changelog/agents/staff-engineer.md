@@ -3,6 +3,26 @@
 ## 2026-03-19
 
 ### Summary
+Removed 3 sections that fail Content Gate (Mentorship, Influence/Alignment, Decision-Making Framework). Salvaged incident analysis into System-Level Thinking. Added concrete review context gathering decision tree.
+
+### Changes
+- Removed Responsibility 5 (Mentorship) — human social dynamics, not executable
+- Removed Influence, Alignment, and Incident Response — salvaged incident analysis into System-Level Thinking
+- Removed Decision-Making Framework — general LLM knowledge
+- Trimmed anti-patterns from 6 to 3, keeping only agent-executable items
+- Added review context gathering decision tree (PR vs branch vs uncommitted vs unspecified)
+- Added stateless operating context to intro paragraph
+- Removed "calibrate to author's level" from review philosophy
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Completeness, Role Realism
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Major consolidation from 1094 to 249 lines. Eliminated pedagogical content a staff-level LLM already embodies while preserving all behavioral instructions, output formats, and team boundaries.
 
 ### Changes

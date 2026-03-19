@@ -3,6 +3,37 @@
 ## 2026-03-19
 
 ### Summary
+Added Operating context paragraph to align with the pattern established across all other agents.
+
+### Changes
+- Added "Operating context" paragraph explaining stateless agent execution model, adapted to PM workflows
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
+Removed 4 sections that fail Content Gate (Communication Style, Retrospective, Anti-Patterns, Decision-Making). Folded Parallelism/Dependencies into Decompose the Work. Calibrated plan summary to tier.
+
+### Changes
+- Removed Communication Style, Retrospective, Anti-Patterns, Decision-Making Framework sections
+- Folded Maximize Parallelism and Dependencies into Decompose the Work, preserving contract task pattern
+- Compressed escalation into Rules section
+- Calibrated plan summary checklist to scale with plan complexity tier
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Major consolidation from 956 to 390 lines. Collapsed verbose routing templates, compressed issue examples, removed redundant workflow summary, and tightened all sections.
 
 ### Changes

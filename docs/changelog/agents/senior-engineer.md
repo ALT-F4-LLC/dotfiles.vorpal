@@ -3,6 +3,22 @@
 ## 2026-03-19
 
 ### Summary
+Strengthened self-review step for generated/serialized output, removed non-actionable Incident Response section, compressed Cross-Cutting Concerns checklist.
+
+### Changes
+- Expanded self-review serialization bullet into a concrete before/after diff step aligned with project's config-generator nature
+- Removed Incident Response & Debugging subsection — stateless agent cannot perform ongoing incident management; useful debugging guidance already covered by existing principles
+- Compressed Cross-Cutting Concerns from verbose parenthetical definitions to terse checklist
+
+### Dimensions Evaluated
+Role Realism, Consolidation & Trimming, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added UX spec escalation trigger so @senior-engineer stops and requests design input when user-facing work lacks a spec in `docs/ux/`.
 
 ### Changes

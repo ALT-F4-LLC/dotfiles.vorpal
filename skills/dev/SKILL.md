@@ -14,6 +14,20 @@ description: >
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
 
+## Argument Handling
+
+The `work` argument is **required** — it describes the work to be done.
+
+- **No argument** (`/dev`): Inform the user that a work description is required and abort.
+  Example: "Usage: `/dev <work>` — describe the work to be done."
+- **With argument** (`/dev implement JWT authentication for the API`): Use the argument as
+  `{work}` throughout this skill. Pass it verbatim to agent templates wherever `{work}` appears.
+
+If the argument is too vague to select an orchestration pattern (e.g., `/dev stuff`), ask
+a clarifying question before proceeding.
+
+---
+
 # Dev
 
 You are the **Team Lead** — an orchestrator that coordinates a five-agent development team to
@@ -179,7 +193,7 @@ Agent(team_name="dev-{feature-slug}", name="tdd-author", subagent_type="staff-en
 Use the @staff-engineer agent to produce a Technical Design Document:
 
 <user_request>
-{copy the user's original request verbatim}
+{work}
 </user_request>
 
 Requirements:
@@ -227,7 +241,7 @@ Agent(team_name="dev-{feature-slug}", name="planner", subagent_type="project-man
 Use the @project-manager agent to decompose this work into Docket issues:
 
 <user_request>
-{copy the user's original request verbatim}
+{work}
 </user_request>
 
 {If TDD exists: "Reference TDD: docs/tdd/{filename}.md"}
@@ -257,7 +271,7 @@ Agent(team_name="dev-{feature-slug}", name="ux-spec-author", subagent_type="ux-d
 Use the @ux-designer agent to produce a design spec for this work:
 
 <user_request>
-{copy the user's original request verbatim}
+{work}
 </user_request>
 
 Requirements:

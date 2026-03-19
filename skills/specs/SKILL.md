@@ -5,6 +5,7 @@ description: >
   parallel. Use this skill when the user wants to initialize, generate, or bootstrap project specs —
   including phrases like "specs", "generate specs", "bootstrap specs", "initialize specs", "create
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -64,39 +65,14 @@ exploration guidance for each — used in the spawning template.
 
 ## Execution
 
-### Team Setup
+### Step 1: Create Team and Spawn Agents
 
-Before spawning any agents, create an Agent Team:
-
-1. **Create the team** using `TeamCreate`:
-   ```
-   TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")
-   ```
-
-2. **Create tasks** — one `TaskCreate` per spec file to generate:
-   ```
-   TaskCreate(team_name="specs-init-{today_date}", title="Generate {filename}", description="Generate docs/spec/{filename} project specification", depends_on=[])
-   ```
-   All tasks are independent (no dependencies).
-
-### Step 1: Spawn Agents
-
-**Spawn all agents in the SAME turn** to maximize parallelism. This is the entire point of the
-skill.
-
-For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate
-using the spawning template below, substituting `{filename}`, `{exploration_guidance}`,
-`{today_date}`, and `{project_name}` from the pre-flight and reference table:
-
-```
-Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")
-```
-
-After spawning, assign tasks to teammates:
-
-```
-TaskUpdate(team_name="specs-init-{today_date}", task_id=<id>, owner="spec-{filename-without-ext}", status="in_progress")
-```
+1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
+2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
+   `TaskCreate(team_name="specs-init-{today_date}", title="Generate {filename}", description="Generate docs/spec/{filename} project specification", depends_on=[])`
+3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, and `{project_name}`:
+   `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
+4. **Assign tasks** — `TaskUpdate(team_name="specs-init-{today_date}", task_id=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 
 ### Step 2: Wait for Completion
 
@@ -136,6 +112,7 @@ Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
 - {exploration_guidance}
 - Check docs/tdd/ for any existing technical design documents that inform this spec
+- If other docs/spec/ files already exist, skim them to avoid content overlap
 - Document what ACTUALLY exists in the codebase — not aspirational goals
 - Be honest about gaps and missing pieces
 - Save the completed spec to `docs/spec/{filename}`
@@ -156,7 +133,6 @@ Requirements:
   - For `dependencies`: list related spec filenames ONLY if a logical connection exists —
     omit the field entirely if none
 - Do NOT write implementation code — the spec file is the deliverable
-- Do NOT commit any changes
 ```
 
 ---

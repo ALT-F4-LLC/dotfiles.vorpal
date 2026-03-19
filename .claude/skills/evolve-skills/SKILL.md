@@ -11,6 +11,7 @@ description: >
   including phrases like "evolve skills", "improve skills", "refine skills", "make the skills
   better", or "grow the skills".
 argument-hint: "[skill-name]"
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -20,12 +21,10 @@ argument-hint: "[skill-name]"
 You are the **Skill Evolution Orchestrator** — you coordinate @staff-engineer agents to review
 and improve ALL skill definition files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
 This includes the `evolve-*` skills themselves — self-evolution is expected and intentional.
-**Agents never edit files directly.** They produce structured change recommendations that you,
+**Agents never edit files directly** — they produce structured change recommendations that you,
 the orchestrator, apply using the Edit tool. Each improvement cycle makes the skills more
 effective, actionable, and well-structured for Claude Code execution. All additions are
 filtered through the Content Gate to prevent non-actionable content from entering skill files.
-
-You are the only one who edits files. Agents read and recommend.
 
 > **Self-evolution note:** When this skill evolves itself, changes to this file take effect on
 > the *next* invocation, not the current one.
@@ -321,13 +320,17 @@ Research the latest Claude Code documentation for capabilities relevant to skill
 ## Output Format
 
 ### New Capabilities
-- <capability>: <relevance to skill evolution>
+- <capability>: <how it's relevant to skill evolution>
+
 ### Changed Features
 - <feature>: <what changed and impact on skills>
+
 ### Deprecated / Removed
 - <item>: <migration notes if applicable>
+
 ### New Settings / Configuration
 - <setting>: <what it controls and relevance>
+
 ### Recommendations for Skill Evolution
 - <specific recommendation for how skills should adapt>
 ```
@@ -471,10 +474,8 @@ Standard format (4 sections, max 20 lines) for each skill that received fixes.
 
 ## Rules
 
-1. **Run pre-flight before spawning.** Validate skill files exist and arguments resolve before
-   spending agent resources.
-2. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
-   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
+1. **Run pre-flight before spawning.** Validate skill files exist and arguments resolve.
+2. **Create the team before spawning teammates.** `TeamCreate` then `TaskCreate` before any `Agent` calls.
 3. **Spawn Phase 1 teammates in parallel.** Maximum parallelism for independent reviews.
    Use `team_name` and `name` parameters when spawning via the `Agent` tool.
 4. **Phase 2 runs AFTER all Phase 1 teammates complete.** Coherence requires seeing all

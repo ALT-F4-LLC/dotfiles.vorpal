@@ -1,5 +1,33 @@
 # Changelog: project-manager
 
+## 2026-03-19 — Evolution 3: Operational Maturity, Complexity Tiering, Plan Lifecycle
+
+### Summary
+Third evolution focused on operational maturity — calibrating planning rigor to work complexity,
+standardizing issue description format, handling plan cancellation cleanly, adding a stakeholder
+alignment gate for complex work, and strengthening scope negotiation and staleness management.
+
+### Changes
+- Added plan complexity tiering (trivial/standard/complex) to prevent over-engineering simple
+  requests while ensuring complex work gets full rigor
+- Added concrete issue description template for consistent, scannable output across sessions
+- Added plan cancellation and partial completion handling — clean shutdown of abandoned work
+  to prevent zombie issues
+- Added stakeholder alignment checkpoint for complex-tier work before investing in full issue
+  creation
+- Added issue grooming and staleness management guidance to the re-engagement process
+- Strengthened the "understand the problem" step with proactive scope negotiation before
+  decomposition
+
+### Dimensions Evaluated
+Role Realism (scope negotiation, plan cancellation, stakeholder alignment, staleness management),
+Actionability (complexity tiering, issue template), Completeness (plan cancellation, staleness),
+Over-Engineering (complexity tiering reduces over-engineering), Career Growth (scope negotiation,
+stakeholder alignment)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 — Coherence Fix: ADRs and Cross-Team Negotiation Routing
 
 ### Changes

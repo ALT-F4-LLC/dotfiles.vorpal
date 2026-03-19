@@ -1,5 +1,44 @@
 # Changelog: staff-engineer
 
+## 2026-03-19 — Coherence Fix: Test Gap Remediation Deferral
+
+### Changes
+- Clarified SDET boundary in "What You Are NOT" to explicitly state that when review identifies
+  test gaps, remediation is deferred to @sdet rather than prescribed by staff-engineer
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+
+## 2026-03-19 — Evolution 3: Cross-Agent Review, Economic Reasoning, Operational Readiness
+
+### Summary
+Added cross-agent review responsibility for non-code artifacts, economic reasoning lenses (cost
+of delay, opportunity cost, TCO) to the decision-making framework, an Observability & Operational
+Readiness section to the TDD format, and a scope creep anti-pattern.
+
+### Changes
+- Added cross-agent review guidance to Responsibility 2 — staff-engineer now has explicit
+  instructions for reviewing @project-manager plans (technical feasibility), @sdet test
+  architecture (coverage strategy), and @ux-designer specs (technical feasibility)
+- Added cost of delay, opportunity cost, and total cost of ownership to Staff-Level Decision
+  Considerations — economic lenses that distinguish staff-level from senior-level leadership
+- Added section 10 (Observability & Operational Readiness) to the TDD format, renumbering
+  Implementation Phases to section 11 — addresses gap where review dimensions treat operations
+  as first-class but TDD format never prompted for operational design
+- Added "Scope creep during design" anti-pattern — prevents expanding TDD scope when codebase
+  exploration reveals adjacent problems
+
+### Dimensions Evaluated
+Role Realism (cross-agent review), Completeness (TDD observability section), Career Growth
+(economic reasoning), Spec Alignment (review-strategy.md, operations.md), Actionability
+(all changes produce concrete behavioral differences), Over-Engineering (no sections removed)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 — Evolution 2: Cross-Team Negotiation, ADRs, Platform Thinking
 
 ### Summary

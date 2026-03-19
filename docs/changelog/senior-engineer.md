@@ -1,5 +1,50 @@
 # Changelog: senior-engineer
 
+## 2026-03-19 — Coherence Fix: Review Handoff and SDET Escalation
+
+### Changes
+- Made @staff-engineer review handoff explicit in Execution Workflow step 5 and Complete Workflow
+  step 4 — both previously said "requesting formal review" without naming the reviewer
+- Added reciprocal acknowledgment in "What You Are NOT" SDET boundary that @sdet may flag
+  insufficient test coverage and return issues for additional implementation-level tests
+
+### Dimensions Evaluated
+Boundary Clarity (cross-agent coherence)
+
+### Rename
+No rename.
+
+## 2026-03-19 — Evolution 3: Agent Execution Context, Concrete Verification, and Precision Refinements
+
+### Summary
+Grounded the agent in its actual AI-agent operating model, strengthened self-review with
+project-specific verification steps, added concrete guidance for error context quality and
+dependency conflict resolution, and reduced redundancy accumulated across prior evolutions.
+
+### Changes
+- Added AI-agent operational context paragraph to introduction — acknowledges stateless
+  sessions, multi-agent team model, and how to adapt human-engineer practices to agent
+  execution reality
+- Strengthened self-review step with cargo check/clippy as zero-cost verification and
+  serialization output inspection for builder changes
+- Added error context quality guidance to Code Quality section — bare `?` vs `.context()`
+  with concrete examples, aligned with project's anyhow usage
+- Added trivial-change exception to ad-hoc issue creation — prevents Docket ceremony from
+  exceeding the effort of one-line fixes
+- Added dependency conflict resolution guidance — systematic approach for version conflicts,
+  feature flag incompatibilities, and lock file merge conflicts
+- Made "consider the blast radius" actionable with explicit call-site analysis via Grep
+- Tightened "verify in production" in Execution Workflow to include concrete build commands
+- Consolidated redundant "hidden complexity" guidance via cross-reference to Principle #4
+
+### Dimensions Evaluated
+Role Realism (AI-agent context), Actionability (concrete verification steps), Spec Alignment
+(testing.md/code-quality.md gaps), Completeness (error context, dependency conflicts),
+Over-Engineering (redundancy reduction)
+
+### Rename
+No rename — current name accurately reflects the role.
+
 ## 2026-03-19 — Coherence Fix: ADRs and Cross-Team Negotiation
 
 ### Changes

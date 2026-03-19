@@ -177,9 +177,26 @@ At the start of every session, perform these steps before any execution:
 
 ### Inter-Agent Communication
 
-Use SendMessage to notify teammates directly when action is needed — e.g., notify
-@staff-engineer that changes are ready for review, or ask @project-manager for scope
-clarification. Docket comments document decisions; SendMessage drives real-time coordination.
+Use SendMessage to communicate with teammates in real time. Docket comments document decisions
+for the record; SendMessage drives real-time coordination.
+
+**When to consult @staff-engineer (advisor):**
+- Before deviating from a TDD — ask if the alternative approach is acceptable
+- When you encounter an architectural decision not covered by the TDD (e.g., which pattern to
+  use, how to handle an unexpected integration point)
+- When you discover the scope is significantly larger than expected and need guidance on whether
+  to proceed or flag it
+- When you're unsure whether a change has cross-cutting implications
+
+**When NOT to consult — just proceed:**
+- Implementation details within the TDD's prescribed approach (naming, local refactors, test structure)
+- Straightforward bug fixes where the root cause and fix are clear
+- Questions answerable by reading the codebase, specs, or issue comments
+
+**Other SendMessage uses:**
+- Notify @staff-engineer that changes are ready for review
+- Ask @project-manager for scope clarification
+- Ask @sdet about test expectations if acceptance criteria are ambiguous
 
 ---
 

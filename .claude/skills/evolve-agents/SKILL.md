@@ -11,6 +11,7 @@ description: >
   or refine agent definitions — including phrases like "evolve agents", "improve agents",
   "grow the team", "refine agent definitions", or "make the agents better".
 argument-hint: "[agent-name]"
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -27,7 +28,8 @@ reliably. All additions are filtered through the Content Gate to prevent non-act
 content from entering agent files. Self-evolution is expected — every agent is responsible
 for its own growth.
 
-You are the only one who edits files. Agents read and recommend.
+> **Self-evolution note:** When agents evolve themselves, changes to agent files take effect on
+> the *next* invocation, not the current one.
 
 > **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** Evolution is about sharpening, not
 > accumulating. Every cycle should leave agent files the same size or smaller. If a file is over
@@ -172,25 +174,10 @@ entries exceeding 20 lines.
 
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
 
-1. **Create the team** using `TeamCreate`:
-   ```
-   TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")
-   ```
-
-2. **Create Phase 0 task** (documentation research):
-   ```
-   TaskCreate(team_name="evolve-agents-{today_date}", title="Docs Research", description="Research latest Claude Code documentation for agent-relevant capabilities", depends_on=[])
-   ```
-
-3. **Create Phase 1 tasks** — one per target agent, each depends on Phase 0:
-   ```
-   TaskCreate(team_name="evolve-agents-{today_date}", title="Review <name>", description="Self-review and improvement recommendations for agents/<name>.md", depends_on=[<phase_0_task_id>])
-   ```
-
-4. **Create the Phase 2 task** — depends on all Phase 1 tasks:
-   ```
-   TaskCreate(team_name="evolve-agents-{today_date}", title="Coherence & Renames", description="Cross-agent coherence review and rename execution", depends_on=[<all Phase 1 task IDs>])
-   ```
+1. **Create the team**: `TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`
+2. **Create Phase 0 task**: `TaskCreate(title="Docs Research", description="Research latest Claude Code documentation for agent-relevant capabilities", depends_on=[])`
+3. **Create Phase 1 tasks** — one per target agent, each depends on Phase 0: `TaskCreate(title="Review <name>", description="Self-review for agents/<name>.md", depends_on=[<phase_0_task_id>])`
+4. **Create Phase 2 task** — depends on all Phase 1 tasks: `TaskCreate(title="Coherence & Renames", description="Cross-agent coherence review", depends_on=[<all_phase_1_ids>])`
 
 ### Phase 0: Documentation Research
 
@@ -268,26 +255,11 @@ handoffs), then reports structured recommendations.
 
 After Phase 2 completes:
 
-1. **Shut down all teammates** — send shutdown requests:
-   ```
-   SendMessage(to="review-<name>", message={type: "shutdown_request"})
-   SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})
-   ```
-   Send one `SendMessage` per teammate that was spawned.
-
-2. **Delete the team** to clean up resources:
-   ```
-   TeamDelete(team_name="evolve-agents-{today_date}")
-   ```
-
-3. Run `wc -l agents/*.md` and compare to pre-flight line counts
-4. If any file exceeds 500 lines, perform additional consolidation until it is under 500
-5. Report:
-   - Files modified
-   - Before/after line counts for each agent (e.g., `staff-engineer.md: 1094 → 480`)
-   - Improvements made to each agent
-   - Any renames or coherence fixes applied
-   - Reminder that NO changes have been committed — review with `git diff`
+1. **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})`
+   for each spawned teammate, then **delete the team** via `TeamDelete(team_name="evolve-agents-{today_date}")`.
+2. Run `wc -l agents/*.md`. If any exceed 500 lines, consolidate until under 500.
+3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
+   and reminder that NO changes have been committed — review with `git diff`.
 
 ---
 

@@ -10,7 +10,8 @@ description: >
   when the user describes work that clearly needs both planning and parallel execution. Also
   trigger when the user references @project-manager and @senior-engineer together, or asks for
   "parallel development", "multi-agent execution", or "agent swarm".
-argument-hint: "[work]"
+argument-hint: "<work>"
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -40,23 +41,7 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
 
 ## Team Structure
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                     TEAM LEAD (you)                       │
-│              Orchestrator — coordinates all               │
-└──┬──────────┬──────────┬──────────────┬─────────┬────────┘
-   │          │          │              │         │
-   ▼          ▼          ▼              ▼         ▼
- @staff    @project   @ux           @senior    @sdet
- engineer  manager    designer      engineer
- ────────  ────────   ────────      ────────   ────────
- TDDs +    Plans in   UX specs     Implements Tests +
- Review    Docket     in docs/ux/  from issues verifies
- docs/tdd/ ONLY role  Never code   Never       Never
- Never     that                    creates     creates
- code      creates                 issues      issues
-            issues
-```
+**Team Lead (you)** coordinates: @staff-engineer, @project-manager, @ux-designer, @senior-engineer, @sdet.
 
 | Agent | Primary Output | Key Constraint |
 |---|---|---|
@@ -169,22 +154,20 @@ For work requiring multiple TDDs, phased rollouts, or cross-cutting architectura
 ### UX-Heavy Task
 
 For work involving user-facing surfaces that need design before technical planning.
-
-```
-@ux-designer → @staff-engineer → @project-manager → @senior-engineer(s) → @staff-engineer → @sdet
-   UX spec        TDD               plan              implement            review           test
-```
+Follows Medium Task pattern with @ux-designer prepended:
 
 1. Spawn @ux-designer to produce a design spec in `docs/ux/`.
-2. Spawn @staff-engineer to produce a TDD in `docs/tdd/` (informed by the UX spec).
+2. Spawn @staff-engineer to produce a TDD (informed by the UX spec).
 3. Spawn @project-manager to decompose into Docket issues.
-4. Spawn @senior-engineer(s) to implement the issues.
-5. Spawn @staff-engineer to review the implementation changes.
-6. Spawn @sdet to verify acceptance criteria.
+4. Execute implementation, review, and verification as in Medium Task.
 
 ---
 
 ## Spawning Templates
+
+> **Shared rules for ALL spawned agents:** Do NOT commit any changes (no `git add`, `git commit`,
+> `git push`). Before starting, check `docs/tdd/`, `docs/ux/`, and `docs/spec/` for relevant
+> context. All Docket commands are Bash commands run via the Bash tool.
 
 ### @staff-engineer (TDD)
 
@@ -199,13 +182,11 @@ Use the @staff-engineer agent to produce a Technical Design Document:
 
 Requirements:
 - Explore the codebase using Read, Grep, Glob, and Bash to understand current patterns
-- Check docs/ux/ for any existing UX design specs that inform this work
-- Check docs/spec/ for relevant project specifications (architecture, testing strategy, etc.)
+- Check docs/ux/ and docs/spec/ for existing specs that inform this work
 - Produce a TDD following the standard format in your agent instructions
 - Save the completed spec to docs/tdd/{descriptive-name}.md
 - Include concrete acceptance criteria, architecture decisions, and implementation phases
 - Do NOT write implementation code — the TDD is the deliverable
-- Do NOT commit any changes
 ```
 
 ### @staff-engineer (Code Review)
@@ -228,10 +209,8 @@ Requirements:
 - If `git diff` shows no changes, STOP and report that no changes were found — do not proceed
   with a review of empty output
 - Evaluate across six dimensions: architecture, security, operations, performance, code quality, testing
-- Check docs/spec/ for project conventions that should be followed
 - Provide actionable feedback structured by severity (blocker, concern, suggestion, praise)
-- If blockers are found, list each one with the specific file and issue so they can be routed back
-- Do NOT commit any changes
+- If blockers are found, list each with specific file and issue for routing back
 ```
 
 ### @project-manager
@@ -298,17 +277,14 @@ Scoped files: {list of files this issue should touch}
 {If Discovered comments exist from prior phases: "Context from prior phases: {relevant Discovered comments}"}
 
 Rules:
-- BEFORE starting, check docs/tdd/, docs/ux/, and docs/spec/ for relevant design and project context
 - BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
 - Run `docket issue move {DOCKET-ID} in-progress` via Bash to claim the issue
-- Do NOT commit any changes (no git add, no git commit, no git push)
 - Do NOT modify files outside the scope of this issue
 - When done, run `docket issue close {DOCKET-ID}` and
   `docket issue comment add {DOCKET-ID} -m "Completed: {summary}"` via Bash
 - Report what files you changed and a summary of the work
 - If you discover additional work needed, add a comment via
   `docket issue comment add {DOCKET-ID} -m "Discovered: {description}"` — do NOT do extra work
-- ALL Docket commands are Bash commands run via the Bash tool
 ```
 
 ### @sdet (Issue Verification)
@@ -322,7 +298,6 @@ Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
 
 Rules:
-- BEFORE starting, check docs/tdd/, docs/ux/, and docs/spec/ for expected behavior and test strategy
 - BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
 - Run `docket issue move {DOCKET-ID} in-progress` via Bash to claim the issue
 - Write tests that verify acceptance criteria from the issue description and specs
@@ -330,7 +305,6 @@ Rules:
 - When done, run `docket issue close {DOCKET-ID}` and
   `docket issue comment add {DOCKET-ID} -m "Tested: {summary of tests, coverage, results}"` via Bash
 - Report bugs as comments on the relevant issue, NOT as new issues
-- ALL Docket commands are Bash commands run via the Bash tool
 ```
 
 ### @sdet (Full Verification)
@@ -349,15 +323,12 @@ Completed issues:
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
 
 Rules:
-- BEFORE starting, check docs/tdd/, docs/ux/, and docs/spec/ for expected behavior and test strategy
 - Review the full set of changes via `git diff` to understand the complete scope
 - Write tests that verify acceptance criteria across ALL completed issues
 - Run existing test suites to check for regressions
 - Verify cross-issue integration — do the pieces work together, not just individually
 - Report: tests written, tests passed/failed, coverage summary, any bugs found
 - Report bugs as comments on the relevant Docket issue, NOT as new issues
-- Do NOT commit any changes
-- ALL Docket commands are Bash commands run via the Bash tool
 ```
 
 ---
@@ -498,59 +469,14 @@ re-analyze file scoping. Retry with corrected phase assignments.
 
 ## Rules
 
-1. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
-   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
-2. **Never commit.** No `git add`, no `git commit`, no `git push`. Work stays uncommitted.
-3. **Never skip planning.** Always start with @project-manager (or design first if needed).
-4. **Never run conflicting phases in parallel.** One phase at a time.
-5. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
-6. **Issue creation is PM-only.** Only @project-manager creates Docket issues. All other agents
-   use comments to report findings, bugs, or discovered work.
-7. **Staff-engineer reviews all implementation changes.** Every @senior-engineer change gets
-   reviewed before the work is considered complete.
-8. **SDET verification is mandatory for medium+ tasks.** @sdet verifies acceptance criteria
-   after implementation and review.
-9. **Route UX work to @ux-designer before design.** When work involves user-facing surfaces,
-   get a UX spec before the @staff-engineer produces a TDD.
-10. **Maximize parallelism.** Spawn all teammates for a phase in the same turn. Never serialize
-    work that can safely run in parallel.
-11. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
-12. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
-    stop looping and escalate to the user.
-13. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
-    via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.
+1. **Create the team before spawning teammates.** Use `TeamCreate` and `TaskCreate` before spawning.
+2. **Never skip planning.** Always start with @project-manager (or design first if needed).
+3. **Never run conflicting phases in parallel.** One phase at a time.
+4. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
+5. **Maximize parallelism.** Spawn all teammates for a phase in the same turn.
+6. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
+7. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
+   stop looping and escalate to the user.
+8. **Clean up the team.** After wrap-up, send `shutdown_request` to all teammates and delete
+   the team with `TeamDelete`.
 
----
-
-## Docket CLI Quick Reference
-
-All agents run these as **Bash commands** via the Bash tool.
-
-```bash
-# Setup and status
-docket init                          # Initialize database (idempotent)
-docket board --json                  # Kanban overview
-docket next --json                   # Work-ready issues
-
-# Query
-docket issue list --json             # List issues (filter: -s, -p, -l, -T, --parent)
-docket issue show <id> --json        # Full issue detail
-docket issue comment list <id>       # List comments
-
-# Create (PM only)
-docket issue create -t "title" -d "desc" -p <priority> -T <type> --parent <id>
-
-# Update
-docket issue move <id> <status>      # Change status (backlog, todo, in-progress, done)
-docket issue close <id>              # Complete issue
-docket issue comment add <id> -m ""  # Add comment
-docket issue edit <id>               # Edit issue (-t, -d, -s, -p, -T)
-
-# Relationships
-docket issue link add <id> blocks <target>
-docket issue link add <id> blocked-by <target>
-
-# File attachments
-docket issue file add <id> <paths>   # Attach files (PM does this during planning)
-docket issue file list <id>          # List attached files
-```

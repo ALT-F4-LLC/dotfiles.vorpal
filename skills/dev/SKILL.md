@@ -1,12 +1,12 @@
 ---
-name: dev-team
+name: dev
 description: >
   Orchestrate a software development agent team consisting of @staff-engineer (design + review),
   @project-manager (planning), @ux-designer (UX design), @senior-engineer (implementation), and
   @sdet (testing). Use this skill whenever the user wants to plan AND execute a body of
   work using the agent team pattern — including feature development, migrations, refactors, bug
-  fix batches, or any multi-issue project. Trigger on phrases like "use the agent team", "plan
-  and execute", "have the team work on", "spin up engineers", "run the dev team on this", or
+  fix batches, or any multi-issue project. Trigger on phrases like "use dev", "run dev",
+  "use the agent team", "plan and execute", "have the team work on", "spin up engineers", or
   when the user describes work that clearly needs both planning and parallel execution. Also
   trigger when the user references @project-manager and @senior-engineer together, or asks for
   "parallel development", "multi-agent execution", or "agent swarm".
@@ -14,7 +14,7 @@ description: >
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
 
-# Dev Team
+# Dev
 
 You are the **Team Lead** — an orchestrator that coordinates a five-agent development team to
 plan and execute software development work.
@@ -174,6 +174,8 @@ For work involving user-facing surfaces that need design before technical planni
 ### @staff-engineer (TDD)
 
 ```
+Agent(team_name="dev-{feature-slug}", name="tdd-author", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to produce a Technical Design Document:
 
 <user_request>
@@ -194,6 +196,8 @@ Requirements:
 ### @staff-engineer (Code Review)
 
 ```
+Agent(team_name="dev-{feature-slug}", name="reviewer", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to review implementation changes:
 
 Review the changes made by @senior-engineer for this work.
@@ -218,6 +222,8 @@ Requirements:
 ### @project-manager
 
 ```
+Agent(team_name="dev-{feature-slug}", name="planner", subagent_type="project-manager", prompt="...")
+
 Use the @project-manager agent to decompose this work into Docket issues:
 
 <user_request>
@@ -246,6 +252,8 @@ Requirements:
 ### @ux-designer
 
 ```
+Agent(team_name="dev-{feature-slug}", name="ux-spec-author", subagent_type="ux-designer", prompt="...")
+
 Use the @ux-designer agent to produce a design spec for this work:
 
 <user_request>
@@ -265,6 +273,8 @@ Requirements:
 ### @senior-engineer
 
 ```
+Agent(team_name="dev-{feature-slug}", name="impl-{DOCKET-ID}", subagent_type="senior-engineer", prompt="...")
+
 Use the @senior-engineer agent to complete this issue:
 
 Docket Issue: {DOCKET-ID} — {title}
@@ -289,6 +299,8 @@ Rules:
 ### @sdet (Issue Verification)
 
 ```
+Agent(team_name="dev-{feature-slug}", name="verifier-{DOCKET-ID}", subagent_type="sdet", prompt="...")
+
 Use the @sdet agent to verify this issue:
 
 Docket Issue: {DOCKET-ID} — {title}
@@ -311,6 +323,8 @@ Rules:
 Use this template at the end of medium+ tasks to verify ALL completed work holistically.
 
 ```
+Agent(team_name="dev-{feature-slug}", name="full-verifier", subagent_type="sdet", prompt="...")
+
 Use the @sdet agent to verify all implementation work:
 
 Completed issues:
@@ -335,16 +349,39 @@ Rules:
 
 ## Execution Workflow
 
+### Team Setup
+
+Before spawning any agents, create an Agent Team to coordinate:
+
+1. **Create the team** using `TeamCreate`:
+   ```
+   TeamCreate(team_name="dev-{feature-slug}", description="{brief description of the work}")
+   ```
+   Use a descriptive slug derived from the user's request (e.g., `dev-auth-refactor`).
+
+2. **Create tasks** using `TaskCreate` based on the orchestration pattern selected:
+   - For each design deliverable (UX spec, TDD): one task
+   - For the planning phase: one task
+   - For each implementation issue: one task (created after PM produces the phase plan)
+   - For the review phase: one task
+   - For the verification phase: one task (if medium+ task)
+
+   Set `depends_on` to enforce phase ordering — implementation tasks depend on planning,
+   review depends on implementation, verification depends on review.
+
 ### Design Phase (if applicable)
 
-1. **If UX-heavy**: Spawn @ux-designer to produce a design spec. Wait for completion.
-2. **If medium+**: Spawn @staff-engineer to produce a TDD. Wait for completion.
-   **If large**: Spawn multiple @staff-engineer agents for parallel TDDs if components are
+1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. After spawning,
+   assign the design task via `TaskUpdate`. Wait for completion.
+2. **If medium+**: Spawn @staff-engineer teammate to produce a TDD. After spawning, assign
+   the TDD task via `TaskUpdate`. Wait for completion.
+   **If large**: Spawn multiple @staff-engineer teammates for parallel TDDs if components are
    independent.
 
 ### Planning Phase
 
-3. **Spawn @project-manager** with the user's request and any spec references.
+3. **Spawn @project-manager teammate** with the user's request and any spec references.
+   Assign the planning task via `TaskUpdate`.
 4. **Receive the phase plan.** Review it for:
    - File collision risks (two issues touching the same files in one phase)
    - Missing acceptance criteria on any issue
@@ -356,32 +393,37 @@ Rules:
 
 ### Implementation Phase
 
-7. **Execute one phase at a time.** Within each phase, spawn one @senior-engineer per issue
-   in parallel.
+7. **Execute one phase at a time.** Within each phase, spawn one @senior-engineer teammate
+   per issue in parallel. After spawning, assign each teammate's task via `TaskUpdate`.
 
-   **Spawn all agents for the current phase in the same turn** to maximize parallelism.
-   Practical limit: spawn up to 5 agents per turn. If a phase has more issues, batch into
+   **Spawn all teammates for the current phase in the same turn** to maximize parallelism.
+   Practical limit: spawn up to 5 teammates per turn. If a phase has more issues, batch into
    groups of 5 and wait for each batch before starting the next.
 
-8. **Wait for all agents in the phase to complete** before starting the next phase.
+   Teammates go idle between turns — messages are delivered automatically. Monitor progress
+   via `TaskList(team_name="dev-{feature-slug}")`.
+
+8. **Wait for all teammates in the phase to complete** before starting the next phase.
 
 9. **After each phase completes:**
-   - Verify all agents reported success
+   - Verify all teammates reported success
    - Confirm issue statuses in Docket are "done" via `docket board --json`
    - Check for "Discovered:" comments that need attention
    - If any Discovered comments affect upcoming phases, include them as context in the
      @senior-engineer prompts for those phases
-   - If any agent failed, diagnose before proceeding (see Handling Failures below)
+   - If any teammate failed, diagnose before proceeding (see Handling Failures below)
    - Proceed to the next phase
 
 ### Review Phase
 
-10. **Spawn @staff-engineer to review** all implementation changes. Provide the `git diff --stat`
-    output in the prompt so the reviewer can focus on the right files.
+10. **Spawn @staff-engineer teammate to review** all implementation changes. Assign the review
+    task via `TaskUpdate`. Provide the `git diff --stat` output in the prompt so the reviewer
+    can focus on the right files.
 
     **For large tasks (20+ files changed):** Consider splitting the review. Spawn one
-    @staff-engineer per logical grouping (e.g., by TDD component, by phase, or by directory).
-    Include only the relevant file paths in each review prompt using `git diff -- <paths>`.
+    @staff-engineer teammate per logical grouping (e.g., by TDD component, by phase, or by
+    directory). Include only the relevant file paths in each review prompt using
+    `git diff -- <paths>`.
 
     If blockers are found, route them back to @senior-engineer for fixes, then re-review.
 
@@ -390,18 +432,20 @@ Rules:
 
 ### Verification Phase (medium+ tasks)
 
-11. **Spawn @sdet using the Full Verification template** to verify acceptance criteria and test
-    coverage across all completed work. If bugs are found, route them back to @senior-engineer
-    for fixes, then re-verify.
+11. **Spawn @sdet teammate using the Full Verification template** to verify acceptance criteria
+    and test coverage across all completed work. Assign the verification task via `TaskUpdate`.
+    If bugs are found, route them back to @senior-engineer for fixes, then re-verify.
 
     **Bug-fix loop limit:** If the same bug persists after 2 fix-verify cycles, escalate to the
     user rather than continuing to loop.
 
-### Wrap-up
+### Wrap-up & Team Cleanup
 
 12. **After all phases complete:**
     - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
+    - **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})` for each
+    - **Delete the team** via `TeamDelete(team_name="dev-{feature-slug}")` to clean up resources
     - Remind the user that NO changes have been committed — they can review with `git diff`
 
 ---
@@ -439,23 +483,27 @@ re-analyze file scoping. Retry with corrected phase assignments.
 
 ## Rules
 
-1. **Never commit.** No `git add`, no `git commit`, no `git push`. Work stays uncommitted.
-2. **Never skip planning.** Always start with @project-manager (or design first if needed).
-3. **Never run conflicting phases in parallel.** One phase at a time.
-4. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
-5. **Issue creation is PM-only.** Only @project-manager creates Docket issues. All other agents
+1. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
+   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
+2. **Never commit.** No `git add`, no `git commit`, no `git push`. Work stays uncommitted.
+3. **Never skip planning.** Always start with @project-manager (or design first if needed).
+4. **Never run conflicting phases in parallel.** One phase at a time.
+5. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
+6. **Issue creation is PM-only.** Only @project-manager creates Docket issues. All other agents
    use comments to report findings, bugs, or discovered work.
-6. **Staff-engineer reviews all implementation changes.** Every @senior-engineer change gets
+7. **Staff-engineer reviews all implementation changes.** Every @senior-engineer change gets
    reviewed before the work is considered complete.
-7. **SDET verification is mandatory for medium+ tasks.** @sdet verifies acceptance criteria
+8. **SDET verification is mandatory for medium+ tasks.** @sdet verifies acceptance criteria
    after implementation and review.
-8. **Route UX work to @ux-designer before design.** When work involves user-facing surfaces,
+9. **Route UX work to @ux-designer before design.** When work involves user-facing surfaces,
    get a UX spec before the @staff-engineer produces a TDD.
-9. **Maximize parallelism.** Spawn all agents for a phase in the same turn. Never serialize
-   work that can safely run in parallel.
-10. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
-11. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
+10. **Maximize parallelism.** Spawn all teammates for a phase in the same turn. Never serialize
+    work that can safely run in parallel.
+11. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
+12. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
     stop looping and escalate to the user.
+13. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
+    via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.
 
 ---
 

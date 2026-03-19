@@ -251,13 +251,44 @@ During **Phase 1**, after applying agent changes, the orchestrator MUST also nor
 
 ## Orchestration Workflow
 
+### Team Setup
+
+Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
+
+1. **Create the team** using `TeamCreate`:
+   ```
+   TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")
+   ```
+
+2. **Create Phase 1 tasks** — one `TaskCreate` per target agent:
+   ```
+   TaskCreate(team_name="evolve-agents-{today_date}", title="Review <name>", description="Self-review and improvement recommendations for agents/<name>.md", depends_on=[])
+   ```
+
+3. **Create the Phase 2 task** — depends on all Phase 1 tasks:
+   ```
+   TaskCreate(team_name="evolve-agents-{today_date}", title="Coherence & Renames", description="Cross-agent coherence review and rename execution", depends_on=[<all Phase 1 task IDs>])
+   ```
+
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one agent per target, using the **matching agent type** (e.g., spawn @senior-engineer to
-review `agents/senior-engineer.md`). **Spawn all agents in the same turn** to maximize
+Spawn one teammate per target, using the **matching agent type** (e.g., spawn @senior-engineer to
+review `agents/senior-engineer.md`). **Spawn all teammates in the same turn** to maximize
 parallelism. If targeting a single agent, spawn one.
 
-Each self-reviewing agent (read-only — no file edits):
+Each teammate is spawned with `team_name` and `name` parameters:
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
+```
+
+After spawning, assign tasks to teammates:
+
+```
+TaskUpdate(team_name="evolve-agents-{today_date}", task_id=<id>, owner="review-<name>", status="in_progress")
+```
+
+Each self-reviewing teammate (read-only — no file edits):
 
 1. Reads the target agent file in `agents/<name>.md`
 2. Reads ONLY the most recent entry in `docs/changelog/agents/<name>.md` (if it exists) — the first
@@ -268,11 +299,15 @@ Each self-reviewing agent (read-only — no file edits):
    + "What You Are NOT" section) to understand team boundaries without consuming excessive context
 5. Evaluates the agent against ALL 8 dimensions, with dimension 5 (Consolidation & Trimming)
    taking highest priority — especially if the file is over 500 lines
-6. Reports back with structured change recommendations including net line change estimates
+6. Marks their task completed via `TaskUpdate` and reports back with structured change
+   recommendations including net line change estimates
 
-**After each Phase 1 agent completes**, the orchestrator:
+Teammates go idle between turns — this is normal. Messages from teammates are delivered
+automatically; no polling is needed. The orchestrator receives results as teammates complete.
 
-1. Reviews the agent's change recommendations **against the Content Gate** — reject any
+**After each Phase 1 teammate completes**, the orchestrator:
+
+1. Reviews the teammate's change recommendations **against the Content Gate** — reject any
    addition that fails any gate check, even if the agent provides a rationale
 2. Applies each approved change to `agents/<name>.md` using the Edit tool
 3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
@@ -281,12 +316,24 @@ Each self-reviewing agent (read-only — no file edits):
    (see "Changelog Normalization" under Changelog Format)
 5. Tracks rename recommendations and coherence issues for Phase 2
 
+Use `TaskList(team_name="evolve-agents-{today_date}")` to check overall Phase 1 progress.
+
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 agents complete and the orchestrator has applied their changes, spawn a
-single @staff-engineer (read-only) to review coherence and recommend fixes.
+After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
+single @staff-engineer teammate (read-only) to review coherence and recommend fixes.
 
-The Phase 2 agent:
+```
+Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
+```
+
+Assign the Phase 2 task:
+
+```
+TaskUpdate(team_name="evolve-agents-{today_date}", task_id=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
+```
+
+The Phase 2 teammate:
 
 1. Reads ALL agent files in `agents/*.md` (the freshly improved versions)
 2. Verifies any renames recommended in Phase 1 and prepares rename instructions
@@ -298,21 +345,34 @@ The Phase 2 agent:
    - Terminology is consistent across all agents
    - Handoff patterns work in both directions
    - Decision-making frameworks are consistent where they should be
-4. Reports structured recommendations (see Phase 2 template for format)
+4. Marks the coherence task completed via `TaskUpdate` and reports structured recommendations
+   (see Phase 2 template for format)
 
-**After the Phase 2 agent completes**, the orchestrator:
+**After the Phase 2 teammate completes**, the orchestrator:
 
 1. Executes any renames (`mv`, frontmatter updates, reference updates across codebase)
 2. Applies coherence fixes using the Edit tool
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
 
-### Wrap-up
+### Wrap-up & Team Cleanup
 
 After Phase 2 completes:
 
-1. Run `wc -l agents/*.md` and compare to pre-flight line counts
-2. If any file exceeds 500 lines, perform additional consolidation until it is under 500
-3. Report:
+1. **Shut down all teammates** — send shutdown requests:
+   ```
+   SendMessage(to="review-<name>", message={type: "shutdown_request"})
+   SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})
+   ```
+   Send one `SendMessage` per teammate that was spawned.
+
+2. **Delete the team** to clean up resources:
+   ```
+   TeamDelete(team_name="evolve-agents-{today_date}")
+   ```
+
+3. Run `wc -l agents/*.md` and compare to pre-flight line counts
+4. If any file exceeds 500 lines, perform additional consolidation until it is under 500
+5. Report:
    - Files modified
    - Before/after line counts for each agent (e.g., `staff-engineer.md: 1094 → 480`)
    - Improvements made to each agent
@@ -325,11 +385,13 @@ After Phase 2 completes:
 
 ### Phase 1: Self-Review & Improve
 
-Spawn one agent per target using `subagent_type` matching the agent name (e.g.,
-`subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute `<name>` and
-`{today_date}` (from pre-flight step 1) for each.
+Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
+name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
+`<name>` and `{today_date}` (from pre-flight step 1) for each.
 
 ```
+Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
+
 Use the @<name> agent to review and improve its own agent definition:
 
 Target: agents/<name>.md
@@ -469,12 +531,14 @@ Do NOT add sections like "What Was Preserved", "What Was NOT Changed", "Reasonin
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
 Phase 2 always uses @staff-engineer — coherence review is an architectural concern that
-requires cross-cutting perspective. **The Phase 2 agent is also read-only** — it reports
+requires cross-cutting perspective. **The Phase 2 teammate is also read-only** — it reports
 coherence issues and rename instructions; the orchestrator applies all edits.
 
 Substitute `{today_date}` (from pre-flight step 1) before spawning.
 
 ```
+Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
+
 Use the @staff-engineer agent to check cross-agent coherence and recommend fixes:
 
 Today's date is {today_date} — use this for any changelog entries.
@@ -560,25 +624,31 @@ No extra sections. Max 20 lines per entry.
 
 1. **Run pre-flight before spawning.** Validate agent files exist and arguments resolve before
    spending agent resources.
-2. **Spawn Phase 1 agents in parallel.** Maximum parallelism for independent reviews.
-3. **Phase 2 runs AFTER all Phase 1 agents complete.** Coherence requires seeing all changes.
-4. **Always run Phase 2.** Even for single-agent improvements — coherence matters.
-5. **Only the orchestrator edits files.** Spawned agents are read-only reviewers that produce
-    change recommendations. The orchestrator applies all edits using the Edit tool.
-6. **Never commit.** No `git add`, no `git commit`, no `git push`.
-7. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-8. **Changelog is mandatory and strictly formatted.** Every entry MUST use exactly four H3
+2. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
+   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
+3. **Spawn Phase 1 teammates in parallel.** Maximum parallelism for independent reviews.
+   Use `team_name` and `name` parameters when spawning via the `Agent` tool.
+4. **Phase 2 runs AFTER all Phase 1 teammates complete.** Coherence requires seeing all
+   changes. Use `TaskList` to verify all Phase 1 tasks are completed before proceeding.
+5. **Always run Phase 2.** Even for single-agent improvements — coherence matters.
+6. **Only the orchestrator edits files.** Spawned teammates are read-only reviewers that
+   produce change recommendations. The orchestrator applies all edits using the Edit tool.
+7. **Never commit.** No `git add`, no `git commit`, no `git push`.
+8. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
+9. **Changelog is mandatory and strictly formatted.** Every entry MUST use exactly four H3
     sections (`### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`), stay
     under 20 lines, use `# Changelog: <agent-name>` as H1, and `## YYYY-MM-DD` as H2 with
     no suffixes. No extra sections. The orchestrator normalizes all existing entries each run.
-9. **Enforce the 500-line budget.** After applying all Phase 1 and Phase 2 edits, run
+10. **Enforce the 500-line budget.** After applying all Phase 1 and Phase 2 edits, run
     `wc -l agents/*.md` and verify every file is under 500 lines. If any file still exceeds
     500 lines, the orchestrator MUST perform additional consolidation directly until it is
     under 500. Report the before/after line counts in the wrap-up.
-10. **Fail loud.** If an agent fails, report it immediately with details.
-11. **Timeout fallback.** If a Phase 1 agent times out or is killed, the orchestrator may
+11. **Fail loud.** If a teammate fails, report it immediately with details.
+12. **Timeout fallback.** If a Phase 1 teammate times out or is killed, the orchestrator may
     re-spawn once. After two failures on the same agent, the orchestrator performs the review
     and applies changes directly.
-12. **Enforce the Content Gate.** The orchestrator MUST reject any Phase 1 recommendation that
+13. **Enforce the Content Gate.** The orchestrator MUST reject any Phase 1 recommendation that
     adds content failing any Content Gate check, even if the agent provides a compelling
     rationale. This is the primary defense against bloat-then-purge cycles.
+14. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
+    via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.

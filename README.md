@@ -63,8 +63,8 @@ Four skills orchestrate the team:
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
-| **dev-team** | `skills/dev-team/` | Coordinates all five agents for planning and executing development work |
-| **dev-init** | `skills/dev-init/` | Bootstraps `docs/spec/` project specifications for new repositories |
+| **dev** | `skills/dev/` | Coordinates all five agents for planning and executing development work |
+| **specs** | `skills/specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
 | **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
 

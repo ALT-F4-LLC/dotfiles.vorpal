@@ -1,4 +1,4 @@
-# Dev Team Skill Evolution Log
+# Dev Skill Evolution Log
 
 ## 2026-03-19 (2)
 
@@ -20,11 +20,11 @@ Second evolution cycle. Focused on decision-making actionability (pattern select
 - **Completeness**: Drove the plan extension workflow and large-review splitting guidance.
 - **Over-Engineering**: Drove removal of the Collision Prevention section (redundant with PM template and failure handlers).
 - **Orchestration Effectiveness**: Drove Discovered comment propagation between phases and review splitting for large tasks.
-- **Coherence with Other Skills**: Verified convention alignment with dev-init, evolve-skills, and evolve-agents. No conflicts found. Consistent commit-notice banner, rule formatting, and template structure across all skills.
+- **Coherence with Other Skills**: Verified convention alignment with specs, evolve-skills, and evolve-agents. No conflicts found. Consistent commit-notice banner, rule formatting, and template structure across all skills.
 - **Spec Alignment**: Verified against architecture.md (agent team structure accurate) and review-strategy.md (review splitting aligns with the spec's guidance on change size triage). No drift.
 
 ### Rename
-No rename -- current name `dev-team` accurately reflects the skill's purpose as the development team orchestrator.
+No rename -- current name `dev` accurately reflects the skill's purpose as the development team orchestrator.
 
 ## 2026-03-19
 
@@ -48,8 +48,8 @@ First evolution cycle. Focused on actionability gaps (SDET verification mismatch
 - **Completeness**: Drove the Large Task pattern and resume/continuation section.
 - **Over-Engineering**: Drove the Roles section consolidation from prose to table.
 - **Orchestration Effectiveness**: Drove the Full Verification template and step 10/11 improvements.
-- **Coherence with Other Skills**: Verified convention alignment with dev-init, evolve-skills, and evolve-agents. No conflicts found.
+- **Coherence with Other Skills**: Verified convention alignment with specs, evolve-skills, and evolve-agents. No conflicts found.
 - **Spec Alignment**: Verified against architecture.md and review-strategy.md. No drift.
 
 ### Rename
-No rename -- current name `dev-team` accurately reflects the skill's purpose as the development team orchestrator.
+No rename -- current name `dev` accurately reflects the skill's purpose as the development team orchestrator.

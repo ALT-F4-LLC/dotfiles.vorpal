@@ -1,4 +1,4 @@
-# Dev Init Skill Evolution Log
+# Specs Skill Evolution Log
 
 ## 2026-03-19 (second cycle)
 
@@ -43,7 +43,7 @@ post-spawn check, and passed project name explicitly to agents.
 - **Skill Design Quality**: Frontmatter, trigger phrases, and argument handling remain appropriate.
   No structural changes needed.
 - **Over-Engineering**: No sections removed this cycle — the skill is already lean.
-- **Coherence with Other Skills**: Conventions remain aligned with dev-team and evolve-* skills.
+- **Coherence with Other Skills**: Conventions remain aligned with dev and evolve-* skills.
   No new coherence issues introduced.
 - **Spec Alignment**: Project name resolution aligns with how architecture.md identifies the
   project. Frontmatter format matches the spec file format documented in the @staff-engineer
@@ -51,21 +51,21 @@ post-spawn check, and passed project name explicitly to agents.
 - **Rename Consideration**: No rename needed — see below.
 
 ### Rename
-No rename — "dev-init" remains the right name. No new arguments for change since first cycle.
+No rename — "specs" remains the right name. No new arguments for change since first cycle.
 
 ## 2026-03-19
 
 ### Summary
 First evolution cycle. Improved date consistency across spawned agents, clarified scope boundary
-with dev-team skill, tightened the spawning template, and streamlined the reference table.
+with dev skill, tightened the spawning template, and streamlined the reference table.
 
 ### Changes
 - Added explicit date resolution step in Pre-flight: the orchestrator now runs `date +%Y-%m-%d`
   before spawning and passes `{today_date}` to every agent template, ensuring consistent
   `last_updated` frontmatter values across all 7 spec files (previously each agent had to
   independently determine "today's date," risking inconsistency)
-- Added scope boundary statement clarifying that dev-init handles initial spec generation while
-  ongoing spec maintenance is handled by @staff-engineer during normal dev-team workflows
+- Added scope boundary statement clarifying that specs handles initial spec generation while
+  ongoing spec maintenance is handled by @staff-engineer during normal dev workflows
   (prevents confusion about which skill to use for spec updates)
 - Added `docs/tdd/` cross-reference to spawning template: agents now check for existing TDDs
   that might inform the spec they are generating (aligns with @staff-engineer agent definition
@@ -84,7 +84,7 @@ with dev-team skill, tightened the spawning template, and streamlined the refere
 - **Actionability**: Date resolution and explicit mkdir improved execution reliability
 - **Completeness**: Scope boundary and TDD cross-reference closed gaps
 - **Over-Engineering**: Removed unused Task Subject column
-- **Coherence with Other Skills**: Clarified boundary with dev-team; conventions (commit notice,
+- **Coherence with Other Skills**: Clarified boundary with dev; conventions (commit notice,
   frontmatter, rules format) already aligned
 - **Spec Alignment**: Cross-referencing docs/tdd/ aligns with architecture.md's description of
   how specs and TDDs interact
@@ -93,6 +93,6 @@ with dev-team skill, tightened the spawning template, and streamlined the refere
 - **Rename Consideration**: No rename needed — see below
 
 ### Rename
-No rename — "dev-init" accurately communicates bootstrapping/initialization purpose. While
-"spec-init" would be more specific, "dev-init" is established in the README and leaves room
+No rename — "specs" accurately communicates bootstrapping/initialization purpose. While
+"spec-init" would be more specific, "specs" is established in the README and leaves room
 for future initialization responsibilities beyond specs.

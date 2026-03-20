@@ -3,6 +3,26 @@
 ## 2026-03-19
 
 ### Summary
+Compressed /vote section and status updates list, tightened spec format descriptions, added accessibility and visual-prototyping checks to self-validation, removed duplicated sentence from Operator Alignment.
+
+### Changes
+- Compressed /vote section from 28 to 10 lines — removed "When NOT" list and verbose invocation
+- Compressed status updates list from 7 to 4 bullets
+- Tightened Internationalization/Privacy/Measurement/Handoff spec section descriptions
+- Added accessibility requirements check to self-validate step
+- Added visual prototyping flag to self-validate step
+- Removed duplicated "do not proceed to drafting" sentence from Operator Alignment
+- [Coherence] Status updates: SendMessage now primary channel; Docket comments conditional
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Removed 19 lines of duplicated guidance (conflict escalation, cross-surface coherence) and redistributed the one unique idea. Sharpened evaluation mode for non-runnable surfaces.
 
 ### Changes

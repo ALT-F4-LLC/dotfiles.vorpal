@@ -3,6 +3,28 @@
 ## 2026-03-19
 
 ### Summary
+Compressed redundancy between Operator Alignment and TDD/Communication sections. Trimmed /vote negative list and verbose status updates. Added conflicting feedback resolution guidance.
+
+### Changes
+- Compressed TDD workflow step 1 — cross-references Operator Alignment instead of restating it
+- Compressed "When to ASK" in Proactive Communication — deduplicated against Operator Alignment
+- Compressed status update list from 6 bullets to a single paragraph
+- Removed "When NOT to invoke /vote" — obvious inverse of positive list
+- Compressed /vote invocation guidance paragraph
+- Added conflicting feedback resolution guidance to TDD section
+- Clarified TDD step 2 to include reading relevant specs before designing
+- [Coherence] Docket comments now conditional ("when an issue exists") for advisory mode
+- [Coherence] "user" → "operator" in TDD section (2 instances) for terminology consistency
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Spec Alignment, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Tightened SDET boundary, removed dead "engineering growth" responsibility, compressed redundant passages, added SendMessage to tool list for inter-agent communication.
 
 ### Changes

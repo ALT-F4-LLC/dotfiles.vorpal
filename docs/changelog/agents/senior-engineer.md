@@ -3,6 +3,27 @@
 ## 2026-03-19
 
 ### Summary
+Consolidated redundant instructions, compressed status-update checklist, added @staff-engineer review notification to self-review workflow, pointed cross-cutting concerns to relevant specs.
+
+### Changes
+- Removed duplicate "verify TDD match" from System-Level Awareness (already in self-review step 5)
+- Removed "Copy-paste implementation" anti-pattern (redundant with DRY in Code Quality)
+- Compressed 6-bullet status-update checklist into compact paragraph format
+- Added concrete SendMessage notification to @staff-engineer after self-review in step 5
+- Removed "Other SendMessage uses" sub-section (all items covered elsewhere)
+- Removed "When asked to cut corners" bullet (covered by anti-patterns and intro)
+- Updated cross-cutting concerns to reference relevant spec files
+- [Coherence] Clarified file attachment verification: PM attaches, engineer verifies, scoped STOP to pre-planned issues
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, Spec Alignment, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Consolidated redundant build-verification steps, compressed Dependency & API Surface section and SDET boundary description, added SendMessage inter-agent communication guidance.
 
 ### Changes

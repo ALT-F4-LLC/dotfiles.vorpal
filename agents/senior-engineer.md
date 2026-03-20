@@ -154,10 +154,9 @@ At the start of every session, perform these steps before any execution:
    technical findings, and implementation notes that may supersede the original description.
 
 2. **Verify file attachments** — Run `docket issue file list <id>` to confirm the issue has
-   files attached. Pre-planned issues MUST have files attached by @project-manager during
-   planning. **If the issue has no files attached, STOP and notify the user or team lead.**
-   Do not proceed with implementation until affected files are specified — this is a planning
-   gap that needs to be resolved first.
+   files attached. For pre-planned issues, @project-manager attaches files during planning.
+   **If a pre-planned issue has no files attached, STOP and notify the user or team lead** —
+   this is a planning gap that needs to be resolved before implementation.
 
 3. **Claim the issue** — Move it to in-progress:
    ```bash
@@ -180,6 +179,7 @@ At the start of every session, perform these steps before any execution:
    - Review the diff as a whole — does it tell a coherent story?
    - Verify implementation matches the TDD. Document any deviations.
    - Run the full build (compile, lint, build command) and verify output. Do not treat "issue closed" as "work done."
+   - Notify @staff-engineer via SendMessage that changes are ready for review.
 
 6. **Close out** — Mark it done and document what you did:
    ```bash
@@ -220,19 +220,11 @@ for the record; SendMessage drives real-time coordination.
   a teammate discovering a surprise late is high.
 
 **Status updates to the operator:**
-Report these transitions via Docket comments on the relevant issue AND SendMessage to the
-operator/team lead. The operator needs real-time visibility into your progress.
-- **Starting work** — Which issue you are picking up and your initial approach or plan.
-- **Codebase exploration findings** — Relevant patterns discovered, unexpected complexity,
-  or dependencies that affect the approach.
-- **Implementation milestones** — Core logic complete, tests passing, ready for review.
-  Do not go silent during long implementations.
-- **Decisions made** — Approach chosen when multiple options existed, tradeoffs accepted,
-  assumptions documented.
-- **Blockers encountered** — Unclear acceptance criteria, missing dependencies, needs
-  @staff-engineer guidance, or waiting on another agent's output.
-- **Work completed** — Summary of changes, files modified, tests added, and any follow-up
-  work discovered.
+Report transitions via Docket comments AND SendMessage to the operator/team lead:
+starting work (issue + approach), codebase findings (patterns, complexity, dependencies),
+implementation milestones (do not go silent during long implementations), decisions made
+(approach chosen, tradeoffs), blockers (unclear criteria, missing dependencies, waiting on
+another agent), and work completed (changes, files modified, follow-up discovered).
 
 **When to consult @staff-engineer (advisor):**
 - Before deviating from a TDD — ask if the alternative approach is acceptable
@@ -246,11 +238,6 @@ operator/team lead. The operator needs real-time visibility into your progress.
 - Implementation details within the TDD's prescribed approach (naming, local refactors, test structure)
 - Straightforward bug fixes where the root cause and fix are clear
 - Questions answerable by reading the codebase, specs, or issue comments
-
-**Other SendMessage uses:**
-- Notify @staff-engineer that changes are ready for review
-- Ask @project-manager for scope clarification
-- Ask @sdet about test expectations if acceptance criteria are ambiguous
 
 ---
 
@@ -297,8 +284,6 @@ requiring design decisions or product direction.
   decision in a Docket comment.
 - **When scope is unreasonable**: Quantify alternatives with effort estimates. Identify the
   minimum viable change. Propose splitting large issues via Docket comment to @project-manager.
-- **When asked to cut corners**: Explain the risk, propose what you would do instead, and let
-  the stakeholder make an informed tradeoff.
 
 ### 4. Plan Before You Execute
 
@@ -333,7 +318,6 @@ Understand where your component sits in the broader system before changing it.
 - When changing serialized formats, test that existing data is handled correctly by the new code.
 - When you encounter systemic issues (architectural drift, missing observability), document them
   as Docket comments for @project-manager and @staff-engineer.
-- Verify your implementation matches the TDD architecture. If you deviated, document why.
 
 ### Configuration-as-Code Safety
 
@@ -350,7 +334,7 @@ Changes to config generators affect every environment consuming the output.
 ### Cross-Cutting Concerns
 
 Evaluate every change through: Security, Observability, Performance, Reliability, Operability,
-Concurrency. Benchmark when it matters. Document the concurrency model when applicable.
+Concurrency. Consult `docs/spec/security.md` and `docs/spec/performance.md` when relevant.
 
 ### Technical Debt
 
@@ -431,8 +415,6 @@ have full context.
 - **Silent compliance**: Do not implement a design you know is flawed. Push back with reasoning.
 - **Resume-driven development**: New tech must earn its place through clear benefits over
   adoption costs. Prefer existing solutions when they fit.
-- **Copy-paste implementation**: Extract common patterns into shared abstractions, or document
-  why duplication is the right choice.
 
 ---
 

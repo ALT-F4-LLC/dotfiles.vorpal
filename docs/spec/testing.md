@@ -1,159 +1,107 @@
 ---
-project: "dotfiles.vorpal"
-maturity: "experimental"
-last_updated: "2026-03-18"
+project: "main"
+maturity: "proof-of-concept"
+last_updated: "2026-03-20"
 updated_by: "@staff-engineer"
-scope: "Testing strategy, current test infrastructure, and coverage approach for the dotfiles.vorpal project"
+scope: "Testing infrastructure, strategy, and coverage for the dotfiles.vorpal configuration project"
 owner: "@staff-engineer"
+dependencies:
+  - code-quality.md
 ---
 
-# Testing
+# Testing Specification
+
+## Overview
+
+This document describes the current state of testing in the `dotfiles.vorpal` project — a Rust
+binary that uses the Vorpal SDK to declaratively build and deploy a user environment (CLI tools,
+configuration files, symlinks) across multiple system architectures.
 
 ## Current State
 
-**The project has no tests.** There are zero `#[test]` functions, zero `#[cfg(test)]` modules,
-zero dev-dependencies, and zero test-related CI steps. This is an honest assessment of the
-codebase as it exists today.
+### No Tests Exist
 
-## What Exists
+The project contains **zero tests**. There are no:
 
-### Build Verification (CI)
+- Unit tests (`#[cfg(test)]` / `#[test]` blocks)
+- Integration tests (`tests/` directory)
+- End-to-end tests
+- Property-based tests
+- Snapshot tests
+- Test fixtures, helpers, or utilities
+- Coverage tooling or coverage thresholds
+- Test-related CI steps
 
-The only automated quality gate is the GitHub Actions workflow
-(`.github/workflows/vorpal.yaml`), which runs on every push to `main` and on pull requests:
+The CI pipeline (`.github/workflows/vorpal.yaml`) runs `vorpal build` for the `dev` and `user`
+artifacts but does not invoke `cargo test` or any test runner.
 
-1. **`build-dev`** -- Builds the `dev` artifact via `vorpal build 'dev'`
-2. **`build`** -- Builds the `user` artifact via `vorpal build 'user'`
+### Why This Is Acceptable (Currently)
 
-Both jobs run on `macos-latest` with the Vorpal runtime provisioned via
-`ALT-F4-LLC/setup-vorpal-action@main`. The workflow uses S3-backed remote caching for artifact
-storage.
+The project is a **personal dotfiles configuration** — essentially a declarative manifest that
+composes Vorpal SDK artifacts and configuration files. The codebase is:
 
-This means the only automated verification is "does the Rust code compile and does Vorpal
-successfully produce the artifact." There is no `cargo test`, `cargo clippy`, `cargo fmt --check`,
-or any other quality gate in CI.
+- **Declarative**: Most code is builder-pattern calls chaining SDK methods (e.g., `ClaudeCode::new().with_permission_allow(...)`)
+- **Thin**: ~490 lines of application code across 9 source files
+- **Configuration-heavy**: The majority of logic is assembling string values and struct fields
+- **Validated at build time**: `vorpal build` compiles and builds all artifacts, serving as an
+  implicit integration test — if the configuration is malformed, the build fails
 
-### Static Analysis
+### Build-as-Test
 
-- **No `clippy.toml`** or `rustfmt.toml` configuration files exist.
-- **No CI steps** run `cargo clippy` or `cargo fmt --check`.
-- The Claude Code permissions configuration does allowlist `Bash(cargo clippy:*)`,
-  `Bash(cargo fmt:*)`, and `Bash(cargo test:*)`, indicating these tools are expected to be
-  used during local development, but they are not enforced in CI.
+The CI workflow provides the only form of validation:
 
-### Dev Dependencies
+1. **`build-dev`** — Runs `vorpal build 'dev'` on `macos-latest`, validating the Rust toolchain
+   and protoc artifact configurations compile and resolve
+2. **`build`** — Runs `vorpal build 'user'` (depends on `build-dev`), validating the full user
+   environment artifact graph (16+ tools, 10+ config files, symlinks)
 
-`Cargo.toml` has no `[dev-dependencies]` section. No test frameworks (e.g., `rstest`,
-`test-case`, `proptest`), assertion libraries, mocking libraries, or coverage tools are
-configured.
+Both jobs run on every push to `main` and every pull request. Build failure = broken configuration.
 
-### Local Test Evidence
+## Test Pyramid Assessment
 
-The `target/debug/.fingerprint/` directory contains test fingerprints (e.g.,
-`dep-test-lib-dotfiles`, `test-bin-vorpal`), indicating that `cargo test` has been run locally
-at some point. Since the codebase has no `#[test]` functions, these runs would have produced
-zero test results -- just compiler verification.
+| Level       | Count | Coverage | Notes                                    |
+|-------------|-------|----------|------------------------------------------|
+| Unit        | 0     | 0%       | No `#[test]` blocks in any source file   |
+| Integration | 0     | 0%       | No `tests/` directory                    |
+| E2E         | 0     | 0%       | No end-to-end test infrastructure        |
+| Build       | 2     | —        | CI `vorpal build` for `dev` and `user`   |
 
-## Test Pyramid Breakdown
+## Coverage Tooling
 
-| Level | Count | Notes |
-|---|---|---|
-| Unit tests | 0 | No `#[test]` functions anywhere in `src/` |
-| Integration tests | 0 | No `tests/` directory exists |
-| End-to-end tests | 0 | No e2e test infrastructure |
-| Build verification | 2 CI jobs | `vorpal build 'dev'` and `vorpal build 'user'` |
+No coverage tools are configured. No `cargo-tarpaulin`, `cargo-llvm-cov`, or similar tooling is
+present in dependencies or CI.
 
-## How to Run Tests
+## Mocking & Test Utilities
 
-```bash
-# Compile check (works today)
-cargo check
+None. The project does not use any mocking crates (`mockall`, `mockito`, etc.) or test utility
+libraries.
 
-# Run tests (works today, but produces "0 tests" output)
-cargo test
+## Where Tests Would Add Value
 
-# Lint (works today, no custom config)
-cargo clippy
+If the project grows beyond its current scope, the following areas would benefit from testing:
 
-# Format check (works today, no custom config)
-cargo fmt --check
+1. **`file.rs` — File artifact builders**: The `FileCreate`, `FileDownload`, and `FileSource`
+   structs generate shell scripts. Unit tests could validate script content generation without
+   requiring a Vorpal runtime.
 
-# Build artifacts via Vorpal (the actual CI gate)
-vorpal build 'dev'
-vorpal build 'user'
-```
+2. **Configuration struct serialization**: The `ClaudeCode`, `GhosttyConfig`, `K9sSkin`,
+   `BatConfig`, and `Opencode` modules generate configuration file content. Snapshot tests could
+   catch unintended changes to generated config output.
 
-## What Would Be Worth Testing
+3. **`get_output_path` utility**: Simple function that could have a trivial unit test, though
+   the value is marginal.
 
-Given the nature of this project -- a configuration generator that produces files, symlinks,
-and tool artifacts -- the following areas carry the most risk and would benefit most from tests:
+4. **Symlink path construction**: The symlink mappings in `UserEnvironment::build` are complex
+   string interpolations. Tests could validate path correctness.
 
-### High Value
+## Gaps & Risks
 
-- **Configuration output correctness**: The builder structs (`ClaudeCode`, `GhosttyConfig`,
-  `K9sSkin`, `BatConfig`, `Opencode`) serialize to specific formats (JSON, YAML, key-value,
-  plain text). Tests could verify that the serialized output matches expected format and content,
-  catching regressions when fields are added or defaults change.
-- **`ClaudeCode` JSON serialization**: This is the most complex configuration struct with nested
-  permissions, sandbox config, MCP server rules, hooks, and environment variables. Incorrect
-  serialization could break Claude Code behavior silently.
-- **`K9sSkin` YAML generation**: The `format_yaml_list` helper and the large `formatdoc!` template
-  could produce malformed YAML if field values contain special characters.
-
-### Medium Value
-
-- **`FileCreate` / `FileDownload` / `FileSource` shell script generation**: These structs
-  generate bash scripts with string interpolation. Verifying the generated scripts are syntactically
-  correct and handle edge cases (special characters in file content, names) would add confidence.
-- **`get_output_path` function**: Simple but foundational -- used to construct all store paths.
-  A unit test would prevent silent breakage.
-
-### Lower Value (for this project type)
-
-- **Vorpal artifact wiring**: Testing that all artifacts are correctly wired in
-  `UserEnvironment::build` would require mocking the Vorpal SDK's `ConfigContext`, which is
-  complex and tightly coupled to the build system. The CI build-verification jobs already
-  cover this path.
-- **Symlink mapping correctness**: The symlink pairs in `user.rs` are static data. Testing
-  them adds little value beyond what a build-time check already provides.
-
-## Gaps and Risks
-
-### Critical Gaps
-
-1. **No regression safety net**: Any change to a configuration builder could silently produce
-   incorrect output. Without tests, the only way to detect breakage is manual inspection or
-   waiting for a downstream tool to fail at runtime.
-2. **No lint or format enforcement in CI**: Code quality is entirely honor-system. Clippy
-   warnings and formatting drift can accumulate unchecked.
-3. **No test for the most complex struct**: `ClaudeCode` has ~50 builder methods and produces
-   nested JSON with permissions, sandbox settings, attribution, MCP rules, and hooks. This is
-   the highest-risk area in the codebase for serialization bugs.
-
-### Mitigating Factors
-
-1. **Small codebase**: ~9 source files, ~1600 lines of Rust. The blast radius of untested
-   changes is bounded by project size.
-2. **Compilation as verification**: The Rust compiler catches type errors, missing fields, and
-   most structural issues at compile time. The builder pattern used throughout enforces correct
-   construction at the type level.
-3. **Vorpal build as integration test**: The CI workflow's `vorpal build` step exercises the
-   full artifact graph end-to-end. If any configuration generator produces invalid output that
-   prevents artifact creation, the build fails.
-4. **Declarative nature**: Most of the code is declarative configuration wiring rather than
-   complex business logic with branching behavior. The surface area for logic bugs is small.
-
-## Testing Approach Recommendations
-
-If tests are added to this project, the highest-value starting point would be:
-
-1. **Snapshot tests for configuration output**: Use `insta` or a similar snapshot testing
-   library to capture the serialized output of each configuration builder with representative
-   inputs. This provides regression detection with minimal test code.
-2. **Add `cargo clippy` and `cargo fmt --check` to CI**: Zero-effort quality gates that
-   prevent common issues. These require no test code, just additional CI steps.
-3. **Unit tests for `ClaudeCode` serialization**: Given its complexity, at minimum verify that
-   a fully-configured `ClaudeCode` instance serializes to valid JSON with the expected structure.
-
-These recommendations are not requirements. The project functions without tests today due to its
-small scope, declarative nature, and the Vorpal build acting as an integration check.
+- **No regression safety net**: If a code change breaks configuration generation, the only signal
+  is a `vorpal build` failure in CI — which may not catch subtle content errors (e.g., a
+  permission typo in the Claude Code config)
+- **No local test workflow**: Developers cannot run `cargo test` to validate changes before
+  pushing — there are no tests to run
+- **Configuration drift is invisible**: Changes to generated config files (JSON, YAML, TOML, shell
+  scripts) are not validated against expected output
+- **SDK contract changes**: If `vorpal-sdk` or `vorpal-artifacts` change their APIs, there are no
+  tests to catch incompatibilities beyond compilation

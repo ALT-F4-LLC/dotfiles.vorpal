@@ -3,6 +3,25 @@
 ## 2026-03-19
 
 ### Summary
+Compressed status updates, removed redundant exploration checklist, merged architect NOT entry, added spike output format and blocking links to issue template.
+
+### Changes
+- Compressed 10-line status update enumeration into 3-line prose
+- Removed "What to look for" exploration paragraph (signals already in Core Responsibilities)
+- Compressed Re-Engagement step 1 to reference Session Initialization
+- Added spike acceptance criteria: findings comment, recommendation, sufficient detail
+- Added "Blocked by" field to issue description template
+- Merged "architect" NOT entry into @staff-engineer NOT entry
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Completeness, Capability Growth
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Trimmed redundancy across session init, scope negotiation, external deps, and NOT-list. Added Bash tool constraint to prevent shell drift beyond Docket and read-only commands.
 
 ### Changes

@@ -3,6 +3,26 @@
 ## 2026-03-19
 
 ### Summary
+Compressed Inter-Agent Communication section (-20 lines of redundant status/intelligence lists), added greenfield zero-test handling, tightened Test Pyramid prose.
+
+### Changes
+- Compressed "Status updates to the operator" 13-line list to 3-line directive
+- Compressed "Proactive quality intelligence" 10-line list to 4-line essentials
+- Removed redundant "Asking questions about intent" paragraph (covered by Operator Alignment)
+- Added step 8 to Greenfield Test Strategy for zero-test-result handling
+- Tightened Test Pyramid subsection by removing truism opener
+- [Coherence] Frontmatter: "does not perform code reviews" → "does not perform production code reviews"
+- [Coherence] Docket comments now conditional ("when working on an issue") for ad-hoc contexts
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Spec Alignment, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Tightened greenfield strategy to reference spec, removed redundant "Running Tests" subsection, replaced prose review section with actionable checklist.
 
 ### Changes

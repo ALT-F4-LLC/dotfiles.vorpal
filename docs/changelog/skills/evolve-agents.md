@@ -3,6 +3,20 @@
 ## 2026-03-19
 
 ### Summary
+Trimmed from 459 to 457 lines. Collapsed redundant changelog normalization restatement.
+
+### Changes
+- Collapsed Phase 1 step 4 changelog normalization detail into reference to Changelog Format section
+
+### Dimensions Evaluated
+Over-Engineering
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added `allowed-tools` frontmatter, compressed Wrap-up and Team Setup sections, replaced redundant "orchestrator-only edits" line with self-evolution note, matching evolve-skills conventions.
 
 ### Changes

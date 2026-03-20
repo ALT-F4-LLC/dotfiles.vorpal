@@ -3,6 +3,22 @@
 ## 2026-03-19
 
 ### Summary
+Added argument handling and trimmed Rules for net +3 lines (163 to 166). First skill to support targeted file arguments.
+
+### Changes
+- Added `argument-hint: "[file...]"` frontmatter for UI parity with dev and vote
+- Added Argument Handling section with optional file-list argument support
+- Trimmed Rules from 8 to 4 (removed rules already covered by Pre-flight, Execution, Wrap-up)
+
+### Dimensions Evaluated
+Coherence with Other Skills, Over-Engineering, Skill Design Quality
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Added allowed-tools frontmatter, consolidated Team Setup into Step 1, removed redundant commit prohibition from spawning template, and added cross-spec awareness instruction.
 
 ### Changes

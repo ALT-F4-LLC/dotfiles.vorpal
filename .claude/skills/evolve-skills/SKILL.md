@@ -39,19 +39,8 @@ filtered through the Content Gate to prevent non-actionable content from enterin
 
 ## Argument Handling
 
-Target skill(s) are determined by `$ARGUMENTS`:
-
-- **No argument** (`/evolve-skills`): Improve ALL skills found in `.claude/skills/*/SKILL.md`
-  and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills dev`): Improve only the named skill. Match against
-  both `.claude/skills/<arg>/SKILL.md` and `skills/<arg>/SKILL.md`. If no match in either
-  location, inform user and abort.
-
-Resolve targets by listing what exists:
-
-```bash
-ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null
-```
+- **No argument**: Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
+- **With argument** (`/evolve-skills dev`): Improve only the named skill. See Pre-flight for validation.
 
 ---
 
@@ -234,9 +223,6 @@ Each @staff-engineer teammate (read-only — no file edits):
 5. Evaluates the skill against ALL 8 dimensions
 6. Marks their task completed via `TaskUpdate` and reports back with structured change
    recommendations including net line change estimates
-
-Teammates go idle between turns — this is normal. Messages from teammates are delivered
-automatically; no polling is needed. The orchestrator receives results as teammates complete.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 

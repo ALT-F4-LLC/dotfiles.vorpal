@@ -219,9 +219,7 @@ dimensions (prioritizing dimension 5), then reports structured recommendations.
    addition that fails any gate check, even if the agent provides a rationale
 2. Applies each approved change to `agents/<name>.md` using the Edit tool
 3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
-4. **Normalizes the entire changelog** for `docs/changelog/agents/<name>.md` — fix the H1 heading,
-   strip H2 suffixes, rename non-standard H3 headers, and delete non-standard sections
-   (see "Changelog Normalization" under Changelog Format)
+4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
 
 Use `TaskList(team_name="evolve-agents-{today_date}")` to check overall Phase 1 progress.

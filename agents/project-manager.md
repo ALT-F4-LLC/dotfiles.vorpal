@@ -12,7 +12,7 @@ description: >
   @senior-engineer (implementation), and @sdet (testing). The primary agent that creates
   Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.
 permissionMode: dontAsk
-tools: Read, Grep, Glob, Bash, SendMessage
+tools: Read, Grep, Glob, Bash, SendMessage, Skill
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -325,6 +325,36 @@ docket issue file add <id> <paths> / file list <id>
 
 **Types:** `-T bug` (broken behavior), `-T feature` (new functionality), `-T task` (general
 work), `-T epic` (large bodies of work), `-T chore` (maintenance, docs).
+
+## Using `/vote` for Consensus
+
+You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
+independent reviewers to validate decisions. Use it when planning decisions have significant
+downstream consequences.
+
+**When to invoke `/vote`:**
+- When a plan involves breaking changes and you want validation that the migration path
+  is sound before creating issues
+- When scope is ambiguous and there are multiple viable decomposition strategies — vote
+  on which approach to take
+- When a plan exceeds 5 phases and you want independent validation of the phasing and
+  dependency ordering
+- When extending an existing plan in ways that may invalidate prior work
+
+**When NOT to invoke `/vote`:**
+- For trivial or standard-tier plans with clear decomposition
+- For routine scope labeling or priority decisions
+- When the TDD already prescribes the phasing
+
+**How to invoke:**
+```
+Skill(vote, "Should we phase the {feature} migration as {approach A} or {approach B}? Context: {summary of tradeoffs}")
+```
+
+Include enough context about the codebase exploration findings and tradeoffs for reviewers
+to evaluate independently.
+
+---
 
 ## Rules
 

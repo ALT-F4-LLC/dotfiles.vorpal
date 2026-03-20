@@ -8,8 +8,10 @@ description: >
   prompt where you want structured multi-agent agreement before proceeding. Any agent or user
   can invoke this skill.
 argument-hint: "<proposal>"
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage", "TeamCreate", "TeamDelete"]
 ---
+
+> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
 
 # Vote — PBFT Consensus Protocol
 
@@ -75,8 +77,7 @@ independent agent instance**. Do NOT reuse an existing teammate for consensus �
 | Proposal Domain | Primary Reviewer | Secondary Reviewer(s) |
 |---|---|---|
 | Architecture / System Design | @staff-engineer | @senior-engineer (feasibility) |
-| Code (security) | @staff-engineer | @sdet (coverage), @senior-engineer (2nd opinion) |
-| Code (general) | @staff-engineer | @sdet (test adequacy) |
+| Code | @staff-engineer | @sdet (coverage); add @senior-engineer for security-tagged proposals |
 | Plan / Scope / Prioritization | @staff-engineer (feasibility) | @senior-engineer (effort) |
 | Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
 | UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
@@ -173,10 +174,8 @@ Be honest — overstating relevance undermines the consensus process.
 One paragraph summarizing your overall assessment.
 
 ## Domain-Specific Checklist
-{Insert checklist for this reviewer's agent type — see below}
+{Insert the relevant checklist below based on the reviewer's agent type}
 ```
-
-### Domain-Specific Checklists
 
 **@staff-engineer**: Architecture fit, system-level implications, backward compatibility,
 operational readiness, cross-cutting concerns (security/performance/reliability), pattern
@@ -220,9 +219,6 @@ effective_weight = confidence * domain_relevance
 - **request-changes**: Neutral — findings are aggregated but not counted for or against.
 - **reject**: Counts against approval and triggers additional constraints per criticality.
 
-Use `request-changes` when the approach is sound but the artifact needs revision.
-Use `reject` when the approach itself is flawed.
-
 ### Compute Approval Score
 
 ```
@@ -232,12 +228,7 @@ approval_score = sum(effective_weight for reviewers where verdict in [approve, a
 
 ### Evaluate Against Thresholds
 
-| Criticality | Threshold | Additional Constraint |
-|---|---|---|
-| low | 50% | None |
-| medium | 60% | No more than 1 reject |
-| high | 75% | Zero rejects |
-| critical | 90% | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
+Apply the thresholds from the Criticality Classification table above.
 
 ---
 
@@ -275,7 +266,7 @@ approval_score = sum(effective_weight for reviewers where verdict in [approve, a
 
 ## Consensus Record Schema
 
-Write records to `.docket/consensus/` as JSON files after Phase 4 completes.
+Write records to `.docket/consensus/` as JSON files via the **Write** tool after Phase 4 completes.
 
 **Path**: `.docket/consensus/consensus-{slug}-{timestamp}.json`
 
@@ -288,15 +279,7 @@ Write records to `.docket/consensus/` as JSON files after Phase 4 completes.
   "rounds": [
     {
       "round": 1,
-      "proposal": {
-        "proposal_id": "...",
-        "artifact_type": "...",
-        "artifact_ref": "...",
-        "rationale": "...",
-        "domain_tags": [],
-        "criticality": "...",
-        "files_changed": []
-      },
+      "proposal": "// same structure as Phase 1 Pre-Prepare proposal object",
       "reviews": [
         {
           "reviewer": "@agent-type",
@@ -326,8 +309,6 @@ Write records to `.docket/consensus/` as JSON files after Phase 4 completes.
   "timestamp": "ISO 8601"
 }
 ```
-
-Write the record via Bash: `cat > .docket/consensus/consensus-{slug}-{timestamp}.json << 'RECORD' ... RECORD`
 
 Records are **permanent and read-only** after creation.
 

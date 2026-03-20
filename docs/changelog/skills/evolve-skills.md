@@ -3,6 +3,21 @@
 ## 2026-03-19
 
 ### Summary
+Trimmed from 499 to 485 lines. Condensed Argument Handling and removed generic agent SDK boilerplate.
+
+### Changes
+- Condensed Argument Handling from 16 lines to 4, deferring validation to Pre-flight
+- Removed "teammates go idle between turns" boilerplate (general agent behavior)
+
+### Dimensions Evaluated
+Over-Engineering (primary), Coherence with Other Skills
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Coherence fixes: restored Phase 0 output format bullets for alignment with evolve-agents, added TeamCreate/TeamDelete to allowed-tools.
 
 ### Changes

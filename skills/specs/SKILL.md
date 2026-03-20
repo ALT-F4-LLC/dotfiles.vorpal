@@ -5,10 +5,19 @@ description: >
   parallel. Use this skill when the user wants to initialize, generate, or bootstrap project specs —
   including phrases like "specs", "generate specs", "bootstrap specs", "initialize specs", "create
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
+argument-hint: "[file...]"
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+
+## Argument Handling
+
+The argument is **optional** — this skill has a single well-defined behavior.
+
+- **No argument** (`/specs`): Proceed normally — bootstrap all 7 spec files.
+- **With argument** (`/specs security.md operations.md`): Treat named files as the target set
+  instead of all 7. Validate each name against the Spec File Reference table; reject unknown names.
 
 # Specs
 
@@ -151,13 +160,7 @@ After all agents complete and verification passes:
 
 ## Rules
 
-1. **Create the team before spawning teammates.** Use `TeamCreate` to set up the team and
-   `TaskCreate` to define tasks before spawning any teammates with the `Agent` tool.
-2. **Spawn all agents in the same turn.** Parallelism is the entire point of this skill.
-3. **Never write spec files yourself.** You are the orchestrator, not the author.
-4. **Never commit.** No `git add`, no `git commit`, no `git push`.
-5. **No cross-agent dependencies.** All 7 specs are independent — no task blocks another.
-6. **Respect the user's choice on existing files.** Honor overwrite/skip/cancel decisions.
-7. **Fail loud.** If an agent fails, report it immediately with details.
-8. **Clean up the team.** After wrap-up, send `shutdown_request` messages to all teammates
-   via `SendMessage` and delete the team with `TeamDelete`. Do not leave orphaned teams.
+1. **Never write spec files yourself.** You are the orchestrator, not the author.
+2. **Never commit.** No `git add`, no `git commit`, no `git push`.
+3. **Fail loud.** If an agent fails, report it immediately with details.
+4. **Clean up the team.** Shutdown agents and delete the team after wrap-up.

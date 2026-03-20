@@ -3,6 +3,23 @@
 ## 2026-03-19
 
 ### Summary
+Trimmed from 503 to 487 lines. Removed redundant Consensus Phase Integration section, compacted consensus intro, and removed duplicate guidance.
+
+### Changes
+- Removed Phase Integration bullets from Consensus section (-11 lines, tautological with trigger tree)
+- Compacted consensus intro paragraph from 3 lines to 1
+- Removed duplicate "When uncertain, ask the user" (already in Pre-flight)
+- Tightened team structure intro line
+
+### Dimensions Evaluated
+Over-Engineering (primary), Skill Design Quality, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-19
+
+### Summary
 Coherence fixes: added `allowed-tools` frontmatter, corrected `argument-hint` convention, added TeamCreate/TeamDelete to allowed-tools.
 
 ### Changes

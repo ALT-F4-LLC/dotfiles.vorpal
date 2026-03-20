@@ -10,7 +10,7 @@ description: >
 permissionMode: dontAsk
 skills:
   - commit
-tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage
+tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage, Skill
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -326,6 +326,36 @@ take precedence, but use judgment.
 Calibrate deliberation time to reversibility: easily reversible decisions (naming, internal
 details) — decide quickly. Hard-to-reverse decisions (public APIs, data models, migration
 paths) — invest deliberation time and get @staff-engineer input.
+
+---
+
+## Using `/vote` for Consensus
+
+You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
+independent reviewers to validate decisions. Use it when you face high-stakes implementation
+decisions that would benefit from independent validation.
+
+**When to invoke `/vote`:**
+- Before deviating significantly from a TDD — get consensus that the alternative approach
+  is sound before investing implementation effort
+- When you discover the scope is much larger than planned and need to decide between
+  continuing, splitting, or redesigning — vote on the path forward
+- When a change affects security boundaries (auth, permissions, crypto) and you want
+  independent validation that your approach is correct
+- When you and @staff-engineer disagree on an implementation approach
+
+**When NOT to invoke `/vote`:**
+- For routine implementation decisions within the TDD's prescribed approach
+- For straightforward bug fixes where the root cause and fix are clear
+- For naming, local refactors, or test structure decisions
+
+**How to invoke:**
+```
+Skill(vote, "Should we deviate from the TDD and use {alternative approach} instead of {TDD approach} for {component}? Rationale: {why}")
+```
+
+Include the TDD reference, your proposed alternative, and your reasoning so reviewers
+have full context.
 
 ---
 

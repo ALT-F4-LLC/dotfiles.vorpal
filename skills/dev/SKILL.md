@@ -11,7 +11,7 @@ description: >
   trigger when the user references @project-manager and @senior-engineer together, or asks for
   "parallel development", "multi-agent execution", or "agent swarm".
 argument-hint: "<work>"
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -57,7 +57,7 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
 
 Before any planning or execution, run these checks:
 
-1. **Initialize Docket** — Run `docket init` via Bash (idempotent, safe to repeat).
+1. **Initialize Docket & Consensus** — Run `docket init && mkdir -p .docket/consensus` via Bash (idempotent).
 2. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
@@ -84,21 +84,17 @@ When uncertain, ask the user.
 
 ### Resuming Mid-Execution
 
-If the user returns to continue work that was already in progress:
-
 1. Run `docket board --json` to see the current state of all issues.
 2. Identify which phase was last active (look for `in-progress` and `done` statuses).
-3. Check for any `Discovered:` comments on completed issues via `docket issue comment list`.
+3. Check for `Discovered:` comments on completed issues via `docket issue comment list`.
 4. Resume from the next incomplete phase — do not re-run completed work.
 
 ### Extending an Existing Plan
 
-If related issues already exist in Docket and the user wants to add new work:
-
 1. Run `docket board --json` and `docket issue list --json` to understand the current plan.
-2. Determine whether the new work depends on existing issues, is independent, or modifies them.
-3. Spawn @project-manager with context about the existing plan and instructions to extend it —
-   not replace it. Include the output of `docket issue list --json` in the prompt.
+2. Determine whether new work depends on existing issues, is independent, or modifies them.
+3. Spawn @project-manager with context about the existing plan and instructions to extend it
+   (not replace it). Include `docket issue list --json` output in the prompt.
 
 ---
 
@@ -353,21 +349,11 @@ Rules:
 
 Before spawning any agents, create an Agent Team to coordinate:
 
-1. **Create the team** using `TeamCreate`:
-   ```
-   TeamCreate(team_name="dev-{feature-slug}", description="{brief description of the work}")
-   ```
+1. **Create the team** using `TeamCreate(team_name="dev-{feature-slug}", description="...")`.
    Use a descriptive slug derived from the user's request (e.g., `dev-auth-refactor`).
-
-2. **Create tasks** using `TaskCreate` based on the orchestration pattern selected:
-   - For each design deliverable (UX spec, TDD): one task
-   - For the planning phase: one task
-   - For each implementation issue: one task (created after PM produces the phase plan)
-   - For the review phase: one task
-   - For the verification phase: one task (if medium+ task)
-
-   Set `depends_on` to enforce phase ordering — implementation tasks depend on planning,
-   review depends on implementation, verification depends on review.
+2. **Create tasks** using `TaskCreate` — one per design deliverable, planning phase,
+   implementation issue (after PM plans), review phase, and verification phase (medium+).
+   Set `depends_on` to enforce phase ordering.
 
 ### Design Phase (if applicable)
 
@@ -402,19 +388,11 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Implementation Phase
 
-8. **Execute one phase at a time.** Within each phase, spawn one @senior-engineer teammate
-   per issue in parallel. After spawning, assign each teammate's task via `TaskUpdate`.
-
-   **Spawn all teammates for the current phase in the same turn** to maximize parallelism.
-   Practical limit: spawn up to 5 teammates per turn. If a phase has more issues, batch into
-   groups of 5 and wait for each batch before starting the next.
-
-   Teammates go idle between turns — messages are delivered automatically. Monitor progress
-   via `TaskList(team_name="dev-{feature-slug}")`.
-
-   **Do NOT shut down @senior-engineer teammates after their phase completes** if a
-   verification phase will follow — @sdet may need to SendMessage them about implementation
-   intent.
+8. **Execute one phase at a time.** Spawn one @senior-engineer teammate per issue in parallel.
+   Assign each teammate's task via `TaskUpdate`. **Spawn all in the same turn** to maximize
+   parallelism (limit: 5 per turn, batch if more). Monitor via `TaskList`.
+   **Do NOT shut down @senior-engineer teammates** if a verification phase follows — @sdet
+   may need to SendMessage them about implementation intent.
 
 9. **Wait for all teammates in the phase to complete** before starting the next phase.
 
@@ -443,6 +421,40 @@ Before spawning any agents, create an Agent Team to coordinate:
     **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
     to the user with the details rather than continuing to loop.
 
+### Consensus Integration
+
+For decisions requiring multi-reviewer validation, invoke the `/vote` skill. Consensus is
+**opt-in** — the Team Lead evaluates each decision point against the triggers below. Existing
+single-reviewer patterns remain the default for decisions below threshold.
+
+**Consensus Trigger Decision Tree:**
+
+1. **Security-sensitive review** (auth, permissions, crypto)? → Always (critical).
+2. **Architectural TDD approval?** → Always (high).
+3. **Code review, 500+ lines changed?** → Always (high).
+4. **Code review touching Tier 1/2 risk areas** (permissions, symlink mapping, file creation,
+   agent definitions — see `docs/spec/review-strategy.md`; <500 lines, non-security)? →
+   Trigger (medium).
+5. **Plan with breaking changes or >30% scope change?** → Trigger (medium).
+6. **Otherwise** → Single-reviewer path. Team Lead MAY opt in at their judgment.
+
+**How to invoke:** Use the Skill tool to call `/vote` with a prompt describing the decision:
+```
+Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summary}. Files: {list}")
+```
+
+**Phase Integration:**
+
+- **Review Phase**: Invoke `/vote` instead of routing solely to the advisor. Include the
+  `git diff --stat` output and file list in the vote prompt.
+- **Design Phase**: For TDD approval at high/critical, invoke `/vote` before planning.
+  Reference the TDD file path in the vote prompt.
+- **Planning Phase**: For plans with breaking changes or >30% scope change, invoke `/vote`
+  on the plan before execution begins.
+
+The `/vote` skill handles reviewer spawning, quorum evaluation, and consensus record
+writing to `.docket/consensus/` automatically.
+
 ### Verification Phase (medium+ tasks)
 
 12. **Spawn @sdet teammate using the Full Verification template** to verify acceptance criteria
@@ -458,31 +470,22 @@ Before spawning any agents, create an Agent Team to coordinate:
 13. **After all phases complete:**
     - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
-    - **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})` for each
-    - **Delete the team** via `TeamDelete(team_name="dev-{feature-slug}")` to clean up resources
-    - Remind the user that NO changes have been committed — they can review with `git diff`
+    - Shut down all teammates via `SendMessage(to="<name>", message={type: "shutdown_request"})`
+    - Delete the team via `TeamDelete(team_name="dev-{feature-slug}")`
+    - Remind the user that NO changes have been committed — review with `git diff`
 
 ---
 
 ## Handling Failures
 
-**Agent fails:** Check output for errors (file not found, permissions, Docket not initialized).
-Re-spawn with corrected context. Do NOT skip the issue.
+- **Agent fails:** Re-spawn with corrected context. Do NOT skip the issue.
+- **Incorrect output:** Correct via Docket CLI and re-spawn if needed.
+- **Review blockers:** Route back to @senior-engineer for fixes, then re-review.
+- **SDET finds bugs:** Route back to @senior-engineer via SendMessage, then re-verify.
+- **Discovered work:** Assess whether it needs immediate attention or follow-up planning.
+- **File conflicts:** Stop current phase, have PM re-scope, retry.
+- **Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.
 
-**Incorrect output:** If an agent modifies files outside scope or creates malformed issues,
-correct via Docket CLI and re-spawn if needed.
-
-**Review blockers:** Route back to @senior-engineer for fixes, then re-review. Do not
-proceed to verification until review passes.
-
-**SDET finds bugs:** Route back to @senior-engineer via SendMessage (they're still alive),
-then re-verify.
-
-**Discovered work:** Assess whether it needs immediate attention or follow-up planning.
-
-**File conflicts:** Stop current phase, have PM re-scope, retry.
-
-**Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.
 ---
 
 ## Rules

@@ -12,6 +12,7 @@ Updated docket vote CLI reference with new flags, compressed Delegation Protocol
 - Added `-f` file attachment awareness to status updates
 - Compressed "When to Create" by folding heuristic into skip bullet
 - Fixed empty string `""` placeholder to `"<message>"` in docket comment example
+- [evolve-skills coherence] Removed invalid `abstain` verdict from vote CLI reference comment (not a valid `docket vote cast` verdict)
 
 ### Dimensions Evaluated
 Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams

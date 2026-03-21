@@ -1,5 +1,21 @@
 # Changelog: evolve-agents
 
+## 2026-03-21
+
+### Summary
+Added cross-communication and vote observability reporting to address operator pain point about lacking visibility into inter-agent messaging and vote usage during evolution cycles.
+
+### Changes
+- Added cross-communication log and vote proposal tracking to wrap-up report output (operator feedback: no observability into agent messaging/votes)
+- Added cross-communication logging step to Phase 1 orchestrator workflow
+- Compressed Phase 0 docket audit template steps from 5 to 3 (-3 lines, offset additions)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

@@ -1,5 +1,22 @@
 # Changelog: vote
 
+## 2026-03-21
+
+### Summary
+Added operator observability via `[VOTE]`-prefixed SendMessage notifications at phase transitions; removed unsupported `request-changes` reviewer verdict.
+
+### Changes
+- Added SendMessage notification to operator after proposal creation (Phase 1) with `[VOTE]` prefix
+- Added SendMessage notification to operator after all reviews collected (Phase 2)
+- Added `[VOTE]` prefix to existing Phase 4 SendMessage calls for consistent filtering
+- Removed `request-changes` from reviewer verdict options and mapping table (not a valid `docket vote cast` verdict)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

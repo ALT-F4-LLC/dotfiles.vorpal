@@ -293,7 +293,7 @@ to @project-manager for decomposition without `/vote` approval.
 ```
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
-  # VERDICT: approve | reject | approve-with-concerns | abstain
+  # VERDICT: approve | reject | approve-with-concerns
 docket vote result <id>
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT]
 docket vote show <id>

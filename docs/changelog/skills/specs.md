@@ -1,5 +1,20 @@
 # Changelog: specs
 
+## 2026-03-21
+
+### Summary
+Added operator-facing progress reporting during agent execution for cross-communication observability; removed stale artifact.
+
+### Changes
+- Added progress relay instruction in Step 2 — orchestrator now reports each agent's completion to the operator with count
+- Removed stale `</output>` tag artifact from end of file
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

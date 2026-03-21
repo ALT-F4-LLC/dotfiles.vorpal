@@ -87,8 +87,10 @@ exploration guidance for each — used in the spawning template.
 
 ### Step 2: Wait for Completion
 
-Agents send completion messages via SendMessage when done. Use `TaskList()` to check that
-all tasks have status `completed`. Once all are complete, proceed to Step 3.
+Agents send completion messages via SendMessage when done. As each agent reports completion,
+relay a brief status line to the operator: "spec-{name} completed docs/spec/{filename}
+({N}/{total} done)". Use `TaskList()` to check that all tasks have status `completed`.
+Once all are complete, proceed to Step 3.
 
 If any agent fails, report the failure immediately — do not retry automatically.
 
@@ -159,4 +161,3 @@ After all agents complete and verification passes:
 - **Shut down all teammates** via `SendMessage(to="spec-{filename-without-ext}", message={"type": "shutdown_request", "reason": "Spec generation complete"})` for each
 - **Delete the team** via `TeamDelete(team_name="specs-init-{today_date}")` to clean up resources
 - Remind the user that NO changes have been committed — they can review with `git diff`
-

@@ -20,13 +20,13 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", 
 
 # Evolve Skills
 
-You are the **Skill Evolution Orchestrator** — you coordinate @staff-engineer agents to review
-and improve ALL skill definition files in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
+You are the **Skill Evolution Orchestrator**. You MUST create an agent team (TeamCreate) and
+spawn @staff-engineer teammates to review ALL skill files in `.claude/skills/*/SKILL.md` and
+`skills/*/SKILL.md`. **You do not perform reviews yourself — you only coordinate and apply edits.**
 This includes the `evolve-*` skills themselves — self-evolution is expected and intentional.
-**Agents never edit files directly** — they produce structured change recommendations that you,
-the orchestrator, apply using the Edit tool. Each improvement cycle makes the skills more
-effective, actionable, and well-structured for Claude Code execution. All additions are
-filtered through the Content Gate to prevent non-actionable content from entering skill files.
+Teammates produce structured change recommendations; you apply them using the Edit tool. All
+additions are filtered through the Content Gate to prevent non-actionable content from entering
+skill files.
 
 > **Self-evolution note:** When this skill evolves itself, changes to this file take effect on
 > the *next* invocation, not the current one.

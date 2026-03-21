@@ -393,4 +393,11 @@ docket issue file list <id>          — List attached files
 docket issue move <id> <status>      — Change status (todo → in-progress → done)
 docket issue close <id>              — Complete issue
 docket issue comment add <id> -m ""  — Add comment
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
+docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote result <id>
+docket vote show <id>
+docket vote list [-s STATUS] [-c CRITICALITY] [--all]
+docket vote link <proposal-id> --issue <issue-id>
+docket vote unlink <proposal-id> --issue <issue-id>
 ```

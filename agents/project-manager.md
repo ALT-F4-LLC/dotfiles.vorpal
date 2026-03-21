@@ -345,6 +345,13 @@ docket issue move <id> <status> / close <id>
 docket issue comment list <id> / comment add <id> -m "text"
 docket issue link add <id> blocks|blocked-by <target>
 docket issue file add <id> <paths> / file list <id>
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
+docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote result <id>
+docket vote show <id>
+docket vote list [-s STATUS] [-c CRITICALITY] [--all]
+docket vote link <proposal-id> --issue <issue-id>
+docket vote unlink <proposal-id> --issue <issue-id>
 ```
 
 **Priorities:** critical | high | medium (default) | low | none

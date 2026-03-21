@@ -173,7 +173,8 @@ for deep analysis.
 3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
 4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
-6. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
+6. **Log cross-communication**: record any SendMessage exchanges between agents (sender, recipient, topic) for the wrap-up observability report
+7. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
    in order, check for broken cross-references to other agents/skills/specs.
 
 Use `TaskList()` to check overall Phase 1 progress.
@@ -206,6 +207,7 @@ After Phase 2 completes:
    for each spawned teammate, then **delete the team** via `TeamDelete(team_name="evolve-agents-{today_date}")`.
 2. Run `wc -l agents/*.md`. If any exceed 500 lines, consolidate until under 500.
 3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
+   cross-communication log (who messaged whom and why), vote proposals created (IDs and outcomes),
    and reminder that NO changes have been committed — review with `git diff`.
 
 ---
@@ -259,12 +261,9 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 
 ## Steps
 
-1. Run `docket --help` to get top-level commands.
-2. Run `docket issue --help` and `docket vote --help` to get subcommands.
-3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
-   `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
-4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
-5. Specifically check for: `docket vote commit`, `docket plan`, `docket next`, `docket board`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason`, `approve-with-concerns` verdict
+1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, all leaf commands) to capture flags and usage.
+2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
+3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage. Specifically check for: `docket vote commit`, `docket plan`, `docket next`, `docket board`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason`, `approve-with-concerns` verdict
 
 ## Output
 Report New, Changed, and Deprecated commands (with synopsis/context) plus a full CLI reference tree with flags for each leaf command.

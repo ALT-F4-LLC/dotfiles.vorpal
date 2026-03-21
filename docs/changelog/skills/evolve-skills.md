@@ -1,5 +1,23 @@
 # Changelog: evolve-skills
 
+## 2026-03-21
+
+### Summary
+Added operator observability reporting for cross-communication and vote usage; expanded Dimension 1 evaluation criteria; trimmed redundant Content Gate and template content.
+
+### Changes
+- Added observability report section to Wrap-up requiring orchestrator to surface cross-communication events, vote invocations, and course-corrections (+2 lines)
+- Expanded Dimension 1 to explicitly check `user-invocable`, `effort`, `argument-hint` frontmatter fields (+1 line)
+- Removed redundant "Avoid" coaching from Phase 1 template — covered by staff-engineer's own anti-patterns (-1 line)
+- Removed redundant "Never add" enumeration from Content Gate — fully covered by checks 1 and 4 (-2 lines)
+- [Phase 2] Added cross-communication logging step to Phase 1 orchestrator workflow for consistency with evolve-agents
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

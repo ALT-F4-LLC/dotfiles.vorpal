@@ -88,8 +88,6 @@ Before spawning any agents:
 3. **Non-redundant** — Already expressed elsewhere in the file? Reject duplicates even if reworded.
 4. **Concrete** — Specific action, check, or output format? Reject aspirational fluff ("think holistically", "drive excellence").
 
-**Never add:** human social dynamics, communication style guidance, generic guidelines unrelated to the skill's purpose, decision matrices restating existing workflows.
-
 ---
 
 ## Evaluation Dimensions
@@ -97,7 +95,7 @@ Before spawning any agents:
 Every @staff-engineer reviewer evaluates against ALL 8 dimensions. **Dimensions 1, 3, and 5
 propose additions — all must pass the Content Gate.**
 
-1. **Skill Design Quality** — Frontmatter, argument handling, `disable-model-invocation`, structure-brevity balance.
+1. **Skill Design Quality** — Frontmatter (including `user-invocable`, `effort`, `argument-hint`), argument handling, `disable-model-invocation`, structure-brevity balance.
 2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
 4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate.
@@ -156,7 +154,8 @@ Each teammate (read-only — no file edits):
 2. Applies approved changes via Edit tool
 3. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
 4. Tracks renames and coherence issues for Phase 2
-5. **Verify edits**: `wc -l` for budget, validate frontmatter/sections, check cross-references
+5. **Log cross-communication**: record any SendMessage exchanges between agents (sender, recipient, topic) for the wrap-up observability report
+6. **Verify edits**: `wc -l` for budget, validate frontmatter/sections, check cross-references
 
 Use `TaskList()` for progress. Route cross-cutting findings from SendMessage to peers and Phase 2.
 
@@ -181,6 +180,9 @@ After Phase 2: shut down all teammates via `SendMessage(shutdown_request)`, then
 `TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
 consolidate any over 500. Report: files modified, before/after line counts, improvements,
 renames/coherence fixes, and reminder that NO changes have been committed.
+
+**Observability report** (always include): cross-communication events (which agents messaged
+which, and why), vote skill invocations (proposals, outcomes), and course-corrections surfaced.
 
 ---
 
@@ -297,7 +299,6 @@ applicable (lifecycle, task coordination, cleanup).
 - Minimize context: first 80 lines of other skills, relevant specs only.
 - **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
   patterns affecting all targets, or scope expansion beyond target skill.
-- **Avoid**: infinite exploration, kitchen-sink reviews, over-correction loops. Use targeted Grep.
 
 ## Output Format
 ### Summary

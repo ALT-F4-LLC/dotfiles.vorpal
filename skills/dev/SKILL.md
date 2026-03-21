@@ -452,17 +452,12 @@ When a sub-agent sends a `SendMessage` with `type: "delegation_request"`, it nee
 execute a skill requiring agent spawning. Required fields: `type`, `protocol_version` ("1"),
 `skill`, `request_id`, `from`, and `vote_id` (for vote skill).
 
-**For `skill: "vote"`:**
-1. `docket vote show <vote_id> --json` — read proposal details.
-2. Create a vote team, spawn reviewer agents per `/vote` protocol, collect verdicts.
-3. Cast votes, evaluate quorum, commit result if reached.
-4. Clean up vote team via `TeamDelete`.
+**For `skill: "vote"`:** Read proposal via `docket vote show <vote_id> --json`, create a vote
+team, spawn reviewers per `/vote` protocol, collect verdicts, commit result, clean up via
+`TeamDelete`. For unknown skills, respond with `status: "failed"`.
 
-**For unknown skills:** Respond with `status: "failed"`.
-
-**Response:** Send `delegation_response` back to `request.from` via SendMessage with fields:
-`type`, `protocol_version`, `request_id`, `status` (completed|failed|escalated), `vote_id`.
-Then resume normal orchestration.
+**Response:** Send `delegation_response` to `request.from` with `type`, `protocol_version`,
+`request_id`, `status` (completed|failed|escalated), `vote_id`. Resume orchestration.
 
 ---
 
@@ -473,9 +468,12 @@ Then resume normal orchestration.
 3. **Never run conflicting phases in parallel.** One phase at a time.
 4. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
 5. **Maximize parallelism.** Spawn all teammates for a phase in the same turn.
-6. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
-7. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
+6. **Surface cross-communication.** When agents SendMessage each other (advisor consultations,
+   scope coordination, delegation requests) or invoke `/vote`, report the event and outcome to
+   the user. The operator needs observability into inter-agent activity.
+7. **Fail loud.** If something goes wrong, surface it to the user immediately with details.
+8. **Escalate loops.** If a fix-review or fix-verify cycle repeats the same failure twice,
    stop looping and escalate to the user.
-8. **Clean up the team.** After wrap-up, send `shutdown_request` to all teammates and delete
+9. **Clean up the team.** After wrap-up, send `shutdown_request` to all teammates and delete
    the team with `TeamDelete`.
 

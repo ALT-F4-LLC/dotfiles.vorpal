@@ -1,5 +1,21 @@
 # Changelog: dev
 
+## 2026-03-21
+
+### Summary
+Added operator observability rule for cross-agent communication and vote events. Compacted delegation request handling.
+
+### Changes
+- Added Rule 6 requiring team lead to surface cross-communication and /vote events to the operator (+3 lines)
+- Compacted Handling Delegation Requests vote steps and response format (-4 lines)
+- Renumbered Rules 6-8 to 7-9
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

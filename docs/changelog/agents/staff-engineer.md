@@ -11,6 +11,7 @@ Updated docket vote CLI reference with newly discovered flags, compressed Delega
 - Updated `docket vote commit` with `--escalation-reason` flag
 - Compressed Delegation Protocol from 26 lines to 9 by referencing `docs/spec/architecture.md`
 - Added Shutdown Handling section for graceful team lifecycle management
+- [evolve-skills coherence] Removed invalid `abstain` verdict from vote CLI reference comment (not a valid `docket vote cast` verdict)
 
 ### Dimensions Evaluated
 Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams

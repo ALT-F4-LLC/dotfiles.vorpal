@@ -214,6 +214,10 @@ docket vote create \
 - Set `--threshold` to the quorum threshold from the Criticality Classification table
   (e.g., 0.50 for low, 0.60 for medium, 0.75 for high, 0.90 for critical).
 
+**Notify the operator:** After creating the proposal, immediately notify the team lead (or
+operator in standalone mode) via SendMessage:
+`SendMessage(to="team-lead", message="[VOTE] Created proposal {proposal_id} | Criticality: {criticality} | Reviewers: {count} | Proposal: {one-line summary}")`.
+
 **Link to a Docket issue (when applicable):**
 
 If the vote is associated with a Docket issue (e.g., voting on a TDD that has a tracking
@@ -241,6 +245,9 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="reviewer-{N}", status="in_progress")`.
 Use `TaskList()` to monitor completion — all reviewer tasks must reach `completed` before Phase 3.
 
+**Notify the operator** when all reviews are collected:
+`SendMessage(to="team-lead", message="[VOTE] All {count} reviews collected for proposal {proposal_id} | Proceeding to quorum evaluation")`.
+
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all reviews only AFTER all reviewers have completed.
 
@@ -256,7 +263,6 @@ or `reject`. Map reviewer verdicts as follows:
 |---|---|
 | `approve` | `approve` |
 | `approve-with-concerns` | `approve-with-concerns` |
-| `request-changes` | `reject` |
 | `reject` | `reject` |
 
 **Cast each vote:**
@@ -298,7 +304,7 @@ and you MUST NOT attempt to infer or coordinate with other reviewers.
 Produce your review in this EXACT structure:
 
 ### Verdict
-One of: approve, approve-with-concerns, request-changes, reject
+One of: approve, approve-with-concerns, reject
 
 ### Confidence
 0.0-1.0 — how confident you are in your assessment. Be calibrated, not generous.
@@ -370,14 +376,14 @@ whether consensus was reached and extract the aggregated findings.
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
 3. Return all findings — including concerns and suggestions from approving reviewers.
 4. If invoked by another agent, use **SendMessage** to deliver the consensus result
-   to the invoking agent so they can act on the outcome.
+   to the invoking agent so they can act on the outcome. Prefix the message with `[VOTE]` for operator observability.
 
 ### If Quorum Is NOT Reached (View Change)
 
 1. Aggregate all findings by category (blocker/concern/suggestion) **without reviewer
    attribution** to preserve independence in subsequent rounds.
 2. Report the aggregated feedback to the caller.
-3. Report to the caller via **SendMessage** if invoked by an agent: "Consensus not reached
+3. Report to the caller via **SendMessage** if invoked by an agent: "[VOTE] Consensus not reached
    (score: {score}, threshold: {threshold}).
    If the caller is the user (not an agent), use AskUserQuestion to present options: "Revise and re-vote", "Escalate to human decision", "Abort". If the caller is an agent, send these options via SendMessage.
 4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal

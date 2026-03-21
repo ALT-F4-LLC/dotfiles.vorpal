@@ -12,7 +12,6 @@ description: >
   better", or "grow the skills".
 argument-hint: "[skill-name]"
 effort: high
-context: fork
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 

@@ -112,6 +112,8 @@ propose additions — all must pass the Content Gate above.**
    orchestrator-type agents: correct team lifecycle (TeamCreate → spawn → work → shutdown →
    TeamDelete)? Shared task lists with dependencies and status flow? Flag: missing cleanup,
    broadcast overuse, no direct teammate addressing.
+   Also check: self-verification steps, course-correction triggers (SendMessage when stuck/off-track),
+   and efficient context management (targeted Grep over broad reads).
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
 8. **Rename Consideration** — Only if compelling — stability has value.
 
@@ -124,25 +126,7 @@ directory if it doesn't exist.
 
 **Every changelog file MUST use this exact format — no deviations, no extra sections:**
 
-```markdown
-# Changelog: <agent-name>
-
-## <YYYY-MM-DD>
-
-### Summary
-<1-2 sentence overview of what this evolution cycle focused on>
-
-### Changes
-- <specific change and why>
-- <specific change and why>
-
-### Dimensions Evaluated
-<which dimensions drove improvements>
-
-### Rename
-<if applicable: "Renamed from `<old>` to `<new>`: reasoning">
-<if not: "No rename.">
-```
+Format: `# Changelog: <agent-name>` > `## YYYY-MM-DD` > exactly 4 H3 sections: `### Summary` (1-2 sentences), `### Changes` (bulleted list with reasoning), `### Dimensions Evaluated`, `### Rename` (rename details or "No rename."). See Changelog Rules below for full specification.
 
 ### Changelog Rules
 
@@ -201,8 +185,13 @@ for deep analysis.
 3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
 4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
+6. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
+   in order, check for broken cross-references to other agents/skills/specs.
 
 Use `TaskList()` to check overall Phase 1 progress.
+
+**If a Phase 1 agent reports cross-cutting findings via SendMessage**, route them to other
+in-flight Phase 1 agents and aggregate for Phase 2.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -245,12 +234,7 @@ Focus on: new tool types, hook patterns, MCP integration, agent SDK features,
 agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
 permission/execution settings, and agent communication patterns. Filter for what agent
 definition authors need to know.
-
-## Output Format
-
-- **<capability/change>**: <relevance to agent evolution>
-
-Group findings under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+Output as `- **<capability/change>**: <relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -271,22 +255,8 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
 5. Specifically check for: `docket vote commit`, `docket plan`, `docket next`, `docket board`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason`, `approve-with-concerns` verdict
 
-## Output Format
-
-### New Commands
-Commands found in `--help` output but NOT used anywhere in agents/*.md or skills:
-- <command> — <synopsis>
-
-### Changed Commands
-Commands where current `--help` flags/syntax differs from how they are used in agent/skill files:
-- <command> — <what changed>
-
-### Deprecated/Removed
-Commands referenced in agent/skill files but NOT found in `--help` output:
-- <command> — <where referenced>
-
-### Full CLI Reference
-Complete command tree with synopsis and flags for each leaf command.
+## Output
+Report New, Changed, and Deprecated commands (with synopsis/context) plus a full CLI reference tree with flags for each leaf command.
 
 ## Rules
 - DO NOT edit any files. Read-only — audit and report only.
@@ -367,6 +337,13 @@ Evaluate agents/<name>.md against ALL 8 dimensions:
 - Build on strengths — improve, don't rewrite from scratch.
 - If no meaningful improvements needed, report that honestly.
 - **Minimize context**: First 80 lines of other agents, relevant specs only.
+- **Course-correction**: SendMessage the orchestrator IMMEDIATELY when you discover: (1) cross-cutting
+  issues affecting other parallel reviews, (2) patterns that should apply consistently across all
+  targets, or (3) your review scope expanding beyond the target agent. The orchestrator will route
+  findings to relevant peers.
+- **Anti-patterns to avoid**: infinite exploration (reading hundreds of files without producing output),
+  kitchen sink (reviewing outside assigned scope), over-correction loops (same fix failing repeatedly —
+  try a different approach). Use targeted Grep over broad reads.
 
 ## Output Format
 

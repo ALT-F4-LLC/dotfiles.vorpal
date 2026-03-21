@@ -378,6 +378,29 @@ codebase exploration findings and tradeoffs for reviewers to evaluate independen
 
 ---
 
+## Delegation Protocol
+
+When invoking `/vote` as a sub-agent (spawned by `/dev`), you lack `Agent`/`TeamCreate` tools
+and cannot spawn reviewer agents directly. Detect this by checking your system prompt tool
+list — if `Agent` and `TeamCreate` are absent, use the delegation path:
+
+1. **Create the vote proposal** via `docket vote create` (you have Bash). Extract the
+   `vote_id` from the JSON response.
+2. **Send a delegation request** to the orchestrator via
+   `SendMessage(to="team-lead", message=...)` with:
+   - `type`: `"delegation_request"`, `protocol_version`: `"1"`, `skill`: `"vote"`
+   - `request_id`: `"{your-team-name}-vote-{epoch-ms}"` (your team name as assigned by the
+     `/dev` orchestrator, plus millisecond timestamp)
+   - `from`: your team name (as assigned by `/dev`)
+   - `vote_id`: the docket vote ID from step 1
+3. **Yield and wait.** After sending the delegation request, stop and wait for a
+   `delegation_response` from the orchestrator before continuing any workflow.
+4. **Read the result** from `docket vote result <vote_id> --json` after receiving a
+   `delegation_response` with `status: "completed"`. If `status` is `"failed"`, handle the
+   error described in the response's `error` field.
+
+---
+
 ## Rules
 
 - **ALL issue management goes through Docket CLI via Bash.** Bash is for Docket commands and

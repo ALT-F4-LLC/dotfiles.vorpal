@@ -37,6 +37,94 @@ If the argument is too vague to evaluate (e.g., `/vote yes or no`), ask a clarif
 
 ---
 
+## Execution Mode Detection
+
+Before proceeding to the full protocol, determine your execution mode:
+
+1. **Check your system prompt** for the list of tools available to you.
+2. **If `Agent` AND `TeamCreate` appear in your tool list:**
+   You are the orchestrator (or have spawn capability). Continue with the full protocol
+   below — execute directly starting from Criticality Classification.
+3. **If `Agent` and `TeamCreate` do NOT appear in your tool list:**
+   You are running inside a sub-agent context. Use the **Delegation Protocol** below instead
+   of the direct-execution flow.
+
+### Delegation Protocol (Sub-Agent Path)
+
+When you lack `Agent`/`TeamCreate`, you can still create the vote proposal in docket and
+delegate only the reviewer-spawning part to the orchestrator.
+
+**Steps:**
+
+a. **Run Pre-flight checks** — Verify docket is available, parse the proposal, and classify
+   criticality. You need criticality before creating the proposal.
+
+b. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Use the
+   same command documented in Phase 1: Pre-Prepare, including criticality, reviewer count,
+   threshold, description, rationale, domain tags, and files changed. Use `--json` to capture
+   the response and extract the `vote_id` (the `id` field from the JSON output).
+
+   ```bash
+   docket vote create \
+     --created-by "{your-agent-name}" \
+     -c {criticality} \
+     -n {reviewer_count} \
+     --threshold {threshold} \
+     -d "{proposal description}" \
+     -r "{rationale}" \
+     --domain-tags "{tags}" \
+     --files-changed "{paths}" \
+     --json
+   ```
+
+   If the vote is associated with a Docket issue, link it: `docket vote link {vote_id} --issue {issue_id}`
+
+c. **Construct a delegation request** with just the `vote_id`:
+
+   ```json
+   {
+     "type": "delegation_request",
+     "protocol_version": "1",
+     "skill": "vote",
+     "request_id": "{your-agent-name}-vote-{epoch-ms}",
+     "from": "{your-agent-name}",
+     "vote_id": "{vote_id}"
+   }
+   ```
+
+d. **Send to the orchestrator** via `SendMessage(to="team-lead", message=<the JSON above>)`.
+
+e. **Yield control.** State explicitly that you are waiting for a `delegation_response`. You
+   do not have a blocking primitive — the response will arrive as a subsequent message in
+   your conversation. Do not proceed until you receive it.
+
+f. **When the `delegation_response` arrives**, handle it per the Delegation Response Handling
+   section below.
+
+### Delegation Response Handling
+
+When you receive a message with `"type": "delegation_response"`:
+
+1. **Parse the `status` field:**
+   - `"completed"` — The vote was executed successfully. Proceed to step 2.
+   - `"failed"` — The delegation failed. Report the error from the `error` field to the
+     caller and abort. Include the `vote_id` so the proposal record is still accessible.
+   - `"escalated"` — The orchestrator escalated to a human. Report this to the caller
+     with the `vote_id` for reference.
+
+2. **Read the full result from docket:**
+   ```bash
+   docket vote result {vote_id} --json
+   ```
+
+3. **Produce the standard `/vote` output** using the Output Format section below. Parse the
+   docket JSON result to extract: approval score, threshold, reviewer count, quorum status,
+   and aggregated findings (blockers, concerns, suggestions).
+
+4. **Continue your workflow** with the vote outcome as if you had executed the protocol directly.
+
+---
+
 ## Pre-flight
 
 1. **Verify docket is available** — Run `docket vote list --limit 1` via Bash to confirm the

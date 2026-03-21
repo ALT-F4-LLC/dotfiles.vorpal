@@ -8,10 +8,11 @@ description: >
   prompt where you want structured multi-agent agreement before proceeding. Any agent or user
   can invoke this skill.
 argument-hint: "<proposal>"
+effort: high
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage", "TeamCreate", "TeamDelete"]
 ---
 
-> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
+> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
 
 # Vote — PBFT Consensus Protocol
 
@@ -126,7 +127,7 @@ prompt. Collect all reviews only AFTER all reviewers have completed.
 ```
 Agent(name="consensus-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
-You are participating in a consensus vote as an independent reviewer.
+You are participating in a consensus vote as an independent reviewer. Use ultrathink for thorough analysis.
 
 ## Proposal Under Review
 - **Type**: {artifact_type}
@@ -147,17 +148,10 @@ Produce your review in this EXACT structure:
 One of: approve, approve-with-concerns, request-changes, reject
 
 ### Confidence
-A number from 0.0 to 1.0 reflecting how confident you are in your assessment.
-- 0.9-1.0: High expertise in this domain, thorough review
-- 0.7-0.8: Good domain knowledge, reasonable review
-- 0.5-0.6: Adjacent domain knowledge, surface-level review
+0.0-1.0 — how confident you are in your assessment. Be calibrated, not generous.
 
 ### Domain Relevance
-A number from 0.0 to 1.0 reflecting how relevant your expertise is to this proposal.
-Be honest — overstating relevance undermines the consensus process.
-- 1.0: Squarely within my defined responsibilities
-- 0.7-0.8: Significant relevant expertise, adjacent to core role
-- 0.5-0.6: Can evaluate high-level aspects only
+0.0-1.0 — how relevant your expertise is to this proposal. Overstating undermines consensus.
 
 ### Findings
 
@@ -216,7 +210,7 @@ effective_weight = confidence * domain_relevance
 
 - **approve** / **approve-with-concerns**: Count toward approval. Concerns are logged but
   do not reduce the approval score.
-- **request-changes**: Neutral — findings are aggregated but not counted for or against.
+- **request-changes**: Neutral — findings aggregated, not counted for or against approval.
 - **reject**: Counts against approval and triggers additional constraints per criticality.
 
 ### Compute Approval Score
@@ -340,10 +334,9 @@ Written to `.docket/consensus/{filename}`
 
 ## Rules
 
-1. **Never vote yourself.** You coordinate, you do not evaluate.
-2. **Independence is sacred.** Never share one reviewer's output with another.
-3. **Quorum is arithmetic.** Do not use judgment to override the threshold calculation.
-4. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
-5. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-6. **Always write a record.** Every completed vote produces a JSON file.
-7. **Respect criticality direction.** May override up, never down for security.
+1. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
+2. **Quorum is arithmetic.** Do not use judgment to override the threshold calculation.
+3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
+4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
+5. **Always write a record.** Every completed vote produces a JSON file.
+6. **Respect criticality direction.** May override up, never down for security.

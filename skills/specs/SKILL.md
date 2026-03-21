@@ -6,6 +6,7 @@ description: >
   including phrases like "specs", "generate specs", "bootstrap specs", "initialize specs", "create
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 argument-hint: "[file...]"
+effort: medium
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
@@ -78,15 +79,15 @@ exploration guidance for each — used in the spawning template.
 
 1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
-   `TaskCreate(team_name="specs-init-{today_date}", title="Generate {filename}", description="Generate docs/spec/{filename} project specification", depends_on=[])`
+   `TaskCreate(subject="Generate {filename}", description="Generate docs/spec/{filename} project specification")`
 3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, and `{project_name}`:
    `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
-4. **Assign tasks** — `TaskUpdate(team_name="specs-init-{today_date}", task_id=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
+4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 
 ### Step 2: Wait for Completion
 
 Teammates go idle between turns — messages are delivered automatically; no polling is needed.
-Use `TaskList(team_name="specs-init-{today_date}")` to monitor overall progress.
+Use `TaskList()` to monitor overall progress.
 
 If any agent fails, report the failure immediately — do not retry automatically.
 
@@ -108,8 +109,6 @@ Use this template for each spec file, substituting `{filename}`, `{exploration_g
 `{today_date}`, and `{project_name}` (from the pre-flight steps).
 
 ```
-Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")
-
 Use the @staff-engineer agent to generate a project specification:
 
 Generate the `docs/spec/{filename}` project specification file.

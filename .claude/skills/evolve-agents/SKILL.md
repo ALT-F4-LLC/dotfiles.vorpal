@@ -12,6 +12,7 @@ description: >
   "grow the team", "refine agent definitions", or "make the agents better".
 argument-hint: "[agent-name]"
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
+effort: high
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -174,10 +175,10 @@ entries exceeding 20 lines.
 
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
 
-1. **Create the team**: `TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`
-2. **Create Phase 0 task**: `TaskCreate(title="Docs Research", description="Research latest Claude Code documentation for agent-relevant capabilities", depends_on=[])`
-3. **Create Phase 1 tasks** — one per target agent, each depends on Phase 0: `TaskCreate(title="Review <name>", description="Self-review for agents/<name>.md", depends_on=[<phase_0_task_id>])`
-4. **Create Phase 2 task** — depends on all Phase 1 tasks: `TaskCreate(title="Coherence & Renames", description="Cross-agent coherence review", depends_on=[<all_phase_1_ids>])`
+1. **Create the team** — `TeamCreate(team_name="evolve-agents-{today_date}", ...)`
+2. **Create Phase 0 task** — Docs Research (no dependencies)
+3. **Create Phase 1 tasks** — one per target agent (sequenced after Phase 0 by orchestrator)
+4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
 
 ### Phase 0: Documentation Research
 
@@ -206,12 +207,13 @@ Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_typ
 After spawning, assign tasks to teammates:
 
 ```
-TaskUpdate(team_name="evolve-agents-{today_date}", task_id=<id>, owner="review-<name>", status="in_progress")
+TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")
 ```
 
 Each self-reviewing teammate (read-only) follows the Phase 1 spawning template: reads its own
 agent file, recent changelog, relevant specs, other agents' first ~80 lines, evaluates all 8
-dimensions (prioritizing dimension 5), then reports structured recommendations.
+dimensions (prioritizing dimension 5), then reports structured recommendations. Use ultrathink
+for deep analysis.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 
@@ -222,7 +224,7 @@ dimensions (prioritizing dimension 5), then reports structured recommendations.
 4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
 
-Use `TaskList(team_name="evolve-agents-{today_date}")` to check overall Phase 1 progress.
+Use `TaskList()` to check overall Phase 1 progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -236,7 +238,7 @@ Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagen
 Assign the Phase 2 task:
 
 ```
-TaskUpdate(team_name="evolve-agents-{today_date}", task_id=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
+TaskUpdate(taskId=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
 ```
 
 The Phase 2 teammate follows the Phase 2 spawning template: reads all agent files, verifies
@@ -274,29 +276,13 @@ Research the latest Claude Code documentation for capabilities relevant to agent
 
 1. Fetch https://code.claude.com/docs/en/overview via WebFetch
 2. From the overview, identify and fetch key subpages covering: hooks, settings, tools,
-   MCP servers, agent SDK, permissions, CLI features, IDE integrations, and configuration
-3. For each area, note: new capabilities, changed behaviors, deprecated features, new
-   settings or config options
-4. Filter findings for relevance to Claude Code agent definitions — focus on capabilities
-   that agents could leverage, new tool types available, settings that affect agent
-   execution, and patterns that agent authors should know about
+   MCP servers, agent SDK, permissions, CLI features, and configuration
+3. For each area, note: new capabilities, changed behaviors, deprecated features, new settings
+4. Filter findings for relevance to agent definitions — capabilities agents could leverage,
+   new tool types, settings that affect agent execution
 
-## Output Format
-
-### New Capabilities
-- <capability>: <how it's relevant to agent evolution>
-
-### Changed Features
-- <feature>: <what changed and impact on agents>
-
-### Deprecated / Removed
-- <item>: <migration notes if applicable>
-
-### New Settings / Configuration
-- <setting>: <what it controls and relevance>
-
-### Recommendations for Agent Evolution
-- <specific recommendation for how agents should adapt>
+Report findings grouped as: New Capabilities, Changed Features, Deprecated/Removed,
+New Settings/Configuration, Recommendations for Agent Evolution.
 ```
 
 ### Phase 1: Self-Review & Improve
@@ -452,6 +438,5 @@ Standard format (4 sections, max 20 lines) for each agent that received fixes.
    `# Changelog: <agent-name>` as H1, `## YYYY-MM-DD` as H2. Normalize each run.
 8. **Enforce the 500-line budget.** Verify with `wc -l` after all edits. Consolidate if over.
 9. **Enforce the Content Gate.** Reject additions failing any gate check.
-10. **Fail loud / timeout fallback.** Report failures immediately. Re-spawn once on timeout;
-    after two failures, the orchestrator performs the review directly.
+10. **Fail loud.** Report failures immediately. On timeout, the orchestrator performs the review directly.
 11. **Clean up the team.** Shutdown all teammates and `TeamDelete` after wrap-up.

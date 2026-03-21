@@ -11,6 +11,7 @@ description: >
   including phrases like "evolve skills", "improve skills", "refine skills", "make the skills
   better", or "grow the skills".
 argument-hint: "[skill-name]"
+effort: high
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 
@@ -167,17 +168,17 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
 
 2. **Create the Phase 0 task** (documentation research):
    ```
-   TaskCreate(team_name="evolve-skills-{today_date}", title="Docs Research", description="Research latest Claude Code documentation for new capabilities", depends_on=[])
+   TaskCreate(subject="Docs Research", description="Research latest Claude Code documentation for new capabilities")
    ```
 
-3. **Create Phase 1 tasks** — one per target skill, each depends on Phase 0:
+3. **Create Phase 1 tasks** — one per target skill (sequenced after Phase 0 by orchestrator):
    ```
-   TaskCreate(team_name="evolve-skills-{today_date}", title="Review <name>", description="Review and improve <skill-path>/SKILL.md", depends_on=[<phase_0_task_id>])
+   TaskCreate(subject="Review <name>", description="Review and improve <skill-path>/SKILL.md")
    ```
 
-4. **Create the Phase 2 task** — depends on all Phase 1 tasks:
+4. **Create the Phase 2 task** — sequenced after all Phase 1 tasks by orchestrator:
    ```
-   TaskCreate(team_name="evolve-skills-{today_date}", title="Coherence & Renames", description="Cross-skill coherence review and rename execution", depends_on=[<all Phase 1 task IDs>])
+   TaskCreate(subject="Coherence & Renames", description="Cross-skill coherence review and rename execution")
    ```
 
 ### Phase 0: Documentation Research
@@ -208,7 +209,7 @@ Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_typ
 After spawning, assign tasks to teammates:
 
 ```
-TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<id>, owner="review-<name>", status="in_progress")
+TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")
 ```
 
 Each @staff-engineer teammate (read-only — no file edits):
@@ -235,7 +236,7 @@ Each @staff-engineer teammate (read-only — no file edits):
    (see "Changelog Normalization" under Changelog Format)
 5. Tracks rename recommendations and coherence issues for Phase 2
 
-Use `TaskList(team_name="evolve-skills-{today_date}")` to check overall Phase 1 progress.
+Use `TaskList()` to check overall Phase 1 progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -249,7 +250,7 @@ Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagen
 Assign the Phase 2 task:
 
 ```
-TaskUpdate(team_name="evolve-skills-{today_date}", task_id=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
+TaskUpdate(taskId=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
 ```
 
 The Phase 2 teammate:
@@ -415,8 +416,7 @@ NEW_STRING:
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
-Phase 2 uses @staff-engineer (read-only) for cross-cutting coherence review. The orchestrator
-applies all edits. Substitute `{today_date}` before spawning.
+Substitute `{today_date}` before spawning.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")

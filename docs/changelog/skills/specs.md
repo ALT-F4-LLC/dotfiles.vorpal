@@ -1,5 +1,23 @@
 # Changelog: specs
 
+## 2026-03-20
+
+### Summary
+Fixed Task tool API calls to match actual schema, added `effort: medium` frontmatter, and trimmed duplicate Agent call from spawning template.
+
+### Changes
+- Added `effort: medium` frontmatter for appropriate reasoning depth
+- Fixed TaskCreate parameters (`title` -> `subject`, removed invalid `team_name` and `depends_on`)
+- Fixed TaskUpdate to use `taskId` instead of `task_id`, removed invalid `team_name`
+- Fixed TaskList to remove invalid `team_name` parameter
+- Removed duplicate `Agent()` call from Spawning Template (-1 line)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering, Coherence with Other Skills
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

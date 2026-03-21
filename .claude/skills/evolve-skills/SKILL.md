@@ -55,18 +55,24 @@ Before spawning any agents:
    until the goal is verified. In standalone mode, use AskUserQuestion to confirm what evolution
    focus the operator wants (e.g., all skills, specific skill, specific dimensions). In team
    mode (orchestrator prompt includes "Verified goal"), use it as the starting point. Re-verify alignment if your understanding diverges.
-2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+2. **Gather experience feedback** — Use `AskUserQuestion` to ask the operator:
+   - Current experience with the skill(s) being evolved (what's working well, what's not)
+   - Pain points or friction encountered during usage
+   - Any specific feedback that should inform this evolution cycle
+   Store the response as `{experience_feedback}`. In team mode, skip if the orchestrator
+   prompt already includes experience feedback context.
+3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-3. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+4. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    to list all discoverable skill files.
-4. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
+5. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
    and abort.
-5. **If no skill files found at all** — Inform user and abort.
-6. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
+6. **If no skill files found at all** — Inform user and abort.
+7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-7. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+8. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    and record the line count for each target skill. Mode is **TRIM** (over 500: consolidation
    primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but
    offset by removals). Include line count and mode in each agent's spawning prompt.
@@ -75,59 +81,44 @@ Before spawning any agents:
 
 ## Content Gate
 
-**Every proposed addition MUST pass ALL checks. Reject content that fails ANY check.**
+**Every proposed addition MUST pass ALL 4 checks. Reject content that fails ANY check.**
 
-1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring humans, attending meetings, relationship-building, career development, team building.
-2. **Behavioral** — Does removing it change the skill's output? Reject: general knowledge a capable LLM already has.
-3. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
-4. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
+1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring, meetings, relationship-building, career development.
+2. **Behavioral** — Does removing it change the skill's output? Reject: general LLM knowledge.
+3. **Non-redundant** — Already expressed elsewhere in the file? Reject duplicates even if reworded.
+4. **Concrete** — Specific action, check, or output format? Reject aspirational fluff ("think holistically", "drive excellence").
 
-**Never add to skill files:** human social dynamics (1:1s, growing engineers, team morale), communication style (Claude's tone is governed by the system prompt), generic guidelines unrelated to the skill's purpose, decision matrices that restate existing workflows abstractly.
+**Never add:** human social dynamics, communication style guidance, generic guidelines unrelated to the skill's purpose, decision matrices restating existing workflows.
 
 ---
 
 ## Evaluation Dimensions
 
-Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensions. **Dimensions
-1, 3, and 5 propose additions — all proposed additions must pass the Content Gate above.**
+Every @staff-engineer reviewer evaluates against ALL 8 dimensions. **Dimensions 1, 3, and 5
+propose additions — all must pass the Content Gate.**
 
-1. **Skill Design Quality** — Claude Code best practices, frontmatter, argument handling,
-   `disable-model-invocation` usage, structure-brevity balance?
-2. **Actionability** — Instructions specific enough for reliable execution? Clear phases,
-   concrete templates, defined outputs?
-3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths?
-4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate?
-5. **Orchestration, Cross-Communication & Agent Teams** — Proper agent use, parallelism,
-   correct types, clear coordination? Templates must include **explicit SendMessage triggers**
-   for peer-to-peer communication — flag hub-and-spoke if >50% of paths route through one agent.
-   For skills using agent teams: correct lifecycle (TeamCreate → spawn → work → shutdown →
-   TeamDelete)? Shared task lists with proper dependencies and status flow? Shutdown protocol
-   correctness? Flag: missing cleanup, broadcast overuse, file conflicts between teammates.
-   Also check: self-verification steps, course-correction triggers (SendMessage when stuck/off-track),
-   and efficient context management (targeted Grep over broad reads).
-6. **Coherence with Other Skills** — Scope overlaps, terminology, shared conventions,
-   accurate references?
-7. **Spec Alignment** — Alignment with `docs/spec/` project patterns?
+1. **Skill Design Quality** — Frontmatter, argument handling, `disable-model-invocation`, structure-brevity balance.
+2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
+3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
+4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate.
+5. **Orchestration & Agent Teams** — Proper agent use, parallelism, correct types, coordination.
+   Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag
+   hub-and-spoke if >50% of paths route through one agent. For team skills: correct lifecycle
+   (TeamCreate → spawn → shutdown → TeamDelete), task coordination, cleanup, shutdown protocol.
+   Check: self-verification, course-correction triggers, efficient context (targeted Grep over broad reads).
+6. **Coherence** — Scope overlaps, terminology, shared conventions, accurate references.
+7. **Spec Alignment** — Alignment with `docs/spec/` project patterns.
 8. **Rename Consideration** — Only if compelling — stability has value.
 
 ---
 
 ## Changelog Format
 
-All changes are tracked in `docs/changelog/skills/<skill-name>.md`. Create the `docs/changelog/skills/`
-directory if it doesn't exist.
+All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory if needed).
 
-**Every changelog file MUST use this exact format — no deviations, no extra sections:**
+**Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-Format: `# Changelog: <skill-name>` > `## YYYY-MM-DD` > exactly 4 H3 sections: `### Summary` (1-2 sentences), `### Changes` (bulleted list with reasoning), `### Dimensions Evaluated`, `### Rename` (rename details or "No rename."). See Changelog Rules below for full specification.
-
-### Changelog Rules
-
-1. **H1**: `# Changelog: <skill-name>` (kebab-case). **H2**: `## YYYY-MM-DD` (no suffixes). **H3**: exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename` — in order, no others.
-2. **Max 20 lines per entry.** Prepend new entries below H1 so most recent is first.
-3. **Read only the most recent `## <date>` entry** in existing changelogs — do NOT read full history.
-4. If no improvements found, report that honestly rather than forcing changes.
-5. **Normalization**: After applying changes, the orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, and truncates entries over 20 lines.
+**Rules:** Max 20 lines per entry. Prepend new entries below H1 (most recent first). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines.
 
 ---
 
@@ -135,136 +126,61 @@ Format: `# Changelog: <skill-name>` > `## YYYY-MM-DD` > exactly 4 H3 sections: `
 
 ### Team Setup
 
-Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
+Create an Agent Team before spawning agents:
 
-1. **Create the team** using `TeamCreate`:
-   ```
-   TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")
-   ```
-
-2. **Create Phase 0 tasks** (documentation research AND docket CLI audit):
-   ```
-   TaskCreate(subject="Docs Research", description="Research latest Claude Code documentation for new capabilities")
-   TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to skills")
-   ```
-
-3. **Create Phase 1 tasks** — one per target skill (sequenced after Phase 0 by orchestrator):
-   ```
-   TaskCreate(subject="Review <name>", description="Review and improve <skill-path>/SKILL.md")
-   ```
-
-4. **Create the Phase 2 task** — sequenced after all Phase 1 tasks by orchestrator:
-   ```
-   TaskCreate(subject="Coherence & Renames", description="Cross-skill coherence review and rename execution")
-   ```
+1. **Create team:** `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`
+2. **Create Phase 0 tasks:** `TaskCreate` for "Docs Research" and "Docket CLI Audit"
+3. **Create Phase 1 tasks** — one `TaskCreate(subject="Review <name>")` per target skill
+4. **Create Phase 2 task:** `TaskCreate(subject="Coherence & Renames")`
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
-Spawn TWO teammates in parallel — a `claude-code-guide` for docs research and a `senior-engineer`
-for docket CLI audit (needs Bash access):
-
-```
-Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
-Agent(team_name="evolve-skills-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
-```
-
-Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
-`{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
-
-Wait for both Phase 0 agents to complete before starting Phase 1.
+Spawn TWO teammates in parallel — `docs-researcher` (claude-code-guide) and `docket-auditor`
+(senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. After both complete,
+capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1.
+Wait for both to complete before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer teammate per target skill. **Spawn all teammates in the same turn**
-to maximize parallelism. If targeting a single skill, spawn one.
+Spawn one @staff-engineer teammate per target skill (all in the same turn for parallelism).
+Assign tasks via `TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")`.
 
-Each teammate is spawned with `team_name` and `name` parameters:
+Each teammate (read-only — no file edits):
+1. Reads target skill file and most recent changelog entry only (first `## <date>` section)
+2. Checks `docs/spec/` selectively — only files relevant to the skill's domain
+3. Reads OTHER skill files — first ~80 lines only for ecosystem context
+4. Evaluates against ALL 8 dimensions, marks task completed, reports structured recommendations
 
-```
-Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
-```
+**After each teammate completes**, the orchestrator:
+1. Reviews recommendations **against the Content Gate** — reject additions failing any check
+2. Applies approved changes via Edit tool
+3. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
+4. Tracks renames and coherence issues for Phase 2
+5. **Verify edits**: `wc -l` for budget, validate frontmatter/sections, check cross-references
 
-After spawning, assign tasks to teammates:
-
-```
-TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")
-```
-
-Each @staff-engineer teammate (read-only — no file edits):
-
-1. Reads the target skill file (e.g., `.claude/skills/<name>/SKILL.md` or `skills/<name>/SKILL.md`)
-2. Reads ONLY the most recent entry in `docs/changelog/skills/<name>.md` (if it exists) — the
-   first `## <date>` section only, NOT the full history — to avoid repeating the last cycle's changes
-3. Checks `docs/spec/` for relevant project specifications (be selective — only files directly
-   related to the skill's domain; do NOT read all spec files)
-4. Reads the OTHER skill files — but ONLY the first ~80 lines of each to understand the skill
-   ecosystem without consuming excessive context
-5. Evaluates the skill against ALL 8 dimensions
-6. Marks their task completed via `TaskUpdate` and reports back with structured change
-   recommendations including net line change estimates
-
-**After each Phase 1 teammate completes**, the orchestrator:
-
-1. Reviews the teammate's change recommendations **against the Content Gate** — reject any
-   addition that fails any gate check, even if the agent provides a rationale
-2. Applies each approved change to the skill file using the Edit tool
-3. Writes/updates the changelog entry in `docs/changelog/skills/<name>.md`
-4. **Normalizes the entire changelog** for `docs/changelog/skills/<name>.md` — fix the H1 heading,
-   strip H2 suffixes, rename non-standard H3 headers, and delete non-standard sections
-   (see "Changelog Normalization" under Changelog Format)
-5. Tracks rename recommendations and coherence issues for Phase 2
-6. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
-   in order, check for broken cross-references to other skills/agents/specs.
-
-Use `TaskList()` to check overall Phase 1 progress.
-
-**If a Phase 1 agent reports cross-cutting findings via SendMessage**, route them to other
-in-flight Phase 1 agents and aggregate for Phase 2.
+Use `TaskList()` for progress. Route cross-cutting findings from SendMessage to peers and Phase 2.
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
-single @staff-engineer teammate (read-only) to review coherence and recommend fixes:
-
-```
-Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
-```
-
-Assign the Phase 2 task:
-
-```
-TaskUpdate(taskId=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
-```
+After ALL Phase 1 changes are applied, spawn a single @staff-engineer teammate (read-only)
+for coherence review. Assign via `TaskUpdate`.
 
 The Phase 2 teammate:
+1. Reads ALL skill files (freshly improved versions)
+2. Verifies Phase 1 rename recommendations and prepares rename instructions
+3. Checks coherence: no scope overlaps, consistent terminology, shared conventions followed,
+   accurate references, correct agent types in templates, consistent argument handling
+4. Marks task completed and reports structured recommendations
 
-1. Reads ALL skill files (the freshly improved versions)
-2. Verifies any renames recommended in Phase 1 and prepares rename instructions
-3. Checks cross-skill coherence:
-   - No scope overlaps — each skill has a distinct purpose
-   - Terminology is consistent across all skills
-   - Shared conventions are followed (commit notice, frontmatter format, changelog patterns)
-   - References to agents, directories, and project structure are accurate
-   - Spawning templates reference correct agent types
-   - Argument handling patterns are consistent
-4. Marks the coherence task completed via `TaskUpdate` and reports structured recommendations
-   (see Phase 2 template for format)
-
-**After the Phase 2 teammate completes**, the orchestrator:
-
-1. Executes any renames (`mv`, frontmatter updates, reference updates across codebase)
-2. Applies coherence fixes using the Edit tool
-3. Updates `docs/changelog/skills/<name>.md` for any skill that received coherence fixes
+**After completion**, the orchestrator executes renames, applies coherence fixes via Edit,
+and updates changelogs for affected skills.
 
 ### Wrap-up & Team Cleanup
 
-After Phase 2 completes:
-
-1. **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})`
-   for each spawned teammate, then **delete the team** via `TeamDelete(team_name="evolve-skills-{today_date}")`.
-2. Run `wc -l` on all target skill files. If any exceed 500 lines, consolidate until under 500.
-3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
-   and reminder that NO changes have been committed — review with `git diff`.
+After Phase 2: shut down all teammates via `SendMessage(shutdown_request)`, then
+`TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
+consolidate any over 500. Report: files modified, before/after line counts, improvements,
+renames/coherence fixes, and reminder that NO changes have been committed.
 
 ---
 
@@ -275,11 +191,46 @@ After Phase 2 completes:
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
 
-Research the latest Claude Code documentation for capabilities relevant to skill definitions.
-Focus on: new frontmatter fields, tool types, hook patterns, MCP integration, agent SDK features,
-agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
-and permission/execution settings. Filter for what skill authors need to know.
-Output as `- **<capability/change>**: <relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+MISSION: Research Claude Code documentation for capabilities relevant to SKILL.md definitions.
+Report NEW or CHANGED features that affect how skill files are written.
+
+PAGES TO RESEARCH (by priority tier):
+
+TIER 1 — MUST visit every page, extract ALL relevant capabilities:
+- Skills — frontmatter fields (name, description, allowed-tools, argument-hint, effort, disable-model-invocation), string substitutions, automatic discovery, skill locations (.claude/skills/ and skills/), argument passing, tool restriction, access control, dynamic context injection, running in subagents, sharing skills, visual output, troubleshooting
+- Sub-agents — how skills run in subagents, agent types for spawning, frontmatter fields, capability control, tool restrictions, MCP scoping, skill preloading
+- Agent Teams — team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle, communication, shutdown protocol)
+- Hooks Reference — hooks in skills, all hook event types, matcher patterns, handler types, hooks defined in skill frontmatter
+
+TIER 2 — SHOULD visit each page, extract only skill-relevant capabilities:
+- Permissions — permission modes, tool-specific rules, managed permissions affecting skills
+- Settings — configuration scopes, settings files, subagent config, plugin config
+- MCP — MCP server patterns, tool search, managed configuration
+- Plugins Reference — plugin manifest schema, plugin components including skills, plugin caching
+- Plugins — plugin creation, skill-plugin relationship
+- Best Practices — skill-related practices, verification, context management
+- Tools Reference — available tools, tool behavior details
+
+TIER 3 — SCAN quickly, report only new/changed features:
+- Commands — built-in commands, MCP prompts
+- Output Styles — custom output styles (relationship to skills)
+- Memory — auto-memory, CLAUDE.md interaction with skills
+- Changelog — recent releases, new features, deprecations
+- CLI Reference — CLI flags affecting skills
+- How Claude Code Works — agentic loop, context management
+
+RESEARCH INSTRUCTIONS:
+- Tier 1: Visit EVERY page. For each, extract: new features, changed behaviors, deprecated patterns. Focus question: "Would this change how a SKILL.md file should be written?"
+- Tier 2: Visit each page, extract only capabilities relevant to skill definitions.
+- Tier 3: Quick scan, report only actionable new/changed features.
+- Visit ALL Tier 1 and Tier 2 pages — do not skip any.
+- If a page fails to load, note it and continue to the next page.
+- Focus on NEW or CHANGED — skip well-known existing features.
+- At the end, report which pages were researched and which were skipped.
+- Filter criterion: only report findings that would affect how SKILL.md files are written.
+
+OUTPUT FORMAT: `- **<capability/change>**: <skill definition relevance>` grouped under:
+New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -289,55 +240,40 @@ Agent(team_name="evolve-skills-{today_date}", name="docket-auditor", subagent_ty
 
 Audit the docket CLI to produce a structured reference of all commands, flags, and usage.
 
-## Steps
+1. Run `--help` on every docket command/subcommand (top-level, `issue`, `vote`, all leaf commands).
+2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
+3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage.
 
-1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, and all leaf commands).
-2. Search the codebase for current docket usage: Grep for `docket ` across `agents/` and `.claude/skills/`.
-3. Cross-reference: identify new commands not used in codebase, changed flags, and deprecated commands.
-
-## Output
-Report New, Changed, and Deprecated commands (with synopsis/context) plus a full CLI reference tree with flags for each leaf command.
-
-## Rules
-- DO NOT edit any files. Read-only — audit and report only.
-- Be thorough — run --help on every subcommand, not just the common ones.
-- If a command errors on --help, note it as unavailable.
+Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
+Rules: Read-only only. Run --help on every subcommand. Note unavailable commands.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
-`{mode}`, `{today_date}`, and `{verified_goal}` (from pre-flight) for each.
+`{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
 
 Use the @staff-engineer agent to review and improve a skill definition:
 
-Target: <skill-path>/SKILL.md
-Skill: <name>
-Current size: {line_count} lines
-Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
-Verified goal: {verified_goal}
-The operator's goal has been pre-verified. Re-verify alignment if your understanding diverges from this goal at any point.
+Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode: {mode}
+Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
+Experience feedback: {experience_feedback}
 
 ## Size Budget
-
-Hard limit: 500 lines. **TRIM mode** (over 500): primary objective is consolidation — removals
-must exceed additions. **BALANCED mode** (under 500): additions allowed but offset by removals.
-Every CHANGE adding lines MUST pair with a removal of equal or greater size. Report NET_LINES.
+Hard limit: 500 lines. TRIM (over 500): removals must exceed additions. BALANCED (under 500):
+additions allowed but offset by removals. Every CHANGE adding lines MUST pair with equal/greater removal. Report NET_LINES.
 
 ## Context
-
-- Today's date is {today_date} — use for changelog entries.
-- Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry.
-- Read docs/spec/ selectively — only files relevant to the skill's domain.
-- Read OTHER skill files — first ~80 lines only. Check both .claude/skills/ and skills/.
-- Review the Claude Code documentation research findings below and consider whether any
-  new capabilities, features, or settings should be reflected in the skill's design.
-- Review the docket CLI audit findings below — verify skills referencing docket commands
-  use correct syntax, flags, and subcommands.
-- Skip WebFetch — adds latency without value for this task.
+- Today's date: {today_date} (for changelog entries)
+- Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry
+- Read docs/spec/ selectively — only files relevant to the skill's domain
+- Read OTHER skill files — first ~80 lines only (both .claude/skills/ and skills/)
+- Review operator experience feedback below — prioritize addressing reported pain points and friction.
+- Review docs research and docket audit findings below for new capabilities and correct CLI usage
+- Skip WebFetch
 
 ## Claude Code Documentation Research
 {docs_research_findings}
@@ -345,69 +281,41 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 ## Docket CLI Audit Findings
 {docket_audit_findings}
 
-## Content Gate (MANDATORY)
+## Operator Experience Feedback
+{experience_feedback}
 
-Apply the 4-check Content Gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
+## Content Gate
+Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
 ## Your Task
-
-Evaluate <skill-path>/SKILL.md against ALL 8 dimensions (see Evaluation Dimensions in evolve-skills).
-Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal.
-For Dimension 5, also evaluate agent team patterns if the skill uses teams: lifecycle correctness
-(TeamCreate → spawn → shutdown → TeamDelete), task coordination, and cleanup.
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY —
+every addition MUST be offset by a removal. For Dimension 5, evaluate agent team patterns if
+applicable (lifecycle, task coordination, cleanup).
 
 ## Requirements
-
-- **DO NOT edit any files.** Read-only — analyze and recommend only.
-- Build on strengths — improve, don't rewrite from scratch
-- If no meaningful improvements needed, report that honestly
-- **Minimize context**: First 80 lines of other skills, relevant specs only.
-- **Course-correction**: SendMessage the orchestrator IMMEDIATELY when you discover: (1) cross-cutting
-  issues affecting other parallel reviews, (2) patterns that should apply consistently across all
-  targets, or (3) your review scope expanding beyond the target skill. The orchestrator will route
-  findings to relevant peers.
-- **Anti-patterns to avoid**: infinite exploration (reading hundreds of files without producing output),
-  kitchen sink (reviewing outside assigned scope), over-correction loops (same fix failing repeatedly —
-  try a different approach). Use targeted Grep over broad reads.
+- **Read-only** — analyze and recommend only. Build on strengths, don't rewrite.
+- Minimize context: first 80 lines of other skills, relevant specs only.
+- **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
+  patterns affecting all targets, or scope expansion beyond target skill.
+- **Avoid**: infinite exploration, kitchen-sink reviews, over-correction loops. Use targeted Grep.
 
 ## Output Format
-
 ### Summary
-<1-2 sentence overview — or "No changes needed">
-Net line change: <estimated +/- lines>
-
+<1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
 ### Recommended Changes
-For each change:
-\```
-CHANGE <n>: <short title>
-DIMENSION: <which dimension>
-CONTEXT: <1 sentence>
-NET_LINES: <+N or -N>
-OLD_STRING:
-<exact text to find — copy-paste precision, enough context to be unique>
-NEW_STRING:
-<exact replacement text — use `<REMOVE>` to delete, `<INSERT_AFTER>` to add after anchor>
-\```
-
-### Changelog Entry (under 20 lines, ONLY 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
-
+For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
+### Changelog Entry (under 20 lines, 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
 ### Rename Recommendation
-<"No rename" or "Rename to `<new-name>`: <reasoning>">
-
 ### Coherence Issues
-<Issues noticed, or "None">
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
-Substitute `{today_date}` before spawning.
-
 ```
 Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
-Use the @staff-engineer agent to check cross-skill coherence and recommend fixes:
-
-Today's date is {today_date}.
+Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
+Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -415,32 +323,22 @@ Today's date is {today_date}.
 ## Phase 1 Coherence Issues
 <list issues from Phase 1, or "None reported.">
 
-## Requirements
-
-- **DO NOT edit any files.** Read-only — the orchestrator applies all changes.
+## Tasks
 1. Read ALL skill files in .claude/skills/*/SKILL.md and skills/*/SKILL.md
 2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
-4. Check cross-communication in orchestration skills: Enumerate which agent pairs have
-   SendMessage triggers in spawn templates. Identify pairs sharing dependencies or handoffs
-   but lacking triggers — these are gaps. Flag hub-and-spoke patterns where >50% of paths
-   route through one agent. Verify triggers are bidirectional where applicable.
+4. Check cross-communication: enumerate SendMessage triggers between agent pairs, identify
+   gaps (shared dependencies/handoffs without triggers), flag hub-and-spoke (>50% routing
+   through one agent), verify bidirectional triggers where applicable
 
 ## Output Format
-
 ### Renames
-For each: `RENAME: <old-dir> → <new-dir>` with FRONTMATTER_UPDATE, REFERENCES_TO_UPDATE,
-CHANGELOG_RENAME. Or: "No renames needed."
-
+For each: `RENAME: <old> → <new>` with FRONTMATTER_UPDATE, REFERENCES_TO_UPDATE, CHANGELOG_RENAME. Or: "No renames needed."
 ### Coherence Fixes (including cross-communication gaps)
-For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`.
-Include cross-communication gaps as fixes (e.g., adding missing SendMessage triggers).
-Or: "No coherence issues found."
-
+For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`. Or: "No coherence issues found."
 ### Changelog Entries
-Standard format (4 sections, max 20 lines) for each skill that received fixes.
-
+Standard format (4 sections, max 20 lines) for each affected skill.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
@@ -449,22 +347,17 @@ Standard format (4 sections, max 20 lines) for each skill that received fixes.
 
 ## Rules
 
-1. **Run pre-flight before spawning.** Validate skill files exist and arguments resolve.
-2. **Create the team before spawning teammates.** `TeamCreate` then `TaskCreate` before any `Agent` calls.
-3. **Spawn Phase 1 teammates in parallel.** Maximum parallelism for independent reviews.
-   Use `team_name` and `name` parameters when spawning via the `Agent` tool.
-4. **Phase 2 runs AFTER all Phase 1 teammates complete.** Coherence requires seeing all
-   changes. Use `TaskList` to verify all Phase 1 tasks are completed before proceeding.
-5. **Always run Phase 2.** Even for single-skill improvements — coherence matters.
-6. **Only the orchestrator edits files.** Spawned teammates are read-only reviewers that
-   produce change recommendations. The orchestrator applies all edits using the Edit tool.
-7. **Never commit.** No `git add`, no `git commit`, no `git push`.
-8. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-9. **Changelog is mandatory.** Follow Changelog Rules above; orchestrator normalizes each run.
-10. **Enforce 500-line budget.** `wc -l` after edits; consolidate if over. Report before/after.
-11. **Fail loud.** If a teammate fails, report immediately with details.
-12. **Timeout fallback.** If a Phase 1 teammate times out, re-spawn once. After two failures,
-    the orchestrator performs the review directly.
-13. **Enforce the Content Gate.** Reject any recommendation adding content that fails any gate
-    check, even with a compelling rationale. Primary defense against bloat-then-purge cycles.
-14. **Clean up the team.** Shut down all teammates and delete the team after wrap-up.
+1. **Pre-flight before spawning.** Validate skill files and arguments first.
+2. **Team before agents.** `TeamCreate` → `TaskCreate` → `Agent` calls.
+3. **Phase 1 in parallel.** Use `team_name` and `name` when spawning.
+4. **Phase 2 after all Phase 1.** Use `TaskList` to verify completion.
+5. **Always run Phase 2** — even for single-skill improvements.
+6. **Only orchestrator edits files.** Teammates are read-only reviewers.
+7. **Never commit.** No `git add`, `git commit`, or `git push`.
+8. **Build on strengths** — improve, don't rewrite.
+9. **Changelog mandatory.** Follow format above; orchestrator normalizes.
+10. **500-line budget.** `wc -l` after edits; consolidate if over.
+11. **Fail loud.** Report teammate failures immediately.
+12. **Timeout fallback.** Re-spawn once; after two failures, orchestrator reviews directly.
+13. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
+14. **Clean up.** Shut down teammates and delete team after wrap-up.

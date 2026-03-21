@@ -3,20 +3,18 @@
 ## 2026-03-21
 
 ### Summary
-Updated Docket CLI reference with new flags (-f/--file, --tree, --expand, --rationale, etc.), compressed Delegation Protocol, removed redundant template field, streamlined file attachment workflow.
+Added cross-communication observability (Docket logging for SendMessage and vote), fixed CLI discrepancies (link remove syntax, --escalation-reason, approve-with-concerns, next -s), added export/import, trimmed non-behavioral prose.
 
 ### Changes
-- Updated Docket CLI Reference with all new flags from audit (create -f, list --tree/--roots/--sort, board --expand, vote create --rationale/--files-changed, etc.)
-- Simplified file attachment workflow to prefer -f flag on issue create (single-step)
-- Compressed Delegation Protocol from 20 to 11 lines
-- Removed redundant "Blocked by" field from issue description template (managed via docket links)
-- Updated session initialization to use --expand on board
-- Added --rationale/--files-changed guidance to vote workflow
-- [Coherence] Added "Receiving review from @staff-engineer" section (bidirectional handoff gap)
-- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+- Added cross-communication observability section: log SendMessage exchanges and vote invocations as Docket comments
+- Fixed `link remove` syntax to include required `<relation>` argument
+- Added `--escalation-reason` to vote create, `approve-with-concerns` verdict to vote cast, `-s` to next
+- Added `docket export / import` to CLI reference
+- Removed "NOT a bureaucrat" bullet (aspirational, enforced by DoR/Rules)
+- Removed "impact is measured" sentence (aspirational, not behavioral)
 
 ### Dimensions Evaluated
-Completeness (primary), Consolidation & Trimming, Actionability, Cross-Communication (coherence)
+Capability Growth & Cross-Communication (primary), Completeness, Consolidation & Trimming, all 8 evaluated
 
 ### Rename
 No rename.

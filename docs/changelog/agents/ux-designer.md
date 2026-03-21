@@ -3,19 +3,17 @@
 ## 2026-03-21
 
 ### Summary
-Updated docket vote CLI reference with new flags, compressed Delegation Protocol from 27 to 10 lines, added shutdown handling, streamlined "When to Create" bullets, fixed empty string placeholder.
+Added observability for cross-communication and vote audit trails, compressed surface table and anti-patterns, added disallowedTools frontmatter to enforce no-edit boundary.
 
 ### Changes
-- Updated vote CLI reference with `--rationale`, `--domain-tags`, `--files-changed`, `--findings-json`, `--summary`, `approve-with-concerns`
-- Compressed Delegation Protocol from 27 to 10 lines (reference spec for message format)
-- Added Shutdown Handling section (save draft before approving shutdown)
-- Added `-f` file attachment awareness to status updates
-- Compressed "When to Create" by folding heuristic into skip bullet
-- Fixed empty string `""` placeholder to `"<message>"` in docket comment example
-- [evolve-skills coherence] Removed invalid `abstain` verdict from vote CLI reference comment (not a valid `docket vote cast` verdict)
+- Added Observability paragraph to Inter-Agent Communication: log consultations and votes as Docket comments
+- Added vote audit trail guidance to /vote section (log vote ID + outcome)
+- Added `disallowedTools: Edit` frontmatter to enforce no-code boundary
+- Compressed Surface-Specific Design Considerations table (removed AI/Conversational row, shortened)
+- Compressed Anti-Patterns from 2 bullets to 1 (measurement already in spec format)
 
 ### Dimensions Evaluated
-Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams
+Capability Growth & Cross-Communication (primary), Consolidation & Trimming, Boundary Clarity, all 8 evaluated
 
 ### Rename
 No rename.

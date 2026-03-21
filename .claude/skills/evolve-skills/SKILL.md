@@ -51,19 +51,18 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Load team tools** — Run `ToolSearch(query="select:TeamCreate,TeamDelete,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet")` to load deferred tools required for agent team coordination.
-2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-3. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+2. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    to list all discoverable skill files.
-4. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
+3. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
    and abort.
-5. **If no skill files found at all** — Inform user and abort.
-6. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
+4. **If no skill files found at all** — Inform user and abort.
+5. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-7. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+6. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    and record the line count for each target skill. This determines the evolution mode for each:
    - **Over 500 lines (TRIM mode)**: The skill's primary objective is consolidation. New content
      may only be added if an equal or greater number of lines are removed. Communicate the line
@@ -308,12 +307,9 @@ Audit the docket CLI to produce a structured reference of all commands, flags, a
 
 ## Steps
 
-1. Run `docket --help` to get top-level commands.
-2. Run `docket issue --help` and `docket vote --help` to get subcommands.
-3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
-   `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
-4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
-5. Specifically check for: `docket vote commit`, `docket plan`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `approve-with-concerns` verdict
+1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, and all leaf commands).
+2. Search the codebase for current docket usage: Grep for `docket ` across `agents/` and `.claude/skills/`.
+3. Cross-reference: identify new commands not used in codebase, changed flags, and deprecated commands.
 
 ## Output Format
 

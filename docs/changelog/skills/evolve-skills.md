@@ -3,6 +3,22 @@
 ## 2026-03-20
 
 ### Summary
+Removed phantom ToolSearch pre-flight step, consolidated docket audit template, rejected `context: fork` (breaks agent teams).
+
+### Changes
+- Removed non-existent `ToolSearch` pre-flight step and renumbered remaining steps (-2 lines)
+- Consolidated Phase 0 docket audit template from 5 verbose steps to 3 focused steps (-4 lines)
+- Rejected `context: fork` recommendation — breaks agent team coordination (TeamCreate/TeamDelete)
+
+### Dimensions Evaluated
+Actionability, Over-Engineering, Skill Design Quality
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Fixed incorrect docket CLI reference, trimmed duplicate Content Gate and evaluation dimensions from Phase 1 template, added `context: fork` frontmatter.
 
 ### Changes

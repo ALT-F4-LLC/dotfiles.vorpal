@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Trimmed redundant explanations, consolidated View Change section, added --findings-json support.
+
+### Changes
+- Removed verbose stdin piping explanation from Phase 1 (-1 line)
+- Added `--findings-json` as alternative to `--findings` in Phase 2 vote casting
+- Trimmed Delegation Protocol step e from 3 to 2 lines
+- Simplified argument handling description
+- Consolidated View Change Constraints into parent section (-5 lines, +1 folded)
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Fixed CLI flag usage to match docket vote capabilities; corrected verdict mapping; added `docket vote commit` for finalizing proposals.
 
 ### Changes

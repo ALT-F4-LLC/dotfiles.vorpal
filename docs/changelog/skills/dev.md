@@ -3,6 +3,26 @@
 ## 2026-03-20
 
 ### Summary
+Major consolidation: compressed Delegation Requests (-52 lines), merged @sdet templates (-20 lines), tightened decision trees and failure handlers.
+
+### Changes
+- Collapsed Delegation Requests from 81 to 18 lines (protocol spec → compact reference)
+- Merged dual @sdet templates into single parameterized template (-20 lines)
+- Compacted consensus trigger decision tree (-5 lines)
+- Tightened pattern decision tree questions (-4 lines)
+- Removed Extending an Existing Plan sub-section (-7 lines)
+- Compacted Handling Failures and Resuming Mid-Execution
+- Added docket vote CLI flag hints (+2 lines)
+
+### Dimensions Evaluated
+Over-Engineering (primary), Completeness, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Integrated `docket plan` and `docket vote commit` from CLI audit, attached file scoping via `-f` flag, trimmed redundancies.
 
 ### Changes

@@ -3,6 +3,37 @@
 ## 2026-03-20
 
 ### Summary
+Removed `context: fork` (breaks agent teams), fixed pre-flight numbering, corrected shutdown syntax.
+
+### Changes
+- Removed `context: fork` from frontmatter — breaks TeamCreate/TeamDelete coordination (coherence fix)
+- Fixed pre-flight step numbering from 1,2,5,6 to 1,2,3,4
+- Fixed shutdown SendMessage to use valid JSON with reason field
+
+### Dimensions Evaluated
+Coherence, Skill Design Quality, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
+Fixed pre-flight step numbering, corrected shutdown message syntax.
+
+### Changes
+- Fixed pre-flight step numbering from 1,2,5,6 to 1,2,3,4 (stale gap from prior deletions)
+- Fixed shutdown SendMessage to use valid JSON with reason field
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added `context: fork` frontmatter, removed redundant Rules section, consolidated pre-flight steps.
 
 ### Changes

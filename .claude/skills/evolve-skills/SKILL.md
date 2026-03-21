@@ -52,18 +52,19 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+1. **Load team tools** — Run `ToolSearch(query="select:TeamCreate,TeamDelete,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet")` to load deferred tools required for agent team coordination.
+2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-2. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+3. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    to list all discoverable skill files.
-3. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
+4. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
    and abort.
-4. **If no skill files found at all** — Inform user and abort.
-5. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
+5. **If no skill files found at all** — Inform user and abort.
+6. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-6. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+7. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    and record the line count for each target skill. This determines the evolution mode for each:
    - **Over 500 lines (TRIM mode)**: The skill's primary objective is consolidation. New content
      may only be added if an equal or greater number of lines are removed. Communicate the line

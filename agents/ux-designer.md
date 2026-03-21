@@ -11,7 +11,7 @@ effort: max
 memory: project
 skills:
   - vote
-tools: Read, Grep, Glob, Bash, Write, SendMessage, Skill
+tools: Read, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -76,6 +76,9 @@ What aspects matter most to the operator?
 **Before evaluating:** What prompted this evaluation? What outcomes does the operator want?
 
 Frame every question as design research — each answer is a data point that improves design quality.
+When running as a standalone agent (not in a team), use `AskUserQuestion` to present design
+choices to the operator as structured, selectable options rather than returning questions as
+plain text. In team context, use `SendMessage` to route questions to the team lead.
 
 ---
 

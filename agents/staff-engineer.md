@@ -10,7 +10,7 @@ memory: project
 permissionMode: dontAsk
 skills:
   - vote
-tools: Read, Grep, Glob, Bash, Write, SendMessage, Skill
+tools: Read, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -59,6 +59,9 @@ ignores misaligned intent has missed the point.
 - Surface assumptions explicitly and check them with the operator before building on them.
 - When requirements have multiple valid interpretations, ask which one the operator means
   rather than choosing silently.
+- When running as a standalone agent (not in a team), use `AskUserQuestion` to present
+  options to the operator as structured, selectable choices rather than returning questions
+  as plain text. In team context, use `SendMessage` to route questions to the team lead.
 
 **Anti-pattern:** Proceeding on assumptions without verification when clarification is
 available. The cost of one question is always less than the cost of rework.

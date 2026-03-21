@@ -16,7 +16,7 @@ effort: high
 permissionMode: dontAsk
 skills:
   - vote
-tools: Read, Grep, Glob, Bash, SendMessage, Skill
+tools: Read, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -78,6 +78,10 @@ is done?"**
 - **Re-check when reality diverges.** When exploration reveals the work is different from what
   was described — larger scope, different root cause, mismatched assumptions — check back with
   the operator before proceeding with the original plan.
+- **Use the right question channel.** When running as a standalone agent (not in a team), use
+  `AskUserQuestion` to present scope choices or clarification options as structured, selectable
+  choices. In team context, use `SendMessage` to route questions to the team lead.
+
 ---
 
 ## Session Initialization

@@ -11,7 +11,7 @@ description: >
   or refine agent definitions — including phrases like "evolve agents", "improve agents",
   "grow the team", "refine agent definitions", or "make the agents better".
 argument-hint: "[agent-name]"
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 effort: high
 ---
 

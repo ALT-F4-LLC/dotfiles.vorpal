@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Compressed pseudo-code blocks, fixed docket CLI audit completeness, added `context: fork` frontmatter.
+
+### Changes
+- Compressed Phase 0, Phase 1, and Phase 2 spawn pseudo-code (-13 lines)
+- Updated Phase 0 template to check for newly-discovered docket commands and flags
+- Added `context: fork` frontmatter for subagent isolation
+- Replaced `grep -r` with Grep tool reference in Phase 0 template
+- Compressed "Never add" list into "Reject examples" one-liner
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Actionability, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Removed Phase 0 agent spawning (docs research now passed as caller context), removed project-agnostic Content Gate check, compressed argument handling, dimension restatements, and template redundancies.
 
 ### Changes

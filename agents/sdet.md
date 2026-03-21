@@ -332,6 +332,7 @@ docket issue comment add <id> -m ""  — Add comment
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]  — Create vote proposal
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE  — Cast a vote
 docket vote result <id>              — View vote result
+docket vote commit <id> --outcome "description"  — Finalize approved vote
 docket vote show <id>                — Show vote details
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]  — List vote proposals
 docket vote link <proposal-id> --issue <issue-id>      — Link vote to issue

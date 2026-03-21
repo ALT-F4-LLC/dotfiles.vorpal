@@ -106,13 +106,16 @@ docket vote create \
   -c {criticality} \
   -n {reviewer_count} \
   --threshold {threshold} \
-  -d "{proposal description including artifact_type, rationale, domain_tags, files_changed}" \
+  -d "{proposal description}" \
+  -r "{rationale for the proposal}" \
+  --domain-tags "{comma-separated tags, e.g. architecture,security}" \
+  --files-changed "{comma-separated file paths}" \
   --json
 ```
 
 - Use `--json` to capture the proposal ID from the output. Extract the `id` field from the
   JSON response — you will need it for all subsequent `docket vote` commands.
-- For long descriptions, use `-d -` to pipe content via stdin.
+- For long descriptions or rationales, use `-d -` or `-r -` to pipe content via stdin.
 - Set `-n` to the reviewer count from the Criticality Classification table.
 - Set `--threshold` to the quorum threshold from the Criticality Classification table
   (e.g., 0.50 for low, 0.60 for medium, 0.75 for high, 0.90 for critical).
@@ -152,20 +155,15 @@ prompt. Collect all reviews only AFTER all reviewers have completed.
 After each reviewer completes, parse their structured output and record their vote using
 `docket vote cast`. Apply the verdict mapping below before casting.
 
-**Verdict mapping** (the `docket vote cast -v` flag only accepts `approve` or `reject`):
+**Verdict mapping**: The `docket vote cast -v` flag accepts `approve`, `approve-with-concerns`,
+or `reject`. Map reviewer verdicts as follows:
 
-| Reviewer Verdict | Maps To | Rationale |
-|---|---|---|
-| `approve` | `approve` | Direct approval |
-| `approve-with-concerns` | `approve` | Approval with noted concerns — concerns are captured in findings |
-| `request-changes` | `reject` | Changes required before approval |
-| `reject` | `reject` | Direct rejection |
-
-> **Behavioral change**: The previous protocol treated `request-changes` as neutral — it was
-> not counted for or against approval. Under the docket CLI, it maps to `reject` and counts
-> against the approval score. The rationale is that requested changes indicate the proposal
-> is not ready for approval in its current form. The original 4-level verdict is preserved
-> in the findings text so the nuance is not lost.
+| Reviewer Verdict | CLI Verdict |
+|---|---|
+| `approve` | `approve` |
+| `approve-with-concerns` | `approve-with-concerns` |
+| `request-changes` | `reject` |
+| `reject` | `reject` |
 
 **Cast each vote:**
 
@@ -176,11 +174,12 @@ echo '{multi-line findings text}' | docket vote cast {proposal_id} \
   -v {mapped_verdict} \
   --confidence {confidence} \
   --domain-relevance {domain_relevance} \
+  --summary "{one-line reviewer summary}" \
   --findings -
 ```
 
 - Use `--findings -` (stdin) to pass multi-line findings from the reviewer.
-- The original 4-level verdict is preserved in the findings text for auditability.
+- Use `--summary` for the reviewer's one-line assessment (from their Summary section).
 
 ### Reviewer Prompt Template
 
@@ -269,9 +268,12 @@ whether consensus was reached and extract the aggregated findings.
 
 ### If Quorum Is Reached
 
-1. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
+1. **Commit the proposal** — finalize the approved vote record:
+   ```bash
+   docket vote commit {proposal_id} --outcome "Approved with score {score}"
+   ```
+2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
-2. The consensus record is already stored by docket. No manual write needed.
 3. Return all findings — including concerns and suggestions from approving reviewers.
 4. If invoked by another agent, use **SendMessage** to deliver the consensus result
    to the invoking agent so they can act on the outcome.
@@ -344,6 +346,5 @@ After Phase 4 completes (whether consensus reached, escalated, or aborted):
 2. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
 3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-5. **Always create a docket vote record.** Every completed vote is recorded via `docket vote create` and `docket vote cast`.
-6. **Respect criticality direction.** May override up, never down for security.
-7. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.
+5. **Respect criticality direction.** May override up, never down for security.
+6. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.

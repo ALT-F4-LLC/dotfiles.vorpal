@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Fixed CLI flag usage to match docket vote capabilities; corrected verdict mapping; added `docket vote commit` for finalizing proposals.
+
+### Changes
+- Used dedicated `--rationale`, `--domain-tags`, `--files-changed` flags on `docket vote create`
+- Fixed verdict mapping: `approve-with-concerns` is a native CLI verdict
+- Added `--summary` flag to `docket vote cast` command template
+- Added `docket vote commit` step to Phase 4 when quorum is reached
+- Removed redundant rule 5 and obsolete "Behavioral change" note
+
+### Dimensions Evaluated
+Actionability, Completeness, Over-Engineering, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added full agent team lifecycle (TeamCreate/TaskCreate/TaskUpdate/TeamDelete) to align with all other skills.
 
 ### Changes

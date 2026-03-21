@@ -58,7 +58,7 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
 
 Before any planning or execution, run these checks:
 
-1. **Initialize Docket** — Run `docket init` via Bash (idempotent).
+1. **Initialize Docket** — Run `docket init` (idempotent).
 2. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
@@ -76,9 +76,8 @@ Answer these questions in order to select the right orchestration pattern:
    phase plan likely have 5+ phases?
    - Yes → **Large Task**
 3. **Does the work involve architectural decisions, data model changes, cross-cutting concerns,
-   or modifications to multiple systems** that benefit from upfront design?
+   or modifications to multiple systems** that benefit from upfront design (and no existing spec/TDD already covers it)?
    - Yes → **Medium Task**
-   - Exception: Skip TDD if existing specs or issue descriptions already define the approach.
 4. **Otherwise** → **Small Task**
 
 ### Resuming Mid-Execution
@@ -233,6 +232,7 @@ Requirements:
 - Use --parent for hierarchy, docket issue link add for dependencies
 - Organize into phases where issues within each phase can run in parallel
 - VERIFY no two issues in the same phase touch the same files
+- Use `docket issue create -f <path>` to attach scoped files to each issue
 - List the specific files each issue will modify in the issue description
 - Include spec references in issue descriptions where applicable
 - Provide the complete phase plan as your final output in this format:
@@ -393,7 +393,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 10. **After each phase completes:**
     - Verify all teammates reported success
-    - Confirm issue statuses in Docket are "done" via `docket board --json`
+    - Confirm issue statuses via `docket plan --json` (shows phased grouping)
     - Check for "Discovered:" comments that need attention
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
@@ -435,6 +435,7 @@ Invoke `/vote` for decisions matching the triggers below. Single-reviewer remain
 ```
 Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summary}. Files: {list}")
 ```
+After `/vote` approves, finalize the record: `docket vote commit {proposal-id} --outcome "Approved: {summary}"`.
 
 ### Verification Phase (medium+ tasks)
 
@@ -449,7 +450,6 @@ Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summar
 ### Wrap-up & Team Cleanup
 
 13. **After all phases complete:**
-    - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
     - Clean up the team (see Rule 8)
     - Remind the user that NO changes have been committed — review with `git diff`

@@ -12,6 +12,7 @@ description: >
   better", or "grow the skills".
 argument-hint: "[skill-name]"
 effort: high
+context: fork
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 ---
 
@@ -306,24 +307,34 @@ Audit the docket CLI to produce a structured reference of all commands, flags, a
 
 ## Steps
 
-1. Run `docket --help` for top-level commands
-2. Run `docket issue --help` and `docket vote --help` for subcommands
-3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`, `docket vote start --help`)
-4. Compare against docket commands used in the codebase (`grep -r "docket " agents/ .claude/skills/ skills/`)
+1. Run `docket --help` to get top-level commands.
+2. Run `docket issue --help` and `docket vote --help` to get subcommands.
+3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
+   `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
+4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
+5. Specifically check for: `docket vote commit`, `docket plan`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `approve-with-concerns` verdict
 
 ## Output Format
 
 ### New Commands
-Commands available in CLI but not yet referenced in any skill or agent file.
+Commands found in `--help` output but NOT used anywhere in agents/*.md or skills:
+- <command> — <synopsis>
 
 ### Changed Commands
-Commands whose flags or syntax differ from how they are currently used in the codebase.
+Commands where current `--help` flags/syntax differs from how they are used in agent/skill files:
+- <command> — <what changed>
 
 ### Deprecated/Removed
-Commands referenced in the codebase that no longer appear in --help output.
+Commands referenced in agent/skill files but NOT found in `--help` output:
+- <command> — <where referenced>
 
 ### Full CLI Reference
 Complete command tree with synopsis and flags for each leaf command.
+
+## Rules
+- DO NOT edit any files. Read-only — audit and report only.
+- Be thorough — run --help on every subcommand, not just the common ones.
+- If a command errors on --help, note it as unavailable.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -365,31 +376,14 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 ## Docket CLI Audit Findings
 {docket_audit_findings}
 
-## Content Gate (MANDATORY — applies to ALL additions)
+## Content Gate (MANDATORY)
 
-Every addition MUST pass ALL checks — reject if ANY fails:
-1. **Executable** — Can Claude do this in a stateless session?
-2. **Behavioral** — Does removing it change the skill's output?
-3. **Non-redundant** — Not already expressed elsewhere in the file?
-4. **Concrete** — A specific action, check, or output format?
+Apply the 4-check Content Gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
 ## Your Task
 
-Evaluate <skill-path>/SKILL.md against ALL 8 dimensions:
-
-1. **Skill Design Quality**: Claude Code best practices, frontmatter, argument handling?
-2. **Actionability**: Specific enough for reliable execution?
-3. **Completeness**: Edge cases, error conditions, all workflow paths? Are there new Claude
-   Code capabilities (from docs research) the skill should leverage?
-4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value content to trim?
-   **Every addition from other dimensions MUST be offset by a removal here.**
-5. **Orchestration Effectiveness & Cross-Communication**: Proper agent use, parallelism,
-   coordination? Do spawn templates include explicit SendMessage triggers between agent pairs
-   ("notify X when Y", "consult X before Y")? If >50% of communication paths route through
-   one agent, flag as hub-and-spoke. Agents are reactive by default — prompts need triggers.
-6. **Coherence with Other Skills**: Scope overlaps, terminology, conventions?
-7. **Spec Alignment**: Alignment with docs/spec/?
-8. **Rename Consideration**: Only if compelling — stability has value.
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions (see Evaluation Dimensions in evolve-skills).
+Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal.
 
 ## Requirements
 

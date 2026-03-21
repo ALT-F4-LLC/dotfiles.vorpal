@@ -2,14 +2,14 @@
 name: vote
 description: >
   PBFT-inspired consensus voting protocol for multi-agent decision validation. Spawns independent
-  reviewer agents to evaluate a proposal, computes weighted quorum, and writes an auditable
-  consensus record. Use when a decision needs independent validation from multiple perspectives —
+  reviewer agents to evaluate a proposal, computes weighted quorum, and creates an auditable
+  consensus record via docket. Use when a decision needs independent validation from multiple perspectives —
   architectural approvals, code reviews, security-sensitive changes, scope decisions, or any
   prompt where you want structured multi-agent agreement before proceeding. Any agent or user
   can invoke this skill.
 argument-hint: "<proposal>"
 effort: high
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -39,7 +39,8 @@ If the argument is too vague to evaluate (e.g., `/vote yes or no`), ask a clarif
 
 ## Pre-flight
 
-1. **Initialize consensus storage** — Run `mkdir -p .docket/consensus` via Bash (idempotent).
+1. **Verify docket is available** — Run `docket vote list --limit 1` via Bash to confirm the
+   vote subsystem is operational.
 2. **Parse the proposal** — Extract what is being decided from the argument.
 3. **Classify criticality** — Use the table below. If the caller specifies criticality
    (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
@@ -93,18 +94,36 @@ For ad-hoc proposals that don't fit neatly, select the 2-3 agents whose domain i
 
 ## Phase 1: Pre-Prepare (Proposal)
 
-Package the proposal into a structured format. Construct this from the proposal argument and any
-context you can gather (read referenced files, run `git diff` if code is mentioned, etc.):
+Create the proposal using the `docket vote create` CLI. Gather context from the proposal
+argument first (read referenced files, run `git diff` if code is mentioned, etc.), then
+construct a description that includes all relevant context for reviewers.
 
-```yaml
-proposal:
-  proposal_id: "consensus-{slug}-{timestamp}"
-  artifact_type: "code-review" | "tdd-approval" | "plan-approval" | "design-review" | "ad-hoc"
-  artifact_ref: "description or file path or diff"
-  rationale: "Summary from the proposal argument"
-  domain_tags: ["security", "architecture", "data-model", "api", "operations", "ux", "testing"]
-  criticality: "low" | "medium" | "high" | "critical"
-  files_changed: ["paths if applicable"]
+**Create the proposal:**
+
+```bash
+docket vote create \
+  --created-by "consensus-coordinator" \
+  -c {criticality} \
+  -n {reviewer_count} \
+  --threshold {threshold} \
+  -d "{proposal description including artifact_type, rationale, domain_tags, files_changed}" \
+  --json
+```
+
+- Use `--json` to capture the proposal ID from the output. Extract the `id` field from the
+  JSON response — you will need it for all subsequent `docket vote` commands.
+- For long descriptions, use `-d -` to pipe content via stdin.
+- Set `-n` to the reviewer count from the Criticality Classification table.
+- Set `--threshold` to the quorum threshold from the Criticality Classification table
+  (e.g., 0.50 for low, 0.60 for medium, 0.75 for high, 0.90 for critical).
+
+**Link to a Docket issue (when applicable):**
+
+If the vote is associated with a Docket issue (e.g., voting on a TDD that has a tracking
+issue), link the proposal:
+
+```bash
+docket vote link {proposal_id} --issue {issue_id}
 ```
 
 If the proposal references files, TDDs, or diffs — read them so you can include the full
@@ -127,6 +146,41 @@ Use `TaskList()` to monitor completion — all reviewer tasks must reach `comple
 
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all reviews only AFTER all reviewers have completed.
+
+### Recording Votes
+
+After each reviewer completes, parse their structured output and record their vote using
+`docket vote cast`. Apply the verdict mapping below before casting.
+
+**Verdict mapping** (the `docket vote cast -v` flag only accepts `approve` or `reject`):
+
+| Reviewer Verdict | Maps To | Rationale |
+|---|---|---|
+| `approve` | `approve` | Direct approval |
+| `approve-with-concerns` | `approve` | Approval with noted concerns — concerns are captured in findings |
+| `request-changes` | `reject` | Changes required before approval |
+| `reject` | `reject` | Direct rejection |
+
+> **Behavioral change**: The previous protocol treated `request-changes` as neutral — it was
+> not counted for or against approval. Under the docket CLI, it maps to `reject` and counts
+> against the approval score. The rationale is that requested changes indicate the proposal
+> is not ready for approval in its current form. The original 4-level verdict is preserved
+> in the findings text so the nuance is not lost.
+
+**Cast each vote:**
+
+```bash
+echo '{multi-line findings text}' | docket vote cast {proposal_id} \
+  --voter "reviewer-{N}" \
+  --role "{agent-type}" \
+  -v {mapped_verdict} \
+  --confidence {confidence} \
+  --domain-relevance {domain_relevance} \
+  --findings -
+```
+
+- Use `--findings -` (stdin) to pass multi-line findings from the reviewer.
+- The original 4-level verdict is preserved in the findings text for auditability.
 
 ### Reviewer Prompt Template
 
@@ -199,38 +253,15 @@ coverage, developer experience.
 
 ## Phase 3: Quorum Evaluation
 
-Collect all reviews. This is **deterministic arithmetic** — not LLM judgment.
+After all votes have been cast via `docket vote cast`, retrieve the consensus result:
 
-### Parse Each Review
-
-Extract from each reviewer's output:
-- `verdict`: one of approve, approve-with-concerns, request-changes, reject
-- `confidence`: 0.0-1.0
-- `domain_relevance`: 0.0-1.0
-
-### Compute Effective Weight
-
-```
-effective_weight = confidence * domain_relevance
+```bash
+docket vote result {proposal_id} --json
 ```
 
-### Verdict Classification
-
-- **approve** / **approve-with-concerns**: Count toward approval. Concerns are logged but
-  do not reduce the approval score.
-- **request-changes**: Neutral — findings aggregated, not counted for or against approval.
-- **reject**: Counts against approval and triggers additional constraints per criticality.
-
-### Compute Approval Score
-
-```
-approval_score = sum(effective_weight for reviewers where verdict in [approve, approve-with-concerns])
-                 / sum(effective_weight for ALL reviewers)
-```
-
-### Evaluate Against Thresholds
-
-Apply the thresholds from the Criticality Classification table above.
+The `docket vote result` command computes quorum automatically — effective weights, approval
+scores, and threshold evaluation are all handled by docket. Parse the JSON output to determine
+whether consensus was reached and extract the aggregated findings.
 
 ---
 
@@ -240,7 +271,7 @@ Apply the thresholds from the Criticality Classification table above.
 
 1. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
-2. Write the consensus record (see schema below).
+2. The consensus record is already stored by docket. No manual write needed.
 3. Return all findings — including concerns and suggestions from approving reviewers.
 4. If invoked by another agent, use **SendMessage** to deliver the consensus result
    to the invoking agent so they can act on the outcome.
@@ -254,8 +285,11 @@ Apply the thresholds from the Criticality Classification table above.
    (score: {score}, threshold: {threshold}).
    Options: (a) revise the proposal and re-vote, (b) escalate to human decision, (c) abort."
 4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal.
+   Each new round creates a new proposal via `docket vote create` — the coordinator MUST track
+   all proposal IDs across rounds and include them in the final report for auditability.
 5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
    - The original proposal
+   - All proposal IDs from each round (for `docket vote show {id}`)
    - Consolidated findings from all rounds
    - Quorum scores from each round
    - Your recommendation based on the pattern of reviews
@@ -265,55 +299,8 @@ Apply the thresholds from the Criticality Classification table above.
 - Reviewers in subsequent rounds MAY be the same or different agents (your choice based on
   whether the revision needs fresh eyes or the same domain expertise).
 - The consolidated feedback shows findings by category without reviewer names.
-- Each round's reviews are preserved in the consensus record.
-
----
-
-## Consensus Record Schema
-
-Write records to `.docket/consensus/` as JSON files via the **Write** tool after Phase 4 completes.
-
-**Path**: `.docket/consensus/consensus-{slug}-{timestamp}.json`
-
-```json
-{
-  "consensus_id": "consensus-{slug}-{timestamp}",
-  "proposal": "The original proposal text",
-  "criticality": "low | medium | high | critical",
-  "outcome": "committed | escalated | aborted",
-  "rounds": [
-    {
-      "round": 1,
-      "proposal": "// same structure as Phase 1 Pre-Prepare proposal object",
-      "reviews": [
-        {
-          "reviewer": "@agent-type",
-          "verdict": "...",
-          "confidence": 0.0,
-          "domain_relevance": 0.0,
-          "effective_weight": 0.0,
-          "findings": {
-            "blockers": [],
-            "concerns": [],
-            "suggestions": []
-          },
-          "summary": "..."
-        }
-      ],
-      "quorum": {
-        "approval_score": 0.0,
-        "threshold": 0.0,
-        "rejects": 0,
-        "reached": false,
-        "reason": "..."
-      }
-    }
-  ],
-  "final_outcome": "Description of result",
-  "escalation_reason": null,
-  "timestamp": "ISO 8601"
-}
-```
+- Each round produces a separate docket proposal. The coordinator maintains the list of all
+  proposal IDs across rounds for the final report.
 
 ---
 
@@ -336,7 +323,8 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-Written to `.docket/consensus/{filename}`
+View with: `docket vote show {proposal_id}`
+Full result: `docket vote result {proposal_id} --json`
 ```
 
 ---
@@ -356,6 +344,6 @@ After Phase 4 completes (whether consensus reached, escalated, or aborted):
 2. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
 3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-5. **Always write a record.** Every completed vote produces a JSON file.
+5. **Always create a docket vote record.** Every completed vote is recorded via `docket vote create` and `docket vote cast`.
 6. **Respect criticality direction.** May override up, never down for security.
 7. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.

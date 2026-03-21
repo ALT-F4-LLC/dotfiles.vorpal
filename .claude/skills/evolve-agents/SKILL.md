@@ -172,14 +172,24 @@ entries exceeding 20 lines.
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
 
 1. **Create the team** — `TeamCreate(team_name="evolve-agents-{today_date}", ...)`
-2. **Create Phase 1 tasks** — one per target agent
+2. **Create Phase 0 task** — `TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to agents")`
+3. **Create Phase 1 tasks** — one per target agent
 4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
 
-### Phase 0: Documentation Research
+### Phase 0: Documentation Research & Docket CLI Audit
 
 The orchestrator receives `{docs_research_findings}` as input context from the caller (team
 lead or user). Pass these findings verbatim to all Phase 1 agents. If no findings are provided,
 skip docs context in Phase 1 templates.
+
+**Docket CLI Audit** — Spawn a docket-auditor agent (using the Phase 0 spawning template below)
+to audit the docket CLI and produce structured findings. Capture output as
+`{docket_audit_findings}`. Wait for completion before starting Phase 1.
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
+TaskUpdate(taskId=<phase0_task_id>, owner="docket-auditor", status="in_progress")
+```
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -254,6 +264,46 @@ After Phase 2 completes:
 
 ## Spawning Templates
 
+### Phase 0: Docket CLI Audit
+
+Spawn one docket-auditor agent using `subagent_type: "senior-engineer"` (needs Bash access).
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
+
+You are auditing the docket CLI to produce a structured reference for agent evolution reviewers.
+
+## Steps
+
+1. Run `docket --help` to get top-level commands.
+2. Run `docket issue --help` and `docket vote --help` to get subcommands.
+3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
+   `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
+4. Search the codebase for current docket usage: `grep -r "docket " agents/ .claude/skills/`
+
+## Output Format
+
+### New Commands
+Commands found in `--help` output but NOT used anywhere in agents/*.md or skills:
+- <command> — <synopsis>
+
+### Changed Commands
+Commands where current `--help` flags/syntax differs from how they are used in agent/skill files:
+- <command> — <what changed>
+
+### Deprecated/Removed
+Commands referenced in agent/skill files but NOT found in `--help` output:
+- <command> — <where referenced>
+
+### Full CLI Reference
+Complete command tree with synopsis and flags for each leaf command.
+
+## Rules
+- DO NOT edit any files. Read-only — audit and report only.
+- Be thorough — run --help on every subcommand, not just the common ones.
+- If a command errors on --help, note it as unavailable.
+```
+
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
@@ -286,10 +336,15 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 - Read OTHER agent files — first ~80 lines only for team boundary context.
 - Review the Claude Code documentation research findings below and consider whether any
   new capabilities, features, or settings should be reflected in the agent's definition.
+- Review the docket CLI audit findings below — for agents that reference docket commands,
+  verify commands/flags are current and consider whether new docket capabilities should be used.
 - Skip WebFetch — adds latency without value for this task.
 
 ## Claude Code Documentation Research
 {docs_research_findings}
+
+## Docket CLI Audit Findings
+{docket_audit_findings}
 
 ## Content Gate (MANDATORY — applies to ALL additions)
 
@@ -404,7 +459,7 @@ Standard format (4 sections, max 20 lines) for each agent that received fixes.
 
 1. **Run pre-flight before spawning.** Validate agent files exist and arguments resolve.
 2. **Create team before spawning.** `TeamCreate` then `TaskCreate` before any `Agent` calls.
-3. **Phase 0 runs first, Phase 1 in parallel, Phase 2 after all Phase 1 complete.**
+3. **Phase 0 completes before Phase 1. Phase 1 runs in parallel. Phase 2 after all Phase 1 complete.**
 4. **Always run Phase 2.** Even for single-agent improvements — coherence matters.
 5. **Only the orchestrator edits files.** Teammates are read-only reviewers.
 6. **Never commit.** No `git add`, no `git commit`, no `git push`.

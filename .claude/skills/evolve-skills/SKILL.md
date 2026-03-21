@@ -158,9 +158,10 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
    TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")
    ```
 
-2. **Create the Phase 0 task** (documentation research):
+2. **Create Phase 0 tasks** (documentation research AND docket CLI audit):
    ```
    TaskCreate(subject="Docs Research", description="Research latest Claude Code documentation for new capabilities")
+   TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to skills")
    ```
 
 3. **Create Phase 1 tasks** — one per target skill (sequenced after Phase 0 by orchestrator):
@@ -173,19 +174,20 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
    TaskCreate(subject="Coherence & Renames", description="Cross-skill coherence review and rename execution")
    ```
 
-### Phase 0: Documentation Research
+### Phase 0: Documentation Research & Docket CLI Audit
 
-Spawn a single `claude-code-guide` teammate to research the latest Claude Code documentation
-for new capabilities, features, or settings relevant to skill evolution:
+Spawn TWO teammates in parallel — a `claude-code-guide` for docs research and a `senior-engineer`
+for docket CLI audit (needs Bash access):
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+Agent(team_name="evolve-skills-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
 ```
 
-Assign the Phase 0 task via `TaskUpdate`. After the teammate completes, capture its findings
-as `{docs_research_findings}` — this is passed to all Phase 1 agents as context.
+Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
+`{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
 
-Wait for Phase 0 to complete before starting Phase 1.
+Wait for both Phase 0 agents to complete before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -295,6 +297,35 @@ and permission/execution settings. Filter for what skill authors need to know.
 Group findings under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
+### Phase 0: Docket CLI Audit
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
+
+Audit the docket CLI to produce a structured reference of all commands, flags, and usage.
+
+## Steps
+
+1. Run `docket --help` for top-level commands
+2. Run `docket issue --help` and `docket vote --help` for subcommands
+3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`, `docket vote start --help`)
+4. Compare against docket commands used in the codebase (`grep -r "docket " agents/ .claude/skills/ skills/`)
+
+## Output Format
+
+### New Commands
+Commands available in CLI but not yet referenced in any skill or agent file.
+
+### Changed Commands
+Commands whose flags or syntax differ from how they are currently used in the codebase.
+
+### Deprecated/Removed
+Commands referenced in the codebase that no longer appear in --help output.
+
+### Full CLI Reference
+Complete command tree with synopsis and flags for each leaf command.
+```
+
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
@@ -324,10 +355,15 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 - Read OTHER skill files — first ~80 lines only. Check both .claude/skills/ and skills/.
 - Review the Claude Code documentation research findings below and consider whether any
   new capabilities, features, or settings should be reflected in the skill's design.
+- Review the docket CLI audit findings below — verify skills referencing docket commands
+  use correct syntax, flags, and subcommands.
 - Skip WebFetch — adds latency without value for this task.
 
 ## Claude Code Documentation Research
 {docs_research_findings}
+
+## Docket CLI Audit Findings
+{docket_audit_findings}
 
 ## Content Gate (MANDATORY — applies to ALL additions)
 

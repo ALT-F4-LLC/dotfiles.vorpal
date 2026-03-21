@@ -9,7 +9,7 @@ description: >
   can invoke this skill.
 argument-hint: "<proposal>"
 effort: high
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -33,7 +33,7 @@ The `proposal` argument is **required** — it describes what to vote on.
 - **With argument** (`/vote Should we use Redis or PostgreSQL for session caching?`):
   Proceed with the protocol.
 
-If the argument is too vague to evaluate (e.g., `/vote yes or no`), ask a clarifying question.
+If the argument is too vague to evaluate (e.g., `/vote yes or no`), use AskUserQuestion to ask what specifically should be voted on, with example options based on the context.
 
 ---
 
@@ -371,7 +371,7 @@ whether consensus was reached and extract the aggregated findings.
 2. Report the aggregated feedback to the caller.
 3. Report to the caller via **SendMessage** if invoked by an agent: "Consensus not reached
    (score: {score}, threshold: {threshold}).
-   Options: (a) revise the proposal and re-vote, (b) escalate to human decision, (c) abort."
+   If the caller is the user (not an agent), use AskUserQuestion to present options: "Revise and re-vote", "Escalate to human decision", "Abort". If the caller is an agent, send these options via SendMessage.
 4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal
    (same or different reviewers — your choice based on whether the revision needs fresh eyes).
    Each new round creates a new proposal via `docket vote create` — the coordinator MUST track

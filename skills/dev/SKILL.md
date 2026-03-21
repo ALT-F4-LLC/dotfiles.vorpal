@@ -12,7 +12,7 @@ description: >
   "parallel development", "multi-agent execution", or "agent swarm".
 argument-hint: "<work>"
 effort: max
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill", "AskUserQuestion"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -26,7 +26,7 @@ The `work` argument is **required** — it describes the work to be done.
 - **With argument** (`/dev implement JWT authentication for the API`): Use the argument as
   `{work}` throughout this skill. Pass it verbatim to agent templates wherever `{work}` appears.
 
-If the argument is too vague (e.g., `/dev stuff`), ask a clarifying question before proceeding.
+If the argument is too vague (e.g., `/dev stuff`), use AskUserQuestion to ask the operator what work they want done.
 
 ---
 
@@ -63,7 +63,7 @@ Before any planning or execution, run these checks:
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
 3. **Assess the request** — Determine which orchestration pattern fits using the decision tree
-   below. If the user's request is ambiguous, ask a clarifying question before choosing.
+   below. If the user's request is ambiguous, use AskUserQuestion to present the pattern options (Small Task, Medium Task, Large Task, UX-Heavy Task) with descriptions so the operator can choose.
 
 ### Pattern Decision Tree
 
@@ -339,7 +339,7 @@ Before spawning any agents, create an Agent Team to coordinate:
    If anything looks off, ask the PM to revise.
 6. **If the PM surfaced investigation needs**, send them to the "advisor" via SendMessage
    rather than spawning a new @staff-engineer.
-7. **Present the plan to the user** (for non-trivial work). Get approval before execution.
+7. **Present the plan to the user** (for non-trivial work). Use AskUserQuestion to get approval before execution — present options like "Approve", "Revise plan", or "Cancel".
 
 ### Implementation Phase
 

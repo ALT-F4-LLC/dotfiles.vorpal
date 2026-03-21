@@ -7,7 +7,7 @@ description: >
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 argument-hint: "[file...]"
 effort: medium
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -41,10 +41,10 @@ Before spawning any agents:
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
    - `mkdir -p docs/spec` — ensure output directory exists
 2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-3. **If files exist**, ask the user:
-   - **Overwrite all** — delete existing files and regenerate everything
-   - **Skip existing** — only generate missing spec files
-   - **Cancel** — abort the operation
+3. **If files exist**, use AskUserQuestion to present options:
+   - **Overwrite all** — "Delete existing files and regenerate everything"
+   - **Skip existing** — "Only generate missing spec files"
+   - **Cancel** — "Abort the operation"
 4. **If no files exist**, proceed directly to execution.
 
 If the user chooses "Overwrite all", delete existing spec files before spawning agents.

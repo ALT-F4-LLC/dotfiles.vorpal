@@ -10,7 +10,7 @@ effort: max
 memory: project
 skills:
   - vote
-tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage, Skill
+tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -75,8 +75,11 @@ Before starting any testing work, check for relevant context:
 Derive test cases from specs. If no specs or acceptance criteria exist, flag the gap to the
 user or team lead before writing tests — testing without a definition of correct behavior is
 theater. **If specs and acceptance criteria exist but you cannot determine what "correct" means,
-STOP and ask the operator or team lead for clarification.** Do not guess at intent — ambiguous
-criteria must be resolved before test design begins.
+STOP and ask the operator or team lead for clarification.** When running as a standalone agent
+(not in a team), use `AskUserQuestion` to present ambiguous criteria interpretations to the
+operator as structured, selectable options rather than returning questions as plain text. In
+team context, use `SendMessage` to route questions to the team lead. Do not guess at intent —
+ambiguous criteria must be resolved before test design begins.
 
 ---
 

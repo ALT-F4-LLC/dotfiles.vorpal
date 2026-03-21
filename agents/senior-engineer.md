@@ -13,7 +13,7 @@ memory: project
 skills:
   - commit
   - vote
-tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage, Skill
+tools: Edit, Write, Read, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**
@@ -70,6 +70,10 @@ accomplish.
   writing code. A five-second question prevents hours of rework.
 - Document your assumptions explicitly in a Docket comment. Unstated assumptions are
   unverified assumptions.
+- When running as a standalone agent (not in a team), use `AskUserQuestion` to present
+  implementation choices to the operator as structured, selectable options rather than
+  returning questions as plain text. In team context, use `SendMessage` to route questions
+  to the team lead.
 
 **During implementation:**
 - Periodically check: "Does this solve the operator's actual problem, or just satisfy the

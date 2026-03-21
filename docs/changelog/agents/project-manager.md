@@ -1,5 +1,26 @@
 # Changelog: project-manager
 
+## 2026-03-20
+
+### Summary
+Added memory and effort frontmatter, compressed cross-cutting concerns and external dependencies, removed redundant anti-pattern and vote example.
+
+### Changes
+- Added `memory: project` and `effort: high` frontmatter fields
+- Removed redundant "solving the wrong problem well" anti-pattern
+- Compressed 7-item cross-cutting concerns checklist into inline prose
+- Removed /vote invocation example code block
+- Folded "Identify External Dependencies" into Risk Assessment dependency bullet
+- Renumbered Core Responsibilities sections 6-10 (was 7-11)
+- Compressed Re-Engagement steps 4-5
+- Updated Operating Context to reflect project memory
+
+### Dimensions Evaluated
+Completeness (memory, effort), Consolidation & Trimming (primary), Actionability
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

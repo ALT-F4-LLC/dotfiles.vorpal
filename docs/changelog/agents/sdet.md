@@ -1,5 +1,25 @@
 # Changelog: sdet
 
+## 2026-03-20
+
+### Summary
+Consolidated Operator Alignment into Check Specs preamble, compressed Testing Philosophy, removed inverse /vote guidance, added effort frontmatter, fixed code review boundary coherence.
+
+### Changes
+- Merged Operator Alignment section into Check Specs preamble (-12 lines, unique content preserved)
+- Compressed Testing Philosophy by removing truisms already in Review Checklist and Test Pyramid
+- Removed "When NOT to invoke /vote" list (logical inverse of positive list)
+- Added `effort: max` frontmatter for thorough verification reasoning
+- Fixed "perform code reviews" to "perform production code reviews" matching frontmatter
+- [Coherence] Removed vestigial `docket config` from Session Initialization
+- [Coherence] Added `memory: project` frontmatter (aligned with all other agents)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Boundary Clarity, Coherence
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

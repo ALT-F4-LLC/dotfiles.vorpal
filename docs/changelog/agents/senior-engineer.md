@@ -1,5 +1,27 @@
 # Changelog: senior-engineer
 
+## 2026-03-20
+
+### Summary
+Consolidation pass removing duplicate content across sections, added memory frontmatter, calibrated self-review depth to change risk.
+
+### Changes
+- Removed "Own the Outcome" alignment paragraph (duplicate of Operator Alignment section)
+- Removed "Navigate Ambiguity" preamble paragraph (restated by its own bullets)
+- Compressed Inter-Agent Communication preamble from 5 lines to 1
+- Removed "Plan Before You Execute" subsection (covered by Check Specs and System-Level Awareness)
+- Trimmed Docket CLI Reference session-setup block (duplicated by Session Initialization)
+- Merged "debuggable code" bullet into error-context bullet in Code Quality
+- Added `memory: project` frontmatter for cross-session codebase learning
+- Added risk-calibrated self-review guidance
+- [Coherence] Added missing `effort: max` frontmatter (aligned with all other agents)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Capability Growth, Role Realism
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

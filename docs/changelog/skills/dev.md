@@ -1,5 +1,23 @@
 # Changelog: dev
 
+## 2026-03-20
+
+### Summary
+Added `effort: max` frontmatter and `isolation: worktree` for parallel implementation safety. Removed redundant callout, duplicate commit warning, and compacted wrap-up.
+
+### Changes
+- Added `effort: max` frontmatter for complexity-appropriate reasoning
+- Added `isolation="worktree"` to @senior-engineer spawn template (eliminates file conflict risk)
+- Removed Persistent Advisor Pattern callout block (-5 lines, redundant with surrounding steps)
+- Removed duplicate "Do NOT commit" from @ux-designer template (-1 line, covered by shared rules)
+- Compacted wrap-up shutdown bullets into Rule 8 reference (-2 lines)
+
+### Dimensions Evaluated
+Skill Design Quality, Completeness, Over-Engineering, Orchestration Effectiveness
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

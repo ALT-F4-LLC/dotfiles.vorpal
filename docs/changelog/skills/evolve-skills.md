@@ -1,5 +1,23 @@
 # Changelog: evolve-skills
 
+## 2026-03-20
+
+### Summary
+Added `effort: high` frontmatter and trimmed redundant Phase 2 preamble. Rejected Phase 0 removal (it IS the docs research mechanism, not redundant).
+
+### Changes
+- Added `effort: high` frontmatter for complexity-appropriate reasoning depth
+- Trimmed redundant "read-only" preamble from Phase 2 template header (-2 lines)
+- Fixed 3 TaskCreate calls: `title` to `subject`, removed `team_name` and `depends_on`
+- Fixed 2 TaskUpdate calls: `task_id` to `taskId`, removed `team_name`
+- Fixed 1 TaskList call: removed invalid `team_name` parameter
+
+### Dimensions Evaluated
+Skill Design Quality, Over-Engineering, Completeness, Coherence with Other Skills
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

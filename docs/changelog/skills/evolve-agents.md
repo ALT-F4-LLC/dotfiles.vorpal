@@ -1,5 +1,25 @@
 # Changelog: evolve-agents
 
+## 2026-03-20
+
+### Summary
+Added effort frontmatter, compressed Phase 0 template and Team Setup pseudo-code, simplified timeout fallback rule, added ultrathink trigger for deep self-review analysis.
+
+### Changes
+- Added `effort: high` frontmatter for complexity-appropriate reasoning depth
+- Compressed Phase 0 spawning template from 35 to 25 lines by removing boilerplate output format
+- Compressed Team Setup pseudo-code from verbose inline code to concise descriptions
+- Simplified rule 10 timeout fallback to single-attempt-then-orchestrator pattern
+- Added ultrathink trigger to Phase 1 for extended thinking during self-review
+- Fixed 2 TaskUpdate calls: `task_id` to `taskId`, removed `team_name`
+- Fixed 1 TaskList call: removed invalid `team_name` parameter
+
+### Dimensions Evaluated
+Skill Design Quality, Completeness, Over-Engineering, Coherence with Other Skills
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

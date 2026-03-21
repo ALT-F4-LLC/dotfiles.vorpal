@@ -11,6 +11,7 @@ description: >
   trigger when the user references @project-manager and @senior-engineer together, or asks for
   "parallel development", "multi-agent execution", or "agent swarm".
 argument-hint: "<work>"
+effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill"]
 ---
 
@@ -254,13 +255,12 @@ Requirements:
 - Include concrete success criteria, interaction flows, and edge cases
 - Include a Handoff Notes section with component breakdown and implementation priorities
 - Do NOT write implementation code — the spec is the deliverable
-- Do NOT commit any changes
 ```
 
 ### @senior-engineer
 
 ```
-Agent(team_name="dev-{feature-slug}", name="impl-{DOCKET-ID}", subagent_type="senior-engineer", prompt="...")
+Agent(team_name="dev-{feature-slug}", name="impl-{DOCKET-ID}", subagent_type="senior-engineer", isolation="worktree", prompt="...")
 
 Use the @senior-engineer agent to complete this issue:
 
@@ -365,11 +365,6 @@ Before spawning any agents, create an Agent Team to coordinate:
    before the implementation phase begins. This advisor persists through implementation and
    review — do NOT shut it down between phases.
 
-> **Persistent Advisor Pattern:** The @staff-engineer "advisor" teammate stays alive from the
-> design/planning phase through the end of the review phase. Other teammates can SendMessage to
-> "advisor" for real-time architectural guidance. The advisor is NOT re-spawned for review — it
-> transitions from TDD author to advisor to reviewer using SendMessage.
-
 ### Planning Phase
 
 4. **Spawn @project-manager teammate** with the user's request and any spec references.
@@ -454,8 +449,7 @@ Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summar
 13. **After all phases complete:**
     - Run `docket board --json` to confirm all issues are "done"
     - Summarize: issues completed, files changed, review findings, test results
-    - Shut down all teammates via `SendMessage(to="<name>", message={type: "shutdown_request"})`
-    - Delete the team via `TeamDelete(team_name="dev-{feature-slug}")`
+    - Clean up the team (see Rule 8)
     - Remind the user that NO changes have been committed — review with `git diff`
 
 ---

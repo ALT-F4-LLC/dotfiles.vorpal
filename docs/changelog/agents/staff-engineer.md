@@ -1,5 +1,24 @@
 # Changelog: staff-engineer
 
+## 2026-03-20
+
+### Summary
+Added effort and memory frontmatter, removed Advisory Mode negative list, compressed System-Level Thinking, tightened status updates, added TDD handoff notification.
+
+### Changes
+- Added `effort: max` and `memory: project` frontmatter fields
+- Removed Advisory Mode "What NOT to do" list (duplicates "What You Are NOT" constraints)
+- Compressed System-Level Thinking from 4 sub-sections to 2
+- Tightened status updates to use SendMessage (removed Docket comments reference)
+- Added explicit SendMessage notification to @project-manager when TDD is ready for decomposition
+- [Coherence] Decoupled Advisory Mode from `dev` skill name to avoid fragile cross-reference
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Capability Growth, Actionability
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

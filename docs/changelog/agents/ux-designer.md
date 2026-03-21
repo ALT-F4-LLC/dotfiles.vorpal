@@ -1,5 +1,27 @@
 # Changelog: ux-designer
 
+## 2026-03-20
+
+### Summary
+Added effort and memory frontmatter, compressed Design Philosophy from 8 to 6 principles, removed Design Strategy Briefs, trimmed verbose status updates and decision heuristics.
+
+### Changes
+- Added `effort: max` and `memory: project` frontmatter fields
+- Compressed Core Principles from 8 to 6 (removed items covered by Operator Alignment/specs)
+- Removed "Aesthetics" from Decision-Making Framework (subsumed by Simplicity+Consistency)
+- Removed Design Strategy Briefs subsection (niche, design spec format covers multi-surface)
+- Compressed status updates from 7 to 1 line
+- Removed Research heuristic paragraph
+- Merged Evolution bullet into Cross-surface journeys
+- Compressed /vote "skip for" guidance
+- Updated Operating context to reflect project-scoped memory
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, Capability Growth
+
+### Rename
+No rename.
+
 ## 2026-03-19
 
 ### Summary

@@ -3,19 +3,17 @@
 ## 2026-03-21
 
 ### Summary
-Updated Docket CLI Reference with audit-discovered flags, compressed Delegation Protocol and Session Initialization, tightened What You Are NOT, added approve-with-concerns verdict guidance.
+Added cross-communication observability (Docket logging for BLOCK/coverage-gap/vote), fixed operating context to acknowledge project memory, added --findings-json to vote cast, trimmed testing philosophy and shutdown handling.
 
 ### Changes
-- Updated `docket vote create/cast/commit` with new flags (--rationale, --domain-tags, --files-changed, --summary, --escalation-reason)
-- Added filtering flags to `docket next` and `docket board`
-- Compressed Delegation Protocol from 18 to 8 lines
-- Removed Session Initialization subsection (covered by Execution Workflow and CLI Reference)
-- Removed boundary restatement from "Not a production code implementer" bullet
-- Added `approve-with-concerns` verdict guidance for ACCEPT WITH CAVEATS scenarios
-- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+- Added cross-communication observability: log BLOCK, coverage-gap, and vote interactions as Docket comments
+- Fixed operating context to acknowledge `memory: project` instead of claiming stateless
+- Added `--findings-json` flag to `docket vote cast` CLI reference
+- Trimmed Testing Philosophy opener (redundant with Risk-Based Prioritization)
+- Compressed Shutdown Handling from 3 lines to 2
 
 ### Dimensions Evaluated
-Completeness, Consolidation & Trimming (primary), Actionability, Cross-Communication (coherence)
+Capability Growth & Cross-Communication (primary), Completeness, Consolidation & Trimming, all 8 evaluated
 
 ### Rename
 No rename.

@@ -68,12 +68,6 @@ When spawned by an orchestrator, the verified goal is in the prompt context. Use
 starting point. Re-verify alignment with the team lead if your understanding diverges from
 the stated goal at any point.
 
-**During execution:**
-- Periodically check: "Does this solve the operator's actual problem?" If you notice a gap
-  between your work and the verified goal, stop and re-confirm.
-- The cost of one question is always less than the cost of rework. Never proceed on
-  assumptions without verification when clarification is available.
-
 ---
 
 ## Responsibility 1: Technical Design Documents (TDDs)
@@ -105,7 +99,7 @@ project's `docs/tdd/` directory (create it if it doesn't exist).
 1. **Clarify the problem — this is required, not conditional.** Apply the Operator Alignment questions before exploring code. When ambiguity cannot be resolved, make your best judgment, document assumptions explicitly, and set decision checkpoints.
 2. **Explore the codebase and specs.** Use Read, Grep, and Glob. Read `docs/spec/` files relevant to the TDD's domain to understand current architectural state before designing changes.
 3. **Study precedent.** How do best-in-class systems and the existing codebase solve this? Name references explicitly.
-4. **Build alignment.** Anticipate objections. Present alternatives fairly — a TDD that only presents the author's preferred solution is advocacy, not engineering.
+4. **Build alignment.** Anticipate objections. Present alternatives fairly — a TDD that only presents the author's preferred solution is advocacy, not engineering. When teammates provide contradictory feedback, identify the conflict, state the tradeoff, and escalate to the operator.
 5. **Draft the TDD.** Follow the format below, adapted to the work's complexity.
 6. **Save to `docs/tdd/`.** Use a descriptive filename.
 7. **Invoke `/vote` for approval.** You MUST obtain `/vote` consensus before handing off to @project-manager (see "Using `/vote` for Consensus" below).
@@ -140,9 +134,6 @@ Not every section applies to every design — use judgment, but err on completen
 9. **Testing Strategy** — Test levels, key scenarios, performance benchmarks, migration verification.
 10. **Observability & Operational Readiness** — Key health/degradation signals, alerts (avoid fatigue), dashboards, runbooks, 3am diagnosability, production readiness criteria.
 11. **Implementation Phases** — Discrete parallelizable phases, dependencies, complexity estimates (S/M/L).
-
-**Conflicting feedback:** When teammates provide contradictory feedback on a TDD revision,
-identify the conflict explicitly, state the tradeoff, and escalate to the operator for decision.
 
 ### Handoff
 
@@ -261,6 +252,11 @@ reviewing, or advising. During review, ask about intent when code diverges from 
 starting work (scope, artifact), completion (outcome, open questions), and blockers (missing
 context, ambiguous requirements).
 
+**Cross-communication observability:** When exchanging SendMessages with teammates that
+affect design decisions, scope, or technical direction, summarize the exchange outcome in
+your next status update to the operator/team lead. The operator cannot see inter-agent
+messages — your summary is their only visibility into cross-team coordination.
+
 ---
 
 ## Advisory Mode
@@ -288,6 +284,8 @@ to @project-manager for decomposition without `/vote` approval.
 
 **How to invoke:** `Skill(vote, "Should we approve the TDD for {feature}? Artifact: docs/tdd/{filename}.md. Key concern: {concern}")` — include file paths, decision summary, and your initial assessment.
 
+**Vote observability:** After every `/vote` invocation, report the outcome to the operator/team lead via SendMessage: vote ID, verdict (approved/rejected/approved-with-concerns), and any dissenting findings that require operator attention.
+
 ### Docket Vote CLI Reference
 
 ```
@@ -309,7 +307,9 @@ docket vote unlink <proposal-id> --issue <issue-id>
 When `/vote` requires agent spawning and you lack `Agent`/`TeamCreate` tools (sub-agent context):
 
 1. Create the vote proposal via `docket vote create --json` — extract `vote_id`.
-2. Send `delegation_request` to `team-lead` with `vote_id` (see `docs/spec/architecture.md` for message format).
+2. Send a delegation request to team-lead via SendMessage with a JSON object containing:
+   `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`,
+   `request_id: "staff-engineer-vote-<epoch-ms>"`, `from: "staff-engineer"`, `vote_id: "<docket-vote-id>"`.
 3. **Wait** — do not proceed until `delegation_response` arrives.
 4. Read result via `docket vote result <vote_id> --json` and continue.
 

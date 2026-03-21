@@ -3,18 +3,17 @@
 ## 2026-03-21
 
 ### Summary
-Consolidated session initialization into execution workflow, compressed delegation protocol and status updates, updated CLI reference with new flags (-f, --limit, --rationale), streamlined ad-hoc issue creation to use -f flag.
+Added cross-communication observability (SendMessage and /vote logging as Docket comments), updated CLI with missing vote flags and approve-with-concerns verdict, compressed Delegation Protocol and Own the Outcome.
 
 ### Changes
-- Merged Session Initialization into Execution Workflow (eliminated duplicate docket next/show instructions)
-- Compressed delegation protocol JSON example from 14 lines to 4 inline description
-- Updated ad-hoc issue creation to use `docket issue create -f` instead of separate `file add` step
-- Updated Docket CLI Reference with new flags: `-f` for issue create, `--limit/-l/-p` for next, `--rationale` for vote create
-- Compressed "Status updates to the operator" from 5 lines to 3
-- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+- Added cross-communication observability subsection: log SendMessage exchanges and /vote outcomes as Docket comments
+- Added vote outcome logging to /vote section
+- Updated CLI: -T/-s on next, --domain-tags/--files-changed/--escalation-reason on vote create, --findings-json/--summary on vote cast, approve-with-concerns verdict
+- Compressed Delegation Protocol from bullet list to inline format
+- Trimmed "Own the Outcome" (removed redundancy with Navigate Ambiguity)
 
 ### Dimensions Evaluated
-Consolidation & Trimming (primary), Completeness (CLI audit), Actionability, Cross-Communication (coherence)
+Capability Growth & Cross-Communication (primary), Completeness (CLI audit), Consolidation & Trimming, all 8 evaluated
 
 ### Rename
 No rename.

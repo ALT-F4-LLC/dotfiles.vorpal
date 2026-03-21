@@ -3,18 +3,17 @@
 ## 2026-03-21
 
 ### Summary
-Updated docket vote CLI reference with newly discovered flags, compressed Delegation Protocol to reference spec, added shutdown request handling for team lifecycle.
+Added cross-communication and vote observability, aligned Delegation Protocol with standardized JSON format, trimmed pre-flight and conflicting-feedback passages, folded conflicting feedback into TDD step 4.
 
 ### Changes
-- Updated `docket vote create` with `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason` flags
-- Updated `docket vote cast` with `--findings-json`, `--summary` flags and `approve-with-concerns` verdict
-- Updated `docket vote commit` with `--escalation-reason` flag
-- Compressed Delegation Protocol from 26 lines to 9 by referencing `docs/spec/architecture.md`
-- Added Shutdown Handling section for graceful team lifecycle management
-- [evolve-skills coherence] Removed invalid `abstain` verdict from vote CLI reference comment (not a valid `docket vote cast` verdict)
+- Added cross-communication observability to Proactive Communication: summarize inter-agent exchanges for operator
+- Added vote observability to /vote section: report vote ID, verdict, and dissenting findings
+- Aligned Delegation Protocol with standardized JSON message format (was spec reference, now inline)
+- Removed "During execution" block from Pre-Flight Gate (restates Operator Alignment)
+- Folded "Conflicting feedback" paragraph into TDD workflow step 4
 
 ### Dimensions Evaluated
-Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams
+Capability Growth & Cross-Communication (primary), Consolidation & Trimming, Spec Alignment, all 8 evaluated
 
 ### Rename
 No rename.

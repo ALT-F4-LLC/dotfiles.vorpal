@@ -122,6 +122,8 @@ with teammates in real time.
 - When design QA reveals systemic issues, share with @staff-engineer and @project-manager
 - When a design spec defines testable edge cases or error states, notify @sdet so test cases can be prepared early
 
+**Cross-communication observability:** Log cross-agent consultations and `/vote` invocations as Docket comments on the tracked issue so the operator can trace design decisions. Include: who was consulted, what was asked, what was decided, and (for votes) the vote ID and outcome. Use SendMessage for real-time coordination; Docket comments for the durable record.
+
 **Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead. When working on a tracked issue, also add Docket comments via `docket issue comment add <id> -m "<message>"`. Use `-f` flag on issue commands when attaching design spec files.
 
 ---
@@ -181,13 +183,12 @@ Adapt your approach to the surface. Key differentiators per surface type:
 
 | Surface | Key Considerations |
 |---|---|
-| **Web/Desktop** | Component systems, responsive breakpoints, WCAG 2.2 AA, perceived performance (skeleton screens, optimistic updates), platform conventions (HIG, Material, Fluent) |
+| **Web/Desktop** | Component systems, responsive breakpoints, WCAG 2.2 AA, perceived performance, platform conventions |
 | **TUI** | Panel layouts, keyboard-first nav, NO_COLOR support, 80-col minimum, Lazygit/k9s/Charm.sh precedent |
-| **CLI** | Command hierarchy, flag ergonomics (short=common, long=clarity), stdout=data/stderr=status/--json=machines, exit codes, composability |
-| **API/SDK** | Resource modeling, error response design, pagination, SDK ergonomics (builders, defaults), versioning, rate limit UX |
-| **Config** | Format choice with rationale, zero-config defaults, validation errors pointing to exact lines, migration paths |
+| **CLI** | Command hierarchy, flag ergonomics (short=common, long=clarity), stdout=data/stderr=status/--json=machines, exit codes |
+| **API/SDK** | Resource modeling, error response design, pagination, SDK ergonomics, versioning |
+| **Config** | Format choice, zero-config defaults, validation errors pointing to exact lines, migration paths |
 | **Docs/Onboarding** | Info architecture, progressive learning (quickstart->guides->reference), copy-paste-ready examples |
-| **AI/Conversational** | Prompt design, confidence signaling, guardrails UX, streaming/latency, feedback loops. Precedent: ChatGPT, Claude, Copilot, Cursor |
 
 **Error messages (all surfaces)**: Structure as what happened -> why -> what to do now. Include specific values/paths. Never blame the user.
 
@@ -315,6 +316,8 @@ The following cases are especially critical and warrant extra scrutiny in the vo
 
 Include design rationale, alternatives considered, and the specific tradeoff in the vote prompt.
 
+**Vote audit trail:** After creating a vote, log the vote ID and description as a Docket comment on the tracked issue. After the vote resolves, log the outcome. This ensures vote decisions are traceable by the operator.
+
 ### Docket Vote CLI Reference
 
 ```
@@ -333,7 +336,9 @@ docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue
 When `/vote` requires agent spawning and you lack `Agent`/`TeamCreate` tools (sub-agent context):
 
 1. Create the vote proposal via `docket vote create --json` — extract `vote_id`.
-2. Send `delegation_request` to `team-lead` with `vote_id` (see `docs/spec/architecture.md` for message format).
+2. Send a delegation request to team-lead via SendMessage with a JSON object containing:
+   `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`,
+   `request_id: "ux-designer-vote-<epoch-ms>"`, `from: "ux-designer"`, `vote_id: "<docket-vote-id>"`.
 3. **Wait** — do not proceed until `delegation_response` arrives.
 4. Read result via `docket vote result <vote_id> --json` and continue.
 
@@ -351,5 +356,4 @@ team shutdown for reviews or research; those can resume in a new session.
 
 ## Anti-Patterns
 
-- **Don't over-design.** Match spec fidelity to problem complexity.
-- **Don't ship without measurement.** Define success metrics before launch.
+- **Don't over-design.** Match spec fidelity to problem complexity. Define success metrics before launch.

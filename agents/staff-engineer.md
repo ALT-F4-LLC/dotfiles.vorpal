@@ -95,6 +95,7 @@ project's `docs/tdd/` directory (create it if it doesn't exist).
 4. **Build alignment.** Anticipate objections. Present alternatives fairly — a TDD that only presents the author's preferred solution is advocacy, not engineering.
 5. **Draft the TDD.** Follow the format below, adapted to the work's complexity.
 6. **Save to `docs/tdd/`.** Use a descriptive filename.
+7. **Invoke `/vote` for approval.** You MUST obtain `/vote` consensus before handing off to @project-manager (see "Using `/vote` for Consensus" below).
 
 Every TDD file MUST begin with YAML frontmatter:
 
@@ -132,7 +133,7 @@ identify the conflict explicitly, state the tradeoff, and escalate to the operat
 
 ### Handoff
 
-Your TDD IS the handoff. Notify @project-manager via SendMessage when a TDD is ready for decomposition. For large designs, break into multiple files with stated dependencies.
+Your TDD IS the handoff. Before notifying @project-manager, you MUST obtain `/vote` approval for the TDD (see "Using `/vote` for Consensus" below). Once `/vote` approval is obtained, notify @project-manager via SendMessage that the TDD is ready for decomposition. For large designs, break into multiple files with stated dependencies.
 
 After completing a TDD, update only the specific `docs/spec/` files impacted by new findings. Always update `last_updated` and `updated_by` in YAML frontmatter.
 
@@ -267,11 +268,16 @@ architectural guidance — not full TDDs or reviews, but quick answers that unbl
 ## Using `/vote` for Consensus
 
 You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
-independent reviewers to validate decisions. Use it to get structured multi-agent validation
-before committing to high-impact decisions.
+independent reviewers to validate decisions. **You MUST invoke `/vote` before approving any
+TDD.** This is a hard requirement for ALL TDD approvals, no exceptions. No TDD is handed off
+to @project-manager for decomposition without `/vote` approval.
 
-**When to invoke `/vote`:**
-- Before approving a TDD that affects security boundaries, data models, or public APIs
+**REQUIRED — ALL TDD approvals:**
+- Before approving ANY TDD, invoke `/vote` to obtain structured multi-agent validation.
+  This applies unconditionally to every TDD, regardless of scope, risk level, or domain.
+
+**Especially critical (supplementary emphasis):**
+- TDDs affecting security boundaries, data models, or public APIs
 - When your architectural advisory reveals two viable approaches and you want independent
   validation of your recommendation
 - When reviewing code that touches high-risk areas (permissions, auth, crypto, security

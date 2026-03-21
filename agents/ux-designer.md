@@ -223,13 +223,15 @@ dependencies) matching the format used in `docs/spec/` and `docs/tdd/`.
 3. **Draft.** Follow the spec format above, adapted to surface type. State trade-offs explicitly with a recommendation.
 4. **Self-validate.** Before saving, verify: every success criterion maps to a design element; every workflow is fully designed including error branches; error states cover every input and external dependency; accessibility requirements are specified (keyboard nav, color independence); actual copy is proposed (not placeholders); layouts that exceed ASCII clarity are flagged for visual prototyping; @senior-engineer can implement without design judgment calls.
 5. **Save to `docs/ux/`.** Descriptive filename, e.g., `docs/ux/board-view-redesign.md`.
+6. **Invoke `/vote` for approval.** You MUST obtain `/vote` consensus before handing off any design spec (see Using `/vote` for Consensus below).
 
 ### Handoff
 
 Your design spec IS the handoff — detailed enough that @project-manager can decompose it,
 @senior-engineer can implement without design questions, and @sdet can derive test cases.
-Always save to `docs/ux/` with YAML frontmatter. Update `last_updated` and `updated_by` on
-every edit. For large designs, break into phased spec files with linked dependencies.
+You MUST obtain `/vote` approval before handing off any design spec. Always save to `docs/ux/`
+with YAML frontmatter. Update `last_updated` and `updated_by` on every edit. For large designs,
+break into phased spec files with linked dependencies.
 
 ---
 
@@ -307,7 +309,10 @@ When ambiguous between review and evaluation, ask the user to clarify.
 
 ## Using `/vote` for Consensus
 
-Use `/vote` when design decisions set precedent or have significant technical implications:
+You MUST invoke `/vote` before approving any design spec. Every design spec requires `/vote`
+approval before handoff to @project-manager or @staff-engineer — no exceptions.
+
+The following cases are especially critical and warrant extra scrutiny in the vote prompt:
 - A pattern that other teams or surfaces will follow
 - Your design conflicts with a TDD's user-facing decisions
 - A design strategy brief affects 3+ surfaces

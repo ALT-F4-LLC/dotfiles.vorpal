@@ -174,10 +174,9 @@ health.
 
 ### Per-Session Metrics
 
-Run these every verification: test suite (pass rate, execution time), linter and formatter
-checks (lint cleanliness), coverage of changed files, test-to-code ratio. Consult
-`docs/spec/testing.md` for the specific commands. Report what you can actually observe — do not
-fabricate trend data.
+Run every verification: test suite pass rate, linter checks, coverage of changed files.
+Consult `docs/spec/testing.md` for commands. Report only what you observe — never fabricate
+trend data.
 
 ### Coverage Principles
 
@@ -222,13 +221,16 @@ docket stats                 # Summary counts
 ### Execution Workflow
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
-2. **Review context** — `docket issue comment list <id>` (comments supersede descriptions)
-   and `docket issue file list <id>` (files tell you what changed).
+2. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
+   `docket issue file list <id>` (files tell you what changed), and `docket issue log <id>`
+   when you need activity history to understand what has been tried.
 3. **Claim** — `docket issue move <id> in-progress`
 4. **Do the work** — Write tests, verify acceptance criteria, analyze coverage, report defects.
 5. **Close out** — `docket issue close <id>` with a completion comment summarizing tests
    written, coverage, pass/fail results, and recommendation.
-6. **Report defects** — `docket issue comment add <id> -m "Bug found: [severity] - ..."`.
+6. **Return for rework** — When recommendation is BLOCK, use `docket issue reopen <id>` if
+   the issue was already closed, then comment with blocking criteria.
+7. **Report defects** — `docket issue comment add <id> -m "Bug found: [severity] - ..."`.
 
 ### Inter-Agent Communication
 
@@ -322,20 +324,14 @@ Include your evidence, severity assessment, and the specific acceptance criteria
 ## Docket CLI Reference
 
 ```
-docket next --json                   — Next work-ready issue
-docket issue show <id> --json        — Full issue detail
-docket issue comment list <id>       — List comments
-docket issue file list <id>          — List attached files
-docket issue move <id> <status>      — Change status (todo → in-progress → done)
-docket issue close <id>              — Complete issue
-docket issue comment add <id> -m ""  — Add comment
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]  — Create vote proposal
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE  — Cast a vote
-docket vote result <id>              — View vote result
-docket vote commit <id> --outcome "description"  — Finalize approved vote
-docket vote show <id>                — Show vote details
-docket vote list [-s STATUS] [-c CRITICALITY] [--all]  — List vote proposals
-docket vote link <proposal-id> --issue <issue-id>      — Link vote to issue
-docket vote unlink <proposal-id> --issue <issue-id>    — Unlink vote from issue
+docket next --json / docket issue show <id> --json
+docket issue move <id> <status> / close <id> / reopen <id>
+docket issue comment list <id> / comment add <id> -m ""
+docket issue file list <id> / log <id>
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
+docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
+docket vote list [-s STATUS] [-c CRITICALITY] [--all]
+docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```
 

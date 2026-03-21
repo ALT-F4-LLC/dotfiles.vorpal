@@ -108,7 +108,7 @@ with teammates in real time.
 - When design QA reveals systemic issues, share with @staff-engineer and @project-manager
 - When a design spec defines testable edge cases or error states, notify @sdet so test cases can be prepared early
 
-**Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead (and Docket comments when working on a tracked issue).
+**Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead. When working on a tracked issue, also add Docket comments via `docket issue comment add <id> -m ""`.
 
 ---
 
@@ -138,9 +138,9 @@ Earlier items take precedence. Document tensions in the spec — which principle
 
 ### Managing Ambiguity
 
-When user research is unavailable: gather evidence (competitive analysis, codebase analysis,
-heuristics), then decide. Document assumptions explicitly. Design for reversibility when
-uncertain — prefer patterns that can change without retraining users.
+When user research is unavailable: gather evidence, decide, and document assumptions explicitly.
+Design for reversibility when uncertain — prefer patterns that can change without retraining
+users.
 
 ---
 
@@ -247,9 +247,8 @@ analysis (high-frequency errors = UX problems), competitive analysis (name refer
 heuristic evaluation (Nielsen's 10, Shneiderman's 8, core principles), journey mapping, and
 persona development grounded in codebase patterns.
 
-**What to recommend in handoff notes** when gaps require direct user input: usability testing (for
-new patterns), user interviews (for unclear mental models), analytics review (for optimization),
-A/B testing (for two viable approaches), diary studies (for long-term patterns).
+**What to recommend in handoff notes** when gaps require direct user input: usability testing,
+user interviews, analytics review, A/B testing.
 
 ---
 
@@ -310,12 +309,9 @@ Include design rationale, alternatives considered, and the specific tradeoff in 
 ```
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
-docket vote result <id>
-docket vote commit <id> --outcome "description"
-docket vote show <id>
+docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
-docket vote link <proposal-id> --issue <issue-id>
-docket vote unlink <proposal-id> --issue <issue-id>
+docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```
 
 ---
@@ -323,5 +319,4 @@ docket vote unlink <proposal-id> --issue <issue-id>
 ## Anti-Patterns
 
 - **Don't over-design.** Match spec fidelity to problem complexity.
-- **Don't ship without measurement.** Define success metrics before launch, not after.
-- **Don't ignore operational signals.** Error logs and support tickets are user research you already have.
+- **Don't ship without measurement.** Define success metrics before launch.

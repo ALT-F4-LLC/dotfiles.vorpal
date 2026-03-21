@@ -3,6 +3,23 @@
 ## 2026-03-20
 
 ### Summary
+Removed Anti-Patterns section (restated by Core Operating Principles), compressed CLI Reference and Cross-Cutting Concerns, updated CLI with `log` and `file add` commands.
+
+### Changes
+- Removed Anti-Patterns to Avoid section entirely (scope creep, silent compliance, resume-driven dev all restated in Core Operating Principles and Dependency Evaluation)
+- Compressed Docket CLI Reference from 15 to 10 lines, added `log`, `file add`
+- Compressed Cross-Cutting Concerns to remove explicit spec file names (already says "relevant docs/spec/")
+- Compressed Dependency Evaluation bullet to paragraph
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidated duplicate build-verification bullets, removed redundant anti-pattern, added @ux-designer cross-communication trigger, compressed Docket CLI Reference, improved Navigate Ambiguity for stateless model.
 
 ### Changes

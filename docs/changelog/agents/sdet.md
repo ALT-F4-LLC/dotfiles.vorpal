@@ -3,6 +3,23 @@
 ## 2026-03-20
 
 ### Summary
+Added `reopen` and `log` docket commands to workflow, compressed Docket CLI Reference and Per-Session Metrics, added rework return step.
+
+### Changes
+- Added `docket issue log <id>` to Review context step for activity history
+- Added step 6 "Return for rework" with `docket issue reopen` for BLOCK scenarios
+- Compressed Docket CLI Reference from 15 lines to 9 (removed inline descriptions, merged related commands)
+- Compressed Per-Session Metrics (removed restated testing.md content)
+
+### Dimensions Evaluated
+Completeness, Consolidation & Trimming, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Merged Block/Accept Criteria into Verification Workflow, compressed greenfield edge-case steps, removed standalone test code review section (boundary overlap with @staff-engineer code review), added coverage-gap escalation trigger.
 
 ### Changes

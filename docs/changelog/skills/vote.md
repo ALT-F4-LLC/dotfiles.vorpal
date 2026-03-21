@@ -3,6 +3,59 @@
 ## 2026-03-20
 
 ### Summary
+Added full agent team lifecycle (TeamCreate/TaskCreate/TaskUpdate/TeamDelete) to align with all other skills.
+
+### Changes
+- Added TeamCreate, TaskCreate, TaskUpdate, TaskList, TaskGet, TeamDelete to allowed-tools
+- Added team creation and task creation to Pre-flight (steps 5-6)
+- Updated reviewer spawn template to include team_name parameter
+- Added task assignment and TaskList monitoring to Phase 2
+- Added TaskUpdate completion instruction to reviewer template
+- Added Wrap-up & Team Cleanup section with shutdown and TeamDelete
+- Added rules 1 (create team before spawning) and 7 (clean up the team)
+
+### Dimensions Evaluated
+Orchestration Effectiveness, Coherence with Other Skills
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
+Fixed inconsistent `$ARGUMENTS` references to align with the skill's own `{proposal}` convention.
+
+### Changes
+- Replaced `$ARGUMENTS` in Pre-flight step 2 with plain language matching `{proposal}` convention
+- Replaced `$ARGUMENTS` in Phase 1 Pre-Prepare with plain language matching `{proposal}` convention
+
+### Dimensions Evaluated
+Coherence with other skills (argument handling consistency)
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
+Removed unused team tools from frontmatter, added SendMessage cross-communication for result reporting, and trimmed redundant content.
+
+### Changes
+- Removed TeamCreate/TeamDelete from allowed-tools (unused — vote spawns ephemeral agents, not teams)
+- Added SendMessage instructions in Phase 4 for reporting results to invoking agents
+- Added SendMessage to view-change escalation path
+- Removed redundant "records are permanent" statement
+- Removed redundant rule 2 (quorum arithmetic) — duplicates Phase 3 statement
+
+### Dimensions Evaluated
+Skill Design Quality, Orchestration Effectiveness & Cross-Communication, Over-Engineering
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added `effort: high` frontmatter, trimmed reviewer prompt scales, enabled ultrathink for deep reasoning, and consolidated duplicate rules.
 
 ### Changes

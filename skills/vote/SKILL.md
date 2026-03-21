@@ -9,7 +9,7 @@ description: >
   can invoke this skill.
 argument-hint: "<proposal>"
 effort: high
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage", "TeamCreate", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Write", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -40,10 +40,13 @@ If the argument is too vague to evaluate (e.g., `/vote yes or no`), ask a clarif
 ## Pre-flight
 
 1. **Initialize consensus storage** — Run `mkdir -p .docket/consensus` via Bash (idempotent).
-2. **Parse the proposal** — Extract what is being decided from `$ARGUMENTS`.
+2. **Parse the proposal** — Extract what is being decided from the argument.
 3. **Classify criticality** — Use the table below. If the caller specifies criticality
    (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
 4. **Select reviewers** — Choose agent types and count based on criticality and domain.
+5. **Create the team** — `TeamCreate(team_name="vote-{slug}-{timestamp}", description="Consensus vote: {one-line proposal summary}")`.
+6. **Create reviewer tasks** — One `TaskCreate` per reviewer:
+   `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review of proposal")`.
 
 ---
 
@@ -90,7 +93,7 @@ For ad-hoc proposals that don't fit neatly, select the 2-3 agents whose domain i
 
 ## Phase 1: Pre-Prepare (Proposal)
 
-Package the proposal into a structured format. Construct this from `$ARGUMENTS` and any
+Package the proposal into a structured format. Construct this from the proposal argument and any
 context you can gather (read referenced files, run `git diff` if code is mentioned, etc.):
 
 ```yaml
@@ -119,13 +122,16 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 4. Instructions to produce structured output
 5. **NO information about other reviewers or their verdicts**
 
+After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="reviewer-{N}", status="in_progress")`.
+Use `TaskList()` to monitor completion — all reviewer tasks must reach `completed` before Phase 3.
+
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all reviews only AFTER all reviewers have completed.
 
 ### Reviewer Prompt Template
 
 ```
-Agent(name="consensus-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
+Agent(team_name="vote-{slug}-{timestamp}", name="reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
 You are participating in a consensus vote as an independent reviewer. Use ultrathink for thorough analysis.
 
@@ -169,6 +175,8 @@ One paragraph summarizing your overall assessment.
 
 ## Domain-Specific Checklist
 {Insert the relevant checklist below based on the reviewer's agent type}
+
+When done, mark your task as completed via TaskUpdate.
 ```
 
 **@staff-engineer**: Architecture fit, system-level implications, backward compatibility,
@@ -234,13 +242,16 @@ Apply the thresholds from the Criticality Classification table above.
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
 2. Write the consensus record (see schema below).
 3. Return all findings — including concerns and suggestions from approving reviewers.
+4. If invoked by another agent, use **SendMessage** to deliver the consensus result
+   to the invoking agent so they can act on the outcome.
 
 ### If Quorum Is NOT Reached (View Change)
 
 1. Aggregate all findings by category (blocker/concern/suggestion) **without reviewer
    attribution** to preserve independence in subsequent rounds.
 2. Report the aggregated feedback to the caller.
-3. Ask the caller: "Consensus not reached (score: {score}, threshold: {threshold}).
+3. Report to the caller via **SendMessage** if invoked by an agent: "Consensus not reached
+   (score: {score}, threshold: {threshold}).
    Options: (a) revise the proposal and re-vote, (b) escalate to human decision, (c) abort."
 4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal.
 5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
@@ -304,8 +315,6 @@ Write records to `.docket/consensus/` as JSON files via the **Write** tool after
 }
 ```
 
-Records are **permanent and read-only** after creation.
-
 ---
 
 ## Output Format
@@ -332,11 +341,21 @@ Written to `.docket/consensus/{filename}`
 
 ---
 
+## Wrap-up & Team Cleanup
+
+After Phase 4 completes (whether consensus reached, escalated, or aborted):
+
+1. **Shut down all reviewer teammates** via `SendMessage(to="reviewer-{N}", message={type: "shutdown_request"})` for each.
+2. **Delete the team** via `TeamDelete()` to clean up resources.
+
+---
+
 ## Rules
 
-1. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
-2. **Quorum is arithmetic.** Do not use judgment to override the threshold calculation.
+1. **Create the team before spawning reviewers.** Use `TeamCreate` and `TaskCreate` before any `Agent` calls.
+2. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
 3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
 5. **Always write a record.** Every completed vote produces a JSON file.
 6. **Respect criticality direction.** May override up, never down for security.
+7. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.

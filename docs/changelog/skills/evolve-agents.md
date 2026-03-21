@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Removed Phase 0 agent spawning (docs research now passed as caller context), removed project-agnostic Content Gate check, compressed argument handling, dimension restatements, and template redundancies.
+
+### Changes
+- Replaced Phase 0 agent spawn with passthrough of caller-provided docs research context
+- Removed Phase 0 spawning template (dead code after Phase 0 change)
+- Removed Content Gate check #3 (project-agnostic) — agent files are project-specific; aligns with evolve-skills
+- Compressed Argument Handling by removing redundant ls block (duplicated in Pre-flight)
+- Compressed Phase 1 template dimension list — removed redundant "Content Gate applies" notes
+
+### Dimensions Evaluated
+Over-Engineering, Actionability, Coherence with Other Skills
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added effort frontmatter, compressed Phase 0 template and Team Setup pseudo-code, simplified timeout fallback rule, added ultrathink trigger for deep self-review analysis.
 
 ### Changes

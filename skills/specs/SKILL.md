@@ -86,8 +86,8 @@ exploration guidance for each — used in the spawning template.
 
 ### Step 2: Wait for Completion
 
-Teammates go idle between turns — messages are delivered automatically; no polling is needed.
-Use `TaskList()` to monitor overall progress.
+Agents send completion messages via SendMessage when done. Use `TaskList()` to check that
+all tasks have status `completed`. Once all are complete, proceed to Step 3.
 
 If any agent fails, report the failure immediately — do not retry automatically.
 
@@ -141,6 +141,8 @@ Requirements:
   - For `dependencies`: list related spec filenames ONLY if a logical connection exists —
     omit the field entirely if none
 - Do NOT write implementation code — the spec file is the deliverable
+- After saving the file, mark your task as completed via TaskUpdate and send a completion
+  message via SendMessage(to="team-lead", message="Completed docs/spec/{filename}")
 ```
 
 ---
@@ -162,4 +164,3 @@ After all agents complete and verification passes:
 1. **Never write spec files yourself.** You are the orchestrator, not the author.
 2. **Never commit.** No `git add`, no `git commit`, no `git push`.
 3. **Fail loud.** If an agent fails, report it immediately with details.
-4. **Clean up the team.** Shutdown agents and delete the team after wrap-up.

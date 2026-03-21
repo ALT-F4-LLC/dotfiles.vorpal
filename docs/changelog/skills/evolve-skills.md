@@ -3,6 +3,23 @@
 ## 2026-03-20
 
 ### Summary
+Trimmed redundant Phase 0 template instructions, consolidated overlapping changelog rules, and aligned argument handling with evolve-agents conventions.
+
+### Changes
+- Trimmed Phase 0 template from verbose step-by-step to focused prompt (-14 lines)
+- Consolidated "Strict Changelog Rules" and "Changelog Normalization" into single "Changelog Rules" section
+- Condensed rules 9-10 to back-references instead of restating constraints
+- Added `$ARGUMENTS` reference to argument handling for cross-skill consistency
+
+### Dimensions Evaluated
+Over-Engineering, Skill Design Quality, Coherence with Other Skills
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added `effort: high` frontmatter and trimmed redundant Phase 2 preamble. Rejected Phase 0 removal (it IS the docs research mechanism, not redundant).
 
 ### Changes

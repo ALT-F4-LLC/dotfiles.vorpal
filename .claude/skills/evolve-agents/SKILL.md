@@ -47,14 +47,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
 - **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent.
 
-Resolve targets by listing what exists:
-
-```bash
-ls agents/*.md
-```
-
-If an argument is provided and no matching file `agents/<name>.md` exists, inform the user
-and abort.
+If an argument is provided and no matching file exists, Pre-flight step 3 will catch it.
 
 ---
 
@@ -88,9 +81,8 @@ Before spawning any agents:
 
 1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring humans, attending meetings, relationship-building, career development, team building.
 2. **Behavioral** — Does removing it change the agent's output? Reject: general knowledge a capable LLM already has.
-3. **Project-agnostic** — Is it about the role itself, not a specific tech stack? Reject: database schemas, specific CI systems, cloud providers (unless core to the role).
-4. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
-5. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
+3. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
+4. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
 
 **Never add to agent files:** human social dynamics (1:1s, growing engineers, team morale), communication style (Claude's tone is governed by the system prompt), technology-specific sections unrelated to the role, decision matrices that restate existing workflows abstractly.
 
@@ -99,7 +91,7 @@ Before spawning any agents:
 ## Evaluation Dimensions
 
 Every agent reviewer evaluates itself against ALL 8 dimensions. **Dimensions 1, 4, and 6
-propose additions — all proposed additions must pass the Content Gate above.**
+propose additions — all must pass the Content Gate above.**
 
 1. **Role Realism** — Behavior consistent with a senior practitioner? Actionable by Claude
    in a stateless session? All additions must pass Content Gate.
@@ -180,21 +172,14 @@ entries exceeding 20 lines.
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
 
 1. **Create the team** — `TeamCreate(team_name="evolve-agents-{today_date}", ...)`
-2. **Create Phase 0 task** — Docs Research (no dependencies)
-3. **Create Phase 1 tasks** — one per target agent (sequenced after Phase 0 by orchestrator)
+2. **Create Phase 1 tasks** — one per target agent
 4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
 
 ### Phase 0: Documentation Research
 
-Spawn a single `claude-code-guide` teammate to research the latest Claude Code documentation
-for capabilities relevant to agent evolution:
-
-```
-Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
-```
-
-Assign the Phase 0 task, then wait for completion. The teammate's findings are passed as
-context to all Phase 1 agents. Store the output as `{docs_research_findings}`.
+The orchestrator receives `{docs_research_findings}` as input context from the caller (team
+lead or user). Pass these findings verbatim to all Phase 1 agents. If no findings are provided,
+skip docs context in Phase 1 templates.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -269,26 +254,6 @@ After Phase 2 completes:
 
 ## Spawning Templates
 
-### Phase 0: @claude-code-guide (Documentation Research)
-
-```
-Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
-
-Research the latest Claude Code documentation for capabilities relevant to agent evolution.
-
-## Instructions
-
-1. Fetch https://code.claude.com/docs/en/overview via WebFetch
-2. From the overview, identify and fetch key subpages covering: hooks, settings, tools,
-   MCP servers, agent SDK, permissions, CLI features, and configuration
-3. For each area, note: new capabilities, changed behaviors, deprecated features, new settings
-4. Filter findings for relevance to agent definitions — capabilities agents could leverage,
-   new tool types, settings that affect agent execution
-
-Report findings grouped as: New Capabilities, Changed Features, Deprecated/Removed,
-New Settings/Configuration, Recommendations for Agent Evolution.
-```
-
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
@@ -331,24 +296,21 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 Every addition MUST pass ALL checks — reject if ANY fails:
 1. **Executable** — Can Claude do this in a stateless session?
 2. **Behavioral** — Does removing it change the agent's output?
-3. **Project-agnostic** — About the role, not a specific tech stack?
-4. **Non-redundant** — Not already expressed elsewhere in the file?
-5. **Concrete** — A specific action, check, or output?
+3. **Non-redundant** — Not already expressed elsewhere in the file?
+4. **Concrete** — A specific action, check, or output?
 
 ## Your Task
 
 Evaluate agents/<name>.md against ALL 8 dimensions:
 
-1. **Role Realism**: Behavior consistent with a senior practitioner? Content Gate applies.
+1. **Role Realism**: Behavior consistent with a senior practitioner?
 2. **Actionability**: Specific enough for reliable execution?
 3. **Boundary Clarity**: Clear, non-overlapping boundaries with other roles?
-4. **Completeness**: Gaps that would cause poor output or stuckness? Are there new Claude
-   Code capabilities (from docs research) the agent should leverage? Content Gate applies.
+4. **Completeness**: Gaps or new Claude Code capabilities the agent should leverage?
 5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition
-   from other dimensions MUST be offset by a removal here.
-6. **Capability Growth & Cross-Communication**: New patterns that improve output? Content
-   Gate applies. Does the agent define proactive SendMessage triggers ("notify X when Y",
-   "consult X before Y")? Agents default to reactive — flag definitions lacking triggers.
+   MUST be offset by a removal here.
+6. **Capability Growth & Cross-Communication**: New patterns? Proactive SendMessage triggers?
+   Flag definitions lacking "notify X when Y" / "consult X before Y" triggers.
 7. **Spec Alignment**: Alignment with docs/spec/?
 8. **Rename Consideration**: Only if compelling.
 

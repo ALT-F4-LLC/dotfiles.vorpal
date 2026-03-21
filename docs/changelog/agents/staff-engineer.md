@@ -3,6 +3,25 @@
 ## 2026-03-20
 
 ### Summary
+Consolidated /vote section, compressed handoff, removed hardcoded spec count, added TDD revision and scope-change notification triggers, compressed review spec-update instruction.
+
+### Changes
+- Merged redundant /vote "REQUIRED" block into existing mandatory statement
+- Compressed Handoff to remove restated /vote requirement
+- Removed hardcoded "seven" from spec files reference
+- Added TDD revision notification trigger for @senior-engineer
+- Added scope-change notification trigger for @project-manager in review
+- Compressed review spec-update instruction
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Cross-Communication, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Compressed Review Workflow step 4, trimmed Advisory Mode to essential bullets, added cross-team review notification triggers for @sdet and @ux-designer, compressed /vote invocation.
 
 ### Changes

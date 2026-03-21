@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Removed standalone "Check Specs Before Designing" section (duplicated workflow step 1), folded unique content into Clarify step, compressed anti-patterns and Design System Coherence, added bidirectional notification trigger.
+
+### Changes
+- Removed "Check Specs Before Designing" section — duplicated Design Spec Workflow step 1
+- Folded spec-reading file paths and selective-reading guidance into Clarify step
+- Removed Operator Alignment anti-patterns (restated positive guidance above)
+- Compressed Cross-team consistency into Pattern governance bullet
+- Added "Request notification from others" trigger for bidirectional cross-communication
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Cross-Communication, Completeness
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Merged Content Design into Design Spec Format, deduplicated TDD conflict escalation, added @sdet notification trigger, removed redundant Design debt bullet.
 
 ### Changes

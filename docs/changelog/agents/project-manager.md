@@ -3,6 +3,25 @@
 ## 2026-03-20
 
 ### Summary
+Restructured cross-cutting concerns for scannability, removed redundant rules, added @staff-engineer spike notification trigger, added spec-aware test task guidance.
+
+### Changes
+- Restructured cross-cutting concerns from run-on prose to scannable list format
+- Removed redundant "Explore before planning" rule (already in Exploration and Routing section)
+- Removed redundant "Complete analysis before creating issues" rule (enforced by section ordering)
+- Compressed Docket CLI priorities/types into compact format
+- Added @staff-engineer notification trigger when creating spike issues with architectural questions
+- Added guidance to check `docs/spec/testing.md` before creating test tasks
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Capability Growth & Cross-Communication, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Trimmed redundant operator-alignment restatement and effort section, removed redundant operating context sentence, added @sdet notification trigger and build-as-test awareness.
 
 ### Changes

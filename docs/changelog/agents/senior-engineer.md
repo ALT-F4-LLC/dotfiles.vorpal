@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Consolidated duplicate build-verification bullets, removed redundant anti-pattern, added @ux-designer cross-communication trigger, compressed Docket CLI Reference, improved Navigate Ambiguity for stateless model.
+
+### Changes
+- Merged two duplicate "run the build" bullets in self-review step 5 into one
+- Removed Operator Alignment anti-pattern paragraph (restated by "During implementation" bullets)
+- Added @ux-designer to proactive sharing examples in Inter-Agent Communication
+- Compressed Docket CLI Reference by removing section headers and shortening descriptions
+- Reworded "reasonable timeframe" to "current session" in Navigate Ambiguity
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Cross-Communication, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidation pass removing self-review/Config-as-Code duplication and implicit "when not to consult" list, added @sdet and @project-manager cross-communication triggers, realigned Docket CLI Reference.
 
 ### Changes

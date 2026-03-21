@@ -3,6 +3,26 @@
 ## 2026-03-20
 
 ### Summary
+Compressed Review Workflow step 4, trimmed Advisory Mode to essential bullets, added cross-team review notification triggers for @sdet and @ux-designer, compressed /vote invocation.
+
+### Changes
+- Compressed Review Workflow step 4 from 4 sentences to 2 (cross-references Operator Alignment)
+- Removed 3 redundant Advisory Mode "How to respond" bullets (covered elsewhere)
+- Removed "What to expect" bullet list, replaced with single sentence
+- Added cross-team notification triggers after code review (notify @sdet for test gaps, @ux-designer for UX inconsistencies)
+- Compressed /vote "How to invoke" from code block to inline example
+- [Coherence] Removed vague parenthetical from Advisory Mode opening
+- [Coherence] Replaced "Tier 1/2 risk areas" with "high-risk areas" for terminology consistency
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Capability Growth & Cross-Communication, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added effort and memory frontmatter, removed Advisory Mode negative list, compressed System-Level Thinking, tightened status updates, added TDD handoff notification.
 
 ### Changes

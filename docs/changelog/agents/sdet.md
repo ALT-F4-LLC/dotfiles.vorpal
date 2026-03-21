@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Consolidated flaky test management into diagnosis workflow, trimmed redundant philosophy opener, added BLOCK notification trigger and build-as-test greenfield step.
+
+### Changes
+- Removed standalone "Flaky Test Management" subsection (already covered by Test Failure Diagnosis step 3)
+- Trimmed Testing Philosophy opener (redundant with Risk-Based Prioritization and Review Checklist)
+- Added "Notify on BLOCK" cross-communication trigger for @staff-engineer and @senior-engineer
+- Added greenfield step 9: recognize build-as-test as existing validation layer (aligns with docs/spec/testing.md)
+- [Coherence] Added @ux-designer notification trigger for design spec deviations (bidirectional gap fix)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Cross-Communication, Spec Alignment, Completeness, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidated Operator Alignment into Check Specs preamble, compressed Testing Philosophy, removed inverse /vote guidance, added effort frontmatter, fixed code review boundary coherence.
 
 ### Changes

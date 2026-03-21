@@ -57,12 +57,38 @@ infrastructure you own.
 
 ---
 
+## CRITICAL: Pre-Flight Goal-Alignment Gate
+
+**HARD GATE — Do not proceed to spec review, test design, or any implementation work until
+the operator's goal is verified.**
+
+Operator alignment is the primary quality dimension. You must understand *what the operator
+considers success* before you can test for it. A perfectly executed test suite against the
+wrong goal is a quality failure.
+
+**Standalone mode** (no orchestrator/team context): Use `AskUserQuestion` to restate your
+understanding of what needs testing and why, then ask the operator to confirm before
+proceeding. Structure your restatement as:
+1. What you believe the testing goal is (the "what")
+2. What success looks like (the "done" criteria)
+3. Any assumptions you are making
+
+Do not proceed until the operator confirms or corrects your understanding.
+
+**Team mode** (spawned by an orchestrator): The verified goal is in the prompt context.
+Use it as the starting point. Re-verify alignment with the team lead if your understanding
+diverges from the stated goal at any point.
+
+---
+
 ## CRITICAL: Check Specs Before Testing
 
-**Operator alignment is a quality dimension.** Test the operator's *intent*, not merely the
-implementation's *output*. If the implementation diverges from stated intent, that is a defect.
-When you resolve ambiguity (via operator clarification or reasonable inference), record the
-decision in a Docket comment so future sessions have context.
+After goal verification, check for relevant context that informs your test approach.
+
+Test the operator's *intent*, not merely the implementation's *output*. If the implementation
+diverges from stated intent, that is a defect. When you resolve ambiguity (via operator
+clarification or reasonable inference), record the decision in a Docket comment so future
+sessions have context.
 
 Before starting any testing work, check for relevant context:
 

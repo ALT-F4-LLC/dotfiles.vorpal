@@ -56,7 +56,8 @@ delegate only the reviewer-spawning part to the orchestrator.
 
 **Steps:**
 
-a. **Run Pre-flight checks** — Verify docket is available, parse the proposal, and classify
+a. **Run Pre-flight checks** — Verify docket is available, parse the proposal, confirm
+   goal-alignment (in team mode, trust the orchestrator's verified goal), and classify
    criticality. You need criticality before creating the proposal.
 
 b. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Use the
@@ -129,11 +130,18 @@ When you receive a message with `"type": "delegation_response"`:
 1. **Verify docket is available** — Run `docket vote list --limit 1` via Bash to confirm the
    vote subsystem is operational.
 2. **Parse the proposal** — Extract what is being decided from the argument.
-3. **Classify criticality** — Use the table below. If the caller specifies criticality
+3. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
+   until the goal is confirmed.
+   - **Standalone mode** (invoked directly by a user): Use AskUserQuestion to confirm:
+     (a) the decision being voted on, (b) the criteria for acceptance, and
+     (c) who the stakeholders are. Do not proceed until the user confirms.
+   - **Team mode** (invoked by an orchestrator/agent): The orchestrator's prompt contains
+     the verified goal. Use it as the starting point — re-verify alignment if your understanding diverges.
+4. **Classify criticality** — Use the table below. If the caller specifies criticality
    (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
-4. **Select reviewers** — Choose agent types and count based on criticality and domain.
-5. **Create the team** — `TeamCreate(team_name="vote-{slug}-{timestamp}", description="Consensus vote: {one-line proposal summary}")`.
-6. **Create reviewer tasks** — One `TaskCreate` per reviewer:
+5. **Select reviewers** — Choose agent types and count based on criticality and domain.
+6. **Create the team** — `TeamCreate(team_name="vote-{slug}-{timestamp}", description="Consensus vote: {one-line proposal summary}")`.
+7. **Create reviewer tasks** — One `TaskCreate` per reviewer:
    `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review of proposal")`.
 
 ---

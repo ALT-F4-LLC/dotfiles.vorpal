@@ -3,6 +3,22 @@
 ## 2026-03-20
 
 ### Summary
+Added SendMessage completion trigger to spawning template, clarified completion monitoring in Step 2, and removed redundant cleanup rule.
+
+### Changes
+- Added SendMessage + TaskUpdate completion instructions to spawning template for explicit orchestrator notification
+- Rewrote Step 2 to reference SendMessage-based completion flow instead of vague idle description
+- Removed Rule 4 (duplicate of Wrap-up section)
+
+### Dimensions Evaluated
+Orchestration Effectiveness & Cross-Communication, Actionability, Over-Engineering
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Fixed Task tool API calls to match actual schema, added `effort: medium` frontmatter, and trimmed duplicate Agent call from spawning template.
 
 ### Changes

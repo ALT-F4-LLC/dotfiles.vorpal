@@ -40,7 +40,9 @@ filtered through the Content Gate to prevent non-actionable content from enterin
 
 ## Argument Handling
 
-- **No argument**: Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
+Target skill(s) are determined by `$ARGUMENTS`:
+
+- **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
 - **With argument** (`/evolve-skills dev`): Improve only the named skill. See Pre-flight for validation.
 
 ---
@@ -135,27 +137,13 @@ directory if it doesn't exist.
 <if not: "No rename.">
 ```
 
-### Strict Changelog Rules
+### Changelog Rules
 
-1. **H1 heading**: Exactly `# Changelog: <skill-name>` — kebab-case matching the directory name.
-2. **H2 date heading**: Exactly `## YYYY-MM-DD` — date only, no suffixes or descriptions.
-3. **H3 sections**: Exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`,
-   `### Rename` — in this order, no others.
-4. **Max 20 lines per entry.** No verbose justifications.
-
-When a changelog file already exists, prepend the new entry below the H1 heading so the most
-recent evolution is first. **Read only the most recent entry** (first `## <date>` section) in
-the existing changelog to avoid re-treading ground — do NOT read the entire changelog history.
-
-If no meaningful improvements are found for a skill, report that in the changelog entry
-rather than forcing changes. Not every cycle needs to produce edits.
-
-### Changelog Normalization
-
-During **Phase 1**, after applying skill changes, the orchestrator MUST normalize
-`docs/changelog/skills/<name>.md`: fix H1 to `# Changelog: <skill-name>`, strip H2 suffixes,
-rename non-standard H3 headers to the standard four, delete non-standard sections, and truncate
-entries exceeding 20 lines.
+1. **H1**: `# Changelog: <skill-name>` (kebab-case). **H2**: `## YYYY-MM-DD` (no suffixes). **H3**: exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename` — in order, no others.
+2. **Max 20 lines per entry.** Prepend new entries below H1 so most recent is first.
+3. **Read only the most recent `## <date>` entry** in existing changelogs — do NOT read full history.
+4. If no improvements found, report that honestly rather than forcing changes.
+5. **Normalization**: After applying changes, the orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, and truncates entries over 20 lines.
 
 ---
 
@@ -296,34 +284,15 @@ After Phase 2 completes:
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
 
-Research the latest Claude Code documentation for capabilities relevant to skill evolution.
-
-## Instructions
-
-1. Fetch https://code.claude.com/docs/en/overview via WebFetch
-2. From the overview, identify and fetch key subpages covering: hooks, settings, tools,
-   MCP servers, agent SDK, permissions, CLI features, IDE integrations, and configuration
-3. For each area, note: new capabilities, changed behaviors, deprecated features, new
-   settings or config options
-4. Filter findings for relevance to skill definitions — focus on capabilities skills could
-   leverage, new tool types, settings that affect execution, and patterns authors should know
+Research the latest Claude Code documentation for capabilities relevant to skill definitions.
+Focus on: new frontmatter fields, tool types, hook patterns, MCP integration, agent SDK features,
+and permission/execution settings. Filter for what skill authors need to know.
 
 ## Output Format
 
-### New Capabilities
-- <capability>: <how it's relevant to skill evolution>
+- **<capability/change>**: <relevance to skill evolution>
 
-### Changed Features
-- <feature>: <what changed and impact on skills>
-
-### Deprecated / Removed
-- <item>: <migration notes if applicable>
-
-### New Settings / Configuration
-- <setting>: <what it controls and relevance>
-
-### Recommendations for Skill Evolution
-- <specific recommendation for how skills should adapt>
+Group findings under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -483,12 +452,8 @@ Standard format (4 sections, max 20 lines) for each skill that received fixes.
    produce change recommendations. The orchestrator applies all edits using the Edit tool.
 7. **Never commit.** No `git add`, no `git commit`, no `git push`.
 8. **Respect existing quality.** Improvements build on what works, not rewrite from scratch.
-9. **Changelog is mandatory and strictly formatted.** Every entry MUST use exactly four H3
-    sections (`### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`), stay
-    under 20 lines, use `# Changelog: <skill-name>` as H1, and `## YYYY-MM-DD` as H2 with
-    no suffixes. No extra sections. The orchestrator normalizes all existing entries each run.
-10. **Enforce the 500-line budget.** After all edits, verify every skill file is under 500
-    lines via `wc -l`. Consolidate further if needed. Report before/after counts in wrap-up.
+9. **Changelog is mandatory.** Follow Changelog Rules above; orchestrator normalizes each run.
+10. **Enforce 500-line budget.** `wc -l` after edits; consolidate if over. Report before/after.
 11. **Fail loud.** If a teammate fails, report immediately with details.
 12. **Timeout fallback.** If a Phase 1 teammate times out, re-spawn once. After two failures,
     the orchestrator performs the review directly.

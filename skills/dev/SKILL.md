@@ -58,7 +58,7 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
 
 Before any planning or execution, run these checks:
 
-1. **Initialize Docket & Consensus** — Run `docket init && mkdir -p .docket/consensus` via Bash (idempotent).
+1. **Initialize Docket** — Run `docket init` via Bash (idempotent).
 2. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
@@ -222,6 +222,10 @@ Use the @project-manager agent to decompose this work into Docket issues:
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
 {If project specs exist: "Reference project specs: docs/spec/"}
 
+Team context:
+- A persistent @staff-engineer advisor named "advisor" is available via SendMessage for
+  architectural clarification on scope, feasibility, or phase ordering questions.
+
 Requirements:
 - Run `docket init` via Bash before creating any issues
 - Explore the codebase using Read, Grep, and Glob to inform your plan
@@ -276,13 +280,13 @@ Team context:
 {If other senior-engineers in this phase: "- Other @senior-engineer teammates in this phase: {names}. Coordinate via SendMessage if your changes might affect shared interfaces."}
 
 Rules:
-- BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
-- Run `docket issue move {DOCKET-ID} in-progress` via Bash to claim the issue
+- BEFORE starting, run `docket issue comment list {DOCKET-ID}` to review all comments
+- Run `docket issue move {DOCKET-ID} in-progress` to claim the issue
 - Do NOT modify files outside the scope of this issue
 - When done, run `docket issue close {DOCKET-ID}` and
-  `docket issue comment add {DOCKET-ID} -m "Completed: {summary}"` via Bash
+  `docket issue comment add {DOCKET-ID} -m "Completed: {summary}"`
 - Report what files you changed and a summary of the work
-- If you discover additional work needed, add a comment via
+- If you discover additional work needed, add a comment:
   `docket issue comment add {DOCKET-ID} -m "Discovered: {description}"` — do NOT do extra work
 ```
 
@@ -302,12 +306,12 @@ Team context:
 - A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
 
 Rules:
-- BEFORE starting, run `docket issue comment list {DOCKET-ID}` via Bash to review all comments
-- Run `docket issue move {DOCKET-ID} in-progress` via Bash to claim the issue
+- BEFORE starting, run `docket issue comment list {DOCKET-ID}` to review all comments
+- Run `docket issue move {DOCKET-ID} in-progress` to claim the issue
 - Write tests that verify acceptance criteria from the issue description and specs
 - Run existing test suites to check for regressions
 - When done, run `docket issue close {DOCKET-ID}` and
-  `docket issue comment add {DOCKET-ID} -m "Tested: {summary of tests, coverage, results}"` via Bash
+  `docket issue comment add {DOCKET-ID} -m "Tested: {summary of tests, coverage, results}"`
 - Report bugs as comments on the relevant issue, NOT as new issues
 ```
 
@@ -355,10 +359,8 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Design Phase (if applicable)
 
-1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. After spawning,
-   assign the design task via `TaskUpdate`. Wait for completion.
-2. **If medium+**: Spawn @staff-engineer teammate **named "advisor"** to produce a TDD. After
-   spawning, assign the TDD task via `TaskUpdate`. Wait for completion.
+1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. Wait for completion.
+2. **If medium+**: Spawn @staff-engineer teammate **named "advisor"** to produce a TDD. Wait for completion.
    **If large**: Spawn multiple @staff-engineer teammates for parallel TDDs if components are
    independent.
 3. **For small tasks** (no TDD phase): Spawn @staff-engineer teammate **named "advisor"**
@@ -458,8 +460,7 @@ Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summar
 
 - **Agent fails:** Re-spawn with corrected context. Do NOT skip the issue.
 - **Incorrect output:** Correct via Docket CLI and re-spawn if needed.
-- **Review blockers:** Route back to @senior-engineer for fixes, then re-review.
-- **SDET finds bugs:** Route back to @senior-engineer via SendMessage, then re-verify.
+- **Review/test blockers:** Route back to @senior-engineer for fixes, then re-review or re-verify.
 - **Discovered work:** Assess whether it needs immediate attention or follow-up planning.
 - **File conflicts:** Stop current phase, have PM re-scope, retry.
 - **Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.

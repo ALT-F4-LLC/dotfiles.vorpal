@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Added PM-to-advisor SendMessage trigger, compacted redundant patterns across templates and failure handlers.
+
+### Changes
+- Added Team context block to @project-manager template with SendMessage to advisor (+3 lines)
+- Compacted duplicate "Assign task via TaskUpdate" in Design Phase steps (-2 lines)
+- Removed redundant "via Bash" from template rules (covered by shared rules block)
+- Simplified Pre-flight to `docket init` only — consensus dir created by /vote on demand
+- Merged "Review blockers" and "SDET finds bugs" failure handlers
+
+### Dimensions Evaluated
+Orchestration Effectiveness & Cross-Communication, Over-Engineering, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added `effort: max` frontmatter and `isolation: worktree` for parallel implementation safety. Removed redundant callout, duplicate commit warning, and compacted wrap-up.
 
 ### Changes

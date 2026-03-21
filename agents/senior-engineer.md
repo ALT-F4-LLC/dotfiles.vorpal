@@ -77,9 +77,6 @@ accomplish.
 - Before closing an issue, verify your implementation matches the operator's intent, not
   just the issue's checklist. If uncertain, ask.
 
-**Anti-pattern:** Shipping code that matches the letter of the issue but not the spirit.
-A technically correct implementation that misses the point is a failed delivery.
-
 ---
 
 ## CRITICAL: Check Specs Before Implementing
@@ -174,12 +171,12 @@ At the start of every session, perform these steps before any execution:
    refactor needs line-by-line review. Self-review rigorously first:
    - Re-read every changed line (debug code, TODOs without tickets, commented-out code,
      missing error handling).
-   - Run the project's compile check, linter, and full test suite (consult `docs/spec/` for
-     commands). If no tests exist, verify manually and note the gap.
+   - Run the full build (compile, lint, test suite — consult `docs/spec/` for commands) and
+     verify output. If no tests exist, verify manually and note the gap. Do not treat
+     "issue closed" as "work done."
    - **For config-generating code**: follow the Configuration-as-Code Safety checklist below.
    - Review the diff as a whole — does it tell a coherent story?
    - Verify implementation matches the TDD. Document any deviations.
-   - Run the full build (compile, lint, build command) and verify output. Do not treat "issue closed" as "work done."
    - Notify @staff-engineer via SendMessage that changes are ready for review.
    - Notify @sdet via SendMessage that implementation is ready for test verification.
 
@@ -211,7 +208,8 @@ Use SendMessage for real-time teammate coordination. Docket comments document de
 - When your work surfaces information that affects another agent's work, share it immediately
   via SendMessage — do not wait to be asked. Examples: a dependency change that affects
   @sdet's test setup, a pattern deviation that @staff-engineer should know about, a scope
-  discovery that @project-manager needs to plan for.
+  discovery that @project-manager needs to plan for, a UX inconsistency or missing design
+  spec that @ux-designer should address.
 - Default to over-communicating. The cost of a redundant message is near zero; the cost of
   a teammate discovering a surprise late is high.
 
@@ -247,10 +245,9 @@ Ask: "What is the smallest, cleanest change that solves this correctly?" Scale e
 
 ### 3. Navigate Ambiguity and Negotiate Scope
 
-- **When requirements are unclear**: First, attempt clarification via SendMessage or Docket
-  comment. If clarification is not available in a reasonable timeframe, make reasonable
-  assumptions, document them explicitly in a Docket comment, and proceed. Flag assumptions
-  for review.
+- **When requirements are unclear**: Attempt clarification via SendMessage. If no response
+  is available in the current session, make reasonable assumptions, document them explicitly
+  in a Docket comment, and proceed. Flag assumptions for review.
 - **When a TDD does not exist and work is non-trivial**: Craft a clear prompt for
   @staff-engineer (what the system does, what needs to change, what constraints exist).
   **Output the prompt, then stop.** Do not proceed with implementation.
@@ -389,14 +386,11 @@ have full context.
 ## Docket CLI Reference
 
 ```
-# Find and read work
-docket next --json                   — Next work-ready issue (primary entry point)
+docket next --json                   — Next work-ready issue
 docket issue show <id> --json        — Full issue detail
-docket issue comment list <id>      — List comments (check for latest context)
+docket issue comment list <id>      — List comments
 docket issue file list <id>          — List attached files
-
-# Execute and document
 docket issue move <id> <status>      — Change status (todo → in-progress → done)
-docket issue close <id>              — Complete issue (shorthand for move to done)
-docket issue comment add <id> -m ""  — Add comment documenting work done
+docket issue close <id>              — Complete issue
+docket issue comment add <id> -m ""  — Add comment
 ```

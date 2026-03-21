@@ -3,6 +3,25 @@
 ## 2026-03-20
 
 ### Summary
+Merged Block/Accept Criteria into Verification Workflow, compressed greenfield edge-case steps, removed standalone test code review section (boundary overlap with @staff-engineer code review), added coverage-gap escalation trigger.
+
+### Changes
+- Merged Block/Accept Criteria section into Verification Workflow step 6 (eliminates standalone section)
+- Compressed greenfield steps 7-9 into single conditional step
+- Removed "Reviewing @senior-engineer Test Code" section (duplicates test quality principles already in agent, overlaps with @staff-engineer's code review boundary)
+- Reframed test code review sentence in "What You Are NOT" to match actual verification boundary
+- Added "Notify on coverage gap" cross-communication trigger for @senior-engineer and @project-manager
+- Added `skills: [vote]` frontmatter (coherence fix — body references /vote but frontmatter didn't declare it)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Boundary Clarity, Cross-Communication, Completeness, Role Realism, Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidated flaky test management into diagnosis workflow, trimmed redundant philosophy opener, added BLOCK notification trigger and build-as-test greenfield step.
 
 ### Changes

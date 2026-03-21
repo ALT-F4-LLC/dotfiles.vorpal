@@ -3,6 +3,25 @@
 ## 2026-03-20
 
 ### Summary
+Merged Content Design into Design Spec Format, deduplicated TDD conflict escalation, added @sdet notification trigger, removed redundant Design debt bullet.
+
+### Changes
+- Merged Responsibility 5 (Content Design) into Design Spec Format as a compact content design rule — the guidance is only actionable during spec creation
+- Deduplicated TDD conflict escalation (appeared in 3 places, now references the canonical version)
+- Added @sdet proactive notification trigger for testable edge cases in design specs
+- Removed Design debt bullet (restates evaluation mode + anti-patterns)
+- Fixed double blank line in Research section
+- Renumbered Design QA from Responsibility 6 to 5
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Cross-Communication, Boundary Clarity, Role Realism, Actionability, Completeness, Spec Alignment, Rename Consideration
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added effort and memory frontmatter, compressed Design Philosophy from 8 to 6 principles, removed Design Strategy Briefs, trimmed verbose status updates and decision heuristics.
 
 ### Changes

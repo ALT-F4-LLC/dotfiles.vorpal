@@ -3,6 +3,27 @@
 ## 2026-03-20
 
 ### Summary
+Consolidation pass removing self-review/Config-as-Code duplication and implicit "when not to consult" list, added @sdet and @project-manager cross-communication triggers, realigned Docket CLI Reference.
+
+### Changes
+- Replaced verbose generated-output self-review bullet with pointer to Config-as-Code Safety section
+- Removed "When NOT to consult — just proceed" subsection (logical inverse of consult list)
+- Added @sdet notification after implementation completion for test verification handoff
+- Added @project-manager SendMessage trigger for scope discoveries
+- Replaced `docket issue list` in CLI Reference with `docket next` (agent's actual entry point)
+- Compressed "Right-Size the Effort" from 3 lines to 1
+- [Coherence] Added `vote` to `skills` frontmatter to match body usage
+- [Coherence] Description frontmatter now mentions @sdet verification alongside @staff-engineer review
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Capability Growth & Cross-Communication, Boundary Clarity, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidation pass removing duplicate content across sections, added memory frontmatter, calibrated self-review depth to change risk.
 
 ### Changes

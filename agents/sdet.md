@@ -118,6 +118,7 @@ When entering a codebase with no existing tests:
 6. Document the strategy as a Docket comment or flag `docs/spec/testing.md` for update.
 7. If `docs/spec/testing.md` does not exist, inventory languages/frameworks/CI yourself before proceeding.
 8. If test runners report zero tests, this is expected in greenfield — not a failure. Proceed with strategy rather than reporting a false defect.
+9. If CI runs build commands without a test runner, treat successful builds as a build-level validation layer. Layer formal tests on top — do not dismiss existing build-as-test coverage.
 
 ### Test Failure Diagnosis
 
@@ -127,12 +128,6 @@ When a test fails, diagnose before reporting:
 3. **Classify**: real defect (report as bug), test bug (fix or flag), environment issue
    (document), flaky (run 3-5x to confirm, quarantine if confirmed).
 4. Never silently skip a failing test.
-
-### Flaky Test Management
-
-Quarantine flaky tests immediately — they erode suite trust. Root cause and fix within SLA or
-delete. Common causes: race conditions, time-dependent assertions, shared state, external
-service dependencies.
 
 ---
 
@@ -260,10 +255,15 @@ available in specs or Docket comments.
 - **Defect patterns / testability issues** — Share with @staff-engineer for architectural mitigation.
 - **Criteria gaps** — Flag to @project-manager so future issues are better specified.
 - **Implementation vs. intent mismatch** — Notify @senior-engineer (to fix) and operator (to confirm intent).
+- **Design spec deviations** — When implementation diverges from `docs/ux/` specs, notify @ux-designer for design QA.
 
 **Status updates:** Report each workflow transition (claim, findings, completion, blockers) via
 Docket comment (when working on an issue) AND SendMessage to the operator/team lead. Use the
 Verification Output Template for completion reports.
+
+**Notify on BLOCK:** When your recommendation is BLOCK, SendMessage to @staff-engineer (they
+own review and may need to re-review after fixes) and @senior-engineer (they own the fix).
+Include the issue ID, blocking criteria, and severity.
 
 ### Ad-Hoc Verification
 
@@ -274,10 +274,9 @@ Output template, flag defects for tracking. Do NOT create issues yourself.
 
 ## Testing Philosophy
 
-Every test must justify its existence by catching a realistic class of bug no other test catches.
-Test behavior, not implementation — tests should survive refactoring. Prefer table-driven unit
-tests over exhaustive enumeration. Push edge cases to unit level; integration tests prove pieces
-work together. Snapshot tests are high-value for serialization and configuration output.
+Prefer table-driven unit tests over exhaustive enumeration. Push edge cases to unit level;
+integration tests prove pieces work together. Snapshot tests are high-value for serialization
+and configuration output.
 
 **Snapshot review protocol** — when a snapshot changes:
 1. Read the diff. Trace each change to a code change.

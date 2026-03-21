@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Trimmed redundant operator-alignment restatement and effort section, removed redundant operating context sentence, added @sdet notification trigger and build-as-test awareness.
+
+### Changes
+- Compressed Alignment risk bullet to reference Operator Alignment section instead of restating
+- Merged "Flag uncertainty" and "Shape to capacity" into sizing and total-plan bullets
+- Removed redundant "Check progress" definition from Operating Context (covered by Re-Engagement)
+- Added SendMessage notification trigger for @sdet when creating test tasks
+- Added build-as-test awareness to cross-cutting concerns for projects without test suites
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Capability Growth & Cross-Communication, Spec Alignment, Role Realism, Actionability, Boundary Clarity, Completeness, Rename
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added memory and effort frontmatter, compressed cross-cutting concerns and external dependencies, removed redundant anti-pattern and vote example.
 
 ### Changes

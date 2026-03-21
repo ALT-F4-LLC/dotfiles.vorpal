@@ -51,25 +51,25 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+1. **Verify evolution goal** — HARD GATE: Do not proceed to file validation or agent spawning
+   until the goal is verified. In standalone mode, use AskUserQuestion to confirm what evolution
+   focus the operator wants (e.g., all skills, specific skill, specific dimensions). In team
+   mode (orchestrator prompt includes "Verified goal"), use it as the starting point. Re-verify alignment if your understanding diverges.
+2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-2. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+3. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
    to list all discoverable skill files.
-3. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
+4. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
    and abort.
-4. **If no skill files found at all** — Inform user and abort.
-5. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
+5. **If no skill files found at all** — Inform user and abort.
+6. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-6. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
-   and record the line count for each target skill. This determines the evolution mode for each:
-   - **Over 500 lines (TRIM mode)**: The skill's primary objective is consolidation. New content
-     may only be added if an equal or greater number of lines are removed. Communicate the line
-     count and TRIM mode to the spawned agent.
-   - **Under 500 lines (BALANCED mode)**: The skill may add content but must offset additions
-     with removals to stay under 500 lines. Communicate the line count and BALANCED mode.
-   - Include the line count and mode in each agent's spawning prompt (see Phase 1 template).
+7. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
+   and record the line count for each target skill. Mode is **TRIM** (over 500: consolidation
+   primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but
+   offset by removals). Include line count and mode in each agent's spawning prompt.
 
 ---
 
@@ -307,7 +307,7 @@ Report New, Changed, and Deprecated commands (with synopsis/context) plus a full
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
-`{mode}`, and `{today_date}` (from pre-flight) for each.
+`{mode}`, `{today_date}`, and `{verified_goal}` (from pre-flight) for each.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
@@ -318,6 +318,8 @@ Target: <skill-path>/SKILL.md
 Skill: <name>
 Current size: {line_count} lines
 Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified. Re-verify alignment if your understanding diverges from this goal at any point.
 
 ## Size Budget
 

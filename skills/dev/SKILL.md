@@ -58,11 +58,17 @@ You do not write code yourself. You do not plan issues yourself. You coordinate.
 
 Before any planning or execution, run these checks:
 
-1. **Initialize Docket** — Run `docket init` (idempotent).
-2. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
+1. **Verify the goal** — Use AskUserQuestion to ask the operator:
+   "What should be true when this work is done?" and "What is explicitly out of scope?"
+   If the response is too vague to pass downstream (e.g., "just make it work", "fix it",
+   "make it better"), use AskUserQuestion with a follow-up asking for specific success
+   criteria before storing. Store the validated response as `{verified_goal}`.
+   **HARD GATE:** Do not proceed until the goal is verified and specific.
+2. **Initialize Docket** — Run `docket init` (idempotent).
+3. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
    plan or start fresh.
-3. **Assess the request** — Determine which orchestration pattern fits using the decision tree
+4. **Assess the request** — Determine which orchestration pattern fits using the decision tree
    below. If the user's request is ambiguous, use AskUserQuestion to present the pattern options (Small Task, Medium Task, Large Task, UX-Heavy Task) with descriptions so the operator can choose.
 
 ### Pattern Decision Tree
@@ -155,6 +161,9 @@ Agent(team_name="dev-{feature-slug}", name="tdd-author", subagent_type="staff-en
 
 Use the @staff-engineer agent to produce a Technical Design Document:
 
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
+
 <user_request>
 {work}
 </user_request>
@@ -174,6 +183,9 @@ Requirements:
 Agent(team_name="dev-{feature-slug}", name="reviewer", subagent_type="staff-engineer", prompt="...")
 
 Use the @staff-engineer agent to review implementation changes:
+
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Review the changes made by @senior-engineer for this work.
 
@@ -198,6 +210,9 @@ Requirements:
 Agent(team_name="dev-{feature-slug}", name="planner", subagent_type="project-manager", prompt="...")
 
 Use the @project-manager agent to decompose this work into Docket issues:
+
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 <user_request>
 {work}
@@ -234,6 +249,9 @@ Agent(team_name="dev-{feature-slug}", name="ux-spec-author", subagent_type="ux-d
 
 Use the @ux-designer agent to produce a design spec for this work:
 
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
+
 <user_request>
 {work}
 </user_request>
@@ -253,6 +271,9 @@ Requirements:
 Agent(team_name="dev-{feature-slug}", name="impl-{DOCKET-ID}", subagent_type="senior-engineer", isolation="worktree", prompt="...")
 
 Use the @senior-engineer agent to complete this issue:
+
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
@@ -284,6 +305,9 @@ Use for per-issue verification or full verification at end of medium+ tasks. Adj
 Agent(team_name="dev-{feature-slug}", name="verifier-{scope}", subagent_type="sdet", prompt="...")
 
 Use the @sdet agent to verify {scope description}:
+
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 {For issue-scoped: "Docket Issue: {DOCKET-ID} — {title}\nDescription: {full issue description}"}
 {For full-scope: "Completed issues:\n{list all DOCKET-IDs, titles, and files changed}"}

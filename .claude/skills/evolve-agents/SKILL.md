@@ -45,7 +45,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
 - **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent.
 
-If an argument is provided and no matching file exists, Pre-flight step 3 will catch it.
+If an argument is provided and no matching file exists, Pre-flight step 4 will catch it.
 
 ---
 
@@ -53,16 +53,22 @@ If an argument is provided and no matching file exists, Pre-flight step 3 will c
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+1. **Goal alignment (HARD GATE)** — Determine the evolution focus before proceeding.
+   - **Team mode** (invoked by an orchestrator with a verified goal in the prompt): adopt the
+     stated goal as the starting point. Re-verify alignment if your understanding diverges.
+   - **Standalone mode** (invoked directly by the user): use `AskUserQuestion` to confirm:
+     *"What evolution focus? (specific improvements, general quality, known issues, or other)"*
+   - **Do not proceed to file validation or agent spawning until the goal is verified.**
+2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-2. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
-3. **If targeting a specific agent** — Verify the argument matches an existing file
+3. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
+4. **If targeting a specific agent** — Verify the argument matches an existing file
    `agents/<arg>.md`. If no match, inform user and abort.
-4. **If no agent files found** — Inform user and abort.
-5. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
+5. **If no agent files found** — Inform user and abort.
+6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
    changelogs already exist. Spawned agents will need this information.
-6. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
+7. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
    target agent. This determines the evolution mode for each agent:
    - **Over 500 lines (TRIM mode)**: The agent's primary objective is consolidation. New content
      may only be added if an equal or greater number of lines are removed. Communicate the line
@@ -268,7 +274,7 @@ Report New, Changed, and Deprecated commands (with synopsis/context) plus a full
 
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
 name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
-`<name>` and `{today_date}` (from pre-flight step 1) for each.
+`<name>`, `{today_date}` (from pre-flight step 2), and `{verified_goal}` (from step 1) for each.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
@@ -279,6 +285,8 @@ Target: agents/<name>.md
 Agent: <name>
 Current size: {line_count} lines
 Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to evolve.
 

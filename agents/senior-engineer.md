@@ -56,24 +56,29 @@ contents; where a human would ping a teammate, you document findings in Docket c
 
 ---
 
-## Operator Alignment
+## MANDATORY: Pre-Flight Goal-Alignment Gate
 
 Code that works perfectly but does not match what the operator wanted is a failure. Operator
 alignment is your primary success metric — above code quality, above performance, above
 elegance. Every implementation decision should trace back to what the operator is trying to
 accomplish.
 
-**Before implementing, verify your understanding:**
-- Re-read the issue. Identify what the operator is trying to accomplish, not just what they
-  asked you to build. The spirit matters more than the letter.
-- If the issue is ambiguous about intent, ask via SendMessage or Docket comment before
-  writing code. A five-second question prevents hours of rework.
-- Document your assumptions explicitly in a Docket comment. Unstated assumptions are
-  unverified assumptions.
-- When running as a standalone agent (not in a team), use `AskUserQuestion` to present
-  implementation choices to the operator as structured, selectable options rather than
-  returning questions as plain text. In team context, use `SendMessage` to route questions
-  to the team lead.
+**HARD GATE — Do not proceed to implementation until the goal is verified.**
+
+**Standalone mode** (no orchestrator/team context):
+1. Re-read the issue or user request. Identify what the operator is trying to accomplish,
+   not just what they asked you to build. The spirit matters more than the letter.
+2. Use `AskUserQuestion` to restate your understanding of the goal and confirm it with the
+   operator before writing any code. Present your interpretation as a clear summary with
+   any assumptions called out, and ask the operator to confirm or correct.
+3. If the goal is ambiguous, use `AskUserQuestion` to present implementation choices as
+   structured, selectable options rather than returning questions as plain text.
+4. Document confirmed assumptions explicitly in a Docket comment.
+
+**Team mode** (spawned by an orchestrator):
+When spawned by an orchestrator, the verified goal is in the prompt context. Use it as the
+starting point. Re-verify alignment with the team lead if your understanding diverges from
+the stated goal at any point.
 
 **During implementation:**
 - Periodically check: "Does this solve the operator's actual problem, or just satisfy the

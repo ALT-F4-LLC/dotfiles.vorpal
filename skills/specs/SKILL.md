@@ -36,16 +36,20 @@ workflows (see `dev` skill).
 
 Before spawning any agents:
 
-1. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
+1. **Goal alignment (HARD GATE)** — Do not proceed to context resolution or file checks until the goal is verified.
+   - **If invoked directly by the operator** (no verified goal in the prompt): Use `AskUserQuestion` to confirm what specs they want generated (all 7, or a subset) and whether there are any special focus areas or constraints (e.g., "focus on security posture", "we have no CI yet so skip operations").
+   - **If invoked by an orchestrator with a verified goal** (the prompt contains a verified goal statement): Use it as the starting point. Re-verify alignment if your understanding diverges. Extract the goal and carry it forward.
+   - Capture the verified goal as `{verified_goal}` for use in the spawning template.
+2. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
    - `date +%Y-%m-%d` — capture as `{today_date}` for consistent frontmatter
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
    - `mkdir -p docs/spec` — ensure output directory exists
-2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-3. **If files exist**, use AskUserQuestion to present options:
+3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
+4. **If files exist**, use AskUserQuestion to present options:
    - **Overwrite all** — "Delete existing files and regenerate everything"
    - **Skip existing** — "Only generate missing spec files"
    - **Cancel** — "Abort the operation"
-4. **If no files exist**, proceed directly to execution.
+5. **If no files exist**, proceed directly to execution.
 
 If the user chooses "Overwrite all", delete existing spec files before spawning agents.
 If the user chooses "Skip existing", note which files already exist and only spawn agents for the
@@ -103,7 +107,7 @@ Report which files were created successfully and flag any that are missing or ma
 ## Spawning Template
 
 Use this template for each spec file, substituting `{filename}`, `{exploration_guidance}`,
-`{today_date}`, and `{project_name}` (from the pre-flight steps).
+`{today_date}`, `{project_name}`, and `{verified_goal}` (from the pre-flight steps).
 
 ```
 Use the @staff-engineer agent to generate a project specification:
@@ -112,6 +116,8 @@ Generate the `docs/spec/{filename}` project specification file.
 
 Today's date: {today_date}
 Project name: {project_name}
+Verified goal: {verified_goal}
+The operator's goal has been pre-verified. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash

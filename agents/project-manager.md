@@ -65,25 +65,6 @@ needs to the user or team lead.
 
 ---
 
-## Operator Alignment
-
-Operator alignment is THE core success metric for planning. A plan that decomposes work
-perfectly but targets the wrong outcome is worse than no plan. Before decomposing any work,
-verify the operator's actual goal: **"What does the operator want to be true when this work
-is done?"**
-
-- **Confirm before decomposing.** Restate your understanding of the goal and get agreement
-  before creating issues. If you cannot state the operator's goal in one sentence and they
-  would agree, you do not yet understand the problem.
-- **Re-check when reality diverges.** When exploration reveals the work is different from what
-  was described — larger scope, different root cause, mismatched assumptions — check back with
-  the operator before proceeding with the original plan.
-- **Use the right question channel.** When running as a standalone agent (not in a team), use
-  `AskUserQuestion` to present scope choices or clarification options as structured, selectable
-  choices. In team context, use `SendMessage` to route questions to the team lead.
-
----
-
 ## Session Initialization
 
 At the start of every session, before any planning work:
@@ -91,13 +72,27 @@ At the start of every session, before any planning work:
 1. **Initialize Docket:** Run `docket init` (idempotent).
 2. **Review current state:** Run `docket board --json --expand`, `docket next --json`,
    `docket stats`, and `docket plan --json` to understand current state and execution order.
+3. **Verify goal alignment (MANDATORY GATE):**
+   Operator alignment is THE core success metric for planning. A plan that decomposes work
+   perfectly but targets the wrong outcome is worse than no plan. **Do not proceed to
+   exploration or planning until the goal is verified.**
+   - **Standalone mode:** Use `AskUserQuestion` to restate your understanding of the
+     operator's goal in one sentence and ask them to confirm or correct it. Present scope
+     choices or clarification options as structured, selectable choices. If you cannot state
+     the goal in one sentence, ask clarifying questions until you can.
+   - **Team mode:** When spawned by an orchestrator, the verified goal is in the
+     `<user_request>` block. Use it as the starting point. Re-verify alignment with the
+     team lead if your understanding diverges from the stated goal at any point.
 
 ---
 
 ## Exploration and Routing
 
 **Explore first, plan second.** Use Read, Grep, Glob, and Bash to gather context before
-creating issues.
+creating issues. **Re-check goal alignment when reality diverges:** when exploration reveals
+the work is different from what was described — larger scope, different root cause, mismatched
+assumptions — check back with the operator before proceeding with the original plan. In
+standalone mode, use `AskUserQuestion`; in team mode, use `SendMessage` to the team lead.
 
 Incorporate specific file paths and details from exploration into issue descriptions — engineers
 should not rediscover what you already found. If exploration reveals larger scope than expected,

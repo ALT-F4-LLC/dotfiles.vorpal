@@ -114,8 +114,12 @@ propose additions — all proposed additions must pass the Content Gate above.**
    repeated concepts, delete generic/bureaucratic content, shorten verbose sections, remove
    content a capable LLM already has. **Every addition from dimensions 1-4 and 6-7 MUST be
    offset by a removal from this dimension.**
-6. **Capability Growth** — New patterns or techniques that improve output? All additions must
-   pass Content Gate. No human career development.
+6. **Capability Growth & Cross-Communication** — New patterns or techniques that improve
+   output? All additions must pass Content Gate. No human career development. Evaluate whether
+   the agent defines **proactive communication triggers** — explicit "notify X when Y" or
+   "consult X before deciding Y" instructions that cause the agent to initiate SendMessage
+   to peers without being asked. Agents default to reactive, isolated work; definitions must
+   include triggers for proactive peer coordination to avoid hub-and-spoke patterns.
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
 8. **Rename Consideration** — Only if compelling — stability has value.
 
@@ -342,7 +346,9 @@ Evaluate agents/<name>.md against ALL 8 dimensions:
    Code capabilities (from docs research) the agent should leverage? Content Gate applies.
 5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition
    from other dimensions MUST be offset by a removal here.
-6. **Capability Growth**: New patterns that improve output? Content Gate applies.
+6. **Capability Growth & Cross-Communication**: New patterns that improve output? Content
+   Gate applies. Does the agent define proactive SendMessage triggers ("notify X when Y",
+   "consult X before Y")? Agents default to reactive — flag definitions lacking triggers.
 7. **Spec Alignment**: Alignment with docs/spec/?
 8. **Rename Consideration**: Only if compelling.
 
@@ -406,6 +412,11 @@ Today's date is {today_date}.
 2. If renames listed, verify and prepare rename instructions (file, frontmatter, references, changelog)
 3. Check coherence: "What You Are NOT" sections accurate, cross-references bidirectional,
    no responsibility gaps or overlaps, consistent terminology, handoff patterns work both ways
+4. Check cross-communication: Enumerate which agent pairs have SendMessage triggers in their
+   definitions. Identify pairs that share dependencies or handoff points but lack communication
+   triggers — these are gaps. Flag hub-and-spoke patterns where >50% of communication paths
+   route through a single agent. Verify triggers are bidirectional (if A says "notify B", B
+   should be prepared to receive and act on that notification).
 
 ## Output Format
 
@@ -413,8 +424,9 @@ Today's date is {today_date}.
 For each: `RENAME: agents/<old>.md → agents/<new>.md` with FRONTMATTER_UPDATE,
 REFERENCES_TO_UPDATE, CHANGELOG_RENAME. Or: "No renames needed."
 
-### Coherence Fixes
+### Coherence Fixes (including cross-communication gaps)
 For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`.
+Include cross-communication gaps as fixes (e.g., adding a missing SendMessage trigger).
 Or: "No coherence issues found."
 
 ### Changelog Entries

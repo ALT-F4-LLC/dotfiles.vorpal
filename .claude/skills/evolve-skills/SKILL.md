@@ -95,8 +95,12 @@ Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensio
    concrete templates, defined outputs?
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths?
 4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate?
-5. **Orchestration Effectiveness** — Proper agent use, parallelism, correct types, clear
-   coordination?
+5. **Orchestration Effectiveness & Cross-Communication** — Proper agent use, parallelism,
+   correct types, clear coordination? Do spawning templates include **explicit cross-communication
+   triggers** (e.g., "notify X when Y changes", "consult X before deciding Y")? Agents default
+   to reactive, isolated work — templates must prompt proactive peer-to-peer communication.
+   Count which agent pairs have explicit SendMessage triggers in spawn templates; if >50% of
+   communication paths route through a single agent, flag as hub-and-spoke.
 6. **Coherence with Other Skills** — Scope overlaps, terminology, shared conventions,
    accurate references?
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns?
@@ -374,7 +378,10 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions:
    Code capabilities (from docs research) the skill should leverage?
 4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value content to trim?
    **Every addition from other dimensions MUST be offset by a removal here.**
-5. **Orchestration Effectiveness**: Proper agent use, parallelism, coordination?
+5. **Orchestration Effectiveness & Cross-Communication**: Proper agent use, parallelism,
+   coordination? Do spawn templates include explicit SendMessage triggers between agent pairs
+   ("notify X when Y", "consult X before Y")? If >50% of communication paths route through
+   one agent, flag as hub-and-spoke. Agents are reactive by default — prompts need triggers.
 6. **Coherence with Other Skills**: Scope overlaps, terminology, conventions?
 7. **Spec Alignment**: Alignment with docs/spec/?
 8. **Rename Consideration**: Only if compelling — stability has value.
@@ -438,6 +445,10 @@ Today's date is {today_date}.
 2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
+4. Check cross-communication in orchestration skills: Enumerate which agent pairs have
+   SendMessage triggers in spawn templates. Identify pairs sharing dependencies or handoffs
+   but lacking triggers — these are gaps. Flag hub-and-spoke patterns where >50% of paths
+   route through one agent. Verify triggers are bidirectional where applicable.
 
 ## Output Format
 
@@ -445,8 +456,9 @@ Today's date is {today_date}.
 For each: `RENAME: <old-dir> → <new-dir>` with FRONTMATTER_UPDATE, REFERENCES_TO_UPDATE,
 CHANGELOG_RENAME. Or: "No renames needed."
 
-### Coherence Fixes
+### Coherence Fixes (including cross-communication gaps)
 For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`.
+Include cross-communication gaps as fixes (e.g., adding missing SendMessage triggers).
 Or: "No coherence issues found."
 
 ### Changelog Entries

@@ -316,6 +316,36 @@ docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue
 
 ---
 
+## Delegation Protocol
+
+When you invoke `/vote` as a sub-agent under `/dev`, you will not have `Agent` or `TeamCreate`
+in your tool list. The `/vote` skill's Execution Mode Detection handles this automatically —
+when delegation is needed, follow these steps:
+
+1. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Extract
+   the `vote_id` from the `--json` output.
+2. **Send a lightweight `delegation_request`** to the orchestrator via
+   `SendMessage(to="team-lead", message=...)` containing only the `vote_id`:
+   ```json
+   {
+     "type": "delegation_request",
+     "protocol_version": "1",
+     "skill": "vote",
+     "request_id": "{your-team-name}-vote-{epoch-ms}",
+     "from": "{your-team-name}",
+     "vote_id": "{vote_id}"
+   }
+   ```
+   Use your team name as assigned by the `/dev` orchestrator for both `request_id` and `from`.
+3. **Yield and wait.** Do not proceed with design spec handoff or any downstream action until a
+   `delegation_response` message arrives.
+4. **On response**, read the full result via `docket vote result <vote_id> --json` and
+   continue your workflow based on the outcome.
+
+If `Agent` and `TeamCreate` ARE available, execute `/vote` directly — no delegation needed.
+
+---
+
 ## Anti-Patterns
 
 - **Don't over-design.** Match spec fidelity to problem complexity.

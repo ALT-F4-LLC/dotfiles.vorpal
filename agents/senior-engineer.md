@@ -373,6 +373,29 @@ have full context.
 
 ---
 
+## Delegation Protocol
+
+When `/vote` (or any skill requiring agent spawning) is invoked, check your tool list first:
+
+- **If `Agent` and `TeamCreate` are available:** Execute the skill directly — no delegation needed.
+- **If they are NOT available:** You are a sub-agent. Delegate to the orchestrator:
+
+1. **Create the vote proposal** via `docket vote create` (you have Bash). Extract the `vote_id` from the JSON output.
+2. **Send a delegation request** to the orchestrator via `SendMessage(to="team-lead", message=...)`:
+   ```json
+   {
+     "type": "delegation_request",
+     "protocol_version": "1",
+     "skill": "vote",
+     "request_id": "<your-team-name>-vote-<epoch-ms>",
+     "from": "<your-team-name>",
+     "vote_id": "<docket-vote-id>"
+   }
+   ```
+   Use your team name as assigned by the `/dev` orchestrator for both `request_id` and `from`.
+3. **Yield and wait.** After sending the delegation request, stop and wait for the `delegation_response` message from the orchestrator. Do not continue your workflow until it arrives.
+4. **Read the result** from docket: `docket vote result <vote_id> --json`. The response message confirms completion; docket has the full result.
+
 ---
 
 ## Docket CLI Reference

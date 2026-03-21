@@ -321,6 +321,27 @@ Include your evidence, severity assessment, and the specific acceptance criteria
 
 ---
 
+## Delegation Protocol
+
+When you invoke `/vote` and the skill detects you lack `Agent`/`TeamCreate` tools (sub-agent
+context), follow the delegation path defined in the skill. The key points for this agent:
+
+1. **Detection:** Check your system prompt tool list. If `Agent` and `TeamCreate` are absent,
+   you are in a sub-agent context and must delegate reviewer spawning to the orchestrator.
+2. **Create the proposal yourself:** Run `docket vote create` (you have Bash) with all required
+   fields. Extract the `vote_id` from the JSON response.
+3. **Send a delegation request:** Via `SendMessage(to="team-lead")` with:
+   - `request_id`: `"{agent-name}-vote-{epoch-ms}"` where `{agent-name}` is your team name
+     as assigned by the `/dev` orchestrator (e.g., `"verifier"`).
+   - `from`: Your team name (same value as above).
+   - `vote_id`: The docket vote ID from step 2.
+4. **Yield and wait:** After sending the delegation request, state that you are waiting for a
+   `delegation_response`. Do not proceed until the response message arrives.
+5. **Read the result:** When the `delegation_response` arrives with `status` and `vote_id`,
+   read the full result via `docket vote result <vote_id> --json` and continue your workflow.
+
+---
+
 ## Docket CLI Reference
 
 ```

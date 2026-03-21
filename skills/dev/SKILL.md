@@ -420,6 +420,10 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 Invoke `/vote` for decisions matching the triggers below. Single-reviewer remains the default.
 
+> **Note:** When a sub-agent invokes `/vote`, it cannot spawn reviewer agents directly. Instead,
+> it creates the vote proposal in docket and sends a `delegation_request` to you (the Team Lead)
+> containing the `vote_id`. Handle these via the "Handling Delegation Requests" section below.
+
 **Consensus Trigger Decision Tree:**
 
 1. **Security-sensitive review** (auth, permissions, crypto)? → Always (critical).
@@ -464,6 +468,90 @@ After `/vote` approves, finalize the record: `docket vote commit {proposal-id} -
 - **Discovered work:** Assess whether it needs immediate attention or follow-up planning.
 - **File conflicts:** Stop current phase, have PM re-scope, retry.
 - **Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.
+
+---
+
+## Handling Delegation Requests
+
+When you receive a `SendMessage` with `type: "delegation_request"`, a sub-agent is requesting
+you to execute a skill that requires agent spawning (which sub-agents cannot do).
+
+### Recognition
+
+Identify a delegation request by its `type` field. Any incoming message where
+`type` equals `"delegation_request"` is a delegation — not a status update, not a question.
+
+### Validation
+
+Before processing, verify all required fields are present:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `type` | Yes | Must be `"delegation_request"` |
+| `protocol_version` | Yes | Must be `"1"` |
+| `skill` | Yes | The skill to execute (e.g., `"vote"`) |
+| `request_id` | Yes | Unique ID for correlating request/response |
+| `from` | Yes | The requesting agent's name (for response routing) |
+| `vote_id` | Yes (for `skill: "vote"`) | The docket vote proposal ID (e.g., `"DKT-V2"`) |
+
+If any required field is missing or `protocol_version` is not `"1"`, send a `delegation_response`
+with `status: "failed"` and an `error` describing the validation failure.
+
+### Skill Routing
+
+Route based on the `skill` field:
+
+**For `skill: "vote"`:**
+
+1. Read the proposal details from docket:
+   ```bash
+   docket vote show <vote_id> --json
+   ```
+2. Create a vote team via `TeamCreate` and spawn independent reviewer agents via `Agent`
+   (one per reviewer), following the `/vote` protocol for reviewer selection based on the
+   proposal's criticality.
+3. Collect verdicts and cast votes via `docket vote cast <vote_id> ...`.
+4. Evaluate quorum via `docket vote result <vote_id> --json`.
+5. If quorum is reached, commit the result:
+   ```bash
+   docket vote commit <vote_id> --outcome "..."
+   ```
+6. Clean up the vote team via `TeamDelete`.
+
+**For unknown skills:** Send a `delegation_response` with `status: "failed"` and
+`error: "Unknown delegatable skill: {skill}"`.
+
+### Response
+
+After execution (success or failure), send a `delegation_response` back to the requesting
+agent via `SendMessage(to=request.from, message=...)`:
+
+```json
+{
+  "type": "delegation_response",
+  "protocol_version": "1",
+  "request_id": "<matching-request-id>",
+  "status": "completed|failed|escalated",
+  "vote_id": "<docket-vote-id>"
+}
+```
+
+- `status: "completed"` — the skill executed successfully (the sub-agent reads full results
+  from docket).
+- `status: "failed"` — execution failed. Include an `error` field with a description.
+- `status: "escalated"` — the request requires user intervention.
+
+After sending the response, resume your normal orchestration workflow.
+
+### Known Limitations
+
+- **Concurrent delegations processed sequentially.** If multiple sub-agents send delegation
+  requests simultaneously, the orchestrator handles them one at a time. This may add latency
+  but preserves correctness. No mitigation needed at current scale.
+- **Orphaned delegations.** If the requesting sub-agent dies after sending a delegation
+  request, the orchestrator completes the vote and records the result in docket regardless.
+  The vote record remains available for auditability. No special cleanup is required beyond
+  normal team teardown.
 
 ---
 

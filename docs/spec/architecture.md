@@ -142,6 +142,35 @@ Four orchestration skills coordinate the team:
 
 A fifth skill, `vote`, provides PBFT-inspired consensus voting for multi-agent decision validation.
 
+### Agent Delegation Protocol
+
+Sub-agents spawned by the `/dev` orchestrator lack `Agent` and `TeamCreate` tools — their tool set is limited to `Read`, `Grep`, `Glob`, `Bash`, `Write`, `Edit`, `SendMessage`, and `Skill`. This means skills that require agent spawning (such as `/vote`, which spawns independent reviewer agents) cannot execute directly in a sub-agent context.
+
+The solution uses **docket as the shared data store** with lightweight coordination signals over `SendMessage`. Sub-agents perform all docket CLI work they can (creating proposals, reading results) and only delegate the part they cannot do (spawning agents). Messages carry resource IDs, not payloads — docket is the source of truth.
+
+**Protocol flow (7 steps):**
+
+1. Sub-agent detects it lacks `Agent`/`TeamCreate` by checking its system prompt tool list.
+2. Sub-agent creates the vote proposal via `docket vote create` and obtains a `vote_id` (e.g., `DKT-V2`).
+3. Sub-agent sends a `delegation_request` to `team-lead` via `SendMessage` containing the `vote_id`.
+4. Orchestrator reads the proposal from docket via `docket vote show <vote_id>`.
+5. Orchestrator spawns reviewer agents, casts votes via `docket vote cast`, evaluates quorum, and commits the result.
+6. Orchestrator sends a `delegation_response` back to the requesting sub-agent with the `vote_id` and completion status.
+7. Sub-agent reads the full result from docket via `docket vote result <vote_id> --json` and continues its workflow.
+
+**Message format:**
+
+The `delegation_request` envelope contains: `type`, `protocol_version` (`"1"`), `skill`, `request_id`, `from`, and a skill-specific resource ID field (e.g., `vote_id` for the vote skill). The `delegation_response` contains: `type`, `protocol_version` (`"1"`), `request_id`, `status` (`"completed"`, `"failed"`, or `"escalated"`), and the same resource ID field. See `docs/tdd/agent-delegation-protocol.md` for full field definitions.
+
+**Design principle:** Docket is the shared data store; `SendMessage` is the coordination channel. Messages are minimal signals — all substantive data (proposals, votes, results) lives in docket. This makes the protocol auditable (the vote record exists in docket before the orchestrator sees the request) and extensible (any future skill with a docket-backed resource can use the same envelope with a skill-specific resource ID).
+
+**Known limitations:**
+
+- **Concurrent delegations are processed sequentially.** The orchestrator handles one delegation at a time; if multiple arrive, they queue naturally. This adds latency during active phases.
+- **Orphaned delegations.** If a sub-agent dies after sending a delegation request, the orchestrator completes the vote and records the result in docket regardless. The vote record remains for auditability; no special cleanup is needed beyond normal team teardown.
+
+**Reference:** `docs/tdd/agent-delegation-protocol.md` for the complete protocol design, message field tables, detection mechanism, and orchestrator handler specification.
+
 ## Build & Deployment Model
 
 ### Content-Addressed Store

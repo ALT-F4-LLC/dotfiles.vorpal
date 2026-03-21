@@ -1,5 +1,23 @@
 # Changelog: staff-engineer
 
+## 2026-03-21
+
+### Summary
+Updated docket vote CLI reference with newly discovered flags, compressed Delegation Protocol to reference spec, added shutdown request handling for team lifecycle.
+
+### Changes
+- Updated `docket vote create` with `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason` flags
+- Updated `docket vote cast` with `--findings-json`, `--summary` flags and `approve-with-concerns` verdict
+- Updated `docket vote commit` with `--escalation-reason` flag
+- Compressed Delegation Protocol from 26 lines to 9 by referencing `docs/spec/architecture.md`
+- Added Shutdown Handling section for graceful team lifecycle management
+
+### Dimensions Evaluated
+Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

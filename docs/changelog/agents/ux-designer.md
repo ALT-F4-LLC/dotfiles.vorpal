@@ -1,5 +1,24 @@
 # Changelog: ux-designer
 
+## 2026-03-21
+
+### Summary
+Updated docket vote CLI reference with new flags, compressed Delegation Protocol from 27 to 10 lines, added shutdown handling, streamlined "When to Create" bullets, fixed empty string placeholder.
+
+### Changes
+- Updated vote CLI reference with `--rationale`, `--domain-tags`, `--files-changed`, `--findings-json`, `--summary`, `approve-with-concerns`
+- Compressed Delegation Protocol from 27 to 10 lines (reference spec for message format)
+- Added Shutdown Handling section (save draft before approving shutdown)
+- Added `-f` file attachment awareness to status updates
+- Compressed "When to Create" by folding heuristic into skip bullet
+- Fixed empty string `""` placeholder to `"<message>"` in docket comment example
+
+### Dimensions Evaluated
+Completeness (docket audit), Consolidation & Trimming (primary), Capability Growth / Agent Teams
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

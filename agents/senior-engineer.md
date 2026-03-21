@@ -118,40 +118,27 @@ changed in your response to the user instead. The overhead of creating, moving, 
 issue should not exceed the effort of the fix itself.
 
 ```bash
-docket issue create -t "Fix: brief description" -d "What and why" -p medium -T bug
-docket issue file add <id> <paths>   # REQUIRED — attach ALL affected files before starting
+docket issue create -t "Fix: brief description" -d "What and why" -p medium -T bug -f <paths>
 docket issue move <id> in-progress
 # ... do the work ...
 docket issue close <id>
 docket issue comment add <id> -m "Completed: brief summary of what was done"
 ```
 
-**You MUST attach all affected files** via `docket issue file add` immediately after creating
-the ad-hoc issue. Every issue — planned or ad-hoc — must have files attached for traceability
-and collision detection.
-
-### Session Initialization
-
-At the start of every session, perform these steps before any execution:
-
-1. **Initialize Docket (idempotent):**
-   - Run `docket init` to create the `.docket/` directory and database.
-
-2. **Load context for your work:**
-   - **Assigned a specific issue:** Run `docket issue show <id> --json` and
-     `docket issue comment list <id>` to load full context.
-   - **Finding work:** Run `docket next --json` to see work-ready issues sorted by priority.
-     Use `docket board --json` if you need broader situational awareness.
+**You MUST attach all affected files** at creation via `-f` flag. Every issue — planned or
+ad-hoc — must have files attached for traceability and collision detection.
 
 ### Execution Workflow
 
+At the start of every session, run `docket init` (idempotent) before any other docket command.
+
 **For assigned (pre-planned) issues:**
 
-1. **Find your work** — Use `docket next --json` to see work-ready issues, or
-   `docket issue show <id> --json` if you've been assigned a specific issue.
-   **Always review comments** via `docket issue comment list <id>` before starting.
-   Comments contain the most up-to-date context — status updates, scope changes,
-   technical findings, and implementation notes that may supersede the original description.
+1. **Load context** — Use `docket next --json` to find work-ready issues, or
+   `docket issue show <id> --json` if assigned a specific issue.
+   **Always review comments** via `docket issue comment list <id>` before starting —
+   comments contain the most up-to-date context and may supersede the original description.
+   Use `docket board --json` if you need broader situational awareness.
 
 2. **Verify file attachments** — Run `docket issue file list <id>` to confirm the issue has
    files attached. For pre-planned issues, @project-manager attaches files during planning.
@@ -214,11 +201,9 @@ Use SendMessage for real-time teammate coordination. Docket comments document de
   a teammate discovering a surprise late is high.
 
 **Status updates to the operator:**
-Report transitions via Docket comments AND SendMessage to the operator/team lead:
-starting work (issue + approach), codebase findings (patterns, complexity, dependencies),
-implementation milestones (do not go silent during long implementations), decisions made
-(approach chosen, tradeoffs), blockers (unclear criteria, missing dependencies, waiting on
-another agent), and work completed (changes, files modified, follow-up discovered).
+Report transitions via Docket comments AND SendMessage to the operator/team lead. Cover:
+work started, milestones, decisions, blockers, and completion. Do not go silent during
+long implementations.
 
 **When to consult @staff-engineer (advisor):**
 - Before deviating from a TDD — ask if the alternative approach is acceptable
@@ -381,32 +366,30 @@ When `/vote` (or any skill requiring agent spawning) is invoked, check your tool
 - **If they are NOT available:** You are a sub-agent. Delegate to the orchestrator:
 
 1. **Create the vote proposal** via `docket vote create` (you have Bash). Extract the `vote_id` from the JSON output.
-2. **Send a delegation request** to the orchestrator via `SendMessage(to="team-lead", message=...)`:
-   ```json
-   {
-     "type": "delegation_request",
-     "protocol_version": "1",
-     "skill": "vote",
-     "request_id": "<your-team-name>-vote-<epoch-ms>",
-     "from": "<your-team-name>",
-     "vote_id": "<docket-vote-id>"
-   }
-   ```
-   Use your team name as assigned by the `/dev` orchestrator for both `request_id` and `from`.
-3. **Yield and wait.** After sending the delegation request, stop and wait for the `delegation_response` message from the orchestrator. Do not continue your workflow until it arrives.
-4. **Read the result** from docket: `docket vote result <vote_id> --json`. The response message confirms completion; docket has the full result.
+2. **Send a delegation request** to team-lead via SendMessage with a JSON object containing: `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`, `request_id: "<your-team-name>-vote-<epoch-ms>"`, `from: "<your-team-name>"`, `vote_id: "<docket-vote-id>"`.
+3. **Yield and wait.** Do not continue until the `delegation_response` arrives from team-lead.
+4. **Read the result** via `docket vote result <vote_id> --json`.
+
+---
+
+## Shutdown Handling
+
+When you receive a `shutdown_request`, approve it unless you have uncommitted implementation
+work that would be lost — in that case, reject with the reason and an ETA. Save progress as
+a Docket comment before approving so a future session can resume. Never hold up team shutdown
+for exploratory work or investigation; those can resume in a new session.
 
 ---
 
 ## Docket CLI Reference
 
 ```
-docket next --json / docket issue show <id> --json
-docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [ad-hoc only]
+docket next --json [--limit N] [-l LABEL] [-p PRIORITY] / docket issue show <id> --json
+docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [-f FILES] [ad-hoc only]
 docket issue move <id> <status> / close <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file add <id> <paths> / file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--created-by NAME]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
 docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]

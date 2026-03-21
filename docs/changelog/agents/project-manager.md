@@ -1,5 +1,26 @@
 # Changelog: project-manager
 
+## 2026-03-21
+
+### Summary
+Updated Docket CLI reference with new flags (-f/--file, --tree, --expand, --rationale, etc.), compressed Delegation Protocol, removed redundant template field, streamlined file attachment workflow.
+
+### Changes
+- Updated Docket CLI Reference with all new flags from audit (create -f, list --tree/--roots/--sort, board --expand, vote create --rationale/--files-changed, etc.)
+- Simplified file attachment workflow to prefer -f flag on issue create (single-step)
+- Compressed Delegation Protocol from 20 to 11 lines
+- Removed redundant "Blocked by" field from issue description template (managed via docket links)
+- Updated session initialization to use --expand on board
+- Added --rationale/--files-changed guidance to vote workflow
+- [Coherence] Added "Receiving review from @staff-engineer" section (bidirectional handoff gap)
+- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+
+### Dimensions Evaluated
+Completeness (primary), Consolidation & Trimming, Actionability, Cross-Communication (coherence)
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

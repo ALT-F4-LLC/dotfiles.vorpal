@@ -280,10 +280,11 @@ to @project-manager for decomposition without `/vote` approval.
 ### Docket Vote CLI Reference
 
 ```
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
+docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+  # VERDICT: approve | reject | approve-with-concerns | abstain
 docket vote result <id>
-docket vote commit <id> --outcome "description"
+docket vote commit <id> --outcome "description" [--escalation-reason TEXT]
 docket vote show <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
 docket vote link <proposal-id> --issue <issue-id>
@@ -294,32 +295,18 @@ docket vote unlink <proposal-id> --issue <issue-id>
 
 ## Delegation Protocol
 
-When you invoke `/vote` as a sub-agent under `/dev`, you will not have `Agent` or `TeamCreate`
-in your tool list. The `/vote` skill's Execution Mode Detection handles this automatically —
-when delegation is needed, follow these steps:
+When `/vote` requires agent spawning and you lack `Agent`/`TeamCreate` tools (sub-agent context):
 
-1. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Extract
-   the `vote_id` from the `--json` output.
-2. **Send a lightweight `delegation_request`** to the orchestrator via
-   `SendMessage(to="team-lead", message=...)` containing only the `vote_id`:
-   ```json
-   {
-     "type": "delegation_request",
-     "protocol_version": "1",
-     "skill": "vote",
-     "request_id": "{your-team-name}-vote-{epoch-ms}",
-     "from": "{your-team-name}",
-     "vote_id": "{vote_id}"
-   }
-   ```
-   Use your team name as assigned by the `/dev` orchestrator (e.g., `"advisor"`) for both
-   `request_id` and `from`.
-3. **Yield and wait.** Do not proceed with TDD handoff or any downstream action until a
-   `delegation_response` message arrives.
-4. **On response**, read the full result via `docket vote result <vote_id> --json` and
-   continue your workflow based on the outcome.
+1. Create the vote proposal via `docket vote create --json` — extract `vote_id`.
+2. Send `delegation_request` to `team-lead` with `vote_id` (see `docs/spec/architecture.md` for message format).
+3. **Wait** — do not proceed until `delegation_response` arrives.
+4. Read result via `docket vote result <vote_id> --json` and continue.
 
 If `Agent` and `TeamCreate` ARE available, execute `/vote` directly — no delegation needed.
+
+## Shutdown Handling
+
+When you receive a `shutdown_request`, approve it unless you have an in-progress TDD that would be lost — in that case, reject with the reason and an ETA. Never hold up team shutdown for spec updates or advisory work; those can resume in a new session.
 
 ---
 

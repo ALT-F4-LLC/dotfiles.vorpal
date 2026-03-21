@@ -45,7 +45,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
 - **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent.
 
-If an argument is provided and no matching file exists, Pre-flight step 4 will catch it.
+If an argument is provided and no matching file exists, Pre-flight step 5 will catch it.
 
 ---
 
@@ -59,16 +59,22 @@ Before spawning any agents:
    - **Standalone mode** (invoked directly by the user): use `AskUserQuestion` to confirm:
      *"What evolution focus? (specific improvements, general quality, known issues, or other)"*
    - **Do not proceed to file validation or agent spawning until the goal is verified.**
-2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+2. **Gather experience feedback** — Use `AskUserQuestion` to ask the operator:
+   - Current experience with the agent(s) being evolved (what's working well, what's not)
+   - Pain points or friction encountered during usage
+   - Any specific feedback that should inform this evolution cycle
+   Store the response as `{experience_feedback}`. In team mode, skip if the orchestrator
+   prompt already includes experience feedback context.
+3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-3. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
-4. **If targeting a specific agent** — Verify the argument matches an existing file
+4. **Validate agent files exist** — Run `ls agents/*.md 2>/dev/null` to list all discoverable agent files.
+5. **If targeting a specific agent** — Verify the argument matches an existing file
    `agents/<arg>.md`. If no match, inform user and abort.
-5. **If no agent files found** — Inform user and abort.
-6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
+6. **If no agent files found** — Inform user and abort.
+7. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
    changelogs already exist. Spawned agents will need this information.
-7. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
+8. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
    target agent. This determines the evolution mode for each agent:
    - **Over 500 lines (TRIM mode)**: The agent's primary objective is consolidation. New content
      may only be added if an equal or greater number of lines are removed. Communicate the line
@@ -81,45 +87,30 @@ Before spawning any agents:
 
 ## Content Gate
 
-**Every proposed addition MUST pass ALL checks. Reject content that fails ANY check.**
+**Every addition MUST pass ALL checks. Reject if ANY fails.**
 
-1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring humans, attending meetings, relationship-building, career development, team building.
+1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring, meetings, relationship-building, career development.
 2. **Behavioral** — Does removing it change the agent's output? Reject: general knowledge a capable LLM already has.
-3. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
-4. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
-
-**Reject examples:** 1:1s, growing engineers, team morale, communication style guidance, technology-specific sections unrelated to the role, decision matrices restating existing workflows.
+3. **Non-redundant** — Already expressed elsewhere in the file? Reject duplicates even if worded differently.
+4. **Concrete** — A specific action, check, or output format? Reject: aspirational fluff ("think holistically", "drive excellence"), decision matrices restating existing workflows.
 
 ---
 
 ## Evaluation Dimensions
 
-Every agent reviewer evaluates itself against ALL 8 dimensions. **Dimensions 1, 4, and 6
-propose additions — all must pass the Content Gate above.**
+Evaluate against ALL 8 dimensions. **Dimensions 1, 4, 6 propose additions — all must pass Content Gate.**
 
-1. **Role Realism** — Behavior consistent with a senior practitioner? Actionable by Claude
-   in a stateless session? All additions must pass Content Gate.
-2. **Actionability** — Instructions specific enough for reliable execution? Clear workflows,
-   concrete steps, defined outputs?
-3. **Boundary Clarity** — Clear, non-overlapping boundaries with other team roles? "What You
-   Are NOT" accurate? Handoff patterns defined? No gaps or overlaps?
-4. **Completeness** — Gaps that would cause poor output or stuckness? Are there new Claude
-   Code capabilities (from docs research) the agent should leverage? All additions must pass
-   Content Gate.
-5. **Consolidation & Trimming (HIGHEST PRIORITY)** — Takes priority over all others. Merge
-   repeated concepts, delete generic/bureaucratic content, shorten verbose sections, remove
-   content a capable LLM already has. **Every addition from dimensions 1-4 and 6-7 MUST be
-   offset by a removal from this dimension.**
-6. **Capability Growth, Cross-Communication & Agent Teams** — New patterns or techniques that
-   improve output? All additions must pass Content Gate. No human career development. Evaluate
-   **proactive communication triggers** — "notify X when Y" / "consult X before Y" instructions
-   causing SendMessage to peers without being asked. Flag definitions lacking these triggers.
-   For agent team participation: does the definition handle shutdown requests/responses? For
-   orchestrator-type agents: correct team lifecycle (TeamCreate → spawn → work → shutdown →
-   TeamDelete)? Shared task lists with dependencies and status flow? Flag: missing cleanup,
-   broadcast overuse, no direct teammate addressing.
-   Also check: self-verification steps, course-correction triggers (SendMessage when stuck/off-track),
-   and efficient context management (targeted Grep over broad reads).
+1. **Role Realism** — Behavior consistent with a senior practitioner, actionable by Claude in a stateless session?
+2. **Actionability** — Specific enough for reliable execution? Clear workflows, concrete steps, defined outputs?
+3. **Boundary Clarity** — Non-overlapping with other roles? "What You Are NOT" accurate? Handoff patterns defined?
+4. **Completeness** — Gaps causing poor output? New Claude Code capabilities to leverage? Additions must pass Gate.
+5. **Consolidation & Trimming (HIGHEST PRIORITY)** — Merge repeats, delete generic content, shorten verbose
+   sections, remove LLM-innate knowledge. **Every addition from other dimensions MUST be offset here.**
+6. **Capability Growth, Cross-Communication & Agent Teams** — New patterns improving output? No human career
+   development. Evaluate proactive SendMessage triggers ("notify X when Y" / "consult X before Y") — flag
+   definitions lacking them. Agent teams: shutdown handling, orchestrator lifecycle (TeamCreate → spawn →
+   shutdown → TeamDelete), task coordination. Flag: missing cleanup, broadcast overuse. Also check:
+   self-verification, course-correction triggers, efficient context management (targeted Grep over broad reads).
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
 8. **Rename Consideration** — Only if compelling — stability has value.
 
@@ -127,20 +118,11 @@ propose additions — all must pass the Content Gate above.**
 
 ## Changelog Format
 
-All changes are tracked in `docs/changelog/agents/<agent-name>.md`. Create the `docs/changelog/agents/`
-directory if it doesn't exist.
+All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory if needed).
 
-**Every changelog file MUST use this exact format — no deviations, no extra sections:**
+**Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-Format: `# Changelog: <agent-name>` > `## YYYY-MM-DD` > exactly 4 H3 sections: `### Summary` (1-2 sentences), `### Changes` (bulleted list with reasoning), `### Dimensions Evaluated`, `### Rename` (rename details or "No rename."). See Changelog Rules below for full specification.
-
-### Changelog Rules
-
-1. **H1**: `# Changelog: <agent-name>` (kebab-case). **H2**: `## YYYY-MM-DD` (no suffixes). **H3**: exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename` — in order, no others.
-2. **Max 20 lines per entry.** Prepend new entries below H1 so most recent is first.
-3. **Read only the most recent `## <date>` entry** in existing changelogs — do NOT read full history.
-4. If no improvements found, report that honestly rather than forcing changes.
-5. **Normalization**: After applying changes, the orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, and truncates entries over 20 lines.
+**Rules:** Max 20 lines per entry. Prepend new entries (most recent first). Read only the latest entry in existing changelogs. Report honestly if no improvements found. After applying changes, the orchestrator normalizes: fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines.
 
 ---
 
@@ -235,12 +217,35 @@ After Phase 2 completes:
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
 
-Research the latest Claude Code documentation for capabilities relevant to agent definitions.
-Focus on: new tool types, hook patterns, MCP integration, agent SDK features,
-agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
-permission/execution settings, and agent communication patterns. Filter for what agent
-definition authors need to know.
-Output as `- **<capability/change>**: <relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+MISSION: Research Claude Code documentation for capabilities relevant to writing agent definition files (agents/*.md). Report NEW or CHANGED features only — skip well-known existing behavior.
+
+TIER 1 — MUST research (visit every page, extract all relevant capabilities):
+- Sub-agents — agent types, frontmatter fields (name, description, tools, model, allowed-tools), capability control, tool restrictions, MCP scoping, permission modes, spawning patterns, persistent memory, hooks for subagents, auto-delegation
+- Agent Teams — team setup, teammate config, plan approval, task assignment, team communication (SendMessage), shutdown/cleanup protocol, quality gates, team architecture, permissions, token usage
+- Hooks Reference — all hook event types (SubagentStart, SubagentStop, TeammateIdle, TaskCompleted, Stop), matcher patterns (including MCP tools), handler types (command, HTTP, prompt, agent), input/output schemas, async hooks
+- Skills — skill-agent interaction, skill preloading in subagents, tool restriction patterns
+- Permissions — permission modes, permission rule syntax, tool-specific rules (Bash, Read/Edit, WebFetch, MCP, Agent), managed permissions
+
+TIER 2 — SHOULD research (visit each page, extract agent-relevant changes):
+- Settings — configuration scopes, settings files, subagent configuration, plugin config, environment variables
+- MCP — MCP server patterns, tool search, managed configuration, MCP scoping for agents
+- Tools Reference — available tools, tool behavior details relevant to agent definitions
+- Memory — auto-memory system, CLAUDE.md files, memory in subagents
+- Best Practices — verification methods, communication patterns, subagent usage, context management
+- Plugins Reference — plugin components including agents, plugin manifest
+
+TIER 3 — SCAN for changes (quick scan, report only new/changed features):
+- Commands, How Claude Code Works, Changelog, CLI Reference, Output Styles, Keybindings
+
+INSTRUCTIONS:
+- Tier 1: Visit EVERY page. Extract: new features, changed behaviors, deprecated patterns. Ask: "Would this change how an agent definition file should be written?"
+- Tier 2: Visit each page, extract only capabilities relevant to agent definitions.
+- Tier 3: Quick scan, report only actionable new/changed features.
+- Visit ALL Tier 1 and Tier 2 pages — do not skip any.
+- If a page fails to load, note it and continue.
+- Report which pages were researched and which were skipped.
+
+OUTPUT FORMAT: `- **<capability/change>**: <agent definition relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -274,39 +279,29 @@ Report New, Changed, and Deprecated commands (with synopsis/context) plus a full
 
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
 name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
-`<name>`, `{today_date}` (from pre-flight step 2), and `{verified_goal}` (from step 1) for each.
+`<name>`, `{today_date}` (from pre-flight step 3), `{verified_goal}` (from step 1), and `{experience_feedback}` (from step 2) for each.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
 
-Use the @<name> agent to review and improve its own agent definition:
-
-Target: agents/<name>.md
-Agent: <name>
-Current size: {line_count} lines
-Mode: {mode} (TRIM if over 500 lines, BALANCED if under)
-Verified goal: {verified_goal}
-The operator's goal has been pre-verified. Re-verify alignment if your understanding diverges from this goal at any point.
-
 Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to evolve.
+
+Target: agents/<name>.md | Size: {line_count} lines | Mode: {mode}
+Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
+Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-Hard limit: 500 lines. **TRIM mode** (over 500): primary objective is consolidation — removals
-must exceed additions. **BALANCED mode** (under 500): additions allowed but offset by removals.
-Every CHANGE adding lines MUST pair with a removal of equal or greater size. Report NET_LINES.
+500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions.
+**BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
 
 ## Context
 
-- Today's date is {today_date} — use for changelog entries.
-- Read docs/changelog/agents/<name>.md — ONLY the most recent `## <date>` entry.
-- Read docs/spec/ selectively — only files relevant to the agent's domain.
-- Read OTHER agent files — first ~80 lines only for team boundary context.
-- Review the Claude Code documentation research findings below and consider whether any
-  new capabilities, features, or settings should be reflected in the agent's definition.
-- Review the docket CLI audit findings below — for agents that reference docket commands,
-  verify commands/flags are current and consider whether new docket capabilities should be used.
-- Skip WebFetch — adds latency without value for this task.
+- Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md.
+- Read docs/spec/ selectively, other agent files first ~80 lines only. Skip WebFetch.
+- Review operator experience feedback below — prioritize addressing reported pain points and friction.
+- Review docs/Claude Code research and docket audit findings below — reflect new capabilities
+  and verify docket commands/flags are current.
 
 ## Claude Code Documentation Research
 {docs_research_findings}
@@ -314,84 +309,49 @@ Every CHANGE adding lines MUST pair with a removal of equal or greater size. Rep
 ## Docket CLI Audit Findings
 {docket_audit_findings}
 
-## Content Gate (MANDATORY — applies to ALL additions)
+## Operator Experience Feedback
+{experience_feedback}
 
-Every addition MUST pass ALL checks — reject if ANY fails:
-1. **Executable** — Can Claude do this in a stateless session?
-2. **Behavioral** — Does removing it change the agent's output?
-3. **Non-redundant** — Not already expressed elsewhere in the file?
-4. **Concrete** — A specific action, check, or output?
+## Content Gate (ALL additions must pass — reject if ANY fails)
 
-## Your Task
+Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
-Evaluate agents/<name>.md against ALL 8 dimensions:
+## Task: Evaluate ALL 8 dimensions
 
-1. **Role Realism**: Behavior consistent with a senior practitioner?
-2. **Actionability**: Specific enough for reliable execution?
-3. **Boundary Clarity**: Clear, non-overlapping boundaries with other roles?
-4. **Completeness**: Gaps or new Claude Code capabilities the agent should leverage?
-5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition
-   MUST be offset by a removal here.
-6. **Capability Growth, Cross-Communication & Agent Teams**: New patterns? Proactive SendMessage
-   triggers? Flag definitions lacking "notify X when Y" / "consult X before Y" triggers.
-   Also evaluate agent team patterns: shutdown request/response handling, team lifecycle
-   for orchestrators (TeamCreate → spawn → shutdown → TeamDelete), task coordination.
-7. **Spec Alignment**: Alignment with docs/spec/?
-8. **Rename Consideration**: Only if compelling.
+1. **Role Realism**: Senior practitioner behavior, actionable by Claude?
+2. **Actionability**: Specific workflows, concrete steps, defined outputs?
+3. **Boundary Clarity**: Non-overlapping roles, accurate "What You Are NOT", handoff patterns?
+4. **Completeness**: Gaps or new capabilities to leverage?
+5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition offset here.
+6. **Capability Growth & Cross-Communication**: New patterns? Proactive SendMessage triggers ("notify X
+   when Y")? Agent team patterns (shutdown, lifecycle, task coordination)? Flag gaps.
+7. **Spec Alignment**: Aligned with docs/spec/?
+8. **Rename**: Only if compelling.
 
-## Requirements
+## Rules
 
-- **DO NOT edit any files.** Read-only — analyze and recommend only.
-- Build on strengths — improve, don't rewrite from scratch.
-- If no meaningful improvements needed, report that honestly.
-- **Minimize context**: First 80 lines of other agents, relevant specs only.
-- **Course-correction**: SendMessage the orchestrator IMMEDIATELY when you discover: (1) cross-cutting
-  issues affecting other parallel reviews, (2) patterns that should apply consistently across all
-  targets, or (3) your review scope expanding beyond the target agent. The orchestrator will route
-  findings to relevant peers.
-- **Anti-patterns to avoid**: infinite exploration (reading hundreds of files without producing output),
-  kitchen sink (reviewing outside assigned scope), over-correction loops (same fix failing repeatedly —
-  try a different approach). Use targeted Grep over broad reads.
+- **Read-only** — analyze and recommend, do not edit files. Build on strengths, don't rewrite.
+- **Minimize context**: first 80 lines of other agents, relevant specs only.
+- **Course-correct**: SendMessage orchestrator immediately for cross-cutting issues, universal patterns,
+  or scope expansion beyond target agent.
+- **Avoid anti-patterns**: infinite exploration, kitchen-sink reviewing, over-correction loops.
 
 ## Output Format
 
-### Summary
-<1-2 sentence overview — or "No changes needed">
-Net line change: <estimated +/- lines>
-
-### Recommended Changes
-For each change:
-\```
-CHANGE <n>: <short title>
-DIMENSION: <which dimension>
-CONTEXT: <1 sentence>
-NET_LINES: <+N or -N>
-OLD_STRING:
-<exact text to find — copy-paste precision, enough context to be unique>
-NEW_STRING:
-<exact replacement — use `<REMOVE>` to delete, `<INSERT_AFTER>` to add after anchor>
-\```
-
-### Changelog Entry (under 20 lines, ONLY 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
-
-### Rename Recommendation
-<"No rename" or "Rename to `<new-name>`: <reasoning>">
-
-### Coherence Issues
-<Issues noticed, or "None">
+`### Summary` (1-2 sentences + net line change) > `### Recommended Changes` (per change:
+CHANGE/DIMENSION/CONTEXT/NET_LINES/OLD_STRING/NEW_STRING — use `<REMOVE>` to delete,
+`<INSERT_AFTER>` to add) > `### Changelog Entry` (under 20 lines, 4 sections: Summary, Changes,
+Dimensions Evaluated, Rename) > `### Rename Recommendation` > `### Coherence Issues`
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
-Phase 2 uses @staff-engineer (read-only) for cross-cutting coherence review. The orchestrator
-applies all edits. Substitute `{today_date}` before spawning.
+Read-only cross-cutting coherence review. Orchestrator applies all edits. Substitute `{today_date}`.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
-Use the @staff-engineer agent to check cross-agent coherence and recommend fixes:
-
-Today's date is {today_date}.
+Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.**
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -399,50 +359,30 @@ Today's date is {today_date}.
 ## Phase 1 Coherence Issues
 <list issues from Phase 1, or "None reported.">
 
-## Requirements
+## Task
 
-- **DO NOT edit any files.** Read-only — the orchestrator applies all changes.
 1. Read ALL agent files in agents/*.md
 2. If renames listed, verify and prepare rename instructions (file, frontmatter, references, changelog)
-3. Check coherence: "What You Are NOT" sections accurate, cross-references bidirectional,
-   no responsibility gaps or overlaps, consistent terminology, handoff patterns work both ways
-4. Check cross-communication: Enumerate which agent pairs have SendMessage triggers in their
-   definitions. Identify pairs that share dependencies or handoff points but lack communication
-   triggers — these are gaps. Flag hub-and-spoke patterns where >50% of communication paths
-   route through a single agent. Verify triggers are bidirectional (if A says "notify B", B
-   should be prepared to receive and act on that notification).
+3. Check coherence: "What You Are NOT" accuracy, bidirectional cross-references, no gaps/overlaps,
+   consistent terminology, handoff patterns work both ways
+4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
+   dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
 
-## Output Format
+## Output
 
-### Renames
-For each: `RENAME: agents/<old>.md → agents/<new>.md` with FRONTMATTER_UPDATE,
-REFERENCES_TO_UPDATE, CHANGELOG_RENAME. Or: "No renames needed."
-
-### Coherence Fixes (including cross-communication gaps)
-For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`.
-Include cross-communication gaps as fixes (e.g., adding a missing SendMessage trigger).
-Or: "No coherence issues found."
-
-### Changelog Entries
-Standard format (4 sections, max 20 lines) for each agent that received fixes.
-
-### Remaining Issues
-<Unresolvable issues, or "None">
+`### Renames` (RENAME/FRONTMATTER_UPDATE/REFERENCES_TO_UPDATE/CHANGELOG_RENAME or "No renames needed")
+> `### Coherence Fixes` (FIX/FILE/OLD_STRING/NEW_STRING/REASON or "No issues found") >
+`### Changelog Entries` (4 sections, max 20 lines per agent) > `### Remaining Issues`
 ```
 
 ---
 
 ## Rules
 
-1. **Run pre-flight before spawning.** Validate agent files exist and arguments resolve.
-2. **Create team before spawning.** `TeamCreate` then `TaskCreate` before any `Agent` calls.
-3. **Phase 0 completes before Phase 1. Phase 1 runs in parallel. Phase 2 after all Phase 1 complete.**
-4. **Always run Phase 2.** Even for single-agent improvements — coherence matters.
-5. **Only the orchestrator edits files.** Teammates are read-only reviewers.
-6. **Never commit.** No `git add`, no `git commit`, no `git push`.
-7. **Changelog is mandatory and strictly formatted.** Four H3 sections, under 20 lines,
-   `# Changelog: <agent-name>` as H1, `## YYYY-MM-DD` as H2. Normalize each run.
-8. **Enforce the 500-line budget.** Verify with `wc -l` after all edits. Consolidate if over.
-9. **Enforce the Content Gate.** Reject additions failing any gate check.
-10. **Fail loud.** Report failures immediately. On timeout, the orchestrator performs the review directly.
-11. **Clean up the team.** Shutdown all teammates and `TeamDelete` after wrap-up.
+1. **Pre-flight before spawning.** Validate files exist and arguments resolve.
+2. **TeamCreate → TaskCreate before any Agent calls.** Phase 0 → Phase 1 (parallel) → Phase 2.
+3. **Always run Phase 2** — even for single-agent improvements.
+4. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
+6. **Fail loud.** Report failures immediately. On timeout, orchestrator reviews directly.
+7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

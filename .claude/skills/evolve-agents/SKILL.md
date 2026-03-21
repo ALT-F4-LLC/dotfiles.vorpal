@@ -165,14 +165,20 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
 3. **Create Phase 1 tasks** — one per target agent
 4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
 
-### Phase 0: Docket CLI Audit & Docs Context
+### Phase 0: Documentation Research & Docket CLI Audit
 
-The orchestrator receives `{docs_research_findings}` as input context from the caller (team
-lead or user). Pass these findings verbatim to all Phase 1 agents. If no findings are provided,
-skip docs context in Phase 1 templates.
+Spawn TWO teammates in parallel — a `claude-code-guide` for docs research and a `senior-engineer`
+for docket CLI audit (needs Bash access):
 
-**Docket CLI Audit** — Spawn a docket-auditor agent (`subagent_type: "senior-engineer"`) to
-audit the docket CLI. Capture output as `{docket_audit_findings}`. Wait for completion before Phase 1.
+```
+Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
+```
+
+Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
+`{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
+
+Wait for both Phase 0 agents to complete before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -228,6 +234,24 @@ After Phase 2 completes:
 ---
 
 ## Spawning Templates
+
+### Phase 0: @claude-code-guide (Documentation Research)
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+
+Research the latest Claude Code documentation for capabilities relevant to agent definitions.
+Focus on: new tool types, hook patterns, MCP integration, agent SDK features,
+agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
+permission/execution settings, and agent communication patterns. Filter for what agent
+definition authors need to know.
+
+## Output Format
+
+- **<capability/change>**: <relevance to agent evolution>
+
+Group findings under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+```
 
 ### Phase 0: Docket CLI Audit
 

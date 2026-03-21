@@ -31,7 +31,7 @@ The `proposal` argument is **required** — it describes what to vote on.
 - **No argument** (`/vote`): Inform the user that a proposal is required and abort.
   Example: "Usage: `/vote <proposal>` — describe what you want voted on."
 - **With argument** (`/vote Should we use Redis or PostgreSQL for session caching?`):
-  Use the argument as `{proposal}` throughout this protocol.
+  Proceed with the protocol.
 
 If the argument is too vague to evaluate (e.g., `/vote yes or no`), ask a clarifying question.
 
@@ -94,9 +94,8 @@ c. **Construct a delegation request** with just the `vote_id`:
 
 d. **Send to the orchestrator** via `SendMessage(to="team-lead", message=<the JSON above>)`.
 
-e. **Yield control.** State explicitly that you are waiting for a `delegation_response`. You
-   do not have a blocking primitive — the response will arrive as a subsequent message in
-   your conversation. Do not proceed until you receive it.
+e. **Yield control.** State that you are waiting for a `delegation_response`. Do not proceed
+   until you receive it.
 
 f. **When the `delegation_response` arrives**, handle it per the Delegation Response Handling
    section below.
@@ -203,7 +202,6 @@ docket vote create \
 
 - Use `--json` to capture the proposal ID from the output. Extract the `id` field from the
   JSON response — you will need it for all subsequent `docket vote` commands.
-- For long descriptions or rationales, use `-d -` or `-r -` to pipe content via stdin.
 - Set `-n` to the reviewer count from the Criticality Classification table.
 - Set `--threshold` to the quorum threshold from the Criticality Classification table
   (e.g., 0.50 for low, 0.60 for medium, 0.75 for high, 0.90 for critical).
@@ -266,7 +264,7 @@ echo '{multi-line findings text}' | docket vote cast {proposal_id} \
   --findings -
 ```
 
-- Use `--findings -` (stdin) to pass multi-line findings from the reviewer.
+- Use `--findings -` (stdin) to pass multi-line findings, or `--findings-json -` for structured JSON.
 - Use `--summary` for the reviewer's one-line assessment (from their Summary section).
 
 ### Reviewer Prompt Template
@@ -374,7 +372,8 @@ whether consensus was reached and extract the aggregated findings.
 3. Report to the caller via **SendMessage** if invoked by an agent: "Consensus not reached
    (score: {score}, threshold: {threshold}).
    Options: (a) revise the proposal and re-vote, (b) escalate to human decision, (c) abort."
-4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal.
+4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal
+   (same or different reviewers — your choice based on whether the revision needs fresh eyes).
    Each new round creates a new proposal via `docket vote create` — the coordinator MUST track
    all proposal IDs across rounds and include them in the final report for auditability.
 5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
@@ -383,14 +382,6 @@ whether consensus was reached and extract the aggregated findings.
    - Consolidated findings from all rounds
    - Quorum scores from each round
    - Your recommendation based on the pattern of reviews
-
-### View Change Constraints
-
-- Reviewers in subsequent rounds MAY be the same or different agents (your choice based on
-  whether the revision needs fresh eyes or the same domain expertise).
-- The consolidated feedback shows findings by category without reviewer names.
-- Each round produces a separate docket proposal. The coordinator maintains the list of all
-  proposal IDs across rounds for the final report.
 
 ---
 

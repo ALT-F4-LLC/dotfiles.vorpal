@@ -3,6 +3,37 @@
 ## 2026-03-20
 
 ### Summary
+Coherence fixes: added Docs Research task to Team Setup, renamed Phase 0 heading to match behavior.
+
+### Changes
+- Added Docs Research task to Team Setup step 2 (was missing vs evolve-skills)
+- Renamed Phase 0 heading from "Documentation Research & Docket CLI Audit" to "Docket CLI Audit & Docs Context"
+
+### Dimensions Evaluated
+Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
+Removed phantom ToolSearch step, compressed changelog rules, expanded docket audit checklist.
+
+### Changes
+- Removed non-existent `ToolSearch` pre-flight step and renumbered steps (-2 lines)
+- Compressed Changelog Rules from 18 lines to 7, matching evolve-skills format (-11 lines)
+- Added `docket next`, `docket board`, `--escalation-reason` to Phase 0 audit checklist
+
+### Dimensions Evaluated
+Actionability, Over-Engineering, Completeness, Coherence
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Compressed pseudo-code blocks, fixed docket CLI audit completeness, added `context: fork` frontmatter.
 
 ### Changes

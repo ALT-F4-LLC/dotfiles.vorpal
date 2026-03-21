@@ -67,32 +67,18 @@ Before any planning or execution, run these checks:
 
 ### Pattern Decision Tree
 
-Answer these questions in order to select the right orchestration pattern:
+Answer in order:
 
-1. **Does the work involve designing or redesigning user-facing surfaces** (UI, CLI commands,
-   TUI layouts, API ergonomics, error messages, config formats, onboarding flows)?
-   - Yes → **UX-Heavy Task**
-2. **Does the work span multiple distinct components or require more than one TDD?** Would the
-   phase plan likely have 5+ phases?
-   - Yes → **Large Task**
-3. **Does the work involve architectural decisions, data model changes, cross-cutting concerns,
-   or modifications to multiple systems** that benefit from upfront design (and no existing spec/TDD already covers it)?
-   - Yes → **Medium Task**
+1. **User-facing surfaces** (UI, CLI, TUI, API ergonomics, config formats)? → **UX-Heavy Task**
+2. **Multiple components or multiple TDDs needed** (5+ phases likely)? → **Large Task**
+3. **Architectural decisions, data model changes, or cross-cutting concerns** needing upfront design? → **Medium Task**
 4. **Otherwise** → **Small Task**
 
 ### Resuming Mid-Execution
 
-1. Run `docket board --json` to see the current state of all issues.
-2. Identify which phase was last active (look for `in-progress` and `done` statuses).
-3. Check for `Discovered:` comments on completed issues via `docket issue comment list`.
-4. Resume from the next incomplete phase — do not re-run completed work.
-
-### Extending an Existing Plan
-
-1. Run `docket board --json` and `docket issue list --json` to understand the current plan.
-2. Determine whether new work depends on existing issues, is independent, or modifies them.
-3. Spawn @project-manager with context about the existing plan and instructions to extend it
-   (not replace it). Include `docket issue list --json` output in the prompt.
+Run `docket board --json` to see issue states. Identify the last active phase (`in-progress`/`done`
+statuses), check for `Discovered:` comments via `docket issue comment list`, and resume from the
+next incomplete phase — do not re-run completed work.
 
 ---
 
@@ -290,55 +276,29 @@ Rules:
   `docket issue comment add {DOCKET-ID} -m "Discovered: {description}"` — do NOT do extra work
 ```
 
-### @sdet (Issue Verification)
+### @sdet (Verification)
+
+Use for per-issue verification or full verification at end of medium+ tasks. Adjust scope fields.
 
 ```
-Agent(team_name="dev-{feature-slug}", name="verifier-{DOCKET-ID}", subagent_type="sdet", prompt="...")
+Agent(team_name="dev-{feature-slug}", name="verifier-{scope}", subagent_type="sdet", prompt="...")
 
-Use the @sdet agent to verify this issue:
+Use the @sdet agent to verify {scope description}:
 
-Docket Issue: {DOCKET-ID} — {title}
-Description: {full issue description from Docket}
-
-Team context:
-- Use SendMessage to ask @senior-engineer teammates about implementation intent when
-  acceptance criteria are ambiguous or a test failure could be a test bug vs. a real defect.
-- A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
-
-Rules:
-- BEFORE starting, run `docket issue comment list {DOCKET-ID}` to review all comments
-- Run `docket issue move {DOCKET-ID} in-progress` to claim the issue
-- Write tests that verify acceptance criteria from the issue description and specs
-- Run existing test suites to check for regressions
-- When done, run `docket issue close {DOCKET-ID}` and
-  `docket issue comment add {DOCKET-ID} -m "Tested: {summary of tests, coverage, results}"`
-- Report bugs as comments on the relevant issue, NOT as new issues
-```
-
-### @sdet (Full Verification)
-
-Use this template at the end of medium+ tasks to verify ALL completed work holistically.
-
-```
-Agent(team_name="dev-{feature-slug}", name="full-verifier", subagent_type="sdet", prompt="...")
-
-Use the @sdet agent to verify all implementation work:
-
-Completed issues:
-{list all DOCKET-IDs, titles, and files changed}
-
+{For issue-scoped: "Docket Issue: {DOCKET-ID} — {title}\nDescription: {full issue description}"}
+{For full-scope: "Completed issues:\n{list all DOCKET-IDs, titles, and files changed}"}
 {If TDD exists: "Reference TDD: docs/tdd/{filename}.md"}
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
 
 Team context:
-- Use SendMessage to ask @senior-engineer teammates about implementation decisions when needed.
+- Use SendMessage to ask @senior-engineer teammates about implementation intent when needed.
 - A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
 
 Rules:
-- Review the full set of changes via `git diff` to understand the complete scope
-- Write tests that verify acceptance criteria across ALL completed issues
+- BEFORE starting, review existing comments on relevant issues
+- Write tests that verify acceptance criteria from issues and specs
 - Run existing test suites to check for regressions
-- Verify cross-issue integration — do the pieces work together, not just individually
+{For full-scope: "- Verify cross-issue integration — do the pieces work together"}
 - Report: tests written, tests passed/failed, coverage summary, any bugs found
 - Report bugs as comments on the relevant Docket issue, NOT as new issues
 ```
@@ -423,23 +383,16 @@ Invoke `/vote` for decisions matching the triggers below. Single-reviewer remain
 > **Note:** When a sub-agent invokes `/vote`, it cannot spawn reviewer agents directly. Instead,
 > it creates the vote proposal in docket and sends a `delegation_request` to you (the Team Lead)
 > containing the `vote_id`. Handle these via the "Handling Delegation Requests" section below.
+> `/vote` supports `--rationale`, `--domain-tags`, `--files-changed` for richer context.
 
-**Consensus Trigger Decision Tree:**
+**Consensus triggers** (otherwise single-reviewer, Team Lead may opt in):
+- Security-sensitive review (auth, permissions, crypto) → Always (critical)
+- Architectural TDD approval → Always (high)
+- Code review, 500+ lines or Tier 1/2 risk areas → Trigger (high/medium)
+- Plan with breaking changes or >30% scope change → Trigger (medium)
 
-1. **Security-sensitive review** (auth, permissions, crypto)? → Always (critical).
-2. **Architectural TDD approval?** → Always (high).
-3. **Code review, 500+ lines changed?** → Always (high).
-4. **Code review touching Tier 1/2 risk areas** (permissions, symlink mapping, file creation,
-   agent definitions — see `docs/spec/review-strategy.md`; <500 lines, non-security)? →
-   Trigger (medium).
-5. **Plan with breaking changes or >30% scope change?** → Trigger (medium).
-6. **Otherwise** → Single-reviewer path. Team Lead MAY opt in at their judgment.
-
-**How to invoke:** Use the Skill tool to call `/vote` with a prompt describing the decision:
-```
-Skill(vote, "Approve code review for {feature}? criticality: high. Diff: {summary}. Files: {list}")
-```
-After `/vote` approves, finalize the record: `docket vote commit {proposal-id} --outcome "Approved: {summary}"`.
+**Invoke:** `Skill(vote, "Approve {decision}? criticality: {level}. {context}")`.
+After approval: `docket vote commit {proposal-id} --outcome "Approved: {summary}"`.
 
 ### Verification Phase (medium+ tasks)
 
@@ -462,96 +415,30 @@ After `/vote` approves, finalize the record: `docket vote commit {proposal-id} -
 
 ## Handling Failures
 
-- **Agent fails:** Re-spawn with corrected context. Do NOT skip the issue.
-- **Incorrect output:** Correct via Docket CLI and re-spawn if needed.
-- **Review/test blockers:** Route back to @senior-engineer for fixes, then re-review or re-verify.
-- **Discovered work:** Assess whether it needs immediate attention or follow-up planning.
-- **File conflicts:** Stop current phase, have PM re-scope, retry.
-- **Mid-execution plan changes:** Pause after current phase, re-engage @project-manager.
+- **Agent fails:** Re-spawn with corrected context — never skip an issue.
+- **Review/test blockers:** Route to @senior-engineer, then re-review/verify (2-cycle limit).
+- **File conflicts or mid-execution changes:** Pause after current phase, re-engage @project-manager.
+- **Discovered work:** Assess for immediate attention vs. follow-up planning.
 
 ---
 
 ## Handling Delegation Requests
 
-When you receive a `SendMessage` with `type: "delegation_request"`, a sub-agent is requesting
-you to execute a skill that requires agent spawning (which sub-agents cannot do).
-
-### Recognition
-
-Identify a delegation request by its `type` field. Any incoming message where
-`type` equals `"delegation_request"` is a delegation — not a status update, not a question.
-
-### Validation
-
-Before processing, verify all required fields are present:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `type` | Yes | Must be `"delegation_request"` |
-| `protocol_version` | Yes | Must be `"1"` |
-| `skill` | Yes | The skill to execute (e.g., `"vote"`) |
-| `request_id` | Yes | Unique ID for correlating request/response |
-| `from` | Yes | The requesting agent's name (for response routing) |
-| `vote_id` | Yes (for `skill: "vote"`) | The docket vote proposal ID (e.g., `"DKT-V2"`) |
-
-If any required field is missing or `protocol_version` is not `"1"`, send a `delegation_response`
-with `status: "failed"` and an `error` describing the validation failure.
-
-### Skill Routing
-
-Route based on the `skill` field:
+When a sub-agent sends a `SendMessage` with `type: "delegation_request"`, it needs you to
+execute a skill requiring agent spawning. Required fields: `type`, `protocol_version` ("1"),
+`skill`, `request_id`, `from`, and `vote_id` (for vote skill).
 
 **For `skill: "vote"`:**
+1. `docket vote show <vote_id> --json` — read proposal details.
+2. Create a vote team, spawn reviewer agents per `/vote` protocol, collect verdicts.
+3. Cast votes, evaluate quorum, commit result if reached.
+4. Clean up vote team via `TeamDelete`.
 
-1. Read the proposal details from docket:
-   ```bash
-   docket vote show <vote_id> --json
-   ```
-2. Create a vote team via `TeamCreate` and spawn independent reviewer agents via `Agent`
-   (one per reviewer), following the `/vote` protocol for reviewer selection based on the
-   proposal's criticality.
-3. Collect verdicts and cast votes via `docket vote cast <vote_id> ...`.
-4. Evaluate quorum via `docket vote result <vote_id> --json`.
-5. If quorum is reached, commit the result:
-   ```bash
-   docket vote commit <vote_id> --outcome "..."
-   ```
-6. Clean up the vote team via `TeamDelete`.
+**For unknown skills:** Respond with `status: "failed"`.
 
-**For unknown skills:** Send a `delegation_response` with `status: "failed"` and
-`error: "Unknown delegatable skill: {skill}"`.
-
-### Response
-
-After execution (success or failure), send a `delegation_response` back to the requesting
-agent via `SendMessage(to=request.from, message=...)`:
-
-```json
-{
-  "type": "delegation_response",
-  "protocol_version": "1",
-  "request_id": "<matching-request-id>",
-  "status": "completed|failed|escalated",
-  "vote_id": "<docket-vote-id>"
-}
-```
-
-- `status: "completed"` — the skill executed successfully (the sub-agent reads full results
-  from docket).
-- `status: "failed"` — execution failed. Include an `error` field with a description.
-- `status: "escalated"` — the request requires user intervention.
-
-After sending the response, resume your normal orchestration workflow.
-
-### Known Limitations
-
-- **Concurrent delegations processed sequentially.** If multiple sub-agents send delegation
-  requests simultaneously, the orchestrator handles them one at a time. This may add latency
-  but preserves correctness. No mitigation needed at current scale.
-- **Orphaned delegations.** If the requesting sub-agent dies after sending a delegation
-  request, the orchestrator completes the vote and records the result in docket regardless.
-  The vote record remains available for auditability. No special cleanup is required beyond
-  normal team teardown.
+**Response:** Send `delegation_response` back to `request.from` via SendMessage with fields:
+`type`, `protocol_version`, `request_id`, `status` (completed|failed|escalated), `vote_id`.
+Then resume normal orchestration.
 
 ---
 

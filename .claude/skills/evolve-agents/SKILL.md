@@ -53,17 +53,16 @@ If an argument is provided and no matching file exists, Pre-flight step 3 will c
 
 Before spawning any agents:
 
-1. **Load team tools** — Run `ToolSearch(query="select:TeamCreate,TeamDelete,SendMessage,TaskCreate,TaskUpdate,TaskList,TaskGet")` to load deferred tools required for agent team coordination.
-2. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-3. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
-4. **If targeting a specific agent** — Verify the argument matches an existing file
+2. **Validate agent files exist** — Run `ls agents/*.md` to list all discoverable agent files.
+3. **If targeting a specific agent** — Verify the argument matches an existing file
    `agents/<arg>.md`. If no match, inform user and abort.
-5. **If no agent files found** — Inform user and abort.
-6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
+4. **If no agent files found** — Inform user and abort.
+5. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
    changelogs already exist. Spawned agents will need this information.
-7. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
+6. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
    target agent. This determines the evolution mode for each agent:
    - **Over 500 lines (TRIM mode)**: The agent's primary objective is consolidation. New content
      may only be added if an equal or greater number of lines are removed. Communicate the line
@@ -145,24 +144,13 @@ directory if it doesn't exist.
 <if not: "No rename.">
 ```
 
-### Strict Changelog Rules
+### Changelog Rules
 
-1. **H1 heading**: Exactly `# Changelog: <agent-name>` — kebab-case matching the filename.
-2. **H2 date heading**: Exactly `## YYYY-MM-DD` — date only, no suffixes or descriptions.
-3. **H3 sections**: Exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`,
-   `### Rename` — in this order, no others.
-4. **Max 20 lines per entry.** No verbose justifications.
-
-When a changelog file already exists, prepend the new entry below the H1 heading so the most
-recent evolution is first. **Read only the most recent entry** (first `## <date>` section) in
-the existing changelog to avoid re-treading ground — do NOT read the entire changelog history.
-
-If no meaningful improvements are found, report that rather than forcing changes.
-
-**Normalization:** During Phase 1, after applying changes, the orchestrator MUST normalize
-`docs/changelog/agents/<name>.md`: fix H1 to `# Changelog: <agent-name>`, strip H2 suffixes,
-rename non-standard H3 headers to the standard four, delete non-standard sections, and truncate
-entries exceeding 20 lines.
+1. **H1**: `# Changelog: <agent-name>` (kebab-case). **H2**: `## YYYY-MM-DD` (no suffixes). **H3**: exactly `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename` — in order, no others.
+2. **Max 20 lines per entry.** Prepend new entries below H1 so most recent is first.
+3. **Read only the most recent `## <date>` entry** in existing changelogs — do NOT read full history.
+4. If no improvements found, report that honestly rather than forcing changes.
+5. **Normalization**: After applying changes, the orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, and truncates entries over 20 lines.
 
 ---
 
@@ -173,11 +161,11 @@ entries exceeding 20 lines.
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
 
 1. **Create the team** — `TeamCreate(team_name="evolve-agents-{today_date}", ...)`
-2. **Create Phase 0 task** — `TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to agents")`
+2. **Create Phase 0 tasks** — `TaskCreate(subject="Docs Research", description="Research latest Claude Code documentation for new capabilities")` and `TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to agents")`
 3. **Create Phase 1 tasks** — one per target agent
 4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
 
-### Phase 0: Documentation Research & Docket CLI Audit
+### Phase 0: Docket CLI Audit & Docs Context
 
 The orchestrator receives `{docs_research_findings}` as input context from the caller (team
 lead or user). Pass these findings verbatim to all Phase 1 agents. If no findings are provided,
@@ -257,7 +245,7 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
    `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
 4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
-5. Specifically check for: `docket vote commit`, `docket plan`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `approve-with-concerns` verdict
+5. Specifically check for: `docket vote commit`, `docket plan`, `docket next`, `docket board`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason`, `approve-with-concerns` verdict
 
 ## Output Format
 

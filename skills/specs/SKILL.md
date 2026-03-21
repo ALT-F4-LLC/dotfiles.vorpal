@@ -7,7 +7,6 @@ description: >
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 argument-hint: "[file...]"
 effort: medium
-context: fork
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
@@ -42,11 +41,11 @@ Before spawning any agents:
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
    - `mkdir -p docs/spec` — ensure output directory exists
 2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-5. **If files exist**, ask the user:
+3. **If files exist**, ask the user:
    - **Overwrite all** — delete existing files and regenerate everything
    - **Skip existing** — only generate missing spec files
    - **Cancel** — abort the operation
-6. **If no files exist**, proceed directly to execution.
+4. **If no files exist**, proceed directly to execution.
 
 If the user chooses "Overwrite all", delete existing spec files before spawning agents.
 If the user chooses "Skip existing", note which files already exist and only spawn agents for the
@@ -151,7 +150,7 @@ After all agents complete and verification passes:
 
 - List all spec files that were created (or skipped)
 - Flag any files that failed to generate or have malformed output
-- **Shut down all teammates** via `SendMessage(to="spec-{filename-without-ext}", message={type: "shutdown_request"})` for each
+- **Shut down all teammates** via `SendMessage(to="spec-{filename-without-ext}", message={"type": "shutdown_request", "reason": "Spec generation complete"})` for each
 - **Delete the team** via `TeamDelete(team_name="specs-init-{today_date}")` to clean up resources
 - Remind the user that NO changes have been committed — they can review with `git diff`
 

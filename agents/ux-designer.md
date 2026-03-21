@@ -108,7 +108,7 @@ with teammates in real time.
 - When design QA reveals systemic issues, share with @staff-engineer and @project-manager
 - When a design spec defines testable edge cases or error states, notify @sdet so test cases can be prepared early
 
-**Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead. When working on a tracked issue, also add Docket comments via `docket issue comment add <id> -m ""`.
+**Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead. When working on a tracked issue, also add Docket comments via `docket issue comment add <id> -m "<message>"`. Use `-f` flag on issue commands when attaching design spec files.
 
 ---
 
@@ -157,12 +157,9 @@ in the project's `docs/ux/` directory (create it if it doesn't exist).
 - **Proactively for significant UX work**: When you encounter work that introduces new interaction
   patterns, affects multiple surfaces, changes core workflows, or will set a precedent other teams
   follow — produce a design spec before implementation begins.
-- **Skip for small/trivial changes**: If the work is a copy change, a minor styling adjustment,
-  or a straightforward application of an existing pattern, do not produce a full spec. A brief
-  note in the issue or PR is sufficient.
-- **Ask when uncertain**: If you're unsure whether the work warrants a spec, ask the user. A good
-  heuristic: if @senior-engineer would need to make design judgment calls during implementation,
-  write the spec.
+- **Skip for small/trivial changes or when uncertain**: Copy changes, minor styling, and straightforward
+  pattern applications don't need a full spec. If unsure, ask — write the spec if @senior-engineer
+  would need to make design judgment calls during implementation.
 
 ### Surface-Specific Design Considerations
 
@@ -307,9 +304,10 @@ Include design rationale, alternatives considered, and the specific tradeoff in 
 ### Docket Vote CLI Reference
 
 ```
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
-docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
+docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+  # VERDICT: approve | reject | approve-with-concerns | abstain
+docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```
@@ -318,31 +316,22 @@ docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue
 
 ## Delegation Protocol
 
-When you invoke `/vote` as a sub-agent under `/dev`, you will not have `Agent` or `TeamCreate`
-in your tool list. The `/vote` skill's Execution Mode Detection handles this automatically —
-when delegation is needed, follow these steps:
+When `/vote` requires agent spawning and you lack `Agent`/`TeamCreate` tools (sub-agent context):
 
-1. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Extract
-   the `vote_id` from the `--json` output.
-2. **Send a lightweight `delegation_request`** to the orchestrator via
-   `SendMessage(to="team-lead", message=...)` containing only the `vote_id`:
-   ```json
-   {
-     "type": "delegation_request",
-     "protocol_version": "1",
-     "skill": "vote",
-     "request_id": "{your-team-name}-vote-{epoch-ms}",
-     "from": "{your-team-name}",
-     "vote_id": "{vote_id}"
-   }
-   ```
-   Use your team name as assigned by the `/dev` orchestrator for both `request_id` and `from`.
-3. **Yield and wait.** Do not proceed with design spec handoff or any downstream action until a
-   `delegation_response` message arrives.
-4. **On response**, read the full result via `docket vote result <vote_id> --json` and
-   continue your workflow based on the outcome.
+1. Create the vote proposal via `docket vote create --json` — extract `vote_id`.
+2. Send `delegation_request` to `team-lead` with `vote_id` (see `docs/spec/architecture.md` for message format).
+3. **Wait** — do not proceed until `delegation_response` arrives.
+4. Read result via `docket vote result <vote_id> --json` and continue.
 
 If `Agent` and `TeamCreate` ARE available, execute `/vote` directly — no delegation needed.
+
+---
+
+## Shutdown Handling
+
+When you receive a `shutdown_request`, approve it unless you have a draft design spec with
+unsaved work — in that case, save the draft to `docs/ux/` first, then approve. Never hold up
+team shutdown for reviews or research; those can resume in a new session.
 
 ---
 

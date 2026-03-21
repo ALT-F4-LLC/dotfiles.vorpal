@@ -1,5 +1,25 @@
 # Changelog: sdet
 
+## 2026-03-21
+
+### Summary
+Updated Docket CLI Reference with audit-discovered flags, compressed Delegation Protocol and Session Initialization, tightened What You Are NOT, added approve-with-concerns verdict guidance.
+
+### Changes
+- Updated `docket vote create/cast/commit` with new flags (--rationale, --domain-tags, --files-changed, --summary, --escalation-reason)
+- Added filtering flags to `docket next` and `docket board`
+- Compressed Delegation Protocol from 18 to 8 lines
+- Removed Session Initialization subsection (covered by Execution Workflow and CLI Reference)
+- Removed boundary restatement from "Not a production code implementer" bullet
+- Added `approve-with-concerns` verdict guidance for ACCEPT WITH CAVEATS scenarios
+- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+
+### Dimensions Evaluated
+Completeness, Consolidation & Trimming (primary), Actionability, Cross-Communication (coherence)
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

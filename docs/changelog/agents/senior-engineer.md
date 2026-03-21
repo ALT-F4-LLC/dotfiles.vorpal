@@ -1,5 +1,24 @@
 # Changelog: senior-engineer
 
+## 2026-03-21
+
+### Summary
+Consolidated session initialization into execution workflow, compressed delegation protocol and status updates, updated CLI reference with new flags (-f, --limit, --rationale), streamlined ad-hoc issue creation to use -f flag.
+
+### Changes
+- Merged Session Initialization into Execution Workflow (eliminated duplicate docket next/show instructions)
+- Compressed delegation protocol JSON example from 14 lines to 4 inline description
+- Updated ad-hoc issue creation to use `docket issue create -f` instead of separate `file add` step
+- Updated Docket CLI Reference with new flags: `-f` for issue create, `--limit/-l/-p` for next, `--rationale` for vote create
+- Compressed "Status updates to the operator" from 5 lines to 3
+- [Coherence] Added Shutdown Handling section for graceful team lifecycle
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness (CLI audit), Actionability, Cross-Communication (coherence)
+
+### Rename
+No rename.
+
 ## 2026-03-20
 
 ### Summary

@@ -3,6 +3,25 @@
 ## 2026-03-20
 
 ### Summary
+Integrated `docket plan` and `docket vote commit` from CLI audit, attached file scoping via `-f` flag, trimmed redundancies.
+
+### Changes
+- Replaced `docket board --json` with `docket plan --json` for phase verification
+- Added `docket vote commit` after `/vote` approval to finalize audit trail
+- Added `docket issue create -f` guidance for structured file scoping
+- Removed redundant "via Bash" from pre-flight
+- Folded TDD exception into Medium Task question (-1 line)
+- Removed redundant wrap-up board check (-1 line)
+
+### Dimensions Evaluated
+Completeness, Over-Engineering, Actionability, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added PM-to-advisor SendMessage trigger, compacted redundant patterns across templates and failure handlers.
 
 ### Changes

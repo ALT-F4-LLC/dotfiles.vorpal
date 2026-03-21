@@ -13,6 +13,7 @@ description: >
 argument-hint: "[agent-name]"
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete"]
 effort: high
+context: fork
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -84,7 +85,7 @@ Before spawning any agents:
 3. **Non-redundant** — Is this concept already expressed elsewhere in the file? Reject duplicates even if worded differently.
 4. **Concrete** — Is it a specific action, check, or output format? Reject: "think holistically", "drive excellence", aspirational fluff.
 
-**Never add to agent files:** human social dynamics (1:1s, growing engineers, team morale), communication style (Claude's tone is governed by the system prompt), technology-specific sections unrelated to the role, decision matrices that restate existing workflows abstractly.
+**Reject examples:** 1:1s, growing engineers, team morale, communication style guidance, technology-specific sections unrelated to the role, decision matrices restating existing workflows.
 
 ---
 
@@ -182,14 +183,8 @@ The orchestrator receives `{docs_research_findings}` as input context from the c
 lead or user). Pass these findings verbatim to all Phase 1 agents. If no findings are provided,
 skip docs context in Phase 1 templates.
 
-**Docket CLI Audit** — Spawn a docket-auditor agent (using the Phase 0 spawning template below)
-to audit the docket CLI and produce structured findings. Capture output as
-`{docket_audit_findings}`. Wait for completion before starting Phase 1.
-
-```
-Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
-TaskUpdate(taskId=<phase0_task_id>, owner="docket-auditor", status="in_progress")
-```
+**Docket CLI Audit** — Spawn a docket-auditor agent (`subagent_type: "senior-engineer"`) to
+audit the docket CLI. Capture output as `{docket_audit_findings}`. Wait for completion before Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -197,17 +192,7 @@ Spawn one teammate per target, using the **matching agent type** (e.g., spawn @s
 review `agents/senior-engineer.md`). **Spawn all teammates in the same turn** to maximize
 parallelism. If targeting a single agent, spawn one.
 
-Each teammate is spawned with `team_name` and `name` parameters:
-
-```
-Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
-```
-
-After spawning, assign tasks to teammates:
-
-```
-TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")
-```
+Spawn each as `Agent(name="review-<name>", subagent_type="<name>", team_name="evolve-agents-{today_date}")` and assign the corresponding task via `TaskUpdate`.
 
 Each self-reviewing teammate (read-only) follows the Phase 1 spawning template: reads its own
 agent file, recent changelog, relevant specs, other agents' first ~80 lines, evaluates all 8
@@ -230,15 +215,7 @@ Use `TaskList()` to check overall Phase 1 progress.
 After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
 single @staff-engineer teammate (read-only) to review coherence and recommend fixes.
 
-```
-Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
-```
-
-Assign the Phase 2 task:
-
-```
-TaskUpdate(taskId=<coherence_task_id>, owner="coherence-reviewer", status="in_progress")
-```
+Spawn as `Agent(name="coherence-reviewer", subagent_type="staff-engineer", team_name="evolve-agents-{today_date}")` and assign the Phase 2 task.
 
 The Phase 2 teammate follows the Phase 2 spawning template: reads all agent files, verifies
 renames, checks cross-agent coherence (boundaries, references, gaps, overlaps, terminology,
@@ -279,7 +256,8 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 2. Run `docket issue --help` and `docket vote --help` to get subcommands.
 3. Run `--help` on each leaf subcommand (e.g., `docket issue create --help`,
    `docket issue move --help`, `docket vote cast --help`, etc.) to capture flags and usage.
-4. Search the codebase for current docket usage: `grep -r "docket " agents/ .claude/skills/`
+4. Search the codebase for current docket usage: use the Grep tool with pattern `docket ` across `agents/` and `.claude/skills/`
+5. Specifically check for: `docket vote commit`, `docket plan`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `approve-with-concerns` verdict
 
 ## Output Format
 

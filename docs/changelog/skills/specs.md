@@ -3,6 +3,22 @@
 ## 2026-03-20
 
 ### Summary
+Added `context: fork` frontmatter, removed redundant Rules section, consolidated pre-flight steps.
+
+### Changes
+- Added `context: fork` frontmatter for isolated execution context
+- Removed Rules section (3 rules already stated in CRITICAL banner and role description)
+- Consolidated pre-flight steps 1-3 into single grouped step
+
+### Dimensions Evaluated
+Skill Design Quality, Over-Engineering, Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Added SendMessage completion trigger to spawning template, clarified completion monitoring in Step 2, and removed redundant cleanup rule.
 
 ### Changes

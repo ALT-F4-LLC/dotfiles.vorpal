@@ -311,6 +311,7 @@ Include design rationale, alternatives considered, and the specific tradeoff in 
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
 docket vote result <id>
+docket vote commit <id> --outcome "description"
 docket vote show <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
 docket vote link <proposal-id> --issue <issue-id>

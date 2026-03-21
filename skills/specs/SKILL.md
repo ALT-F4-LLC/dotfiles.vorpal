@@ -7,6 +7,7 @@ description: >
   project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
 argument-hint: "[file...]"
 effort: medium
+context: fork
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete"]
 ---
 
@@ -36,14 +37,11 @@ workflows (see `dev` skill).
 
 Before spawning any agents:
 
-1. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. This date
-   is passed to every spawned agent for consistent `last_updated` frontmatter values.
-2. **Resolve the project name** — Run `basename $(git rev-parse --show-toplevel)` via Bash to
-   get the repository directory name. This is passed to every spawned agent for consistent
-   `project` frontmatter values.
-3. **Ensure the output directory exists** — Run `mkdir -p docs/spec` via Bash. This is done
-   once by the orchestrator, not by each spawned agent.
-4. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
+1. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
+   - `date +%Y-%m-%d` — capture as `{today_date}` for consistent frontmatter
+   - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
+   - `mkdir -p docs/spec` — ensure output directory exists
+2. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
 5. **If files exist**, ask the user:
    - **Overwrite all** — delete existing files and regenerate everything
    - **Skip existing** — only generate missing spec files
@@ -157,10 +155,3 @@ After all agents complete and verification passes:
 - **Delete the team** via `TeamDelete(team_name="specs-init-{today_date}")` to clean up resources
 - Remind the user that NO changes have been committed — they can review with `git diff`
 
----
-
-## Rules
-
-1. **Never write spec files yourself.** You are the orchestrator, not the author.
-2. **Never commit.** No `git add`, no `git commit`, no `git push`.
-3. **Fail loud.** If an agent fails, report it immediately with details.

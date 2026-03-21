@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Fixed incorrect docket CLI reference, trimmed duplicate Content Gate and evaluation dimensions from Phase 1 template, added `context: fork` frontmatter.
+
+### Changes
+- Fixed `docket vote start` to `docket vote create` in Phase 0 template (docket CLI audit)
+- Replaced verbatim Content Gate in Phase 1 template with back-reference (-5 lines)
+- Replaced verbatim 8-dimension listing in Phase 1 template with concise reference (-6 lines)
+- Added `context: fork` frontmatter for isolated execution context (+1 line)
+- Aligned Phase 0 docket audit template with evolve-agents (coherence fix)
+
+### Dimensions Evaluated
+Over-Engineering, Skill Design Quality, Completeness
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Trimmed redundant Phase 0 template instructions, consolidated overlapping changelog rules, and aligned argument handling with evolve-agents conventions.
 
 ### Changes

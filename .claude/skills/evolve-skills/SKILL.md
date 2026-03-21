@@ -103,6 +103,8 @@ Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensio
    For skills using agent teams: correct lifecycle (TeamCreate → spawn → work → shutdown →
    TeamDelete)? Shared task lists with proper dependencies and status flow? Shutdown protocol
    correctness? Flag: missing cleanup, broadcast overuse, file conflicts between teammates.
+   Also check: self-verification steps, course-correction triggers (SendMessage when stuck/off-track),
+   and efficient context management (targeted Grep over broad reads).
 6. **Coherence with Other Skills** — Scope overlaps, terminology, shared conventions,
    accurate references?
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns?
@@ -117,25 +119,7 @@ directory if it doesn't exist.
 
 **Every changelog file MUST use this exact format — no deviations, no extra sections:**
 
-```markdown
-# Changelog: <skill-name>
-
-## <YYYY-MM-DD>
-
-### Summary
-<1-2 sentence overview of what this evolution cycle focused on>
-
-### Changes
-- <specific change and why>
-- <specific change and why>
-
-### Dimensions Evaluated
-<which dimensions drove improvements>
-
-### Rename
-<if applicable: "Renamed from `<old>` to `<new>`: reasoning">
-<if not: "No rename.">
-```
+Format: `# Changelog: <skill-name>` > `## YYYY-MM-DD` > exactly 4 H3 sections: `### Summary` (1-2 sentences), `### Changes` (bulleted list with reasoning), `### Dimensions Evaluated`, `### Rename` (rename details or "No rename."). See Changelog Rules below for full specification.
 
 ### Changelog Rules
 
@@ -229,8 +213,13 @@ Each @staff-engineer teammate (read-only — no file edits):
    strip H2 suffixes, rename non-standard H3 headers, and delete non-standard sections
    (see "Changelog Normalization" under Changelog Format)
 5. Tracks rename recommendations and coherence issues for Phase 2
+6. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
+   in order, check for broken cross-references to other skills/agents/specs.
 
 Use `TaskList()` to check overall Phase 1 progress.
+
+**If a Phase 1 agent reports cross-cutting findings via SendMessage**, route them to other
+in-flight Phase 1 agents and aggregate for Phase 2.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -290,12 +279,7 @@ Research the latest Claude Code documentation for capabilities relevant to skill
 Focus on: new frontmatter fields, tool types, hook patterns, MCP integration, agent SDK features,
 agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
 and permission/execution settings. Filter for what skill authors need to know.
-
-## Output Format
-
-- **<capability/change>**: <relevance to skill evolution>
-
-Group findings under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+Output as `- **<capability/change>**: <relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -311,22 +295,8 @@ Audit the docket CLI to produce a structured reference of all commands, flags, a
 2. Search the codebase for current docket usage: Grep for `docket ` across `agents/` and `.claude/skills/`.
 3. Cross-reference: identify new commands not used in codebase, changed flags, and deprecated commands.
 
-## Output Format
-
-### New Commands
-Commands found in `--help` output but NOT used anywhere in agents/*.md or skills:
-- <command> — <synopsis>
-
-### Changed Commands
-Commands where current `--help` flags/syntax differs from how they are used in agent/skill files:
-- <command> — <what changed>
-
-### Deprecated/Removed
-Commands referenced in agent/skill files but NOT found in `--help` output:
-- <command> — <where referenced>
-
-### Full CLI Reference
-Complete command tree with synopsis and flags for each leaf command.
+## Output
+Report New, Changed, and Deprecated commands (with synopsis/context) plus a full CLI reference tree with flags for each leaf command.
 
 ## Rules
 - DO NOT edit any files. Read-only — audit and report only.
@@ -390,6 +360,13 @@ For Dimension 5, also evaluate agent team patterns if the skill uses teams: life
 - Build on strengths — improve, don't rewrite from scratch
 - If no meaningful improvements needed, report that honestly
 - **Minimize context**: First 80 lines of other skills, relevant specs only.
+- **Course-correction**: SendMessage the orchestrator IMMEDIATELY when you discover: (1) cross-cutting
+  issues affecting other parallel reviews, (2) patterns that should apply consistently across all
+  targets, or (3) your review scope expanding beyond the target skill. The orchestrator will route
+  findings to relevant peers.
+- **Anti-patterns to avoid**: infinite exploration (reading hundreds of files without producing output),
+  kitchen sink (reviewing outside assigned scope), over-correction loops (same fix failing repeatedly —
+  try a different approach). Use targeted Grep over broad reads.
 
 ## Output Format
 

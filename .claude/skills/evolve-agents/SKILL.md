@@ -107,12 +107,14 @@ propose additions — all must pass the Content Gate above.**
    repeated concepts, delete generic/bureaucratic content, shorten verbose sections, remove
    content a capable LLM already has. **Every addition from dimensions 1-4 and 6-7 MUST be
    offset by a removal from this dimension.**
-6. **Capability Growth & Cross-Communication** — New patterns or techniques that improve
-   output? All additions must pass Content Gate. No human career development. Evaluate whether
-   the agent defines **proactive communication triggers** — explicit "notify X when Y" or
-   "consult X before deciding Y" instructions that cause the agent to initiate SendMessage
-   to peers without being asked. Agents default to reactive, isolated work; definitions must
-   include triggers for proactive peer coordination to avoid hub-and-spoke patterns.
+6. **Capability Growth, Cross-Communication & Agent Teams** — New patterns or techniques that
+   improve output? All additions must pass Content Gate. No human career development. Evaluate
+   **proactive communication triggers** — "notify X when Y" / "consult X before Y" instructions
+   causing SendMessage to peers without being asked. Flag definitions lacking these triggers.
+   For agent team participation: does the definition handle shutdown requests/responses? For
+   orchestrator-type agents: correct team lifecycle (TeamCreate → spawn → work → shutdown →
+   TeamDelete)? Shared task lists with dependencies and status flow? Flag: missing cleanup,
+   broadcast overuse, no direct teammate addressing.
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
 8. **Rename Consideration** — Only if compelling — stability has value.
 
@@ -342,8 +344,10 @@ Evaluate agents/<name>.md against ALL 8 dimensions:
 4. **Completeness**: Gaps or new Claude Code capabilities the agent should leverage?
 5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition
    MUST be offset by a removal here.
-6. **Capability Growth & Cross-Communication**: New patterns? Proactive SendMessage triggers?
-   Flag definitions lacking "notify X when Y" / "consult X before Y" triggers.
+6. **Capability Growth, Cross-Communication & Agent Teams**: New patterns? Proactive SendMessage
+   triggers? Flag definitions lacking "notify X when Y" / "consult X before Y" triggers.
+   Also evaluate agent team patterns: shutdown request/response handling, team lifecycle
+   for orchestrators (TeamCreate → spawn → shutdown → TeamDelete), task coordination.
 7. **Spec Alignment**: Alignment with docs/spec/?
 8. **Rename Consideration**: Only if compelling.
 

@@ -98,12 +98,12 @@ Every @staff-engineer reviewer evaluates the target skill against ALL 8 dimensio
    concrete templates, defined outputs?
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths?
 4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate?
-5. **Orchestration Effectiveness & Cross-Communication** — Proper agent use, parallelism,
-   correct types, clear coordination? Do spawning templates include **explicit cross-communication
-   triggers** (e.g., "notify X when Y changes", "consult X before deciding Y")? Agents default
-   to reactive, isolated work — templates must prompt proactive peer-to-peer communication.
-   Count which agent pairs have explicit SendMessage triggers in spawn templates; if >50% of
-   communication paths route through a single agent, flag as hub-and-spoke.
+5. **Orchestration, Cross-Communication & Agent Teams** — Proper agent use, parallelism,
+   correct types, clear coordination? Templates must include **explicit SendMessage triggers**
+   for peer-to-peer communication — flag hub-and-spoke if >50% of paths route through one agent.
+   For skills using agent teams: correct lifecycle (TeamCreate → spawn → work → shutdown →
+   TeamDelete)? Shared task lists with proper dependencies and status flow? Shutdown protocol
+   correctness? Flag: missing cleanup, broadcast overuse, file conflicts between teammates.
 6. **Coherence with Other Skills** — Scope overlaps, terminology, shared conventions,
    accurate references?
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns?
@@ -289,6 +289,7 @@ Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_t
 
 Research the latest Claude Code documentation for capabilities relevant to skill definitions.
 Focus on: new frontmatter fields, tool types, hook patterns, MCP integration, agent SDK features,
+agent team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle),
 and permission/execution settings. Filter for what skill authors need to know.
 
 ## Output Format
@@ -384,6 +385,8 @@ Apply the 4-check Content Gate (Executable, Behavioral, Non-redundant, Concrete)
 
 Evaluate <skill-path>/SKILL.md against ALL 8 dimensions (see Evaluation Dimensions in evolve-skills).
 Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal.
+For Dimension 5, also evaluate agent team patterns if the skill uses teams: lifecycle correctness
+(TeamCreate → spawn → shutdown → TeamDelete), task coordination, and cleanup.
 
 ## Requirements
 

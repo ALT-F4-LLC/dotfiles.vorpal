@@ -3,6 +3,23 @@
 ## 2026-03-20
 
 ### Summary
+Compressed Advisory Mode and Anti-Patterns sections, added `docket plan` reference to review context gathering.
+
+### Changes
+- Compressed Advisory Mode from 10 lines to 3 (removed implicit conversation mechanics)
+- Removed "Gold plating / bikeshedding" anti-pattern (general knowledge, restated by effort-matching in body)
+- Compressed remaining anti-patterns
+- Added `docket plan --json` to review workflow context gathering step
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Consolidated /vote section, compressed handoff, removed hardcoded spec count, added TDD revision and scope-change notification triggers, compressed review spec-update instruction.
 
 ### Changes

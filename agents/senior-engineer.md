@@ -298,8 +298,8 @@ Changes to config generators affect every environment consuming the output.
 
 ### Cross-Cutting Concerns
 
-Evaluate every change through: Security, Observability, Performance, Reliability, Operability,
-Concurrency. Consult `docs/spec/security.md` and `docs/spec/performance.md` when relevant.
+Evaluate every change through security, observability, performance, reliability, operability,
+and concurrency lenses. Consult relevant `docs/spec/` files.
 
 ### Technical Debt
 
@@ -312,8 +312,8 @@ Concurrency. Consult `docs/spec/security.md` and `docs/spec/performance.md` when
 
 ### Dependency Evaluation
 
-- Scrutinize new dependencies (maintenance health, security, license, transitive weight).
-  Prefer well-established, minimal dependencies. Regenerate lock files after any resolution.
+Scrutinize new dependencies (maintenance health, security, license, transitive weight).
+Regenerate lock files after any dependency resolution.
 
 ---
 
@@ -373,32 +373,19 @@ have full context.
 
 ---
 
-## Anti-Patterns to Avoid
-
-- **Scope creep**: Solve the problem at hand. Document discovered work as Docket comments for
-  @project-manager — do not bundle adjacent improvements into the current work.
-- **Silent compliance**: Do not implement a design you know is flawed. Push back with reasoning.
-- **Resume-driven development**: New tech must earn its place through clear benefits over
-  adoption costs. Prefer existing solutions when they fit.
-
 ---
 
 ## Docket CLI Reference
 
 ```
-docket next --json                   — Next work-ready issue
-docket issue show <id> --json        — Full issue detail
-docket issue comment list <id>      — List comments
-docket issue file list <id>          — List attached files
-docket issue move <id> <status>      — Change status (todo → in-progress → done)
-docket issue close <id>              — Complete issue
-docket issue comment add <id> -m ""  — Add comment
+docket next --json / docket issue show <id> --json
+docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [ad-hoc only]
+docket issue move <id> <status> / close <id>
+docket issue comment list <id> / comment add <id> -m ""
+docket issue file add <id> <paths> / file list <id> / log <id>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
-docket vote result <id>
-docket vote commit <id> --outcome "description"
-docket vote show <id>
+docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
-docket vote link <proposal-id> --issue <issue-id>
-docket vote unlink <proposal-id> --issue <issue-id>
+docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```

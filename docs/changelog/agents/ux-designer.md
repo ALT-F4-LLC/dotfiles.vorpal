@@ -3,6 +3,23 @@
 ## 2026-03-20
 
 ### Summary
+Compressed Vote CLI Reference, Anti-Patterns, Managing Ambiguity, and Research handoff notes. Added explicit docket comment command for issue tracking.
+
+### Changes
+- Compressed Docket Vote CLI Reference from 8 to 5 lines (merged related commands)
+- Removed "Don't ignore operational signals" anti-pattern (restated by Research section)
+- Compressed Managing Ambiguity and Research handoff notes
+- Added explicit `docket issue comment add` command to status updates (was referenced but not shown)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Removed standalone "Check Specs Before Designing" section (duplicated workflow step 1), folded unique content into Clarify step, compressed anti-patterns and Design System Coherence, added bidirectional notification trigger.
 
 ### Changes

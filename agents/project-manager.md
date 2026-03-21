@@ -85,8 +85,9 @@ is done?"**
 At the start of every session, before any planning work:
 
 1. **Initialize Docket:** Run `docket init` (idempotent).
-2. **Review current state:** Run `docket board --json`, `docket next --json`, and `docket stats`
-   to understand issue distribution, work-ready items, and overall progress.
+2. **Review current state:** Run `docket board --json`, `docket next --json`, `docket stats`,
+   and `docket plan --json` to understand issue distribution, work-ready items, phased execution
+   order, and overall progress.
 
 ---
 
@@ -287,8 +288,9 @@ engineer's.
 
 If an issue cannot pass DoR, convert it to a spike whose output makes the real issue ready.
 
-**Self-review**: Confirm ordering, parallelism, and file paths. Analyze the **critical path**
-(longest sequential chain) — if it contains a large task, consider decomposing further.
+**Self-review**: Run `docket plan --root <parent_id> --json` and `docket issue graph <parent_id>`
+to verify phased ordering and dependency chains. Analyze the **critical path** (longest
+sequential chain) — if it contains a large task, consider decomposing further.
 
 **Provide a summary** scaled to tier: trivial needs only issue count and what's ready now.
 Standard adds effort estimate, critical path, and risks. Complex adds scope breakdown,
@@ -304,9 +306,8 @@ are requested, or cross-workstream coordination is needed.
 
 ### Cancellation
 
-Clean shutdown: close remaining `todo`/`blocked` issues with a cancellation comment, update the
-parent with what was completed vs. cancelled and why, and salvage useful findings from completed
-spikes into issue comments. Never leave orphaned `todo` issues.
+Close remaining `todo`/`blocked` issues with cancellation comments and update the parent with
+completed vs. cancelled summary. Never leave orphaned `todo` issues.
 
 ### Re-Engagement
 
@@ -337,22 +338,21 @@ shared contract task.
 
 ```
 docket init / config / board --json / next --json / stats
-docket issue list --json [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID]
-docket issue show <id> --json
+docket plan --json [--root ID] [--label LABEL] [-s STATUS]
 docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE -l LABEL [--parent ID]
-docket issue edit <id> [-t] [-d] [-s] [-p] [-T]
-docket issue move <id> <status> / close <id>
+docket issue list --json [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID]
+docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T]
+docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "text"
 docket issue link add <id> blocks|blocked-by <target>
 docket issue file add <id> <paths> / file list <id>
+docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
+docket issue label add <id> <labels> / label rm <id> <labels>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME]
 docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
-docket vote result <id>
-docket vote commit <id> --outcome "description"
-docket vote show <id>
+docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
 docket vote list [-s STATUS] [-c CRITICALITY] [--all]
-docket vote link <proposal-id> --issue <issue-id>
-docket vote unlink <proposal-id> --issue <issue-id>
+docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```
 
 **Priorities:** critical | high | medium (default) | low | none
@@ -373,13 +373,8 @@ downstream consequences.
   dependency ordering
 - When extending an existing plan in ways that may invalidate prior work
 
-**When NOT to invoke `/vote`:**
-- For trivial or standard-tier plans with clear decomposition
-- For routine scope labeling or priority decisions
-- When the TDD already prescribes the phasing
-
-Include enough context about codebase exploration findings and tradeoffs for reviewers
-to evaluate independently.
+Skip `/vote` for trivial/standard plans and when the TDD already prescribes phasing. Include
+codebase exploration findings and tradeoffs for reviewers to evaluate independently.
 
 ---
 

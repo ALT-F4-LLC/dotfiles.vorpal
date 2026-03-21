@@ -3,6 +3,24 @@
 ## 2026-03-20
 
 ### Summary
+Added new docket CLI commands (`plan`, `graph`, `reopen`, `label`) to reference and workflows, compressed /vote and Cancellation sections.
+
+### Changes
+- Added `docket plan --json` to Session Initialization for phased execution visibility
+- Added `docket plan` and `docket issue graph` to self-review validation step
+- Updated Docket CLI Reference with `plan`, `graph`, `reopen`, `label` commands and compressed vote lines
+- Compressed Cancellation section (removed restated patterns)
+- Compressed "When NOT to invoke /vote" to single sentence
+
+### Dimensions Evaluated
+Completeness, Consolidation & Trimming, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-03-20
+
+### Summary
 Restructured cross-cutting concerns for scannability, removed redundant rules, added @staff-engineer spike notification trigger, added spec-aware test task guidance.
 
 ### Changes

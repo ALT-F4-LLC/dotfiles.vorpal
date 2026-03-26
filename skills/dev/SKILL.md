@@ -452,9 +452,23 @@ When a sub-agent sends a `SendMessage` with `type: "delegation_request"`, it nee
 execute a skill requiring agent spawning. Required fields: `type`, `protocol_version` ("1"),
 `skill`, `request_id`, `from`, and `vote_id` (for vote skill).
 
-**For `skill: "vote"`:** Read proposal via `docket vote show <vote_id> --json`, create a vote
-team, spawn reviewers per `/vote` protocol, collect verdicts, commit result, clean up via
-`TeamDelete`. For unknown skills, respond with `status: "failed"`.
+**For `skill: "vote"`:**
+
+1. Read the proposal via `docket vote show <vote_id> --json`.
+2. **Extract the `created_by` field** from the proposal and apply the proposer exclusion
+   mapping defined in the `/vote` skill's "Reviewer Independence Enforcement" section.
+   Use **case-insensitive matching** when mapping `created_by` to an agent type, as specified
+   by the `/vote` skill.
+3. Create a vote team using **`vote-{vote-id}`** as the team name.
+4. Spawn reviewers as **`{vote-id}-reviewer-{N}`** (e.g., `abc123-reviewer-1`), selecting
+   only from agent types that remain after proposer exclusion.
+5. Collect verdicts, commit result, clean up via `TeamDelete`.
+
+> **The independence rules from the `/vote` skill (proposer exclusion, unique agent types,
+> case-insensitive matching) apply equally to delegated execution.** The Team Lead is
+> responsible for enforcing these rules when executing votes on behalf of sub-agents.
+
+For unknown skills, respond with `status: "failed"`.
 
 **Response:** Send `delegation_response` to `request.from` with `type`, `protocol_version`,
 `request_id`, `status` (completed|failed|escalated), `vote_id`. Resume orchestration.

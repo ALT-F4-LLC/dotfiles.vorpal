@@ -139,8 +139,8 @@ When you receive a message with `"type": "delegation_response"`:
      the verified goal. Use it as the starting point — re-verify alignment if your understanding diverges.
 4. **Classify criticality** — Use the table below. If the caller specifies criticality
    (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
-5. **Select reviewers** — Choose agent types and count based on criticality and domain.
-6. **Create the team** — `TeamCreate(team_name="vote-{slug}-{timestamp}", description="Consensus vote: {one-line proposal summary}")`.
+5. **Select reviewers** — After classifying criticality, read the `created_by` value and apply the proposer exclusion mapping from the Reviewer Independence Enforcement section before selecting reviewers. Choose agent types and count based on criticality and domain from the remaining pool.
+6. **Create the team** — `TeamCreate(team_name="vote-{vote-id}", description="Consensus vote: {one-line proposal summary}")`. The `{vote-id}` is the docket proposal ID from `docket vote create --json` (e.g., `DKT-V5`).
 7. **Create reviewer tasks** — One `TaskCreate` per reviewer:
    `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review of proposal")`.
 
@@ -184,6 +184,59 @@ independent agent instance**. Do NOT reuse an existing teammate for consensus �
 | General / Mixed domain | @staff-engineer | @senior-engineer |
 
 For ad-hoc proposals that don't fit neatly, select the 2-3 agents whose domain is closest.
+
+> **Note:** The proposer's agent type is always excluded from the reviewer pool before selection.
+> See the Reviewer Independence Enforcement section below.
+
+---
+
+## Reviewer Independence Enforcement
+
+Before selecting reviewers, the coordinator MUST apply proposer exclusion and uniqueness
+constraints. These rules are non-negotiable — they ensure every vote has verifiably
+independent reviewers.
+
+### Proposer Exclusion
+
+1. Read the proposal's `created_by` value (from `docket vote create --created-by` or
+   `docket vote show {vote-id} --json`).
+2. Map `created_by` to an agent type using the table below. All comparisons MUST be
+   **case-insensitive**.
+3. Remove the matched agent type from the available reviewer pool before selecting reviewers.
+
+**Mapping table:**
+
+| `created_by` value | Excluded agent type |
+|---|---|
+| `"staff-engineer"`, `"tdd-author"`, `"advisor"` | `staff-engineer` |
+| `"senior-engineer"`, or starts with `"impl-"` | `senior-engineer` |
+| `"project-manager"`, `"planner"` | `project-manager` |
+| `"sdet"`, or starts with `"verifier-"` | `sdet` |
+| `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
+| `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
+
+If `created_by` does not match any known pattern, apply no exclusion but log a warning in
+the docket proposal rationale: "Warning: created_by value '{value}' did not match any known
+agent type — no proposer exclusion applied."
+
+> **Mapping freshness:** Cross-check this table against `/dev` spawning templates
+> (`agents/*.md`) when agent names change to keep mappings current.
+
+### Uniqueness Constraint
+
+Each reviewer in a single vote round MUST have a unique `subagent_type`. No agent type may
+appear more than once in the `Agent()` calls for a single round.
+
+### Edge Cases
+
+- **Critical vote requiring 4 reviewers with proposer excluded (4 types remaining):**
+  Use all 4 remaining agent types. If the domain normally requires a type that was excluded
+  as the proposer, substitute the closest available type and document the substitution in a
+  docket comment on the proposal.
+
+- **Fewer unique types available than reviewers needed:** Reduce the reviewer count to the
+  number of available unique types. Add `--escalation-reason "Reduced reviewer count: only
+  N unique agent types available after proposer exclusion"` to `docket vote commit`.
 
 ---
 
@@ -242,7 +295,7 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 4. Instructions to produce structured output
 5. **NO information about other reviewers or their verdicts**
 
-After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="reviewer-{N}", status="in_progress")`.
+After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="{vote-id}-reviewer-{N}", status="in_progress")`.
 Use `TaskList()` to monitor completion — all reviewer tasks must reach `completed` before Phase 3.
 
 **Notify the operator** when all reviews are collected:
@@ -269,7 +322,7 @@ or `reject`. Map reviewer verdicts as follows:
 
 ```bash
 echo '{multi-line findings text}' | docket vote cast {proposal_id} \
-  --voter "reviewer-{N}" \
+  --voter "{vote-id}-reviewer-{N}" \
   --role "{agent-type}" \
   -v {mapped_verdict} \
   --confidence {confidence} \
@@ -284,7 +337,7 @@ echo '{multi-line findings text}' | docket vote cast {proposal_id} \
 ### Reviewer Prompt Template
 
 ```
-Agent(team_name="vote-{slug}-{timestamp}", name="reviewer-{N}", subagent_type="{agent-type}", prompt="...")
+Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
 You are participating in a consensus vote as an independent reviewer. Use ultrathink for thorough analysis.
 
@@ -428,7 +481,7 @@ Full result: `docket vote result {proposal_id} --json`
 
 After Phase 4 completes (whether consensus reached, escalated, or aborted):
 
-1. **Shut down all reviewer teammates** via `SendMessage(to="reviewer-{N}", message={type: "shutdown_request"})` for each.
+1. **Shut down all reviewer teammates** via `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each.
 2. **Delete the team** via `TeamDelete()` to clean up resources.
 
 ---
@@ -436,8 +489,128 @@ After Phase 4 completes (whether consensus reached, escalated, or aborted):
 ## Rules
 
 1. **Create the team before spawning reviewers.** Use `TeamCreate` and `TaskCreate` before any `Agent` calls.
-2. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
+2. **Independence is sacred.** You do not vote. The proposer's agent type is excluded from reviewer selection. Never share one reviewer's output with another.
 3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
 5. **Respect criticality direction.** May override up, never down for security.
 6. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.
+
+---
+
+## Audit Trail
+
+The vote protocol produces a self-contained audit trail through docket's existing fields.
+No additional metadata is needed — the naming conventions and field structure make reviewer
+independence verifiable from the docket record alone.
+
+### Audit Questions
+
+| Question | Docket Field | How to Check |
+|---|---|---|
+| Who proposed this vote? | `created_by` from `docket vote create` | `docket vote show {vote-id} --json` → `.created_by` |
+| Which agents reviewed? | `voter` per vote from `docket vote cast` | `docket vote result {vote-id} --json` → each vote's `.voter` |
+| What agent type was each reviewer? | `role` per vote from `docket vote cast` | `docket vote result {vote-id} --json` → each vote's `.role` |
+| Were reviewers independent instances? | `voter` naming convention encodes `{vote-id}` | Verify each `.voter` matches pattern `{vote-id}-reviewer-{N}` |
+| Was the proposer excluded? | `created_by` vs. all `role` values | Map `created_by` to agent type per the Reviewer Independence Enforcement section, then confirm no `.role` matches |
+| Were all reviewers unique types? | All `role` values in the round | Confirm no duplicate `.role` values across votes |
+
+### Verification Procedure
+
+```bash
+# 1. Show the proposal to see created_by
+docket vote show {vote-id} --json
+# -> Check .created_by field
+
+# 2. Show the result to see all votes
+docket vote result {vote-id} --json
+# -> For each vote, check:
+#    a. .voter matches pattern "{vote-id}-reviewer-{N}"
+#    b. .role does not match the agent type of .created_by
+#       (use the mapping table in "Reviewer Independence Enforcement")
+#    c. No two votes have the same .role
+```
+
+### Pass/Fail Examples
+
+**PASS** — All independence checks satisfied:
+
+```json
+{
+  "id": "DKT-V12",
+  "created_by": "advisor",
+  "status": "committed",
+  "votes": [
+    {
+      "voter": "DKT-V12-reviewer-1",
+      "role": "senior-engineer",
+      "verdict": "approve",
+      "confidence": 0.85,
+      "domain_relevance": 0.9
+    },
+    {
+      "voter": "DKT-V12-reviewer-2",
+      "role": "sdet",
+      "verdict": "approve-with-concerns",
+      "confidence": 0.75,
+      "domain_relevance": 0.7
+    },
+    {
+      "voter": "DKT-V12-reviewer-3",
+      "role": "project-manager",
+      "verdict": "approve",
+      "confidence": 0.80,
+      "domain_relevance": 0.6
+    }
+  ]
+}
+```
+
+Why this passes:
+- `created_by` is `"advisor"` which maps to `staff-engineer` — no reviewer has `role: "staff-engineer"`
+- All `voter` names follow the `DKT-V12-reviewer-{N}` pattern
+- All `role` values are unique: `senior-engineer`, `sdet`, `project-manager`
+
+**FAIL — Proposer's agent type appears as a reviewer role:**
+
+```json
+{
+  "id": "DKT-V13",
+  "created_by": "advisor",
+  "votes": [
+    { "voter": "DKT-V13-reviewer-1", "role": "staff-engineer" },
+    { "voter": "DKT-V13-reviewer-2", "role": "sdet" }
+  ]
+}
+```
+
+Violation: `created_by: "advisor"` maps to `staff-engineer`, but reviewer-1 has `role: "staff-engineer"`. The proposer's agent type was not excluded.
+
+**FAIL — Duplicate reviewer roles:**
+
+```json
+{
+  "id": "DKT-V14",
+  "created_by": "senior-engineer",
+  "votes": [
+    { "voter": "DKT-V14-reviewer-1", "role": "staff-engineer" },
+    { "voter": "DKT-V14-reviewer-2", "role": "staff-engineer" }
+  ]
+}
+```
+
+Violation: Two reviewers share `role: "staff-engineer"`. Each reviewer must have a unique agent type.
+
+**FAIL — Voter name does not encode the vote ID:**
+
+```json
+{
+  "id": "DKT-V15",
+  "created_by": "senior-engineer",
+  "votes": [
+    { "voter": "reviewer-1", "role": "staff-engineer" },
+    { "voter": "DKT-V15-reviewer-2", "role": "sdet" }
+  ]
+}
+```
+
+Violation: `reviewer-1` does not follow the `{vote-id}-reviewer-{N}` pattern. The voter name must include the vote ID (`DKT-V15-reviewer-1`) to prove it was spawned specifically for this vote.

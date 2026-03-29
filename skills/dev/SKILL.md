@@ -227,15 +227,10 @@ Team context:
   architectural clarification on scope, feasibility, or phase ordering questions.
 
 Requirements:
-- Run `docket init` via Bash before creating any issues
 - Explore the codebase using Read, Grep, and Glob to inform your plan
-- Create all issues in Docket using CLI commands via Bash
-- Use --parent for hierarchy, docket issue link add for dependencies
-- Organize into phases where issues within each phase can run in parallel
-- VERIFY no two issues in the same phase touch the same files
-- Use `docket issue create -f <path>` to attach scoped files to each issue
-- List the specific files each issue will modify in the issue description
-- Include spec references in issue descriptions where applicable
+- Create issues via `docket issue create` with `-f <path>` for file scoping, `--parent` for hierarchy
+- Use `docket issue link add` for cross-issue dependencies
+- Organize into phases; VERIFY no two issues in the same phase touch the same files
 - Provide the complete phase plan as your final output in this format:
   Phase 1: [issue IDs and titles, files touched]
   Phase 2: [issue IDs and titles, files touched]
@@ -341,7 +336,7 @@ Before spawning any agents, create an Agent Team to coordinate:
    implementation issue (after PM plans), review phase, and verification phase (medium+).
    Set `depends_on` to enforce phase ordering.
 
-### Design Phase (if applicable)
+### Design Phase
 
 1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. Wait for completion.
 2. **If medium+**: Spawn @staff-engineer teammate **named "advisor"** to produce a TDD. Wait for completion.
@@ -356,6 +351,8 @@ Before spawning any agents, create an Agent Team to coordinate:
 4. **Spawn @project-manager teammate** with the user's request and any spec references.
    Assign the planning task via `TaskUpdate`. The PM can SendMessage to "advisor" for
    architectural clarification during planning.
+   **Guard:** Before spawning, run `docket issue list --json`. If issues already exist for this
+   work, skip planning and resume from the existing plan (see Resuming Mid-Execution).
 5. **Receive the phase plan.** Review it for:
    - File collision risks (two issues touching the same files in one phase)
    - Missing acceptance criteria on any issue
@@ -363,7 +360,7 @@ Before spawning any agents, create an Agent Team to coordinate:
    If anything looks off, ask the PM to revise.
 6. **If the PM surfaced investigation needs**, send them to the "advisor" via SendMessage
    rather than spawning a new @staff-engineer.
-7. **Present the plan to the user** (for non-trivial work). Use AskUserQuestion to get approval before execution — present options like "Approve", "Revise plan", or "Cancel".
+7. **Present the plan to the user.** Use AskUserQuestion with options: "Approve", "Revise plan", "Cancel".
 
 ### Implementation Phase
 
@@ -374,6 +371,9 @@ Before spawning any agents, create an Agent Team to coordinate:
    may need to SendMessage them about implementation intent.
 
 9. **Wait for all teammates in the phase to complete** before starting the next phase.
+   **Shutdown timing for @senior-engineer teammates:**
+   - If NO verification phase follows (small tasks): shut down after review completes.
+   - If verification phase follows: keep alive through verification, shut down in wrap-up.
 
 10. **After each phase completes:**
     - Verify all teammates reported success
@@ -404,10 +404,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 Invoke `/vote` for decisions matching the triggers below. Single-reviewer remains the default.
 
-> **Note:** When a sub-agent invokes `/vote`, it cannot spawn reviewer agents directly. Instead,
-> it creates the vote proposal in docket and sends a `delegation_request` to you (the Team Lead)
-> containing the `vote_id`. Handle these via the "Handling Delegation Requests" section below.
-> `/vote` supports `--rationale`, `--domain-tags`, `--files-changed` for richer context.
+> Sub-agent `/vote` invocations arrive as delegation requests — see "Handling Delegation Requests."
 
 **Consensus triggers** (otherwise single-reviewer, Team Lead may opt in):
 - Security-sensitive review (auth, permissions, crypto) → Always (critical)
@@ -432,17 +429,9 @@ After approval: `docket vote commit {proposal-id} --outcome "Approved: {summary}
 
 13. **After all phases complete:**
     - Summarize: issues completed, files changed, review findings, test results
-    - Clean up the team (see Rule 8)
+    - Send `shutdown_request` to ALL remaining teammates (advisor, senior-engineers, sdet)
+    - Wait for shutdown confirmations, then run `TeamDelete(team_name="dev-{feature-slug}")`
     - Remind the user that NO changes have been committed — review with `git diff`
-
----
-
-## Handling Failures
-
-- **Agent fails:** Re-spawn with corrected context — never skip an issue.
-- **Review/test blockers:** Route to @senior-engineer, then re-review/verify (2-cycle limit).
-- **File conflicts or mid-execution changes:** Pause after current phase, re-engage @project-manager.
-- **Discovered work:** Assess for immediate attention vs. follow-up planning.
 
 ---
 

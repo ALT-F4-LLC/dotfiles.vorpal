@@ -1,10 +1,9 @@
 ---
 name: specs
 description: >
-  Bootstrap the project specification files in docs/spec/ by spawning 7 @staff-engineer agents in
-  parallel. Use this skill when the user wants to initialize, generate, or bootstrap project specs —
-  including phrases like "specs", "generate specs", "bootstrap specs", "initialize specs", "create
-  project specifications", "bootstrap docs/spec", "populate specs", or "set up project documentation".
+  Bootstrap docs/spec/ by spawning @staff-engineer agents in parallel. Trigger on: "specs",
+  "generate specs", "bootstrap specs", "initialize specs", "create project specifications",
+  "bootstrap docs/spec", "populate specs", or "set up project documentation".
 argument-hint: "[file...]"
 effort: medium
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -70,7 +69,7 @@ exploration guidance for each — used in the spawning template.
 | `performance.md` | Look for caching strategies, database queries, connection pooling, and concurrency patterns. Identify known bottlenecks, benchmarking tools, and performance-critical paths. Check for lazy loading, pagination, batching, and scaling considerations. |
 | `code-quality.md` | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. |
 | `review-strategy.md` | Identify areas of high risk, complex logic, and frequent change. Determine which review dimensions matter most for this specific project. Look for existing PR templates, review checklists, contribution guidelines, and CI quality gates. |
-| `testing.md` | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. Be honest if no tests exist. |
+| `testing.md` | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. If no tests exist, state that explicitly. |
 
 ---
 
@@ -87,12 +86,9 @@ exploration guidance for each — used in the spawning template.
 
 ### Step 2: Wait for Completion
 
-Agents send completion messages via SendMessage when done. As each agent reports completion,
-relay a brief status line to the operator: "spec-{name} completed docs/spec/{filename}
-({N}/{total} done)". Use `TaskList()` to check that all tasks have status `completed`.
-Once all are complete, proceed to Step 3.
+Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
 
-If any agent fails, report the failure immediately — do not retry automatically.
+Use `TaskList()` periodically. Once all tasks show `completed`, proceed to Step 3. If any agent fails or stops responding, report the failure to the operator — do not retry automatically.
 
 ### Step 3: Verify
 
@@ -126,8 +122,7 @@ Requirements:
 - {exploration_guidance}
 - Check docs/tdd/ for any existing technical design documents that inform this spec
 - If other docs/spec/ files already exist, skim them to avoid content overlap
-- Document what ACTUALLY exists in the codebase — not aspirational goals
-- Be honest about gaps and missing pieces
+- Document only what exists in the codebase — flag gaps explicitly, do not invent aspirational content
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:
   ```yaml
@@ -156,8 +151,9 @@ Requirements:
 
 After all agents complete and verification passes:
 
-- List all spec files that were created (or skipped)
-- Flag any files that failed to generate or have malformed output
-- **Shut down all teammates** via `SendMessage(to="spec-{filename-without-ext}", message={"type": "shutdown_request", "reason": "Spec generation complete"})` for each
-- **Delete the team** via `TeamDelete(team_name="specs-init-{today_date}")` to clean up resources
-- Remind the user that NO changes have been committed — they can review with `git diff`
+1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
+2. **Shut down all teammates immediately** — send to EACH spawned agent:
+   `SendMessage(to="spec-{name}", message={"type": "shutdown_request", "reason": "Spec generation complete"})`
+   Send all shutdown messages in the SAME turn. Do not wait for responses.
+3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
+4. Remind the user that NO changes have been committed — they can review with `git diff`.

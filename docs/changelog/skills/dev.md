@@ -1,5 +1,26 @@
 # Changelog: dev
 
+## 2026-03-29
+
+### Summary
+Tightened agent lifecycle and cleanup patterns, added duplicate planner guard, removed hedging language, compacted redundant sections.
+
+### Changes
+- Added duplicate planner guard: check `docket issue list` before spawning PM
+- Added explicit @senior-engineer shutdown timing based on task size
+- Made wrap-up cleanup deterministic: explicit shutdown + TeamDelete sequence
+- Removed "(if applicable)" and "(for non-trivial work)" hedging
+- Compacted consensus delegation note from 4 lines to 1
+- Compacted PM template: removed redundant docket init, merged requirement lines
+- Removed Handling Failures section (duplicates inline workflow guidance)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+
 ## 2026-03-21
 
 ### Summary

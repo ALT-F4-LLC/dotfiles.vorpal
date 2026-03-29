@@ -1,5 +1,26 @@
 # Changelog: evolve-agents
 
+## 2026-03-29
+
+### Summary
+Tightened agent lifecycle to shut down Phase 0 and Phase 1 agents immediately after use, compressed Phase 0 templates, removed hedging language contributing to "experimental" feel.
+
+### Changes
+- Added explicit Phase 0 agent shutdown before Phase 1 starts (addresses "agents stay alive longer than needed")
+- Added explicit Phase 1 agent shutdown after each agent's changes are applied
+- Compressed Phase 0 docs-researcher template INSTRUCTIONS block from 7 lines to 1
+- Compressed Phase 0 docket-auditor template from 12 lines to 5
+- Removed self-evolution note blockquote (LLM-innate knowledge, hedging language)
+- Tightened wrap-up to reference only Phase 2 agent (others already shut down)
+- Removed generic "avoid anti-patterns" bullet from Phase 1 template (fails Behavioral gate)
+
+### Dimensions Evaluated
+Capability Growth & Agent Teams (primary — lifecycle/cleanup), Consolidation & Trimming, Role Realism, all 8 evaluated
+
+### Rename
+No rename.
+
+
 ## 2026-03-21
 
 ### Summary

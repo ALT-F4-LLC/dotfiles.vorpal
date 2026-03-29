@@ -1,5 +1,24 @@
 # Changelog: specs
 
+## 2026-03-29
+
+### Summary
+Tightened agent lifecycle (deterministic shutdown sequencing), removed hedging language, trimmed description and spawning template.
+
+### Changes
+- Rewrote Wrap-up as numbered steps with explicit "send all shutdowns in the SAME turn" instruction
+- Replaced hedging ("Be honest", "ACTUALLY exists") with directive language throughout
+- Trimmed spawning template by merging two redundant documentation-honesty lines into one
+- Made Step 2 completion monitoring more concise with failure-detection guidance
+- Shortened frontmatter description to stay within 250-char cap
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+
 ## 2026-03-21
 
 ### Summary

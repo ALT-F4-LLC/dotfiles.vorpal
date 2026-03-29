@@ -1,5 +1,25 @@
 # Changelog: evolve-skills
 
+## 2026-03-29
+
+### Summary
+Added per-phase agent shutdown to prevent lingering agents, trimmed redundant template instructions, tightened experimental-feeling language.
+
+### Changes
+- Added explicit Phase 0 and Phase 1 shutdown instructions — agents shut down immediately when their phase completes
+- Simplified Wrap-up to only shut down Phase 2 agent since earlier phases are already cleaned up
+- Trimmed docs-researcher RESEARCH INSTRUCTIONS from 9 lines to 1
+- Removed redundant Dimension 5 elaboration from Phase 1 template
+- Tightened self-evolution note — removed hedging language
+- Added `{focus_areas}` placeholder to Phase 1 spawning template
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+
 ## 2026-03-21
 
 ### Summary

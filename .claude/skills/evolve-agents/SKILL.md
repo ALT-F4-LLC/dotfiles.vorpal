@@ -27,9 +27,6 @@ Teammates produce structured change recommendations; you apply them using the Ed
 additions are filtered through the Content Gate to prevent non-actionable content from entering
 agent files. Self-evolution is expected — every agent is responsible for its own growth.
 
-> **Self-evolution note:** When agents evolve themselves, changes to agent files take effect on
-> the *next* invocation, not the current one.
-
 > **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** Evolution is about sharpening, not
 > accumulating. Every cycle should leave agent files the same size or smaller. If a file is over
 > 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
@@ -150,7 +147,9 @@ Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_ty
 Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
 `{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
 
-Wait for both Phase 0 agents to complete before starting Phase 1.
+Wait for both Phase 0 agents to complete. **Immediately shut down Phase 0 agents** via
+`SendMessage(to="docs-researcher", message={type: "shutdown_request"})` and
+`SendMessage(to="docket-auditor", message={type: "shutdown_request"})` before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -182,6 +181,8 @@ Use `TaskList()` to check overall Phase 1 progress.
 **If a Phase 1 agent reports cross-cutting findings via SendMessage**, route them to other
 in-flight Phase 1 agents and aggregate for Phase 2.
 
+**Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
+
 ### Phase 2: Coherence & Renames (sequential)
 
 After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
@@ -203,9 +204,8 @@ handoffs), then reports structured recommendations.
 
 After Phase 2 completes:
 
-1. **Shut down all teammates** via `SendMessage(to="<name>", message={type: "shutdown_request"})`
-   for each spawned teammate, then **delete the team** via `TeamDelete(team_name="evolve-agents-{today_date}")`.
-2. Run `wc -l agents/*.md`. If any exceed 500 lines, consolidate until under 500.
+1. **Shut down the Phase 2 agent** (Phase 0 and Phase 1 agents were shut down in their phases), then `TeamDelete(team_name="evolve-agents-{today_date}")`.
+2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
    cross-communication log (who messaged whom and why), vote proposals created (IDs and outcomes),
    and reminder that NO changes have been committed — review with `git diff`.
@@ -239,13 +239,7 @@ TIER 2 — SHOULD research (visit each page, extract agent-relevant changes):
 TIER 3 — SCAN for changes (quick scan, report only new/changed features):
 - Commands, How Claude Code Works, Changelog, CLI Reference, Output Styles, Keybindings
 
-INSTRUCTIONS:
-- Tier 1: Visit EVERY page. Extract: new features, changed behaviors, deprecated patterns. Ask: "Would this change how an agent definition file should be written?"
-- Tier 2: Visit each page, extract only capabilities relevant to agent definitions.
-- Tier 3: Quick scan, report only actionable new/changed features.
-- Visit ALL Tier 1 and Tier 2 pages — do not skip any.
-- If a page fails to load, note it and continue.
-- Report which pages were researched and which were skipped.
+INSTRUCTIONS: Visit ALL Tier 1 and Tier 2 pages — do not skip any. If a page fails to load, note it and continue. Report which pages were visited vs skipped.
 
 OUTPUT FORMAT: `- **<capability/change>**: <agent definition relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
@@ -261,17 +255,11 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 
 ## Steps
 
-1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, all leaf commands) to capture flags and usage.
+1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, all leaf commands).
 2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
-3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage. Specifically check for: `docket vote commit`, `docket plan`, `docket next`, `docket board`, `--findings-json`, `--summary`, `--rationale`, `--domain-tags`, `--files-changed`, `--escalation-reason`, `approve-with-concerns` verdict
+3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage.
 
-## Output
-Report New, Changed, and Deprecated commands (with synopsis/context) plus a full CLI reference tree with flags for each leaf command.
-
-## Rules
-- DO NOT edit any files. Read-only — audit and report only.
-- Be thorough — run --help on every subcommand, not just the common ones.
-- If a command errors on --help, note it as unavailable.
+Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree. Read-only — do not edit files.
 ```
 
 ### Phase 1: Self-Review & Improve
@@ -333,7 +321,6 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 - **Minimize context**: first 80 lines of other agents, relevant specs only.
 - **Course-correct**: SendMessage orchestrator immediately for cross-cutting issues, universal patterns,
   or scope expansion beyond target agent.
-- **Avoid anti-patterns**: infinite exploration, kitchen-sink reviewing, over-correction loops.
 
 ## Output Format
 

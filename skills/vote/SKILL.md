@@ -16,9 +16,8 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 # Vote — PBFT Consensus Protocol
 
-You are the **Consensus Coordinator** — you run a structured, multi-phase voting protocol
-adapted from Practical Byzantine Fault Tolerance (PBFT). You spawn independent reviewers,
-collect their verdicts, evaluate quorum mechanically, and report the outcome.
+You are the **Consensus Coordinator**. You run a structured, multi-phase voting protocol:
+spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome.
 
 You do NOT vote yourself. You coordinate.
 
@@ -51,77 +50,31 @@ Before proceeding to the full protocol, determine your execution mode:
 
 ### Delegation Protocol (Sub-Agent Path)
 
-When you lack `Agent`/`TeamCreate`, you can still create the vote proposal in docket and
-delegate only the reviewer-spawning part to the orchestrator.
+When you lack `Agent`/`TeamCreate`, create the proposal yourself and delegate reviewer spawning.
 
 **Steps:**
 
-a. **Run Pre-flight checks** — Verify docket is available, parse the proposal, confirm
-   goal-alignment (in team mode, trust the orchestrator's verified goal), and classify
-   criticality. You need criticality before creating the proposal.
+a. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment (in team mode, trust the orchestrator's verified goal), classify criticality.
 
-b. **Create the vote proposal yourself** via `docket vote create` (you have Bash). Use the
-   same command documented in Phase 1: Pre-Prepare, including criticality, reviewer count,
-   threshold, description, rationale, domain tags, and files changed. Use `--json` to capture
-   the response and extract the `vote_id` (the `id` field from the JSON output).
+b. **Create the proposal** via `docket vote create` using the same command from Phase 1: Pre-Prepare. Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable: `docket vote link {vote_id} --issue {issue_id}`.
 
-   ```bash
-   docket vote create \
-     --created-by "{your-agent-name}" \
-     -c {criticality} \
-     -n {reviewer_count} \
-     --threshold {threshold} \
-     -d "{proposal description}" \
-     -r "{rationale}" \
-     --domain-tags "{tags}" \
-     --files-changed "{paths}" \
-     --json
-   ```
-
-   If the vote is associated with a Docket issue, link it: `docket vote link {vote_id} --issue {issue_id}`
-
-c. **Construct a delegation request** with just the `vote_id`:
+c. **Delegate** — Send to the orchestrator via SendMessage:
 
    ```json
-   {
-     "type": "delegation_request",
-     "protocol_version": "1",
-     "skill": "vote",
-     "request_id": "{your-agent-name}-vote-{epoch-ms}",
-     "from": "{your-agent-name}",
-     "vote_id": "{vote_id}"
-   }
+   {"type":"delegation_request","protocol_version":"1","skill":"vote","request_id":"{your-agent-name}-vote-{epoch-ms}","from":"{your-agent-name}","vote_id":"{vote_id}"}
    ```
 
-d. **Send to the orchestrator** via `SendMessage(to="team-lead", message=<the JSON above>)`.
+d. **Wait** for `delegation_response`. Do not proceed until received.
 
-e. **Yield control.** State that you are waiting for a `delegation_response`. Do not proceed
-   until you receive it.
+e. **Handle response** by `status` field:
 
-f. **When the `delegation_response` arrives**, handle it per the Delegation Response Handling
-   section below.
+   | Status | Action |
+   |---|---|
+   | `completed` | Read result: `docket vote result {vote_id} --json`. Produce standard output per Output Format section. |
+   | `failed` | Report error and `vote_id` to caller. Abort. |
+   | `escalated` | Report escalation and `vote_id` to caller. |
 
-### Delegation Response Handling
-
-When you receive a message with `"type": "delegation_response"`:
-
-1. **Parse the `status` field:**
-   - `"completed"` — The vote was executed successfully. Proceed to step 2.
-   - `"failed"` — The delegation failed. Report the error from the `error` field to the
-     caller and abort. Include the `vote_id` so the proposal record is still accessible.
-   - `"escalated"` — The orchestrator escalated to a human. Report this to the caller
-     with the `vote_id` for reference.
-
-2. **Read the full result from docket:**
-   ```bash
-   docket vote result {vote_id} --json
-   ```
-
-3. **Produce the standard `/vote` output** using the Output Format section below. Parse the
-   docket JSON result to extract: approval score, threshold, reviewer count, quorum status,
-   and aggregated findings (blockers, concerns, suggestions).
-
-4. **Continue your workflow** with the vote outcome as if you had executed the protocol directly.
+f. **Continue your workflow** with the vote outcome.
 
 ---
 
@@ -261,11 +214,7 @@ docket vote create \
   --json
 ```
 
-- Use `--json` to capture the proposal ID from the output. Extract the `id` field from the
-  JSON response — you will need it for all subsequent `docket vote` commands.
-- Set `-n` to the reviewer count from the Criticality Classification table.
-- Set `--threshold` to the quorum threshold from the Criticality Classification table
-  (e.g., 0.50 for low, 0.60 for medium, 0.75 for high, 0.90 for critical).
+Extract `id` from the `--json` response — needed for all subsequent commands. Use `-n` and `--threshold` values from the Criticality Classification table.
 
 **Notify the operator:** After creating the proposal, immediately notify the team lead (or
 operator in standalone mode) via SendMessage:
@@ -385,21 +334,13 @@ One paragraph summarizing your overall assessment.
 When done, mark your task as completed via TaskUpdate.
 ```
 
-**@staff-engineer**: Architecture fit, system-level implications, backward compatibility,
-operational readiness, cross-cutting concerns (security/performance/reliability), pattern
-adherence.
-
-**@senior-engineer**: Implementation feasibility, effort accuracy, code quality, testability,
-dependency impact, edge cases and error handling.
-
-**@sdet**: Test coverage adequacy, testability of design, risk coverage, acceptance criteria
-clarity, regression risk.
-
-**@project-manager**: Scope accuracy, dependency completeness, parallelism validity, effort
-estimates, risk identification.
-
-**@ux-designer**: User impact, consistency with existing patterns, accessibility, error state
-coverage, developer experience.
+| Agent | Checklist Focus |
+|---|---|
+| @staff-engineer | Architecture fit, backward compatibility, operational readiness, cross-cutting concerns, pattern adherence |
+| @senior-engineer | Implementation feasibility, effort accuracy, code quality, testability, dependency impact, edge cases |
+| @sdet | Test coverage adequacy, testability of design, risk coverage, acceptance criteria clarity, regression risk |
+| @project-manager | Scope accuracy, dependency completeness, parallelism validity, effort estimates, risk identification |
+| @ux-designer | User impact, consistency with existing patterns, accessibility, error state coverage, developer experience |
 
 ---
 
@@ -475,33 +416,26 @@ View with: `docket vote show {proposal_id}`
 Full result: `docket vote result {proposal_id} --json`
 ```
 
----
+### Cleanup (MANDATORY — all outcomes)
 
-## Wrap-up & Team Cleanup
-
-After Phase 4 completes (whether consensus reached, escalated, or aborted):
-
-1. **Shut down all reviewer teammates** via `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each.
-2. **Delete the team** via `TeamDelete()` to clean up resources.
+Immediately after reporting the outcome (approved, rejected, or escalated):
+1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each spawned reviewer. Do not wait for acknowledgment.
+2. **Delete the team** — `TeamDelete()`. Failure to clean up wastes resources and causes agent lifecycle issues.
 
 ---
 
 ## Rules
 
-1. **Create the team before spawning reviewers.** Use `TeamCreate` and `TaskCreate` before any `Agent` calls.
-2. **Independence is sacred.** You do not vote. The proposer's agent type is excluded from reviewer selection. Never share one reviewer's output with another.
-3. **Spawn all reviewers for a round in the same turn** to maximize parallelism.
-4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-5. **Respect criticality direction.** May override up, never down for security.
-6. **Clean up the team.** Shut down all reviewers and `TeamDelete` after wrap-up.
+1. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
+2. **Spawn all reviewers in the same turn** to maximize parallelism.
+3. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
+4. **Respect criticality direction.** May override up, never down for security.
 
 ---
 
 ## Audit Trail
 
-The vote protocol produces a self-contained audit trail through docket's existing fields.
-No additional metadata is needed — the naming conventions and field structure make reviewer
-independence verifiable from the docket record alone.
+Reviewer independence is verifiable from docket records alone via naming conventions and field structure.
 
 ### Audit Questions
 
@@ -530,87 +464,3 @@ docket vote result {vote-id} --json
 #    c. No two votes have the same .role
 ```
 
-### Pass/Fail Examples
-
-**PASS** — All independence checks satisfied:
-
-```json
-{
-  "id": "DKT-V12",
-  "created_by": "advisor",
-  "status": "committed",
-  "votes": [
-    {
-      "voter": "DKT-V12-reviewer-1",
-      "role": "senior-engineer",
-      "verdict": "approve",
-      "confidence": 0.85,
-      "domain_relevance": 0.9
-    },
-    {
-      "voter": "DKT-V12-reviewer-2",
-      "role": "sdet",
-      "verdict": "approve-with-concerns",
-      "confidence": 0.75,
-      "domain_relevance": 0.7
-    },
-    {
-      "voter": "DKT-V12-reviewer-3",
-      "role": "project-manager",
-      "verdict": "approve",
-      "confidence": 0.80,
-      "domain_relevance": 0.6
-    }
-  ]
-}
-```
-
-Why this passes:
-- `created_by` is `"advisor"` which maps to `staff-engineer` — no reviewer has `role: "staff-engineer"`
-- All `voter` names follow the `DKT-V12-reviewer-{N}` pattern
-- All `role` values are unique: `senior-engineer`, `sdet`, `project-manager`
-
-**FAIL — Proposer's agent type appears as a reviewer role:**
-
-```json
-{
-  "id": "DKT-V13",
-  "created_by": "advisor",
-  "votes": [
-    { "voter": "DKT-V13-reviewer-1", "role": "staff-engineer" },
-    { "voter": "DKT-V13-reviewer-2", "role": "sdet" }
-  ]
-}
-```
-
-Violation: `created_by: "advisor"` maps to `staff-engineer`, but reviewer-1 has `role: "staff-engineer"`. The proposer's agent type was not excluded.
-
-**FAIL — Duplicate reviewer roles:**
-
-```json
-{
-  "id": "DKT-V14",
-  "created_by": "senior-engineer",
-  "votes": [
-    { "voter": "DKT-V14-reviewer-1", "role": "staff-engineer" },
-    { "voter": "DKT-V14-reviewer-2", "role": "staff-engineer" }
-  ]
-}
-```
-
-Violation: Two reviewers share `role: "staff-engineer"`. Each reviewer must have a unique agent type.
-
-**FAIL — Voter name does not encode the vote ID:**
-
-```json
-{
-  "id": "DKT-V15",
-  "created_by": "senior-engineer",
-  "votes": [
-    { "voter": "reviewer-1", "role": "staff-engineer" },
-    { "voter": "DKT-V15-reviewer-2", "role": "sdet" }
-  ]
-}
-```
-
-Violation: `reviewer-1` does not follow the `{vote-id}-reviewer-{N}` pattern. The voter name must include the vote ID (`DKT-V15-reviewer-1`) to prove it was spawned specifically for this vote.

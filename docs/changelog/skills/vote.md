@@ -1,5 +1,26 @@
 # Changelog: vote
 
+## 2026-03-29
+
+### Summary
+Aggressive trim from 616 to 466 lines. Removed verbose pass/fail JSON examples, compressed Delegation Protocol, folded Wrap-up into Phase 4, tightened language.
+
+### Changes
+- Removed 85-line Pass/Fail Examples from Audit Trail (Verification Procedure is sufficient)
+- Compressed Delegation Protocol from 73 to ~45 lines (inline JSON, response table)
+- Folded Wrap-up into Phase 4 as mandatory cleanup step with stronger language
+- Compressed domain-specific checklists from paragraphs to table
+- Consolidated Rules from 6 to 4 (removed duplicates of in-section instructions)
+- Tightened coordinator description to remove academic PBFT framing
+- Compressed Audit Trail preamble and Phase 1 redundant bullets
+
+### Dimensions Evaluated
+Over-Engineering (primary), Skill Design Quality, Orchestration & Agent Teams, Actionability, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+
 ## 2026-03-21
 
 ### Summary

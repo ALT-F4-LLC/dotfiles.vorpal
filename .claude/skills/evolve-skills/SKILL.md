@@ -27,8 +27,7 @@ Teammates produce structured change recommendations; you apply them using the Ed
 additions are filtered through the Content Gate to prevent non-actionable content from entering
 skill files.
 
-> **Self-evolution note:** When this skill evolves itself, changes to this file take effect on
-> the *next* invocation, not the current one.
+> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
 
 > **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** Evolution is about sharpening, not
 > accumulating. Every cycle should leave skill files the same size or smaller. If a file is over
@@ -136,7 +135,8 @@ Create an Agent Team before spawning agents:
 Spawn TWO teammates in parallel — `docs-researcher` (claude-code-guide) and `docket-auditor`
 (senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. After both complete,
 capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1.
-Wait for both to complete before starting Phase 1.
+**Shut down Phase 0 agents immediately** — `SendMessage(shutdown_request)` to both before
+starting Phase 1. They have no further role.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -161,8 +161,9 @@ Use `TaskList()` for progress. Route cross-cutting findings from SendMessage to 
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 changes are applied, spawn a single @staff-engineer teammate (read-only)
-for coherence review. Assign via `TaskUpdate`.
+After ALL Phase 1 changes are applied, **shut down all Phase 1 agents** via
+`SendMessage(shutdown_request)` before spawning the Phase 2 agent. Then spawn a single
+@staff-engineer teammate (read-only) for coherence review. Assign via `TaskUpdate`.
 
 The Phase 2 teammate:
 1. Reads ALL skill files (freshly improved versions)
@@ -176,13 +177,11 @@ and updates changelogs for affected skills.
 
 ### Wrap-up & Team Cleanup
 
-After Phase 2: shut down all teammates via `SendMessage(shutdown_request)`, then
+After Phase 2: shut down the coherence-reviewer via `SendMessage(shutdown_request)`, then
 `TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
 consolidate any over 500. Report: files modified, before/after line counts, improvements,
-renames/coherence fixes, and reminder that NO changes have been committed.
-
-**Observability report** (always include): cross-communication events (which agents messaged
-which, and why), vote skill invocations (proposals, outcomes), and course-corrections surfaced.
+renames/coherence fixes, cross-communication events, vote invocations, and reminder that
+NO changes have been committed.
 
 ---
 
@@ -221,15 +220,7 @@ TIER 3 — SCAN quickly, report only new/changed features:
 - CLI Reference — CLI flags affecting skills
 - How Claude Code Works — agentic loop, context management
 
-RESEARCH INSTRUCTIONS:
-- Tier 1: Visit EVERY page. For each, extract: new features, changed behaviors, deprecated patterns. Focus question: "Would this change how a SKILL.md file should be written?"
-- Tier 2: Visit each page, extract only capabilities relevant to skill definitions.
-- Tier 3: Quick scan, report only actionable new/changed features.
-- Visit ALL Tier 1 and Tier 2 pages — do not skip any.
-- If a page fails to load, note it and continue to the next page.
-- Focus on NEW or CHANGED — skip well-known existing features.
-- At the end, report which pages were researched and which were skipped.
-- Filter criterion: only report findings that would affect how SKILL.md files are written.
+INSTRUCTIONS: Focus on NEW or CHANGED features that affect SKILL.md writing. If a page fails to load, note it and continue. Report which pages were visited vs. skipped.
 
 OUTPUT FORMAT: `- **<capability/change>**: <skill definition relevance>` grouped under:
 New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
@@ -253,7 +244,8 @@ Rules: Read-only only. Run --help on every subcommand. Note unavailable commands
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
-`{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each.
+`{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}`, and
+`{focus_areas}` (operator-reported pain points to prioritize) for each.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
@@ -291,8 +283,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Your Task
 Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY —
-every addition MUST be offset by a removal. For Dimension 5, evaluate agent team patterns if
-applicable (lifecycle, task coordination, cleanup).
+every addition MUST be offset by a removal.
 
 ## Requirements
 - **Read-only** — analyze and recommend only. Build on strengths, don't rewrite.

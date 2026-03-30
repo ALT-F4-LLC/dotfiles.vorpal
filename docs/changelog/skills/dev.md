@@ -3,6 +3,21 @@
 ## 2026-03-30
 
 ### Summary
+Trimmed description from 800 to 230 chars (250-char cap). Compacted delegation response section. Net -11 lines.
+
+### Changes
+- Trimmed description to 230 chars, moved trigger phrases out (-7 lines)
+- Merged delegation response paragraph with unknown-skills line, removed redundant blockquote (-4 lines)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering, Completeness, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-03-30
+
+### Summary
 Added honest mentor directive for the Team Lead orchestrator role. Compressed Rules section by merging redundant entries already covered in Execution Workflow.
 
 ### Changes

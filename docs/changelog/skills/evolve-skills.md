@@ -3,6 +3,22 @@
 ## 2026-03-30
 
 ### Summary
+Trimmed description from 758 to ~185 chars to meet 250-char cap; removed redundant experience feedback section from Phase 1 template.
+
+### Changes
+- Trimmed description from 758 chars to ~185 chars — 250-char cap per Claude Code docs, moved details to body
+- Removed duplicate `## Operator Experience Feedback` from Phase 1 template — already present in template header
+- Fixed Phase 0 and wrap-up shutdown syntax to use full structured SendMessage format (coherence with evolve-agents)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-03-30
+
+### Summary
 Added rigorous honest mentor directives to orchestrator identity and Phase 1 template; trimmed docs-researcher checklist, consolidated rules, fixed role paragraph structure.
 
 ### Changes

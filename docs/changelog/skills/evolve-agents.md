@@ -3,6 +3,22 @@
 ## 2026-03-30
 
 ### Summary
+Trimmed description from 815 to ~230 chars (250-char cap), removed unused template variable, added anti-rubber-stamp directive for evolve-skills coherence.
+
+### Changes
+- Compressed description from 815 chars to ~230 chars — was 3x over Claude Code docs 250-char cap
+- Removed unused `{focus_areas}` variable from Phase 1 substitution list — experience_feedback already covers operator feedback
+- Added "Do not default to approval" directive to Phase 1 template task heading (coherence with evolve-skills)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-03-30
+
+### Summary
 Added rigorous honest orchestrator directive (operator priority), compressed Phase 0 templates, removed inapplicable Mermaid rule.
 
 ### Changes

@@ -1,5 +1,27 @@
 # Changelog: project-manager
 
+## 2026-03-30
+
+### Summary
+Added rigorous honest mentor directive adapted to PM role (challenge vague requirements, surface uncomfortable scope truths, flag plan weaknesses). Compressed redundant goal-alignment restatement, fixed `issue edit -f` footgun, added `-r` shorthand and `FIELD:DIR` sort format. Net: +3 lines.
+
+### Changes
+- Added honest mentor directive after role introduction — pushback on vague scope, unrealistic timelines, and hidden plan risk
+- Compressed "Understand the Problem" clarify-ambiguity bullets to back-reference goal alignment (-4 lines)
+- Added `issue edit -f` replacement warning to file attachment section (CLI audit finding)
+- Compressed vote CLI reference lines and added `-r` shorthand for `--rationale`
+- Fixed `--sort FIELD` to `--sort FIELD:DIR` format (CLI audit finding)
+- Removed redundant "NOT a rubber stamp" bullet (subsumed by mentor directive)
+- [Coherence] Added @sdet to "What You Are NOT" section (was the only agent missing it)
+- [Coherence] Added `/vote` fallback pattern for when skill is unavailable
+- [Coherence] Standardized goal-alignment heading to "MANDATORY: Pre-Flight Goal-Alignment Gate"
+
+### Dimensions Evaluated
+Role Realism (primary — mentor directive), Consolidation & Trimming, Completeness (CLI audit), Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

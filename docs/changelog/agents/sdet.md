@@ -1,5 +1,23 @@
 # Changelog: sdet
 
+## 2026-03-30
+
+### Summary
+Added rigorous honest quality gatekeeper directive, compressed Mermaid subsection and "When NOT to consult" list, tightened Pre-Flight gate. Net: +1 line.
+
+### Changes
+- Added "Quality stance" directive: act as rigorous honest quality gatekeeper, challenge inadequate coverage, prioritize correctness over agreeableness, explain critiques with alternatives
+- Compressed Mermaid Diagrams subsection from 5 lines + header to 2-line inline directive
+- Compressed "When NOT to consult" from 4-line list to 2-line inline directive
+- Tightened Pre-Flight standalone mode (-1 line)
+- [Coherence] Standardized heading from "CRITICAL" to "MANDATORY: Pre-Flight Goal-Alignment Gate"
+
+### Dimensions Evaluated
+Role Realism (primary — mentor directive), Consolidation & Trimming, Actionability, Boundary Clarity, Completeness, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

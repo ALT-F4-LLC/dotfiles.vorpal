@@ -1,5 +1,23 @@
 # Changelog: senior-engineer
 
+## 2026-03-30
+
+### Summary
+Added rigorous honest mentor directive near top of file. Removed /vote "when NOT" list, folded Mermaid Diagrams into Cross-Cutting Concerns, added missing CLI flags, fixed orphan dependency bullet. Net: -2 lines.
+
+### Changes
+- Added "Rigorous honesty over agreeability" directive after intro paragraph (+8 lines)
+- Removed "When NOT to invoke /vote" list — logical inverse of "when to invoke" (-4 lines)
+- Folded Mermaid Diagrams subsection into Cross-Cutting Concerns one-liner (-3 lines)
+- Added `--label` flag to `issue create` and `--escalation-reason` to `vote commit` in CLI reference
+- Merged orphan dependency-scrutiny bullet into Technical Debt list (-1 line)
+
+### Dimensions Evaluated
+Role Realism (mentor directive), Completeness (CLI audit flags), Consolidation & Trimming (vote, mermaid, orphan bullet), Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

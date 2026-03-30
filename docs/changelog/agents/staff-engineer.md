@@ -1,5 +1,24 @@
 # Changelog: staff-engineer
 
+## 2026-03-30
+
+### Summary
+Added Honest Technical Critique directive establishing posture on intellectual honesty, challenging flawed designs, and avoiding rubber-stamp reviews. Compressed System-Level Thinking, Proactive Communication, and Advisory Mode. Net: +4 lines.
+
+### Changes
+- Added "Honest Technical Critique" section after intro, before "What You Are NOT" (+8 lines)
+- Compressed System-Level Thinking "Dependencies and incidents" sentence (-2 lines)
+- Compressed "When to ASK" in Proactive Communication to single-line cross-reference (-1 line)
+- Compressed Advisory Mode from 3 sentences to 2 (-1 line)
+- Added review posture cross-reference in Code Review philosophy (0 lines)
+- [Coherence] Added `/vote` fallback pattern for when skill is unavailable
+
+### Dimensions Evaluated
+Role Realism (primary: honest mentor directive), Consolidation & Trimming, Actionability, Boundary Clarity, Completeness, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

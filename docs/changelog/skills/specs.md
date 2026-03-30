@@ -1,5 +1,24 @@
 # Changelog: specs
 
+## 2026-03-30
+
+### Summary
+Added rigorous honesty directives at orchestrator and spawning template levels, trimmed description, added docket plan context, removed redundant lines.
+
+### Changes
+- Added orchestrator-level honest mentor directive after role statement (coherence fix — all other skills had one)
+- Added honest mentor reinforcement in spawning template — specs must document reality, flag gaps explicitly
+- Trimmed description from ~343 to ~230 chars, front-loaded key use case
+- Added `docket plan --json` context to spawning template for richer project awareness
+- Removed redundant "The spec file is the deliverable" line
+- Collapsed shutdown instructions
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

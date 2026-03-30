@@ -1,5 +1,22 @@
 # Changelog: evolve-agents
 
+## 2026-03-30
+
+### Summary
+Added rigorous honest orchestrator directive (operator priority), compressed Phase 0 templates, removed inapplicable Mermaid rule.
+
+### Changes
+- Added "Rigorous honesty over agreeability" directive block after orchestrator role description — enforces Content Gate ruthlessly, challenges unsupported claims (+4 lines)
+- Compressed docs-researcher template FOCUS AREAS and removed non-behavioral instructions (-4 lines)
+- Removed Rule 8 Mermaid diagram requirement — skill produces changelogs not architectural docs (-1 line)
+- Compressed docket-auditor template preamble and steps (-1 line)
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

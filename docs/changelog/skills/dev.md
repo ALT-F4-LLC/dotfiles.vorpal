@@ -1,5 +1,20 @@
 # Changelog: dev
 
+## 2026-03-30
+
+### Summary
+Added honest mentor directive for the Team Lead orchestrator role. Compressed Rules section by merging redundant entries already covered in Execution Workflow.
+
+### Changes
+- Added "Rigorous orchestration over agreeability" directive to Team Lead role definition (+4 lines)
+- Compressed Rules from 9 items to 5 by merging redundant team-setup, parallelism, loop-limit, and cleanup rules (-5 lines)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

@@ -3,6 +3,24 @@
 ## 2026-03-29
 
 ### Summary
+Added TaskCreate/TaskUpdate/TaskList/TaskGet to frontmatter and session initialization, connected Mermaid graph output to plan validation, trimmed restated goal-alignment and proactive-sharing patterns. Net: -3 lines.
+
+### Changes
+- Added task coordination tools to frontmatter and planning progress tracking step
+- Added `--mermaid` flag guidance to self-review validation step
+- Trimmed operating context analogy sentence (-2 lines)
+- Compressed proactive information sharing bullets into prose (-6 lines)
+- Compressed exploration re-alignment paragraph (-4 lines)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Capability Growth, Completeness, Actionability, all 8 evaluated
+
+### Rename
+No rename.
+
+## 2026-03-29
+
+### Summary
 Updated Docket CLI reference with audit findings (missing flags, corrected defaults, new subcommands), removed obsolete Delegation Protocol (PM has /vote skill directly), added --quiet flag awareness, trimmed redundant vote skip guidance. Net: -14 lines.
 
 ### Changes

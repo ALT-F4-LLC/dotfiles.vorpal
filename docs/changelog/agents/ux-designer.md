@@ -3,6 +3,25 @@
 ## 2026-03-29
 
 ### Summary
+Added TaskCreate/TaskUpdate/TaskList/TaskGet to frontmatter, compressed spec format list, removed vestigial Anti-Patterns and Delegation Protocol sections, deduplicated Handoff. Net: -12 lines.
+
+### Changes
+- Added task coordination tools to frontmatter and multi-step design tracking guidance
+- Compressed spec format sections 8-10 into single grouped item (-5 lines)
+- Removed Handoff duplication with workflow steps 5-6 (-4 lines)
+- Folded Anti-Patterns bullet into spec format intro (-3 lines)
+- Merged Delegation Protocol into /vote section (-2 lines)
+- [Coherence] Added post-/vote notification to @project-manager in Handoff section (aligned with staff-engineer pattern)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Capability Growth, Coherence (Phase 2), all 8 evaluated
+
+### Rename
+No rename.
+
+## 2026-03-29
+
+### Summary
 Updated Docket Vote CLI reference with audit-discovered flags, compressed Delegation Protocol and Managing Ambiguity subsection. Net -15 lines.
 
 ### Changes

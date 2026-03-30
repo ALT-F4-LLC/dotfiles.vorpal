@@ -3,6 +3,24 @@
 ## 2026-03-29
 
 ### Summary
+Added TaskCreate/TaskUpdate/TaskList/TaskGet to frontmatter, removed speculative Delegation Protocol and redundant Anti-Patterns sections, compressed Shutdown Handling, clarified SDET review boundary. Net: -10 lines.
+
+### Changes
+- Added task coordination tools to frontmatter
+- Removed Delegation Protocol section (speculative fallback, -6 lines)
+- Removed Anti-Patterns section (both bullets restate TDD workflow instructions, -6 lines)
+- Compressed Shutdown Handling (-1 line)
+- Clarified SDET boundary to include test architecture review
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Boundary Clarity, all 8 evaluated
+
+### Rename
+No rename.
+
+## 2026-03-29
+
+### Summary
 Updated Docket Vote CLI reference with audit findings (new flags, corrected --voter default), compressed Delegation Protocol from 12 to 3 lines, trimmed System-Level Thinking, added docket issue show to review context gathering.
 
 ### Changes

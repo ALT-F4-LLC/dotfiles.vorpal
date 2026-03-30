@@ -3,6 +3,25 @@
 ## 2026-03-29
 
 ### Summary
+Added TaskCreate/TaskUpdate/TaskList/TaskGet to frontmatter, compressed Inter-Agent Communication (merged status updates and observability), trimmed consult list and description, shortened Mermaid section. Net: -13 lines.
+
+### Changes
+- Added task coordination tools to frontmatter tools list
+- Merged "Status updates to the operator" and "Cross-communication observability" into "Status updates and observability" (-5 lines)
+- Compressed @staff-engineer consult list from 4 to 3 bullets (-2 lines)
+- Shortened frontmatter description (-2 lines)
+- Compressed Mermaid Diagrams section (-2 lines)
+- [Coherence] Consolidated standalone Delegation Protocol into /vote section (aligned with staff-engineer/ux-designer pattern)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness (task tools), Coherence (Phase 2), all 8 evaluated
+
+### Rename
+No rename.
+
+## 2026-03-29
+
+### Summary
 CLI reference fixes from docket audit (reopen, --domain-tag, --limit, optional --voter, --status, --assignee, --quiet), consolidated Build & Commit Hygiene and Decision-Making Framework, merged Dependency Evaluation into Technical Debt.
 
 ### Changes

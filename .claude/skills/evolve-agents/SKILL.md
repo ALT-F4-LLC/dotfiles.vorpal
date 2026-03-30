@@ -227,6 +227,7 @@ TIER 1 — MUST research (visit every page, extract all relevant capabilities):
 - Hooks Reference — all hook event types (SubagentStart, SubagentStop, TeammateIdle, TaskCompleted, Stop), matcher patterns (including MCP tools), handler types (command, HTTP, prompt, agent), input/output schemas, async hooks
 - Skills — skill-agent interaction, skill preloading in subagents, tool restriction patterns
 - Permissions — permission modes, permission rule syntax, tool-specific rules (Bash, Read/Edit, WebFetch, MCP, Agent), managed permissions
+- Changelog (https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) — recent releases, new features, deprecations, breaking changes affecting agent definitions
 
 TIER 2 — SHOULD research (visit each page, extract agent-relevant changes):
 - Settings — configuration scopes, settings files, subagent configuration, plugin config, environment variables
@@ -237,7 +238,7 @@ TIER 2 — SHOULD research (visit each page, extract agent-relevant changes):
 - Plugins Reference — plugin components including agents, plugin manifest
 
 TIER 3 — SCAN for changes (quick scan, report only new/changed features):
-- Commands, How Claude Code Works, Changelog, CLI Reference, Output Styles, Keybindings
+- Commands, How Claude Code Works, CLI Reference, Output Styles, Keybindings
 
 INSTRUCTIONS: Visit ALL Tier 1 and Tier 2 pages — do not skip any. If a page fails to load, note it and continue. Report which pages were visited vs skipped.
 

@@ -202,6 +202,7 @@ TIER 1 — MUST visit every page, extract ALL relevant capabilities:
 - Sub-agents — how skills run in subagents, agent types for spawning, frontmatter fields, capability control, tool restrictions, MCP scoping, skill preloading
 - Agent Teams — team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle, communication, shutdown protocol)
 - Hooks Reference — hooks in skills, all hook event types, matcher patterns, handler types, hooks defined in skill frontmatter
+- Changelog (https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) — recent releases, new features, deprecations, breaking changes affecting skill definitions
 
 TIER 2 — SHOULD visit each page, extract only skill-relevant capabilities:
 - Permissions — permission modes, tool-specific rules, managed permissions affecting skills
@@ -216,7 +217,6 @@ TIER 3 — SCAN quickly, report only new/changed features:
 - Commands — built-in commands, MCP prompts
 - Output Styles — custom output styles (relationship to skills)
 - Memory — auto-memory, CLAUDE.md interaction with skills
-- Changelog — recent releases, new features, deprecations
 - CLI Reference — CLI flags affecting skills
 - How Claude Code Works — agentic loop, context management
 

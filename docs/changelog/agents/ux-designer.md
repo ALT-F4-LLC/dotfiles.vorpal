@@ -1,5 +1,25 @@
 # Changelog: ux-designer
 
+## 2026-03-30
+
+### Summary
+Added honest UX critique directive, compressed Decision-Making Framework and /vote critical-cases, added trade-off documentation check to self-validate. Net: -5 lines.
+
+### Changes
+- Added "Honest critique over validation" directive after Core responsibilities (+6 lines)
+- Compressed Decision-Making Framework from enumerated hierarchy to single-line priority chain (-8 lines)
+- Compressed /vote critical-cases from 4-bullet list to single sentence (-3 lines)
+- Compressed Design System Coherence intro (-1 line)
+- Added trade-off honesty check to self-validate step (+1 line)
+- Tightened Research section parentheticals (-1 line)
+- [Coherence] Standardized heading to "MANDATORY: Pre-Flight Goal-Alignment Gate"
+
+### Dimensions Evaluated
+Completeness (primary — honest critique directive), Consolidation & Trimming, Actionability, Role Realism, Boundary Clarity, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

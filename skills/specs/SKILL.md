@@ -1,9 +1,9 @@
 ---
 name: specs
 description: >
-  Bootstrap docs/spec/ by spawning @staff-engineer agents in parallel. Trigger on: "specs",
-  "generate specs", "bootstrap specs", "initialize specs", "create project specifications",
-  "bootstrap docs/spec", "populate specs", or "set up project documentation".
+  Bootstrap docs/spec/ by spawning @staff-engineer agents in parallel to generate project
+  specification files. Trigger on: "specs", "generate specs", "bootstrap specs", "create
+  project specifications".
 argument-hint: "[file...]"
 effort: medium
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -24,6 +24,8 @@ The argument is **optional** — this skill has a single well-defined behavior.
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in
 parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify, but you
 never write spec files yourself.
+
+> **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
 **Scope boundary:** This skill handles initial generation of spec files only. Ongoing maintenance
 and updates to `docs/spec/` are handled by `@staff-engineer` agents during normal TDD and review
@@ -117,8 +119,9 @@ Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
 - {exploration_guidance}
 - Check docs/tdd/ for any existing technical design documents that inform this spec
+- Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
-- Document only what exists in the codebase — flag gaps explicitly, do not invent aspirational content
+- Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:
@@ -135,7 +138,6 @@ Requirements:
   ---
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames only if a logical connection exists (omit if none)
-- The spec file is the deliverable
 - After saving the file, mark your task as completed via TaskUpdate and send a completion
   message via SendMessage(to="team-lead", message="Completed docs/spec/{filename}")
 ```
@@ -147,8 +149,6 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down all teammates immediately** — send to EACH spawned agent:
-   `SendMessage(to="spec-{name}", message={"type": "shutdown_request", "reason": "Spec generation complete"})`
-   Send all shutdown messages in the SAME turn. Do not wait for responses.
+2. **Shut down all teammates** — send `shutdown_request` to each spawned agent in the SAME turn.
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
 4. Remind the user that NO changes have been committed — they can review with `git diff`.

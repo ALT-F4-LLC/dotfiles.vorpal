@@ -27,6 +27,11 @@ Teammates produce structured change recommendations; you apply them using the Ed
 additions are filtered through the Content Gate to prevent non-actionable content from entering
 agent files. Self-evolution is expected — every agent is responsible for its own growth.
 
+> **Rigorous honesty over agreeability.** Do not rubber-stamp agent recommendations. Your value
+> is in enforcing the Content Gate ruthlessly — reject additions that fail any check, even when
+> the reviewing agent provides compelling rationale. Challenge net-positive claims that lack
+> concrete behavioral evidence. Report honestly when a cycle produces no meaningful improvements.
+
 > **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** Evolution is about sharpening, not
 > accumulating. Every cycle should leave agent files the same size or smaller. If a file is over
 > 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
@@ -218,15 +223,9 @@ Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_t
 
 MISSION: Research Claude Code documentation for capabilities relevant to writing agent definition files (agents/*.md). Report NEW or CHANGED features only — skip well-known existing behavior.
 
-FOCUS AREAS: Sub-agents (frontmatter, types, tools, permissions, memory, hooks), Agent Teams
-(lifecycle, coordination, shutdown), Hooks (event types, matchers, handlers), Skills
-(skill-agent interaction, preloading), Changelog (recent releases, breaking changes).
-Also check: Settings, MCP, Tools Reference, Memory, Plugins, Best Practices, Permissions.
+FOCUS AREAS: Sub-agents, Agent Teams, Hooks, Skills, Changelog (recent releases, breaking changes), Settings, MCP, Tools, Memory, Permissions.
 
-INSTRUCTIONS: Focus on NEW or CHANGED features that affect agent definition writing. Report
-which pages were visited vs. skipped.
-
-OUTPUT FORMAT: `- **<capability/change>**: <agent definition relevance>` grouped under:
+OUTPUT: `- **<capability/change>**: <agent definition relevance>` grouped under:
 New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
@@ -237,13 +236,11 @@ Spawn one docket-auditor agent using `subagent_type: "senior-engineer"` (needs B
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
 
-You are auditing the docket CLI to produce a structured reference for agent evolution reviewers.
+Audit the docket CLI for agent evolution reviewers.
 
-## Steps
-
-1. Run `--help` on every docket command and subcommand (top-level, `issue`, `vote`, all leaf commands).
-2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
-3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage.
+1. Run `--help` on every docket command and subcommand.
+2. Grep for `docket ` across `agents/` and `.claude/skills/` for current usage.
+3. Cross-reference: new/changed/deprecated commands vs. codebase usage.
 
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
@@ -359,4 +356,3 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
 6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **Mermaid diagrams required.** All documentation produced by this skill MUST include Mermaid diagrams to visualize agent relationships, orchestration flows, and evolution patterns.

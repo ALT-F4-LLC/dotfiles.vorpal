@@ -27,6 +27,8 @@ Teammates produce structured change recommendations; you apply them using the Ed
 additions are filtered through the Content Gate to prevent non-actionable content from entering
 skill files.
 
+> **Rigorous honesty over agreeability.** Do not rubber-stamp teammate recommendations. Apply the Content Gate ruthlessly — reject additions that fail any check, even when a reviewer argues for them. Your value is in filtering, not forwarding.
+
 > **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
 
 > **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
@@ -192,7 +194,7 @@ Report NEW or CHANGED features that affect how skill files are written.
 
 FOCUS AREAS: Skills (frontmatter, substitutions, discovery, subagents), Agent Teams (lifecycle,
 coordination, shutdown), Hooks (skill-scoped hooks, event types), Changelog (recent releases,
-breaking changes). Also check: Permissions, Settings, MCP, Plugins, Best Practices, Tools.
+breaking changes).
 
 INSTRUCTIONS: Focus on NEW or CHANGED features that affect SKILL.md writing. Report which
 pages were visited vs. skipped.
@@ -254,7 +256,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Your Task
 Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY —
-every addition MUST be offset by a removal.
+every addition MUST be offset by a removal. Do not default to approval — your value is in identifying weaknesses, bloat, and flawed assumptions, not validating what exists.
 
 ## Requirements
 - **Read-only** — analyze and recommend only. Build on strengths, don't rewrite.
@@ -320,7 +322,6 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 8. **Build on strengths** — improve, don't rewrite.
 9. **Changelog mandatory.** Follow format above; orchestrator normalizes.
 10. **500-line budget.** `wc -l` after edits; consolidate if over.
-11. **Fail loud.** Report teammate failures immediately.
-12. **Timeout fallback.** Re-spawn once; after two failures, orchestrator reviews directly.
-13. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
-14. **Clean up.** Shut down teammates and delete team after wrap-up.
+11. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
+12. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
+13. **Clean up.** Shut down teammates and delete team after wrap-up.

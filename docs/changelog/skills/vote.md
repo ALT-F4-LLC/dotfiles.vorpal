@@ -1,5 +1,23 @@
 # Changelog: vote
 
+## 2026-03-30
+
+### Summary
+Added honest consensus integrity directive and reviewer honesty instruction; trimmed redundant audit verification procedure, mapping freshness note, and description. Net -15 lines.
+
+### Changes
+- Added "Consensus integrity over false agreement" directive after coordinator role statement (+5 lines)
+- Added honest-reviewer instruction to Reviewer Prompt Template (+3 lines)
+- Removed redundant Verification Procedure bash block — Audit Questions table is sufficient (-14 lines)
+- Removed "Mapping freshness" maintenance note — meta-documentation, not executable (-3 lines)
+- Tightened description to ~240 chars, front-loading key use case per 250-char limit (-6 lines)
+
+### Dimensions Evaluated
+Cross-Skill Coherence, Over-Engineering, Skill Design Quality, Actionability, Completeness, Orchestration & Agent Teams, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

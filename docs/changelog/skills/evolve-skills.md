@@ -1,5 +1,23 @@
 # Changelog: evolve-skills
 
+## 2026-03-30
+
+### Summary
+Added rigorous honest mentor directives to orchestrator identity and Phase 1 template; trimmed docs-researcher checklist, consolidated rules, fixed role paragraph structure.
+
+### Changes
+- Added honest mentor directive to orchestrator identity block — enforces Content Gate rigor
+- Fixed role paragraph structure — reunited split paragraph and repositioned honest mentor blockquote (coherence with evolve-agents)
+- Added honest mentor reinforcement to Phase 1 spawning template task section
+- Removed vague "Also check" list from docs-researcher template
+- Consolidated rules 11-12 (Fail loud + Timeout fallback) into single rule, renumbered
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-29
 
 ### Summary

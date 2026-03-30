@@ -1,12 +1,9 @@
 ---
 name: vote
 description: >
-  PBFT-inspired consensus voting protocol for multi-agent decision validation. Spawns independent
-  reviewer agents to evaluate a proposal, computes weighted quorum, and creates an auditable
-  consensus record via docket. Use when a decision needs independent validation from multiple perspectives —
-  architectural approvals, code reviews, security-sensitive changes, scope decisions, or any
-  prompt where you want structured multi-agent agreement before proceeding. Any agent or user
-  can invoke this skill.
+  Multi-agent consensus voting protocol. Spawns independent reviewers, computes weighted quorum,
+  and records auditable results via docket. Use for architectural approvals, code reviews,
+  security-sensitive changes, or any decision needing structured multi-agent validation.
 argument-hint: "<proposal>"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -20,6 +17,11 @@ You are the **Consensus Coordinator**. You run a structured, multi-phase voting 
 spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome.
 
 You do NOT vote yourself. You coordinate.
+
+**Consensus integrity over false agreement.** Reviewers MUST NOT default to APPROVE. A consensus
+protocol that rubber-stamps proposals is worse than no protocol — it creates false confidence.
+When spawning reviewers, instruct each to prioritize identifying weaknesses and risks over
+reaching agreement. A justified REJECT is more valuable than an unexamined APPROVE.
 
 ---
 
@@ -172,9 +174,6 @@ If `created_by` does not match any known pattern, apply no exclusion but log a w
 the docket proposal rationale: "Warning: created_by value '{value}' did not match any known
 agent type — no proposer exclusion applied."
 
-> **Mapping freshness:** Cross-check this table against `/dev` spawning templates
-> (`agents/*.md`) when agent names change to keep mappings current.
-
 ### Uniqueness Constraint
 
 Each reviewer in a single vote round MUST have a unique `subagent_type`. No agent type may
@@ -289,7 +288,9 @@ You are participating in a consensus vote as an independent reviewer. Think thro
 
 ## Your Review Task
 Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,
-and you MUST NOT attempt to infer or coordinate with other reviewers.
+and you MUST NOT attempt to infer or coordinate with other reviewers. Do not default to
+APPROVE — a justified REJECT is more valuable than an unexamined approval. Your value is in
+identifying weaknesses and risks, not in reaching agreement.
 
 Produce your review in this EXACT structure:
 
@@ -425,19 +426,4 @@ Reviewer independence is verifiable from docket records alone via naming convent
 | Was the proposer excluded? | `created_by` vs. all `role` values | Map `created_by` to agent type per the Reviewer Independence Enforcement section, then confirm no `.role` matches |
 | Were all reviewers unique types? | All `role` values in the round | Confirm no duplicate `.role` values across votes |
 
-### Verification Procedure
-
-```bash
-# 1. Show the proposal to see created_by
-docket vote show {vote-id} --json
-# -> Check .created_by field
-
-# 2. Show the result to see all votes
-docket vote result {vote-id} --json
-# -> For each vote, check:
-#    a. .voter matches pattern "{vote-id}-reviewer-{N}"
-#    b. .role does not match the agent type of .created_by
-#       (use the mapping table in "Reviewer Independence Enforcement")
-#    c. No two votes have the same .role
-```
 

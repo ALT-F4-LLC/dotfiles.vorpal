@@ -3,6 +3,26 @@
 ## 2026-03-29
 
 ### Summary
+Added TaskCreate/TaskUpdate/TaskList/TaskGet to frontmatter and verification workflow, compressed cross-communication observability, proactive intelligence, delegation protocol, and testing philosophy. Net: -7 lines.
+
+### Changes
+- Added task coordination tools to frontmatter and multi-step verification guidance
+- Compressed cross-communication observability from 6 to 3 lines
+- Compressed proactive quality intelligence from 5 to 3 lines
+- Tightened greenfield step 7 (-1 line)
+- Compressed Delegation Protocol to inline format (-3 lines)
+- Trimmed testing philosophy truism (-2 lines)
+- [Coherence] Consolidated standalone Delegation Protocol into /vote section (aligned with staff-engineer/ux-designer pattern)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, Coherence (Phase 2), all 8 evaluated
+
+### Rename
+No rename.
+
+## 2026-03-29
+
+### Summary
 Fixed Docket CLI reference inaccuracies (voter defaults, missing reopen/domain-tag/limit), compressed Pre-Flight Goal-Alignment Gate and Delegation Protocol, added --quiet flag awareness.
 
 ### Changes

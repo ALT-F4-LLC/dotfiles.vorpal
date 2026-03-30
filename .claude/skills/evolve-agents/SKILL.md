@@ -12,7 +12,7 @@ description: >
   "grow the team", "refine agent definitions", or "make the agents better".
 argument-hint: "[agent-name]"
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
-effort: high
+effort: max
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -103,11 +103,9 @@ Evaluate against ALL 8 dimensions. **Dimensions 1, 4, 6 propose additions — al
 4. **Completeness** — Gaps causing poor output? New Claude Code capabilities to leverage? Additions must pass Gate.
 5. **Consolidation & Trimming (HIGHEST PRIORITY)** — Merge repeats, delete generic content, shorten verbose
    sections, remove LLM-innate knowledge. **Every addition from other dimensions MUST be offset here.**
-6. **Capability Growth, Cross-Communication & Agent Teams** — New patterns improving output? No human career
-   development. Evaluate proactive SendMessage triggers ("notify X when Y" / "consult X before Y") — flag
-   definitions lacking them. Agent teams: shutdown handling, orchestrator lifecycle (TeamCreate → spawn →
-   shutdown → TeamDelete), task coordination. Flag: missing cleanup, broadcast overuse. Also check:
-   self-verification, course-correction triggers, efficient context management (targeted Grep over broad reads).
+6. **Capability Growth & Cross-Communication** — New patterns improving output? No human career development.
+   Evaluate proactive SendMessage triggers ("notify X when Y" / "consult X before Y") — flag definitions
+   lacking them. Check: agent team lifecycle, self-verification, course-correction, context efficiency.
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
 8. **Rename Consideration** — Only if compelling — stability has value.
 
@@ -207,8 +205,7 @@ After Phase 2 completes:
 1. **Shut down the Phase 2 agent** (Phase 0 and Phase 1 agents were shut down in their phases), then `TeamDelete(team_name="evolve-agents-{today_date}")`.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
-   cross-communication log (who messaged whom and why), vote proposals created (IDs and outcomes),
-   and reminder that NO changes have been committed — review with `git diff`.
+   cross-communication log (who messaged whom and why), and reminder that NO changes have been committed.
 
 ---
 
@@ -221,28 +218,16 @@ Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_t
 
 MISSION: Research Claude Code documentation for capabilities relevant to writing agent definition files (agents/*.md). Report NEW or CHANGED features only — skip well-known existing behavior.
 
-TIER 1 — MUST research (visit every page, extract all relevant capabilities):
-- Sub-agents — agent types, frontmatter fields (name, description, tools, model, allowed-tools), capability control, tool restrictions, MCP scoping, permission modes, spawning patterns, persistent memory, hooks for subagents, auto-delegation
-- Agent Teams — team setup, teammate config, plan approval, task assignment, team communication (SendMessage), shutdown/cleanup protocol, quality gates, team architecture, permissions, token usage
-- Hooks Reference — all hook event types (SubagentStart, SubagentStop, TeammateIdle, TaskCompleted, Stop), matcher patterns (including MCP tools), handler types (command, HTTP, prompt, agent), input/output schemas, async hooks
-- Skills — skill-agent interaction, skill preloading in subagents, tool restriction patterns
-- Permissions — permission modes, permission rule syntax, tool-specific rules (Bash, Read/Edit, WebFetch, MCP, Agent), managed permissions
-- Changelog (https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) — recent releases, new features, deprecations, breaking changes affecting agent definitions
+FOCUS AREAS: Sub-agents (frontmatter, types, tools, permissions, memory, hooks), Agent Teams
+(lifecycle, coordination, shutdown), Hooks (event types, matchers, handlers), Skills
+(skill-agent interaction, preloading), Changelog (recent releases, breaking changes).
+Also check: Settings, MCP, Tools Reference, Memory, Plugins, Best Practices, Permissions.
 
-TIER 2 — SHOULD research (visit each page, extract agent-relevant changes):
-- Settings — configuration scopes, settings files, subagent configuration, plugin config, environment variables
-- MCP — MCP server patterns, tool search, managed configuration, MCP scoping for agents
-- Tools Reference — available tools, tool behavior details relevant to agent definitions
-- Memory — auto-memory system, CLAUDE.md files, memory in subagents
-- Best Practices — verification methods, communication patterns, subagent usage, context management
-- Plugins Reference — plugin components including agents, plugin manifest
+INSTRUCTIONS: Focus on NEW or CHANGED features that affect agent definition writing. Report
+which pages were visited vs. skipped.
 
-TIER 3 — SCAN for changes (quick scan, report only new/changed features):
-- Commands, How Claude Code Works, CLI Reference, Output Styles, Keybindings
-
-INSTRUCTIONS: Visit ALL Tier 1 and Tier 2 pages — do not skip any. If a page fails to load, note it and continue. Report which pages were visited vs skipped.
-
-OUTPUT FORMAT: `- **<capability/change>**: <agent definition relevance>` grouped under: New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+OUTPUT FORMAT: `- **<capability/change>**: <agent definition relevance>` grouped under:
+New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -260,14 +245,15 @@ You are auditing the docket CLI to produce a structured reference for agent evol
 2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
 3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage.
 
-Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree. Read-only — do not edit files.
+Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
 
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
 name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
-`<name>`, `{today_date}` (from pre-flight step 3), `{verified_goal}` (from step 1), and `{experience_feedback}` (from step 2) for each.
+`<name>`, `{today_date}` (from pre-flight step 3), `{verified_goal}` (from step 1),
+`{experience_feedback}` (from step 2), and `{focus_areas}` (operator pain points) for each.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
@@ -371,6 +357,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 3. **Always run Phase 2** — even for single-agent improvements.
 4. **Orchestrator-only edits.** Teammates are read-only. Never commit.
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
-6. **Fail loud.** Report failures immediately. On timeout, orchestrator reviews directly.
+6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **Mermaid diagrams required.** All documentation produced by this skill (evolution reports, architecture reviews, wrap-up reports) MUST include Mermaid diagrams to visualize agent relationships, capability maps, and evolution flows.
+8. **Mermaid diagrams required.** All documentation produced by this skill MUST include Mermaid diagrams to visualize agent relationships, orchestration flows, and evolution patterns.

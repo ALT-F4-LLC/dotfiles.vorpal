@@ -150,13 +150,6 @@ Follows Medium Task pattern with @ux-designer prepended:
 
 ## Spawning Templates
 
-> **Shared rules for ALL spawned agents:** Do NOT commit any changes (no `git add`, `git commit`,
-> `git push`). Before starting, check `docs/tdd/`, `docs/ux/`, and `docs/spec/` for relevant
-> context. All Docket commands are Bash commands run via the Bash tool.
-> **Documentation requirement:** When producing any documentation (TDDs, design specs, project
-> specs, review reports, verification reports), use Mermaid diagrams to visualize architecture,
-> component relationships, data flows, and process workflows. Diagrams are mandatory, not optional.
-
 ### @staff-engineer (TDD)
 
 ```
@@ -172,12 +165,9 @@ The operator's goal has been pre-verified by the team lead. Re-verify alignment 
 </user_request>
 
 Requirements:
-- Explore the codebase using Read, Grep, Glob, and Bash to understand current patterns
 - Check docs/ux/ and docs/spec/ for existing specs that inform this work
-- Produce a TDD following the standard format in your agent instructions
-- Save the completed spec to docs/tdd/{descriptive-name}.md
+- Produce a TDD following your agent instructions, saved to docs/tdd/{descriptive-name}.md
 - Include concrete acceptance criteria, architecture decisions, and implementation phases
-- Do NOT write implementation code — the TDD is the deliverable
 ```
 
 ### @staff-engineer (Code Review)
@@ -255,12 +245,8 @@ The operator's goal has been pre-verified by the team lead. Re-verify alignment 
 </user_request>
 
 Requirements:
-- Explore the codebase using Read, Grep, Glob, and Bash to understand current patterns
-- Produce a design spec following the standard format in your agent instructions
-- Save the completed spec to docs/ux/{descriptive-name}.md
-- Include concrete success criteria, interaction flows, and edge cases
+- Produce a design spec following your agent instructions, saved to docs/ux/{descriptive-name}.md
 - Include a Handoff Notes section with component breakdown and implementation priorities
-- Do NOT write implementation code — the spec is the deliverable
 ```
 
 ### @senior-engineer

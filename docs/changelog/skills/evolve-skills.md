@@ -3,18 +3,20 @@
 ## 2026-03-29
 
 ### Summary
-Added per-phase agent shutdown to prevent lingering agents, trimmed redundant template instructions, tightened experimental-feeling language.
+Trimmed over-engineered content, aligned Phase 1 shutdown pattern with evolve-agents (immediate per-agent), upgraded effort to max.
 
 ### Changes
-- Added explicit Phase 0 and Phase 1 shutdown instructions — agents shut down immediately when their phase completes
-- Simplified Wrap-up to only shut down Phase 2 agent since earlier phases are already cleaned up
-- Trimmed docs-researcher RESEARCH INSTRUCTIONS from 9 lines to 1
-- Removed redundant Dimension 5 elaboration from Phase 1 template
-- Tightened self-evolution note — removed hedging language
-- Added `{focus_areas}` placeholder to Phase 1 spawning template
+- Removed Rule 15 (Mermaid diagrams) — fails Content Gate for Behavioral and Concrete
+- Consolidated docs-researcher template from 25+ lines to 6 focused lines (-19 lines)
+- Replaced verbose SIZE CONSTRAINT blockquote with one-liner referencing Pre-flight step 8
+- Changed `effort: high` to `effort: max` (matches dev skill complexity)
+- Consolidated docket audit template from 7 lines to 3
+- Merged orchestrator post-steps 5-6 into steps 2 and wrap-up
+- Added immediate per-agent shutdown to Phase 1 (coherence with evolve-agents pattern)
+- Removed batch Phase 1 shutdown from Phase 2 section header
 
 ### Dimensions Evaluated
-Skill Design Quality, Actionability, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+Skill Design Quality, Over-Engineering, Orchestration & Agent Teams, Coherence, all 8 evaluated
 
 ### Rename
 No rename.

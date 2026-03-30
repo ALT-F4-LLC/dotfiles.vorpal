@@ -15,8 +15,8 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 The argument is **optional** — this skill has a single well-defined behavior.
 
-- **No argument** (`/specs`): Proceed normally — bootstrap all 7 spec files.
-- **With argument** (`/specs security.md operations.md`): Treat named files as the target set
+- **No argument** (`/specs`): Bootstrap all 7 spec files.
+- **With argument** (`/specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
   instead of all 7. Validate each name against the Spec File Reference table; reject unknown names.
 
 # Specs
@@ -45,14 +45,10 @@ Before spawning any agents:
    - `mkdir -p docs/spec` — ensure output directory exists
 3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
 4. **If files exist**, use AskUserQuestion to present options:
-   - **Overwrite all** — "Delete existing files and regenerate everything"
-   - **Skip existing** — "Only generate missing spec files"
-   - **Cancel** — "Abort the operation"
-5. **If no files exist**, proceed directly to execution.
-
-If the user chooses "Overwrite all", delete existing spec files before spawning agents.
-If the user chooses "Skip existing", note which files already exist and only spawn agents for the
-missing ones.
+   - **Overwrite all** — delete existing files and regenerate everything
+   - **Skip existing** — only generate missing spec files
+   - **Cancel** — abort the operation
+   If no files exist, proceed directly to execution.
 
 ---
 
@@ -138,10 +134,8 @@ Requirements:
     - <related-spec-filename.md>
   ---
   ```
-  - For `maturity`: choose honestly based on your findings about the overall project
-  - For `dependencies`: list related spec filenames ONLY if a logical connection exists —
-    omit the field entirely if none
-- Do NOT write implementation code — the spec file is the deliverable
+  - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames only if a logical connection exists (omit if none)
+- The spec file is the deliverable
 - After saving the file, mark your task as completed via TaskUpdate and send a completion
   message via SendMessage(to="team-lead", message="Completed docs/spec/{filename}")
 ```

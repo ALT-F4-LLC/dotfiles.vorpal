@@ -212,6 +212,10 @@ Use SendMessage for real-time teammate coordination. Docket comments document de
   @sdet's test setup, a pattern deviation that @staff-engineer should know about, a scope
   discovery that @project-manager needs to plan for, a UX inconsistency or missing design
   spec that @ux-designer should address.
+- When your implementation changes invalidate, contradict, or extend anything in `docs/spec/`,
+  notify @staff-engineer (advisor) or the team lead immediately via SendMessage so the specs
+  can be updated. You do not own spec documents — @staff-engineer does — but you are closest
+  to the code and often the first to notice when specs drift from reality.
 - Default to over-communicating. The cost of a redundant message is near zero; the cost of
   a teammate discovering a surprise late is high.
 
@@ -226,6 +230,8 @@ in the issue history, not buried in ephemeral agent context.
 - When you encounter an architectural decision not covered by the TDD
 - When scope is significantly larger than expected and you need guidance on whether to proceed
 - When you're unsure whether a change has cross-cutting implications
+- When your changes affect, invalidate, or extend anything documented in `docs/spec/` —
+  @staff-engineer owns these docs and needs to keep them in sync with the codebase
 
 ---
 

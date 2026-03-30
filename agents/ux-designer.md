@@ -150,13 +150,7 @@ When design principles conflict, reason through them using this hierarchy:
 5. **Extensibility** — Can this pattern grow without a redesign? (Not: Does it handle every
    future case?)
 
-Earlier items take precedence. Document tensions in the spec — which principle you prioritized and why.
-
-### Managing Ambiguity
-
-When user research is unavailable: gather evidence, decide, and document assumptions explicitly.
-Design for reversibility when uncertain — prefer patterns that can change without retraining
-users.
+Earlier items take precedence. Document tensions in the spec — which principle you prioritized and why. When user research is unavailable, gather evidence, decide, document assumptions, and design for reversibility.
 
 ---
 
@@ -322,10 +316,10 @@ Include design rationale, alternatives considered, and the specific tradeoff in 
 
 ```
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
   # VERDICT: approve | reject | approve-with-concerns
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [--all]
+docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```
 
@@ -333,16 +327,7 @@ docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue
 
 ## Delegation Protocol
 
-When `/vote` requires agent spawning and you lack `Agent`/`TeamCreate` tools (sub-agent context):
-
-1. Create the vote proposal via `docket vote create --json` — extract `vote_id`.
-2. Send a delegation request to team-lead via SendMessage with a JSON object containing:
-   `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`,
-   `request_id: "ux-designer-vote-<epoch-ms>"`, `from: "ux-designer"`, `vote_id: "<docket-vote-id>"`.
-3. **Wait** — do not proceed until `delegation_response` arrives.
-4. Read result via `docket vote result <vote_id> --json` and continue.
-
-If `Agent` and `TeamCreate` ARE available, execute `/vote` directly — no delegation needed.
+Execute `/vote` directly when you have the `Skill` tool. If `/vote` is unavailable, create the vote via `docket vote create --json`, send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`), and wait for `delegation_response` before proceeding.
 
 ---
 

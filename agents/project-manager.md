@@ -67,6 +67,7 @@ At the start of every session, before any planning work:
 1. **Initialize Docket:** Run `docket init` (idempotent).
 2. **Review current state:** Run `docket board --json --expand`, `docket next --json`,
    `docket stats`, and `docket plan --json` to understand current state and execution order.
+   Use `--quiet` on commands where you only need structured output (suppresses decorative text).
 3. **Verify goal alignment (MANDATORY GATE):**
    Operator alignment is THE core success metric for planning. A plan that decomposes work
    perfectly but targets the wrong outcome is worse than no plan. **Do not proceed to
@@ -351,23 +352,24 @@ produced issues; those can resume in a new session.
 ## Docket CLI Reference
 
 ```
-docket init / config / board --json [--expand] [-a] [-l] [-p] / next --json [--limit N] [-l] [-p] [-T] [-s] / stats
+docket init / config / board --json [--expand] [-a ASSIGNEE] [-l] [-p] / next --json [--limit N] [-l] [-p] [-T] [-s] / stats
 docket plan --json [--root ID] [--label LABEL] [-s STATUS]
-docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE -l LABEL [--parent ID] [-f FILES] [-a ASSIGNEE]
-docket issue list --json [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID] [--tree] [--roots] [--sort FIELD] [--limit N] [--all]
-docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] / delete <id>
+docket issue create -t TITLE [-d DESC] [-p PRIORITY] [-T TYPE] [-l LABEL] [--parent ID] [-f FILES] [-a ASSIGNEE] [-s STATUS]
+docket issue list --json [-a ASSIGNEE] [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID] [--tree] [--roots] [--sort FIELD] [--limit N] [--all]
+docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f] [--parent] / delete <id> [-f] [--orphan]
 docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "text"
 docket issue link add <id> blocks|blocked-by <target> / link list <id> / link remove <id> <relation> <target_id>
 docket issue file add <id> <paths> / file list <id> / file remove <id> <paths>
 docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
-docket issue label add <id> <labels> / label rm <id> <labels> / label delete <label>
-docket export / import
+docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
+docket issue log <id> [--limit N]
+docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT (approve|approve-with-concerns|reject) --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--summary TEXT]
-docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [--all]
-docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
+docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+docket vote commit <id> [--outcome TEXT] [--escalation-reason TEXT] / vote show <id> / vote result <id>
+docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
+docket vote link <proposal-id> --issue ID / unlink <proposal-id> --issue ID
 ```
 
 **Priorities:** critical | high | medium (default) | low | none
@@ -388,24 +390,8 @@ downstream consequences.
   dependency ordering
 - When extending an existing plan in ways that may invalidate prior work
 
-Skip `/vote` for trivial/standard plans and when the TDD already prescribes phasing. Use
-`--rationale` and `--files-changed` on `docket vote create` to give reviewers full context.
+Use `--rationale` and `--files-changed` on `docket vote create` to give reviewers full context.
 Include codebase exploration findings and tradeoffs for reviewers to evaluate independently.
-
----
-
-## Delegation Protocol
-
-When invoking `/vote` as a sub-agent without `Agent`/`TeamCreate` tools, delegate to the
-orchestrator:
-
-1. Create the vote via `docket vote create`. Extract `vote_id`.
-2. Send a delegation request via `SendMessage(to="team-lead", message=...)` with:
-   `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`,
-   `request_id: "{your-team-name}-vote-{epoch-ms}"`, `from: your-team-name`, `vote_id`.
-3. **Yield and wait** for a `delegation_response` before continuing.
-4. On `status: "completed"`, read `docket vote result <vote_id> --json`. On `"failed"`,
-   handle the error.
 
 ---
 

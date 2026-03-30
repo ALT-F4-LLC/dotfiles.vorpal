@@ -1,5 +1,24 @@
 # Changelog: project-manager
 
+## 2026-03-29
+
+### Summary
+Updated Docket CLI reference with audit findings (missing flags, corrected defaults, new subcommands), removed obsolete Delegation Protocol (PM has /vote skill directly), added --quiet flag awareness, trimmed redundant vote skip guidance. Net: -14 lines.
+
+### Changes
+- Updated CLI reference: added `-a ASSIGNEE` on board/list, `-s STATUS` on create, `--orphan`/`-f` on delete, `--merge`/`--replace` on import, `-d`/`--limit` on vote list, `--findings-json` on vote cast, `issue log`, label subcommands with `--color`; fixed `--voter` as optional
+- Removed Delegation Protocol section — PM has `/vote` skill in frontmatter, delegation workaround is dead code (-14 lines)
+- Added `--quiet` flag note to Session Initialization
+- Removed "Skip /vote for trivial/standard plans" sentence (inverse of trigger list)
+- [Coherence] Fixed `vote create` flags: `-c`/`-n` restored to required (consistent with all other agents)
+- [Coherence] Fixed `vote cast` flag brackets and added `JSON` arg to `--findings-json` (aligned with staff/senior/ux pattern)
+
+### Dimensions Evaluated
+Completeness (primary — CLI audit alignment), Consolidation & Trimming, Capability Growth, Actionability, Role Realism, Boundary Clarity, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-21
 
 ### Summary

@@ -1,5 +1,23 @@
 # Changelog: ux-designer
 
+## 2026-03-29
+
+### Summary
+Updated Docket Vote CLI reference with audit-discovered flags, compressed Delegation Protocol and Managing Ambiguity subsection. Net -15 lines.
+
+### Changes
+- Updated `vote list` CLI reference with `-d/--domain-tag`, `--limit`, `--quiet` flags
+- Fixed `--voter` as optional (defaults to git user.name) in `vote cast` reference
+- Compressed Delegation Protocol from 10 lines to 2 (essential behavior preserved)
+- Merged Managing Ambiguity subsection into Decision-Making Framework closing sentence (-4 lines)
+- [Coherence] Removed `[--quiet]` from `vote list` (global flag, not per-command)
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Completeness, Actionability, all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-21
 
 ### Summary

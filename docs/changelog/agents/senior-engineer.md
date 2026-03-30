@@ -1,5 +1,23 @@
 # Changelog: senior-engineer
 
+## 2026-03-29
+
+### Summary
+CLI reference fixes from docket audit (reopen, --domain-tag, --limit, optional --voter, --status, --assignee, --quiet), consolidated Build & Commit Hygiene and Decision-Making Framework, merged Dependency Evaluation into Technical Debt.
+
+### Changes
+- Fixed CLI reference: added `reopen`, `--domain-tag`, `--limit` on vote list; marked `--voter` optional; added `-s`/`-a` on issue create
+- Added `--quiet` flag documentation (global note + ad-hoc example)
+- Compressed Build & Commit Hygiene from 5 bullets to 3 (merged lockfile and commit discipline bullets)
+- Compressed Decision-Making Framework from 2 paragraphs to 1
+- Merged Dependency Evaluation section into Technical Debt as fourth bullet
+
+### Dimensions Evaluated
+Completeness (CLI audit — primary), Consolidation & Trimming, Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-21
 
 ### Summary

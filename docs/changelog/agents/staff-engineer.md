@@ -1,5 +1,24 @@
 # Changelog: staff-engineer
 
+## 2026-03-29
+
+### Summary
+Updated Docket Vote CLI reference with audit findings (new flags, corrected --voter default), compressed Delegation Protocol from 12 to 3 lines, trimmed System-Level Thinking, added docket issue show to review context gathering.
+
+### Changes
+- Updated vote CLI reference: `--voter` now optional (defaults to git user.name), added `--quiet`, `-d/--domain-tag`, `--limit` flags
+- Compressed Delegation Protocol from numbered procedure to single-line with fallback note (-7 lines)
+- Compressed System-Level Thinking dependencies paragraph (-3 lines)
+- Added `docket issue show` to review workflow context gathering step
+- [Coherence] Removed `[--quiet]` from `vote result` (global flag, not per-command)
+- [Coherence] Added `docket issue log <id> [--limit N]` to CLI reference
+
+### Dimensions Evaluated
+All 8: Completeness (CLI gaps filled), Consolidation & Trimming (primary: -8 net), Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-21
 
 ### Summary

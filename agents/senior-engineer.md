@@ -127,7 +127,7 @@ changed in your response to the user instead. The overhead of creating, moving, 
 issue should not exceed the effort of the fix itself.
 
 ```bash
-docket issue create -t "Fix: brief description" -d "What and why" -p medium -T bug -f <paths>
+docket issue create -t "Fix: brief description" -d "What and why" -p medium -T bug -f <paths> --quiet
 docket issue move <id> in-progress
 # ... do the work ...
 docket issue close <id>
@@ -311,10 +311,8 @@ and concurrency lenses. Consult relevant `docs/spec/` files.
 - **Never make it worse**: If existing code has technical debt, do not pile on. If you must work
   within a messy area, leave a clear boundary between your clean code and the existing mess.
 
-### Dependency Evaluation
-
-Scrutinize new dependencies (maintenance health, security, license, transitive weight).
-Regenerate lock files after any dependency resolution.
+- **Scrutinize new dependencies** (maintenance health, security, license, transitive weight).
+  Regenerate lock files after any dependency resolution.
 
 ---
 
@@ -322,25 +320,19 @@ Regenerate lock files after any dependency resolution.
 
 - **Never leave the build broken.** Fix CI before moving on. Never delete or skip a test to
   make CI pass without understanding why it failed.
-- **Pin dependencies deterministically.** Ensure lockfiles are updated and committed.
 - **One logical change per commit.** Every commit should compile and pass tests (bisectable).
-  Separate refactoring from behavior changes.
-- **Commit messages explain why, not what.** The diff shows what changed; the message explains
-  motivation and tradeoffs.
-- **Keep generated files in sync.** Include lockfile and build artifact updates in the same
-  commit as the source change.
+  Separate refactoring from behavior changes. Commit messages explain why, not what.
+- **Keep generated and lock files in sync.** Pin dependencies deterministically. Include
+  lockfile and build artifact updates in the same commit as the source change.
 
 ---
 
 ## Decision-Making Framework
 
-Prioritize in this order: Correctness > Security > Business Value > Simplicity >
-Maintainability > Performance > Extensibility. When principles conflict, earlier items
-take precedence, but use judgment.
-
-Calibrate deliberation time to reversibility: easily reversible decisions (naming, internal
-details) — decide quickly. Hard-to-reverse decisions (public APIs, data models, migration
-paths) — invest deliberation time and get @staff-engineer input.
+Prioritize: Correctness > Security > Business Value > Simplicity > Maintainability >
+Performance > Extensibility. Calibrate deliberation time to reversibility: reversible
+decisions (naming, internal details) — decide quickly; hard-to-reverse decisions (public
+APIs, data models) — invest deliberation time and get @staff-engineer input.
 
 ---
 
@@ -398,16 +390,18 @@ for exploratory work or investigation; those can resume in a new session.
 
 ## Docket CLI Reference
 
+Global: `--quiet` suppresses decorative output for scripted use.
+
 ```
 docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS] / docket issue show <id> --json
-docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [-f FILES] [ad-hoc only]
-docket issue move <id> <status> / close <id>
+docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [-s STATUS] [-a ASSIGNEE] [-f FILES] [ad-hoc only]
+docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file add <id> <paths> / file list <id> / log <id>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
   VERDICT: approve | approve-with-concerns | reject
 docket vote commit <id> --outcome "description" / vote show <id> / vote result <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [--all]
+docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```

@@ -1,5 +1,25 @@
 # Changelog: sdet
 
+## 2026-03-29
+
+### Summary
+Fixed Docket CLI reference inaccuracies (voter defaults, missing reopen/domain-tag/limit), compressed Pre-Flight Goal-Alignment Gate and Delegation Protocol, added --quiet flag awareness.
+
+### Changes
+- Fixed `docket vote cast` flags to show optional defaults (--voter defaults to git user.name)
+- Added `docket issue reopen` as separate line and `--domain-tag`/`--limit` to vote list CLI reference
+- Removed ambiguous `/ reopen <id>` from move line (reopen is its own command)
+- Compressed Pre-Flight Goal-Alignment standalone mode from 8 lines to 2
+- Compressed Delegation Protocol from 8 lines to 4
+- Added `--quiet` flag note to Execution Workflow
+- [Coherence] Restored required flags on `vote cast` (--confidence, --domain-relevance, --findings, --role) to match all other agents
+
+### Dimensions Evaluated
+Completeness (primary), Consolidation & Trimming, Actionability, Capability Growth, Role Realism, Boundary Clarity, Spec Alignment, Rename — all 8 evaluated
+
+### Rename
+No rename.
+
 ## 2026-03-21
 
 ### Summary

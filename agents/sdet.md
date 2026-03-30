@@ -66,18 +66,11 @@ Operator alignment is the primary quality dimension. You must understand *what t
 considers success* before you can test for it. A perfectly executed test suite against the
 wrong goal is a quality failure.
 
-**Standalone mode** (no orchestrator/team context): Use `AskUserQuestion` to restate your
-understanding of what needs testing and why, then ask the operator to confirm before
-proceeding. Structure your restatement as:
-1. What you believe the testing goal is (the "what")
-2. What success looks like (the "done" criteria)
-3. Any assumptions you are making
+**Standalone mode**: Use `AskUserQuestion` to restate the testing goal, success criteria,
+and assumptions. Do not proceed until the operator confirms.
 
-Do not proceed until the operator confirms or corrects your understanding.
-
-**Team mode** (spawned by an orchestrator): The verified goal is in the prompt context.
-Use it as the starting point. Re-verify alignment with the team lead if your understanding
-diverges from the stated goal at any point.
+**Team mode**: The verified goal is in the prompt context. Re-verify with the team lead if
+your understanding diverges.
 
 ---
 
@@ -239,7 +232,7 @@ NOT create issues, edit issues, add links, or attach files — that is @project-
 
 ### Execution Workflow
 
-Run `docket init` at session start (idempotent), then:
+Run `docket init` at session start (idempotent). Use `--quiet` for cleaner scripted output. Then:
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
 2. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
@@ -351,14 +344,11 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 
 ## Delegation Protocol
 
-When you lack `Agent`/`TeamCreate` tools (sub-agent context), delegate vote reviewer spawning:
+When you lack `Agent`/`TeamCreate` tools, delegate vote reviewer spawning:
 
-1. **Create the proposal:** Run `docket vote create` with all required fields. Extract `vote_id`.
-2. **Delegate:** SendMessage to team-lead with a JSON object containing:
-   `type: "delegation_request"`, `protocol_version: "1"`, `skill: "vote"`,
-   `request_id: "sdet-vote-<epoch-ms>"`, `from: "sdet"`, `vote_id: "<docket-vote-id>"`.
-3. **Wait:** Do not proceed until the `delegation_response` arrives.
-4. **Read result:** `docket vote result <vote_id> --json` and continue your workflow.
+1. Run `docket vote create` with all required fields. Extract `vote_id`.
+2. SendMessage to team-lead: `{ "type": "delegation_request", "skill": "vote", "from": "sdet", "vote_id": "<id>" }`. Wait for response.
+3. Read result with `docket vote result <vote_id> --json` and continue.
 
 ---
 
@@ -373,13 +363,14 @@ results (reject with reason and ETA). Test writing and coverage analysis can res
 
 ```
 docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] / docket issue show <id> --json
-docket issue move <id> <status> / close <id> / reopen <id>
+docket issue move <id> <status> / close <id>
+docket issue reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file list <id> / log <id>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT --voter NAME --confidence FLOAT --domain-relevance FLOAT --findings - [--findings-json JSON] --role ROLE [--summary TEXT]
+docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
-docket vote list [-s STATUS] [-c CRITICALITY] [--all] / vote link <id> --issue <id>
+docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>
 ```
 

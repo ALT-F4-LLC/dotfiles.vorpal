@@ -153,6 +153,9 @@ Follows Medium Task pattern with @ux-designer prepended:
 > **Shared rules for ALL spawned agents:** Do NOT commit any changes (no `git add`, `git commit`,
 > `git push`). Before starting, check `docs/tdd/`, `docs/ux/`, and `docs/spec/` for relevant
 > context. All Docket commands are Bash commands run via the Bash tool.
+> **Documentation requirement:** When producing any documentation (TDDs, design specs, project
+> specs, review reports, verification reports), use Mermaid diagrams to visualize architecture,
+> component relationships, data flows, and process workflows. Diagrams are mandatory, not optional.
 
 ### @staff-engineer (TDD)
 

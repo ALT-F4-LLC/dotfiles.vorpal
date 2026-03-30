@@ -297,6 +297,13 @@ Changes to config generators affect every environment consuming the output.
   accepts the output. A valid JSON file is not necessarily a valid config file.
 - **Guard against key collisions** in formats with undefined duplicate-key behavior.
 
+### Mermaid Diagrams
+
+When you produce documentation (TDD feedback, Docket comments with architectural context,
+or any markdown artifacts), use Mermaid diagrams to visualize architecture, component
+relationships, data flows, and state transitions. Prefer diagrams over prose for conveying
+system structure.
+
 ### Cross-Cutting Concerns
 
 Evaluate every change through security, observability, performance, reliability, operability,

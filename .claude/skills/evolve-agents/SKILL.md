@@ -372,3 +372,4 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
 6. **Fail loud.** Report failures immediately. On timeout, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
+8. **Mermaid diagrams required.** All documentation produced by this skill (evolution reports, architecture reviews, wrap-up reports) MUST include Mermaid diagrams to visualize agent relationships, capability maps, and evolution flows.

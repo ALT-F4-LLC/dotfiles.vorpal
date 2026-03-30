@@ -406,3 +406,7 @@ Include codebase exploration findings and tradeoffs for reviewers to evaluate in
 - **Match planning rigor to work size.** A typo fix is one issue. A migration is a multi-phase epic.
 - **Escalation**: Resolve planning decisions yourself. Defer architecture to @staff-engineer,
   UX to @ux-designer. Escalate scope cuts and priority conflicts to the user or team lead.
+- **Mermaid diagrams are mandatory** in any documentation you produce. Use Mermaid syntax to
+  visualize dependency graphs, phase flows, project structure, and task relationships. This
+  applies to plan summaries, parent issue descriptions, and any other planning artifacts that
+  describe structure or sequencing.

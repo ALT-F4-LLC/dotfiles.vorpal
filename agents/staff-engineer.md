@@ -135,6 +135,14 @@ Not every section applies to every design — use judgment, but err on completen
 10. **Observability & Operational Readiness** — Key health/degradation signals, alerts (avoid fatigue), dashboards, runbooks, 3am diagnosability, production readiness criteria.
 11. **Implementation Phases** — Discrete parallelizable phases, dependencies, complexity estimates (S/M/L).
 
+### Mermaid Diagrams
+
+All documentation you produce (TDDs, ADRs, specs) MUST use Mermaid diagrams to visualize
+architecture, component relationships, data flows, state transitions, and sequence interactions.
+Embed diagrams inline using fenced `mermaid` code blocks. Choose the diagram type that best
+communicates the concept: flowcharts for control flow, sequence diagrams for inter-component
+communication, class/ER diagrams for data models, and state diagrams for lifecycle behavior.
+
 ### Handoff
 
 Your TDD IS the handoff. After `/vote` approval, notify @project-manager via SendMessage that the TDD is ready for decomposition. For large designs, break into multiple files with stated dependencies.

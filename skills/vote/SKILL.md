@@ -430,6 +430,7 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 2. **Spawn all reviewers in the same turn** to maximize parallelism.
 3. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
 4. **Respect criticality direction.** May override up, never down for security.
+5. **Mermaid diagrams required.** All documentation produced by this skill — consensus records, vote flow summaries, escalation reports — MUST include Mermaid diagrams to visualize vote flows, consensus processes, and reviewer relationships. Use `flowchart`, `sequenceDiagram`, or `graph` types as appropriate for the content.
 
 ---
 

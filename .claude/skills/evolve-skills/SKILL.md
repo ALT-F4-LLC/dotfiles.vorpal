@@ -353,3 +353,4 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 12. **Timeout fallback.** Re-spawn once; after two failures, orchestrator reviews directly.
 13. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 14. **Clean up.** Shut down teammates and delete team after wrap-up.
+15. **Mermaid diagrams required.** All documentation produced by this skill (evolution reports, changelog entries, architecture reviews, wrap-up summaries) MUST use Mermaid diagrams to visualize skill relationships, orchestration flows, and evolution patterns.

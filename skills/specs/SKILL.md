@@ -123,6 +123,7 @@ Requirements:
 - Check docs/tdd/ for any existing technical design documents that inform this spec
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Document only what exists in the codebase — flag gaps explicitly, do not invent aspirational content
+- Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:
   ```yaml

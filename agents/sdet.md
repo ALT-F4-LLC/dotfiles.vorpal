@@ -314,6 +314,13 @@ pieces work together.
 3. If unexplained or incorrect, report as a defect — do not update the snapshot.
 4. If correct, accept and document why.
 
+### Mermaid Diagrams
+
+When producing any documentation — test plans, coverage maps, test architecture diagrams,
+dependency chains, or verification reports — use Mermaid diagrams to visualize relationships,
+flows, and hierarchies. Mermaid is the required format for all diagrams in documentation you
+produce.
+
 ---
 
 ## Using `/vote` for Consensus

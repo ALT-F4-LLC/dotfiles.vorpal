@@ -8,7 +8,7 @@ description: >
   prompt where you want structured multi-agent agreement before proceeding. Any agent or user
   can invoke this skill.
 argument-hint: "<proposal>"
-effort: high
+effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
@@ -247,25 +247,13 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="{vote-id}-reviewer-{N}", status="in_progress")`.
 Use `TaskList()` to monitor completion — all reviewer tasks must reach `completed` before Phase 3.
 
-**Notify the operator** when all reviews are collected:
-`SendMessage(to="team-lead", message="[VOTE] All {count} reviews collected for proposal {proposal_id} | Proceeding to quorum evaluation")`.
-
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all reviews only AFTER all reviewers have completed.
 
 ### Recording Votes
 
 After each reviewer completes, parse their structured output and record their vote using
-`docket vote cast`. Apply the verdict mapping below before casting.
-
-**Verdict mapping**: The `docket vote cast -v` flag accepts `approve`, `approve-with-concerns`,
-or `reject`. Map reviewer verdicts as follows:
-
-| Reviewer Verdict | CLI Verdict |
-|---|---|
-| `approve` | `approve` |
-| `approve-with-concerns` | `approve-with-concerns` |
-| `reject` | `reject` |
+`docket vote cast`. The `-v` flag accepts `approve`, `approve-with-concerns`, or `reject`.
 
 **Cast each vote:**
 
@@ -288,7 +276,7 @@ echo '{multi-line findings text}' | docket vote cast {proposal_id} \
 ```
 Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
-You are participating in a consensus vote as an independent reviewer. Use ultrathink for thorough analysis.
+You are participating in a consensus vote as an independent reviewer. Think through your analysis step by step before reaching a verdict.
 
 ## Proposal Under Review
 - **Type**: {artifact_type}
@@ -344,21 +332,9 @@ When done, mark your task as completed via TaskUpdate.
 
 ---
 
-## Phase 3: Quorum Evaluation
+## Phase 3: Commit or Escalate
 
-After all votes have been cast via `docket vote cast`, retrieve the consensus result:
-
-```bash
-docket vote result {proposal_id} --json
-```
-
-The `docket vote result` command computes quorum automatically — effective weights, approval
-scores, and threshold evaluation are all handled by docket. Parse the JSON output to determine
-whether consensus was reached and extract the aggregated findings.
-
----
-
-## Phase 4: Commit or Escalate
+After all votes have been cast, retrieve the consensus result via `docket vote result {proposal_id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
 
 ### If Quorum Is Reached
 
@@ -430,7 +406,7 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 2. **Spawn all reviewers in the same turn** to maximize parallelism.
 3. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
 4. **Respect criticality direction.** May override up, never down for security.
-5. **Mermaid diagrams required.** All documentation produced by this skill — consensus records, vote flow summaries, escalation reports — MUST include Mermaid diagrams to visualize vote flows, consensus processes, and reviewer relationships. Use `flowchart`, `sequenceDiagram`, or `graph` types as appropriate for the content.
+5. **Mermaid diagrams for escalations.** When escalating to a human after 3 failed rounds, include a Mermaid diagram visualizing the vote flow across rounds. Standard consensus results use the structured text Output Format without diagrams.
 
 ---
 

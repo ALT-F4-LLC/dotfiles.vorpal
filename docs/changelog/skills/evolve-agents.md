@@ -3,19 +3,19 @@
 ## 2026-03-29
 
 ### Summary
-Tightened agent lifecycle to shut down Phase 0 and Phase 1 agents immediately after use, compressed Phase 0 templates, removed hedging language contributing to "experimental" feel.
+Compressed dimension 6, aligned templates with evolve-skills, upgraded effort to max, consolidated docs-researcher template.
 
 ### Changes
-- Added explicit Phase 0 agent shutdown before Phase 1 starts (addresses "agents stay alive longer than needed")
-- Added explicit Phase 1 agent shutdown after each agent's changes are applied
-- Compressed Phase 0 docs-researcher template INSTRUCTIONS block from 7 lines to 1
-- Compressed Phase 0 docket-auditor template from 12 lines to 5
-- Removed self-evolution note blockquote (LLM-innate knowledge, hedging language)
-- Tightened wrap-up to reference only Phase 2 agent (others already shut down)
-- Removed generic "avoid anti-patterns" bullet from Phase 1 template (fails Behavioral gate)
+- Compressed Dimension 6 from 5 to 3 lines (agent team lifecycle details were orchestrator-level)
+- Added `{focus_areas}` variable to Phase 1 template for evolve-skills parity
+- Added re-spawn-once timeout fallback (was skipping straight to orchestrator review)
+- Removed "vote proposals created" from wrap-up report (never creates votes)
+- Removed redundant "Read-only" from Phase 0 docket-auditor template
+- Upgraded `effort: high` to `effort: max` (coherence with evolve-skills and vote)
+- Consolidated docs-researcher template from 30+ lines to ~12 (matches evolve-skills format)
 
 ### Dimensions Evaluated
-Capability Growth & Agent Teams (primary — lifecycle/cleanup), Consolidation & Trimming, Role Realism, all 8 evaluated
+Consolidation & Trimming, Coherence, Completeness, Over-Engineering, Skill Design Quality, all 8 evaluated
 
 ### Rename
 No rename.

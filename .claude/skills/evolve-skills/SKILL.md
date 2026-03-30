@@ -11,7 +11,7 @@ description: >
   including phrases like "evolve skills", "improve skills", "refine skills", "make the skills
   better", or "grow the skills".
 argument-hint: "[skill-name]"
-effort: high
+effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
@@ -29,11 +29,7 @@ skill files.
 
 > **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
 
-> **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** Evolution is about sharpening, not
-> accumulating. Every cycle should leave skill files the same size or smaller. If a file is over
-> 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
-> be added if an equal or greater amount is removed. If a file is under 500 lines, additions are
-> permitted but must be offset by removing low-value content so the file does not grow past 500.
+> **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
 
 ---
 
@@ -151,19 +147,18 @@ Each teammate (read-only — no file edits):
 
 **After each teammate completes**, the orchestrator:
 1. Reviews recommendations **against the Content Gate** — reject additions failing any check
-2. Applies approved changes via Edit tool
+2. Applies approved changes via Edit tool, then `wc -l` to verify budget
 3. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
 4. Tracks renames and coherence issues for Phase 2
-5. **Log cross-communication**: record any SendMessage exchanges between agents (sender, recipient, topic) for the wrap-up observability report
-6. **Verify edits**: `wc -l` for budget, validate frontmatter/sections, check cross-references
+
+**Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
 
 Use `TaskList()` for progress. Route cross-cutting findings from SendMessage to peers and Phase 2.
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 changes are applied, **shut down all Phase 1 agents** via
-`SendMessage(shutdown_request)` before spawning the Phase 2 agent. Then spawn a single
-@staff-engineer teammate (read-only) for coherence review. Assign via `TaskUpdate`.
+After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
+single @staff-engineer teammate (read-only) for coherence review. Assign via `TaskUpdate`.
 
 The Phase 2 teammate:
 1. Reads ALL skill files (freshly improved versions)
@@ -195,32 +190,12 @@ Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_t
 MISSION: Research Claude Code documentation for capabilities relevant to SKILL.md definitions.
 Report NEW or CHANGED features that affect how skill files are written.
 
-PAGES TO RESEARCH (by priority tier):
+FOCUS AREAS: Skills (frontmatter, substitutions, discovery, subagents), Agent Teams (lifecycle,
+coordination, shutdown), Hooks (skill-scoped hooks, event types), Changelog (recent releases,
+breaking changes). Also check: Permissions, Settings, MCP, Plugins, Best Practices, Tools.
 
-TIER 1 — MUST visit every page, extract ALL relevant capabilities:
-- Skills — frontmatter fields (name, description, allowed-tools, argument-hint, effort, disable-model-invocation), string substitutions, automatic discovery, skill locations (.claude/skills/ and skills/), argument passing, tool restriction, access control, dynamic context injection, running in subagents, sharing skills, visual output, troubleshooting
-- Sub-agents — how skills run in subagents, agent types for spawning, frontmatter fields, capability control, tool restrictions, MCP scoping, skill preloading
-- Agent Teams — team patterns (TeamCreate, TeamDelete, task coordination, teammate lifecycle, communication, shutdown protocol)
-- Hooks Reference — hooks in skills, all hook event types, matcher patterns, handler types, hooks defined in skill frontmatter
-- Changelog (https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) — recent releases, new features, deprecations, breaking changes affecting skill definitions
-
-TIER 2 — SHOULD visit each page, extract only skill-relevant capabilities:
-- Permissions — permission modes, tool-specific rules, managed permissions affecting skills
-- Settings — configuration scopes, settings files, subagent config, plugin config
-- MCP — MCP server patterns, tool search, managed configuration
-- Plugins Reference — plugin manifest schema, plugin components including skills, plugin caching
-- Plugins — plugin creation, skill-plugin relationship
-- Best Practices — skill-related practices, verification, context management
-- Tools Reference — available tools, tool behavior details
-
-TIER 3 — SCAN quickly, report only new/changed features:
-- Commands — built-in commands, MCP prompts
-- Output Styles — custom output styles (relationship to skills)
-- Memory — auto-memory, CLAUDE.md interaction with skills
-- CLI Reference — CLI flags affecting skills
-- How Claude Code Works — agentic loop, context management
-
-INSTRUCTIONS: Focus on NEW or CHANGED features that affect SKILL.md writing. If a page fails to load, note it and continue. Report which pages were visited vs. skipped.
+INSTRUCTIONS: Focus on NEW or CHANGED features that affect SKILL.md writing. Report which
+pages were visited vs. skipped.
 
 OUTPUT FORMAT: `- **<capability/change>**: <skill definition relevance>` grouped under:
 New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
@@ -231,14 +206,10 @@ New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
 
-Audit the docket CLI to produce a structured reference of all commands, flags, and usage.
-
-1. Run `--help` on every docket command/subcommand (top-level, `issue`, `vote`, all leaf commands).
-2. Grep for `docket ` across `agents/` and `.claude/skills/` to find current usage.
-3. Cross-reference: identify new/changed/deprecated commands vs. codebase usage.
+Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
+usage in `agents/` and `.claude/skills/`.
 
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
-Rules: Read-only only. Run --help on every subcommand. Note unavailable commands.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -353,4 +324,3 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 12. **Timeout fallback.** Re-spawn once; after two failures, orchestrator reviews directly.
 13. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 14. **Clean up.** Shut down teammates and delete team after wrap-up.
-15. **Mermaid diagrams required.** All documentation produced by this skill (evolution reports, changelog entries, architecture reviews, wrap-up summaries) MUST use Mermaid diagrams to visualize skill relationships, orchestration flows, and evolution patterns.

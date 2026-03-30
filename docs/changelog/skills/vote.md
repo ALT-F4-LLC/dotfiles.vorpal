@@ -3,19 +3,18 @@
 ## 2026-03-29
 
 ### Summary
-Aggressive trim from 616 to 466 lines. Removed verbose pass/fail JSON examples, compressed Delegation Protocol, folded Wrap-up into Phase 4, tightened language.
+Trimmed identity verdict mapping, folded Phase 3 into Phase 4, removed mid-protocol notification, upgraded effort to max. Net -22 lines.
 
 ### Changes
-- Removed 85-line Pass/Fail Examples from Audit Trail (Verification Procedure is sufficient)
-- Compressed Delegation Protocol from 73 to ~45 lines (inline JSON, response table)
-- Folded Wrap-up into Phase 4 as mandatory cleanup step with stronger language
-- Compressed domain-specific checklists from paragraphs to table
-- Consolidated Rules from 6 to 4 (removed duplicates of in-section instructions)
-- Tightened coordinator description to remove academic PBFT framing
-- Compressed Audit Trail preamble and Phase 1 redundant bullets
+- Removed identity verdict mapping table (approve->approve) left over from request-changes removal (-12 lines)
+- Folded Phase 3 (Quorum Evaluation) into Phase 4 — single command doesn't warrant its own phase (-7 lines)
+- Removed "all reviews collected" operator notification — redundant with outcome notification (-3 lines)
+- Replaced non-standard "ultrathink" directive with concrete reasoning instruction
+- Scoped Mermaid diagram requirement to escalation reports only
+- Upgraded effort from high to max for Opus 4.6 multi-agent coordination
 
 ### Dimensions Evaluated
-Over-Engineering (primary), Skill Design Quality, Orchestration & Agent Teams, Actionability, Coherence, Spec Alignment, Rename
+Over-Engineering (primary), Skill Design Quality, Actionability, Coherence, Orchestration & Agent Teams, Completeness, Spec Alignment, Rename
 
 ### Rename
 No rename.

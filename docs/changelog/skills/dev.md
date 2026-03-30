@@ -3,16 +3,12 @@
 ## 2026-03-29
 
 ### Summary
-Tightened agent lifecycle and cleanup patterns, added duplicate planner guard, removed hedging language, compacted redundant sections.
+Trimmed redundancy from spawning templates — removed shared-rules preamble and agent-definition duplicates from @ux-designer and @staff-engineer templates.
 
 ### Changes
-- Added duplicate planner guard: check `docket issue list` before spawning PM
-- Added explicit @senior-engineer shutdown timing based on task size
-- Made wrap-up cleanup deterministic: explicit shutdown + TeamDelete sequence
-- Removed "(if applicable)" and "(for non-trivial work)" hedging
-- Compacted consensus delegation note from 4 lines to 1
-- Compacted PM template: removed redundant docket init, merged requirement lines
-- Removed Handling Failures section (duplicates inline workflow guidance)
+- Removed "Shared rules" preamble from Spawning Templates (duplicates agent definitions and line 18, -5 lines)
+- Compacted @ux-designer template requirements (3 of 6 lines duplicated agent definition, -3 lines)
+- Compacted @staff-engineer TDD template requirements (2 of 6 lines duplicated agent definition, -2 lines)
 
 ### Dimensions Evaluated
 Skill Design Quality, Actionability, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename

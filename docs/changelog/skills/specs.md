@@ -3,14 +3,13 @@
 ## 2026-03-29
 
 ### Summary
-Tightened agent lifecycle (deterministic shutdown sequencing), removed hedging language, trimmed description and spawning template.
+Trimmed redundant instructions from spawning template and pre-flight, aligned argument handling with `$ARGUMENTS` convention.
 
 ### Changes
-- Rewrote Wrap-up as numbered steps with explicit "send all shutdowns in the SAME turn" instruction
-- Replaced hedging ("Be honest", "ACTUALLY exists") with directive language throughout
-- Trimmed spawning template by merging two redundant documentation-honesty lines into one
-- Made Step 2 completion monitoring more concise with failure-detection guidance
-- Shortened frontmatter description to stay within 250-char cap
+- Removed redundant "Do NOT write implementation code" from spawning template (already in @staff-engineer agent definition)
+- Consolidated "If no files exist" into the existing file check step (-2 lines)
+- Merged maturity/dependencies frontmatter bullets into single line (-2 lines)
+- Added `$ARGUMENTS` reference in Argument Handling for cross-skill coherence
 
 ### Dimensions Evaluated
 Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename

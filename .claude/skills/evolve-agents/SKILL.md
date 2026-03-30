@@ -1,15 +1,9 @@
 ---
 name: evolve-agents
 description: >
-  Review and improve agent definitions in agents/*.md to make them more effective as AI agent
-  definitions that Claude can execute reliably. Evaluates role realism, actionability, boundary
-  clarity, completeness, consolidation, capability growth, spec alignment, and rename dimensions.
-  Enforces a Content Gate that rejects non-actionable, non-executable, or redundant additions
-  before they enter agent files. Enforces a 500-line size budget per agent. Can target a specific
-  agent or improve all agents. Agents propose changes; the orchestrator applies all edits,
-  handles renames, and maintains changelogs. Use when the user wants to evolve, improve, grow,
-  or refine agent definitions — including phrases like "evolve agents", "improve agents",
-  "grow the team", "refine agent definitions", or "make the agents better".
+  Evolve agent definitions in agents/*.md via multi-agent self-review. Spawns agents to review
+  themselves, enforces Content Gate and 500-line budget, applies edits. Trigger: "evolve agents",
+  "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name]"
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 effort: max
@@ -250,7 +244,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
 name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
 `<name>`, `{today_date}` (from pre-flight step 3), `{verified_goal}` (from step 1),
-`{experience_feedback}` (from step 2), and `{focus_areas}` (operator pain points) for each.
+and `{experience_feedback}` (from step 2) for each.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
@@ -287,7 +281,7 @@ Experience feedback: {experience_feedback}
 
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
-## Task: Evaluate ALL 8 dimensions
+## Task: Evaluate ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
 
 1. **Role Realism**: Senior practitioner behavior, actionable by Claude?
 2. **Actionability**: Specific workflows, concrete steps, defined outputs?

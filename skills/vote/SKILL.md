@@ -2,8 +2,7 @@
 name: vote
 description: >
   Multi-agent consensus voting protocol. Spawns independent reviewers, computes weighted quorum,
-  and records auditable results via docket. Use for architectural approvals, code reviews,
-  security-sensitive changes, or any decision needing structured multi-agent validation.
+  and records auditable results via docket. Use for any decision needing structured validation.
 argument-hint: "<proposal>"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -40,43 +39,18 @@ If the argument is too vague to evaluate (e.g., `/vote yes or no`), use AskUserQ
 
 ## Execution Mode Detection
 
-Before proceeding to the full protocol, determine your execution mode:
-
-1. **Check your system prompt** for the list of tools available to you.
-2. **If `Agent` AND `TeamCreate` appear in your tool list:**
-   You are the orchestrator (or have spawn capability). Continue with the full protocol
-   below — execute directly starting from Criticality Classification.
-3. **If `Agent` and `TeamCreate` do NOT appear in your tool list:**
-   You are running inside a sub-agent context. Use the **Delegation Protocol** below instead
-   of the direct-execution flow.
+If you have `Agent` and `TeamCreate` tools available, execute the full protocol starting from
+Pre-flight. Otherwise, use the **Delegation Protocol** below.
 
 ### Delegation Protocol (Sub-Agent Path)
 
-When you lack `Agent`/`TeamCreate`, create the proposal yourself and delegate reviewer spawning.
+When you lack `Agent`/`TeamCreate`, create the proposal and delegate reviewer spawning.
 
-**Steps:**
-
-a. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment (in team mode, trust the orchestrator's verified goal), classify criticality.
-
-b. **Create the proposal** via `docket vote create` using the same command from Phase 1: Pre-Prepare. Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable: `docket vote link {vote_id} --issue {issue_id}`.
-
-c. **Delegate** — Send to the orchestrator via SendMessage:
-
-   ```json
-   {"type":"delegation_request","protocol_version":"1","skill":"vote","request_id":"{your-agent-name}-vote-{epoch-ms}","from":"{your-agent-name}","vote_id":"{vote_id}"}
-   ```
-
-d. **Wait** for `delegation_response`. Do not proceed until received.
-
-e. **Handle response** by `status` field:
-
-   | Status | Action |
-   |---|---|
-   | `completed` | Read result: `docket vote result {vote_id} --json`. Produce standard output per Output Format section. |
-   | `failed` | Report error and `vote_id` to caller. Abort. |
-   | `escalated` | Report escalation and `vote_id` to caller. |
-
-f. **Continue your workflow** with the vote outcome.
+1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
+2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", skill: "vote", vote_id: "{vote_id}", from: "{your-agent-name}"})`. Wait for `delegation_response`.
+4. **Handle response** — On `completed`: read result via `docket vote result {vote_id} --json` and produce standard Output Format. On `failed`: report error and abort. On `escalated`: report to caller.
+5. **Continue your workflow** with the vote outcome.
 
 ---
 
@@ -397,7 +371,7 @@ Full result: `docket vote result {proposal_id} --json`
 
 Immediately after reporting the outcome (approved, rejected, or escalated):
 1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each spawned reviewer. Do not wait for acknowledgment.
-2. **Delete the team** — `TeamDelete()`. Failure to clean up wastes resources and causes agent lifecycle issues.
+2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")`. Failure to clean up wastes resources and causes agent lifecycle issues.
 
 ---
 
@@ -413,17 +387,14 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 
 ## Audit Trail
 
-Reviewer independence is verifiable from docket records alone via naming conventions and field structure.
+All audit data is in `docket vote show {vote-id} --json` and `docket vote result {vote-id} --json`:
 
-### Audit Questions
-
-| Question | Docket Field | How to Check |
-|---|---|---|
-| Who proposed this vote? | `created_by` from `docket vote create` | `docket vote show {vote-id} --json` → `.created_by` |
-| Which agents reviewed? | `voter` per vote from `docket vote cast` | `docket vote result {vote-id} --json` → each vote's `.voter` |
-| What agent type was each reviewer? | `role` per vote from `docket vote cast` | `docket vote result {vote-id} --json` → each vote's `.role` |
-| Were reviewers independent instances? | `voter` naming convention encodes `{vote-id}` | Verify each `.voter` matches pattern `{vote-id}-reviewer-{N}` |
-| Was the proposer excluded? | `created_by` vs. all `role` values | Map `created_by` to agent type per the Reviewer Independence Enforcement section, then confirm no `.role` matches |
-| Were all reviewers unique types? | All `role` values in the round | Confirm no duplicate `.role` values across votes |
+| Audit Check | Fields |
+|---|---|
+| Who proposed? | `.created_by` |
+| Who reviewed? | Each vote's `.voter` and `.role` |
+| Independent instances? | `.voter` matches `{vote-id}-reviewer-{N}` pattern |
+| Proposer excluded? | No `.role` matches `created_by` mapped agent type |
+| Unique reviewer types? | No duplicate `.role` values |
 
 

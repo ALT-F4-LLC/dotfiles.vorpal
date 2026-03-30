@@ -1,15 +1,9 @@
 ---
 name: dev
 description: >
-  Orchestrate a software development agent team consisting of @staff-engineer (design + review),
-  @project-manager (planning), @ux-designer (UX design), @senior-engineer (implementation), and
-  @sdet (testing). Use this skill whenever the user wants to plan AND execute a body of
-  work using the agent team pattern — including feature development, migrations, refactors, bug
-  fix batches, or any multi-issue project. Trigger on phrases like "use dev", "run dev",
-  "use the agent team", "plan and execute", "have the team work on", "spin up engineers", or
-  when the user describes work that clearly needs both planning and parallel execution. Also
-  trigger when the user references @project-manager and @senior-engineer together, or asks for
-  "parallel development", "multi-agent execution", or "agent swarm".
+  Orchestrate a 5-agent dev team (@staff-engineer, @project-manager, @ux-designer,
+  @senior-engineer, @sdet) to plan and execute software work: features, migrations,
+  refactors, or bug fix batches. Trigger: "use dev", "agent team", "plan and execute".
 argument-hint: "<work>"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill", "AskUserQuestion"]
@@ -447,14 +441,9 @@ execute a skill requiring agent spawning. Required fields: `type`, `protocol_ver
    only from agent types that remain after proposer exclusion.
 5. Collect verdicts, commit result, clean up via `TeamDelete`.
 
-> **The independence rules from the `/vote` skill (proposer exclusion, unique agent types,
-> case-insensitive matching) apply equally to delegated execution.** The Team Lead is
-> responsible for enforcing these rules when executing votes on behalf of sub-agents.
-
-For unknown skills, respond with `status: "failed"`.
-
 **Response:** Send `delegation_response` to `request.from` with `type`, `protocol_version`,
-`request_id`, `status` (completed|failed|escalated), `vote_id`. Resume orchestration.
+`request_id`, `status` (completed|failed|escalated), `vote_id`. For unknown skills, respond
+with `status: "failed"`. Resume orchestration.
 
 ---
 

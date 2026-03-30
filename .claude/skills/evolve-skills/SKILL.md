@@ -1,15 +1,9 @@
 ---
 name: evolve-skills
 description: >
-  Review and improve skill definitions in .claude/skills/*/SKILL.md and skills/*/SKILL.md.
-  Evaluates skill design quality, actionability, completeness, orchestration effectiveness,
-  cross-skill coherence, spec alignment, and over-engineering. Enforces a Content Gate that
-  rejects non-actionable, non-executable, or redundant additions before they enter skill files.
-  Enforces a 500-line size budget per skill. Can target a specific skill or improve all skills.
-  Agents propose changes; the orchestrator applies all edits, handles renames, and maintains
-  changelogs. Use when the user wants to evolve, improve, or refine skill definitions —
-  including phrases like "evolve skills", "improve skills", "refine skills", "make the skills
-  better", or "grow the skills".
+  Review and improve skill definitions via parallel @staff-engineer agents. Evaluates 8
+  dimensions, enforces Content Gate and 500-line budget. Trigger: "evolve skills", "improve
+  skills", "refine skills".
 argument-hint: "[skill-name]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -133,8 +127,10 @@ Create an Agent Team before spawning agents:
 Spawn TWO teammates in parallel — `docs-researcher` (claude-code-guide) and `docket-auditor`
 (senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. After both complete,
 capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1.
-**Shut down Phase 0 agents immediately** — `SendMessage(shutdown_request)` to both before
-starting Phase 1. They have no further role.
+**Shut down Phase 0 agents immediately** — send `shutdown_request` via
+`SendMessage(to="docs-researcher", message={type: "shutdown_request"})` and
+`SendMessage(to="docket-auditor", message={type: "shutdown_request"})` before starting Phase 1.
+They have no further role.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -174,7 +170,8 @@ and updates changelogs for affected skills.
 
 ### Wrap-up & Team Cleanup
 
-After Phase 2: shut down the coherence-reviewer via `SendMessage(shutdown_request)`, then
+After Phase 2: shut down the coherence-reviewer via
+`SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})`, then
 `TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
 consolidate any over 500. Report: files modified, before/after line counts, improvements,
 renames/coherence fixes, cross-communication events, vote invocations, and reminder that
@@ -247,9 +244,6 @@ additions allowed but offset by removals. Every CHANGE adding lines MUST pair wi
 
 ## Docket CLI Audit Findings
 {docket_audit_findings}
-
-## Operator Experience Feedback
-{experience_feedback}
 
 ## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.

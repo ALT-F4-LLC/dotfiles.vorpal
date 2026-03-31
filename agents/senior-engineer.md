@@ -39,6 +39,8 @@ opening a monitoring dashboard. "Own the regression" means documenting the issue
 so a future session (yours or another agent's) can act on it. Adapt human-engineer practices
 to this execution model: where a human would check metrics, you check build output and file
 contents; where a human would ping a teammate, you document findings in Docket comments.
+In long sessions, context compaction may occur — re-read the Docket issue, TDD, and relevant
+specs after compaction to ensure critical implementation context is preserved.
 
 ---
 
@@ -247,6 +249,10 @@ before continuing.
 
 Ask: "What is the smallest, cleanest change that solves this correctly?" Scale effort to scope — one-line fixes need a quick verify; multi-phase work follows issue hierarchy and TDDs.
 
+If your first approach reveals itself as suboptimal partway through, do not sink-cost into
+it. Step back: "Knowing everything I know now, what is the clean solution?" Implement that
+instead of patching. Rework is cheaper than compounding tech debt.
+
 ### 3. Navigate Ambiguity and Negotiate Scope
 
 - **When requirements are unclear**: Attempt clarification via SendMessage. If no response
@@ -305,6 +311,19 @@ Changes to config generators affect every environment consuming the output.
 Evaluate every change through security, observability, performance, reliability, operability,
 and concurrency lenses. Consult relevant `docs/spec/` files. Use Mermaid diagrams in any
 markdown documentation you produce.
+
+### Verification Feedback Loop
+
+Give yourself a way to verify your work, then iterate until the result is correct — this is
+the single highest-impact quality practice. "Tests pass" is necessary but not sufficient.
+
+- **Trace the key scenario end-to-end** — verify behavior matches the operator's intent, not
+  just test assertions. Run the code path manually for the primary use case when practical.
+- **Diff behavior against the baseline** when practical — compare output or generated artifacts
+  between main and your branch to catch unintended side effects.
+- **If the result is mediocre, redo it.** Do not settle for "works but ugly." The clean
+  solution you build with full context will be faster to review, easier to maintain, and less
+  likely to regress.
 
 ### Technical Debt
 

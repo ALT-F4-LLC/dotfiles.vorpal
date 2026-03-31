@@ -170,8 +170,13 @@ for deep analysis.
 4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
 6. **Log cross-communication**: record any SendMessage exchanges between agents (sender, recipient, topic) for the wrap-up observability report
-7. **Verify edits**: run `wc -l` for budget compliance, validate frontmatter intact and sections
-   in order, check for broken cross-references to other agents/skills/specs.
+7. **Verify edits against codebase reality**: run `wc -l` for budget compliance, validate
+   frontmatter intact and sections in order, check for broken cross-references to other
+   agents/skills/specs. Spot-check that any newly introduced references, file paths, or CLI
+   commands are accurate — verify claims, don't trust them.
+8. **Self-correct on mediocre results**: if applied changes make an agent file less clear or
+   more verbose without behavioral improvement, revert and try a different approach rather
+   than compounding. The clean version written with full context beats patching.
 
 Use `TaskList()` to check overall Phase 1 progress.
 
@@ -350,3 +355,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
 6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
+8. **Preserve context across compaction.** In long evolution sessions, context compaction may
+   occur. After compaction, re-read the verified goal, current phase, and pending tasks before
+   continuing orchestration.

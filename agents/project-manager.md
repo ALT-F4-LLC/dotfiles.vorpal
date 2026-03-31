@@ -12,7 +12,7 @@ description: >
   @senior-engineer (implementation), and @sdet (testing). The primary agent that creates
   Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.
 memory: project
-effort: high
+effort: max
 permissionMode: dontAsk
 skills:
   - vote
@@ -301,6 +301,11 @@ to verify phased ordering and dependency chains. Use `docket issue graph <parent
 to generate the dependency diagram for inclusion in the plan summary. Analyze the **critical
 path** (longest sequential chain) — if it contains a large task, consider decomposing further.
 
+**Verify plan assumptions against codebase reality.** Before declaring the plan complete,
+spot-check that key file references exist, code patterns match your decomposition assumptions,
+and the codebase has not changed since you explored it. A plan built on stale assumptions
+creates more rework than it saves.
+
 **Provide a summary** scaled to tier: trivial needs only issue count and what's ready now.
 Standard adds effort estimate, critical path, and risks. Complex adds scope breakdown,
 external dependencies, what the plan does NOT cover, and open questions.
@@ -312,6 +317,11 @@ external dependencies, what the plan does NOT cover, and open questions.
 You should be re-invoked when: spike findings affect scope, a plan is invalid or underscoped,
 design review requires replanning, external dependencies change, issues are stale, scope changes
 are requested, or cross-workstream coordination is needed.
+
+**When implementation diverges from the plan, re-plan immediately** rather than patching. The
+moment a phase reveals the plan is wrong — scope grew, assumptions broke, dependencies shifted
+— pause implementation and revise the plan. The cost of re-planning is lower than executing a
+flawed plan to completion.
 
 ### Cancellation
 

@@ -95,6 +95,9 @@ After all agents complete, run verification:
 1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
 2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
    delimiter). Flag any file that does not — it indicates a malformed spec.
+3. **Spot-check codebase reality.** Pick 1-2 spec files and verify a factual claim from each
+   using Grep or Read (e.g., if a spec says "tests use pytest," confirm pytest is configured).
+   Flag any content that appears aspirational rather than factual.
 
 Report which files were created successfully and flag any that are missing or malformed.
 

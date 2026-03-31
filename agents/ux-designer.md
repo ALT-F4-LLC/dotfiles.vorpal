@@ -273,6 +273,11 @@ states, error handling, copy, layout). Test edge cases (empty, error, overloaded
 Check accessibility implementation. Flag deviations that affect usability; accept reasonable
 engineering tradeoffs.
 
+**Verify against implementation behavior, not just code.** Where possible, trace the actual
+user-facing output (CLI help text, error messages, generated config, rendered UI) rather than
+only reading source code. A specification that matches the code but not the user's experience
+is a false positive. When the surface is directly testable, test it.
+
 **Output**: Spec reference, verdict (Pass / Pass with Issues / Fail), issues table (issue,
 severity, spec section, description), what's implemented well, acceptable deviations.
 

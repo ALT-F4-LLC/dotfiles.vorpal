@@ -370,6 +370,10 @@ Before spawning any agents, create an Agent Team to coordinate:
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
     - If any teammate failed, diagnose before proceeding (see Handling Failures below)
+    - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong —
+      scope grew beyond expectations, assumptions broke, dependencies shifted — pause and
+      re-invoke @project-manager to revise the plan rather than patching. The cost of
+      re-planning is lower than executing a flawed plan to completion.
     - Proceed to the next phase
 
 ### Review Phase
@@ -387,6 +391,11 @@ Before spawning any agents, create an Agent Team to coordinate:
 
     **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
     to the user with the details rather than continuing to loop.
+
+    **Optional simplification pass:** For medium+ tasks with significant code changes (20+
+    files or 500+ lines), ask the "advisor" to also evaluate the changeset for unnecessary
+    complexity, code duplication across issues, and opportunities to simplify. This catches
+    over-engineering that individual-issue reviews miss.
 
 ### Consensus Integration
 
@@ -456,4 +465,7 @@ with `status: "failed"`. Resume orchestration.
    report the event and outcome to the user — the operator needs observability.
 5. **Fail loud.** Surface failures immediately with details. Escalate same-failure loops
    after 2 cycles rather than continuing to retry.
+6. **Preserve context across compaction.** In long-running team sessions, context compaction
+   may occur. After compaction, re-read the verified goal, current phase, and active issue
+   states before continuing orchestration.
 

@@ -146,8 +146,10 @@ Each teammate (read-only — no file edits):
 **After each teammate completes**, the orchestrator:
 1. Reviews recommendations **against the Content Gate** — reject additions failing any check
 2. Applies approved changes via Edit tool, then `wc -l` to verify budget
-3. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
-4. Tracks renames and coherence issues for Phase 2
+3. **Verify edits against codebase reality** — spot-check that references, file paths, and
+   CLI commands in modified content are accurate. If a change introduces a claim, verify it.
+4. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
+5. Tracks renames and coherence issues for Phase 2
 
 **Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
 
@@ -319,3 +321,9 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 11. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
 12. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 13. **Clean up.** Shut down teammates and delete team after wrap-up.
+14. **Self-correct on mediocre results.** If applied changes make a skill less clear or more
+    verbose without behavioral improvement, revert and try a different approach rather than
+    compounding. The clean version you write with full context is better than patching.
+15. **Preserve context across compaction.** In long evolution sessions, context compaction may
+    occur. After compaction, re-read the verified goal, current phase, and pending tasks before
+    continuing orchestration.

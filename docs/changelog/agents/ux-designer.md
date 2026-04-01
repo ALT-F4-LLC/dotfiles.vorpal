@@ -1,5 +1,25 @@
 # Changelog: ux-designer
 
+## 2026-04-01
+
+### Summary
+Added `model: opus[1m]` to frontmatter, added context compaction handling, compressed Pre-Flight and Inter-Agent Communication sections, added Edit tool. Net: -12 lines.
+
+### Changes
+- Added `model: opus[1m]` to frontmatter (settings standardization)
+- Added context compaction handling to Operating context (team-wide pattern)
+- Compressed Pre-Flight standalone mode from 13 to 4 lines
+- Merged notification triggers into single Proactive communication block
+- Compressed cross-communication observability
+- Compressed vote cast CLI reference to inline format
+- Added Edit tool for incremental docs/ux/ spec updates
+
+### Dimensions Evaluated
+All 8: Completeness (frontmatter, Edit tool), Consolidation & Trimming (primary), Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

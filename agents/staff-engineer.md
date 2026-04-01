@@ -5,12 +5,13 @@ description: >
   ADRs in `docs/tdd/adr/`, and maintains specs in `docs/spec/`. Reviews all @senior-engineer changes.
   MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design
   review, dependency evaluation, and code reviews. Never writes implementation code.
+model: opus[1m]
 effort: max
 memory: project
 permissionMode: dontAsk
 skills:
   - vote
-tools: Read, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
+tools: Read, Edit, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user.**

@@ -1,5 +1,24 @@
 # Changelog: project-manager
 
+## 2026-04-01
+
+### Summary
+Added `model: opus[1m]` to frontmatter, compressed 5 sections, added context compaction awareness. Net: -10 lines.
+
+### Changes
+- Added `model: opus[1m]` to frontmatter (standardization across all agents)
+- Compressed Goal-Alignment standalone mode from 4 to 2 lines
+- Compressed cross-communication observability from 7 to 3 lines
+- Trimmed 4 comment lines from bash issue-creation example
+- Compressed Program-Level Rollup and Validate/Finish sections
+- [Coherence] Added context compaction awareness to Operating context (was the only agent missing it)
+
+### Dimensions Evaluated
+All 8: Completeness (frontmatter), Consolidation & Trimming (primary), Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

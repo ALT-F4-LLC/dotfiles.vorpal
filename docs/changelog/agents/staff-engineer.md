@@ -1,5 +1,20 @@
 # Changelog: staff-engineer
 
+## 2026-04-01
+
+### Summary
+Added `model: opus[1m]` to frontmatter and Edit tool for incremental doc updates. Settings standardization and coherence fix.
+
+### Changes
+- Added `model: opus[1m]` to frontmatter (settings standardization)
+- [Coherence] Added `Edit` to tools list (was the only doc-producing agent without it)
+
+### Dimensions Evaluated
+All 8: Completeness (frontmatter — primary), Consolidation & Trimming, Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

@@ -1,5 +1,22 @@
 # Changelog: senior-engineer
 
+## 2026-04-01
+
+### Summary
+Added `model: opus[1m]` to frontmatter, compressed proactive sharing, /vote guidance, and Docket CLI Reference. Added docket aliases. Net: -13 lines.
+
+### Changes
+- Added `model: opus[1m]` to frontmatter (settings standardization)
+- Compressed proactive sharing from 12 to 5 lines with trigger→recipient mapping
+- Merged /vote "when to invoke" bullets, tightened trailing prose (-5 lines)
+- Compressed Docket CLI Reference: inlined VERDICT, merged vote subcommands, added aliases (-3 lines)
+
+### Dimensions Evaluated
+All 8: Completeness (frontmatter), Consolidation & Trimming (primary), Capability Growth (docket aliases), Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

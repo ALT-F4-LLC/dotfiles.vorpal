@@ -1,2 +1,4 @@
-/.docket
-/target
+.docket/
+docs/spec/
+docs/tdd/
+target/

@@ -1,5 +1,24 @@
 # Changelog: sdet
 
+## 2026-04-01
+
+### Summary
+Added `model: opus[1m]` to frontmatter, added context compaction awareness, compressed Inter-Agent Communication, merged status/observability sections, removed Mermaid directive, compressed Defect Analysis and severity definitions. Net: -9 lines.
+
+### Changes
+- Added `model: opus[1m]` to frontmatter (settings standardization)
+- Added context compaction handling to Operating context (team-wide pattern)
+- Compressed Inter-Agent Communication preamble from 5 to 2 lines
+- Merged Status updates and Cross-communication observability (-4 lines)
+- Removed "Mermaid required" directive (not behaviorally relevant for test verification)
+- Compressed Defect Analysis and bug severity to inline format
+
+### Dimensions Evaluated
+All 8: Completeness (frontmatter), Consolidation & Trimming (primary), Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

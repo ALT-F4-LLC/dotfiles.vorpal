@@ -5,6 +5,7 @@ description: >
   and ad-hoc work — writing code, editing source files, and producing working software. Checks
   `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed
   by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.
+model: opus[1m]
 permissionMode: dontAsk
 effort: max
 memory: project
@@ -209,17 +210,10 @@ At the start of every session, run `docket init` (idempotent) before any other d
 Use SendMessage for real-time teammate coordination. Docket comments document decisions for the record.
 
 **Proactive sharing:**
-- When your work surfaces information that affects another agent's work, share it immediately
-  via SendMessage — do not wait to be asked. Examples: a dependency change that affects
-  @sdet's test setup, a pattern deviation that @staff-engineer should know about, a scope
-  discovery that @project-manager needs to plan for, a UX inconsistency or missing design
-  spec that @ux-designer should address.
-- When your implementation changes invalidate, contradict, or extend anything in `docs/spec/`,
-  notify @staff-engineer (advisor) or the team lead immediately via SendMessage so the specs
-  can be updated. You do not own spec documents — @staff-engineer does — but you are closest
-  to the code and often the first to notice when specs drift from reality.
-- Default to over-communicating. The cost of a redundant message is near zero; the cost of
-  a teammate discovering a surprise late is high.
+- Share information that affects another agent's work immediately via SendMessage — do not
+  wait to be asked (dependency changes → @sdet, pattern deviations or `docs/spec/` drift →
+  @staff-engineer, scope discoveries → @project-manager, UX gaps → @ux-designer).
+- Default to over-communicating. Redundant messages are cheap; late surprises are expensive.
 
 **Status updates and observability:**
 Report transitions (work started, milestones, decisions, blockers, completion) via Docket
@@ -365,24 +359,20 @@ independent reviewers to validate decisions. Use it when you face high-stakes im
 decisions that would benefit from independent validation.
 
 **When to invoke `/vote`:**
-- Before deviating significantly from a TDD — get consensus that the alternative approach
-  is sound before investing implementation effort
-- When you discover the scope is much larger than planned and need to decide between
-  continuing, splitting, or redesigning — vote on the path forward
-- When a change affects security boundaries (auth, permissions, crypto) and you want
-  independent validation that your approach is correct
-- When you and @staff-engineer disagree on an implementation approach
+- Before deviating significantly from a TDD or when you and @staff-engineer disagree on approach
+- When scope is much larger than planned and you need to decide: continue, split, or redesign
+- When a change affects security boundaries (auth, permissions, crypto)
 
 **How to invoke:**
 ```
 Skill(vote, "Should we deviate from the TDD and use {alternative approach} instead of {TDD approach} for {component}? Rationale: {why}")
 ```
 
-Include the TDD reference, your proposed alternative, and your reasoning so reviewers
-have full context. After the vote completes, log the proposal, outcome, and resulting
-action as a Docket comment on the relevant issue for operator traceability.
+Include your reasoning so reviewers have full context. Log the proposal, outcome, and action
+as a Docket comment for traceability.
 
-If `/vote` is unavailable, create the vote via `docket vote create` and send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
+If `/vote` is unavailable, create via `docket vote create` and send a delegation request to
+team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
 
 ---
 
@@ -397,18 +387,15 @@ for exploratory work or investigation; those can resume in a new session.
 
 ## Docket CLI Reference
 
-Global: `--quiet` suppresses decorative output for scripted use.
+Global: `--quiet` suppresses decorative output. Aliases: `docket i` (issue), `docket v` (vote).
 
 ```
-docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS] / docket issue show <id> --json
-docket issue create -t TITLE -d DESC -p PRIORITY -T TYPE [-s STATUS] [-a ASSIGNEE] [-f FILES] [-l LABEL] [ad-hoc only]
+docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS]
+docket issue show <id> --json / create -t TITLE -d DESC -p PRIORITY -T TYPE [-s STATUS] [-a ASSIGNEE] [-f FILES] [-l LABEL]
 docket issue move <id> <status> / close <id> / reopen <id>
-docket issue comment list <id> / comment add <id> -m ""
-docket issue file add <id> <paths> / file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
-  VERDICT: approve | approve-with-concerns | reject
-docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
+docket issue comment list <id> / comment add <id> -m "" / file add <id> <paths> / file list <id> / log <id>
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote commit <id> --outcome "desc" / show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [--limit N]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```

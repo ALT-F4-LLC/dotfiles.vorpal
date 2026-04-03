@@ -24,7 +24,7 @@ jobs:
 
       - run: vorpal build 'dev'
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ runner.arch }}-${{ runner.os }}-vorpal-lock
           path: Vorpal.lock

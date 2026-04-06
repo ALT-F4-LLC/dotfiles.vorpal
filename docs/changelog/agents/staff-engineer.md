@@ -3,6 +3,24 @@
 ## 2026-04-06
 
 ### Summary
+CRITICAL: Encoded mandatory TDD question-resolution workflow — open questions resolved via AskUserQuestion, secondary @staff-engineer review, status tracking. Added `status` field to TDD frontmatter. Folded Advisory Mode. Net: -5 lines.
+
+### Changes
+- **CRITICAL**: Replaced TDD workflow steps 7-8 with steps 7-11: save(draft) → resolve questions(AskUserQuestion) → secondary review → vote → update status(accepted)
+- Added `status` field to TDD frontmatter template (draft | questions-resolved | in-review | accepted | superseded)
+- Updated "Risks & Open Questions" — questions must be resolved before vote
+- Compressed Handoff section — PM notification moved to workflow step 11
+- Folded Advisory Mode into Responsibility 3 opening
+
+### Dimensions Evaluated
+All 8: Completeness (primary — question-resolution workflow), Actionability, Consolidation & Trimming, Role Realism, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-06
+
+### Summary
 Fixed `/vote` team-nesting bug (operator feedback): team-mode now delegates to orchestrator instead of invoking Skill directly. Removed Docket Vote CLI Reference block (agent can run `docket vote --help`). Compressed Mermaid Diagrams section. Net: -20 lines.
 
 ### Changes

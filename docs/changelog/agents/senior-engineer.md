@@ -3,19 +3,17 @@
 ## 2026-04-06
 
 ### Summary
-Fixed `/vote` team-nesting bug (operator feedback): team-mode now delegates to orchestrator via SendMessage. Compressed Technical Debt, Verification, and Status Updates sections. Updated CLI reference with audit findings. Net: -15 lines.
+Added TDD status gate (only implement from ACCEPTED TDDs). Compressed Core Operating Principles and Verification. Updated CLI reference with audit findings. Net: -3 lines.
 
 ### Changes
-- **CRITICAL**: Reworked `/vote` section — team mode delegates to orchestrator via SendMessage, standalone invokes Skill directly. Prevents nested agent teams.
-- Compressed Technical Debt from 8 to 4 lines
-- Compressed Verification Feedback Loop from 6 to 3 lines
-- Compressed Status Updates and Observability from 6 to 4 lines
-- Added `docket version --quiet` to session initialization (traceability, audit finding)
-- Updated CLI reference: added `--watch`/`--interval`, `issue ls`/`vote ls` aliases, `docket version`
-- [Coherence] Added `--escalation-reason TEXT` to `vote commit` in CLI reference
+- **CRITICAL**: Added TDD status gate — only implement from TDDs with `status: accepted` frontmatter; non-accepted TDDs block implementation with notification
+- Compressed "Own the Outcome" — removed non-executable "regressions after close" (-1 line)
+- Compressed "Right-Size the Effort" — merged sink-cost paragraph into single sentence (-3 lines)
+- Compressed Verification Feedback Loop — removed puffery and redundant "mediocre, redo" bullet (-2 lines)
+- Updated CLI: `--created-by`/`--escalation-reason` on vote create, `--summary`/`--voter` on vote cast, `export --status` (+1 line)
 
 ### Dimensions Evaluated
-All 8: Capability Growth (vote fix — primary), Consolidation & Trimming, Completeness (CLI audit), Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+All 8: Completeness (TDD gate — primary, CLI audit), Consolidation & Trimming, Spec Alignment, Role Realism, Actionability, Boundary Clarity, Capability Growth, Rename
 
 ### Rename
 No rename.

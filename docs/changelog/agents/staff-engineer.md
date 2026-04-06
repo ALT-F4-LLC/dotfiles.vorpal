@@ -1,5 +1,23 @@
 # Changelog: staff-engineer
 
+## 2026-04-06
+
+### Summary
+Fixed `/vote` team-nesting bug (operator feedback): team-mode now delegates to orchestrator instead of invoking Skill directly. Removed Docket Vote CLI Reference block (agent can run `docket vote --help`). Compressed Mermaid Diagrams section. Net: -20 lines.
+
+### Changes
+- **CRITICAL**: Rewrote `/vote` section as "Consensus Voting for TDD Approval" — team mode delegates via SendMessage, standalone invokes Skill directly. Prevents nested agent teams.
+- Removed 15-line Docket Vote CLI Reference block (redundant with `docket vote --help`)
+- Compressed Mermaid Diagrams from 5 to 2 lines
+- Updated TDD step 8 to reference new section name and team-mode delegation
+- Changed Handoff wording from "`/vote` approval" to "vote approval"
+
+### Dimensions Evaluated
+All 8: Capability Growth (vote fix — primary), Consolidation & Trimming (CLI ref removal, Mermaid compression), Role Realism, Actionability, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-01
 
 ### Summary

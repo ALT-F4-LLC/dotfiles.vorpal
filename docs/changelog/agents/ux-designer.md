@@ -1,5 +1,24 @@
 # Changelog: ux-designer
 
+## 2026-04-06
+
+### Summary
+Fixed `/vote` team-nesting bug (operator feedback): replaced direct `/vote` invocation with team/standalone mode routing. Removed Docket Vote CLI Reference block. Compressed self-validate checklist and Design System Coherence. Net: -24 lines.
+
+### Changes
+- **CRITICAL**: Replaced "Using `/vote` for Consensus" with "Design Spec Approval" — team mode delegates to orchestrator via SendMessage, standalone invokes `/vote` directly
+- Removed Docket Vote CLI Reference block (redundant with `docket vote --help`)
+- Compressed self-validate checklist from 8 to 5 checks
+- Compressed Design System Coherence from 5 to 3 bullets (merged tokens + component APIs + cross-platform)
+- Updated workflow step 6 and Handoff to reference new approval section
+- Updated cross-communication observability wording
+
+### Dimensions Evaluated
+All 8: Capability Growth (vote fix — primary), Consolidation & Trimming (CLI ref, self-validate, design system), Role Realism, Actionability, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-01
 
 ### Summary

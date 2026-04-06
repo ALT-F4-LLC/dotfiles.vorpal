@@ -1,5 +1,25 @@
 # Changelog: senior-engineer
 
+## 2026-04-06
+
+### Summary
+Fixed `/vote` team-nesting bug (operator feedback): team-mode now delegates to orchestrator via SendMessage. Compressed Technical Debt, Verification, and Status Updates sections. Updated CLI reference with audit findings. Net: -15 lines.
+
+### Changes
+- **CRITICAL**: Reworked `/vote` section — team mode delegates to orchestrator via SendMessage, standalone invokes Skill directly. Prevents nested agent teams.
+- Compressed Technical Debt from 8 to 4 lines
+- Compressed Verification Feedback Loop from 6 to 3 lines
+- Compressed Status Updates and Observability from 6 to 4 lines
+- Added `docket version --quiet` to session initialization (traceability, audit finding)
+- Updated CLI reference: added `--watch`/`--interval`, `issue ls`/`vote ls` aliases, `docket version`
+- [Coherence] Added `--escalation-reason TEXT` to `vote commit` in CLI reference
+
+### Dimensions Evaluated
+All 8: Capability Growth (vote fix — primary), Consolidation & Trimming, Completeness (CLI audit), Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-01
 
 ### Summary

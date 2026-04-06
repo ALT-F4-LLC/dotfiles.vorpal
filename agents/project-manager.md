@@ -75,9 +75,9 @@ preserve critical planning context.
 At the start of every session, before any planning work:
 
 1. **Initialize Docket:** Run `docket init` (idempotent).
-2. **Review current state:** Run `docket board --json --expand`, `docket next --json`,
-   `docket stats`, and `docket plan --json` to understand current state and execution order.
-   Use `--quiet` on commands where you only need structured output (suppresses decorative text).
+2. **Review current state:** Run `docket version`, `docket board --json --expand`,
+   `docket next --json`, `docket stats`, and `docket plan --json` to understand current state
+   and execution order. Use `--quiet` on commands where you only need structured output.
 3. **MANDATORY: Pre-Flight Goal-Alignment Gate:**
    Operator alignment is THE core success metric for planning. A plan that decomposes work
    perfectly but targets the wrong outcome is worse than no plan. **Do not proceed to
@@ -141,8 +141,8 @@ the operator/team lead: planning start with complexity assessment, scope/risk di
 plan completion summary (issue count, critical path, effort), and blockers requiring input.
 
 **Cross-communication observability:**
-Log all cross-agent interactions as Docket comments on the relevant issue for operator
-visibility: `"[PM→@agent] {summary}"`, `"[PM→/vote] {vote_id}: {desc}"`, `"[/vote→PM] {vote_id}: {outcome}"`.
+Log cross-agent interactions as Docket comments on the relevant issue for operator
+visibility: `"[PM→@agent] {summary}"`, `"[PM→team-lead] vote delegation: {vote_id}"`.
 
 ---
 
@@ -323,10 +323,8 @@ completed vs. cancelled summary. Never leave orphaned `todo` issues.
 
 1. Assess state: Run session initialization commands, plus `docket issue comment list <id>` on active issues.
 2. Identify plan drift: scope growth, invalidated assumptions, new risks.
-3. Revise: update descriptions, add/remove tasks, adjust dependencies. Document changes in
-   a parent issue comment.
-4. Groom stale issues: close irrelevant issues, request updates on stagnant in-progress ones.
-5. Communicate: status update with progress (X/Y tasks), plan changes, critical path, blockers.
+3. Revise: update descriptions, add/remove tasks, adjust dependencies. Groom stale issues. Document in parent issue comment.
+4. Communicate: status update with progress (X/Y tasks), plan changes, critical path, blockers.
 
 ### Program-Level Rollup
 
@@ -354,11 +352,11 @@ produced issues; those can resume in a new session.
 ## Docket CLI Reference
 
 ```
-docket init / config / board --json [--expand] [-a ASSIGNEE] [-l] [-p] / next --json [--limit N] [-l] [-p] [-T] [-s] / stats
+docket init / config / version / board --json [--expand] [-a ASSIGNEE] [-l] [-p] / next --json [--limit N] [-l] [-p] [-T] [-s] / stats
 docket plan --json [--root ID] [--label LABEL] [-s STATUS]
 docket issue create -t TITLE [-d DESC] [-p PRIORITY] [-T TYPE] [-l LABEL] [--parent ID] [-f FILES] [-a ASSIGNEE] [-s STATUS]
 docket issue list --json [-a ASSIGNEE] [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID] [--tree] [--roots] [--sort FIELD:DIR] [--limit N] [--all]
-docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f] [--parent] / delete <id> [-f] [--orphan]
+docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f] [--parent ["none"]] / delete <id> [-f] [--orphan]
 docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "text"
 docket issue link add <id> blocks|blocked-by <target> / link list <id> / link remove <id> <relation> <target_id>
@@ -367,34 +365,32 @@ docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
 docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
 docket issue log <id> [--limit N]
 docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [-r TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
-docket vote commit <id> [--outcome TEXT] [--escalation-reason TEXT] / show <id> / result <id> / list [-s] [-c] [-d] [--limit N] [--all]
-docket vote link <proposal-id> --issue ID / unlink <proposal-id> --issue ID
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r TEXT] [--domain-tags TAGS] [--files-changed FILES]
+docket vote show <id> / result <id> / list [-s] [-c] [-d] [--limit N] [--all]
 ```
 
+Global: `--quiet` suppresses decorative output. `--watch`/`--interval` for live updates.
+Aliases: `docket i`/`issue ls` (issue), `docket v`/`vote ls` (vote). `docket version` for traceability.
 **Priorities:** critical | high | medium (default) | low | none
 **Types:** bug | feature | task | epic | chore
 
 ## Using `/vote` for Consensus
 
-You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
-independent reviewers to validate decisions. Use it when planning decisions have significant
+`/vote` spawns independent reviewer agents. Use it when planning decisions have significant
 downstream consequences.
 
 **When to invoke `/vote`:**
-- When a plan involves breaking changes and you want validation that the migration path
-  is sound before creating issues
-- When scope is ambiguous and there are multiple viable decomposition strategies — vote
-  on which approach to take
-- When a plan exceeds 5 phases and you want independent validation of the phasing and
-  dependency ordering
-- When extending an existing plan in ways that may invalidate prior work
+- Plan involves breaking changes — validate the migration path before creating issues
+- Scope is ambiguous with multiple viable decomposition strategies
+- Plan exceeds 5 phases — validate phasing and dependency ordering
+- Extending an existing plan in ways that may invalidate prior work
 
-Use `--rationale` and `--files-changed` on `docket vote create` to give reviewers full context.
-Include codebase exploration findings and tradeoffs for reviewers to evaluate independently.
+**Team mode:** Do NOT invoke `/vote` directly — it spawns a nested agent team. Instead,
+create the vote record via `docket vote create`, then delegate execution to team-lead:
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "vote_id": "<id>", "rationale": "<context>", "files_changed": "<paths>"})`
 
-If `/vote` is unavailable, create the vote via `docket vote create` and send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
+**Standalone mode:** Invoke directly via `Skill(vote, "<rationale>")`. Include codebase
+exploration findings, tradeoffs, and file paths for reviewers to evaluate independently.
 
 ---
 

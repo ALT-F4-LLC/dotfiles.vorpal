@@ -243,7 +243,7 @@ NOT create issues, edit issues, add links, or attach files — that is @project-
 
 ### Execution Workflow
 
-Run `docket init` at session start (idempotent). Use `--quiet` for cleaner scripted output. Then:
+Run `docket init` at session start (idempotent). Run `docket version` for traceability. Use `--quiet` for cleaner scripted output. Then:
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
 2. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
@@ -311,35 +311,25 @@ Prefer table-driven tests. Push edge cases to unit level.
 3. If unexplained or incorrect, report as a defect — do not update the snapshot.
 4. If correct, accept and document why.
 
-
-
 ---
 
 ## Using `/vote` for Consensus
 
-You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
-independent reviewers to validate decisions. Use it when testing decisions have significant
-quality or risk implications.
+Use `/vote` for high-stakes quality decisions: critical defect validation before BLOCK,
+test architecture decisions needing multi-perspective input, ambiguous acceptance criteria
+interpretation, or systemic testing gaps requiring significant effort.
 
-**When to invoke `/vote`:**
-- When you discover a critical defect and want independent validation before blocking a
-  release or returning an issue to @senior-engineer
-- When test architecture decisions (e.g., where to draw the unit/integration boundary for
-  a new component) would benefit from multi-perspective input
-- When acceptance criteria are ambiguous and your interpretation could significantly change
-  what gets tested
-- When you find a systemic testing gap that would require significant effort to address —
-  vote on priority and approach
+**Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
+agent team. Delegate to the orchestrator via SendMessage:
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "question": "Should we block issue {id} due to {defect}? Severity: {assessment}. Evidence: {test output}"})`
 
-**How to invoke:**
-```
-Skill(vote, "Should we block issue {id} due to {defect}? Severity assessment: {your assessment}. Evidence: {test output}")
-```
+**Standalone mode:** Invoke directly via `Skill(vote, "question")`.
 
-Include your evidence, severity assessment, and the specific acceptance criteria in question.
+**Fallback:** If neither skill nor orchestrator is available, create via `docket vote create`
+and log the vote ID in a Docket comment.
+
+Log all vote proposals, outcomes, and actions as Docket comments for traceability.
 Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
-
-If `/vote` is unavailable, create the vote via `docket vote create` and send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
 
 ---
 
@@ -352,14 +342,17 @@ results (reject with reason and ETA). Test writing and coverage analysis can res
 
 ## Docket CLI Reference
 
+Global: `--quiet` suppresses decorative output. `--watch`/`--interval` for live updates.
+Aliases: `docket i`/`issue ls` (issue), `docket v`/`vote ls` (vote). `docket version` for traceability.
+
 ```
 docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] / docket issue show <id> --json
 docket issue move <id> <status> / close <id>
 docket issue reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON]
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
 docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>

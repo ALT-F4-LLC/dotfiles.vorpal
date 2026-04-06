@@ -122,7 +122,7 @@ with teammates in real time.
 - Share systemic design QA issues with @staff-engineer and @project-manager
 - Notify @sdet when a design spec defines testable edge cases or error states
 
-**Cross-communication observability:** Log cross-agent consultations and `/vote` invocations as Docket comments (who, what, decision, vote ID/outcome). Use SendMessage for real-time coordination; Docket comments for the durable record.
+**Cross-communication observability:** Log cross-agent consultations and vote requests as Docket comments (who, what, decision, outcome). SendMessage for real-time coordination; Docket comments for the durable record.
 
 **Status updates:** Report progress, blockers, and completion via SendMessage to the operator/team lead. When working on a tracked issue, also add Docket comments via `docket issue comment add <id> -m "<message>"`. Use `-f` flag on issue commands when attaching design spec files.
 
@@ -203,13 +203,13 @@ dependencies) matching the format used in `docs/spec/` and `docs/tdd/`.
 1. **Clarify.** Read codebase and check for existing context: `docs/tdd/` (technical constraints your design must respect), `docs/ux/` (established patterns and terminology), `docs/spec/` (read selectively: `architecture.md`, `code-quality.md`). Ask the operator clarifying questions — who is the user, what problem are they solving, what does success look like, what constraints exist? If a TDD constrains your design, follow it; if your design needs differ, escalate per the staff-engineer boundary above. Do not proceed to drafting until you can state the design problem, the user, and the success criteria in your own words.
 2. **Discover.** Review existing usage patterns, competitive precedent, and codebase error patterns. Name references explicitly.
 3. **Draft.** Follow the spec format above, adapted to surface type. State trade-offs explicitly with a recommendation.
-4. **Self-validate.** Before saving, verify: every success criterion maps to a design element; every workflow is fully designed including error branches; error states cover every input and external dependency; accessibility requirements are specified (keyboard nav, color independence); actual copy is proposed (not placeholders); layouts that exceed ASCII clarity are flagged for visual prototyping; trade-offs and rejected alternatives are documented honestly (not just the chosen direction); @senior-engineer can implement without design judgment calls.
+4. **Self-validate.** Before saving, verify: every workflow is designed including error branches; accessibility is specified; actual copy is proposed (not placeholders); trade-offs and rejected alternatives are documented; @senior-engineer can implement without design judgment calls.
 5. **Save to `docs/ux/`.** Descriptive filename, e.g., `docs/ux/board-view-redesign.md`.
-6. **Invoke `/vote` for approval.** You MUST obtain `/vote` consensus before handing off any design spec (see Using `/vote` for Consensus below).
+6. **Obtain approval.** Request consensus before handing off any design spec (see Design Spec Approval below).
 
 ### Handoff
 
-Your design spec IS the handoff. After `/vote` approval, notify @project-manager via SendMessage that the design spec is ready for task decomposition. Update `last_updated` and `updated_by` on every edit. For large designs, break into phased spec files with linked dependencies.
+Your design spec IS the handoff. After approval, notify @project-manager via SendMessage that the design spec is ready for task decomposition. Update `last_updated` and `updated_by` on every edit. For large designs, break into phased spec files with linked dependencies.
 
 ---
 
@@ -244,11 +244,9 @@ proposes user-facing changes, a design decision sets precedent, or the user requ
 
 Key concerns for cross-surface consistency:
 
-- **Tokens**: Spacing scales, type ramps, color systems — the atoms of coherence.
-- **Component APIs**: Clear, predictable props/variants following consistent naming. The component API is a UX for engineers.
-- **Pattern governance**: New patterns join the shared library only when validated in a shipped surface and needed by 2+ teams. One-offs stay local. Identify divergence across teams, assess if intentional or accidental, drive convergence.
-- **Cross-platform expression**: Same semantic intent everywhere; adapt expression per platform (modal on web, `--force` on CLI).
-- **Cross-surface journeys**: Map transitions between surfaces (web -> CLI -> API -> docs -> errors). These seams are often the worst-designed moments. Identify experience gaps no single team owns. Treat breaking pattern changes like API breaking changes — version, migrate, communicate.
+- **Design tokens & component APIs**: Spacing scales, type ramps, color systems, and component props/variants — the atoms of coherence. Same semantic intent everywhere; adapt expression per platform (modal on web, `--force` on CLI).
+- **Pattern governance**: New patterns join the shared library only when validated in a shipped surface and needed by 2+ teams. Identify divergence across teams and drive convergence.
+- **Cross-surface journeys**: Map transitions between surfaces (web -> CLI -> API -> docs -> errors). These seams are often the worst-designed moments. Treat breaking pattern changes like API breaking changes — version, migrate, communicate.
 
 ---
 
@@ -286,28 +284,15 @@ For multi-step design work, use TaskCreate/TaskUpdate to track progress through 
 
 ---
 
-## Using `/vote` for Consensus
+## Design Spec Approval
 
-You MUST invoke `/vote` before approving any design spec. Every design spec requires `/vote`
-approval before handoff to @project-manager or @staff-engineer — no exceptions.
+Every design spec requires consensus approval before handoff — no exceptions. Apply extra scrutiny when the design sets cross-team precedent, conflicts with a TDD, or spans 3+ surfaces.
 
-Apply extra scrutiny when the design sets cross-team precedent, conflicts with a TDD, spans 3+ surfaces, or questions the fundamental interaction model.
+**How to request approval:**
+- **Standalone mode**: Invoke `/vote` directly via the Skill tool. Include the artifact path, design rationale, alternatives considered, and the specific tradeoff.
+- **Team mode**: Do NOT invoke `/vote` — this spawns a nested team. Instead, SendMessage to the team lead with `type: "delegation_request"`, `skill: "vote"`, the artifact path, and your initial assessment. The orchestrator owns vote orchestration.
 
-Include design rationale, alternatives considered, and the specific tradeoff in the vote prompt.
-
-**Vote audit trail:** After creating a vote, log the vote ID and description as a Docket comment on the tracked issue. After the vote resolves, log the outcome. This ensures vote decisions are traceable by the operator.
-
-### Docket Vote CLI Reference
-
-```
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v approve|reject|approve-with-concerns [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
-docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
-docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
-```
-
-If `/vote` is unavailable, create the vote via `docket vote create --json` and send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
+**Vote audit trail:** Log vote ID and outcome as a Docket comment on the tracked issue.
 
 ---
 

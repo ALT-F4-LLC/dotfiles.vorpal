@@ -1,5 +1,23 @@
 # Changelog: evolve-skills
 
+## 2026-04-06
+
+### Summary
+Added anti-sub-agent-spawning instructions to orchestrator identity, Phase 1 template, Phase 2 template, and consolidated verbose rules. Removed "vote invocations" from wrap-up report.
+
+### Changes
+- Added "No nested agents" blockquote at orchestrator identity level (+2 lines)
+- Added "No sub-agents" rule to Phase 1 spawning template Requirements (+1 line)
+- Added anti-spawning instruction to Phase 2 coherence reviewer template (+1 line)
+- Removed "vote invocations" from wrap-up report list (contradicts sub-agent prevention)
+- Consolidated rules 14-15 verbose phrasing (-3 lines)
+
+### Dimensions Evaluated
+Orchestration & Agent Teams, Coherence, Over-Engineering, Completeness, Skill Design Quality, Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

@@ -1,5 +1,25 @@
 # Changelog: vote
 
+## 2026-04-06
+
+### Summary
+Fixed critical nested agent spawning bug: replaced broken Execution Mode Detection (tool-availability check that never triggers for team agents) with team-context awareness. Added explicit team-spawning prohibition to Rules.
+
+### Changes
+- Rewrote Execution Mode Detection to use team-context (team_name presence) instead of tool availability — fixes root cause of team agents spawning reviewer sub-agents
+- Added Rule 2: explicit prohibition on agent spawning from within a team, with delegation protocol redirect
+- Rewrote description to distinguish standalone (spawns reviewers) vs team (delegates to orchestrator) behavior
+- Renamed "Sub-Agent Path" to "Team Path" in Delegation Protocol header
+- Added "Standalone Mode Only" header and team-mode note to Reviewer Prompt Template section
+- Removed trailing blank lines
+- Fixed duplicate Rule 3 numbering (renumbered to 3-6) — coherence fix
+
+### Dimensions Evaluated
+Over-Engineering, Skill Design Quality, Actionability, Completeness, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

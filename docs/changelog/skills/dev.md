@@ -1,5 +1,23 @@
 # Changelog: dev
 
+## 2026-04-06
+
+### Summary
+Fixed critical orchestration gap: team agents lacked explicit sub-agent spawning prohibition in spawning templates. Added preamble, overrode @staff-engineer /vote behavior, completed team table constraints.
+
+### Changes
+- Added sub-agent prohibition preamble to Spawning Templates section (+2 lines)
+- Added /vote delegation override to @staff-engineer TDD template (+1 line)
+- Added "cannot spawn sub-agents" to @project-manager and @senior-engineer table rows
+- Removed redundant delegation blockquote from Consensus Integration (-2 lines)
+- Fixed Rule 4 "invoke" → "request" for /vote consistency
+
+### Dimensions Evaluated
+Orchestration & Agent Teams, Over-Engineering, Skill Design Quality, Actionability, Completeness, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

@@ -1,8 +1,8 @@
 ---
 name: vote
 description: >
-  Multi-agent consensus voting protocol. Spawns independent reviewers, computes weighted quorum,
-  and records auditable results via docket. Use for any decision needing structured validation.
+  Multi-agent consensus voting protocol. Standalone: spawns reviewers. Team: delegates to
+  orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
 argument-hint: "<proposal>"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -39,12 +39,16 @@ If the argument is too vague to evaluate (e.g., `/vote yes or no`), use AskUserQ
 
 ## Execution Mode Detection
 
-If you have `Agent` and `TeamCreate` tools available, execute the full protocol starting from
-Pre-flight. Otherwise, use the **Delegation Protocol** below.
+**Team context** (you were spawned as a teammate — i.e., you have a `team_name`): You MUST NOT
+spawn agents or create teams. Use the **Delegation Protocol** below — send a `delegation_request`
+to the orchestrator and let them handle reviewer spawning.
 
-### Delegation Protocol (Sub-Agent Path)
+**Standalone context** (invoked directly by the user via `/vote`): Execute the full protocol
+starting from Pre-flight.
 
-When you lack `Agent`/`TeamCreate`, create the proposal and delegate reviewer spawning.
+### Delegation Protocol (Team Path)
+
+When in team context, create the proposal and delegate reviewer spawning to the orchestrator.
 
 1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
@@ -244,7 +248,9 @@ echo '{multi-line findings text}' | docket vote cast {proposal_id} \
 - Use `--findings -` (stdin) to pass multi-line findings, or `--findings-json -` for structured JSON.
 - Use `--summary` for the reviewer's one-line assessment (from their Summary section).
 
-### Reviewer Prompt Template
+### Reviewer Prompt Template (Standalone Mode Only)
+
+> In team mode, the orchestrator spawns reviewers — this template is provided for the orchestrator's reference.
 
 ```
 Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
@@ -378,10 +384,11 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 ## Rules
 
 1. **Independence is sacred.** You do not vote. Never share one reviewer's output with another.
-2. **Spawn all reviewers in the same turn** to maximize parallelism.
-3. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-4. **Respect criticality direction.** May override up, never down for security.
-5. **Mermaid diagrams for escalations.** When escalating to a human after 3 failed rounds, include a Mermaid diagram visualizing the vote flow across rounds. Standard consensus results use the structured text Output Format without diagrams.
+2. **Never spawn agents from within a team.** If you are a teammate (have a `team_name`), use the Delegation Protocol — send a `delegation_request` to the orchestrator. Only standalone invocations spawn reviewers.
+3. **Spawn all reviewers in the same turn** to maximize parallelism (standalone mode only).
+4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
+5. **Respect criticality direction.** May override up, never down for security.
+6. **Mermaid diagrams for escalations.** When escalating to a human after 3 failed rounds, include a Mermaid diagram visualizing the vote flow across rounds. Standard consensus results use the structured text Output Format without diagrams.
 
 ---
 
@@ -396,5 +403,3 @@ All audit data is in `docket vote show {vote-id} --json` and `docket vote result
 | Independent instances? | `.voter` matches `{vote-id}-reviewer-{N}` pattern |
 | Proposer excluded? | No `.role` matches `created_by` mapped agent type |
 | Unique reviewer types? | No duplicate `.role` values |
-
-

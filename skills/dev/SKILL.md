@@ -46,9 +46,9 @@ the problem and tradeoffs directly — do not soften bad news.
 |---|---|---|
 | **Team Lead (you)** | Orchestration decisions, agent prompts | Never writes code, never creates issues, never commits |
 | **@staff-engineer** | TDDs in `docs/tdd/`, code reviews, project specs in `docs/spec/` | Never writes implementation code; cannot spawn sub-agents |
-| **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | ONLY agent that creates Docket issues; never writes code |
+| **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | ONLY agent that creates Docket issues; never writes code; cannot spawn sub-agents |
 | **@ux-designer** | Design specs in `docs/ux/` | Never writes implementation code; cannot spawn sub-agents |
-| **@senior-engineer** | Implementation code, issue completion comments | Does NOT create issues; does NOT commit changes |
+| **@senior-engineer** | Implementation code, issue completion comments | Does NOT create issues; does NOT commit changes; cannot spawn sub-agents |
 | **@sdet** | Tests, verification reports, bug comments on existing issues | Never creates issues; cannot spawn sub-agents |
 
 ---
@@ -149,6 +149,8 @@ Follows Medium Task pattern with @ux-designer prepended:
 
 ## Spawning Templates
 
+> **All teammates**: Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. To request voting or agent-spawning operations, use `SendMessage(to="team-lead")` with `type: "delegation_request"`.
+
 ### @staff-engineer (TDD)
 
 ```
@@ -167,6 +169,7 @@ Requirements:
 - Check docs/ux/ and docs/spec/ for existing specs that inform this work
 - Produce a TDD following your agent instructions, saved to docs/tdd/{descriptive-name}.md
 - Include concrete acceptance criteria, architecture decisions, and implementation phases
+- Do NOT invoke /vote for TDD approval — instead SendMessage the team lead to request voting
 ```
 
 ### @staff-engineer (Code Review)
@@ -401,8 +404,6 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 Invoke `/vote` for decisions matching the triggers below. Single-reviewer remains the default.
 
-> Sub-agent `/vote` invocations arrive as delegation requests — see "Handling Delegation Requests."
-
 **Consensus triggers** (otherwise single-reviewer, Team Lead may opt in):
 - Security-sensitive review (auth, permissions, crypto) → Always (critical)
 - Architectural TDD approval → Always (high)
@@ -461,7 +462,7 @@ with `status: "failed"`. Resume orchestration.
 1. **Never skip planning.** Always start with @project-manager (or design first if needed).
 2. **One phase at a time.** Never run conflicting phases in parallel.
 3. **Respect scope.** Each @senior-engineer only touches files listed in their issue scope.
-4. **Surface cross-communication.** When agents SendMessage each other or invoke `/vote`,
+4. **Surface cross-communication.** When agents SendMessage each other or request `/vote`,
    report the event and outcome to the user — the operator needs observability.
 5. **Fail loud.** Surface failures immediately with details. Escalate same-failure loops
    after 2 cycles rather than continuing to retry.

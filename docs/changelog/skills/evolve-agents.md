@@ -1,5 +1,22 @@
 # Changelog: evolve-agents
 
+## 2026-04-06
+
+### Summary
+Added anti-sub-agent-spawning instructions to Phase 1 template, Phase 2 template, and Rules section. Compressed post-Phase-1 verification steps.
+
+### Changes
+- Added "No sub-agents" rule to Phase 1 template Rules — prevents `/vote`, `Skill()`, `Agent()`, `TeamCreate` (+2 lines)
+- Added anti-spawning instruction to Phase 2 template (+1 line)
+- Added Rule 8 "No nested agents" establishing orchestrator as sole agent-spawner (+2 lines)
+- Compressed post-Phase-1 steps 6-8 from 8 lines to 3 (-5 lines)
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

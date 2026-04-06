@@ -27,6 +27,8 @@ skill files.
 
 > **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
 
+> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates.
+
 ---
 
 ## Argument Handling
@@ -176,7 +178,7 @@ After Phase 2: shut down the coherence-reviewer via
 `SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})`, then
 `TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
 consolidate any over 500. Report: files modified, before/after line counts, improvements,
-renames/coherence fixes, cross-communication events, vote invocations, and reminder that
+renames/coherence fixes, cross-communication events, and reminder that
 NO changes have been committed.
 
 ---
@@ -256,6 +258,7 @@ every addition MUST be offset by a removal. Do not default to approval — your 
 
 ## Requirements
 - **Read-only** — analyze and recommend only. Build on strengths, don't rewrite.
+- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 - Minimize context: first 80 lines of other skills, relevant specs only.
 - **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
   patterns affecting all targets, or scope expansion beyond target skill.
@@ -277,6 +280,7 @@ Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagen
 
 Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -321,9 +325,5 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 11. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
 12. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 13. **Clean up.** Shut down teammates and delete team after wrap-up.
-14. **Self-correct on mediocre results.** If applied changes make a skill less clear or more
-    verbose without behavioral improvement, revert and try a different approach rather than
-    compounding. The clean version you write with full context is better than patching.
-15. **Preserve context across compaction.** In long evolution sessions, context compaction may
-    occur. After compaction, re-read the verified goal, current phase, and pending tasks before
-    continuing orchestration.
+14. **Self-correct on mediocre results.** If changes worsen clarity without behavioral gain, revert and retry.
+15. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.

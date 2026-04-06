@@ -9,8 +9,9 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, jj::Jj, jq::Jq, k9s::K9s,
-    kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, tmux::Tmux,
+    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, jj::Jj, jq::Jq,
+    k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, sesh::Sesh,
+    tmux::Tmux, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -46,6 +47,7 @@ impl UserEnvironment {
         let direnv = Direnv::new().build(context).await?;
         let doppler = Doppler::new().build(context).await?;
         let fd = Fd::new().build(context).await?;
+        let fzf = Fzf::new().build(context).await?;
         let gh = Gh::new().build(context).await?;
         let git = Git::new().build(context).await?;
         let gopls = Gopls::new().build(context).await?;
@@ -56,7 +58,9 @@ impl UserEnvironment {
         let lazygit = Lazygit::new().build(context).await?;
         let nnn = Nnn::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
+        let sesh = Sesh::new().build(context).await?;
         let tmux = Tmux::new().build(context).await?;
+        let zoxide = Zoxide::new().build(context).await?;
 
         // Configuration files
 
@@ -442,6 +446,7 @@ impl UserEnvironment {
                 direnv,
                 doppler,
                 fd,
+                fzf,
                 gh,
                 git,
                 gopls,
@@ -452,7 +457,9 @@ impl UserEnvironment {
                 lazygit,
                 nnn,
                 ripgrep,
+                sesh,
                 tmux,
+                zoxide,
                 // Dependencies configurations
                 bat_config,
                 bat_theme,

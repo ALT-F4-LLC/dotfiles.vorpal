@@ -169,14 +169,9 @@ for deep analysis.
 3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
 4. **Normalizes the changelog** per the Changelog Format rules above
 5. Tracks rename recommendations and coherence issues for Phase 2
-6. **Log cross-communication**: record any SendMessage exchanges between agents (sender, recipient, topic) for the wrap-up observability report
-7. **Verify edits against codebase reality**: run `wc -l` for budget compliance, validate
-   frontmatter intact and sections in order, check for broken cross-references to other
-   agents/skills/specs. Spot-check that any newly introduced references, file paths, or CLI
-   commands are accurate — verify claims, don't trust them.
-8. **Self-correct on mediocre results**: if applied changes make an agent file less clear or
-   more verbose without behavioral improvement, revert and try a different approach rather
-   than compounding. The clean version written with full context beats patching.
+6. **Log cross-communication**: record SendMessage exchanges (sender, recipient, topic) for wrap-up
+7. **Verify edits**: run `wc -l` for budget, validate frontmatter/sections, spot-check new references and CLI commands against codebase
+8. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
 Use `TaskList()` to check overall Phase 1 progress.
 
@@ -301,6 +296,8 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 ## Rules
 
 - **Read-only** — analyze and recommend, do not edit files. Build on strengths, don't rewrite.
+- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. If you need
+  voting or agent spawning, SendMessage the orchestrator with a delegation request.
 - **Minimize context**: first 80 lines of other agents, relevant specs only.
 - **Course-correct**: SendMessage orchestrator immediately for cross-cutting issues, universal patterns,
   or scope expansion beyond target agent.
@@ -321,6 +318,7 @@ Read-only cross-cutting coherence review. Orchestrator applies all edits. Substi
 Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
 Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.**
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -355,6 +353,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
 6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **Preserve context across compaction.** In long evolution sessions, context compaction may
-   occur. After compaction, re-read the verified goal, current phase, and pending tasks before
-   continuing orchestration.
+8. **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`,
+   `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests.
+9. **Preserve context across compaction.** After compaction, re-read the verified goal, current
+   phase, and pending tasks before continuing orchestration.

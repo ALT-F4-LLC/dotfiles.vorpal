@@ -1,5 +1,22 @@
 # Changelog: specs
 
+## 2026-04-06
+
+### Summary
+Added explicit leaf-agent constraints to prevent spawned agents from creating sub-agents or invoking skills.
+
+### Changes
+- Added leaf-agent prohibition to role description paragraph — spawned agents must NOT spawn sub-agents or invoke skills
+- Added concrete leaf-agent instruction to spawning template — "Do NOT spawn sub-agents, invoke skills (e.g., /vote), or use the Agent tool"
+- Addresses reported experience feedback: team agents were invoking /vote and spawning nested agents
+- Standardized anti-spawning language to canonical 4-tool pattern (`/vote`, `Skill()`, `Agent()`, `TeamCreate`) — coherence fix
+
+### Dimensions Evaluated
+Orchestration & Agent Teams, Coherence, Completeness, Over-Engineering
+
+### Rename
+No rename.
+
 ## 2026-03-30
 
 ### Summary

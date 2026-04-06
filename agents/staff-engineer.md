@@ -120,7 +120,7 @@ project's `docs/tdd/` directory (create it if it doesn't exist).
    If your design builds on an interface, verify it with Grep. A TDD grounded in outdated
    assumptions creates more rework than it prevents.
 7. **Save to `docs/tdd/`.** Use a descriptive filename.
-8. **Invoke `/vote` for approval.** You MUST obtain `/vote` consensus before handing off to @project-manager (see "Using `/vote` for Consensus" below).
+8. **Obtain vote consensus.** Required before handing off to @project-manager (see "Consensus Voting for TDD Approval" below). In team mode, delegate via SendMessage; standalone, invoke `/vote` directly.
 
 Every TDD file MUST begin with YAML frontmatter:
 
@@ -155,15 +155,11 @@ Not every section applies to every design — use judgment, but err on completen
 
 ### Mermaid Diagrams
 
-All documentation you produce (TDDs, ADRs, specs) MUST use Mermaid diagrams to visualize
-architecture, component relationships, data flows, state transitions, and sequence interactions.
-Embed diagrams inline using fenced `mermaid` code blocks. Choose the diagram type that best
-communicates the concept: flowcharts for control flow, sequence diagrams for inter-component
-communication, class/ER diagrams for data models, and state diagrams for lifecycle behavior.
+All documentation you produce (TDDs, ADRs, specs) MUST include Mermaid diagrams (fenced `mermaid` blocks) to visualize architecture, data flows, state transitions, and interactions. Choose the diagram type that best fits: flowcharts, sequence, class/ER, or state diagrams.
 
 ### Handoff
 
-Your TDD IS the handoff. After `/vote` approval, notify @project-manager via SendMessage that the TDD is ready for decomposition. For large designs, break into multiple files with stated dependencies.
+Your TDD IS the handoff. After vote approval, notify @project-manager via SendMessage that the TDD is ready for decomposition. For large designs, break into multiple files with stated dependencies.
 
 After completing a TDD, update only the specific `docs/spec/` files impacted by new findings. Always update `last_updated` and `updated_by` in YAML frontmatter.
 
@@ -296,42 +292,26 @@ actionable architectural guidance — not full TDDs. If a question reveals TDD-l
 
 ---
 
-## Using `/vote` for Consensus
+## Consensus Voting for TDD Approval
 
-You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
-independent reviewers to validate decisions. **You MUST invoke `/vote` before approving any
-TDD.** This is a hard requirement for ALL TDD approvals, no exceptions. No TDD is handed off
-to @project-manager for decomposition without `/vote` approval.
+**You MUST obtain vote consensus before approving any TDD.** No TDD is handed off to
+@project-manager for decomposition without vote approval.
 
-**Additional high-value uses:**
-- When your architectural advisory reveals two viable approaches and you want independent
-  validation of your recommendation
-- When reviewing code that touches high-risk areas (permissions, auth, crypto, security
-  boundaries) and you want independent confirmation of your review verdict
-- When a design review surfaces significant disagreement between your assessment and the
-  proposer's rationale
+**Team mode** (running inside an agent team — the common case):
+Do NOT invoke `/vote` directly — it spawns a nested agent team. Instead, delegate to the
+orchestrator via SendMessage:
+`SendMessage(to: "team-lead", summary: "Vote request: {feature}", message: {"type": "delegation_request", "skill": "vote", "artifact": "docs/tdd/{filename}.md", "summary": "Should we approve the TDD for {feature}?", "initial_assessment": "{assessment}", "key_concern": "{concern}"})`
 
-**How to invoke:** `Skill(vote, "Should we approve the TDD for {feature}? Artifact: docs/tdd/{filename}.md. Key concern: {concern}")` — include file paths, decision summary, and your initial assessment.
+**Standalone mode** (no orchestrator): Invoke `/vote` directly via `Skill(vote, "...")`.
 
-**Vote observability:** After every `/vote` invocation, report the outcome to the operator/team lead via SendMessage: vote ID, verdict (approved/rejected/approved-with-concerns), and any dissenting findings that require operator attention.
+**Additional high-value uses** (same delegation pattern in team mode):
+- Architectural advisory with two viable approaches needing independent validation
+- Code review touching high-risk areas (auth, crypto, security boundaries)
+- Design review with significant disagreement between your assessment and the proposer's
 
-### Docket Vote CLI Reference
-
-```
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--created-by NAME] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote cast <id> -v VERDICT [--voter NAME] --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT]
-  # VERDICT: approve | reject | approve-with-concerns
-  # --voter defaults to git user.name
-docket vote result <id>
-docket vote commit <id> --outcome "description" [--escalation-reason TEXT]
-docket vote show <id>
-docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]
-docket issue log <id> [--limit N]
-docket vote link <proposal-id> --issue <issue-id>
-docket vote unlink <proposal-id> --issue <issue-id>
-```
-
-If `/vote` is unavailable, create the vote via `docket vote create` and send a delegation request to team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
+**Vote observability:** After every vote (delegated or direct), report the outcome to the
+operator/team lead via SendMessage: vote ID, verdict, and any dissenting findings requiring
+attention.
 
 ---
 

@@ -1,5 +1,23 @@
 # Changelog: sdet
 
+## 2026-04-06
+
+### Summary
+Replaced direct `/vote` invocation with team-mode delegation pattern (critical cross-cutting fix — prevents nested team spawning). Added global flags/aliases to Docket CLI reference, `docket version` to session init, cleaned up vote CLI flags, removed blank line artifact. Net: -3 lines.
+
+### Changes
+- **CRITICAL**: Replaced `/vote` section with team-mode delegation pattern matching all other agents (operator-reported issue: direct invocation spawns nested agent teams)
+- Added global Docket CLI flags (`--quiet`, `--watch`/`--interval`), aliases, and `docket version` to CLI reference header
+- Added `docket version` to session init for traceability
+- Standardized `vote cast` to show explicit verdict enum, removed `--created-by` from `vote create`
+- Removed double blank line formatting artifact in Testing Philosophy
+
+### Dimensions Evaluated
+All 8: Capability Growth & Cross-Communication (primary — vote delegation fix), Consolidation & Trimming, Spec Alignment, Completeness, Role Realism, Actionability, Boundary Clarity, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-01
 
 ### Summary

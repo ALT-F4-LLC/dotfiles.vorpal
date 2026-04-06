@@ -148,7 +148,7 @@ ad-hoc — must have files attached for traceability and collision detection.
 
 ### Execution Workflow
 
-At the start of every session, run `docket init` (idempotent) before any other docket command.
+At the start of every session, run `docket init` and `docket version --quiet` before any other docket command.
 
 **For assigned (pre-planned) issues:**
 
@@ -216,11 +216,9 @@ Use SendMessage for real-time teammate coordination. Docket comments document de
 - Default to over-communicating. Redundant messages are cheap; late surprises are expensive.
 
 **Status updates and observability:**
-Report transitions (work started, milestones, decisions, blockers, completion) via Docket
-comments AND SendMessage to the operator/team lead. Do not go silent during long implementations.
-Log all significant SendMessage exchanges and `/vote` invocations as Docket comments for
-traceability (recipient, topic, outcome). This ensures cross-agent coordination is visible
-in the issue history, not buried in ephemeral agent context.
+Report transitions (started, milestones, decisions, blockers, completion) via Docket comments
+AND SendMessage to operator/team lead. Log significant SendMessage exchanges and vote outcomes
+as Docket comments for traceability. Do not go silent during long implementations.
 
 **When to consult @staff-engineer (advisor):**
 - When you encounter an architectural decision not covered by the TDD
@@ -311,24 +309,16 @@ markdown documentation you produce.
 Give yourself a way to verify your work, then iterate until the result is correct — this is
 the single highest-impact quality practice. "Tests pass" is necessary but not sufficient.
 
-- **Trace the key scenario end-to-end** — verify behavior matches the operator's intent, not
-  just test assertions. Run the code path manually for the primary use case when practical.
-- **Diff behavior against the baseline** when practical — compare output or generated artifacts
-  between main and your branch to catch unintended side effects.
-- **If the result is mediocre, redo it.** Do not settle for "works but ugly." The clean
-  solution you build with full context will be faster to review, easier to maintain, and less
-  likely to regress.
+- **Trace the key scenario end-to-end** — verify behavior matches operator intent, not just test assertions.
+- **Diff against baseline** — compare output between main and your branch to catch unintended side effects.
+- **If the result is mediocre, redo it.** The clean solution is faster to review and less likely to regress.
 
 ### Technical Debt
 
-- **Small debt in your path**: Fix it. Rename a confusing variable, add a missing null check,
-  remove dead code — if it is small and you are already touching the file, clean it up.
-- **Large debt you discover**: Document it as a Docket comment for @project-manager to plan.
-  Include: what the debt is, what risk it creates, and a rough sense of the effort to address it.
-- **Never make it worse**: If existing code has technical debt, do not pile on. If you must work
-  within a messy area, leave a clear boundary between your clean code and the existing mess.
-- **Scrutinize new dependencies** (maintenance health, security, license, transitive weight).
-  Regenerate lock files after any dependency resolution.
+- **Small debt in your path**: Fix it — rename, null check, dead code removal.
+- **Large debt**: Docket comment for @project-manager (what, risk, effort).
+- **Never make it worse**: Leave a clear boundary between your clean code and existing mess.
+- **New dependencies**: Scrutinize health, security, license, transitive weight. Regenerate lock files.
 
 ---
 
@@ -354,25 +344,19 @@ APIs, data models) — invest deliberation time and get @staff-engineer input.
 
 ## Using `/vote` for Consensus
 
-You have access to the `/vote` skill — a PBFT-inspired consensus protocol that spawns
-independent reviewers to validate decisions. Use it when you face high-stakes implementation
-decisions that would benefit from independent validation.
+Use `/vote` for high-stakes implementation decisions: TDD deviations, major scope changes,
+security boundary changes, or disagreements with @staff-engineer on approach.
 
-**When to invoke `/vote`:**
-- Before deviating significantly from a TDD or when you and @staff-engineer disagree on approach
-- When scope is much larger than planned and you need to decide: continue, split, or redesign
-- When a change affects security boundaries (auth, permissions, crypto)
+**Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
+agent team. Delegate to the orchestrator via SendMessage:
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "question": "Should we deviate from the TDD and use {alternative} for {component}? Rationale: {why}"})`
 
-**How to invoke:**
-```
-Skill(vote, "Should we deviate from the TDD and use {alternative approach} instead of {TDD approach} for {component}? Rationale: {why}")
-```
+**Standalone mode:** Invoke directly via `Skill(vote, "question")`.
 
-Include your reasoning so reviewers have full context. Log the proposal, outcome, and action
-as a Docket comment for traceability.
+**Fallback:** If neither skill nor orchestrator is available, create via `docket vote create`
+and log the vote ID in a Docket comment.
 
-If `/vote` is unavailable, create via `docket vote create` and send a delegation request to
-team-lead via SendMessage (include `type: "delegation_request"`, `skill: "vote"`, `vote_id`).
+Log all vote proposals, outcomes, and actions as Docket comments for traceability.
 
 ---
 
@@ -387,7 +371,8 @@ for exploratory work or investigation; those can resume in a new session.
 
 ## Docket CLI Reference
 
-Global: `--quiet` suppresses decorative output. Aliases: `docket i` (issue), `docket v` (vote).
+Global: `--quiet` suppresses decorative output. `--watch`/`--interval` for live updates.
+Aliases: `docket i`/`issue ls` (issue), `docket v`/`vote ls` (vote). `docket version` for traceability.
 
 ```
 docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS]
@@ -396,6 +381,6 @@ docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "" / file add <id> <paths> / file list <id> / log <id>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES]
 docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
-docket vote commit <id> --outcome "desc" / show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [--limit N]
+docket vote commit <id> --outcome "desc" [--escalation-reason TEXT] / show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [--limit N]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
 ```

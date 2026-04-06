@@ -3,6 +3,24 @@
 ## 2026-04-06
 
 ### Summary
+Added mandatory "Resolve open questions" workflow step (verified goal). Compressed What You Are NOT, Research, and Shutdown sections. Updated Handoff Notes to require resolved decisions. Net: +1 line.
+
+### Changes
+- **CRITICAL**: Added workflow step 5 "Resolve open questions — do not defer" requiring all design questions be surfaced to operator via AskUserQuestion before saving spec
+- Updated Handoff Notes: replaced "open questions" with "resolved design decisions"
+- Compressed What You Are NOT from 4 bullets to 2 (merged implementer + PM, removed SDET)
+- Compressed Research section from two paragraphs to one
+- Compressed Shutdown Handling from 3 lines to 1
+
+### Dimensions Evaluated
+All 8: Completeness (primary — open questions workflow), Consolidation & Trimming, Spec Alignment, Role Realism, Actionability, Boundary Clarity, Capability Growth, Rename
+
+### Rename
+No rename.
+
+## 2026-04-06
+
+### Summary
 Fixed `/vote` team-nesting bug (operator feedback): replaced direct `/vote` invocation with team/standalone mode routing. Removed Docket Vote CLI Reference block. Compressed self-validate checklist and Design System Coherence. Net: -24 lines.
 
 ### Changes

@@ -3,20 +3,16 @@
 ## 2026-04-06
 
 ### Summary
-Fixed critical `/vote` team-nesting issue (operator feedback) by adding team/standalone mode routing. Updated Docket CLI reference with audit findings. Compressed re-engagement and observability sections. Net: -6 lines.
+Added TDD acceptance gate blocking premature decomposition. Compressed Plan Monitoring and merged Program-Level Rollup. Updated CLI reference with `--created-by` flag. Net: -1 line.
 
 ### Changes
-- **CRITICAL**: Rewrote `/vote` section with team-mode delegation (do NOT invoke directly in teams) and standalone-mode direct invocation
-- Updated cross-communication observability to reflect vote delegation pattern
-- Added `docket version`, `--parent ["none"]`, `--watch`/`--interval` global flags, and aliases to CLI reference
-- Removed vote cast/commit/link from CLI reference (PM delegates, doesn't execute votes)
-- Compressed Re-Engagement from 5 steps to 4
-- Added `docket version` to session initialization step 2
-- [Coherence] Removed `--created-by NAME` from `vote create` in CLI reference (defaults to git user.name)
-- [Coherence] Added `--quiet`, full aliases format, and `docket version` to CLI reference global header
+- **PRIMARY**: Added TDD acceptance gate to Exploration and Routing — blocks decomposition until TDD acceptance pipeline completes (questions → review → vote → status update)
+- Compressed Plan Monitoring intro from 7 lines to 4
+- Merged Program-Level Rollup into Re-Engagement step 4
+- Added `--created-by NAME` to `vote create` in CLI reference (docket audit finding)
 
 ### Dimensions Evaluated
-All 8: Boundary Clarity (primary — vote team-nesting fix), Consolidation & Trimming, Completeness (CLI audit), Actionability, Role Realism, Capability Growth, Spec Alignment, Rename
+All 8: Completeness (primary — TDD acceptance gate, CLI audit), Consolidation & Trimming, Spec Alignment, Boundary Clarity, Actionability, Role Realism, Capability Growth, Rename
 
 ### Rename
 No rename.

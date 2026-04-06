@@ -125,6 +125,13 @@ If feedback conflicts with operator requirements, escalate to the user or team l
 **When to surface requests in your output (for the team lead to route):**
 - **Technical investigation/design** needing a full TDD — route to @staff-engineer. Check
   `docs/tdd/` first — a TDD may already exist.
+
+**TDD acceptance gate:** Do NOT decompose work that depends on a TDD until the TDD has been
+accepted. Acceptance means: all open questions resolved via operator input, a separate
+@staff-engineer review completed, vote consensus obtained, and TDD status updated. Wait for
+@staff-engineer's SendMessage notification that the TDD is ready for decomposition. If you
+discover a dependency on an unaccepted TDD during planning, create a blocked issue and surface
+the dependency to the team lead.
 - **UX design** — route to @ux-designer: new UI/CLI/TUI surfaces, API ergonomics, error
   message design, config format changes. Check `docs/ux/` first.
 
@@ -305,14 +312,10 @@ dependencies, what the plan does NOT cover, and open questions.
 
 ## Plan Monitoring and Re-Engagement
 
-You should be re-invoked when: spike findings affect scope, a plan is invalid or underscoped,
-design review requires replanning, external dependencies change, issues are stale, scope changes
-are requested, or cross-workstream coordination is needed.
-
-**When implementation diverges from the plan, re-plan immediately** rather than patching. The
-moment a phase reveals the plan is wrong — scope grew, assumptions broke, dependencies shifted
-— pause implementation and revise the plan. The cost of re-planning is lower than executing a
-flawed plan to completion.
+Re-invoke when: spike findings affect scope, plan is invalid/underscoped, design review requires
+replanning, external dependencies change, issues are stale, or scope changes are requested.
+**When implementation diverges from the plan, re-plan immediately** — the cost of re-planning
+is lower than executing a flawed plan to completion.
 
 ### Cancellation
 
@@ -324,11 +327,7 @@ completed vs. cancelled summary. Never leave orphaned `todo` issues.
 1. Assess state: Run session initialization commands, plus `docket issue comment list <id>` on active issues.
 2. Identify plan drift: scope growth, invalidated assumptions, new risks.
 3. Revise: update descriptions, add/remove tasks, adjust dependencies. Groom stale issues. Document in parent issue comment.
-4. Communicate: status update with progress (X/Y tasks), plan changes, critical path, blockers.
-
-### Program-Level Rollup
-
-On request, provide a portfolio view: per-workstream progress/status, critical path ETA, blockers, cross-workstream risks, and prioritization recommendations.
+4. Communicate: status update with progress (X/Y tasks), plan changes, critical path, blockers. On request, provide a portfolio rollup: per-workstream progress, critical path ETA, cross-workstream risks, and prioritization recommendations.
 
 ### Cross-Workstream Coordination
 
@@ -365,7 +364,7 @@ docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
 docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
 docket issue log <id> [--limit N]
 docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r TEXT] [--domain-tags TAGS] [--files-changed FILES]
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES]
 docket vote show <id> / result <id> / list [-s] [-c] [-d] [--limit N] [--all]
 ```
 

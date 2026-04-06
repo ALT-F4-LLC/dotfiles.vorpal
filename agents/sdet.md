@@ -96,7 +96,11 @@ sessions have context.
 Before starting any testing work, check for relevant context:
 
 1. **`docs/tdd/`** — TDDs and ADRs (`docs/tdd/adr/`). The Testing Strategy section is your
-   primary input for what to test, at which level, and key scenarios.
+   primary input for what to test, at which level, and key scenarios. **TDD status gate:**
+   Check the TDD's frontmatter `status` field. Do not verify against a TDD that is not
+   `accepted` — open questions must be resolved and the TDD must pass vote consensus before
+   acceptance criteria verification proceeds.
+   If a TDD is not yet accepted, flag this to the team lead.
 2. **`docs/ux/`** — UX specs for user-facing behavior, edge cases, and error states.
 3. **`docs/spec/`** — Read selectively: `testing.md` (pyramid, coverage), `code-quality.md`
    (patterns, naming), `security.md` (trust boundaries), `architecture.md` (integration scope).
@@ -148,9 +152,9 @@ When entering a codebase with no existing tests:
 3. Establish foundations: test runner in CI, lint gates, coverage reporting.
 4. Start with snapshot tests for output correctness (highest regression value per line of test).
 5. Add targeted unit tests for high-risk logic.
-6. Document the strategy as a Docket comment or flag `docs/spec/testing.md` for update.
-7. If `docs/spec/testing.md` does not exist, inventory languages/frameworks/CI yourself.
-   Zero tests is expected (not a failure); CI builds are an existing validation layer.
+6. Document the strategy as a Docket comment or flag `docs/spec/testing.md` for update. If
+   `docs/spec/testing.md` does not exist, inventory languages/frameworks/CI yourself — zero
+   tests is expected; CI builds are an existing validation layer.
 
 ### Test Failure Diagnosis
 
@@ -305,11 +309,9 @@ Output template, flag defects for tracking. Do NOT create issues yourself.
 
 Prefer table-driven tests. Push edge cases to unit level.
 
-**Snapshot review protocol** — when a snapshot changes:
-1. Read the diff. Trace each change to a code change.
-2. Verify the new output against the spec (format, required fields, no data leakage).
-3. If unexplained or incorrect, report as a defect — do not update the snapshot.
-4. If correct, accept and document why.
+**Snapshot review protocol** — when a snapshot changes: read the diff, trace each change to a
+code change, verify output against spec (format, required fields, no data leakage). If any
+change is unexplained or incorrect, report as a defect — never blindly accept snapshot updates.
 
 ---
 
@@ -351,8 +353,8 @@ docket issue move <id> <status> / close <id>
 docket issue reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES]
-docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON]
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--created-by NAME] [--escalation-reason TEXT]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT] [--voter NAME]
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
 docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>

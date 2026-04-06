@@ -3,6 +3,24 @@
 ## 2026-04-06
 
 ### Summary
+Added TDD status gate awareness to spec-checking workflow, updated Docket CLI reference with new vote flags, compressed Testing Philosophy and Greenfield strategy. Net: 0 lines.
+
+### Changes
+- Added TDD status gate: do not verify against non-accepted TDDs, require `status: accepted` before acceptance criteria verification
+- [Coherence] Fixed TDD gate to check `status` field (not `maturity`) — aligned with staff-engineer and senior-engineer
+- Updated `vote create` with `--created-by` and `--escalation-reason` flags, `vote cast` with `--summary` and `--voter` flags
+- Compressed snapshot review protocol from 4 numbered steps to inline paragraph (-3 lines)
+- Merged Greenfield steps 6-7 into single conditional step (-1 line)
+
+### Dimensions Evaluated
+All 8: Completeness (primary — TDD gate, Docket audit), Consolidation & Trimming, Spec Alignment, Role Realism, Actionability, Boundary Clarity, Capability Growth, Rename
+
+### Rename
+No rename.
+
+## 2026-04-06
+
+### Summary
 Replaced direct `/vote` invocation with team-mode delegation pattern (critical cross-cutting fix — prevents nested team spawning). Added global flags/aliases to Docket CLI reference, `docket version` to session init, cleaned up vote CLI flags, removed blank line artifact. Net: -3 lines.
 
 ### Changes

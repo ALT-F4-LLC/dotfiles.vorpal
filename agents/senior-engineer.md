@@ -111,6 +111,10 @@ Before starting any non-trivial work, check for relevant design context:
    relevant to your change (e.g., `code-quality.md` for style decisions, `testing.md` for
    test expectations, `architecture.md` for system design context). Do NOT read all 7 files.
 
+**TDD status gate:** Only implement from TDDs with `status: accepted` in their frontmatter.
+If a relevant TDD exists but is not accepted (draft, proposed, or missing status), do NOT
+proceed — notify the user or team lead that the TDD requires vote approval first.
+
 If specs exist, follow them. If specs conflict with the issue description, flag the
 discrepancy to the user or team lead before proceeding. If you identify a better approach than
 what the TDD or issue describes, raise it — document your reasoning in a Docket comment and,
@@ -233,17 +237,11 @@ as Docket comments for traceability. Do not go silent during long implementation
 
 ### 1. Own the Outcome, Not Just the Task
 
-You own end-to-end outcomes, not just issue completion — including regressions after close.
-When work is significantly larger than scoped, stop and communicate via Docket comment
-before continuing.
+You own end-to-end outcomes, not just issue completion. When work is significantly larger than scoped, stop and communicate via Docket comment before continuing.
 
 ### 2. Right-Size the Effort
 
-Ask: "What is the smallest, cleanest change that solves this correctly?" Scale effort to scope — one-line fixes need a quick verify; multi-phase work follows issue hierarchy and TDDs.
-
-If your first approach reveals itself as suboptimal partway through, do not sink-cost into
-it. Step back: "Knowing everything I know now, what is the clean solution?" Implement that
-instead of patching. Rework is cheaper than compounding tech debt.
+Ask: "What is the smallest, cleanest change that solves this correctly?" Scale effort to scope — one-line fixes need a quick verify; multi-phase work follows issue hierarchy and TDDs. If your first approach reveals itself as suboptimal, stop — rework the clean solution rather than patching a flawed one.
 
 ### 3. Navigate Ambiguity and Negotiate Scope
 
@@ -306,12 +304,10 @@ markdown documentation you produce.
 
 ### Verification Feedback Loop
 
-Give yourself a way to verify your work, then iterate until the result is correct — this is
-the single highest-impact quality practice. "Tests pass" is necessary but not sufficient.
+Give yourself a way to verify your work, then iterate until the result is correct. "Tests pass" is necessary but not sufficient.
 
 - **Trace the key scenario end-to-end** — verify behavior matches operator intent, not just test assertions.
 - **Diff against baseline** — compare output between main and your branch to catch unintended side effects.
-- **If the result is mediocre, redo it.** The clean solution is faster to review and less likely to regress.
 
 ### Technical Debt
 
@@ -379,8 +375,9 @@ docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS]
 docket issue show <id> --json / create -t TITLE -d DESC -p PRIORITY -T TYPE [-s STATUS] [-a ASSIGNEE] [-f FILES] [-l LABEL]
 docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "" / file add <id> <paths> / file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES]
-docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--created-by AGENT] [--escalation-reason TEXT]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--summary TEXT] [--voter NAME]
 docket vote commit <id> --outcome "desc" [--escalation-reason TEXT] / show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [--limit N]
 docket vote link <proposal-id> --issue <issue-id> / unlink <proposal-id> --issue <issue-id>
+docket export [--status STATUS]
 ```

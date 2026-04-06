@@ -14,4 +14,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.148" }
 tokio = { features = ["rt-multi-thread"], version = "1" }
 vorpal-artifacts = { git = "https://github.com/ALT-F4-LLC/artifacts.vorpal.git", branch = "main" }
-vorpal-sdk = { version = "0.1.0-alpha.0" }
+vorpal-sdk = { version = "0.1.0-alpha.4" }

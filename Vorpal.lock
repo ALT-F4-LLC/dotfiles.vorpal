@@ -57,6 +57,14 @@ digest = "0908501901ff99232aa75a18bf9409e80dae10742dc3759a67249bca5a459490"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "fzf"
+path = "https://github.com/junegunn/fzf/releases/download/v0.70.0/fzf-0.70.0-darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "0c48ed17e428e6e092964d3dba0f11ac8138b5964c9f4305965e200b98ad4f8e"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "gh"
 path = "https://github.com/cli/cli/releases/download/v2.87.3/gh_2.87.3_macOS_arm64.zip"
 includes = []
@@ -225,6 +233,14 @@ digest = "17b27bfbf46861bc587e5dc0e04fbc32cbd02f9b111867ffc79653261de7796a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "sesh"
+path = "https://github.com/joshmedeski/sesh/releases/download/v2.24.2/sesh_Darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "2efb04b9de0b7bc99f87ab3e2a0f20fa9de946f162b45b362a1b626849a19cf7"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "tmux"
 path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
 includes = []
@@ -238,4 +254,12 @@ path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.
 includes = []
 excludes = []
 digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "zoxide"
+path = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "cc76b3bfa120e009ea5489f6d77157695534ad4818f0b3d33080beeb98b7fe7b"
 platform = "aarch64-darwin"

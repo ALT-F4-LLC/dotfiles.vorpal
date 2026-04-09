@@ -350,9 +350,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a043dc74da1e37d6afe657061213aa6f425f855399a11d3463c6ecccc4dfda1f"
+checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "find-msvc-tools"
@@ -1715,9 +1715,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.51.0"
+version = "1.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd1c4c0fc4a7ab90fc15ef6daaa3ec3b893f004f915f2392557ed23237820cd"
+checksum = "f66bf9585cda4b724d3e78ab34b73fb2bbaba9011b9bfdf69dc836382ea13b8c"
 dependencies = [
  "bytes",
  "libc",
@@ -2033,7 +2033,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-artifacts"
 version = "0.1.0"
-source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#25eefb618732271e6a2a9b10ff64adf0e917d598"
+source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#16a5bb71e1bad3acce974c012f9036b4fd566a6e"
 dependencies = [
  "anyhow",
  "indoc",
@@ -2043,9 +2043,9 @@ dependencies = [
 
 [[package]]
 name = "vorpal-sdk"
-version = "0.1.0-alpha.4"
+version = "0.1.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b95a7f0107772f35646aa1bc8670ca95105e1769672f008588d49f9b65c073"
+checksum = "d4c500ee634609aaa4ec569db1382764cd93b9aa126205053c7d3b3e91f30a79"
 dependencies = [
  "anyhow",
  "clap",

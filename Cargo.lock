@@ -2043,9 +2043,9 @@ dependencies = [
 
 [[package]]
 name = "vorpal-sdk"
-version = "0.1.0-rc.2"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4c500ee634609aaa4ec569db1382764cd93b9aa126205053c7d3b3e91f30a79"
+checksum = "f7ad20073079f0b1b295f339f5550d03510eb1e7ebe5f53f7ca10fd714a6d64e"
 dependencies = [
  "anyhow",
  "clap",

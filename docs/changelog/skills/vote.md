@@ -1,5 +1,21 @@
 # Changelog: vote
 
+## 2026-04-16
+
+### Summary
+Fixed Pre-flight→Phase 1 ordering bug (TeamCreate referenced `{vote-id}` before it existed) and aligned delegation_request schema with dev skill. Trimmed redundant cross-reference note.
+
+### Changes
+- Moved `TeamCreate` + `TaskCreate` from Pre-flight steps 6-7 into Phase 1 after `docket vote create` — pre-flight required a vote-id that didn't exist yet
+- Added `protocol_version: "1"` and `request_id` to delegation_request example to match dev/SKILL.md schema
+- Trimmed two-line cross-reference blockquote to a single line (section being referenced is the next one)
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Actionability, Completeness, Skill Design Quality, Orchestration & Agent Teams, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

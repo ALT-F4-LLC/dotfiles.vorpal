@@ -137,13 +137,8 @@ For work requiring multiple TDDs, phased rollouts, or cross-cutting architectura
 
 ### UX-Heavy Task
 
-For work involving user-facing surfaces that need design before technical planning.
-Follows Medium Task pattern with @ux-designer prepended:
-
-1. Spawn @ux-designer to produce a design spec in `docs/ux/`.
-2. Spawn @staff-engineer to produce a TDD (informed by the UX spec).
-3. Spawn @project-manager to decompose into Docket issues.
-4. Execute implementation, review, and verification as in Medium Task.
+Same as Medium Task, but prepend @ux-designer to produce a design spec in `docs/ux/` (informing
+the TDD) before @staff-engineer begins.
 
 ---
 
@@ -159,7 +154,6 @@ Agent(team_name="dev-{feature-slug}", name="tdd-author", subagent_type="staff-en
 Use the @staff-engineer agent to produce a Technical Design Document:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 <user_request>
 {work}
@@ -180,7 +174,6 @@ Agent(team_name="dev-{feature-slug}", name="reviewer", subagent_type="staff-engi
 Use the @staff-engineer agent to review implementation changes:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Review the changes made by @senior-engineer for this work.
 
@@ -207,7 +200,6 @@ Agent(team_name="dev-{feature-slug}", name="planner", subagent_type="project-man
 Use the @project-manager agent to decompose this work into Docket issues:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 <user_request>
 {work}
@@ -217,9 +209,7 @@ The operator's goal has been pre-verified by the team lead. Re-verify alignment 
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
 {If project specs exist: "Reference project specs: docs/spec/"}
 
-Team context:
-- A persistent @staff-engineer advisor named "advisor" is available via SendMessage for
-  architectural clarification on scope, feasibility, or phase ordering questions.
+Team context: Persistent @staff-engineer "advisor" available via SendMessage for architectural clarification during planning.
 
 Requirements:
 - Explore the codebase using Read, Grep, and Glob to inform your plan
@@ -240,7 +230,6 @@ Agent(team_name="dev-{feature-slug}", name="ux-spec-author", subagent_type="ux-d
 Use the @ux-designer agent to produce a design spec for this work:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 <user_request>
 {work}
@@ -259,7 +248,6 @@ Agent(team_name="dev-{feature-slug}", name="impl-{DOCKET-ID}", subagent_type="se
 Use the @senior-engineer agent to complete this issue:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 Docket Issue: {DOCKET-ID} — {title}
 Description: {full issue description from Docket}
@@ -293,7 +281,6 @@ Agent(team_name="dev-{feature-slug}", name="verifier-{scope}", subagent_type="sd
 Use the @sdet agent to verify {scope description}:
 
 Verified goal: {verified_goal}
-The operator's goal has been pre-verified by the team lead. Re-verify alignment if your understanding diverges from this goal at any point.
 
 {For issue-scoped: "Docket Issue: {DOCKET-ID} — {title}\nDescription: {full issue description}"}
 {For full-scope: "Completed issues:\n{list all DOCKET-IDs, titles, and files changed}"}
@@ -395,10 +382,8 @@ Before spawning any agents, create an Agent Team to coordinate:
     **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
     to the user with the details rather than continuing to loop.
 
-    **Optional simplification pass:** For medium+ tasks with significant code changes (20+
-    files or 500+ lines), ask the "advisor" to also evaluate the changeset for unnecessary
-    complexity, code duplication across issues, and opportunities to simplify. This catches
-    over-engineering that individual-issue reviews miss.
+    **Simplification pass (medium+, 20+ files or 500+ lines):** Ask "advisor" to evaluate
+    the changeset for complexity, cross-issue duplication, and simplification opportunities.
 
 ### Consensus Integration
 

@@ -91,7 +91,7 @@ propose additions — all must pass the Content Gate.**
 1. **Skill Design Quality** — Frontmatter (including `user-invocable`, `effort`, `argument-hint`), argument handling, `disable-model-invocation`, structure-brevity balance.
 2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
-4. **Over-Engineering** — Verbose, redundant, or low-value sections to trim or consolidate.
+4. **Over-Engineering (HIGHEST PRIORITY)** — Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
 5. **Orchestration & Agent Teams** — Proper agent use, parallelism, correct types, coordination.
    Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag
    hub-and-spoke if >50% of paths route through one agent. For team skills: correct lifecycle
@@ -218,8 +218,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
-`{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}`, and
-`{focus_areas}` (operator-reported pain points to prioritize) for each.
+`{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")

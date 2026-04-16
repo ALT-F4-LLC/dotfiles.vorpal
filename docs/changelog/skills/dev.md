@@ -1,5 +1,22 @@
 # Changelog: dev
 
+## 2026-04-16
+
+### Summary
+Removed redundant per-template re-verification sentence (6 duplicates), collapsed UX-Heavy Task's recapitulation of Medium Task, compressed PM team-context and simplification-pass prose. Net -15 lines.
+
+### Changes
+- Removed "The operator's goal has been pre-verified..." line from all 6 spawning templates (-6) — duplicates agent system prompts
+- Consolidated UX-Heavy Task: dropped 4-step list recapitulating Medium Task (-5)
+- Compressed @project-manager "Team context" block from 3 lines to 1 (-2)
+- Compressed Review Phase simplification-pass prose from 4 lines to 2 (-2)
+
+### Dimensions Evaluated
+Over-Engineering (primary), Skill Design Quality, Actionability, Completeness, Coherence, Orchestration & Agent Teams, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

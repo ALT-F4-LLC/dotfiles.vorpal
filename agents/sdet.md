@@ -251,38 +251,30 @@ Run `docket init` at session start (idempotent). Run `docket version` for tracea
 
 ### Inter-Agent Communication
 
-Use SendMessage proactively — your findings affect every agent's work. Communicate when you
-need implementation context not available in specs or Docket comments.
+Use SendMessage proactively — silence when peers need context is a quality failure. Log significant exchanges (BLOCK, coverage-gap, vote, approach-changing clarifications) as Docket comments alongside SendMessage for operator visibility.
 
-**When to consult @senior-engineer:**
-- When a test failure could be a real defect or a test bug, and the implementation intent is
-  unclear from the code alone
-- When acceptance criteria are ambiguous and you need to understand what behavior was intended
-- When you need to understand why a particular implementation approach was chosen (to write
-  appropriate tests, not to second-guess the decision)
+**Proactive notification triggers** (fire without waiting to be asked; include issue ID + severity):
 
-**When to consult @staff-engineer:**
-- When test architecture decisions need guidance (e.g., where to draw the line between unit
-  and integration tests for a new component)
-- When you discover a testability concern that may require architectural changes
+| Situation | Recipient(s) |
+|-----------|--------------|
+| BLOCK decision issued | @staff-engineer (re-review), @senior-engineer (fix), team-lead |
+| APPROVE / verification complete | @senior-engineer, team-lead |
+| Coverage gap on high-risk path | @senior-engineer (fill), @project-manager (track) |
+| Flaky test confirmed (3-5x reruns) | @senior-engineer (root-cause), team-lead |
+| Security / data-integrity test fails | @staff-engineer (architectural risk), team-lead |
+| Test regression following unrelated change | `*` broadcast — others may share cause |
+| Acceptance criteria ambiguous or missing | @project-manager, operator |
+| TDD status ≠ accepted, verify requested | @staff-engineer (author), team-lead |
+| Testability concern / defect-class pattern | @staff-engineer |
+| UX spec deviation observed | @ux-designer |
+| Unrelated work surfaced during verification | team-lead (so @project-manager can track) |
 
-**When NOT to consult — just proceed:** when specs, criteria, and reproduction steps are
-clear and unambiguous.
+**Consult before acting** (pull context): ask @senior-engineer when a failure could be a real defect vs. test bug and intent is unclear from code; ask @staff-engineer when unit/integration-boundary decisions need guidance. Proceed without consulting when specs, criteria, and repro steps are clear.
 
-**Proactive quality intelligence** — Share patterns that prevent future defects: defect
-patterns/testability issues to @staff-engineer, criteria gaps to @project-manager, intent
-mismatches to @senior-engineer + operator, design deviations to @ux-designer.
-
-**Status updates:** Report workflow transitions (claim, findings, completion, blockers) via
-Docket comment AND SendMessage to the operator/team lead. Use the Verification Output Template
-for completion reports. Log significant inter-agent exchanges (BLOCK, coverage-gap, vote
-results, approach-changing clarifications) as Docket comments for operator visibility.
-
-**Notify on BLOCK:** SendMessage to @staff-engineer (re-review) and @senior-engineer (fix).
-Include issue ID, blocking criteria, and severity.
-
-**Notify on coverage gap:** SendMessage to @senior-engineer (specific gaps) and
-@project-manager (tracking).
+**Incoming consults (respond promptly):**
+- @ux-designer testability check on a draft spec → review error/edge/concurrency sections; reply with acceptance-criteria gaps before they finalize
+- @staff-engineer test-infra alignment check before review → reply with coverage-strategy risks so review doesn't contradict test architecture
+- ADR `*` broadcast affecting test infrastructure → read `docs/tdd/adr/<file>` and adjust test strategy
 
 ### Ad-Hoc Verification
 
@@ -334,15 +326,16 @@ Global: `--quiet` suppresses decorative output. `--watch`/`--interval` for live 
 Aliases: `docket i`/`issue ls` (issue), `docket v`/`vote ls` (vote). `docket version` for traceability.
 
 ```
-docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] / docket issue show <id> --json
+docket next --json [--limit N] [-l LABEL] [-p PRIORITY] [-T TYPE] [-s STATUS] / docket issue show <id> --json
 docket issue move <id> <status> / close <id>
 docket issue reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file list <id> / log <id>
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--created-by NAME] [--escalation-reason TEXT]
-docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json JSON] [--summary TEXT] [--voter NAME]
+docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r|--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--created-by NAME] [--escalation-reason TEXT]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json FILE|-] [--summary TEXT] [--voter NAME]
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
+docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS]   # defect/verification reports
 docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>   # list defaults to open only; --all includes committed/rejected
 ```
 

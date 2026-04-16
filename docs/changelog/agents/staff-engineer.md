@@ -3,6 +3,23 @@
 ## 2026-04-16
 
 ### Summary
+Cross-communication pass: rewrote Proactive Communication into 10 concrete "situation → action" SendMessage triggers (5 new). Added Incoming triggers for reciprocal handling. Trimmed intro; removed duplicated Cross-team notifications. Added `docket issue graph --mermaid` and `docket stats` to review Gather Context. Net: -13 lines.
+
+### Changes
+- PRIMARY: Rewrote Proactive Communication — 10 concrete triggers naming peer + payload (was 6 vague). New: consult-@sdet-pre-test-infra-review, PM-scope-delta, re-plan dual-notify (@senior + @PM), spec-drift dual-action, ADR `*` broadcast for cross-cutting, TDD-accepted dual-notify (@PM + @senior)
+- [Phase 2] Added Incoming triggers block: @sdet BLOCK priority re-review, @sdet TDD-not-accepted verify request, @senior test-infra flag → consult @sdet before reviewing
+- Trimmed intro (archetype list, core-responsibilities restatement) and removed redundant Cross-team notifications (absorbed)
+- Added `docket issue graph --mermaid <id>` and `docket stats` to Review Gather Context step
+
+### Dimensions Evaluated
+All 8: Cross-Communication (GOAL — primary), Consolidation (HIGHEST priority), Capability Growth, Completeness, Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Compressed Pre-Flight Gate mode descriptions and "When to Create a TDD" bullets; added proactive consultation triggers for @sdet (TDD Testing Strategy) and @ux-designer (user-facing surfaces) before TDD finalization. Net: -7 lines.
 
 ### Changes

@@ -3,6 +3,23 @@
 ## 2026-04-16
 
 ### Summary
+Cross-communication pass: restructured Inter-Agent Communication around concrete proactive SendMessage triggers (Consult first / Notify proactively) keyed to specific teammates. Phase 2 reconciled spec-handoff timing. Added `docket issue show` and `comment list` as context-read commands before commenting. Net: -9 lines.
+
+### Changes
+- PRIMARY: Replaced 3 vague "When to consult" blocks + generic "Proactive communication" with two crisp trigger-keyed blocks — **Consult first** (4 agents, specific preconditions) and **Notify proactively** (5 targets with "when X → notify Y" triggers)
+- Added triggers: @PM handoff, @sdet testability check before finalizing spec with error states, @senior-engineer on spec revision affecting implemented behavior, @staff-engineer on cross-surface precedent
+- [Phase 2] Resolved spec-handoff timing: @PM notification happens after vote approval (not on save), reconciling Inter-Agent trigger with Design Spec Workflow step 7
+- Added broadcast discipline (prefer direct; `*` only for cross-surface precedent) and `docket issue show`/`comment list` as required context reads
+
+### Dimensions Evaluated
+All 8: Cross-Communication (GOAL — primary), Consolidation (HIGHEST — offset secured), Capability Growth, Actionability, Boundary Clarity, Role Realism, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Consolidation pass: merged text-medium directives, compressed What You Are NOT (added missing @sdet boundary for cross-agent coherence), tightened Operating context. Phase 2 coherence: replaced in-role Docket create/edit guidance with routing through @project-manager (matches role boundary). Net: -12 lines.
 
 ### Changes

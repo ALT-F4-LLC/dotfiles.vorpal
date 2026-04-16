@@ -3,6 +3,24 @@
 ## 2026-04-16
 
 ### Summary
+Cross-communication pass: replaced 5 prose Inter-Agent Communication subsections with an 11-trigger notification table (6 new triggers). Added Incoming consults block for bidirectional reciprocity. Fixed Docket CLI audit gaps. Net: -12 lines.
+
+### Changes
+- PRIMARY: Consolidated Inter-Agent Communication into scannable trigger table + compact consult paragraph
+- Added 6 new proactive SendMessage triggers: APPROVE-complete, flaky-confirmed, security-test-fail, regression `*` broadcast, TDD-not-accepted verify, unrelated-work surfaced
+- [Phase 2] Added Incoming consults block: @ux-designer testability on draft spec, @staff-engineer test-infra alignment, ADR `*` broadcast consumption
+- Added `-s STATUS` to `docket next`; added `docket export` for defect/verification reports
+- Fixed `--findings-json JSON` → `--findings-json FILE|-`; documented `-r` short form for `--rationale`
+
+### Dimensions Evaluated
+All 8: Cross-Communication (GOAL — primary), Consolidation & Trimming, Completeness (CLI audit), Actionability, Role Realism, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Consolidation pass — removed duplicated operator-alignment guidance between Pre-Flight gate, Check Specs ambiguity paragraph, and Verification Workflow step 2. Merged duplicate test-coverage-escalation. Trimmed rhetorical opener. Annotated `vote list` default scope. Net: -14 lines.
 
 ### Changes

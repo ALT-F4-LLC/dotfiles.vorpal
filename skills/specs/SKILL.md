@@ -78,7 +78,7 @@ exploration guidance for each — used in the spawning template.
 1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
    `TaskCreate(subject="Generate {filename}", description="Generate docs/spec/{filename} project specification")`
-3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, and `{project_name}`:
+3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`:
    `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
 4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 

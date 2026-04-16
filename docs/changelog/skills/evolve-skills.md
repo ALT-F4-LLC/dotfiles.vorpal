@@ -1,5 +1,20 @@
 # Changelog: evolve-skills
 
+## 2026-04-16
+
+### Summary
+Removed dead `{focus_areas}` substitution variable from Phase 1 template and promoted Over-Engineering to HIGHEST PRIORITY in the main dimension list to match template enforcement.
+
+### Changes
+- Removed `{focus_areas}` variable from Phase 1 substitution list — never interpolated; redundant with `{experience_feedback}`
+- Dimension 4 now labeled "Over-Engineering (HIGHEST PRIORITY)" with offset-here reminder, aligning main list with Phase 1 template and evolve-agents dim-5 treatment
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

@@ -26,11 +26,9 @@ agent files. Self-evolution is expected — every agent is responsible for its o
 > the reviewing agent provides compelling rationale. Challenge net-positive claims that lack
 > concrete behavioral evidence. Report honestly when a cycle produces no meaningful improvements.
 
-> **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** Evolution is about sharpening, not
-> accumulating. Every cycle should leave agent files the same size or smaller. If a file is over
-> 500 lines, the primary goal of that cycle is consolidation and trimming — new content may only
-> be added if an equal or greater amount is removed. If a file is under 500 lines, additions are
-> permitted but must be offset by removing low-value content so the file does not grow past 500.
+> **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
+
+> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates.
 
 ---
 
@@ -70,14 +68,10 @@ Before spawning any agents:
 6. **If no agent files found** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
    changelogs already exist. Spawned agents will need this information.
-8. **Measure agent file sizes** — Run `wc -l agents/*.md` and record the line count for each
-   target agent. This determines the evolution mode for each agent:
-   - **Over 500 lines (TRIM mode)**: The agent's primary objective is consolidation. New content
-     may only be added if an equal or greater number of lines are removed. Communicate the line
-     count and TRIM mode to the spawned agent.
-   - **Under 500 lines (BALANCED mode)**: The agent may add content but must offset additions
-     with removals to stay under 500 lines. Communicate the line count and BALANCED mode.
-   - Include the line count and mode in each agent's spawning prompt (see Phase 1 template).
+8. **Measure agent file sizes** — Run `wc -l agents/*.md` and record line counts. Mode is
+   **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED**
+   (under 500: additions allowed but offset by removals). Include line count and mode in each
+   agent's spawning prompt (see Phase 1 template).
 
 ---
 
@@ -163,15 +157,11 @@ for deep analysis.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 
-1. Reviews the teammate's change recommendations **against the Content Gate** — reject any
-   addition that fails any gate check, even if the agent provides a rationale
-2. Applies each approved change to `agents/<name>.md` using the Edit tool
-3. Writes/updates the changelog entry in `docs/changelog/agents/<name>.md`
-4. **Normalizes the changelog** per the Changelog Format rules above
-5. Tracks rename recommendations and coherence issues for Phase 2
-6. **Log cross-communication**: record SendMessage exchanges (sender, recipient, topic) for wrap-up
-7. **Verify edits**: run `wc -l` for budget, validate frontmatter/sections, spot-check new references and CLI commands against codebase
-8. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
+1. Reviews recommendations **against the Content Gate** — reject additions failing any check
+2. Applies approved changes via Edit, then `wc -l` to verify budget; spot-check references/CLI commands against codebase
+3. Writes/normalizes the changelog entry in `docs/changelog/agents/<name>.md` per Changelog Format
+4. Tracks renames and coherence issues for Phase 2; logs SendMessage exchanges for wrap-up
+5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
 Use `TaskList()` to check overall Phase 1 progress.
 
@@ -281,7 +271,7 @@ Experience feedback: {experience_feedback}
 
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
-## Task: Evaluate ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
+## Task: Evaluate ALL 8 dimensions. Consolidation & Trimming is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
 
 1. **Role Realism**: Senior practitioner behavior, actionable by Claude?
 2. **Actionability**: Specific workflows, concrete steps, defined outputs?
@@ -353,7 +343,5 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
 6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`,
-   `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests.
-9. **Preserve context across compaction.** After compaction, re-read the verified goal, current
+8. **Preserve context across compaction.** After compaction, re-read the verified goal, current
    phase, and pending tasks before continuing orchestration.

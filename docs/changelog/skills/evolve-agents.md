@@ -1,5 +1,23 @@
 # Changelog: evolve-agents
 
+## 2026-04-16
+
+### Summary
+Trimmed ~12 lines (359→347) via size-constraint/checklist consolidation; Phase 2 aligned dimension naming in template and promoted "No nested agents" to intro callout.
+
+### Changes
+- Collapsed SIZE CONSTRAINT block from 5 lines to 1, referencing Pre-flight step 8
+- Compressed Pre-flight step 8 from 8 lines to 4
+- Compressed post-Phase-1 checklist from 8 numbered steps to 5
+- Phase 1 template: "Over-Engineering is HIGHEST PRIORITY" → "Consolidation & Trimming is HIGHEST PRIORITY" to match dimension 5 name
+- Moved "No nested agents" rule from Rule 8 to intro callout for discoverability parity with evolve-skills
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

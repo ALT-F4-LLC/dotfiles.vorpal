@@ -1,5 +1,25 @@
 # Changelog: project-manager
 
+## 2026-04-16
+
+### Summary
+Consolidation pass: trimmed aspirational prose, compressed redundant "NEVER write code" paragraph, restructured TDD routing bullets. Phase 2 coherence: normalized Docket CLI reference (flag placeholders, `--rationale TEXT`, `--escalation-reason`, destructive-edit warning). Net: -7 lines.
+
+### Changes
+- Compressed "NEVER write code" paragraph — merged with output-contract sentence
+- Removed "Communication is a planning tool, not overhead" aspirational framing (Content Gate: non-behavioral)
+- Removed "Estimates are communication tools, not commitments" aspirational preamble (Content Gate: non-behavioral)
+- Restructured Cross-Agent Communication so TDD acceptance gate no longer splits routing bullets
+- [Coherence] `issue create -f FILES` → `-f FILE ...`; `vote create -r TEXT` → `--rationale TEXT`, added `--escalation-reason`
+- [Coherence] `vote list` — added flag type placeholders and `--all` default-behavior comment
+- [Coherence] `issue edit` — added `-f FILE ...` placeholder and destructive-attachment warning in CLI reference
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (primary), Actionability, Role Realism, Boundary Clarity, Completeness, Capability Growth & Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

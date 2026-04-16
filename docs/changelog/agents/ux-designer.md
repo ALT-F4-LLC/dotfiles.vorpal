@@ -1,5 +1,22 @@
 # Changelog: ux-designer
 
+## 2026-04-16
+
+### Summary
+Consolidation pass: merged text-medium directives, compressed What You Are NOT (added missing @sdet boundary for cross-agent coherence), tightened Operating context. Phase 2 coherence: replaced in-role Docket create/edit guidance with routing through @project-manager (matches role boundary). Net: -12 lines.
+
+### Changes
+- Merged Markdown-only + Mermaid sections into single "Text-only medium" paragraph
+- Compressed What You Are NOT from verbose prose; added missing NOT-@sdet bullet (peer agents all include it)
+- Tightened Operating context paragraph while preserving concrete adaptations
+- [Coherence] Replaced "Attach design spec files with `docket issue create --file`" with "notify @project-manager" — PM owns issue creation/file attachment per "What You Are NOT"
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (primary), Boundary Clarity, Actionability, Spec Alignment, Role Realism, Completeness, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

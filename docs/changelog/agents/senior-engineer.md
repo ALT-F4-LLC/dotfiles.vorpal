@@ -1,5 +1,26 @@
 # Changelog: senior-engineer
 
+## 2026-04-16
+
+### Summary
+Consolidation pass: trimmed Operating Context boilerplate, Docket Rules redundancy, and self-review bullet list. Aligned CLI reference with Docket audit findings. Phase 2 coherence: normalized `--created-by` value name and added `vote list` default-behavior comment. Net: -13 lines.
+
+### Changes
+- Trimmed Operating Context — removed inherited "verify in production" / "own the regression" metaphors already implied by role
+- Compressed Docket Rules — removed restated intro guidance
+- Compressed Execution Workflow step 5 — merged notify bullets and diff-review bullets
+- CLI: `vote cast` now documents `--findings-json FILE` alternative (aligned with @sdet)
+- CLI: `vote list` now documents `--all` flag (default is open-only)
+- CLI: `issue create` clarified `-f FILE ...` (repeatable, not multi-value)
+- [Coherence] `--created-by AGENT` → `--created-by NAME` (peer-agent convention)
+- [Coherence] Added `--all` default-behavior comment to `vote list`
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (primary), Completeness (CLI audit), Spec Alignment, Actionability, Role Realism, Boundary Clarity, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

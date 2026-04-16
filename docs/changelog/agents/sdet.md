@@ -1,5 +1,23 @@
 # Changelog: sdet
 
+## 2026-04-16
+
+### Summary
+Consolidation pass — removed duplicated operator-alignment guidance between Pre-Flight gate, Check Specs ambiguity paragraph, and Verification Workflow step 2. Merged duplicate test-coverage-escalation. Trimmed rhetorical opener. Annotated `vote list` default scope. Net: -14 lines.
+
+### Changes
+- Removed Verification Workflow step 2 (duplicated Pre-Flight gate) and compressed step 5
+- Compressed Check Specs ambiguity paragraph to single directive referencing Pre-Flight mechanism
+- Merged `Test coverage escalation` into preceding `@senior-engineer unit tests` paragraph
+- Trimmed motivational flourish in opening role statement
+- Annotated `docket vote list` default-open-only behavior in CLI reference
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (primary), Coherence, Completeness, Role Realism, Actionability, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

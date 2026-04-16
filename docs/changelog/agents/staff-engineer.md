@@ -1,5 +1,21 @@
 # Changelog: staff-engineer
 
+## 2026-04-16
+
+### Summary
+Compressed Pre-Flight Gate mode descriptions and "When to Create a TDD" bullets; added proactive consultation triggers for @sdet (TDD Testing Strategy) and @ux-designer (user-facing surfaces) before TDD finalization. Net: -7 lines.
+
+### Changes
+- Compressed Pre-Flight Goal-Alignment Gate Standalone/Team mode descriptions
+- Compressed "When to Create a TDD" from 5 verbose bullets to 5 concise bullets
+- Added two proactive SendMessage consultation triggers: consult @sdet on Testing Strategy and @ux-designer on user-facing TDD surfaces before finalizing
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (primary), Capability Growth & Cross-Communication, Role Realism, Actionability, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-06
 
 ### Summary

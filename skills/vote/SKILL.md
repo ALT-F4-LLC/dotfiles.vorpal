@@ -52,8 +52,8 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 
 1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote_id}", from: "{your-agent-name}"})`. Wait for `delegation_response`.
-4. **Handle response** — On `completed`: read result via `docket vote result {vote_id} --json` and produce standard Output Format. On `failed`: report error and abort. On `escalated`: report to caller.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response`.
+4. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed`: report error and abort. On `escalated`: report to caller.
 5. **Continue your workflow** with the vote outcome.
 
 ---
@@ -144,9 +144,7 @@ independent reviewers.
 | `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
 | `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
 
-If `created_by` does not match any known pattern, apply no exclusion but log a warning in
-the docket proposal rationale: "Warning: created_by value '{value}' did not match any known
-agent type — no proposer exclusion applied."
+If `created_by` does not match any known pattern, apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
 
 ### Uniqueness Constraint
 
@@ -155,14 +153,8 @@ appear more than once in the `Agent()` calls for a single round.
 
 ### Edge Cases
 
-- **Critical vote requiring 4 reviewers with proposer excluded (4 types remaining):**
-  Use all 4 remaining agent types. If the domain normally requires a type that was excluded
-  as the proposer, substitute the closest available type and document the substitution in a
-  docket comment on the proposal.
-
-- **Fewer unique types available than reviewers needed:** Reduce the reviewer count to the
-  number of available unique types. Add `--escalation-reason "Reduced reviewer count: only
-  N unique agent types available after proposer exclusion"` to `docket vote commit`.
+- **Critical vote needs 4 reviewers with proposer excluded:** use all 4 remaining types; if the domain-required type is the proposer, substitute the closest available and note it in a docket comment.
+- **Pool smaller than required reviewer count:** reduce count to available unique types and add `--escalation-reason "Reduced reviewer count: N unique types after proposer exclusion"` on `docket vote commit`.
 
 ---
 
@@ -193,7 +185,7 @@ Extract `id` from the `--json` response — this is `{vote-id}` for all subseque
 
 **Notify the operator:** After creating the proposal, immediately notify the team lead (or
 operator in standalone mode) via SendMessage:
-`SendMessage(to="team-lead", message="[VOTE] Created proposal {proposal_id} | Criticality: {criticality} | Reviewers: {count} | Proposal: {one-line summary}")`.
+`SendMessage(to="team-lead", message="[VOTE] Created proposal {vote-id} | Criticality: {criticality} | Reviewers: {count} | Proposal: {one-line summary}")`.
 
 **Link to a Docket issue (when applicable):**
 
@@ -201,7 +193,7 @@ If the vote is associated with a Docket issue (e.g., voting on a TDD that has a 
 issue), link the proposal:
 
 ```bash
-docket vote link {proposal_id} --issue {issue_id}
+docket vote link {vote-id} --issue {issue_id}
 ```
 
 If the proposal references files, TDDs, or diffs — read them so you can include the full
@@ -219,11 +211,13 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 4. Instructions to produce structured output
 5. **NO information about other reviewers or their verdicts**
 
-After spawning, assign tasks: `TaskUpdate(taskId=<id>, owner="{vote-id}-reviewer-{N}", status="in_progress")`.
-Use `TaskList()` to monitor completion — all reviewer tasks must reach `completed` before Phase 3.
+After spawning, claim tasks: `TaskUpdate(taskId=<id>, owner="{vote-id}-reviewer-{N}", status="in_progress")`.
+Each reviewer's structured output is the final message returned by their `Agent()` call —
+parse verdict, confidence, domain_relevance, and findings from that return value. Wait for
+all `Agent()` calls to return before Phase 3; `TaskList()` is only for observability.
 
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
-prompt. Collect all reviews only AFTER all reviewers have completed.
+prompt. Collect all return values AFTER every reviewer completes.
 
 ### Recording Votes
 
@@ -233,7 +227,7 @@ After each reviewer completes, parse their structured output and record their vo
 **Cast each vote:**
 
 ```bash
-echo '{multi-line findings text}' | docket vote cast {proposal_id} \
+echo '{multi-line findings text}' | docket vote cast {vote-id} \
   --voter "{vote-id}-reviewer-{N}" \
   --role "{agent-type}" \
   -v {mapped_verdict} \
@@ -313,13 +307,13 @@ When done, mark your task as completed via TaskUpdate.
 
 ## Phase 3: Commit or Escalate
 
-After all votes have been cast, retrieve the consensus result via `docket vote result {proposal_id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
+After all votes have been cast, retrieve the consensus result via `docket vote result {vote-id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
 
 ### If Quorum Is Reached
 
 1. **Commit the proposal** — finalize the approved vote record:
    ```bash
-   docket vote commit {proposal_id} --outcome "Approved with score {score}"
+   docket vote commit {vote-id} --outcome "Approved with score {score}"
    ```
 2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
@@ -367,8 +361,8 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-View with: `docket vote show {proposal_id}`
-Full result: `docket vote result {proposal_id} --json`
+View with: `docket vote show {vote-id}`
+Full result: `docket vote result {vote-id} --json`
 ```
 
 ### Cleanup (MANDATORY — all outcomes)

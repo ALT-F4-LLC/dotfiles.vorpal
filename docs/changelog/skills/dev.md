@@ -3,6 +3,25 @@
 ## 2026-04-16
 
 ### Summary
+Dimension 5 orchestration fixes: unified "advisor" lifecycle, explicit @project-manager shutdown timing, forwarded review findings into @sdet prompt, tightened vague SendMessage triggers. Addresses operator feedback on coordination clarity. Net 457→454.
+
+### Changes
+- Consolidated Design Phase steps 2-3: advisor is always persistent, TDD assignment varies by task size (fixes large-task ambiguity)
+- Added `{If review completed: ...}` review-findings handoff to @sdet template
+- Replaced "when needed" with concrete conditions in @sdet SendMessage trigger
+- Added PM shutdown at plan-approval in step 7; added PM to wrap-up shutdown as safety net
+- Compressed @senior-engineer team-context block from 5 to 3 lines
+- Coherence: aligned vote-id placeholders with canonical `{vote-id}` — replaced `{proposal-id}` in `docket vote commit` example and `<vote_id>` shell placeholder in Delegation Protocol
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (primary), Over-Engineering, Coherence, Actionability, Completeness, Skill Design Quality, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Removed redundant per-template re-verification sentence (6 duplicates), collapsed UX-Heavy Task's recapitulation of Medium Task, compressed PM team-context and simplification-pass prose. Net -15 lines.
 
 ### Changes

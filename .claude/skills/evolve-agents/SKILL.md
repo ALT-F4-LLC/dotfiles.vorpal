@@ -28,7 +28,7 @@ agent files. Self-evolution is expected — every agent is responsible for its o
 
 > **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
 
-> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates.
+> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
 
 ---
 
@@ -53,12 +53,7 @@ Before spawning any agents:
    - **Standalone mode** (invoked directly by the user): use `AskUserQuestion` to confirm:
      *"What evolution focus? (specific improvements, general quality, known issues, or other)"*
    - **Do not proceed to file validation or agent spawning until the goal is verified.**
-2. **Gather experience feedback** — Use `AskUserQuestion` to ask the operator:
-   - Current experience with the agent(s) being evolved (what's working well, what's not)
-   - Pain points or friction encountered during usage
-   - Any specific feedback that should inform this evolution cycle
-   Store the response as `{experience_feedback}`. In team mode, skip if the orchestrator
-   prompt already includes experience feedback context.
+2. **Gather experience feedback** — Use `AskUserQuestion` to collect operator pain points and friction with the target agent(s). Store as `{experience_feedback}`. Skip in team mode if the orchestrator prompt already includes it.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -116,6 +111,16 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ## Orchestration Workflow
 
+### Agent Lifecycle
+
+| Phase | Agents | Lifecycle |
+|---|---|---|
+| 0 | `docs-researcher`, `docket-auditor` | Spawn parallel → both complete → shut down both before Phase 1 |
+| 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
+| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
+
+Shutdown format: `SendMessage(to="<name>", message={type: "shutdown_request"})`.
+
 ### Team Setup
 
 Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
@@ -138,10 +143,6 @@ Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_ty
 Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
 `{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
 
-Wait for both Phase 0 agents to complete. **Immediately shut down Phase 0 agents** via
-`SendMessage(to="docs-researcher", message={type: "shutdown_request"})` and
-`SendMessage(to="docket-auditor", message={type: "shutdown_request"})` before starting Phase 1.
-
 ### Phase 1: Review & Improve (parallel)
 
 Spawn one teammate per target, using the **matching agent type** (e.g., spawn @senior-engineer to
@@ -157,18 +158,14 @@ for deep analysis.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 
-1. Reviews recommendations **against the Content Gate** — reject additions failing any check
-2. Applies approved changes via Edit, then `wc -l` to verify budget; spot-check references/CLI commands against codebase
-3. Writes/normalizes the changelog entry in `docs/changelog/agents/<name>.md` per Changelog Format
-4. Tracks renames and coherence issues for Phase 2; logs SendMessage exchanges for wrap-up
+1. Reviews recommendations against the **Content Gate** — reject any failing check
+2. Applies approved changes via Edit; `wc -l` to verify budget; spot-check references/CLI against codebase
+3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
+4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
+6. Shuts down the teammate (don't wait for sibling Phase 1 agents — see Agent Lifecycle)
 
-Use `TaskList()` to check overall Phase 1 progress.
-
-**If a Phase 1 agent reports cross-cutting findings via SendMessage**, route them to other
-in-flight Phase 1 agents and aggregate for Phase 2.
-
-**Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
+Mid-Phase-1 cross-cutting findings: route to in-flight siblings. `TaskList()` tracks progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -285,12 +282,12 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Rules
 
-- **Read-only** — analyze and recommend, do not edit files. Build on strengths, don't rewrite.
-- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. If you need
-  voting or agent spawning, SendMessage the orchestrator with a delegation request.
+- **Read-only** — recommend only; don't edit files. Build on strengths, don't rewrite.
+- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
 - **Minimize context**: first 80 lines of other agents, relevant specs only.
-- **Course-correct**: SendMessage orchestrator immediately for cross-cutting issues, universal patterns,
-  or scope expansion beyond target agent.
+- **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents,
+  (b) scope expansion beyond target agent, or (c) conflicts with another agent's boundary —
+  aggregated into Phase 2 handoff.
 
 ## Output Format
 

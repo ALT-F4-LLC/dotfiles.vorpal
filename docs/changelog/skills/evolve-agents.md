@@ -3,6 +3,25 @@
 ## 2026-04-16
 
 ### Summary
+Added Agent Lifecycle table, replaced vague course-correct rule with specific (a)/(b)/(c) SendMessage triggers, consolidated Phase 1 post-completion, compressed Pre-flight step 2. Addresses operator feedback on coordination clarity. Net 347→344.
+
+### Changes
+- Added Agent Lifecycle table at top of Orchestration Workflow — centralizes spawn/shutdown per phase
+- Removed redundant Phase 0 shutdown paragraph (now covered by Lifecycle table)
+- Consolidated Phase 1 post-completion: folded shutdown into numbered steps, made Phase 2 handoff explicit, collapsed cross-cutting paragraph
+- Replaced vague Phase 1 template "Course-correct" rule with specific (a)/(b)/(c) SendMessage triggers
+- Compressed Pre-flight step 2 (experience feedback) from 6 lines to 1
+- Coherence: added pointer to `skills/vote/` Delegation Protocol in "No nested agents" blockquote (symmetry with evolve-skills)
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Coherence, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Trimmed ~12 lines (359→347) via size-constraint/checklist consolidation; Phase 2 aligned dimension naming in template and promoted "No nested agents" to intro callout.
 
 ### Changes

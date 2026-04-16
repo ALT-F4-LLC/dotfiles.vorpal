@@ -3,6 +3,22 @@
 ## 2026-04-16
 
 ### Summary
+Cross-communication pass: restructured Cross-Agent Communication into explicit per-teammate direct-SendMessage trigger blocks (@staff-engineer, @ux-designer, @senior-engineer, @sdet) plus a team-lead escalation block. Added Incoming triggers block for reciprocal handling. Compressed mentor paragraph and operating context. Net: -1 line body, +5 Phase 2.
+
+### Changes
+- PRIMARY: Replaced vague "proactive sharing" prose with concrete "notify/consult X when Y" triggers. New: @senior-engineer on active-issue plan edits, @sdet on acceptance-criteria change, team-lead escalation on DoR failure, direct @ux-designer ergonomics consult, @staff-engineer on spike-ambiguity
+- [Phase 2] Added Incoming triggers block: @staff-engineer spec-drift → `chore` issue; ADR/TDD broadcast → flag invalidated active issues; @sdet missing-criteria → update or blocked-by follow-up
+- Compressed "rigorous honest mentor" paragraph (7 → 4 lines) and Operating context (5 → 4 lines)
+
+### Dimensions Evaluated
+All 8: Capability Growth & Cross-Communication (GOAL — primary), Consolidation & Trimming, Actionability, Role Realism, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Consolidation pass: trimmed aspirational prose, compressed redundant "NEVER write code" paragraph, restructured TDD routing bullets. Phase 2 coherence: normalized Docket CLI reference (flag placeholders, `--rationale TEXT`, `--escalation-reason`, destructive-edit warning). Net: -7 lines.
 
 ### Changes

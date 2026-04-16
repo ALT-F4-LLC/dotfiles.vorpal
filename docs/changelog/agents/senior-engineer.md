@@ -3,6 +3,23 @@
 ## 2026-04-16
 
 ### Summary
+Cross-communication pass: replaced vague "proactive sharing" prose with concrete phase-indexed SendMessage trigger matrix (before/during/close, 14 triggers). Added Incoming triggers for bidirectional reciprocity. Trimmed boilerplate across Operating Context, Rigorous Honesty, What You Are NOT, Pre-Flight Gate, and Check-Specs. Applied Docket CLI audit findings. Net: -29 lines.
+
+### Changes
+- PRIMARY: Added phase-indexed SendMessage trigger matrix — 14 concrete "when X → notify Y" rules grouped by implementation phase (before/during/close)
+- [Phase 2] Added Incoming triggers block: @sdet BLOCK fix-loop, TDD-accepted/revised preload, @ux-designer spec-revision reconcile, ADR `*` broadcast consumption; flag test-infra-adjacent changes on review handoff
+- Trimmed Operating Context (-2), Rigorous Honesty (-4), What You Are NOT (-7), Pre-Flight Gate (-17), Check-Specs (-8)
+- CLI: `docket export` expanded; `vote list` added `-d|--domain-tag TAG`; `vote create` documented `-r|--rationale` short form
+
+### Dimensions Evaluated
+All 8: Cross-Communication (GOAL — primary), Consolidation (HIGHEST priority), Completeness (CLI audit), Boundary Clarity, Role Realism, Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Consolidation pass: trimmed Operating Context boilerplate, Docket Rules redundancy, and self-review bullet list. Aligned CLI reference with Docket audit findings. Phase 2 coherence: normalized `--created-by` value name and added `vote list` default-behavior comment. Net: -13 lines.
 
 ### Changes

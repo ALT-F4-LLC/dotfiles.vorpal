@@ -27,7 +27,7 @@ skill files.
 
 > **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
 
-> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates.
+> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
 
 ---
 
@@ -115,24 +115,20 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 ## Orchestration Workflow
 
-### Team Setup
+### Team Setup & Agent Lifecycle
 
-Create an Agent Team before spawning agents:
+1. `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`.
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
 
-1. **Create team:** `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`
-2. **Create Phase 0 tasks:** `TaskCreate` for "Docs Research" and "Docket CLI Audit"
-3. **Create Phase 1 tasks** — one `TaskCreate(subject="Review <name>")` per target skill
-4. **Create Phase 2 task:** `TaskCreate(subject="Coherence & Renames")`
+**Lifecycle rules (apply uniformly):**
+- Each teammate delivers its final report by `SendMessage` to the orchestrator, THEN is shut down via `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`.
+- No teammate is reused across phases — spawn fresh per phase.
+- After all phases complete: `TeamDelete(team_name="evolve-skills-{today_date}")`.
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
 Spawn TWO teammates in parallel — `docs-researcher` (claude-code-guide) and `docket-auditor`
-(senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. After both complete,
-capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1.
-**Shut down Phase 0 agents immediately** — send `shutdown_request` via
-`SendMessage(to="docs-researcher", message={type: "shutdown_request"})` and
-`SendMessage(to="docket-auditor", message={type: "shutdown_request"})` before starting Phase 1.
-They have no further role.
+(senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution. Then shut down both per lifecycle rules before starting Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -155,12 +151,11 @@ Each teammate (read-only — no file edits):
 
 **Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
 
-Use `TaskList()` for progress. Route cross-cutting findings from SendMessage to peers and Phase 2.
+**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer** — the orchestrator is the only relay, and forwards cross-cutting items to Phase 2. Use `TaskList()` for progress tracking.
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
-single @staff-engineer teammate (read-only) for coherence review. Assign via `TaskUpdate`.
+Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single @staff-engineer (read-only) coherence-reviewer; assign via `TaskUpdate`.
 
 The Phase 2 teammate:
 1. Reads ALL skill files (freshly improved versions)
@@ -174,12 +169,7 @@ and updates changelogs for affected skills.
 
 ### Wrap-up & Team Cleanup
 
-After Phase 2: shut down the coherence-reviewer via
-`SendMessage(to="coherence-reviewer", message={type: "shutdown_request"})`, then
-`TeamDelete(team_name="evolve-skills-{today_date}")`. Run `wc -l` on all target skills —
-consolidate any over 500. Report: files modified, before/after line counts, improvements,
-renames/coherence fixes, cross-communication events, and reminder that
-NO changes have been committed.
+After Phase 2: shut down coherence-reviewer and `TeamDelete` per lifecycle rules. Run `wc -l` on all target skills — consolidate any over 500. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, and that NO changes have been committed.
 
 ---
 
@@ -316,13 +306,11 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 3. **Phase 1 in parallel.** Use `team_name` and `name` when spawning.
 4. **Phase 2 after all Phase 1.** Use `TaskList` to verify completion.
 5. **Always run Phase 2** — even for single-skill improvements.
-6. **Only orchestrator edits files.** Teammates are read-only reviewers.
-7. **Never commit.** No `git add`, `git commit`, or `git push`.
-8. **Build on strengths** — improve, don't rewrite.
-9. **Changelog mandatory.** Follow format above; orchestrator normalizes.
-10. **500-line budget.** `wc -l` after edits; consolidate if over.
-11. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
-12. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
-13. **Clean up.** Shut down teammates and delete team after wrap-up.
-14. **Self-correct on mediocre results.** If changes worsen clarity without behavioral gain, revert and retry.
-15. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.
+6. **Never commit.** No `git add`, `git commit`, or `git push`.
+7. **Build on strengths** — improve, don't rewrite.
+8. **Changelog mandatory.** Follow format above; orchestrator normalizes.
+9. **500-line budget.** `wc -l` after edits; consolidate if over.
+10. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
+11. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
+12. **Self-correct on mediocre results.** If changes worsen clarity without behavioral gain, revert and retry.
+13. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.

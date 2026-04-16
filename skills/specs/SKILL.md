@@ -23,13 +23,12 @@ The argument is **optional** — this skill has a single well-defined behavior.
 
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in
 parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify, but you
-never write spec files yourself. Spawned agents are leaf agents — they must NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`.
+never write spec files yourself. Agents work independently on isolated files — no cross-agent handoffs during generation. Spawned agents are leaf agents — they must NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`.
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
-**Scope boundary:** This skill handles initial generation of spec files only. Ongoing maintenance
-and updates to `docs/spec/` are handled by `@staff-engineer` agents during normal TDD and review
-workflows (see `dev` skill).
+**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance is handled by
+`@staff-engineer` during TDD and review workflows (see `dev` skill).
 
 ---
 
@@ -125,7 +124,7 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. If you need a decision or vote, SendMessage the team lead.
+- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage team-lead if you are blocked or need a decision; the completion SendMessage is covered below.
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:

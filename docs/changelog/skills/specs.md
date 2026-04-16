@@ -3,6 +3,22 @@
 ## 2026-04-16
 
 ### Summary
+Clarified agent independence model (isolated files, no cross-agent handoffs during generation) and expanded SendMessage triggers to cover blocker case. Addresses operator feedback on coordination clarity. Net 158→157.
+
+### Changes
+- Added explicit independence clause to role paragraph — agents work on isolated files with no cross-agent handoffs
+- Expanded spawning-template SendMessage guidance to cover blocker trigger in addition to decisions
+- Tightened Scope boundary paragraph from 3 lines to 2 (compensating trim)
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (priority), Skill Design Quality, Actionability, Completeness, Over-Engineering, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Fixed missing `{verified_goal}` substitution in Step 1 to match the Spawning Template section. Skill remains lean at 158 lines — full-sweep review found no bloat, gaps, or coherence issues.
 
 ### Changes

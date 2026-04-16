@@ -3,6 +3,23 @@
 ## 2026-04-16
 
 ### Summary
+Made reviewer output retrieval explicit (Agent() return message is the source), trimmed over-engineered edge-case blocks, unified vote-id placeholder spelling across the skill. Addresses operator feedback on coordination clarity.
+
+### Changes
+- Phase 2: replaced vague "TaskList monitors completion" with explicit "parse Agent() return value" — closes Dimension 5 ambiguity about how coordinator retrieves verdict/findings payload
+- Compressed unmapped-`created_by` warning from 3 lines to 1
+- Compressed Reviewer Independence Edge Cases from 9 lines to 5
+- Coherence: unified all `{proposal_id}` and placeholder `{vote_id}` references to canonical `{vote-id}` across CLI examples; JSON field name `vote_id` preserved (snake_case is correct for JSON keys)
+
+### Dimensions Evaluated
+Over-Engineering, Orchestration & Agent Teams, Coherence, Actionability, Completeness, Skill Design Quality, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Fixed Pre-flight→Phase 1 ordering bug (TeamCreate referenced `{vote-id}` before it existed) and aligned delegation_request schema with dev skill. Trimmed redundant cross-reference note.
 
 ### Changes

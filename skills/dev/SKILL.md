@@ -255,10 +255,8 @@ Scoped files: {list of files this issue should touch}
 {If Discovered comments exist from prior phases: "Context from prior phases: {relevant Discovered comments}"}
 
 Team context:
-- A persistent @staff-engineer advisor named "advisor" is available via SendMessage for
-  architectural questions. Consult them before deviating from the TDD or when you encounter
-  decisions not covered by the specs. Do NOT consult for routine implementation decisions.
-{If other senior-engineers in this phase: "- Other @senior-engineer teammates in this phase: {names}. Coordinate via SendMessage if your changes might affect shared interfaces."}
+- @staff-engineer "advisor" via SendMessage for architectural questions — consult before deviating from the TDD or for decisions not covered by specs; NOT for routine choices.
+{If other senior-engineers in this phase: "- Peer @senior-engineers: {names}. SendMessage if your changes affect shared interfaces."}
 
 Rules:
 - BEFORE starting, run `docket issue comment list {DOCKET-ID}` to review all comments
@@ -286,10 +284,11 @@ Verified goal: {verified_goal}
 {For full-scope: "Completed issues:\n{list all DOCKET-IDs, titles, and files changed}"}
 {If TDD exists: "Reference TDD: docs/tdd/{filename}.md"}
 {If UX spec exists: "Reference design spec: docs/ux/{filename}.md"}
+{If review completed: "Review findings (risk areas to probe): {summary of concerns/blockers from @staff-engineer review}"}
 
 Team context:
-- Use SendMessage to ask @senior-engineer teammates about implementation intent when needed.
-- A persistent @staff-engineer advisor named "advisor" is available for test architecture questions.
+- SendMessage @senior-engineer teammates when tests fail unexpectedly or acceptance criteria are ambiguous.
+- @staff-engineer "advisor" available for test architecture questions.
 
 Rules:
 - BEFORE starting, review existing comments on relevant issues
@@ -317,12 +316,10 @@ Before spawning any agents, create an Agent Team to coordinate:
 ### Design Phase
 
 1. **If UX-heavy**: Spawn @ux-designer teammate to produce a design spec. Wait for completion.
-2. **If medium+**: Spawn @staff-engineer teammate **named "advisor"** to produce a TDD. Wait for completion.
-   **If large**: Spawn multiple @staff-engineer teammates for parallel TDDs if components are
-   independent.
-3. **For small tasks** (no TDD phase): Spawn @staff-engineer teammate **named "advisor"**
-   before the implementation phase begins. This advisor persists through implementation and
-   review — do NOT shut it down between phases.
+2. **Spawn persistent "advisor"** — one @staff-engineer teammate **named "advisor"** that persists through review (do NOT shut down between phases).
+3. **TDD assignment**: Medium+: advisor produces the TDD. Large: advisor produces the lead TDD;
+   spawn additional ephemeral @staff-engineer teammates for parallel sibling TDDs, shutting them
+   down after TDD completion. Small: no TDD.
 
 ### Planning Phase
 
@@ -338,7 +335,7 @@ Before spawning any agents, create an Agent Team to coordinate:
    If anything looks off, ask the PM to revise.
 6. **If the PM surfaced investigation needs**, send them to the "advisor" via SendMessage
    rather than spawning a new @staff-engineer.
-7. **Present the plan to the user.** Use AskUserQuestion with options: "Approve", "Revise plan", "Cancel".
+7. **Present the plan to the user.** Use AskUserQuestion: "Approve", "Revise plan", "Cancel". On Approve, shut down @project-manager (re-spawn only on divergence per step 10).
 
 ### Implementation Phase
 
@@ -396,7 +393,7 @@ Invoke `/vote` for decisions matching the triggers below. Single-reviewer remain
 - Plan with breaking changes or >30% scope change → Trigger (medium)
 
 **Invoke:** `Skill(vote, "Approve {decision}? criticality: {level}. {context}")`.
-After approval: `docket vote commit {proposal-id} --outcome "Approved: {summary}"`.
+After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`.
 
 ### Verification Phase (medium+ tasks)
 
@@ -412,7 +409,7 @@ After approval: `docket vote commit {proposal-id} --outcome "Approved: {summary}
 
 13. **After all phases complete:**
     - Summarize: issues completed, files changed, review findings, test results
-    - Send `shutdown_request` to ALL remaining teammates (advisor, senior-engineers, sdet)
+    - Send `shutdown_request` to ALL remaining teammates (advisor, any remaining senior-engineers, sdet, project-manager)
     - Wait for shutdown confirmations, then run `TeamDelete(team_name="dev-{feature-slug}")`
     - Remind the user that NO changes have been committed — review with `git diff`
 
@@ -426,7 +423,7 @@ execute a skill requiring agent spawning. Required fields: `type`, `protocol_ver
 
 **For `skill: "vote"`:**
 
-1. Read the proposal via `docket vote show <vote_id> --json`.
+1. Read the proposal via `docket vote show {vote-id} --json`.
 2. **Extract the `created_by` field** from the proposal and apply the proposer exclusion
    mapping defined in the `/vote` skill's "Reviewer Independence Enforcement" section.
    Use **case-insensitive matching** when mapping `created_by` to an agent type, as specified

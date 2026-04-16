@@ -3,6 +3,24 @@
 ## 2026-04-16
 
 ### Summary
+Centralized agent lifecycle, made Phase 1 SendMessage triggers explicit, added Phase 2 handoff gate, removed duplicate rules. Addresses operator feedback that agent coordination felt unclear. Net 328→316.
+
+### Changes
+- Added "Agent Lifecycle" rules (single source for shutdown + report capture); Phase 0 / Wrap-up now reference them instead of inlining shutdown JSON
+- Replaced vague "Route cross-cutting findings from SendMessage to peers" with explicit triggers: orchestrator-only relay, cross-cutting/delegation/blocker categories
+- Phase 2 gate made explicit: tasks completed + edits applied + teammates shut down
+- Removed duplicate Rule 6 ("Only orchestrator edits") and Rule 13 ("Clean up"); renumbered
+- Coherence: added pointer to `skills/vote/` Delegation Protocol in "No nested agents" blockquote so teammates can resolve delegation_request schema without duplicated content
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-04-16
+
+### Summary
 Removed dead `{focus_areas}` substitution variable from Phase 1 template and promoted Over-Engineering to HIGHEST PRIORITY in the main dimension list to match template enforcement.
 
 ### Changes

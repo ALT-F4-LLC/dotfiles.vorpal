@@ -1,5 +1,23 @@
 # Changelog: senior-engineer
 
+## 2026-04-19
+
+### Summary
+Embedded operator "No guessing — verify" rule at top-of-file principle level adjacent to Rigorous honesty, and reinforced operationally in Verification Feedback Loop. Compressed boundary prose and redundant SendMessage closings to offset.
+
+### Changes
+- Added "No guessing — verify" top-level principle — STOP and verify APIs/signatures/paths via Read, Grep, Bash, WebFetch; never invent imports or patch symptoms
+- Added pre-code verification bullet to Verification Feedback Loop
+- Compressed "What You Are NOT" (8 → 5 lines) and SendMessage preamble; removed redundant "Report transitions" block
+- [Phase 2] Added @sdet source-clarification incoming trigger — reciprocates SDET fixture/framework uncertainty outgoing
+- [Phase 2] Added @project-manager plan-change incoming trigger — reciprocates PM active-issue scope/dep notifications
+
+### Dimensions Evaluated
+All 8: Role Realism (primary — No Guessing), Actionability (verification steps), Consolidation (offset trims), Boundary Clarity, Completeness, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

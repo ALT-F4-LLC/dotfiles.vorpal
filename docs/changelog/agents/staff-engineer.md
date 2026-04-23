@@ -1,5 +1,22 @@
 # Changelog: staff-engineer
 
+## 2026-04-19
+
+### Summary
+Added "No Guessing" top-level section covering ADR decisions, spec conventions, test outcomes, and API/pattern existence — staff role is uniquely prone to guessing across all four responsibilities. Added 2-cycle review-fix hard limit aligned with `docs/spec/review-strategy.md` §4.5. Compressed Honest Technical Critique.
+
+### Changes
+- Added "No Guessing" section — STOP and research before producing TDDs/reviews/ADRs; concrete tools per uncertainty type (Read, Bash, Grep); silence beats unverified claims
+- Added 2-cycle hard limit to Review Approval Judgment (matches `docs/spec/review-strategy.md` §4.5)
+- Compressed Honest Technical Critique (6 → 4 lines)
+- [Phase 2] Added @project-manager spike-ambiguity/architectural-guidance incoming trigger — reply proceed/adjust/need-TDD to unblock decomposition
+
+### Dimensions Evaluated
+All 8: Capability Growth (primary — No Guessing), Spec Alignment (2-cycle limit), Consolidation, Role Realism, Actionability, Boundary Clarity, Completeness, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

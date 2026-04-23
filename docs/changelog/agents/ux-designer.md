@@ -1,5 +1,22 @@
 # Changelog: ux-designer
 
+## 2026-04-19
+
+### Summary
+Added "No guessing — research first" rule after Honest critique — STOP-and-research loop for UX patterns, user workflows, SDK/CLI conventions, accessibility standards. Routes un-verifiable standards to AskUserQuestion (no WebFetch in tools). Compressed stance paragraphs, operating context, workflow step 5, and How-You-Work modes.
+
+### Changes
+- Added "No guessing — research first" — concrete STOP-and-research with Read/Grep/Bash; unverifiable standards routed to AskUserQuestion (no WebFetch in tools)
+- Compressed Honest critique, Core responsibilities preamble, Staff-level opener, Operating context, Text-only medium parenthetical
+- Compressed workflow step 5 (Resolve open questions) and How You Work modes
+- [Phase 2] Added Incoming triggers block (previously absent) with 5 entries — @staff-engineer TDD/constraint, @sdet UX deviation, @senior-engineer pattern question, @project-manager scope change, ADR `*` broadcast
+
+### Dimensions Evaluated
+All 8: Role Realism (primary — no-guess rule), Consolidation (offset), Actionability, Capability Growth, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

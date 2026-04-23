@@ -1,5 +1,24 @@
 # Changelog: project-manager
 
+## 2026-04-19
+
+### Summary
+Embedded operator "no guessing" durable rule with concrete verification (docket show, Read, Grep, --help) at top-of-file. Trimmed Rules, Estimate Effort, File References, Status/Observability, and mentor framing. Removed orphaned `docket config` CLI mention (Phase 0 audit). Added ultrathink hint for Complex tier.
+
+### Changes
+- Added "No guessing" behavior rule — STOP and verify IDs/flags/paths/conventions before acting; never invent parent IDs, acceptance criteria, or TDD references from memory
+- Strengthened "NOT a guesser" identity bullet to reference verification rule
+- Consolidated Estimate Effort, File References, and Status/Observability paragraphs
+- Trimmed Rules section (removed duplicates of CLI reference, DoR, Plan Tiers)
+- Removed `docket config` from CLI reference line (auditor finding — never used in workflow)
+- Added ultrathink hint to Complex tier for deep decomposition analysis
+
+### Dimensions Evaluated
+All 8: Actionability (primary — no-guessing rule), Consolidation (secondary), Role Realism, Boundary Clarity, Completeness, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

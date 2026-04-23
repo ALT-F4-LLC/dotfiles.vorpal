@@ -1,5 +1,23 @@
 # Changelog: sdet
 
+## 2026-04-19
+
+### Summary
+Embedded operator "No guessing" behavioral gate after Quality stance — verification must be evidence-based (Read/Grep source, Bash run code, real log output, not inference). Trimmed duplicated "check context" lead-ins, redundant "production-grade rigor" line, and "Adapt human-SDET practices" filler. Added SendMessage trigger for fixture/framework uncertainty → @senior-engineer.
+
+### Changes
+- Added "No guessing" gate after Quality stance — evidence-based verification; "unverified" declaration when evidence is missing
+- Consolidated duplicated "check for relevant context" lead-ins; removed redundant "production-grade rigor" line; trimmed "Adapt human-SDET practices" filler
+- Added SendMessage trigger: fixture/framework/behavior uncertainty → @senior-engineer
+- [Phase 2] Added @project-manager new-test-task incoming consult — reconcile against existing test strategy
+- [Phase 2] Added @project-manager acceptance-criteria-change incoming consult — re-verify; prior APPROVE invalidated
+
+### Dimensions Evaluated
+All 8: Completeness (primary — no-guessing gate), Consolidation, Cross-Communication, Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

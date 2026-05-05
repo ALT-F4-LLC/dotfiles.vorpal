@@ -1,5 +1,24 @@
 # Changelog: project-manager
 
+## 2026-05-05
+
+### Summary
+Consolidation pass — removed duplicated "NOT a guesser" boundary bullet (covered by No-guessing rule above), circular Alignment risk bullet, and tightened verbose paragraphs across No-guessing, Estimate Effort, Decompose the Work, Self-review/Verify-assumptions (merged), Re-Engagement step 4, /vote section, and Rules. Updated Shutdown Handling to reference the explicit `shutdown_response` protocol per Phase 0 docs research. Net: -20 lines (406→386).
+
+### Changes
+- Removed duplicate "NOT a guesser" boundary bullet (covered by No-guessing rule above)
+- Removed circular Alignment risk bullet (no actionable content)
+- Compressed No-guessing, Estimate Effort, Decompose the Work, Re-Engagement step 4, /vote, and Rules
+- Merged Self-review and Verify-assumptions paragraphs
+- Updated Shutdown Handling to reference `shutdown_response` protocol explicitly
+- [Phase 2] Added 6 incoming-trigger entries closing inverse-trigger gaps: @staff-engineer TDD-accepted/scope-delta/re-plan, @senior-engineer scope-expansion / discovered-follow-up, @sdet coverage-gap tracking, @ux-designer post-vote handoff / breaking-UX / scope-discovery
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (PRIMARY), Boundary Clarity, Capability Growth (shutdown protocol), Actionability, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-19
 
 ### Summary

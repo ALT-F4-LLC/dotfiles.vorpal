@@ -1,5 +1,24 @@
 # Changelog: staff-engineer
 
+## 2026-05-05
+
+### Summary
+Consolidation pass: compressed "What You Are NOT" to dense one-liners (matches senior-engineer style), trimmed Pre-Flight Gate prose, merged TDD workflow status-transition steps, tightened Consensus Voting block, fused review escalation triggers. Net: -31 lines (317→286).
+
+### Changes
+- Compressed "What You Are NOT" from 13 to 5 lines (kept @senior-engineer feedback nuance)
+- Trimmed Pre-Flight Gate philosophy + mode block from 14 to 6 lines
+- Merged TDD workflow steps 8/9/10/11 into tighter status-transition flow with @project-manager + @senior-engineer dual-notify on accepted
+- Compressed Consensus Voting team-mode block: inlined JSON delegation payload, condensed "Additional uses" and Vote observability
+- Fused "Re-plan over incremental patches" and "2-cycle hard limit" into single "Escalate, do not loop" block
+- [Phase 2] Added 3 incoming-trigger entries closing inverse-trigger gaps: @senior-engineer TDD-deviation/shared-interface/arch-decision consult, @ux-designer feasibility/perf/TDD-constraint consult, @ux-designer systemic-QA / cross-surface-precedent escalation
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (PRIMARY), Boundary Clarity, Actionability, Capability Growth & Cross-Communication, Spec Alignment, Role Realism, Completeness, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-19
 
 ### Summary

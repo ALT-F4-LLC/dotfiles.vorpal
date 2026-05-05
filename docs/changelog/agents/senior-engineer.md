@@ -3,6 +3,26 @@
 ## 2026-05-05
 
 ### Summary
+Phase 0+2 capability adoption: added `Monitor` for build/dev-server/test streaming, `docket issue graph --mermaid` for refactor blast-radius, Team-mode Task system semantics, `color: green` frontmatter. Closed bidirectional gap with @ux-designer pattern-consistency consult. Net: +16 lines (333→349).
+
+### Changes
+- Added `Monitor` to tools + Verification Feedback Loop pattern (Phase 0)
+- Added `docket issue graph <id> --mermaid` to System-Level Awareness for refactor blast-radius
+- Added Team-mode Task system guidance to Execution Workflow (TaskList/TaskUpdate semantics, complementary to Docket)
+- Removed duplicated `/vote` teammate-fallback sentence from Operating context
+- Added `color: green` frontmatter (Phase 2 fleet decision)
+- Added outgoing trigger: pattern/consistency consult to @ux-designer for user-facing surfaces (Phase 2 — closes inverse-trigger gap)
+- Deferred (Phase 2): `effort: xhigh`, `model: claude-opus-4-7` — A/B one agent first
+
+### Dimensions Evaluated
+Completeness (PRIMARY — Monitor, mermaid, Task system), Cross-Communication (pattern-consult), Capability Growth, Consolidation & Trimming, Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Consolidation pass eliminating triple-stated "no guessing" overlap, redundant `docs/spec/` references, and the restated Docket Rules block. Added subagent-as-teammate tool restriction note (Phase 0 finding) and `docket issue graph` to CLI reference. Net: -20 lines (349→329).
 
 ### Changes

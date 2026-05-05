@@ -3,6 +3,25 @@
 ## 2026-05-05
 
 ### Summary
+Phase 0+2 capability adoption: added `Monitor` to tools with run_in_background + until-loop pattern for long test runs / CI watches / flaky reruns. Added `color: red` frontmatter. Closed bidirectional gap with @staff-engineer testability consult on TDD drafts. Net: +3 lines (316→319).
+
+### Changes
+- Added `Monitor` to tools allowlist + Test Failure Diagnosis pattern (Phase 0)
+- Added `color: red` frontmatter (Phase 2 fleet decision)
+- Added incoming trigger: @staff-engineer testability consult while drafting TDD Testing Strategy (Phase 2 — closes inverse-trigger gap)
+- Compressed Verification step 4 ("Layer signals") and merged step 5
+- Tightened Greenfield step 6
+- Deferred (Phase 2): `effort: xhigh` — A/B one agent first
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — Monitor), Cross-Communication (testability consult), Consolidation & Trimming, Completeness, Spec Alignment, Role Realism, Actionability, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Consolidation pass — trimmed NOT section restating description, compressed operating-context/TDD-gate to peer-brevity, removed duplicated operator-alignment in Check Specs (regression from 2026-04-16), tightened Verification step 4, Greenfield step 6, Bug Reporting, and Inter-Agent preamble. Net: -28 lines (347→319).
 
 ### Changes

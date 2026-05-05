@@ -3,6 +3,26 @@
 ## 2026-05-05
 
 ### Summary
+Phase 0+2 capability adoption + consolidation: added Bash run_in_background + Monitor pattern for QA of long-running surfaces, `color: magenta` frontmatter. Merged Honest-critique + No-guessing stance, merged two @staff-engineer incoming triggers, trimmed Pre-Flight parentheticals and stale skills footnote. Net: -3 lines (287→284).
+
+### Changes
+- Added Monitor + run_in_background pattern in Responsibility 5 (Design QA) for long-running user-facing surfaces (Phase 0)
+- Added `color: magenta` frontmatter (Phase 2 fleet decision)
+- Merged Honest-critique and No-guessing stance paragraphs into single block
+- Merged two @staff-engineer incoming-trigger lines (TDD revision + feasibility consult) into one bidirectional trigger
+- Tightened Pre-Flight Standalone Mode wording
+- Dropped Phase 0 footnote about `skills` frontmatter no longer auto-loading in team mode
+- Deferred (Phase 2): `model: claude-opus-4-7`, `effort: xhigh` — A/B one agent first
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Capability Growth (Monitor for QA), Actionability, Boundary Clarity, Role Realism, Completeness, Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Consolidation pass: compressed three stance paragraphs (Honest critique / No guessing / Text-only medium), tightened workflow step 1 (Clarify), trimmed Pre-Flight Standalone Mode parenthetical. Added Phase 0 note that `skills` frontmatter does not auto-load in team mode — clarifying the existing Design Spec Approval routing. Net: -6 lines (290→284).
 
 ### Changes

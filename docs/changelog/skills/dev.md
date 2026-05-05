@@ -1,5 +1,23 @@
 # Changelog: dev
 
+## 2026-05-04
+
+### Summary
+General Over-Engineering pass at 422 lines: trimmed verbose Argument Handling, compressed Pre-flight goal verification prose, removed non-behavioral compaction rule, and de-duplicated six-dimensions enumeration that the @staff-engineer agent file already owns. Net 422→408.
+
+### Changes
+- Compressed Argument Handling from 10 lines to 3 (removed worked example and obvious substitution mechanics)
+- Compressed Pre-flight step 1 from 6 lines to 1 (removed hand-coded vague-example list and HARD GATE rehearsal)
+- Removed Rule 3 "Preserve context across compaction" — generic LLM advice, not behavioral
+- De-duplicated six review dimensions enumeration in Code Review template (already in @staff-engineer agent spec)
+- [Phase 2 coherence] Stripped unverifiable "v2.1.111 stall detection" parenthetical from Stall & Crash Recovery
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-22
 
 ### Summary

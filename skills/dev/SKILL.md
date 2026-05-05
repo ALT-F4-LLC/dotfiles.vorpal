@@ -13,14 +13,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "Ta
 
 ## Argument Handling
 
-The `work` argument is **required** — it describes the work to be done.
-
-- **No argument** (`/dev`): Inform the user that a work description is required and abort.
-  Example: "Usage: `/dev <work>` — describe the work to be done."
-- **With argument** (`/dev implement JWT authentication for the API`): Use the argument as
-  `{work}` throughout this skill. Pass it verbatim to agent templates wherever `{work}` appears.
-
-If the argument is too vague (e.g., `/dev stuff`), use AskUserQuestion to ask the operator what work they want done.
+The `work` argument is **required**. If absent, abort with: "Usage: `/dev <work>` — describe the work to be done." Otherwise substitute as `{work}` in spawning templates. Pre-flight step 1 handles vagueness via AskUserQuestion.
 
 ---
 
@@ -46,12 +39,7 @@ You are the **Team Lead** — an orchestrator that coordinates a five-agent deve
 
 Before any planning or execution, run these checks:
 
-1. **Verify the goal** — Use AskUserQuestion to ask the operator:
-   "What should be true when this work is done?" and "What is explicitly out of scope?"
-   If the response is too vague to pass downstream (e.g., "just make it work", "fix it",
-   "make it better"), use AskUserQuestion with a follow-up asking for specific success
-   criteria before storing. Store the validated response as `{verified_goal}`.
-   **HARD GATE:** Do not proceed until the goal is verified and specific.
+1. **Verify the goal (HARD GATE)** — Use AskUserQuestion to capture "What should be true when this work is done?" and "What is explicitly out of scope?" Re-ask with a follow-up if the answer is too vague to pass downstream. Store as `{verified_goal}`. Do not proceed until verified and specific.
 2. **Initialize Docket** — Run `docket init` (idempotent).
 3. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, decide whether to extend the existing
@@ -176,8 +164,7 @@ Requirements:
 - Run `git diff` to review all uncommitted changes
 - If `git diff` shows no changes, STOP and report that no changes were found — do not proceed
   with a review of empty output
-- Evaluate across six dimensions: architecture, security, operations, performance, code quality, testing
-- Provide actionable feedback structured by severity (blocker, concern, suggestion, praise)
+- Provide actionable feedback structured by severity (blocker, concern, suggestion, praise) covering the six review dimensions defined in your agent spec
 - If blockers are found, list each with specific file and issue for routing back
 ```
 
@@ -390,7 +377,7 @@ Single-reviewer is the default. Invoke `Skill(vote, "Approve {decision}? critica
 
 ### Teammate Stall & Crash Recovery
 
-Teammates can crash silently or stall. Detect via: (a) `TaskList` entry stuck `in_progress` with no status update for ~10 min (v2.1.111 stall detection surfaces this) OR `TeammateIdle` hook fires, (b) SendMessage to teammate unanswered for 5+ min on a direct question, (c) docket issue stuck `in-progress` with no completion comment after expected duration.
+Teammates can crash silently or stall. Detect via: (a) `TaskList` entry stuck `in_progress` with no status update for ~10 min OR `TeammateIdle` hook fires, (b) SendMessage to teammate unanswered for 5+ min on a direct question, (c) docket issue stuck `in-progress` with no completion comment after expected duration.
 
 Recovery: `TaskUpdate` to clear `owner`, then `Agent(...)` to respawn with the SAME `name` and original prompt plus a resume preamble: "Prior instance stalled — re-read verified goal, check docket issue state and comments, resume from last completed step." Reassign the task. Do NOT respawn silently — report the event to the operator.
 
@@ -418,5 +405,4 @@ For `skill: "vote"`: read proposal (`docket vote show {vote-id} --json`), apply 
 
 1. **Surface cross-communication.** When teammates SendMessage each other or delegate `/vote`, report the event and outcome to the operator — they cannot see inter-agent messages.
 2. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review loops after 2 cycles, and stalled teammates after one respawn attempt.
-3. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and active issue states before continuing orchestration.
 

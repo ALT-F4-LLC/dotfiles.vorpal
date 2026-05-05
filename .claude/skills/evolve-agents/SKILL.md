@@ -5,8 +5,8 @@ description: >
   themselves, enforces Content Gate and 500-line budget, applies edits. Trigger: "evolve agents",
   "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name]"
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 effort: max
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
 > **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
@@ -37,9 +37,7 @@ agent files. Self-evolution is expected — every agent is responsible for its o
 Target agent(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
-- **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent.
-
-If an argument is provided and no matching file exists, Pre-flight step 5 will catch it.
+- **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent. See Pre-flight step 5 for validation.
 
 ---
 
@@ -108,7 +106,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 Teammates can crash silently, stall mid-stream, or be killed before reporting. The orchestrator detects and recovers.
 
-- **Detect stall**: No `TaskUpdate` activity AND no `SendMessage` from the teammate in >10 minutes (v2.1.111 stall detection surfaces this), OR a `TeammateIdle` hook fires.
+- **Detect stall**: No `TaskUpdate` activity AND no `SendMessage` from the teammate in >10 minutes, OR a `TeammateIdle` hook fires.
 - **Detect crash**: `shutdown_request` gets no response within one orchestrator turn, OR Agent() return contains an explicit error.
 - **Re-spawn ONCE** with fresh name suffix (e.g., `review-<name>-r2`). Reuse the Phase template plus a `Resume context:` section listing (a) what the prior teammate reported (if partial), (b) the task ID to claim, (c) which agent file to review.
 - **Second failure**: Mark task completed, record "No review performed — agent unavailable" in the changelog, skip that agent this cycle. NEVER review directly — the orchestrator-only-coordinates invariant is absolute.
@@ -125,24 +123,11 @@ Before spawning any agents, create an Agent Team to coordinate the evolution cyc
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
-Spawn TWO teammates in parallel — a `claude-code-guide` for docs research and a `senior-engineer`
-for docket CLI audit (needs Bash access):
-
-```
-Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
-Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
-```
-
-Assign Phase 0 tasks via `TaskUpdate`. After both complete, capture outputs as
-`{docs_research_findings}` and `{docket_audit_findings}` — both are passed to Phase 1 agents.
+Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign tasks via `TaskUpdate`. After both complete, capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` — both passed to Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one teammate per target, using the **matching agent type** (e.g., spawn @senior-engineer to
-review `agents/senior-engineer.md`). **Spawn all teammates in the same turn** to maximize
-parallelism. If targeting a single agent, spawn one.
-
-Spawn each as `Agent(name="review-<name>", subagent_type="<name>", team_name="evolve-agents-{today_date}")` and assign the corresponding task via `TaskUpdate`.
+Spawn one teammate per target using the **matching agent type** (e.g., @senior-engineer reviews `agents/senior-engineer.md`) per the Phase 1 template. **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
 
 Each self-reviewing teammate (read-only) follows the Phase 1 spawning template: reads its own
 agent file, recent changelog, relevant specs, other agents' first ~80 lines, evaluates all 8
@@ -162,10 +147,7 @@ Mid-Phase-1 cross-cutting findings: route to in-flight siblings. `TaskList()` tr
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a
-single @staff-engineer teammate (read-only) to review coherence and recommend fixes.
-
-Spawn as `Agent(name="coherence-reviewer", subagent_type="staff-engineer", team_name="evolve-agents-{today_date}")` and assign the Phase 2 task.
+After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a single `coherence-reviewer` (@staff-engineer, read-only) per the Phase 2 template and assign the Phase 2 task.
 
 The Phase 2 teammate follows the Phase 2 spawning template: reads all agent files, verifies
 renames, checks cross-agent coherence (boundaries, references, gaps, overlaps, terminology,
@@ -250,9 +232,6 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 ## Docket CLI Audit Findings
 {docket_audit_findings}
 
-## Operator Experience Feedback
-{experience_feedback}
-
 ## Content Gate (ALL additions must pass — reject if ANY fails)
 
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
@@ -322,11 +301,10 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 
 ## Rules
 
-1. **Pre-flight before spawning.** Validate files exist and arguments resolve.
-2. **TeamCreate → TaskCreate before any Agent calls.** Phase 0 → Phase 1 (parallel) → Phase 2.
-3. **Always run Phase 2** — even for single-agent improvements.
-4. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
-6. **Fail loud.** Detect stalls via `TeammateIdle` hook or >10min without `TaskUpdate`/`SendMessage`. Follow the Crash & Stall Recovery protocol: re-spawn ONCE with resume context, then skip with a changelog "No review performed" entry on second failure. Never review directly.
-7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **Orchestrator is the single coordination point** — its loss ends the cycle. After any compaction or resume, follow Crash & Stall Recovery → Compaction recovery before issuing new `Agent` or `SendMessage` calls.
+Follow Pre-flight, Orchestration Workflow (Lifecycle/Setup), Content Gate, Changelog Format, and the spawning templates above. Behavioral invariants:
+
+1. **Always run Phase 2** — even for single-agent improvements.
+2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+3. **Fail loud.** Detect stalls via `TeammateIdle` hook or >10min without `TaskUpdate`/`SendMessage`. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly.
+4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
+5. **Orchestrator is the single coordination point** — its loss ends the cycle. After compaction or resume, follow Crash & Stall Recovery → Compaction recovery before any new `Agent`/`SendMessage` calls.

@@ -21,11 +21,7 @@ Teammates produce structured change recommendations; you apply them using the Ed
 additions are filtered through the Content Gate to prevent non-actionable content from entering
 skill files.
 
-> **Rigorous honesty over agreeability.** Do not rubber-stamp teammate recommendations. Apply the Content Gate ruthlessly — reject additions that fail any check, even when a reviewer argues for them. Your value is in filtering, not forwarding.
-
-> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
-
-> **SIZE CONSTRAINT: Skill files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
+> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one. **SIZE CONSTRAINT:** Skill files MUST stay under 500 lines (see Pre-flight step 8 for TRIM/BALANCED mode).
 
 > **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
 
@@ -122,6 +118,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 **Lifecycle rules (apply uniformly):**
 - Each teammate delivers its final report by `SendMessage` to the orchestrator, THEN is shut down via `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`.
+- If a `shutdown_response` does not arrive within the next orchestrator turn, treat the teammate as dead and proceed — do NOT block the phase on a missing shutdown ack (see Rule #10).
 - No teammate is reused across phases — spawn fresh per phase.
 - After all phases complete: `TeamDelete(team_name="evolve-skills-{today_date}")`.
 
@@ -310,7 +307,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 7. **Build on strengths** — improve, don't rewrite.
 8. **Changelog mandatory.** Follow format above; orchestrator normalizes.
 9. **500-line budget.** `wc -l` after edits; consolidate if over.
-10. **Fail loud.** Report teammate failures immediately; re-spawn once, then review directly.
+10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TaskList()` shows task `in_progress` with no TaskUpdate/SendMessage for 10+ minutes (v2.1.111 stall detection surfaces this) OR a `TeammateIdle` hook fires, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
 11. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 12. **Self-correct on mediocre results.** If changes worsen clarity without behavioral gain, revert and retry.
 13. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.

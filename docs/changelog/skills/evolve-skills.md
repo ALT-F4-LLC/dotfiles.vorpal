@@ -1,5 +1,22 @@
 # Changelog: evolve-skills
 
+## 2026-04-22
+
+### Summary
+Hardened crash recovery: expanded Rule #10 with concrete stall/crash detection signals and fail-forward behavior when shutdown_response doesn't land. Resolved contradiction between the old "review directly" fallback and the orchestrator-only-coordinates invariant. Addresses operator pain: agents crashing silently and needing manual restart. Net 316→313.
+
+### Changes
+- Rule #10 now defines: 3 failure-detection signals (Agent error return, 10+ min stalled task per v2.1.111 OR `TeammateIdle` hook, no SendMessage response), shutdown-timeout behavior (proceed after one turn if no shutdown_response), single re-spawn with name suffix, and fail-forward ("No review performed" changelog entry) rather than the self-contradicting "review directly"
+- Lifecycle rules document shutdown-ack timeout so phases don't block on dead agents
+- Removed "Rigorous honesty" blockquote — redundant with Rule #11 and Phase 1 template's reviewer-side directive; merged "Self-evolution" and "SIZE CONSTRAINT" into one blockquote
+- Phase 2 coherence: added `TeammateIdle` hook signal to Rule #10 for parity with evolve-agents stall detection
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

@@ -1,5 +1,23 @@
 # Changelog: specs
 
+## 2026-04-22
+
+### Summary
+Closed the crash/stall handling gap flagged by operator feedback: concrete 2-minute polling cadence, task-state classification with v2.1.111 stall reference, and structured `AskUserQuestion` options on failure (respawn / skip / abort). Upgraded `effort: medium → max` for team-spawning parity with dev/vote. Net 157→161.
+
+### Changes
+- Upgraded `effort: medium` → `effort: max` (team-spawning parity with dev and vote)
+- Rewrote Step 2 with concrete polling cadence, task-state classification, and structured respawn/skip/abort choice on failure
+- Hardened Wrap-up shutdown to tolerate already-crashed agents
+- Tightened frontmatter-template `dependencies` to `[]` (matches canonical form in actual `docs/spec/` files)
+- Compressed role paragraph: consolidated isolation clause and deferred leaf-agent tool list to single occurrence in Spawning Template
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

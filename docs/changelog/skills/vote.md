@@ -1,5 +1,22 @@
 # Changelog: vote
 
+## 2026-04-22
+
+### Summary
+Hardened crash/stall handling for reviewer failures and clarified Delegation Protocol response schema (15-min timeout, explicit orchestrator responsibilities) to prevent team-mode orchestrator hangs. Net 397→399.
+
+### Changes
+- Added Handling Reviewer Failures to Phase 2: v2.1.111 stall auto-fail, partial-quorum continuation via audit-trail reject-cast, single re-spawn policy, abort-on-two-failures
+- Clarified Delegation Protocol: `delegation_response` shape, 15-min timeout, orchestrator responsibilities (reviewer spawn + crash monitoring + vote casting on delegator's behalf)
+- Removed mermaid-for-escalations rule, proposal-created operator notification (redundant with outcome), AskUserQuestion-fallback paragraph
+- Rejected 3 reviewer proposals: removing shutdown_request (team-spawned agents need shutdown before TeamDelete), trimming Reviewer Independence mapping (dev uses synthetic instance names like tdd-author/impl-*/verifier-* as `created_by`), removing Standalone-Mode-Only blockquote (disambiguates for team-mode readers)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

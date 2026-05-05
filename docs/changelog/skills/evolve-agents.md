@@ -1,5 +1,24 @@
 # Changelog: evolve-agents
 
+## 2026-04-22
+
+### Summary
+Added explicit Crash & Stall Recovery protocol addressing the operator's #1 pain (silent agent failures and manual restart churn). Documented TeammateIdle detection, re-spawn-once with resume context, fail-forward with changelog entry on second failure (never review directly), and compaction recovery. Offset by consolidating duplicate dimension lists, tightening Pre-flight, and compressing Phase 1 Context block. Net 344→332.
+
+### Changes
+- Added Crash & Stall Recovery subsection: stall detection (>10min / TeammateIdle hook / v2.1.111), crash detection (shutdown timeout / Agent error), single re-spawn with `Resume context:` preamble, fail-forward on second failure, compaction recovery
+- Strengthened shutdown protocol: documents shutdown_response handling, rejection handling, one-turn timeout → re-spawn path
+- Rule 6 references the Crash & Stall Recovery protocol and names TeammateIdle as the detection hook
+- Rule 8 reframed around orchestrator-as-SPOF to make compaction recovery the primary mitigation
+- Consolidated near-duplicate dimension lists (orchestrator-facing list replaced by pointer to Phase 1 template's canonical list)
+- Compressed Pre-flight steps 1-2 and Phase 1 template Context block (duplicated template structure below)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

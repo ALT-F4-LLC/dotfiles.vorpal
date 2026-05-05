@@ -31,9 +31,7 @@ The `proposal` argument is **required** — it describes what to vote on.
 - **No argument** (`/vote`): Inform the user that a proposal is required and abort.
   Example: "Usage: `/vote <proposal>` — describe what you want voted on."
 - **With argument** (`/vote Should we use Redis or PostgreSQL for session caching?`):
-  Proceed with the protocol.
-
-If the argument is too vague to evaluate (e.g., `/vote yes or no`), use AskUserQuestion to ask what specifically should be voted on, with example options based on the context.
+  Proceed with the protocol. If the argument is too vague to evaluate, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -52,9 +50,10 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 
 1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response`.
-4. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed`: report error and abort. On `escalated`: report to caller.
-5. **Continue your workflow** with the vote outcome.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
+4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
+5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
+6. **Continue your workflow** with the vote outcome.
 
 ---
 
@@ -183,10 +182,6 @@ Extract `id` from the `--json` response — this is `{vote-id}` for all subseque
 
 **Create team and reviewer tasks** (standalone mode only): `TeamCreate(team_name="vote-{vote-id}", description="Consensus vote: {summary}")`, then one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
 
-**Notify the operator:** After creating the proposal, immediately notify the team lead (or
-operator in standalone mode) via SendMessage:
-`SendMessage(to="team-lead", message="[VOTE] Created proposal {vote-id} | Criticality: {criticality} | Reviewers: {count} | Proposal: {one-line summary}")`.
-
 **Link to a Docket issue (when applicable):**
 
 If the vote is associated with a Docket issue (e.g., voting on a TDD that has a tracking
@@ -218,6 +213,14 @@ all `Agent()` calls to return before Phase 3; `TaskList()` is only for observabi
 
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all return values AFTER every reviewer completes.
+
+### Handling Reviewer Failures
+
+Claude Code auto-fails stalled subagents at 10 minutes (v2.1.111). Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
+
+- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast ... -v reject --summary "reviewer failed: {reason}" --confidence 0.0 --domain-relevance 0.0` so the audit trail is complete, then proceed to Phase 3.
+- **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
+- **Two or more reviewers fail in the same round**: abort and escalate. Do not re-spawn the whole panel.
 
 ### Recording Votes
 
@@ -380,7 +383,6 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 3. **Spawn all reviewers in the same turn** to maximize parallelism (standalone mode only).
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
 5. **Respect criticality direction.** May override up, never down for security.
-6. **Mermaid diagrams for escalations.** When escalating to a human after 3 failed rounds, include a Mermaid diagram visualizing the vote flow across rounds. Standard consensus results use the structured text Output Format without diagrams.
 
 ---
 

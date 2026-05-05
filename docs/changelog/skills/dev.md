@@ -1,5 +1,25 @@
 # Changelog: dev
 
+## 2026-04-22
+
+### Summary
+Added explicit crash/stall recovery for the 5-agent team (operator's #1 pain), trimmed delegation-protocol and consensus-trigger sections that duplicated the `/vote` skill, pruned redundant Rules and Team Lead preamble, and connected @ux-designer into the SendMessage graph. Net 454→422.
+
+### Changes
+- Added Teammate Stall & Crash Recovery subsection: detection signals (stuck TaskList entry, unanswered SendMessage, stuck docket issue), respawn procedure with resume preamble, shutdown-ack timeout (60s → proceed)
+- Collapsed Handling Delegation Requests from full protocol spec to thin pointer into `/vote` skill's Reviewer Independence Enforcement
+- Removed 4 of 6 Rules that duplicated Pre-flight/Execution/@senior-engineer template; kept cross-communication, fail-loud (with stall-respawn mention), and compaction recovery
+- Compressed Team Lead preamble + removed self-referencing "Team Lead (you)" row from Team Structure table
+- Compressed Consensus Integration trigger table into a single sentence pointing to `/vote` criticality rules
+- Kept @ux-designer alive through implementation + added SendMessage channel for design-intent questions
+- Phase 2 coherence: added `protocol_version: "1"` to documented delegation_request fields (parity with vote schema), added `TeammateIdle` hook signal to Stall & Crash Recovery detection
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-16
 
 ### Summary

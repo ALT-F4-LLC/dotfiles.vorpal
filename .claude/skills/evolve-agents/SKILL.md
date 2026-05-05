@@ -47,13 +47,8 @@ If an argument is provided and no matching file exists, Pre-flight step 5 will c
 
 Before spawning any agents:
 
-1. **Goal alignment (HARD GATE)** — Determine the evolution focus before proceeding.
-   - **Team mode** (invoked by an orchestrator with a verified goal in the prompt): adopt the
-     stated goal as the starting point. Re-verify alignment if your understanding diverges.
-   - **Standalone mode** (invoked directly by the user): use `AskUserQuestion` to confirm:
-     *"What evolution focus? (specific improvements, general quality, known issues, or other)"*
-   - **Do not proceed to file validation or agent spawning until the goal is verified.**
-2. **Gather experience feedback** — Use `AskUserQuestion` to collect operator pain points and friction with the target agent(s). Store as `{experience_feedback}`. Skip in team mode if the orchestrator prompt already includes it.
+1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone mode: use `AskUserQuestion` to confirm evolution focus. Do not proceed to spawning until verified.
+2. **Gather experience feedback** — Use `AskUserQuestion` to collect operator pain points. Store as `{experience_feedback}`. Skip if orchestrator prompt already includes it.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -83,19 +78,7 @@ Before spawning any agents:
 
 ## Evaluation Dimensions
 
-Evaluate against ALL 8 dimensions. **Dimensions 1, 4, 6 propose additions — all must pass Content Gate.**
-
-1. **Role Realism** — Behavior consistent with a senior practitioner, actionable by Claude in a stateless session?
-2. **Actionability** — Specific enough for reliable execution? Clear workflows, concrete steps, defined outputs?
-3. **Boundary Clarity** — Non-overlapping with other roles? "What You Are NOT" accurate? Handoff patterns defined?
-4. **Completeness** — Gaps causing poor output? New Claude Code capabilities to leverage? Additions must pass Gate.
-5. **Consolidation & Trimming (HIGHEST PRIORITY)** — Merge repeats, delete generic content, shorten verbose
-   sections, remove LLM-innate knowledge. **Every addition from other dimensions MUST be offset here.**
-6. **Capability Growth & Cross-Communication** — New patterns improving output? No human career development.
-   Evaluate proactive SendMessage triggers ("notify X when Y" / "consult X before Y") — flag definitions
-   lacking them. Check: agent team lifecycle, self-verification, course-correction, context efficiency.
-7. **Spec Alignment** — Alignment with `docs/spec/` project patterns and conventions?
-8. **Rename Consideration** — Only if compelling — stability has value.
+Teammates evaluate against 8 dimensions listed in the Phase 1 spawning template. **Dimension 5 (Consolidation & Trimming) is HIGHEST PRIORITY — every addition from other dimensions MUST be offset by a removal.**
 
 ---
 
@@ -119,7 +102,17 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-Shutdown format: `SendMessage(to="<name>", message={type: "shutdown_request"})`.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response within the next orchestrator turn, treat as crashed and proceed with re-spawn recovery below.
+
+### Crash & Stall Recovery
+
+Teammates can crash silently, stall mid-stream, or be killed before reporting. The orchestrator detects and recovers.
+
+- **Detect stall**: No `TaskUpdate` activity AND no `SendMessage` from the teammate in >10 minutes (v2.1.111 stall detection surfaces this), OR a `TeammateIdle` hook fires.
+- **Detect crash**: `shutdown_request` gets no response within one orchestrator turn, OR Agent() return contains an explicit error.
+- **Re-spawn ONCE** with fresh name suffix (e.g., `review-<name>-r2`). Reuse the Phase template plus a `Resume context:` section listing (a) what the prior teammate reported (if partial), (b) the task ID to claim, (c) which agent file to review.
+- **Second failure**: Mark task completed, record "No review performed — agent unavailable" in the changelog, skip that agent this cycle. NEVER review directly — the orchestrator-only-coordinates invariant is absolute.
+- **Compaction recovery**: If the orchestrator's own context compacts mid-phase, re-read the verified goal, current phase tasks via `TaskList()`, latest changelog entries for already-completed targets, and the spawning template for the active phase before issuing any new `SendMessage` or `Agent` call.
 
 ### Team Setup
 
@@ -249,11 +242,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-- Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md.
-- Read docs/spec/ selectively, other agent files first ~80 lines only. Skip WebFetch.
-- Review operator experience feedback below — prioritize addressing reported pain points and friction.
-- Review docs/Claude Code research and docket audit findings below — reflect new capabilities
-  and verify docket commands/flags are current.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md, docs/spec/ selectively, other agent files first ~80 lines only. Skip WebFetch. Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}
@@ -338,7 +327,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 3. **Always run Phase 2** — even for single-agent improvements.
 4. **Orchestrator-only edits.** Teammates are read-only. Never commit.
 5. **Enforce Content Gate, 500-line budget, and changelog format** per their sections above.
-6. **Fail loud.** Report failures immediately. On timeout, re-spawn once; after two failures, orchestrator reviews directly.
+6. **Fail loud.** Detect stalls via `TeammateIdle` hook or >10min without `TaskUpdate`/`SendMessage`. Follow the Crash & Stall Recovery protocol: re-spawn ONCE with resume context, then skip with a changelog "No review performed" entry on second failure. Never review directly.
 7. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-8. **Preserve context across compaction.** After compaction, re-read the verified goal, current
-   phase, and pending tasks before continuing orchestration.
+8. **Orchestrator is the single coordination point** — its loss ends the cycle. After any compaction or resume, follow Crash & Stall Recovery → Compaction recovery before issuing new `Agent` or `SendMessage` calls.

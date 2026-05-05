@@ -5,7 +5,7 @@ description: >
   specification files. Trigger on: "specs", "generate specs", "bootstrap specs", "create
   project specifications".
 argument-hint: "[file...]"
-effort: medium
+effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
@@ -21,9 +21,7 @@ The argument is **optional** — this skill has a single well-defined behavior.
 
 # Specs
 
-You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in
-parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify, but you
-never write spec files yourself. Agents work independently on isolated files — no cross-agent handoffs during generation. Spawned agents are leaf agents — they must NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`.
+You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs; spawned agents are leaf agents (prohibition detailed in the Spawning Template).
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
@@ -85,7 +83,14 @@ exploration guidance for each — used in the spawning template.
 
 Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
 
-Use `TaskList()` periodically. Once all tasks show `completed`, proceed to Step 3. If any agent fails or stops responding, report the failure to the operator — do not retry automatically.
+Poll `TaskList()` every ~2 minutes. Classify each task:
+- **completed** — agent SendMessaged; verify the spec file exists on disk.
+- **failed** — agent SendMessaged a failure, OR task is `in_progress` past ~10 min with no SendMessage activity (v2.1.111 stall detection will surface this).
+- **in_progress** — still working; continue polling.
+
+**On any failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+
+Proceed to Step 3 once every task is `completed` OR the operator has resolved every failure.
 
 ### Step 3: Verify
 
@@ -136,11 +141,10 @@ Requirements:
   updated_by: "@staff-engineer"
   scope: "<one-liner describing what this spec covers>"
   owner: "@staff-engineer"
-  dependencies:
-    - <related-spec-filename.md>
+  dependencies: []
   ---
   ```
-  - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames only if a logical connection exists (omit if none)
+  - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
 - After saving the file, mark your task as completed via TaskUpdate and send a completion
   message via SendMessage(to="team-lead", message="Completed docs/spec/{filename}")
 ```
@@ -152,6 +156,6 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down all teammates** — send `shutdown_request` to each spawned agent in the SAME turn.
+2. **Shut down surviving teammates** — send `shutdown_request` to each spawned agent that is still active in the SAME turn. Skip agents that already failed/crashed (no process to terminate).
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
 4. Remind the user that NO changes have been committed — they can review with `git diff`.

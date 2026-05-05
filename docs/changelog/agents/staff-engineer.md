@@ -3,6 +3,27 @@
 ## 2026-05-05
 
 ### Summary
+Phase 0+2 consolidation + capability adoption: trimmed TDD section (removed redundant docs/tdd/ note, compressed "When to Create" bullets, tightened Verify-against-codebase). Upgraded review Gather Context to explicit Monitor + until-loop pattern (matches engineer fleet). Standardized in-text "Pre-Flight Gate" terminology. Added `color: blue` frontmatter and `Monitor` to tools. Net: -8 lines (289→281).
+
+### Changes
+- Removed redundant "TDDs saved to docs/tdd/" sentence (already stated twice elsewhere)
+- Compressed "When to Create a TDD" five-bullet block (10→5 dense lines)
+- Tightened TDD step 6 (Verify-against-codebase) from 4 lines to 1
+- Upgraded review-context guidance to Monitor + until-loop (Phase 2 — replaced Bash run_in_background pattern; matches sdet/senior-engineer/ux-designer)
+- Added `Monitor` to tools allowlist (Phase 2)
+- Added `color: blue` frontmatter (Phase 2 fleet decision)
+- Standardized in-text references to "Pre-Flight Gate" (replaced two "Operator Alignment" variants — matches section heading; Phase 2)
+- Deferred (Phase 2): `effort: xhigh` — A/B one agent first
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Capability Growth (Monitor), Coherence (terminology), Spec Alignment, Completeness, Role Realism, Actionability, Boundary Clarity, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Consolidation pass: compressed "What You Are NOT" to dense one-liners (matches senior-engineer style), trimmed Pre-Flight Gate prose, merged TDD workflow status-transition steps, tightened Consensus Voting block, fused review escalation triggers. Net: -31 lines (317→286).
 
 ### Changes

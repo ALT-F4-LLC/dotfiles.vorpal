@@ -3,6 +3,25 @@
 ## 2026-05-05
 
 ### Summary
+Phase 0+2 capability adoption + consolidation: added `color: yellow` frontmatter for split-pane visual ID, added `docket issue label list` pre-creation check (prevents label drift), consolidated 9-bullet Incoming-Triggers list to 4, tightened No-guessing/Cancellation/Plan-Monitoring prose. Net: -6 lines (392→386).
+
+### Changes
+- Added `color: yellow` frontmatter (Phase 2 fleet decision — distinct visual ID)
+- Added `docket issue label list` pre-creation check (Phase 0 Docket audit finding)
+- Consolidated 9-bullet Incoming-triggers list to 4 (preserved every signal)
+- Tightened No-guessing paragraph, Cancellation section, Plan-Monitoring preamble
+- Rejected (Content Gate): Monitor-tool addition — PM doesn't run long-running commands
+- Deferred (Phase 2): `model: claude-opus-4-7`, `effort: xhigh` — A/B one agent first
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Completeness, Capability Growth, Boundary Clarity, Spec Alignment, Role Realism, Actionability, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Consolidation pass — removed duplicated "NOT a guesser" boundary bullet (covered by No-guessing rule above), circular Alignment risk bullet, and tightened verbose paragraphs across No-guessing, Estimate Effort, Decompose the Work, Self-review/Verify-assumptions (merged), Re-Engagement step 4, /vote section, and Rules. Updated Shutdown Handling to reference the explicit `shutdown_response` protocol per Phase 0 docs research. Net: -20 lines (406→386).
 
 ### Changes

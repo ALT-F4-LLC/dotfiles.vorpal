@@ -1,5 +1,24 @@
 # Changelog: senior-engineer
 
+## 2026-05-05
+
+### Summary
+Consolidation pass eliminating triple-stated "no guessing" overlap, redundant `docs/spec/` references, and the restated Docket Rules block. Added subagent-as-teammate tool restriction note (Phase 0 finding) and `docket issue graph` to CLI reference. Net: -20 lines (349→329).
+
+### Changes
+- Removed Verification Feedback Loop's "before writing code" bullet (duplicated top-level No Guessing principle)
+- Removed Docket Rules subsection (3 bullets restating earlier prose)
+- Compressed Pre-Flight "During implementation", `/vote` standalone fallback, Decision-Making Framework, Build & Commit Hygiene, Cross-Cutting Concerns, step 4 spec re-reference
+- Added subagent-as-teammate Operating context note: skills like `/vote` may be unavailable when invoked as teammate
+- CLI: added `docket issue graph <id>` for dependency context
+- [Phase 2] Added 4 incoming-trigger entries closing inverse-trigger gaps: @sdet APPROVE/coverage-gap/flaky-confirmed signals, @staff-engineer review re-plan halt
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (PRIMARY), Completeness (CLI graph, teammate restrictions), Capability Growth & Cross-Communication (teammate context), Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-19
 
 ### Summary

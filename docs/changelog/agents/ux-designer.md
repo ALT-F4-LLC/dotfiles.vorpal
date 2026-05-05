@@ -1,5 +1,23 @@
 # Changelog: ux-designer
 
+## 2026-05-05
+
+### Summary
+Consolidation pass: compressed three stance paragraphs (Honest critique / No guessing / Text-only medium), tightened workflow step 1 (Clarify), trimmed Pre-Flight Standalone Mode parenthetical. Added Phase 0 note that `skills` frontmatter does not auto-load in team mode — clarifying the existing Design Spec Approval routing. Net: -6 lines (290→284).
+
+### Changes
+- Compressed Honest critique / No guessing / Text-only medium stance paragraphs
+- Trimmed Clarify workflow step (removed TDD escalation duplicate already in What You Are NOT)
+- Tightened Pre-Flight Standalone Mode question list (work-type parenthetical was non-load-bearing)
+- Restructured Design Spec Approval — added explicit note that `skills` frontmatter does not auto-load in team mode (Phase 0 finding)
+- [Phase 2] Added 3 incoming-trigger entries closing inverse-trigger gaps: @staff-engineer feasibility/precedent consult, @senior-engineer missing-UX-spec notification, @project-manager pre-decomposition ergonomics consult
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (HIGHEST — primary), Capability Growth (skill-in-teammate note), Boundary Clarity, Actionability, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-19
 
 ### Summary

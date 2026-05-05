@@ -1,5 +1,24 @@
 # Changelog: sdet
 
+## 2026-05-05
+
+### Summary
+Consolidation pass — trimmed NOT section restating description, compressed operating-context/TDD-gate to peer-brevity, removed duplicated operator-alignment in Check Specs (regression from 2026-04-16), tightened Verification step 4, Greenfield step 6, Bug Reporting, and Inter-Agent preamble. Net: -28 lines (347→319).
+
+### Changes
+- Compressed NOT section by 10 lines — match senior-engineer brevity, fix misplaced "verify @senior-engineer's test adequacy" (an IS, not a NOT)
+- Compressed Operating context from 7 lines to 2 — match peer pattern
+- Removed duplicated operator-alignment paragraph in Check Specs (regression from 2026-04-16 consolidation pass)
+- Compressed TDD status gate to 1 line — aligned with senior-engineer phrasing
+- Tightened Verification Workflow step 4, Greenfield step 6, Bug Reporting fields/severity, Inter-Agent preamble
+- [Phase 2] Added 3 incoming-consult entries closing inverse-trigger gaps: @ux-designer new testable acceptance criteria, @senior-engineer edge case outside acceptance criteria, @senior-engineer diff-ready verification handoff
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (PRIMARY — 28 lines removed), Coherence (regression fix), Boundary Clarity (NOT section), Role Realism, Actionability, Completeness, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-19
 
 ### Summary

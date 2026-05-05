@@ -1,5 +1,26 @@
 # Changelog: evolve-agents
 
+## 2026-05-05
+
+### Summary
+Adopted `Monitor` tool for stall detection, replacing the 10-minute wall-clock heuristic with event-driven streaming. Removed duplicate invariants. Phase 2 unified top-of-file blockquotes into one critical-rules block (parity with evolve-skills) and consolidated pre-flight inventory steps. Net 310→274.
+
+### Changes
+- Added `Monitor` to allowed-tools — used in updated Crash & Stall Recovery for event-driven detection
+- Tightened Crash & Stall Recovery to reference TeammateIdle notification + Monitor stream (replaces 10-minute wall-clock heuristic)
+- Compressed orchestrator intro and removed three duplicate invariant blocks (Rigorous honesty callout, Evaluation Dimensions pointer, Phase 1 description summary)
+- Trimmed Phase 1 template Rules from 4 to 2 bullets (Read-only and Minimize-context were restatements)
+- Removed Rules pointer paragraph; numbered rules below were the actual behavior
+- [Phase 2] Merged top-of-file blockquotes into one CRITICAL critical-rules block matching evolve-skills' structure (commit-ban + no-nested-agents); removed standalone SIZE CONSTRAINT (already in Pre-flight)
+- [Phase 2] Consolidated Pre-flight steps 4 (`ls`) and 8 (`wc -l`) into one inventory step — parity with evolve-skills
+- Rejected: TeammateIdle frontmatter hook (system already auto-delivers idle notifications — fails Non-redundant Content Gate)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-04
 
 ### Summary

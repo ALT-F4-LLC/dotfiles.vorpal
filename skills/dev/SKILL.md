@@ -56,17 +56,7 @@ Answer in order:
 3. **Architectural decisions, data model changes, or cross-cutting concerns** needing upfront design? → **Medium Task**
 4. **Otherwise** → **Small Task**
 
-### Resuming Mid-Execution
-
-Run `docket board --json` to see issue states. Identify the last active phase (`in-progress`/`done`
-statuses), check for `Discovered:` comments via `docket issue comment list`, and resume from the
-next incomplete phase — do not re-run completed work.
-
----
-
 ## Orchestration Patterns
-
-Choose the pattern that fits the task size and complexity using the decision tree above.
 
 ### Small Task
 
@@ -250,8 +240,6 @@ Rules:
 
 ### @sdet (Verification)
 
-Use for per-issue verification or full verification at end of medium+ tasks. Adjust scope fields.
-
 ```
 Agent(team_name="dev-{feature-slug}", name="verifier-{scope}", subagent_type="sdet", prompt="...")
 
@@ -305,8 +293,9 @@ Before spawning any agents, create an Agent Team to coordinate:
 4. **Spawn @project-manager teammate** with the user's request and any spec references.
    Assign the planning task via `TaskUpdate`. The PM can SendMessage to "advisor" for
    architectural clarification during planning.
-   **Guard:** Before spawning, run `docket issue list --json`. If issues already exist for this
-   work, skip planning and resume from the existing plan (see Resuming Mid-Execution).
+   **Guard:** Before spawning, run `docket issue list --json`. If issues exist for this work,
+   skip planning, run `docket board --json` to find the last active phase, check `docket issue
+   comment list` for `Discovered:` comments, and resume from the next incomplete phase.
 5. **Receive the phase plan.** Review it for:
    - File collision risks (two issues touching the same files in one phase)
    - Missing acceptance criteria on any issue
@@ -395,9 +384,7 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 
 ## Handling Delegation Requests
 
-Teammates cannot spawn sub-agents, so they delegate via `SendMessage(type: "delegation_request", protocol_version: "1", skill, vote_id, request_id, from)`.
-
-For `skill: "vote"`: read proposal (`docket vote show {vote-id} --json`), apply proposer exclusion from the `/vote` skill's Reviewer Independence Enforcement (case-insensitive), spawn reviewers in team `vote-{vote-id}` named `{vote-id}-reviewer-{N}`, commit result, `TeamDelete`. Reply `delegation_response` with `status: completed|failed|escalated`. Unknown skills: reply `failed`.
+Teammates cannot spawn sub-agents, so they delegate via `SendMessage(type: "delegation_request", protocol_version: "1", skill, vote_id, request_id, from)`. For `skill: "vote"`: invoke `Skill(vote, "{vote_id}")` per the vote skill's protocol, then reply `delegation_response` with `status: completed|failed|escalated`. Unknown skills: reply `failed`.
 
 ---
 

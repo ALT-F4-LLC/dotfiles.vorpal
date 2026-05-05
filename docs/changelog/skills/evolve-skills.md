@@ -1,5 +1,24 @@
 # Changelog: evolve-skills
 
+## 2026-05-05
+
+### Summary
+Adopted `paths:` frontmatter (new Claude Code feature, Apr 2026) and `Monitor` tool for stall detection. Removed third restatement of 500-line budget, merged top-of-file critical-rules blockquotes, and made Phase 1→Phase 2 cross-cutting handoff concrete. Net 304→303.
+
+### Changes
+- Added `paths:` frontmatter (.claude/skills/**, skills/**, docs/changelog/skills/**) — declares write surface to harness
+- Added `Monitor` to allowed-tools — supports Rule 10's event-driven stall detection
+- Merged commit-ban and no-nested-agents blockquotes into one critical-rules block — both are spawned-teammate invariants, fragmenting them obscured the region
+- Removed redundant "## Size Budget" block from Phase 1 template — `{mode}` substitution and Output Format's `NET_LINES:` field already carry the rule
+- Made Phase 1 cross-cutting handoff concrete — orchestrator appends cross-cutting findings to running notes and passes them verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section
+- [Phase 2] Updated Rule 10 stall detection to reference TeammateIdle notification + Monitor stream silence (replaces 10-minute polling heuristic) — parity with evolve-agents Crash & Stall Recovery
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-04
 
 ### Summary

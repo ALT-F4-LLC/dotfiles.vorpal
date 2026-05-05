@@ -26,12 +26,11 @@ reaching agreement. A justified REJECT is more valuable than an unexamined APPRO
 
 ## Argument Handling
 
-The `proposal` argument is **required** — it describes what to vote on.
+The argument is **required** and may be EITHER a proposal description (user invocation) OR a `vote_id` from an existing docket proposal (orchestrator handling a delegation_request).
 
-- **No argument** (`/vote`): Inform the user that a proposal is required and abort.
-  Example: "Usage: `/vote <proposal>` — describe what you want voted on."
-- **With argument** (`/vote Should we use Redis or PostgreSQL for session caching?`):
-  Proceed with the protocol. If the argument is too vague to evaluate, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
+- **No argument** (`/vote`): Inform the user that a proposal is required and abort. Example: "Usage: `/vote <proposal>` — describe what you want voted on."
+- **Argument is a vote_id** (matches an existing `docket vote show $ARGUMENTS` record): Skip Phase 1 proposal creation. Read the existing proposal via `docket vote show {vote_id} --json`, extract criticality and reviewer count, then proceed directly to Phase 2 reviewer spawning.
+- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Proceed with full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -53,8 +52,6 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
-6. **Continue your workflow** with the vote outcome.
-
 ---
 
 ## Pre-flight
@@ -284,8 +281,6 @@ One paragraph summarizing your overall assessment.
 
 ## Domain-Specific Checklist
 {Insert the relevant checklist below based on the reviewer's agent type}
-
-When done, mark your task as completed via TaskUpdate.
 ```
 
 | Agent | Checklist Focus |

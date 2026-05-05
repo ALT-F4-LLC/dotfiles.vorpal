@@ -1,5 +1,21 @@
 # Changelog: vote
 
+## 2026-05-05
+
+### Summary
+Phase 1 fixes: removed coherence bug in Phase 2 reviewer prompt (instructed spawned reviewers to update tasks they don't own) and trimmed tautological closing step from Delegation Protocol. Phase 2 fixed a cross-skill contract bug: Argument Handling now dispatches on `vote_id` so dev's `Skill(vote, "{vote_id}")` invocation skips redundant Phase 1 proposal creation. Net 374→369.
+
+### Changes
+- Removed "When done, mark your task as completed via TaskUpdate" from Phase 2 reviewer prompt template — contradicted coordinator-driven task lifecycle
+- Removed Delegation Protocol step 6 — step 5 already documents each response-status action
+- [Phase 2] Argument Handling now has two branches: `vote_id` arg (skip Phase 1, read existing proposal, proceed to reviewers) vs. proposal description arg (full protocol). Closes contract bug where dev's `Skill(vote, "{vote_id}")` would have re-created the proposal in Phase 1
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Actionability, Skill Design Quality, Cross-Skill Invocation, Terminology Alignment, Spec/Docket Alignment, Rename
+
+### Rename
+No rename — `vote` matches `docket vote` CLI exactly.
+
 ## 2026-05-04
 
 ### Summary

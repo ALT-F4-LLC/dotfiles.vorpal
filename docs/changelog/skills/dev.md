@@ -1,5 +1,22 @@
 # Changelog: dev
 
+## 2026-05-05
+
+### Summary
+General review pass adopting Phase 0 features judiciously: confirmed `TeammateIdle` already in use, rejected speculative additions (Monitor, hooks, ${CLAUDE_*}) that did not earn their place per Content Gate. Trimmed 4 redundancies — collapsed standalone "Resuming Mid-Execution" subsection into the Planning Phase Guard, removed vacuous Orchestration Patterns intro and @sdet template meta-line, and deferred vote-delegation mechanics to the /vote skill. Net 408→395.
+
+### Changes
+- Collapsed "Resuming Mid-Execution" subsection into Planning Phase step 4 Guard — single source of truth for resume logic
+- Removed redundant "Choose the pattern..." preamble before pattern subsections — decision tree above already directs
+- Removed @sdet template meta-instruction — template's conditional fields already convey scope guidance
+- Compressed "Handling Delegation Requests" to invoke `Skill(vote, "{vote_id}")` rather than re-specifying vote mechanics — eliminates duplication that can drift between dev and /vote
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-04
 
 ### Summary

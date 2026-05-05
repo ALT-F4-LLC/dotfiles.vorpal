@@ -6,29 +6,14 @@ description: >
   "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name]"
 effort: max
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 # Evolve Agents
 
-You are the **Agent Evolution Orchestrator**. You MUST create an agent team (TeamCreate) and
-spawn teammates to review their own definition files in `agents/*.md`. **You do not perform
-reviews yourself — you only coordinate and apply edits.** Each agent reviews itself —
-@senior-engineer reviews `agents/senior-engineer.md`, @sdet reviews `agents/sdet.md`, etc.
-Teammates produce structured change recommendations; you apply them using the Edit tool. All
-additions are filtered through the Content Gate to prevent non-actionable content from entering
-agent files. Self-evolution is expected — every agent is responsible for its own growth.
-
-> **Rigorous honesty over agreeability.** Do not rubber-stamp agent recommendations. Your value
-> is in enforcing the Content Gate ruthlessly — reject additions that fail any check, even when
-> the reviewing agent provides compelling rationale. Challenge net-positive claims that lack
-> concrete behavioral evidence. Report honestly when a cycle produces no meaningful improvements.
-
-> **SIZE CONSTRAINT: Agent files MUST stay under 500 lines.** See Pre-flight step 8 for TRIM/BALANCED mode rules.
-
-> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
+You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn each agent to review its own definition file (e.g. @senior-engineer reviews `agents/senior-engineer.md`). Teammates are read-only and report structured recommendations; only the orchestrator edits files via the Edit tool. All additions pass through the Content Gate.
 
 ---
 
@@ -50,16 +35,10 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Validate agent files exist** — Run `ls agents/*.md 2>/dev/null` to list all discoverable agent files.
-5. **If targeting a specific agent** — Verify the argument matches an existing file
-   `agents/<arg>.md`. If no match, inform user and abort.
+4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. This both lists discoverable files and records line counts. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+5. **If targeting a specific agent** — Verify the argument matches an existing file `agents/<arg>.md`. If no match, inform user and abort.
 6. **If no agent files found** — Inform user and abort.
-7. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which
-   changelogs already exist. Spawned agents will need this information.
-8. **Measure agent file sizes** — Run `wc -l agents/*.md` and record line counts. Mode is
-   **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED**
-   (under 500: additions allowed but offset by removals). Include line count and mode in each
-   agent's spawning prompt (see Phase 1 template).
+7. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 
 ---
 
@@ -71,12 +50,6 @@ Before spawning any agents:
 2. **Behavioral** — Does removing it change the agent's output? Reject: general knowledge a capable LLM already has.
 3. **Non-redundant** — Already expressed elsewhere in the file? Reject duplicates even if worded differently.
 4. **Concrete** — A specific action, check, or output format? Reject: aspirational fluff ("think holistically", "drive excellence"), decision matrices restating existing workflows.
-
----
-
-## Evaluation Dimensions
-
-Teammates evaluate against 8 dimensions listed in the Phase 1 spawning template. **Dimension 5 (Consolidation & Trimming) is HIGHEST PRIORITY — every addition from other dimensions MUST be offset by a removal.**
 
 ---
 
@@ -106,11 +79,11 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 Teammates can crash silently, stall mid-stream, or be killed before reporting. The orchestrator detects and recovers.
 
-- **Detect stall**: No `TaskUpdate` activity AND no `SendMessage` from the teammate in >10 minutes, OR a `TeammateIdle` hook fires.
-- **Detect crash**: `shutdown_request` gets no response within one orchestrator turn, OR Agent() return contains an explicit error.
-- **Re-spawn ONCE** with fresh name suffix (e.g., `review-<name>-r2`). Reuse the Phase template plus a `Resume context:` section listing (a) what the prior teammate reported (if partial), (b) the task ID to claim, (c) which agent file to review.
-- **Second failure**: Mark task completed, record "No review performed — agent unavailable" in the changelog, skip that agent this cycle. NEVER review directly — the orchestrator-only-coordinates invariant is absolute.
-- **Compaction recovery**: If the orchestrator's own context compacts mid-phase, re-read the verified goal, current phase tasks via `TaskList()`, latest changelog entries for already-completed targets, and the spawning template for the active phase before issuing any new `SendMessage` or `Agent` call.
+- **Detect stall**: TeammateIdle notification arrives or `Monitor` stream goes silent past expected progress.
+- **Detect crash**: `shutdown_request` gets no response within one turn, OR Agent() returns an explicit error.
+- **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
+- **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
+- **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Team Setup
 
@@ -129,10 +102,7 @@ Spawn TWO teammates in parallel per the templates below: `docs-researcher` (clau
 
 Spawn one teammate per target using the **matching agent type** (e.g., @senior-engineer reviews `agents/senior-engineer.md`) per the Phase 1 template. **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
 
-Each self-reviewing teammate (read-only) follows the Phase 1 spawning template: reads its own
-agent file, recent changelog, relevant specs, other agents' first ~80 lines, evaluates all 8
-dimensions (prioritizing dimension 5), then reports structured recommendations. Use ultrathink
-for deep analysis.
+Each teammate follows the Phase 1 spawning template (use ultrathink for deep analysis).
 
 **After each Phase 1 teammate completes**, the orchestrator:
 
@@ -250,12 +220,8 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Rules
 
-- **Read-only** — recommend only; don't edit files. Build on strengths, don't rewrite.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
-- **Minimize context**: first 80 lines of other agents, relevant specs only.
-- **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents,
-  (b) scope expansion beyond target agent, or (c) conflicts with another agent's boundary —
-  aggregated into Phase 2 handoff.
+- **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
 ## Output Format
 
@@ -300,8 +266,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 ---
 
 ## Rules
-
-Follow Pre-flight, Orchestration Workflow (Lifecycle/Setup), Content Gate, Changelog Format, and the spawning templates above. Behavioral invariants:
 
 1. **Always run Phase 2** — even for single-agent improvements.
 2. **Orchestrator-only edits.** Teammates are read-only. Never commit.

@@ -6,10 +6,14 @@ description: >
   skills", "refine skills".
 argument-hint: "[skill-name]"
 effort: max
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+paths:
+  - ".claude/skills/**"
+  - "skills/**"
+  - "docs/changelog/skills/**"
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 # Evolve Skills
 
@@ -19,8 +23,6 @@ spawn @staff-engineer teammates to review ALL skill files in `.claude/skills/*/S
 yourself — you only coordinate and apply edits.**
 
 > **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
-
-> **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
 
 ---
 
@@ -142,7 +144,7 @@ Each teammate (read-only — no file edits):
 
 **Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
 
-**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer** — the orchestrator is the only relay, and forwards cross-cutting items to Phase 2. Use `TaskList()` for progress tracking.
+**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer** — the orchestrator is the only relay. Cross-cutting items are appended to a running notes list and passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. Use `TaskList()` for progress tracking.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -209,9 +211,6 @@ Use the @staff-engineer agent to review and improve a skill definition:
 Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
-
-## Size Budget
-Hard limit: 500 lines. Every CHANGE adding lines MUST pair with equal/greater removal. Report NET_LINES.
 
 ## Context
 - Today's date: {today_date} (for changelog entries)
@@ -299,6 +298,6 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 7. **Build on strengths** — improve, don't rewrite.
 8. **Changelog mandatory.** Follow format above; orchestrator normalizes.
 9. **500-line budget.** `wc -l` after edits; consolidate if over.
-10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TaskList()` shows task `in_progress` with no TaskUpdate/SendMessage for 10+ minutes OR a `TeammateIdle` hook fires, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
+10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TeammateIdle` notification arrives or `Monitor` stream goes silent past expected progress, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
 11. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
 12. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.

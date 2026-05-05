@@ -15,13 +15,10 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "SendMessage", 
 
 You are the **Skill Evolution Orchestrator**. You MUST create an agent team (TeamCreate) and
 spawn @staff-engineer teammates to review ALL skill files in `.claude/skills/*/SKILL.md` and
-`skills/*/SKILL.md`. **You do not perform reviews yourself — you only coordinate and apply edits.**
-This includes the `evolve-*` skills themselves — self-evolution is expected and intentional.
-Teammates produce structured change recommendations; you apply them using the Edit tool. All
-additions are filtered through the Content Gate to prevent non-actionable content from entering
-skill files.
+`skills/*/SKILL.md`, including the `evolve-*` skills themselves. **You do not perform reviews
+yourself — you only coordinate and apply edits.**
 
-> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one. **SIZE CONSTRAINT:** Skill files MUST stay under 500 lines (see Pre-flight step 8 for TRIM/BALANCED mode).
+> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
 
 > **No nested agents.** Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. The orchestrator handles all voting and agent spawning via delegation requests from teammates (see `skills/vote/` Delegation Protocol).
 
@@ -53,18 +50,15 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Validate skill files exist** — Run `ls .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
-   to list all discoverable skill files.
+4. **Inventory skill files and sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`.
+   This both lists discoverable files and records line counts. Mode per file is **TRIM**
+   (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500:
+   additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
-   either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user
-   and abort.
+   either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user and abort.
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-8. **Measure skill file sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`
-   and record the line count for each target skill. Mode is **TRIM** (over 500: consolidation
-   primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but
-   offset by removals). Include line count and mode in each agent's spawning prompt.
 
 ---
 
@@ -217,8 +211,7 @@ Verified goal: {verified_goal} (pre-verified — re-verify if your understanding
 Experience feedback: {experience_feedback}
 
 ## Size Budget
-Hard limit: 500 lines. TRIM (over 500): removals must exceed additions. BALANCED (under 500):
-additions allowed but offset by removals. Every CHANGE adding lines MUST pair with equal/greater removal. Report NET_LINES.
+Hard limit: 500 lines. Every CHANGE adding lines MUST pair with equal/greater removal. Report NET_LINES.
 
 ## Context
 - Today's date: {today_date} (for changelog entries)
@@ -239,11 +232,10 @@ additions allowed but offset by removals. Every CHANGE adding lines MUST pair wi
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
 ## Your Task
-Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY —
-every addition MUST be offset by a removal. Do not default to approval — your value is in identifying weaknesses, bloat, and flawed assumptions, not validating what exists.
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Do not default to approval — your value is in identifying weaknesses, bloat, and flawed assumptions, not validating what exists.
 
 ## Requirements
-- **Read-only** — analyze and recommend only. Build on strengths, don't rewrite.
+- **Read-only** — analyze and recommend only.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 - Minimize context: first 80 lines of other skills, relevant specs only.
 - **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
@@ -281,7 +273,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
    correct agent types in templates, consistent conventions and argument handling
 4. Check cross-communication: enumerate SendMessage triggers between agent pairs, identify
    gaps (shared dependencies/handoffs without triggers), flag hub-and-spoke (>50% routing
-   through one agent), verify bidirectional triggers where applicable
+   through one agent)
 
 ## Output Format
 ### Renames
@@ -307,7 +299,6 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 7. **Build on strengths** — improve, don't rewrite.
 8. **Changelog mandatory.** Follow format above; orchestrator normalizes.
 9. **500-line budget.** `wc -l` after edits; consolidate if over.
-10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TaskList()` shows task `in_progress` with no TaskUpdate/SendMessage for 10+ minutes (v2.1.111 stall detection surfaces this) OR a `TeammateIdle` hook fires, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
+10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TaskList()` shows task `in_progress` with no TaskUpdate/SendMessage for 10+ minutes OR a `TeammateIdle` hook fires, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
 11. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
-12. **Self-correct on mediocre results.** If changes worsen clarity without behavioral gain, revert and retry.
-13. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.
+12. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.

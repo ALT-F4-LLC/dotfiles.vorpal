@@ -1,5 +1,24 @@
 # Changelog: evolve-agents
 
+## 2026-05-04
+
+### Summary
+Trim pass: removed redundant Argument Handling tail, dropped unverifiable v2.1.111 reference, compressed Phase 0/1/2 description blocks (Agent() pseudo-code already lives in spawning templates), removed duplicate experience-feedback section header, and consolidated pointer-only Rules. Net 332→310.
+
+### Changes
+- Removed Argument Handling tail that restated Pre-flight step 5
+- Removed unverifiable "v2.1.111 stall detection surfaces this" parenthetical (TeammateIdle hook reference retained)
+- Compressed Phase 0/1/2 description blocks — dropped Agent() pseudo-code already present in spawning templates
+- Removed redundant "## Operator Experience Feedback" section in Phase 1 template (already substituted at top of prompt)
+- Consolidated Rules: pointer-only items collapsed into one intro line; kept 5 behavioral rules
+- [Phase 2 coherence] Reordered frontmatter to `argument-hint → effort → allowed-tools` to match the 3-skill majority
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-22
 
 ### Summary

@@ -1,5 +1,27 @@
 # Changelog: evolve-skills
 
+## 2026-05-04
+
+### Summary
+Trim pass: removed restated orchestrator-identity content, vague Rule #12, vague Phase 2 "bidirectional" check, and redundant size/priority restatements in Phase 1 template. Consolidated Pre-flight inventory steps. Net 313→304.
+
+### Changes
+- Tightened orchestrator-identity paragraph — removed restatement of Phase 1 workflow steps and the Behavioral-failing "self-evolution is expected" sentence
+- Removed Rule #12 (Self-correct on mediocre results) — no concrete trigger; Rules #11 and #7 cover its intent
+- Removed "verify bidirectional triggers where applicable" from Phase 2 cross-communication checks — fails Concrete (no defined "applicable" criterion)
+- Consolidated Pre-flight steps 4 and 8 into one `wc -l` inventory step
+- Removed redundant "Build on strengths, don't rewrite" from Phase 1 Requirements (duplicates Rule #7)
+- Removed "SIZE CONSTRAINT" half of merged blockquote (third restatement of 500-line rule; broken step reference after consolidation)
+- Tightened Phase 1 Size Budget block — removed TRIM/BALANCED definitions already passed via `{mode}` substitution
+- Removed duplicate "HIGHEST PRIORITY / offset" reminder from Phase 1 Your Task section
+- [Phase 2 coherence] Stripped unverifiable "v2.1.111 stall detection" parenthetical from Rule #10
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-22
 
 ### Summary

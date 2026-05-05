@@ -85,8 +85,6 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 | Code review (<500 lines), plan approval, scope decisions | medium |
 | Style, naming, tooling, documentation, low-risk config | low |
 
-The caller MAY override criticality upward. NEVER override downward for security-tagged proposals.
-
 **Reviewer count by criticality:**
 
 | Criticality | Reviewers | Quorum Threshold | Additional Constraint |
@@ -111,8 +109,6 @@ independent agent instance**. Do NOT reuse an existing teammate for consensus �
 | Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
 | UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
 | General / Mixed domain | @staff-engineer | @senior-engineer |
-
-For ad-hoc proposals that don't fit neatly, select the 2-3 agents whose domain is closest.
 
 > Proposer's agent type is always excluded — see Reviewer Independence Enforcement below.
 
@@ -182,17 +178,11 @@ Extract `id` from the `--json` response — this is `{vote-id}` for all subseque
 
 **Create team and reviewer tasks** (standalone mode only): `TeamCreate(team_name="vote-{vote-id}", description="Consensus vote: {summary}")`, then one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
 
-**Link to a Docket issue (when applicable):**
-
-If the vote is associated with a Docket issue (e.g., voting on a TDD that has a tracking
-issue), link the proposal:
+**Link to a Docket issue when applicable** (e.g., voting on a TDD with a tracking issue):
 
 ```bash
 docket vote link {vote-id} --issue {issue_id}
 ```
-
-If the proposal references files, TDDs, or diffs — read them so you can include the full
-artifact content in reviewer prompts.
 
 ---
 
@@ -216,7 +206,7 @@ prompt. Collect all return values AFTER every reviewer completes.
 
 ### Handling Reviewer Failures
 
-Claude Code auto-fails stalled subagents at 10 minutes (v2.1.111). Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
+Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
 
 - **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast ... -v reject --summary "reviewer failed: {reason}" --confidence 0.0 --domain-relevance 0.0` so the audit trail is complete, then proceed to Phase 3.
 - **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
@@ -326,17 +316,10 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
 
 ### If Quorum Is NOT Reached (View Change)
 
-1. Aggregate all findings by category (blocker/concern/suggestion) **without reviewer
-   attribution** to preserve independence in subsequent rounds.
-2. Report the aggregated feedback to the caller.
-3. Report to the caller via **SendMessage** if invoked by an agent: "[VOTE] Consensus not reached
-   (score: {score}, threshold: {threshold}).
-   If the caller is the user (not an agent), use AskUserQuestion to present options: "Revise and re-vote", "Escalate to human decision", "Abort". If the caller is an agent, send these options via SendMessage.
-4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal
-   (same or different reviewers — your choice based on whether the revision needs fresh eyes).
-   Each new round creates a new proposal via `docket vote create` — the coordinator MUST track
-   all proposal IDs across rounds and include them in the final report for auditability.
-5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
+1. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
+2. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings — via SendMessage if invoked by an agent, AskUserQuestion if invoked by the user — and present options: "Revise and re-vote", "Escalate to human decision", "Abort".
+3. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability.
+4. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
    - The original proposal
    - All proposal IDs from each round (for `docket vote show {id}`)
    - Consolidated findings from all rounds
@@ -388,12 +371,4 @@ Immediately after reporting the outcome (approved, rejected, or escalated):
 
 ## Audit Trail
 
-All audit data is in `docket vote show {vote-id} --json` and `docket vote result {vote-id} --json`:
-
-| Audit Check | Fields |
-|---|---|
-| Who proposed? | `.created_by` |
-| Who reviewed? | Each vote's `.voter` and `.role` |
-| Independent instances? | `.voter` matches `{vote-id}-reviewer-{N}` pattern |
-| Proposer excluded? | No `.role` matches `created_by` mapped agent type |
-| Unique reviewer types? | No duplicate `.role` values |
+Full audit data lives in `docket vote show {vote-id} --json`. Before commit, verify two non-obvious invariants from that output: (a) no vote `.role` matches the proposer's mapped agent type (proposer exclusion held), and (b) all `.role` values are unique (no duplicate reviewer types).

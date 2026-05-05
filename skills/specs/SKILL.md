@@ -17,7 +17,8 @@ The argument is **optional** — this skill has a single well-defined behavior.
 
 - **No argument** (`/specs`): Bootstrap all 7 spec files.
 - **With argument** (`/specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
-  instead of all 7. Validate each name against the Spec File Reference table; reject unknown names.
+  instead of all 7. Validate each name against the Spec File Reference table.
+- **On unknown name(s)**: Abort with a message listing the rejected name(s) and the 7 valid filenames; do not partially proceed.
 
 # Specs
 
@@ -43,11 +44,11 @@ Before spawning any agents:
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
    - `mkdir -p docs/spec` — ensure output directory exists
 3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-4. **If files exist**, use AskUserQuestion to present options:
-   - **Overwrite all** — delete existing files and regenerate everything
-   - **Skip existing** — only generate missing spec files
+4. **If any file in the target set already exists**, use AskUserQuestion to present options. The "target set" is all 7 by default, or the `$ARGUMENTS` subset:
+   - **Overwrite** — delete the conflicting file(s) in the target set and regenerate
+   - **Skip existing** — only generate missing files in the target set
    - **Cancel** — abort the operation
-   If no files exist, proceed directly to execution.
+   If every file in the target set is missing, proceed directly to execution.
 
 ---
 
@@ -74,7 +75,7 @@ exploration guidance for each — used in the spawning template.
 
 1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
-   `TaskCreate(subject="Generate {filename}", description="Generate docs/spec/{filename} project specification")`
+   `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
 3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`:
    `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
 4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
@@ -85,7 +86,7 @@ Agents send completion messages via SendMessage when done. As each reports, rela
 
 Poll `TaskList()` every ~2 minutes. Classify each task:
 - **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR task is `in_progress` past ~10 min with no SendMessage activity (v2.1.111 stall detection will surface this).
+- **failed** — agent SendMessaged a failure, OR task is `in_progress` past ~10 min with no SendMessage activity.
 - **in_progress** — still working; continue polling.
 
 **On any failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
@@ -156,6 +157,6 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down surviving teammates** — send `shutdown_request` to each spawned agent that is still active in the SAME turn. Skip agents that already failed/crashed (no process to terminate).
+2. **Shut down surviving teammates** — for each spawned agent whose task is `completed` (per Step 2 classification), send `shutdown_request` in the SAME turn. Skip agents whose task was marked `failed` (no process to terminate).
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
 4. Remind the user that NO changes have been committed — they can review with `git diff`.

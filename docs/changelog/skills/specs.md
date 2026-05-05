@@ -1,5 +1,23 @@
 # Changelog: specs
 
+## 2026-05-04
+
+### Summary
+Closed three edge-case ambiguities (unknown-argument rejection, argument+existing-file interaction, Wrap-up shutdown targeting) and added `activeForm` per Claude Code recommendations. Net 161→162.
+
+### Changes
+- Defined abort behavior for unknown spec-file arguments (Argument Handling)
+- Scoped existing-file conflict UX to "target set" so `/specs <files>` works correctly when a subset already exists
+- Added `activeForm` to TaskCreate per Claude Code docs (operator-visible spinner)
+- Tied Wrap-up shutdown step to Step 2's task-state classification for unambiguous targeting
+- [Phase 2 coherence] Stripped unverifiable "v2.1.111 stall detection" parenthetical from Step 2 task classification
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-22
 
 ### Summary

@@ -1,5 +1,24 @@
 # Changelog: vote
 
+## 2026-05-04
+
+### Summary
+Fixed malformed View Change SendMessage instruction (unterminated quoted message + duplicated agent/user routing); compressed Audit Trail reference table to two non-obvious invariants; trimmed Phase 1 link block, redundant criticality-override blurb, and ad-hoc-fallback filler sentence. Net 399→374.
+
+### Changes
+- Fixed View Change view step 3 — collapsed broken/duplicated SendMessage instructions into one notify+options sentence covering both agent and user callers
+- Compressed Audit Trail from 11-line reference table to 3-line pointer + two non-obvious post-commit invariants
+- Trimmed Phase 1 `docket vote link` block from 11 to 4 lines (read-proposal-files instruction already covered upstream)
+- Removed criticality-override blurb under the classification table — Rule 5 is the canonical home
+- Removed "For ad-hoc proposals" filler sentence — General/Mixed table row already covers it
+- [Phase 2 coherence] Stripped unverifiable "(v2.1.111)" parenthetical from Handling Reviewer Failures
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Actionability, Skill Design Quality, Completeness, Orchestration & Agent Teams, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-04-22
 
 ### Summary

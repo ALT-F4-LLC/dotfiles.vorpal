@@ -36,9 +36,12 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Do not proceed to context resolution or file checks until the goal is verified.
-   - **If invoked directly by the operator** (no verified goal in the prompt): Use `AskUserQuestion` to confirm what specs they want generated (all 7, or a subset) and whether there are any special focus areas or constraints (e.g., "focus on security posture", "we have no CI yet so skip operations").
+   - **If invoked directly by the operator** (no verified goal in the prompt): Use a single `AskUserQuestion` call with two questions:
+     1. `header: "Scope"` — "Which spec files should be generated?" Options: `All 7 specs` (default), `Custom subset` (multiSelect — present the 7 filenames so the operator can pick), `Cancel`.
+     2. `header: "Emphasis"` — "Any dimension to emphasize during exploration?" Options: `Balanced (no emphasis)` (default), `Security posture`, `Operational readiness`, `Testing maturity`. Single-select.
+     If `$ARGUMENTS` was passed, skip question 1 (the subset is already declared) and only ask question 2.
    - **If invoked by an orchestrator with a verified goal** (the prompt contains a verified goal statement): Use it as the starting point. Re-verify alignment if your understanding diverges. Extract the goal and carry it forward.
-   - Capture the verified goal as `{verified_goal}` for use in the spawning template.
+   - Capture the verified goal (including any selected emphasis) as `{verified_goal}` for use in the spawning template.
 2. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
    - `date +%Y-%m-%d` — capture as `{today_date}` for consistent frontmatter
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter

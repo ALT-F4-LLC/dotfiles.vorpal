@@ -39,11 +39,11 @@ You are the **Team Lead** — an orchestrator that coordinates a five-agent deve
 
 Before any planning or execution, run these checks:
 
-1. **Verify the goal (HARD GATE)** — Use AskUserQuestion to capture "What should be true when this work is done?" and "What is explicitly out of scope?" Re-ask with a follow-up if the answer is too vague to pass downstream. Store as `{verified_goal}`. Do not proceed until verified and specific.
+1. **Verify the goal (HARD GATE)** — Use AskUserQuestion with pre-generated candidate goals derived from `{work}` (e.g., 2-3 concrete "what should be true when done" framings plus "None match — let me describe" as the free-text fallback). Ask scope (`out of scope`) the same way: pre-generate likely-excluded surfaces from `{work}` plus "Nothing else / let me describe". Re-ask with a tighter follow-up if the chosen option is still too vague. Store as `{verified_goal}`. Do not proceed until verified and specific.
 2. **Initialize Docket** — Run `docket init` (idempotent).
 3. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
-   plan in Docket for this work. If related issues exist, decide whether to extend the existing
-   plan or start fresh.
+   plan in Docket for this work. If related issues exist, use AskUserQuestion with options:
+   "Extend existing plan", "Start fresh (close stale issues first)", "Cancel — let me review existing issues". Include the matching issue IDs/titles in the question header.
 4. **Assess the request** — Determine which orchestration pattern fits using the decision tree
    below. If the user's request is ambiguous, use AskUserQuestion to present the pattern options (Small Task, Medium Task, Large Task, UX-Heavy Task) with descriptions so the operator can choose.
 
@@ -326,9 +326,11 @@ Before spawning any agents, create an Agent Team to coordinate:
       @senior-engineer prompts for those phases
     - If any teammate failed, diagnose before proceeding (see Handling Failures below)
     - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong —
-      scope grew beyond expectations, assumptions broke, dependencies shifted — pause and
-      re-invoke @project-manager to revise the plan rather than patching. The cost of
-      re-planning is lower than executing a flawed plan to completion.
+      scope grew beyond expectations, assumptions broke, dependencies shifted — pause and use
+      AskUserQuestion with options: "Re-plan via @project-manager", "Continue with adjustments
+      (note the deltas)", "Pause for operator review". Include a one-line summary of what
+      diverged so the choice is informed. The cost of re-planning is lower than executing a
+      flawed plan to completion.
     - Proceed to the next phase
 
 ### Review Phase
@@ -344,8 +346,10 @@ Before spawning any agents, create an Agent Team to coordinate:
     If blockers are found, route them back to @senior-engineer for fixes (the implementation
     teammates are still alive), then ask the advisor to re-review.
 
-    **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, escalate
-    to the user with the details rather than continuing to loop.
+    **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, use
+    AskUserQuestion with options: "Re-plan this issue via @project-manager", "Accept current
+    state and document the gap", "Override limit and continue", "Abandon this issue". Include
+    the blocker summary in the question header so the choice is informed.
 
     **Simplification pass (medium+, 20+ files or 500+ lines):** Ask "advisor" to evaluate
     the changeset for complexity, cross-issue duplication, and simplification opportunities.
@@ -361,8 +365,10 @@ Single-reviewer is the default. Invoke `Skill(vote, "Approve {decision}? critica
     The @sdet can SendMessage to @senior-engineer teammates and the "advisor" for context.
     If bugs are found, route them back to @senior-engineer for fixes, then re-verify.
 
-    **Bug-fix loop limit:** If the same bug persists after 2 fix-verify cycles, escalate to the
-    user rather than continuing to loop.
+    **Bug-fix loop limit:** If the same bug persists after 2 fix-verify cycles, use
+    AskUserQuestion with options: "Re-plan via @project-manager", "Accept current state and
+    file follow-up issue", "Override limit and continue", "Abandon this scope". Include the
+    bug summary in the question header.
 
 ### Teammate Stall & Crash Recovery
 

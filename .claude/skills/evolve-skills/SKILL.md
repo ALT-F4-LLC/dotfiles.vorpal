@@ -35,16 +35,31 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+
 1. **Verify evolution goal** — HARD GATE: Do not proceed to file validation or agent spawning
-   until the goal is verified. In standalone mode, use AskUserQuestion to confirm what evolution
-   focus the operator wants (e.g., all skills, specific skill, specific dimensions). In team
-   mode (orchestrator prompt includes "Verified goal"), use it as the starting point. Re-verify alignment if your understanding diverges.
-2. **Gather experience feedback** — Use `AskUserQuestion` to ask the operator:
-   - Current experience with the skill(s) being evolved (what's working well, what's not)
-   - Pain points or friction encountered during usage
-   - Any specific feedback that should inform this evolution cycle
-   Store the response as `{experience_feedback}`. In team mode, skip if the orchestrator
-   prompt already includes experience feedback context.
+   until the goal is verified. In team mode (orchestrator prompt includes "Verified goal"), use
+   it as the starting point and re-verify alignment if your understanding diverges. In standalone
+   mode, call `AskUserQuestion` with this question and these four options as selectable choices
+   (no free-text prompt): "What is the evolution focus for this cycle?" — options: (a) "All
+   skills (broad pass)", (b) "Specific skill" (pair with `$ARGUMENTS` if set, else add a
+   follow-up AskUserQuestion listing the inventoried skill names from step 4), (c) "Specific
+   dimension(s) across all skills" (follow-up AskUserQuestion listing the 8 dimensions as
+   `multiSelect: true`), (d) "Address operator-reported pain (skip to step 2)". Capture the
+   selection as `{verified_goal}`.
+2. **Gather experience feedback** — In team mode, skip if the orchestrator prompt already
+   includes experience feedback context. Otherwise issue a SINGLE `AskUserQuestion` call with
+   these structured questions (no free-text prompts; each option is a selectable choice). Q1
+   `header: "Friction"`, multiSelect true: "Where did you feel friction recently?" — options:
+   "Spawning/coordination (agents stalling, shutdown loops)", "Operator prompts (too much
+   typing, vague questions)", "Output quality (changelog/edits/recommendations)", "Scope or
+   pacing (too aggressive, too cautious)", "No friction — looks good". Q2 `header: "Focus"`:
+   "Which dimension should this cycle prioritize?" — options: "Over-Engineering / trim",
+   "Actionability / clarity", "Orchestration & Agent Teams", "Coherence across skills". Q3
+   `header: "Specifics"`: "Anything specific to flag?" — options: "Yes — I'll paste details
+   next", "No, the selections above are enough". If Q3 is "Yes", THEN issue a follow-up plain
+   prompt asking for the paste (free-text justified: logs/reproductions/quotes are paste
+   material). Store the consolidated answers as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -97,7 +112,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. Prepend new entries below H1 (most recent first). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries.
 
 ---
 

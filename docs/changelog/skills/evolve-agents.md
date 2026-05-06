@@ -3,6 +3,24 @@
 ## 2026-05-05
 
 ### Summary
+Three Orchestration & Agent Teams alignments with evolve-skills (mid-Phase-1 routing fix, explicit no-peer-to-peer rule in Phase 1 template, shutdown-protocol consolidation) plus two trims. Net 274→270.
+
+### Changes
+- Fixed mid-Phase-1 cross-cutting routing: append findings to a notes list and pass to Phase 2 — do NOT route to in-flight siblings (race condition); aligns with evolve-skills line 158
+- Phase 1 template: added explicit "No peer-to-peer SendMessage — orchestrator is the only relay" rule (parity with evolve-skills)
+- Consolidated Shutdown protocol → Crash & Stall Recovery (removed duplicate timeout language)
+- Removed Argument Handling forward-reference to Pre-flight step 5 (step 5 is one line, encountered immediately)
+- Compressed Crash & Stall Recovery intro list (failure modes covered by detection mechanisms)
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Pre-flight step 2 experience-feedback prompt restructured: replaced one-line free-text `AskUserQuestion` with `multiSelect: true` over six pain-point classes (role realism, coordination gaps, cross-comm visibility, file-size bloat, workflow stalls, Other) with free-text follow-up only when `Other` is selected. Net 274→274.
 
 ### Changes

@@ -8,7 +8,7 @@ effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
 
 # Vote — PBFT Consensus Protocol
 
@@ -29,7 +29,7 @@ reaching agreement. A justified REJECT is more valuable than an unexamined APPRO
 The argument is **required** and may be EITHER a proposal description (user invocation) OR a `vote_id` from an existing docket proposal (orchestrator handling a delegation_request).
 
 - **No argument** (`/vote`): Inform the user that a proposal is required and abort. Example: "Usage: `/vote <proposal>` — describe what you want voted on."
-- **Argument is a vote_id** (matches an existing `docket vote show $ARGUMENTS` record): Skip Phase 1 proposal creation. Read the existing proposal via `docket vote show {vote_id} --json`, extract criticality and reviewer count, then proceed directly to Phase 2 reviewer spawning.
+- **Argument is a vote_id** (matches an existing `docket vote show $ARGUMENTS` record): Skip Phase 1 proposal creation. Read the existing proposal via `docket vote show {vote_id} --json`, extract criticality, reviewer count, and `created_by`. Apply Reviewer Independence Enforcement (proposer exclusion + uniqueness) using the existing `created_by`, then proceed to Phase 2 reviewer spawning.
 - **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Proceed with full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
 
 ---
@@ -90,7 +90,7 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 | low | 2 | 50% weighted approval | None |
 | medium | 2 | 60% weighted approval | No more than 1 reject |
 | high | 3 | 75% weighted approval | Zero rejects |
-| critical | 3-4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
+| critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
 ---
 
@@ -206,7 +206,7 @@ prompt. Collect all return values AFTER every reviewer completes.
 
 Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
 
-- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast ... -v reject --summary "reviewer failed: {reason}" --confidence 0.0 --domain-relevance 0.0` so the audit trail is complete, then proceed to Phase 3.
+- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "reviewer failed: {reason}" --confidence 0.0 --domain-relevance 0.0` so the audit trail is complete, then proceed to Phase 3.
 - **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
 - **Two or more reviewers fail in the same round**: abort and escalate. Do not re-spawn the whole panel.
 
@@ -298,6 +298,8 @@ One paragraph summarizing your overall assessment.
 
 After all votes have been cast, retrieve the consensus result via `docket vote result {vote-id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
 
+**For `critical` proposals, additionally enforce the domain-expertise floor**: parse the cast list from `docket vote show {vote-id} --json` and verify at least one vote has `domain_relevance >= 0.8`. If not, treat as quorum-not-reached regardless of approval score and proceed to View Change.
+
 ### If Quorum Is Reached
 
 1. **Commit the proposal** — finalize the approved vote record:
@@ -312,10 +314,11 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
 
 ### If Quorum Is NOT Reached (View Change)
 
-1. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
-2. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
-3. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability.
-4. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
+1. **Finalize the failed round in docket** — `docket vote commit {vote-id} --outcome "Quorum not reached (score: {score})" --escalation-reason "view-change: round {N} of 3"`. This closes the proposal so `docket vote list` reflects accurate state.
+2. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
+3. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
+4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability.
+5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
    - The original proposal
    - All proposal IDs from each round (for `docket vote show {id}`)
    - Consolidated findings from all rounds
@@ -347,9 +350,9 @@ View with: `docket vote show {vote-id}`
 Full result: `docket vote result {vote-id} --json`
 ```
 
-### Cleanup (MANDATORY — all outcomes)
+### Cleanup (MANDATORY — standalone mode only)
 
-Immediately after reporting the outcome (approved, rejected, or escalated):
+In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
 1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each spawned reviewer. Do not wait for acknowledgment.
 2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")`. Failure to clean up wastes resources and causes agent lifecycle issues.
 

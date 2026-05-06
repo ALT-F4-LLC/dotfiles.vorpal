@@ -27,7 +27,7 @@ yourself — you only coordinate and apply edits.**
 Target skill(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills dev`): Improve only the named skill. See Pre-flight for validation.
+- **With argument** (`/evolve-skills dev`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
 
 ---
 
@@ -37,29 +37,8 @@ Before spawning any agents:
 
 > **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
 
-1. **Verify evolution goal** — HARD GATE: Do not proceed to file validation or agent spawning
-   until the goal is verified. In team mode (orchestrator prompt includes "Verified goal"), use
-   it as the starting point and re-verify alignment if your understanding diverges. In standalone
-   mode, call `AskUserQuestion` with this question and these four options as selectable choices
-   (no free-text prompt): "What is the evolution focus for this cycle?" — options: (a) "All
-   skills (broad pass)", (b) "Specific skill" (pair with `$ARGUMENTS` if set, else add a
-   follow-up AskUserQuestion listing the inventoried skill names from step 4), (c) "Specific
-   dimension(s) across all skills" (follow-up AskUserQuestion listing the 8 dimensions as
-   `multiSelect: true`), (d) "Address operator-reported pain (skip to step 2)". Capture the
-   selection as `{verified_goal}`.
-2. **Gather experience feedback** — In team mode, skip if the orchestrator prompt already
-   includes experience feedback context. Otherwise issue a SINGLE `AskUserQuestion` call with
-   these structured questions (no free-text prompts; each option is a selectable choice). Q1
-   `header: "Friction"`, multiSelect true: "Where did you feel friction recently?" — options:
-   "Spawning/coordination (agents stalling, shutdown loops)", "Operator prompts (too much
-   typing, vague questions)", "Output quality (changelog/edits/recommendations)", "Scope or
-   pacing (too aggressive, too cautious)", "No friction — looks good". Q2 `header: "Focus"`:
-   "Which dimension should this cycle prioritize?" — options: "Over-Engineering / trim",
-   "Actionability / clarity", "Orchestration & Agent Teams", "Coherence across skills". Q3
-   `header: "Specifics"`: "Anything specific to flag?" — options: "Yes — I'll paste details
-   next", "No, the selections above are enough". If Q3 is "Yes", THEN issue a follow-up plain
-   prompt asking for the paste (free-text justified: logs/reproductions/quotes are paste
-   material). Store the consolidated answers as `{experience_feedback}`.
+1. **Verify evolution goal (HARD GATE)** — Team mode: adopt verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or follow-up listing inventoried skills from step 4), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes experience feedback. Otherwise issue ONE `AskUserQuestion` with three structured questions: Q1 `header: "Friction"` (multiSelect) covering coordination / operator prompts / output quality / scope / "no friction"; Q2 `header: "Focus"` over the 8 evaluation dimensions; Q3 `header: "Specifics"` with options "Yes — paste next" / "No". If Q3=Yes, follow up with a free-text prompt for the paste (paste material is the only free-text exception). Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -123,11 +102,13 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 1. `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`.
 2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
 
-**Lifecycle rules (apply uniformly):**
-- Each teammate delivers its final report by `SendMessage` to the orchestrator, THEN is shut down via `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`.
-- If a `shutdown_response` does not arrive within the next orchestrator turn, treat the teammate as dead and proceed — do NOT block the phase on a missing shutdown ack (see Rule #10).
-- No teammate is reused across phases — spawn fresh per phase.
-- After all phases complete: `TeamDelete(team_name="evolve-skills-{today_date}")`.
+| Phase | Agents | Lifecycle |
+|---|---|---|
+| 0 | `docs-researcher`, `docket-auditor` | Spawn parallel → both complete → shut down both before Phase 1 |
+| 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
+| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
+
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. If no `shutdown_response` arrives within the next orchestrator turn, treat as dead and proceed (see Rule #10). No teammate is reused across phases — spawn fresh.
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
@@ -155,7 +136,7 @@ Each teammate (read-only — no file edits):
 
 **Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
 
-**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer** — the orchestrator is the only relay. Cross-cutting items are appended to a running notes list and passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. Use `TaskList()` for progress tracking.
+**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer in this skill:** reviewers operate on independent skill files and have no shared edit surfaces; cross-cutting items are intentionally consolidated in Phase 2 to prevent mid-flight contradictory peer edits. Cross-cutting items are appended to a running notes list and passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. Use `TaskList()` for progress tracking.
 
 ### Phase 2: Coherence & Renames (sequential)
 

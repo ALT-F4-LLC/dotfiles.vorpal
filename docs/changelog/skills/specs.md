@@ -3,6 +3,36 @@
 ## 2026-05-05
 
 ### Summary
+Phase 2 coherence fix: unified CRITICAL banner format with evolve-* skills, preserving leaf-agent terminology native to this skill.
+
+### Changes
+- Replaced top-of-file CRITICAL banner with unified two-rule format covering no-commit and leaf-agent constraints (parity across all 5 team-spawning skills)
+
+### Dimensions Evaluated
+Coherence
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
+No improvements applied this cycle. Reviewer flagged Monitor-tool gap and CRITICAL banner format divergence; both rejected — adding Monitor without a usage fails Content Gate (Behavioral), and TaskList polling cannot be replaced with a Bash-stream Monitor since TaskList is a tool, not a CLI. Reviewer themselves recommended deferral. Banner format divergence judged not load-bearing. Net 165→165.
+
+### Changes
+- No code changes
+- Rejected: add `Monitor` to allowed-tools (no usage proposed; reviewer deferred the polling rewrite due to TaskList CLI uncertainty)
+- Rejected: rewrite Step 2 polling to a `claude task list --json` shell loop (TaskList is a tool, not a CLI)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Converted Pre-flight goal-alignment from a free-text `AskUserQuestion` to a structured two-question call with concrete Scope (multiSelect over the 7 spec filenames) and Emphasis options. Eliminates typing where selectable choices apply. Net 162→165.
 
 ### Changes

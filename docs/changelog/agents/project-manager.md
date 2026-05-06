@@ -1,5 +1,39 @@
 # Changelog: project-manager
 
+## 2026-05-06
+
+### Summary
+Phase 2 coherence pass: standardized Pre-Flight Gate to "HARD GATE" terminology (fleet majority — matches senior/sdet/ux). No cross-comm changes — PM already practices the prefix-mirroring pattern that the rest of the fleet adopted in this cycle.
+
+### Changes
+- Standardized Pre-Flight Gate to "HARD GATE — Do not proceed..." (matches senior/sdet/ux fleet pattern)
+
+### Dimensions Evaluated
+Coherence with Fleet Standards (Pre-Flight Gate terminology)
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Operator-visibility & capability-growth pass. Hoisted the cross-agent comms visibility contract (`[PM→@agent]` Docket-comment mirror) to top of Cross-Agent Communication so operators can predict where to look. Added SendMessage auto-resumes-idle-peers note, plan-revision broadcast trigger, and stalled-work check-in trigger. Offset by trimming Session Init step 2, redundant TDD acceptance gate (duplicated trigger), and Plan Monitoring preamble. Net: +6 lines (386→392; under 500 budget).
+
+### Changes
+- Hoisted operator-visibility contract for `[PM→@agent]` Docket comments to top of Cross-Agent Communication (was buried in Status & Observability)
+- Added SendMessage auto-resumes-idle-peers note (Phase 0 capability finding)
+- Added stalled-work check-in trigger to @senior-engineer Notify block
+- Added new Broadcast trigger for plan revisions affecting ≥2 in-flight issues
+- Trimmed Session Init step 2 (5 commands → essentials + reference pointer); renumbered downstream steps
+- Removed standalone TDD acceptance gate block (duplicated Incoming-trigger entry)
+- Trimmed Plan Monitoring preamble (re-plan-immediately repeated Re-Engagement step 2)
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (FOCUS), Consolidation & Trimming, Boundary Clarity, Actionability, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

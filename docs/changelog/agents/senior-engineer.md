@@ -1,5 +1,56 @@
 # Changelog: senior-engineer
 
+## 2026-05-06
+
+### Summary
+Phase 2 coherence pass: extended operator-visibility contract with high-stakes real-time cc rule (TDD-deviation-requiring-re-plan, scope-expansion, blocked-15min, security-boundary). Closed two bidirectional gaps: added @ux-designer outgoing trigger for design QA on user-facing surfaces (inverse of ux-designer's incoming); added @project-manager cc to blocked-15min trigger (closes loop with PM's stalled-work check-in).
+
+### Changes
+- Extended operator-visibility contract to require concurrent team-lead cc on high-stakes events (do not buffer)
+- Added "Diff ready on user-facing surface with `docs/ux/` spec → SendMessage @ux-designer for design QA" outgoing trigger
+- Added "also SendMessage @project-manager if the block requires re-plan or scope cut" to Blocked-15min trigger
+
+### Dimensions Evaluated
+Cross-Communication & Observability (PRIMARY), Bidirectional Trigger Coverage, Coherence with Fleet Standards
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Adopted PM's operator-visibility contract: every peer SendMessage is mirrored as a Docket comment with `[SE→@agent] {summary}` prefix (operator reads Docket, not the agent message bus). Added SendMessage auto-resume + TaskUpdate cadence note. Reverted the "discovered follow-up" trigger to use the new mirror contract.
+
+### Changes
+- Added operator-visibility contract preamble to Proactive SendMessage Triggers (mirrors PM pattern; closes operator's "can't see cross-agent comms" complaint)
+- Added SendMessage auto-resume note + TaskUpdate-at-every-transition cadence rule
+- Reworded "Discovered follow-up work" trigger to invoke the visibility contract explicitly
+
+### Dimensions Evaluated
+Cross-Communication Visibility (PRIMARY), Capability Growth, Spec Alignment, Role Realism, Actionability
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Capability growth via Phase 0 docket CLI audit — added `docket issue log <id>` (pre-start activity context), `docket issue graph --direction up|down|both` (blast-radius), and `docket plan --root <id> --json` (phased execution view) to System-Level Awareness and CLI reference. Trimmed Operating Context restatement (3 lines → 1). Reviewer initially proposed a hub-routing rewrite (rejected — see follow-up entry above for the corrected approach via PM's visibility contract).
+
+### Changes
+- Added `docket issue log <id>` pre-start check to System-Level Awareness (Phase 0 audit recommendation)
+- Added `docket issue graph --direction up|down|both` for explicit blast-radius direction control
+- Added `docket plan --root <id> --json` for parent-scoped phase view before claiming child issues
+- Updated CLI reference block to include `docket plan` and graph `--direction`/`--depth` flags
+- Trimmed Operating Context paragraph (3 → 1 line; removed restatement already implied by Pre-Flight Gate and Check Specs)
+- REJECTED: hub-routing rewrite of SendMessage triggers — based on misinterpretation of EVOLVE-cycle rule
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — CLI surfaces), Completeness (Phase 0 audit), Consolidation, Cross-Communication, Role Realism, Actionability, Boundary Clarity, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

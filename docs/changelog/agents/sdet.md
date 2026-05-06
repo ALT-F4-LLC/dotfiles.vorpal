@@ -1,5 +1,24 @@
 # Changelog: sdet
 
+## 2026-05-06
+
+### Summary
+Cross-agent comms visibility pass — adopted PM's `"[SDET→@agent] {summary}"` Docket-comment logging so operator can see SendMessage traffic in the issue timeline. Added SendMessage auto-resume note (wake idle peers on post-verification discovery) and `docket plan --root` for phase-aware verification (sibling-failure check). Net: -3 lines (319→316).
+
+### Changes
+- PRIMARY: Adopted `"[SDET→@agent] {summary}"` cross-agent message logging format (matches @project-manager) — addresses operator visibility feedback
+- Capability: SendMessage auto-resume note in Inter-Agent preamble — wake idle peers on post-completion gap discovery
+- Capability: Added `docket plan --root <id> --json` to Verification Workflow step 1 + CLI reference — phase-aware sibling context (failing sibling can invalidate APPROVE)
+- Trimmed Per-Session Metrics — removed list overlapping Verification step 4 ("Layer signals") and Coverage Principles
+- Trimmed Ad-Hoc Verification — removed restatement of template + "no new issues" rule already covered in Bug Reporting
+- Compressed Bug Reporting severity definitions and required-field list
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — visibility format + auto-resume + docket plan), Consolidation & Trimming (PRIMARY — 3 trim sites), Actionability, Boundary Clarity, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

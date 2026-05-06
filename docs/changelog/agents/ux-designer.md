@@ -1,5 +1,36 @@
 # Changelog: ux-designer
 
+## 2026-05-06
+
+### Summary
+Phase 2 coherence pass: replaced "summarize in next status update" cross-comm pattern with fleet-standard hybrid (Docket-comment prefix `[UX→@agent]` for persistence + concurrent team-lead cc for high-stakes events). Strengthened Mermaid statement to MUST-use mandate to align with staff/PM.
+
+### Changes
+- Replaced "Cross-communication observability" paragraph with "Operator-visibility contract" — Docket-comment prefix `[UX→@agent]` + real-time cc for high-stakes (breaking-UX broadcast, blocking design-QA Fail, TDD/UX conflict escalation, cross-surface precedent)
+- Strengthened Mermaid statement to "MUST be used to visualize user flows, state transitions, and cross-surface journeys" — matches staff/PM fleet mandate
+
+### Dimensions Evaluated
+Cross-Communication & Observability (PRIMARY), Coherence with Fleet Standards, Documentation Mandate Alignment
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Cross-comms visibility + capability growth pass. Added Cross-communication observability paragraph (operator can't see inter-agent SendMessage), added missing incoming trigger for @senior-engineer implementation-complete → design QA wake-up (closed bidirectional gap with senior-engineer's diff-ready outbound), compressed "How You Work" three-mode block (duplicated Responsibilities 1/2/5). Net: -3 lines (284→281).
+
+### Changes
+- Added Cross-communication observability to Inter-Agent Communication (mirrors staff-engineer canonical pattern at agents/staff-engineer.md:260) — operator visibility focus
+- Added incoming trigger: @senior-engineer implementation-complete on user-facing surface → run design QA per Responsibility 5 (closed bidirectional gap)
+- Compressed "How You Work" three-mode block — collapsed verb-routing into single sentence, removed Evaluate-mode duplication of Responsibility 5
+
+### Dimensions Evaluated
+Cross-Communication (PRIMARY — observability + missing inbound trigger), Consolidation & Trimming (HIGHEST priority offset), Capability Growth, Boundary Clarity, Actionability, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

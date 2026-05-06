@@ -1,5 +1,40 @@
 # Changelog: staff-engineer
 
+## 2026-05-06
+
+### Summary
+Phase 2 coherence pass: added persistent Docket-comment prefix `[STAFF→@agent]` alongside existing real-time `(cc operator)` markers — completes the hybrid operator-visibility pattern fleet-wide. Standardized Pre-Flight Gate to "HARD GATE" terminology (matches senior/sdet/ux majority).
+
+### Changes
+- Replaced "Cross-communication observability" summary-paragraph with "Operator-visibility contract" referencing both the prefix (persistent record) and existing (cc operator) markers (real-time cc for high-stakes events)
+- Standardized Pre-Flight Gate header to "HARD GATE — Do not proceed..." (matches senior/sdet/ux fleet pattern)
+
+### Dimensions Evaluated
+Cross-Communication & Observability, Coherence with Fleet Standards (Pre-Flight Gate terminology)
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Cross-comm observability + capability growth: marked 5 high-stakes outgoing triggers with **(cc operator)** for real-time visibility (vs batched in next status update); documented SendMessage auto-resume of stopped subagents; added `docket issue log <id>` and `docket issue comment list <id>` to review Gather Context (matches sdet pattern). Trimmed two duplicate `last_updated`/`updated_by` Handoff/review reminders that triple-stated Responsibility 4. Net: ~+2 lines (281→283).
+
+### Changes
+- Strengthened Proactive Communication preamble: real-time cc for high-stakes events (re-plan, scope-delta, TDD-revision, ADR broadcast, TDD-accepted, scope-discovery) instead of batched next-status-update; folded ASK cross-reference inline
+- Added SendMessage auto-resume capability note (Phase 0 finding) — staff can wake idle PM/engineer/sdet on TDD-acceptance, scope-delta, re-plan triggers
+- Annotated 5 outgoing triggers with **(cc operator)** marker (TDD-scope-delta, re-plan, TDD-revision, ADR broadcast, TDD-accepted)
+- Added `docket issue log <id>` and `docket issue comment list <id>` to review Gather Context (Phase 0 audit recommendation; matches sdet)
+- Trimmed duplicate `last_updated`/`updated_by` reminder in TDD Handoff section (canonical at line 217)
+- Trimmed duplicate `last_updated`/`updated_by` reminder in code-review post-step
+- Tightened review Gather Context Monitor sentence (removed redundant `Bash(run_in_background=true)` since Monitor already implies it)
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — auto-resume + real-time cc), Consolidation & Trimming, Spec Alignment, Completeness, Role Realism, Actionability, Boundary Clarity, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

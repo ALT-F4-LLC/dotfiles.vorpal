@@ -6,10 +6,6 @@ description: >
   skills", "refine skills".
 argument-hint: "[skill-name]"
 effort: max
-paths:
-  - ".claude/skills/**"
-  - "skills/**"
-  - "docs/changelog/skills/**"
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 

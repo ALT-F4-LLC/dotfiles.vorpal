@@ -31,7 +31,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone mode: use `AskUserQuestion` to confirm evolution focus. Do not proceed to spawning until verified.
-2. **Gather experience feedback** — Use `AskUserQuestion` to collect operator pain points. Store as `{experience_feedback}`. Skip if orchestrator prompt already includes it.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Agent quality / role realism`, `Coordination & handoff gaps`, `Cross-agent communication visibility`, `File-size bloat / verbosity`, `Workflow gaps or stalls`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -59,7 +59,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. Prepend new entries (most recent first). Read only the latest entry in existing changelogs. Report honestly if no improvements found. After applying changes, the orchestrator normalizes: fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. After applying changes, the orchestrator normalizes ONLY the new entry it just prepended: fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries.
 
 ---
 

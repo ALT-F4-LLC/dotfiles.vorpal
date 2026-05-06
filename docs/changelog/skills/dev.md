@@ -3,6 +3,23 @@
 ## 2026-05-05
 
 ### Summary
+AskUserQuestion adoption pass — converted four free-text operator decision points (existing-issues handling, re-plan on divergence, review-fix and bug-fix loop escalations) to structured-options prompts; goal-verification now uses pre-generated candidate options derived from `{work}` with free-text fallback. Net 395→401.
+
+### Changes
+- Goal verification: pre-generate candidate goals/scope as options with "None match" free-text fallback
+- Existing-issues: AskUserQuestion (Extend/Start fresh/Cancel)
+- Re-plan-on-divergence: operator decision via AskUserQuestion (Re-plan/Adjust/Pause)
+- Review-fix and bug-fix loop limits: AskUserQuestion with structured next-step options instead of free-text escalation
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 General review pass adopting Phase 0 features judiciously: confirmed `TeammateIdle` already in use, rejected speculative additions (Monitor, hooks, ${CLAUDE_*}) that did not earn their place per Content Gate. Trimmed 4 redundancies — collapsed standalone "Resuming Mid-Execution" subsection into the Planning Phase Guard, removed vacuous Orchestration Patterns intro and @sdet template meta-line, and deferred vote-delegation mechanics to the /vote skill. Net 408→395.
 
 ### Changes

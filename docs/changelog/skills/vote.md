@@ -3,6 +3,21 @@
 ## 2026-05-05
 
 ### Summary
+Restructured operator-facing `AskUserQuestion` calls (goal-alignment, View Change next-step) to use concrete option arrays where the question is a discrete choice; free-text retained for descriptive bodies (criteria/stakeholders, findings rationale). Net 369→370.
+
+### Changes
+- Pre-flight goal-alignment now specifies AskUserQuestion shape: `Decision` (Confirm/Revise) + free-text Criteria
+- View Change step 2 now specifies AskUserQuestion shape for the three next-step options (Revise/Escalate/Abort)
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Actionability, Skill Design Quality, Cross-Skill Invocation, Terminology Alignment, Spec/Docket Alignment, Rename
+
+### Rename
+No rename — `vote` matches `docket vote` CLI exactly.
+
+## 2026-05-05
+
+### Summary
 Phase 1 fixes: removed coherence bug in Phase 2 reviewer prompt (instructed spawned reviewers to update tasks they don't own) and trimmed tautological closing step from Delegation Protocol. Phase 2 fixed a cross-skill contract bug: Argument Handling now dispatches on `vote_id` so dev's `Skill(vote, "{vote_id}")` invocation skips redundant Phase 1 proposal creation. Net 374→369.
 
 ### Changes

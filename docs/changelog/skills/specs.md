@@ -1,5 +1,20 @@
 # Changelog: specs
 
+## 2026-05-05
+
+### Summary
+Converted Pre-flight goal-alignment from a free-text `AskUserQuestion` to a structured two-question call with concrete Scope (multiSelect over the 7 spec filenames) and Emphasis options. Eliminates typing where selectable choices apply. Net 162→165.
+
+### Changes
+- Replaced free-text "what specs / focus areas" prompt with structured `AskUserQuestion`: Scope question (`All 7`/`Custom subset` multiSelect/`Cancel`) + Emphasis question (`Balanced`/`Security`/`Operational`/`Testing`)
+- Skip Scope question when `$ARGUMENTS` already declares the subset
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-04
 
 ### Summary

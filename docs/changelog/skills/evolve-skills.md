@@ -3,6 +3,22 @@
 ## 2026-05-05
 
 ### Summary
+Eliminated free-text operator prompts from Pre-flight in favor of structured `AskUserQuestion` calls (Step 1 four explicit options; Step 2 single multi-question call with concrete dimension-aligned options); added operator-prompts blockquote rule near top. Free-text reserved for paste material only. Net 299→314.
+
+### Changes
+- Pre-flight step 1: replaced vague "(e.g., all skills, specific skill, specific dimensions)" hint with four explicit AskUserQuestion options + follow-up patterns
+- Pre-flight step 2: replaced three free-text bullets with one structured multi-question AskUserQuestion call (Friction multiSelect, Focus, Specifics) — addresses operator pain that prompts/options beat typing
+- Added blockquote rule above Pre-flight: operator prompts use AskUserQuestion w/ pre-generated options; free-text only for paste material via prior option-led question
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Adopted `paths:` frontmatter (new Claude Code feature, Apr 2026) and `Monitor` tool for stall detection. Removed third restatement of 500-line budget, merged top-of-file critical-rules blockquotes, and made Phase 1→Phase 2 cross-cutting handoff concrete. Net 304→303.
 
 ### Changes

@@ -61,9 +61,10 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 2. **Parse the proposal** — Extract what is being decided from the argument.
 3. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
    until the goal is confirmed.
-   - **Standalone mode** (invoked directly by a user): Use AskUserQuestion to confirm:
-     (a) the decision being voted on, (b) the criteria for acceptance, and
-     (c) who the stakeholders are. Do not proceed until the user confirms.
+   - **Standalone mode** (invoked directly by a user): Use AskUserQuestion with two questions:
+     1. `header: "Decision"`, question: "Vote on this decision: {parsed proposal}?", options: `[{label: "Confirm", description: "Proceed with this exact framing"}, {label: "Revise", description: "Let me restate the decision"}]`. If "Revise", re-prompt with a free-text question for the corrected proposal.
+     2. `header: "Criteria"`, question: "What does acceptance look like? (criteria + stakeholders)" — free-text is correct here; this is descriptive context, not a selectable choice.
+     Do not proceed until both are answered.
    - **Team mode** (invoked by an orchestrator/agent): The orchestrator's prompt contains
      the verified goal. Use it as the starting point — re-verify alignment if your understanding diverges.
 4. **Classify criticality** — Use the table below. If the caller specifies criticality
@@ -312,7 +313,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
 ### If Quorum Is NOT Reached (View Change)
 
 1. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
-2. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings — via SendMessage if invoked by an agent, AskUserQuestion if invoked by the user — and present options: "Revise and re-vote", "Escalate to human decision", "Abort".
+2. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
 3. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability.
 4. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
    - The original proposal

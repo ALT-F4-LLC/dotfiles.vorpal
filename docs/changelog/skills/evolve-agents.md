@@ -3,6 +3,21 @@
 ## 2026-05-05
 
 ### Summary
+Pre-flight step 2 experience-feedback prompt restructured: replaced one-line free-text `AskUserQuestion` with `multiSelect: true` over six pain-point classes (role realism, coordination gaps, cross-comm visibility, file-size bloat, workflow stalls, Other) with free-text follow-up only when `Other` is selected. Net 274→274.
+
+### Changes
+- Pre-flight step 2: replaced free-text experience-feedback ask with `AskUserQuestion` (multiSelect: true, six pain-point options + Other free-text follow-up); addresses operator feedback that prompts/options beat typing
+- Rejected: structuring Pre-flight step 1 standalone goal-confirm (speculative bloat)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Adopted `Monitor` tool for stall detection, replacing the 10-minute wall-clock heuristic with event-driven streaming. Removed duplicate invariants. Phase 2 unified top-of-file blockquotes into one critical-rules block (parity with evolve-skills) and consolidated pre-flight inventory steps. Net 310→274.
 
 ### Changes

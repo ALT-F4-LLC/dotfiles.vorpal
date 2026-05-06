@@ -22,7 +22,7 @@ You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) 
 Target agent(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
-- **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent. See Pre-flight step 5 for validation.
+- **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
 
 ---
 
@@ -73,14 +73,12 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response within the next orchestrator turn, treat as crashed and proceed with re-spawn recovery below.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery.
 
 ### Crash & Stall Recovery
 
-Teammates can crash silently, stall mid-stream, or be killed before reporting. The orchestrator detects and recovers.
+Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
-- **Detect stall**: TeammateIdle notification arrives or `Monitor` stream goes silent past expected progress.
-- **Detect crash**: `shutdown_request` gets no response within one turn, OR Agent() returns an explicit error.
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
 - **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
@@ -113,7 +111,7 @@ Each teammate follows the Phase 1 spawning template (use ultrathink for deep ana
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 6. Shuts down the teammate (don't wait for sibling Phase 1 agents — see Agent Lifecycle)
 
-Mid-Phase-1 cross-cutting findings: route to in-flight siblings. `TaskList()` tracks progress.
+Mid-Phase-1 cross-cutting findings: append to a running notes list and pass verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section — do NOT route to in-flight siblings (race condition). `TaskList()` tracks progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -221,6 +219,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 ## Rules
 
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
+- **No peer-to-peer SendMessage** — the orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
 ## Output Format

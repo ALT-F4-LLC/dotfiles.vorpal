@@ -3,6 +3,39 @@
 ## 2026-05-05
 
 ### Summary
+Phase 2 coherence fix: unified CRITICAL banner format with evolve-* skills, preserving coordinator/reviewer terminology native to this skill.
+
+### Changes
+- Replaced top-of-file CRITICAL banner with unified two-rule format covering no-commit and no-recursive-vote/sub-agent prohibitions
+
+### Dimensions Evaluated
+Coherence
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
+Fixed Cleanup running in team mode (would shut down agents the delegator doesn't own), closed audit-trail gap where failed rounds were never committed, made the critical-tier domain_relevance ≥ 0.8 invariant explicitly enforceable, and patched two actionability gaps. Net 370→373.
+
+### Changes
+- Scoped Cleanup to standalone mode — team-mode delegator never spawned reviewers (Delegation Protocol step 4)
+- View Change now calls `docket vote commit --escalation-reason "view-change: round N"` to finalize failed rounds — closes stale open proposals in `docket vote list`
+- Failure-cast in Handling Reviewer Failures now includes `--role`, `{vote-id}`, and `--voter` — Audit Trail invariant requires `.role` for proposer-exclusion verification
+- Phase 3 explicitly enforces `critical` tier `domain_relevance >= 0.8` floor by parsing `docket vote show --json` after `docket vote result` (docket computes weighted threshold but not custom invariants)
+- Argument Handling vote_id branch now references Reviewer Independence Enforcement — was silently skipping proposer exclusion
+- Criticality table: `critical` reviewer count `3-4` → `4` (`docket vote create -n` takes a single int)
+
+### Dimensions Evaluated
+Orchestration & Agent Teams, Spec/Docket Alignment, Coherence, Actionability, Skill Design Quality, Cross-Skill Invocation, Over-Engineering, Rename
+
+### Rename
+No rename — `vote` matches `docket vote` CLI exactly.
+
+## 2026-05-05
+
+### Summary
 Restructured operator-facing `AskUserQuestion` calls (goal-alignment, View Change next-step) to use concrete option arrays where the question is a discrete choice; free-text retained for descriptive bodies (criteria/stakeholders, findings rationale). Net 369→370.
 
 ### Changes

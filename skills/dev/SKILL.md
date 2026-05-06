@@ -9,11 +9,11 @@ effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "Skill", "AskUserQuestion"]
 ---
 
-> **CRITICAL: Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed to do so by the user. This applies to ALL agents spawned by this skill.**
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 ## Argument Handling
 
-The `work` argument is **required**. If absent, abort with: "Usage: `/dev <work>` — describe the work to be done." Otherwise substitute as `{work}` in spawning templates. Pre-flight step 1 handles vagueness via AskUserQuestion.
+The `work` argument is **required**. If absent, abort with: "Usage: `/dev <work>` — describe the work to be done." Otherwise substitute as `{work}` in spawning templates.
 
 ---
 
@@ -294,7 +294,7 @@ Before spawning any agents, create an Agent Team to coordinate:
    Assign the planning task via `TaskUpdate`. The PM can SendMessage to "advisor" for
    architectural clarification during planning.
    **Guard:** Before spawning, run `docket issue list --json`. If issues exist for this work,
-   skip planning, run `docket board --json` to find the last active phase, check `docket issue
+   skip planning, run `docket plan --json` to find the last active phase, check `docket issue
    comment list` for `Discovered:` comments, and resume from the next incomplete phase.
 5. **Receive the phase plan.** Review it for:
    - File collision risks (two issues touching the same files in one phase)
@@ -309,9 +309,8 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 8. **Execute one phase at a time.** Spawn one @senior-engineer teammate per issue in parallel.
    Assign each teammate's task via `TaskUpdate`. **Spawn all in the same turn** to maximize
-   parallelism (limit: 5 per turn, batch if more). Monitor via `TaskList`.
-   **Do NOT shut down @senior-engineer teammates** if a verification phase follows — @sdet
-   may need to SendMessage them about implementation intent.
+   parallelism (limit: 5 per turn, batch if more). Monitor via `TaskList`. Shutdown timing
+   for these teammates is governed by step 9.
 
 9. **Wait for all teammates in the phase to complete** before starting the next phase.
    **Shutdown timing for @senior-engineer teammates:**

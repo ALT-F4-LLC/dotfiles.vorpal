@@ -3,6 +3,38 @@
 ## 2026-05-05
 
 ### Summary
+Phase 2 coherence fix: inlined Argument Handling validation note for parity with evolve-agents.
+
+### Changes
+- Inlined "See Pre-flight for validation" → "Pre-flight step 5 validates the argument matches an existing skill directory" (parity with evolve-agents:25, removes low-value forward-reference)
+
+### Dimensions Evaluated
+Coherence
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
+Trimmed Pre-flight steps 1 and 2 AskUserQuestion verbosity, justified the no-peer-to-peer policy in Phase 1, and converted lifecycle prose to a Phase | Agents | Lifecycle table for parity with evolve-agents. Net 314→295.
+
+### Changes
+- Pre-flight step 1: removed verbatim option-label prose; kept structured-question pattern and the four selectable choices in compressed form
+- Pre-flight step 2: collapsed three-question construction prose; preserved Q1 multiSelect, Q2 dimension focus, Q3 paste-material gate
+- Phase 1 SendMessage triggers: added one-sentence justification for orchestrator-only-relay (independent edit surfaces, Phase 2 consolidates) so future cycles don't strip the rule
+- Lifecycle rules: replaced bulleted prose with Phase | Agents | Lifecycle table for coherence with evolve-agents
+- Rejected: removing "No sub-agents" from Phase 1 template — that line IS the spawning-prompt content reaching teammates; top-of-file CRITICAL block does not auto-propagate
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 Eliminated free-text operator prompts from Pre-flight in favor of structured `AskUserQuestion` calls (Step 1 four explicit options; Step 2 single multi-question call with concrete dimension-aligned options); added operator-prompts blockquote rule near top. Free-text reserved for paste material only. Net 299→314.
 
 ### Changes

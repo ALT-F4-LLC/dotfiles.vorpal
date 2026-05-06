@@ -3,6 +3,36 @@
 ## 2026-05-05
 
 ### Summary
+Phase 2 coherence fix: unified CRITICAL banner format with evolve-* skills — promotes no-sub-agents rule to top-of-file alongside no-commit rule for visibility at first-look location.
+
+### Changes
+- Replaced top-of-file CRITICAL banner with unified two-rule format covering both no-commit and no-sub-agents prohibitions (parity with evolve-agents/evolve-skills line 12)
+
+### Dimensions Evaluated
+Coherence, Orchestration & Agent Teams
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
+Coherence pass: aligned phase-verification on canonical `docket plan` (matches CLI help "execution plan with phased grouping" and step 10 usage) instead of stale `docket board`. Trimmed two micro-redundancies in Argument Handling and step 8 shutdown caveat. Net 401→400.
+
+### Changes
+- Replaced `docket board --json` with `docket plan --json` in Planning Phase Guard for consistency with step 10 and CLI audit
+- Trimmed downstream-step pointer from Argument Handling (pre-flight is read regardless)
+- Removed step 8 trailing shutdown caveat — step 9 owns the full timing matrix
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-05-05
+
+### Summary
 AskUserQuestion adoption pass — converted four free-text operator decision points (existing-issues handling, re-plan on divergence, review-fix and bug-fix loop escalations) to structured-options prompts; goal-verification now uses pre-generated candidate options derived from `{work}` with free-text fallback. Net 395→401.
 
 ### Changes

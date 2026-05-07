@@ -1,4 +1,23 @@
-# Changelog: create-prd
+# Changelog: prd
+
+## 2026-05-06
+
+### Summary
+**Rename: `create-prd` → `prd`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-prd` → `/prd`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/create-prd/` → `skills/prd/`
+- Frontmatter `name: create-prd` → `name: prd`
+- Cross-references updated in: sibling skills (`adr`, `tdd`, `ux-spec`, `specs`), `agents/project-manager.md`, `agents/staff-engineer.md`, `agents/team-lead.md`, `README.md`
+- COUPLING comment phrasing changed from "create-* family" → "doc-authoring family"
+- Reserved-name error messages updated to reference the `specs` skill (no longer `create-specs`)
+- Changelog file moved: `docs/changelog/skills/create-prd.md` → `prd.md`; H1 updated; historical entries left intact
+
+### Dimensions Evaluated
+Rename, Coherence
+
+### Rename
+Renamed `create-prd` → `prd` per operator request.
 
 ## 2026-05-06
 

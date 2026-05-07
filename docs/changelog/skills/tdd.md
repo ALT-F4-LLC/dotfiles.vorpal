@@ -1,4 +1,22 @@
-# Changelog: create-tdd
+# Changelog: tdd
+
+## 2026-05-06
+
+### Summary
+**Rename: `create-tdd` → `tdd`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-tdd` → `/tdd`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/create-tdd/` → `skills/tdd/`
+- Frontmatter `name: create-tdd` → `name: tdd`
+- Cross-references updated in: sibling skills (`prd`, `adr`, `ux-spec`, `specs`), `agents/staff-engineer.md`, `agents/team-lead.md`, `README.md`
+- COUPLING comment phrasing changed from "create-* family" → "doc-authoring family"
+- Changelog file moved: `docs/changelog/skills/create-tdd.md` → `tdd.md`; H1 updated; historical entries left intact
+
+### Dimensions Evaluated
+Rename, Coherence
+
+### Rename
+Renamed `create-tdd` → `tdd` per operator request.
 
 ## 2026-05-06
 

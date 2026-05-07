@@ -9,7 +9,7 @@ effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/create-vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 # Evolve Skills
 
@@ -231,7 +231,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Do not default to appro
 
 ## Rules
 - **Read-only** — analyze and recommend only; orchestrator applies all edits.
-- **No sub-agents**: Do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 - **No peer-to-peer SendMessage** — orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name), (b) scope expansion beyond target, or (c) blocker.
 
@@ -252,7 +252,7 @@ Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagen
 
 Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
-**No sub-agents** — do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">

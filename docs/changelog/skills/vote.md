@@ -1,4 +1,24 @@
-# Changelog: create-vote
+# Changelog: vote
+
+## 2026-05-06
+
+### Summary
+**Rename: `create-vote` → `vote`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-vote` → `/vote`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/create-vote/` → `skills/vote/`
+- Frontmatter `name: create-vote` → `name: vote`
+- Slash command `/create-vote` → `/vote` throughout (banner, argument handling, execution mode detection)
+- Delegation protocol: `skill: "create-vote"` → `skill: "vote"`
+- Cross-references updated in: all 6 agent files, `.claude/skills/evolve-skills/`, `.claude/skills/evolve-agents/`, `docs/spec/review-strategy.md`, `README.md`
+- Changelog file moved: `docs/changelog/skills/create-vote.md` → `vote.md`; H1 updated; historical entries left intact (rule: never modify existing changelog entries)
+- Note: `docket vote` CLI commands and `vote-id` placeholder remain unchanged (CLI subcommand of docket; protocol-internal id)
+
+### Dimensions Evaluated
+Rename, Coherence
+
+### Rename
+Renamed `create-vote` → `vote` per operator request.
 
 ## 2026-05-06
 

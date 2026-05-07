@@ -49,21 +49,21 @@ Each tool configuration is defined as a builder struct in Rust:
 
 ## Agent Team
 
-The project deploys a five-agent Claude Code development team to `~/.claude/agents/`:
+The project deploys a six-agent Claude Code development team to `~/.claude/agents/`:
 
 | Agent | Role |
 |-------|------|
+| **Team Lead** | Orchestrates the other five agents through plan/implement/review/verify cycles |
 | **Staff Engineer** | Architecture, technical design documents, code review |
 | **Senior Engineer** | Implementation, code quality, debugging |
 | **Project Manager** | Issue planning, task breakdown, dependency management |
 | **SDET** | Test infrastructure, automation, quality engineering, verification |
 | **UX Designer** | User experience design specs |
 
-Four skills orchestrate the team:
+Skills support the team:
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
-| **dev** | `skills/dev/` | Coordinates all five agents for planning and executing development work |
 | **create-specs** | `skills/create-specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
 | **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |

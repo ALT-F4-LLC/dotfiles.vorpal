@@ -18,6 +18,7 @@ effort: max
 permissionMode: dontAsk
 skills:
   - vote
+  - create-prd
 tools: Read, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -381,6 +382,19 @@ vote record via `docket vote create`, then delegate to team-lead:
 `SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "vote_id": "<id>", "rationale": "<context>", "files_changed": "<paths>"})`
 
 **Standalone mode:** `Skill(vote, "<rationale>")` directly — include exploration findings, tradeoffs, and file paths for reviewers.
+
+---
+
+## Authoring Feature-Level PRDs
+
+When the planned work warrants a feature-level Product Requirements Document (e.g.,
+`docs/spec/auth-token-rotation.md`) before decomposition, the PM is the primary author.
+To author a feature-level PRD, invoke `Skill(create-prd, "<topic>")`. The format authority
+is `skills/create-prd/SKILL.md` — do not duplicate format guidance here.
+
+Project-wide engineering specs (the 7 reserved names: architecture, security, operations,
+performance, code-quality, review-strategy, testing) remain owned by the `specs` skill —
+do NOT use `create-prd` for those.
 
 ---
 

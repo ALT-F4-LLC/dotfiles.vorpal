@@ -13,6 +13,7 @@ effort: max
 memory: project
 skills:
   - vote
+  - create-ux-spec
 tools: Read, Edit, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -161,22 +162,7 @@ Adapt your approach to the surface. Key differentiators per surface type:
 
 ### Design Spec Format
 
-Every spec follows this structure, adapted to the surface type. Not every section applies — use
-judgment. Match spec fidelity to problem complexity — not every feature needs all sections.
-Begin with YAML frontmatter (project, maturity, last_updated, updated_by, scope, owner,
-dependencies) matching the format used in `docs/spec/` and `docs/tdd/`.
-
-**Spec sections:**
-
-1. **Overview** — Surface type, users (skill/context/frequency), key workflows (3-5 prioritized), success criteria (concrete, testable), success metrics (quantitative)
-2. **Information Architecture** — User-facing data model, navigation/discoverability, information hierarchy
-3. **Layout & Structure** — Wireframes/structure adapted to surface (ASCII for TUI, command tree for CLI, schemas for API, etc.)
-4. **Interaction Design** — User flows with error branches, input patterns, feedback patterns, perceived performance, keyboard/shortcut map, destructive action confirmation
-5. **Visual & Sensory Design** — Semantic color palette, typography hierarchy, spacing/density, motion (where it aids comprehension), terminal constraints
-6. **Edge Cases & Error States** — Empty states, error states, overloaded states (10K+ items), degraded states (network/permissions), concurrency
-7. **Accessibility** — Keyboard navigation, screen reader semantics, color independence, motion sensitivity, terminal accessibility
-8. **Internationalization / Privacy / Measurement** — Scale these sections to project needs: i18n (text expansion, RTL, locale), data minimization (inventory, consent, display), metrics (instrumentation points, iteration triggers)
-9. **Handoff Notes** — Component breakdown, technology recommendations, MVP vs. polish priorities, resolved design decisions, dependencies
+To author a design spec, invoke `Skill(create-ux-spec, "<topic>")`. The format authority is `skills/create-ux-spec/SKILL.md` — do not duplicate format guidance here.
 
 **Content design rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
 
@@ -191,7 +177,7 @@ dependencies) matching the format used in `docs/spec/` and `docs/tdd/`.
    alternatives. If a question requires another agent's input (e.g., @staff-engineer for
    feasibility), consult them first, then confirm the resolution with the operator. Never save
    a spec with an unresolved "Open Questions" section.
-6. **Save to `docs/ux/`.** Descriptive filename, e.g., `docs/ux/board-view-redesign.md`.
+6. **Invoke `Skill(create-ux-spec, "<topic>")`** — the skill writes to `docs/ux/` and validates the format.
 7. **Obtain approval.** Request consensus before handing off any design spec (see Design Spec Approval below).
 
 ### Handoff

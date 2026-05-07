@@ -1,5 +1,24 @@
 # Changelog: evolve-agents
 
+## 2026-05-06
+
+### Summary
+Six parity/coherence fixes against sister evolve-skills: structured AskUserQuestion options for Pre-flight goal alignment, operator-prompts discipline blockquote, consolidated Team Setup & Agent Lifecycle, dropped duplicative Phase 1 line, fixed stale 10-min stall reference, trimmed cross-communication log from wrap-up. Net 273→266.
+
+### Changes
+- Pre-flight step 1: structured AskUserQuestion options (parity with evolve-skills)
+- Added operator-prompts discipline blockquote to Pre-flight
+- Consolidated separate "Team Setup" H3 into "Team Setup & Agent Lifecycle" header
+- Removed duplicative Phase 1 line referencing dead "ultrathink" guidance
+- Rule 3: removed stale ">10min" reference contradicting Monitor adoption
+- Wrap-up step 3: replaced "cross-communication log" with "cross-communication events"
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

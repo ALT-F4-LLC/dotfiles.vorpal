@@ -9,7 +9,7 @@ effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/create-vote/` Delegation Protocol).
 
 # Evolve Skills
 
@@ -44,7 +44,7 @@ Before spawning any agents:
    a consistent date for changelog entries.
 4. **Inventory skill files and sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`.
    This both lists discoverable files and records line counts. Mode per file is **TRIM**
-   (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500:
+   (>500 lines: consolidation primary, removals must exceed additions) or **BALANCED** (≤500 lines:
    additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
    either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user and abort.
@@ -70,7 +70,7 @@ Before spawning any agents:
 Every @staff-engineer reviewer evaluates against ALL 8 dimensions. **Dimensions 1, 3, and 5
 propose additions — all must pass the Content Gate.**
 
-1. **Skill Design Quality** — Frontmatter (including `user-invocable`, `effort`, `argument-hint`), argument handling, `disable-model-invocation`, structure-brevity balance.
+1. **Skill Design Quality** — Frontmatter (`effort`, `argument-hint`, `allowed-tools`), argument handling, structure-brevity balance.
 2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
 4. **Over-Engineering (HIGHEST PRIORITY)** — Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
@@ -165,18 +165,11 @@ After Phase 2: shut down coherence-reviewer and `TeamDelete` per lifecycle rules
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
 
-MISSION: Research Claude Code documentation for capabilities relevant to SKILL.md definitions.
-Report NEW or CHANGED features that affect how skill files are written.
+MISSION: Research Claude Code docs for NEW or CHANGED features affecting SKILL.md writing. Report which pages were visited vs. skipped.
 
-FOCUS AREAS: Skills (frontmatter, substitutions, discovery, subagents), Agent Teams (lifecycle,
-coordination, shutdown), Hooks (skill-scoped hooks, event types), Changelog (recent releases,
-breaking changes).
+FOCUS AREAS: Skills (frontmatter, substitutions, discovery, subagents), Agent Teams (lifecycle, coordination, shutdown), Hooks (skill-scoped hooks, event types), Changelog (recent releases, breaking changes).
 
-INSTRUCTIONS: Focus on NEW or CHANGED features that affect SKILL.md writing. Report which
-pages were visited vs. skipped.
-
-OUTPUT FORMAT: `- **<capability/change>**: <skill definition relevance>` grouped under:
-New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
+OUTPUT: `- **<capability/change>**: <skill definition relevance>` under New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
@@ -227,7 +220,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Do not default to appro
 
 ## Requirements
 - **Read-only** — analyze and recommend only.
-- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+- **No sub-agents**: Do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 - Minimize context: first 80 lines of other skills, relevant specs only.
 - **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
   patterns affecting all targets, or scope expansion beyond target skill.
@@ -249,7 +242,7 @@ Agent(team_name="evolve-skills-{today_date}", name="coherence-reviewer", subagen
 
 Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
-**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+**No sub-agents** — do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">

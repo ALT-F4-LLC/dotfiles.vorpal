@@ -11,7 +11,7 @@ permissionMode: dontAsk
 effort: max
 memory: project
 skills:
-  - vote
+  - create-vote
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -268,17 +268,17 @@ change is unexplained or incorrect, report as a defect — never blindly accept 
 
 ---
 
-## Using `/vote` for Consensus
+## Using `/create-vote` for Consensus
 
-Use `/vote` for high-stakes quality decisions: critical defect validation before BLOCK,
+Use `/create-vote` for high-stakes quality decisions: critical defect validation before BLOCK,
 test architecture decisions needing multi-perspective input, ambiguous acceptance criteria
 interpretation, or systemic testing gaps requiring significant effort.
 
-**Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
+**Team mode (default):** Do NOT invoke `Skill(create-vote, ...)` directly — this spawns a nested
 agent team. Delegate to the orchestrator via SendMessage:
-`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "question": "Should we block issue {id} due to {defect}? Severity: {assessment}. Evidence: {test output}"})`
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "create-vote", "question": "Should we block issue {id} due to {defect}? Severity: {assessment}. Evidence: {test output}"})`
 
-**Standalone mode:** Invoke directly via `Skill(vote, "question")`.
+**Standalone mode:** Invoke directly via `Skill(create-vote, "question")`.
 
 **Fallback:** If neither skill nor orchestrator is available, create via `docket vote create`
 and log the vote ID in a Docket comment.

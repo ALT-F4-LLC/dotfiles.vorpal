@@ -71,7 +71,7 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
   `Skill(create-prd, "<topic>")`.
 - UX / design specs: use `Skill(create-ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `specs` skill.
+  code-quality, review-strategy, testing): owned by the `create-specs` skill.
 
 ## Pre-flight
 
@@ -81,11 +81,11 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Check collision**: After step 5 below resolves `{output_path}`, run `Glob
-   docs/tdd/adr/{NNNN}-{slug}.md` (using the resolved `{NNNN}`). Same-slug collisions
-   at the chosen number indicate a malformed-existing condition (handled in step 5)
-   or an in-flight race (handled in Save & Return). If a file already exists at the
-   exact resolved `{output_path}`, run the COLLISION_DIALOG below.
+4. **Collision handling**: ADR numbering (step 5 below) picks the next free
+   `{NNNN}`, so a same-`{output_path}` collision should be impossible at Pre-flight
+   time. Same-slug or same-number races are detected post-write in Save & Return.
+   The COLLISION_DIALOG below remains the canonical handler if a pre-Write Glob ever
+   does return an existing file at `{output_path}`.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -125,13 +125,13 @@ malformed frontmatter.
              Found malformed: {malformed}.
       ```
 
-   4. If there are no matches and no malformed entries, `next_num = 1`. Otherwise
-      `next_num = max(matches) + 1` where `max` is taken over the captured numeric
-      group as integers.
-   5. Format as `f"{next_num:04d}"` (4-digit zero-padded — see TDD §8 Q3).
+   4. If there are no matching files, `next_num = 1`. Otherwise `next_num = max(matches) + 1`,
+      where `max` is taken over the captured numeric group as integers.
+   5. Format as `f"{next_num:04d}"` (4-digit zero-padded so chronological sort matches numeric sort up to ADR 9999).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
-   7. Run this Glob RIGHT BEFORE the Write in Save & Return — do not interleave
-      long-running operations between numbering and Write.
+   7. The numbering Glob is re-run inside Save & Return immediately before Write
+      (see Save & Return step 1) — Authoring Procedure can take long enough for a
+      concurrent author to claim the chosen `{NNNN}`.
 
 ## Authoring Procedure
 
@@ -250,8 +250,9 @@ and re-invokes `Skill(create-adr, "<topic>")`.
 After Validation Before Save passes:
 
 1. `Bash mkdir -p {output_dir}` (idempotent).
-2. `Write {output_path}` with the drafted content.
-3. Emit a single confirmation line:
+2. **Re-run Pre-flight step 5** (numbering Glob + `next_num` + `{output_path}` resolution) so the chosen `{NNNN}` reflects the latest filesystem state. If `{NNNN}` changed, update the frontmatter / body references before Write.
+3. `Write {output_path}` with the drafted content.
+4. Emit a single confirmation line:
 
    ```
    Created {output_path}
@@ -263,7 +264,7 @@ The calling agent owns next steps (vote requests, decomposition, peer notificati
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.
 
-On operator Cancel during the collision dialog or missing-parent prompt: emit
+On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 

@@ -12,7 +12,7 @@ permissionMode: dontAsk
 effort: max
 memory: project
 skills:
-  - vote
+  - create-vote
   - create-ux-spec
 tools: Read, Edit, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
@@ -253,8 +253,8 @@ Route by verb: "design/spec out" → Responsibility 1; "review/feedback" → Res
 
 Every design spec requires consensus before handoff — extra scrutiny when it sets cross-team precedent, conflicts with a TDD, or spans 3+ surfaces.
 
-- **Standalone mode**: Invoke `/vote` via Skill with artifact path, rationale, alternatives, and the tradeoff.
-- **Team mode**: Do NOT invoke `/vote` (nests a team). SendMessage team-lead with `type: "delegation_request"`, `skill: "vote"`, artifact path, and initial assessment — the orchestrator owns it.
+- **Standalone mode**: Invoke `/create-vote` via Skill with artifact path, rationale, alternatives, and the tradeoff.
+- **Team mode**: Do NOT invoke `/create-vote` (nests a team). SendMessage team-lead with `type: "delegation_request"`, `skill: "create-vote"`, artifact path, and initial assessment — the orchestrator owns it.
 
 Log vote ID and outcome as a Docket comment on the tracked issue.
 

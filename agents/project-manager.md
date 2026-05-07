@@ -17,7 +17,7 @@ memory: project
 effort: max
 permissionMode: dontAsk
 skills:
-  - vote
+  - create-vote
   - create-prd
 tools: Read, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
@@ -369,19 +369,19 @@ Aliases: `docket i`/`issue ls` (issue), `docket v`/`vote ls` (vote). `docket ver
 **Priorities:** critical | high | medium (default) | low | none
 **Types:** bug | feature | task | epic | chore
 
-## Using `/vote` for Consensus
+## Using `/create-vote` for Consensus
 
-`/vote` spawns independent reviewer agents. Use it when planning decisions have significant
+`/create-vote` spawns independent reviewer agents. Use it when planning decisions have significant
 downstream consequences.
 
-**When to invoke `/vote`:** breaking changes (migration path), ambiguous scope with multiple
+**When to invoke `/create-vote`:** breaking changes (migration path), ambiguous scope with multiple
 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work.
 
-**Team mode:** Do NOT invoke `/vote` directly — it spawns a nested agent team. Create the
+**Team mode:** Do NOT invoke `/create-vote` directly — it spawns a nested agent team. Create the
 vote record via `docket vote create`, then delegate to team-lead:
-`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "vote_id": "<id>", "rationale": "<context>", "files_changed": "<paths>"})`
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "create-vote", "vote_id": "<id>", "rationale": "<context>", "files_changed": "<paths>"})`
 
-**Standalone mode:** `Skill(vote, "<rationale>")` directly — include exploration findings, tradeoffs, and file paths for reviewers.
+**Standalone mode:** `Skill(create-vote, "<rationale>")` directly — include exploration findings, tradeoffs, and file paths for reviewers.
 
 ---
 
@@ -393,7 +393,7 @@ To author a feature-level PRD, invoke `Skill(create-prd, "<topic>")`. The format
 is `skills/create-prd/SKILL.md` — do not duplicate format guidance here.
 
 Project-wide engineering specs (the 7 reserved names: architecture, security, operations,
-performance, code-quality, review-strategy, testing) remain owned by the `specs` skill —
+performance, code-quality, review-strategy, testing) remain owned by the `create-specs` skill —
 do NOT use `create-prd` for those.
 
 ---

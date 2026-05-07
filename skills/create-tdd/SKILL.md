@@ -68,7 +68,7 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
   `Skill(create-prd, "<topic>")`.
 - UX / design specs: use `Skill(create-ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `specs` skill.
+  code-quality, review-strategy, testing): owned by the `create-specs` skill.
 
 ## Pre-flight
 
@@ -154,9 +154,9 @@ malformed frontmatter.
 4. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
    block where the design involves architecture, sequence, state, or data
    relationships. For pure-policy TDDs (e.g., "we will use semantic versioning")
-   prose alone is acceptable; explicitly note the override here in the Authoring
-   Procedure of the drafted document (one line in §4 or the Architecture section
-   stating "Pure-policy TDD — no Mermaid required.").
+   prose alone is acceptable; record the override as a single line inside the
+   drafted Architecture & System Design section: "Pure-policy TDD — no Mermaid
+   required."
 5. **Alternatives Considered**: at least two alternatives, each with shape,
    strengths, weaknesses, and a verdict. The chosen alternative should match the
    Architecture & System Design section.
@@ -164,12 +164,9 @@ malformed frontmatter.
    flag any open questions that must be resolved before vote.
 7. **Implementation Phases**: split the work into phases with file scoping and
    per-phase acceptance. The planner consumes this section directly.
-8. **Self-check** before proceeding to Validation Before Save:
-   - All frontmatter fields populated (no `TODO`, no empty strings).
-   - All Required Sections present, in order.
-   - Mermaid block(s) present where mandated, OR explicit override note recorded.
-   - At least two Alternatives Considered.
-   - No placeholder text (`{slug}`, `{topic}`, `TBD`) leaked into the body.
+8. **Self-check**: confirm at least two Alternatives Considered are drafted before
+   proceeding. The remaining checks (frontmatter, section order, Mermaid, placeholder
+   scan) are enforced by Validation Before Save below.
 
 ## Output Contract
 
@@ -193,7 +190,7 @@ Field rules:
 
 - `project` = `basename $(git rev-parse --show-toplevel)`.
 - `maturity` is the doc-class ladder; `status` is the workflow ladder. Both fields
-  are required for TDDs (see TDD §4.3).
+  are required for TDDs.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
@@ -297,9 +294,6 @@ On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: 
 On operator Cancel during the collision dialog or missing-parent prompt: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
-
-For this skill, `{output_dir}` is `docs/tdd/` and `{output_path}` is
-`docs/tdd/{slug}.md`.
 
 ## Failure Modes
 

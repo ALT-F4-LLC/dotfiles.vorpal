@@ -14,7 +14,7 @@ skills:
   - create-tdd
   - create-adr
   - create-prd
-  - vote
+  - create-vote
 tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -183,7 +183,7 @@ You own `docs/spec/` — living documentation describing how the project actuall
 
 **Create on-demand only** — when explicitly asked. **Update proactively** after any work (TDD, review, design review) reveals specs are out of date — but only the specific files affected. Watch for spec drift (codebase diverged from docs) and correct it.
 
-**Workflow:** Explore the codebase thoroughly, document what actually exists (be honest about gaps), save to `docs/spec/`. The spec frontmatter contract lives in `skills/specs/SKILL.md` — do not duplicate format guidance here. Always update `last_updated` and `updated_by` on every edit.
+**Workflow:** Explore the codebase thoroughly, document what actually exists (be honest about gaps), save to `docs/spec/`. The spec frontmatter contract lives in `skills/create-specs/SKILL.md` — do not duplicate format guidance here. Always update `last_updated` and `updated_by` on every edit.
 
 **PRD authoring (rare).** Feature-level PRDs are @project-manager's. You are a secondary PRD author only for project-spec-tier or cross-cutting specs when no PM is in the loop. To author a PRD, invoke `Skill(create-prd, "<topic>")`. The format authority is `skills/create-prd/SKILL.md` — do not duplicate format guidance here.
 
@@ -239,8 +239,8 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 **You MUST obtain vote consensus before approving any TDD.** No TDD is handed off to
 @project-manager for decomposition without vote approval.
 
-- **Team mode** (the common case): Do NOT invoke `/vote` directly — it spawns a nested team. Delegate via SendMessage to team-lead with `{type: "delegation_request", skill: "vote", artifact: "docs/tdd/{file}.md", summary, initial_assessment, key_concern}`.
-- **Standalone mode**: Invoke `/vote` directly via `Skill(vote, ...)`.
+- **Team mode** (the common case): Do NOT invoke `/create-vote` directly — it spawns a nested team. Delegate via SendMessage to team-lead with `{type: "delegation_request", skill: "create-vote", artifact: "docs/tdd/{file}.md", summary, initial_assessment, key_concern}`.
+- **Standalone mode**: Invoke `/create-vote` directly via `Skill(create-vote, ...)`.
 
 **Also use vote for:** advisory with two viable approaches, reviews touching high-risk areas (auth, crypto, security boundaries), or design reviews where your assessment diverges sharply from the proposer's.
 

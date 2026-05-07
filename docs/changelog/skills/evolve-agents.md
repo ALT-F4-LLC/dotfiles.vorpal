@@ -3,6 +3,39 @@
 ## 2026-05-06
 
 ### Summary
+Phase 2 coherence: aligned operator-prompt blockquote phrasing with evolve-skills.
+
+### Changes
+- Pre-flight operator-prompts blockquote: now matches evolve-skills wording ("logs, reproductions, large diffs, or verbatim quotes" replaces "logs, repros, large diffs"). The two skills share the same operator-prompt convention; aligning the phrasing prevents future drift.
+
+### Dimensions Evaluated
+Coherence (cross-skill convention alignment).
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Phase 1 trim/coherence pass with sister evolve-skills: pruned redundant description tail, collapsed restated Phase 2 paragraph, merged Rule 5 into Rule 3 (Crash & Stall Recovery section already covers compaction), trimmed orchestrator-role triple-redundancy, added `reason: "<phase> complete"` to shutdown_protocol, aligned Phase 0 capture phrasing.
+
+### Changes
+- Description: removed redundant "Spawns agents to review themselves, enforces Content Gate and 500-line budget" tail. Reason: covered by body.
+- Phase 2: collapsed restated template body — lead-in "follows the Phase 2 spawning template" is sufficient.
+- Rules: merged Rule 5 (compaction recovery pointer) into Rule 3; Crash & Stall Recovery already covers compaction.
+- Orchestrator role: removed duplicate "teammates are read-only / orchestrator edits" — Rule 2 + top-of-file CRITICAL block already cover.
+- Shutdown protocol: added `reason: "<phase> complete"` parameter (parity with evolve-skills).
+- Phase 0 capture: aligned phrasing with evolve-skills ("captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution").
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename.
+
+### Rename
+No rename. Stable name parallel to evolve-skills.
+
+## 2026-05-06
+
+### Summary
 Six parity/coherence fixes against sister evolve-skills: structured AskUserQuestion options for Pre-flight goal alignment, operator-prompts discipline blockquote, consolidated Team Setup & Agent Lifecycle, dropped duplicative Phase 1 line, fixed stale 10-min stall reference, trimmed cross-communication log from wrap-up. Net 273→266.
 
 ### Changes

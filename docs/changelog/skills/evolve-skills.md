@@ -3,6 +3,29 @@
 ## 2026-05-06
 
 ### Summary
+Phase 1 self-review aligned with sister evolve-agents: collapsed Pre-flight step 2 to single multiSelect, extracted Rule 10 (Fail loud) + Rule 12 (compaction) into a dedicated "Crash & Stall Recovery" section after the lifecycle table, trimmed Phase 1 post-review loop, bulleted SendMessage triggers, removed non-behavioral Rule 7 ("Build on strengths"), tightened Phase 0 docs-researcher MISSION wording, dropped redundant Phase 2 task 4 enumeration.
+
+### Changes
+- Pre-flight step 2: 3 questions → 1 multiSelect with `Other` follow-up (parity with evolve-agents)
+- Pre-flight step 1: trimmed verbose option-list parenthetical
+- Extracted Rules 10/12 into a dedicated `### Crash & Stall Recovery` section after Team Setup & Agent Lifecycle — improves mid-incident scannability and matches evolve-agents structure
+- Phase 1 post-review loop: 5 prose steps + separate shutdown paragraph → 6 numbered bullets including "Self-correct" step
+- Phase 1 SendMessage triggers paragraph → bulleted triggers + 1-line policy
+- Phase 1 spawning template: renamed "Requirements" → "Rules"; added "No peer-to-peer SendMessage" bullet for explicitness
+- Phase 0 docs-researcher MISSION: aligned wording with evolve-agents
+- Removed Rule 7 ("Build on strengths — improve, don't rewrite") — fails Content Gate Concrete check
+- Phase 2 Task 4: removed enumeration (Phase 1 Dimension 5 already covers triggers)
+- Rules section: renumbered after consolidation (10 rules, was 12)
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
 Removed unverified `disable-model-invocation` from Dimension 1, trimmed Phase 0 docs-researcher template asymmetry vs. docket-auditor sibling, tightened mode threshold wording. Net 295→288.
 
 ### Changes

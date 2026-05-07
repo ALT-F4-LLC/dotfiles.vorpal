@@ -194,15 +194,7 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-PRDs **always require** at least one Mermaid block — a user journey, state
-diagram, or component map. Acceptable block fences are ` ```mermaid ` (lowercase,
-no space). Unlike TDDs, PRDs have no pure-policy override: a feature without any
-visual-able relationships rarely warrants a feature-level PRD. If the PRD truly
-has no relationship/flow surface, the calling agent should reconsider whether a
-PRD is the right doc class.
-
-The skill's Validation Before Save step rejects PRDs without at least one
-` ```mermaid ` fenced block.
+PRDs **always require** at least one Mermaid block — a user journey, state diagram, or component map (see Authoring Procedure §5 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). Unlike TDDs, there is no pure-policy override; Validation Before Save rejects PRDs without a Mermaid block.
 
 ## Validation Before Save
 
@@ -253,9 +245,6 @@ On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
-For this skill, `{output_dir}` is `docs/spec/` and `{output_path}` is
-`docs/spec/{slug}.md`.
-
 ## Failure Modes
 
 ### Reserved-Name List
@@ -263,7 +252,7 @@ For this skill, `{output_dir}` is `docs/spec/` and `{output_path}` is
 The 7 names below are owned by the `create-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: reserved-name list mirrors skills/create-specs/SKILL.md Spec File Reference. Update both in lockstep. -->
+<!-- COUPLING: the 7 reserved names are also HARD-REFUSED by skills/create-tdd, create-adr, and create-ux-spec, and listed in skills/create-specs/SKILL.md Spec File Reference. Update all 5 in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

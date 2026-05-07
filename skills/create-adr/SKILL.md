@@ -63,6 +63,7 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the create-* family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/create-prd, create-tdd, create-ux-spec, and create-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/adr/`.
 - Full system designs spanning multiple components or phases: use
@@ -81,11 +82,7 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: ADR numbering (step 5 below) picks the next free
-   `{NNNN}`, so a same-`{output_path}` collision should be impossible at Pre-flight
-   time. Same-slug or same-number races are detected post-write in Save & Return.
-   The COLLISION_DIALOG below remains the canonical handler if a pre-Write Glob ever
-   does return an existing file at `{output_path}`.
+4. **Collision handling**: numbering (step 5) picks the next free `{NNNN}`, so a same-path collision is normally impossible. The COLLISION_DIALOG below handles the residual race case if a pre-Write Glob ever returns an existing file.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -127,7 +124,7 @@ malformed frontmatter.
 
    4. If there are no matching files, `next_num = 1`. Otherwise `next_num = max(matches) + 1`,
       where `max` is taken over the captured numeric group as integers.
-   5. Format as `f"{next_num:04d}"` (4-digit zero-padded so chronological sort matches numeric sort up to ADR 9999).
+   5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
    7. The numbering Glob is re-run inside Save & Return immediately before Write
       (see Save & Return step 1) — Authoring Procedure can take long enough for a
@@ -155,14 +152,6 @@ malformed frontmatter.
 6. **Consequences**: enumerate positive, negative, and neutral consequences.
    Future readers consult this section first when deciding whether the ADR still
    applies.
-7. **Self-check** before proceeding to Validation Before Save:
-   - All frontmatter fields populated (no `TODO`, no empty strings).
-   - All Required Sections present, in order.
-   - Mermaid block present where mandated, OR explicit pure-policy override note
-     recorded.
-   - At least one alternative considered.
-   - No placeholder text (`{slug}`, `{topic}`, `{NNNN}`, `TBD`) leaked into the
-     body.
 
 ## Output Contract
 
@@ -186,9 +175,6 @@ Field rules:
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
   `superseded` is set when a later ADR replaces this one.
 
-ADRs intentionally omit `maturity`, `scope`, `owner`, and `dependencies` to keep
-the file lean (see TDD §4.3 and `agents/staff-engineer.md` Responsibility 3).
-
 ### Required Sections
 
 The ADR body MUST contain these top-level sections, in this order. Each is a `##`
@@ -206,15 +192,7 @@ heading in the drafted document.
 
 ### Mermaid Mandate
 
-Mermaid is a **judgment call** for ADRs. Decisions about component relationships,
-state transitions, sequence flows, or data shapes MUST include a Mermaid block —
-diagrams disambiguate the decision better than prose. Decisions about pure policy
-("use SemVer", "license under Apache 2.0", "team will follow this naming
-convention") may be prose-only.
-
-If pure-policy, record an explicit one-line override note in the Decision section:
-"Pure-policy ADR — no Mermaid required." Validation Before Save accepts the ADR
-without a Mermaid block when this note is present.
+Mermaid is a judgment call for ADRs (see Authoring Procedure step 4 for the rule). Validation Before Save accepts the ADR without a Mermaid block only when the pure-policy override note ("Pure-policy ADR — no Mermaid required.") is present in the Decision section.
 
 ## Validation Before Save
 
@@ -234,15 +212,11 @@ Before invoking `Write`, verify in the calling agent's context:
    `{project_name}`, `{NNNN}`, `TBD`, or `TODO` text outside of code-fenced
    examples.
 
-If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
-skill's tools):
+If any check fails, ABORT with:
 
 ```
 Error: validation failed: {field/section} — {detail}.
 ```
-
-The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(create-adr, "<topic>")`.
 
 ## Save & Return
 
@@ -298,8 +272,3 @@ This catches different-slug concurrent races but NOT same-slug concurrent races
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
 | Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |
 
-**Race-detection honesty.** ADR numbering is best-effort. The skill detects
-different-slug concurrent races via a post-write Glob check. Same-slug concurrent
-races (both invocations producing `(N+1)-{slug}.md`) are NOT detected — the later
-write silently replaces the earlier. If the operator suspects a same-slug race,
-they must manually inspect git diff after invocation.

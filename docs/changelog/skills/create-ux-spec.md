@@ -3,6 +3,38 @@
 ## 2026-05-06
 
 ### Summary
+Phase 2 coherence: added create-* family COUPLING comment for sibling-asymmetry prevention.
+
+### Changes
+- Added COUPLING comment to "When NOT to Use" section listing the 4 sibling create-* skills (mirroring create-prd's RESERVED-NAMES marker) — prevents asymmetric drift when adding/removing siblings.
+
+### Dimensions Evaluated
+Coherence (cross-skill family symmetry).
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Phase 1 over-engineering trim: removed five duplicated rules — Authoring self-check (mirrored Validation), Pre-flight prior-art scan (overlapped Authoring step 1), trailing path restatement, two redundant Failure Modes rows, and the third repetition of Mermaid Mandate. Net 298→282.
+
+### Changes
+- Authoring step 8 self-check removed — duplicated Validation Before Save verbatim
+- Pre-flight step 5 prior-art scan removed — Authoring step 1 already runs a broader Grep over docs/
+- Removed trailing `{output_dir}` / `{output_path}` restatement after SAVE_AND_RETURN block — Pre-flight step 2 establishes the path
+- Failure Modes table: collapsed three rows (status-field, Mermaid-missing, generic validation) into one row referencing common defects
+- Validation step 5: removed third repetition of "Mermaid Mandate is mandatory; there is no override"
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Actionability, Completeness, Orchestration.
+
+### Rename
+No rename. Family-aligned with create-tdd/create-prd/create-adr.
+
+## 2026-05-06
+
+### Summary
 Phase 2 coherence: removed dead "missing-parent prompt" phrase from SAVE_AND_RETURN. create-ux-spec runs only an informational prior-art scan; no parent prompt.
 
 ### Changes

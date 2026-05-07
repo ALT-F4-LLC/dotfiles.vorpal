@@ -3,6 +3,21 @@
 ## 2026-05-06
 
 ### Summary
+Phase 1 over-engineering trim: dropped half-finished verification spot-check (no defined remediation arm) and trailing git-diff reminder already covered by the CRITICAL banner. Net 168→161.
+
+### Changes
+- Verification: removed Step 3 "Spot-check codebase reality" sub-step. Reason: no defined failure response made it half-finished, and the spawning template's honest-mentor directive already enforces non-aspirational documentation.
+- Wrap-up: removed step 4 git-diff reminder. Reason: top-of-file CRITICAL banner already states the no-commit rule; git-diff is operator general knowledge.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename. Already aligned with create-* family per prior 2026-05-06 entry.
+
+## 2026-05-06
+
+### Summary
 **Rename: `specs` → `create-specs`** to align with the create-* family. Directory moved, frontmatter `name:` updated, slash command `/specs` → `/create-specs`, all cross-references updated.
 
 ### Changes

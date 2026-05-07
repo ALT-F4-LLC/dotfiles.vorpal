@@ -3,6 +3,26 @@
 ## 2026-05-06
 
 ### Summary
+Phase 1 over-engineering trim: removed 5 boilerplate "cannot spawn sub-agents" repetitions in team table (banner already covers), compressed verbose Pre-flight step 1, collapsed Orchestration Patterns numbered restatements into header+diagram, tightened Team Setup and shutdown-timing prose, removed non-behavioral simplification-pass bullet. Added "no conversation history inherited" anchor to @sdet template. Net 394→~368.
+
+### Changes
+- Team Structure table: removed 5 per-row "; cannot spawn sub-agents" suffixes — covered by top-of-file CRITICAL banner
+- Pre-flight step 1: 92-word run-on → 2-sentence directive on goal + out-of-scope verification
+- Orchestration Patterns: collapsed Small/Medium/Large/UX-Heavy numbered steps into header + ASCII diagram (templates and Execution Workflow already cover spawn order)
+- Removed standalone "Simplification pass" bullet in Review Phase — duplicates advisor's six-dimension review
+- Team Setup TaskCreate enumeration → one line referencing the chosen pattern
+- Shutdown timing matrix (4 lines) → 1 sentence
+- @sdet template: added "no conversation history inherited" anchor to Team context (Phase 0 alignment with current Agent Teams behavior)
+
+### Dimensions Evaluated
+Over-Engineering (primary), Coherence, Actionability, Spec Alignment, Orchestration & Agent Teams.
+
+### Rename
+No rename. `dev` is the operator-facing trigger.
+
+## 2026-05-06
+
+### Summary
 Coherence pass: wired explicit hand-offs to canonical authoring skills (`create-tdd`, `create-ux-spec`, `create-prd`) and removed two near-duplicate prohibition/delegation blocks. Net 400→394.
 
 ### Changes

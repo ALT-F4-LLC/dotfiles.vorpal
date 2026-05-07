@@ -61,6 +61,7 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the create-* family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/create-prd, create-adr, create-ux-spec, and create-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
 - Architecture Decision Records (single decisions): use `Skill(create-adr, "<topic>")`.
@@ -108,36 +109,10 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Parent-PRD probe** (TDD-specific):
-   1. Split the slug on `-` to derive a keyword set; drop stopwords (`the`, `a`,
-      `an`, `for`, `to`, `of`, `and`, `or`).
-   2. Run `Glob docs/spec/*{keyword}*.md` for each keyword and aggregate matches.
-   3. Fallback: `Grep -l "{topic-without-stopwords}" docs/spec/*.md`.
-   4. If 1+ results found: list them inline (informational, not blocking) and
-      proceed to Authoring Procedure. Note the candidate parent(s) for use in the
-      `dependencies` frontmatter field.
-   5. If zero results found, invoke `AskUserQuestion`:
-
-   ```
-   AskUserQuestion(
-     header: "No matching PRD found",
-     question: "I searched docs/spec/ for a PRD related to '{topic}' and found
-                none. Proceed without a parent PRD?",
-     options: [
-       {label: "Proceed",
-        description: "Author the TDD; PRD can come later"},
-       {label: "Author PRD first",
-        description: "Cancel; I'll create the PRD with create-prd, then re-invoke"},
-       {label: "Cancel",
-        description: "Stop without writing"}
-     ]
-   )
-   ```
-
-   - "Proceed" → continue to Authoring Procedure with `dependencies: []`.
-   - "Author PRD first" → emit `Cancelled — no file written.` and end. The calling
-     agent re-invokes after authoring the PRD.
-   - "Cancel" → emit `Cancelled — no file written.` and end.
+5. **Parent-PRD probe**: `Glob docs/spec/*.md` and scan filenames for any that
+   plausibly relate to `<topic>`. If candidates exist, note them for the
+   `dependencies` frontmatter field. If none seem to apply, proceed with
+   `dependencies: []` — the calling agent's judgment is authoritative.
 
 ## Authoring Procedure
 
@@ -189,8 +164,7 @@ status: "draft"
 Field rules:
 
 - `project` = `basename $(git rev-parse --show-toplevel)`.
-- `maturity` is the doc-class ladder; `status` is the workflow ladder. Both fields
-  are required for TDDs.
+- `maturity` is the doc-class ladder (how settled the *content* is) and `status` is the workflow ladder (where the doc sits in the review-and-vote lifecycle). Both fields are required for TDDs because the two ladders are orthogonal — a TDD can be `status: accepted` while still `maturity: experimental` (design signed off, but the underlying approach is provisional). This is intentional: PRDs/UX specs use only `maturity` (no vote workflow), ADRs use only `status` (no maturity arc), TDDs need both.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
@@ -231,18 +205,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-Mermaid is **required** where the design involves architecture, sequence, state,
-or data relationships. Acceptable block fences are ` ```mermaid ` (lowercase, no
-space). At minimum, include a high-level component map OR an authoring/data-flow
-sequence diagram.
-
-For **pure-policy TDDs** (e.g., "we will adopt semantic versioning", "use Apache
-2.0 license"), prose is acceptable. The Authoring Procedure §4 above requires an
-explicit one-line override note inside the document acknowledging the
-pure-policy classification.
-
-This is judgment by the calling agent: validation enforces Mermaid presence
-unless the document contains the override note.
+Mermaid is **required** where the design involves architecture, sequence, state, or data relationships (see Authoring Procedure §4 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). At minimum, include a high-level component map OR a sequence diagram. Validation Before Save accepts the TDD without a Mermaid block only when the pure-policy override note is present.
 
 ## Validation Before Save
 
@@ -256,7 +219,7 @@ Before invoking `Write`, verify in the calling agent's context:
 3. **Section order** — the body contains all 11 Required Sections, as `##`
    headings, in the order listed.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
-   least two alternatives (look for `### Alt` or two `###`-level subsections).
+   least two `###`-level subsections.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the
    body, OR a pure-policy override note recorded per the Mermaid Mandate.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
@@ -291,7 +254,7 @@ The calling agent owns next steps (vote requests, decomposition, peer notificati
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.
 
-On operator Cancel during the collision dialog or missing-parent prompt: emit
+On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
@@ -303,7 +266,6 @@ On operator Cancel during the collision dialog or missing-parent prompt: emit
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
-| Parent-PRD probe finds zero results | Run the missing-parent AskUserQuestion. On "Author PRD first" or "Cancel": `Cancelled — no file written.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied AND no pure-policy override note | Abort: `Error: validation failed: Mermaid block missing — TDD requires Mermaid where architecture/sequence/state/data relationships are involved, or an explicit pure-policy override note.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

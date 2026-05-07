@@ -1,9 +1,8 @@
 ---
 name: evolve-agents
 description: >
-  Evolve agent definitions in agents/*.md via multi-agent self-review. Spawns agents to review
-  themselves, enforces Content Gate and 500-line budget, applies edits. Trigger: "evolve agents",
-  "improve agents", "grow the team", "refine agents".
+  Evolve agent definitions in agents/*.md via multi-agent self-review (each agent reviews its own
+  file). Trigger: "evolve agents", "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -13,7 +12,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Sen
 
 # Evolve Agents
 
-You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn each agent to review its own definition file (e.g. @senior-engineer reviews `agents/senior-engineer.md`). Teammates are read-only and report structured recommendations; only the orchestrator edits files via the Edit tool. All additions pass through the Content Gate.
+You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn each agent to review its own definition file (e.g. @senior-engineer reviews `agents/senior-engineer.md`). All additions pass through the Content Gate.
 
 ---
 
@@ -28,7 +27,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, repros, large diffs) — and only AFTER a structured option-led question routes them there.
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
 
 Before spawning any agents:
 
@@ -78,7 +77,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery.
 
 ### Crash & Stall Recovery
 
@@ -90,7 +89,7 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
-Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign tasks via `TaskUpdate`. After both complete, capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` — both passed to Phase 1.
+Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -111,9 +110,7 @@ Mid-Phase-1 cross-cutting findings: append to a running notes list and pass verb
 
 After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a single `coherence-reviewer` (@staff-engineer, read-only) per the Phase 2 template and assign the Phase 2 task.
 
-The Phase 2 teammate follows the Phase 2 spawning template: reads all agent files, verifies
-renames, checks cross-agent coherence (boundaries, references, gaps, overlaps, terminology,
-handoffs), then reports structured recommendations.
+The Phase 2 teammate follows the Phase 2 spawning template (read-only cross-cutting review).
 
 **After the Phase 2 teammate completes**, the orchestrator:
 
@@ -261,6 +258,5 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 
 1. **Always run Phase 2** — even for single-agent improvements.
 2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-3. **Fail loud.** Detect stalls via `TeammateIdle` notification or `Monitor` stream silence. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly.
+3. **Fail loud.** Detect stalls via `TeammateIdle` notification or `Monitor` stream silence. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly. After compaction, follow Compaction recovery before any new `Agent`/`SendMessage` call.
 4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
-5. **Orchestrator is the single coordination point** — its loss ends the cycle. After compaction or resume, follow Crash & Stall Recovery → Compaction recovery before any new `Agent`/`SendMessage` calls.

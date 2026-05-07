@@ -60,6 +60,8 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
+<!-- COUPLING: this list is also referenced by skills/create-prd/SKILL.md. Update both in lockstep. -->
+<!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
 | `architecture.md` | Examine project structure, entry points, module boundaries, and dependency graph. Identify system components, design patterns, integration points, and key architectural decisions. Look at package manifests, config files, and directory layout for structure clues. |
@@ -69,6 +71,7 @@ exploration guidance for each — used in the spawning template.
 | `code-quality.md` | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. |
 | `review-strategy.md` | Identify areas of high risk, complex logic, and frequent change. Determine which review dimensions matter most for this specific project. Look for existing PR templates, review checklists, contribution guidelines, and CI quality gates. |
 | `testing.md` | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. If no tests exist, state that explicitly. |
+<!-- RESERVED-NAMES:END -->
 
 ---
 

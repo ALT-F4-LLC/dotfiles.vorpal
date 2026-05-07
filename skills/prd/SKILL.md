@@ -1,5 +1,5 @@
 ---
-name: create-prd
+name: prd
 description: >
   Author a single Product Requirements Document at docs/spec/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the PRD per the format authority below.
@@ -29,7 +29,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill(create-{TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -66,12 +66,12 @@ For this skill, substitute `{TYPE}` with `prd` in the usage error.
   that are not meant to live at `docs/spec/`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `create-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
+  `specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
   and Failure Modes.
 - Technical Design Documents (architecture, system design, multi-step migration):
-  use `Skill(create-tdd, "<topic>")`.
-- Architecture Decision Records (single decisions): use `Skill(create-adr, "<topic>")`.
-- UX / design specs: use `Skill(create-ux-spec, "<topic>")`.
+  use `Skill(tdd, "<topic>")`.
+- Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`.
 
 ## Pre-flight
 
@@ -112,12 +112,12 @@ malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
 5. **Reserved-name refusal** (PRD-specific). The 7 names enumerated in the Failure
-   Modes Reserved-Name List are owned by the `create-specs` skill. If `{slug}` matches
+   Modes Reserved-Name List are owned by the `specs` skill. If `{slug}` matches
    any reserved name, ABORT with the exact message — there is **no overwrite path**
    for reserved names:
 
    ```
-   Error: '{slug}.md' is a reserved name owned by the create-specs skill. Pick a different topic or use the create-specs skill to bootstrap project specs.
+   Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.
    ```
 
    Substitute the resolved slug into `{slug}.md`. The reserved-name list is the
@@ -167,7 +167,7 @@ Field rules:
   `proof-of-concept | draft | experimental | stable`. New PRDs start at `draft`.
 - **PRDs do NOT use a `status` field.** `status` is reserved for in-flight workflow
   artifacts (TDDs and ADRs). PRDs are living product definitions — they take
-  `maturity` from the `create-specs` family ladder.
+  `maturity` from the `specs` family ladder.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@project-manager`, etc.).
 - `scope` is a one-line description of what the PRD covers — populated by the
@@ -220,7 +220,7 @@ Error: validation failed: {field/section} — {detail}.
 ```
 
 The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(create-prd, "<topic>")`.
+and re-invokes `Skill(prd, "<topic>")`.
 
 ## Save & Return
 
@@ -249,10 +249,10 @@ On operator Cancel during the collision dialog: emit
 
 ### Reserved-Name List
 
-The 7 names below are owned by the `create-specs` skill (project-wide engineering specs)
+The 7 names below are owned by the `specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are also HARD-REFUSED by skills/create-tdd, create-adr, and create-ux-spec, and listed in skills/create-specs/SKILL.md Spec File Reference. Update all 5 in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are also HARD-REFUSED by skills/tdd, adr, and ux-spec, and listed in skills/specs/SKILL.md Spec File Reference. Update all 5 in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -267,9 +267,9 @@ testing
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(create-prd, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: Skill(prd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the create-specs skill. Pick a different topic or use the create-specs skill to bootstrap project specs.` No overwrite path. |
+| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.` No overwrite path. |
 | Output file already exists (and slug is not reserved) | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |

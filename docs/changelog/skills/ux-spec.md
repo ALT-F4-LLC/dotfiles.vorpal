@@ -1,4 +1,22 @@
-# Changelog: create-ux-spec
+# Changelog: ux-spec
+
+## 2026-05-06
+
+### Summary
+**Rename: `create-ux-spec` → `ux-spec`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-ux-spec` → `/ux-spec`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/create-ux-spec/` → `skills/ux-spec/`
+- Frontmatter `name: create-ux-spec` → `name: ux-spec`
+- Cross-references updated in: sibling skills (`prd`, `tdd`, `adr`, `specs`), `agents/ux-designer.md`, `agents/team-lead.md`, `README.md`
+- COUPLING comment phrasing changed from "create-* family" → "doc-authoring family"
+- Changelog file moved: `docs/changelog/skills/create-ux-spec.md` → `ux-spec.md`; H1 updated; historical entries left intact
+
+### Dimensions Evaluated
+Rename, Coherence
+
+### Rename
+Renamed `create-ux-spec` → `ux-spec` per operator request.
 
 ## 2026-05-06
 

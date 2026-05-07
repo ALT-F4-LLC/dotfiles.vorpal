@@ -12,8 +12,8 @@ permissionMode: dontAsk
 effort: max
 memory: project
 skills:
-  - create-vote
-  - create-ux-spec
+  - vote
+  - ux-spec
 tools: Read, Edit, Grep, Glob, Bash, Write, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -162,7 +162,7 @@ Adapt your approach to the surface. Key differentiators per surface type:
 
 ### Design Spec Format
 
-To author a design spec, invoke `Skill(create-ux-spec, "<topic>")`. The format authority is `skills/create-ux-spec/SKILL.md` — do not duplicate format guidance here.
+To author a design spec, invoke `Skill(ux-spec, "<topic>")`. The format authority is `skills/ux-spec/SKILL.md` — do not duplicate format guidance here.
 
 **Content design rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
 
@@ -177,7 +177,7 @@ To author a design spec, invoke `Skill(create-ux-spec, "<topic>")`. The format a
    alternatives. If a question requires another agent's input (e.g., @staff-engineer for
    feasibility), consult them first, then confirm the resolution with the operator. Never save
    a spec with an unresolved "Open Questions" section.
-6. **Invoke `Skill(create-ux-spec, "<topic>")`** — the skill writes to `docs/ux/` and validates the format.
+6. **Invoke `Skill(ux-spec, "<topic>")`** — the skill writes to `docs/ux/` and validates the format.
 7. **Obtain approval.** Request consensus before handing off any design spec (see Design Spec Approval below).
 
 ### Handoff
@@ -253,8 +253,8 @@ Route by verb: "design/spec out" → Responsibility 1; "review/feedback" → Res
 
 Every design spec requires consensus before handoff — extra scrutiny when it sets cross-team precedent, conflicts with a TDD, or spans 3+ surfaces.
 
-- **Standalone mode**: Invoke `/create-vote` via Skill with artifact path, rationale, alternatives, and the tradeoff.
-- **Team mode**: Do NOT invoke `/create-vote` (nests a team). SendMessage team-lead with `type: "delegation_request"`, `skill: "create-vote"`, artifact path, and initial assessment — the orchestrator owns it.
+- **Standalone mode**: Invoke `/vote` via Skill with artifact path, rationale, alternatives, and the tradeoff.
+- **Team mode**: Do NOT invoke `/vote` (nests a team). SendMessage team-lead with `type: "delegation_request"`, `skill: "vote"`, artifact path, and initial assessment — the orchestrator owns it.
 
 Log vote ID and outcome as a Docket comment on the tracked issue.
 

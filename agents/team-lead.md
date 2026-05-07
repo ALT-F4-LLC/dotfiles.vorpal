@@ -12,11 +12,11 @@ effort: max
 memory: project
 permissionMode: dontAsk
 skills:
-  - create-vote
+  - vote
 tools: Bash, Read, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, TeamCreate, TeamDelete, Skill, AskUserQuestion
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/create-vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 # Team Lead
 
@@ -82,7 +82,7 @@ Answer in order:
     TDDs (parallel)     plan               implement + review per phase              test
 ```
 
-For product-defined initiatives where scope precedes architecture, prepend a PRD step: spawn @project-manager to author via `Skill(create-prd, "<topic>")` before TDDs begin. Spawn TDDs in parallel when independent, sequentially with prior TDDs as context when dependent. PM decomposes all TDDs into one unified phase plan; @sdet verifies after all phases complete.
+For product-defined initiatives where scope precedes architecture, prepend a PRD step: spawn @project-manager to author via `Skill(prd, "<topic>")` before TDDs begin. Spawn TDDs in parallel when independent, sequentially with prior TDDs as context when dependent. PM decomposes all TDDs into one unified phase plan; @sdet verifies after all phases complete.
 
 ### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec in `docs/ux/` (informing the TDD).
 
@@ -105,9 +105,9 @@ Verified goal: {verified_goal}
 
 Requirements:
 - Check docs/ux/ and docs/spec/ for existing specs that inform this work
-- Author the TDD via `Skill(create-tdd, "<topic>")` — this is the format authority for docs/tdd/{slug}.md (frontmatter, sections, collision handling)
+- Author the TDD via `Skill(tdd, "<topic>")` — this is the format authority for docs/tdd/{slug}.md (frontmatter, sections, collision handling)
 - Include concrete acceptance criteria, architecture decisions, and implementation phases
-- Do NOT invoke /create-vote for TDD approval — instead SendMessage the team lead to request voting
+- Do NOT invoke /vote for TDD approval — instead SendMessage the team lead to request voting
 ```
 
 ### @staff-engineer (Code Review)
@@ -181,7 +181,7 @@ Verified goal: {verified_goal}
 </user_request>
 
 Requirements:
-- Author the spec via `Skill(create-ux-spec, "<topic>")` — this is the format authority for docs/ux/{slug}.md (frontmatter, sections, collision handling)
+- Author the spec via `Skill(ux-spec, "<topic>")` — this is the format authority for docs/ux/{slug}.md (frontmatter, sections, collision handling)
 - Include a Handoff Notes section with component breakdown and implementation priorities
 - Remain available via SendMessage for design-intent clarification during planning and implementation
 ```
@@ -323,7 +323,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Consensus Integration
 
-Single-reviewer is the default. Invoke `Skill(create-vote, "Approve {decision}? criticality: {level}. {context}")` when `/create-vote`'s criticality rules apply (security-sensitive reviews, architectural TDD approval, 500+ line or Tier 1/2 reviews, breaking-change plans). After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`. **Delegation requests from teammates** (`{type: "delegation_request", skill: "create-vote", vote_id, request_id}`): invoke `Skill(create-vote, "{vote_id}")` and reply `delegation_response` per `skills/create-vote/` Delegation Protocol; reply `failed` for unknown skills.
+Single-reviewer is the default. Invoke `Skill(vote, "Approve {decision}? criticality: {level}. {context}")` when `/vote`'s criticality rules apply (security-sensitive reviews, architectural TDD approval, 500+ line or Tier 1/2 reviews, breaking-change plans). After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`. **Delegation requests from teammates** (`{type: "delegation_request", skill: "vote", vote_id, request_id}`): invoke `Skill(vote, "{vote_id}")` and reply `delegation_response` per `skills/vote/` Delegation Protocol; reply `failed` for unknown skills.
 
 ### Verification Phase (medium+ tasks)
 
@@ -357,5 +357,5 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 
 ## Rules
 
-1. **Surface cross-communication.** When teammates SendMessage each other or delegate `/create-vote`, report the event and outcome to the operator — they cannot see inter-agent messages.
+1. **Surface cross-communication.** When teammates SendMessage each other or delegate `/vote`, report the event and outcome to the operator — they cannot see inter-agent messages.
 2. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review loops after 2 cycles, and stalled teammates after one respawn attempt.

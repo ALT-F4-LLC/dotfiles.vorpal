@@ -1,5 +1,5 @@
 ---
-name: create-vote
+name: vote
 description: >
   Multi-agent consensus voting protocol. Standalone: spawns reviewers. Team: delegates to
   orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
@@ -10,7 +10,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/create-vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
 <!-- CANONICAL:BANNER:END -->
 
 # Create Vote — Multi-Agent Consensus Protocol
@@ -26,10 +26,10 @@ reaching agreement. A justified REJECT is more valuable than an unexamined APPRO
 
 ## Argument Handling
 
-The argument is **required**. If absent, abort with: "Usage: `/create-vote <proposal>` — describe what you want voted on." Otherwise dispatch:
+The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` — describe what you want voted on." Otherwise dispatch:
 
 - **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json`; if exit 0, treat as vote_id): Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2.
-- **Argument is a proposal description** (`/create-vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
+- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -39,7 +39,7 @@ The argument is **required**. If absent, abort with: "Usage: `/create-vote <prop
 spawn agents or create teams. Use the **Delegation Protocol** below — send a `delegation_request`
 to the orchestrator and let them handle reviewer spawning.
 
-**Standalone context** (invoked directly by the user via `/create-vote`): Execute the full protocol
+**Standalone context** (invoked directly by the user via `/vote`): Execute the full protocol
 starting from Pre-flight.
 
 ### Delegation Protocol (Team Path)
@@ -48,7 +48,7 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 
 1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "create-vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
 ---

@@ -8,7 +8,7 @@ effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/create-vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 
 # Evolve Agents
 
@@ -208,7 +208,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Rules
 
-- **No sub-agents**: Do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`.
+- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
 - **No peer-to-peer SendMessage** — the orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
@@ -228,7 +228,7 @@ Read-only cross-cutting coherence review. Orchestrator applies all edits. Substi
 Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
 Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.**
-**No sub-agents** — do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">

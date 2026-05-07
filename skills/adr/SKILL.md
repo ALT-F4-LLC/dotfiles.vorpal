@@ -1,5 +1,5 @@
 ---
-name: create-adr
+name: adr
 description: >
   Author a single Architecture Decision Record at docs/tdd/adr/{NNNN}-{slug}.md. Loaded
   into the calling agent's context; the agent drafts the ADR per the format authority
@@ -31,7 +31,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill(create-{TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -63,16 +63,16 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the create-* family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/create-prd, create-tdd, create-ux-spec, and create-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/adr/`.
 - Full system designs spanning multiple components or phases: use
-  `Skill(create-tdd, "<topic>")`.
+  `Skill(tdd, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
-  `Skill(create-prd, "<topic>")`.
-- UX / design specs: use `Skill(create-ux-spec, "<topic>")`.
+  `Skill(prd, "<topic>")`.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `create-specs` skill.
+  code-quality, review-strategy, testing): owned by the `specs` skill.
 
 ## Pre-flight
 
@@ -260,7 +260,7 @@ This catches different-slug concurrent races but NOT same-slug concurrent races
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(create-adr, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Existing ADR filename does not match `^\d{4}-[a-z0-9-]+\.md$` | Abort: `Error: Could not determine next ADR number. Existing ADR filenames must start with NNNN- (4-digit zero-padded). Found malformed: {malformed}.` |
 | Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |

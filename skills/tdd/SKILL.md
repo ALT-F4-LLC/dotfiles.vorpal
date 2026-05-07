@@ -1,5 +1,5 @@
 ---
-name: create-tdd
+name: tdd
 description: >
   Author a single Technical Design Document at docs/tdd/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the TDD per the format authority below.
@@ -29,7 +29,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill(create-{TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -61,15 +61,15 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the create-* family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/create-prd, create-adr, create-ux-spec, and create-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, adr, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
-- Architecture Decision Records (single decisions): use `Skill(create-adr, "<topic>")`.
+- Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
-  `Skill(create-prd, "<topic>")`.
-- UX / design specs: use `Skill(create-ux-spec, "<topic>")`.
+  `Skill(prd, "<topic>")`.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `create-specs` skill.
+  code-quality, review-strategy, testing): owned by the `specs` skill.
 
 ## Pre-flight
 
@@ -233,7 +233,7 @@ Error: validation failed: {field/section} — {detail}.
 ```
 
 The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(create-tdd, "<topic>")`.
+and re-invokes `Skill(tdd, "<topic>")`.
 
 ## Save & Return
 
@@ -262,7 +262,7 @@ On operator Cancel during the collision dialog: emit
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(create-tdd, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: Skill(tdd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |

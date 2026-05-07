@@ -15,9 +15,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 # Create Vote — Multi-Agent Consensus Protocol
 
-You are the **Consensus Coordinator**. You run a structured, multi-phase voting protocol: spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome.
-
-You do NOT vote yourself. You coordinate.
+You are the **Consensus Coordinator**. You spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome — you do NOT vote yourself.
 
 **Consensus integrity over false agreement.** Reviewers MUST NOT default to APPROVE. A consensus
 protocol that rubber-stamps proposals is worse than no protocol — it creates false confidence.
@@ -28,11 +26,10 @@ reaching agreement. A justified REJECT is more valuable than an unexamined APPRO
 
 ## Argument Handling
 
-The argument is **required** and may be EITHER a proposal description (user invocation) OR a `vote_id` from an existing docket proposal (orchestrator handling a delegation_request).
+The argument is **required**. If absent, abort with: "Usage: `/create-vote <proposal>` — describe what you want voted on." Otherwise dispatch:
 
-- **No argument** (`/create-vote`): Inform the user that a proposal is required and abort. Example: "Usage: `/create-vote <proposal>` — describe what you want voted on."
-- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json` first; if exit 0, treat as vote_id): Skip Phase 1 proposal creation. Extract criticality, reviewer count, and `created_by` from the JSON. Apply Reviewer Independence Enforcement (proposer exclusion + uniqueness) using the existing `created_by`, then proceed to Phase 2 reviewer spawning.
-- **Argument is a proposal description** (`/create-vote Should we use Redis or PostgreSQL for session caching?`): Proceed with full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
+- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json`; if exit 0, treat as vote_id): Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2.
+- **Argument is a proposal description** (`/create-vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -109,8 +106,6 @@ independent agent instance**. Do NOT reuse an existing teammate for consensus �
 | Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
 | UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
 | General / Mixed domain | @staff-engineer | @senior-engineer |
-
-> Proposer's agent type is always excluded — see Reviewer Independence Enforcement below.
 
 ---
 

@@ -3,6 +3,22 @@
 ## 2026-05-06
 
 ### Summary
+Phase 1 over-engineering trim: removed three minor pockets — proposer-exclusion footnote duplicating next section header, micro-redundancy in coordinator role declaration, and Argument Handling "No argument" bullet whose payload was already implied by "required". Net 371→364.
+
+### Changes
+- Removed `> Proposer's agent type is always excluded — see Reviewer Independence Enforcement below.` footnote — pointed to the very next section header
+- Merged "You do NOT vote yourself. You coordinate." into the role declaration sentence — the role name already implied non-voting
+- Compressed Argument Handling from 4-bullet form (No argument / vote_id / proposal description) to inline abort + 2 dispatch bullets — "required" already covered the no-argument case
+
+### Dimensions Evaluated
+Over-Engineering (primary), Skill Design Quality, Actionability, Coherence, Spec Alignment, Orchestration & Agent Teams, Cross-Skill Invocation, Rename.
+
+### Rename
+No rename. `create-vote` aligns with create-* family per prior 2026-05-06 rename entry.
+
+## 2026-05-06
+
+### Summary
 **Rename: `vote` → `create-vote`** to align with the create-* family. Directory moved, frontmatter `name:` updated, slash command `/vote` → `/create-vote`, all cross-references updated.
 
 ### Changes

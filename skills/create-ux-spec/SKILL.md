@@ -61,6 +61,7 @@ For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the create-* family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/create-prd, create-tdd, create-adr, and create-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
 - Technical Design Documents (architecture/system design): use
@@ -109,16 +110,6 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Prior-art scan** (UX-spec-specific, informational):
-   1. Split the slug on `-` to derive a keyword set; drop stopwords (`the`, `a`,
-      `an`, `for`, `to`, `of`, `and`, `or`).
-   2. Run `Grep -r "{topic-keywords}" docs/ux/` to surface adjacent UX specs.
-   3. List any matches inline (informational, not blocking) and proceed to the
-      Authoring Procedure. The new spec should reference, not contradict, prior
-      accepted UX work.
-   4. No prompt is shown; this step never blocks. UX specs do not require a
-      parent doc and the skill does not enforce reserved names.
-
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` (broader than the
@@ -149,14 +140,6 @@ malformed frontmatter.
    an unresolved "Open Questions" section. If a question requires another agent's
    input, the calling agent consults them and confirms with the operator before
    re-invoking this skill.
-8. **Self-check** before proceeding to Validation Before Save:
-   - All frontmatter fields populated (no `TODO`, no empty strings).
-   - All Required Sections present, in order.
-   - At least one Mermaid block present.
-   - Actual copy proposed for user-visible strings (no placeholders).
-   - No literal `{slug}`, `{topic}`, `{project_name}`, `TBD`, or `TODO` text in the
-     body outside of code-fenced examples.
-
 ## Output Contract
 
 ### Required Frontmatter
@@ -242,7 +225,6 @@ Before invoking `Write`, verify in the calling agent's context:
 4. **Section order** — the body contains all 9 Required Sections, as `##`
    headings, in the order listed.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
-   The Mermaid Mandate is mandatory; there is no override.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
@@ -279,9 +261,6 @@ On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
-For this skill, `{output_dir}` is `docs/ux/` and `{output_path}` is
-`docs/ux/{slug}.md`.
-
 ## Failure Modes
 
 | Trigger | Handling |
@@ -290,9 +269,7 @@ For this skill, `{output_dir}` is `docs/ux/` and `{output_path}` is
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
-| Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| `status` field present in drafted frontmatter | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status'.` |
-| Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — UX specs require at least one Mermaid block (user flow, state transition, or cross-surface journey).` |
+| Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. Common defects include `status` field instead of `maturity`, missing Mermaid block, or missing required section. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
 | Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |

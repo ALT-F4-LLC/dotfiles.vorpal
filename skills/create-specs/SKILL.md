@@ -106,9 +106,6 @@ After all agents complete, run verification:
 1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
 2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
    delimiter). Flag any file that does not — it indicates a malformed spec.
-3. **Spot-check codebase reality.** Pick 1-2 spec files and verify a factual claim from each
-   using Grep or Read (e.g., if a spec says "tests use pytest," confirm pytest is configured).
-   Flag any content that appears aspirational rather than factual.
 
 Report which files were created successfully and flag any that are missing or malformed.
 
@@ -165,4 +162,3 @@ After all agents complete and verification passes:
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
 2. **Shut down surviving teammates** — for each spawned agent whose task is `completed` (per Step 2 classification), send `shutdown_request` in the SAME turn. Skip agents whose task was marked `failed` (no process to terminate).
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
-4. Remind the user that NO changes have been committed — they can review with `git diff`.

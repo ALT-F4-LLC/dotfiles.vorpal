@@ -37,8 +37,8 @@ Before spawning any agents:
 
 > **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
 
-1. **Verify evolution goal (HARD GATE)** — Team mode: adopt verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or follow-up listing inventoried skills from step 4), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes experience feedback. Otherwise issue ONE `AskUserQuestion` with three structured questions: Q1 `header: "Friction"` (multiSelect) covering coordination / operator prompts / output quality / scope / "no friction"; Q2 `header: "Focus"` over the 8 evaluation dimensions; Q3 `header: "Specifics"` with options "Yes — paste next" / "No". If Q3=Yes, follow up with a free-text prompt for the paste (paste material is the only free-text exception). Store as `{experience_feedback}`.
+1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (use `$ARGUMENTS` or list step-4 inventory), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (→ step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -108,7 +108,15 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. If no `shutdown_response` arrives within the next orchestrator turn, treat as dead and proceed (see Rule #10). No teammate is reused across phases — spawn fresh.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. If no `shutdown_response` arrives within the next orchestrator turn, treat as dead and proceed (see Crash & Stall Recovery). No teammate is reused across phases — spawn fresh.
+
+### Crash & Stall Recovery
+
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+
+- **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
+- **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
+- **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
@@ -126,17 +134,20 @@ Each teammate (read-only — no file edits):
 3. Reads OTHER skill files — first ~80 lines only for ecosystem context
 4. Evaluates against ALL 8 dimensions, marks task completed, reports structured recommendations
 
-**After each teammate completes**, the orchestrator:
-1. Reviews recommendations **against the Content Gate** — reject additions failing any check
-2. Applies approved changes via Edit tool, then `wc -l` to verify budget
-3. **Verify edits against codebase reality** — spot-check that references, file paths, and
-   CLI commands in modified content are accurate. If a change introduces a claim, verify it.
-4. Writes/updates and normalizes changelog in `docs/changelog/skills/<name>.md`
-5. Tracks renames and coherence issues for Phase 2
+**After each Phase 1 teammate completes**, the orchestrator:
+1. Reviews recommendations against the **Content Gate** — reject any failing check
+2. Applies approved changes via Edit; `wc -l` to verify budget; spot-check references/CLI against codebase
+3. Writes/normalizes `docs/changelog/skills/<name>.md` per Changelog Format
+4. Aggregates renames and coherence issues for Phase 2
+5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
+6. Shuts down the teammate (don't wait for siblings — see Agent Lifecycle)
 
-**Shut down each Phase 1 agent immediately after applying its changes** — do not wait for all Phase 1 agents to complete before shutting down finished ones.
+**Phase 1 SendMessage triggers** (to orchestrator only — no peer-to-peer; cross-cutting items consolidate in Phase 2 to prevent contradictory mid-flight edits):
+- A finding affects another skill (include affected skill name)
+- The teammate needs delegation (voting, sub-agents)
+- The teammate is blocked
 
-**Phase 1 SendMessage triggers** — teammates message the orchestrator (team-lead) ONLY when: (1) a finding affects another skill (cross-cutting — include affected skill name), (2) they need delegation (voting, sub-agents), or (3) they're blocked. **No peer-to-peer in this skill:** reviewers operate on independent skill files and have no shared edit surfaces; cross-cutting items are intentionally consolidated in Phase 2 to prevent mid-flight contradictory peer edits. Cross-cutting items are appended to a running notes list and passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. Use `TaskList()` for progress tracking.
+Cross-cutting items append to a running notes list and pass verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. `TaskList()` tracks progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -165,7 +176,7 @@ After Phase 2: shut down coherence-reviewer and `TeamDelete` per lifecycle rules
 ```
 Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
 
-MISSION: Research Claude Code docs for NEW or CHANGED features affecting SKILL.md writing. Report which pages were visited vs. skipped.
+MISSION: Research Claude Code documentation for capabilities relevant to writing skill definition files (.claude/skills/*/SKILL.md and skills/*/SKILL.md). Report NEW or CHANGED features only — skip well-known existing behavior.
 
 FOCUS AREAS: Skills (frontmatter, substitutions, discovery, subagents), Agent Teams (lifecycle, coordination, shutdown), Hooks (skill-scoped hooks, event types), Changelog (recent releases, breaking changes).
 
@@ -218,12 +229,11 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 ## Your Task
 Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Do not default to approval — your value is in identifying weaknesses, bloat, and flawed assumptions, not validating what exists.
 
-## Requirements
-- **Read-only** — analyze and recommend only.
+## Rules
+- **Read-only** — analyze and recommend only; orchestrator applies all edits.
 - **No sub-agents**: Do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
-- Minimize context: first 80 lines of other skills, relevant specs only.
-- **Course-correction**: SendMessage the orchestrator IMMEDIATELY for cross-cutting issues,
-  patterns affecting all targets, or scope expansion beyond target skill.
+- **No peer-to-peer SendMessage** — orchestrator is the only relay.
+- **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name), (b) scope expansion beyond target, or (c) blocker.
 
 ## Output Format
 ### Summary
@@ -255,9 +265,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
-4. Check cross-communication: enumerate SendMessage triggers between agent pairs, identify
-   gaps (shared dependencies/handoffs without triggers), flag hub-and-spoke (>50% routing
-   through one agent)
+4. Check cross-communication: identify SendMessage trigger gaps between dependent skills, flag hub-and-spoke patterns (>50% routing through one agent)
 
 ## Output Format
 ### Renames
@@ -280,9 +288,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 4. **Phase 2 after all Phase 1.** Use `TaskList` to verify completion.
 5. **Always run Phase 2** — even for single-skill improvements.
 6. **Never commit.** No `git add`, `git commit`, or `git push`.
-7. **Build on strengths** — improve, don't rewrite.
-8. **Changelog mandatory.** Follow format above; orchestrator normalizes.
-9. **500-line budget.** `wc -l` after edits; consolidate if over.
-10. **Fail loud / re-spawn once.** Detect teammate failure via: (a) explicit error in Agent return, (b) `TeammateIdle` notification arrives or `Monitor` stream goes silent past expected progress, or (c) no `SendMessage` response within one orchestrator turn after a direct ask. On detection: send `shutdown_request`; if no `shutdown_response` within the next turn, treat agent as dead and proceed. Re-spawn ONCE with a fresh name suffix (e.g., `review-<name>-r2`) and re-assign the task. If the re-spawn also fails: mark task completed, record "No review performed — agent unavailable" in the changelog, skip that skill this cycle. NEVER review directly yourself — the orchestrator-only-coordinates invariant is absolute.
-11. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
-12. **Preserve context across compaction.** After compaction, re-read the verified goal, current phase, and pending tasks before continuing.
+7. **Changelog mandatory.** Follow format above; orchestrator normalizes.
+8. **500-line budget.** `wc -l` after edits; consolidate if over.
+9. **Crash & Stall Recovery.** See dedicated section above. Never review directly — the orchestrator-only-coordinates invariant is absolute.
+10. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.

@@ -1,19 +1,21 @@
 ---
-name: vote
+name: create-vote
 description: >
   Multi-agent consensus voting protocol. Standalone: spawns reviewers. Team: delegates to
   orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
+  Trigger: "create vote", "vote on this", "consensus vote", "run a vote".
 argument-hint: "<proposal>"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
+<!-- CANONICAL:BANNER:BEGIN -->
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/create-vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
+<!-- CANONICAL:BANNER:END -->
 
-# Vote — PBFT Consensus Protocol
+# Create Vote — Multi-Agent Consensus Protocol
 
-You are the **Consensus Coordinator**. You run a structured, multi-phase voting protocol:
-spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome.
+You are the **Consensus Coordinator**. You run a structured, multi-phase voting protocol: spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome.
 
 You do NOT vote yourself. You coordinate.
 
@@ -28,9 +30,9 @@ reaching agreement. A justified REJECT is more valuable than an unexamined APPRO
 
 The argument is **required** and may be EITHER a proposal description (user invocation) OR a `vote_id` from an existing docket proposal (orchestrator handling a delegation_request).
 
-- **No argument** (`/vote`): Inform the user that a proposal is required and abort. Example: "Usage: `/vote <proposal>` — describe what you want voted on."
-- **Argument is a vote_id** (matches an existing `docket vote show $ARGUMENTS` record): Skip Phase 1 proposal creation. Read the existing proposal via `docket vote show {vote_id} --json`, extract criticality, reviewer count, and `created_by`. Apply Reviewer Independence Enforcement (proposer exclusion + uniqueness) using the existing `created_by`, then proceed to Phase 2 reviewer spawning.
-- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Proceed with full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
+- **No argument** (`/create-vote`): Inform the user that a proposal is required and abort. Example: "Usage: `/create-vote <proposal>` — describe what you want voted on."
+- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json` first; if exit 0, treat as vote_id): Skip Phase 1 proposal creation. Extract criticality, reviewer count, and `created_by` from the JSON. Apply Reviewer Independence Enforcement (proposer exclusion + uniqueness) using the existing `created_by`, then proceed to Phase 2 reviewer spawning.
+- **Argument is a proposal description** (`/create-vote Should we use Redis or PostgreSQL for session caching?`): Proceed with full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone only) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -40,7 +42,7 @@ The argument is **required** and may be EITHER a proposal description (user invo
 spawn agents or create teams. Use the **Delegation Protocol** below — send a `delegation_request`
 to the orchestrator and let them handle reviewer spawning.
 
-**Standalone context** (invoked directly by the user via `/vote`): Execute the full protocol
+**Standalone context** (invoked directly by the user via `/create-vote`): Execute the full protocol
 starting from Pre-flight.
 
 ### Delegation Protocol (Team Path)
@@ -49,7 +51,7 @@ When in team context, create the proposal and delegate reviewer spawning to the 
 
 1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "create-vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
 ---
@@ -114,9 +116,7 @@ independent agent instance**. Do NOT reuse an existing teammate for consensus �
 
 ## Reviewer Independence Enforcement
 
-Before selecting reviewers, the coordinator MUST apply proposer exclusion and uniqueness
-constraints. These rules are non-negotiable — they ensure every vote has verifiably
-independent reviewers.
+Before selecting reviewers, apply proposer exclusion and uniqueness:
 
 ### Proposer Exclusion
 
@@ -151,7 +151,7 @@ appear more than once in the `Agent()` calls for a single round.
 
 ---
 
-## Phase 1: Pre-Prepare (Proposal)
+## Phase 1: Proposal
 
 Create the proposal using the `docket vote create` CLI. Gather context from the proposal
 argument first (read referenced files, run `git diff` if code is mentioned, etc.), then
@@ -184,7 +184,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ---
 
-## Phase 2: Prepare (Independent Review)
+## Phase 2: Independent Review
 
 Spawn reviewer agents **in parallel**. Each reviewer receives:
 
@@ -194,10 +194,7 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 4. Instructions to produce structured output
 5. **NO information about other reviewers or their verdicts**
 
-After spawning, claim tasks: `TaskUpdate(taskId=<id>, owner="{vote-id}-reviewer-{N}", status="in_progress")`.
-Each reviewer's structured output is the final message returned by their `Agent()` call —
-parse verdict, confidence, domain_relevance, and findings from that return value. Wait for
-all `Agent()` calls to return before Phase 3; `TaskList()` is only for observability.
+Tasks are coordinator-owned for observability — set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value. Wait for all `Agent()` calls to return before Phase 3.
 
 **Critical constraint**: You MUST NOT include any reviewer's output in any other reviewer's
 prompt. Collect all return values AFTER every reviewer completes.
@@ -215,17 +212,19 @@ Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() err
 After each reviewer completes, parse their structured output and record their vote using
 `docket vote cast`. The `-v` flag accepts `approve`, `approve-with-concerns`, or `reject`.
 
-**Cast each vote:**
+**Cast each vote** (heredoc preserves multi-line findings):
 
 ```bash
-echo '{multi-line findings text}' | docket vote cast {vote-id} \
+docket vote cast {vote-id} \
   --voter "{vote-id}-reviewer-{N}" \
   --role "{agent-type}" \
   -v {mapped_verdict} \
   --confidence {confidence} \
   --domain-relevance {domain_relevance} \
   --summary "{one-line reviewer summary}" \
-  --findings -
+  --findings - <<'EOF'
+{multi-line findings text}
+EOF
 ```
 
 - Use `--findings -` (stdin) to pass multi-line findings, or `--findings-json -` for structured JSON.
@@ -294,7 +293,7 @@ One paragraph summarizing your overall assessment.
 
 ---
 
-## Phase 3: Commit or Escalate
+## Phase 3: Quorum Evaluation
 
 After all votes have been cast, retrieve the consensus result via `docket vote result {vote-id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
 
@@ -364,7 +363,6 @@ In team mode, the orchestrator owns reviewer/team lifecycle — skip this sectio
 2. **Never spawn agents from within a team.** If you are a teammate (have a `team_name`), use the Delegation Protocol — send a `delegation_request` to the orchestrator. Only standalone invocations spawn reviewers.
 3. **Spawn all reviewers in the same turn** to maximize parallelism (standalone mode only).
 4. **Maximum 3 rounds.** Escalate to human after 3 failed rounds.
-5. **Respect criticality direction.** May override up, never down for security.
 
 ---
 

@@ -9,7 +9,7 @@ effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/create-vote/` Delegation Protocol).
 
 # Evolve Agents
 
@@ -28,9 +28,11 @@ Target agent(s) are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, repros, large diffs) — and only AFTER a structured option-led question routes them there.
+
 Before spawning any agents:
 
-1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone mode: use `AskUserQuestion` to confirm evolution focus. Do not proceed to spawning until verified.
+1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or follow-up listing inventoried agents from step 4), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Agent quality / role realism`, `Coordination & handoff gaps`, `Cross-agent communication visibility`, `File-size bloat / verbosity`, `Workflow gaps or stalls`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
@@ -65,7 +67,10 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ## Orchestration Workflow
 
-### Agent Lifecycle
+### Team Setup & Agent Lifecycle
+
+1. `TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`.
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
@@ -83,15 +88,6 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 - **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
-### Team Setup
-
-Before spawning any agents, create an Agent Team to coordinate the evolution cycle:
-
-1. **Create the team** — `TeamCreate(team_name="evolve-agents-{today_date}", ...)`
-2. **Create Phase 0 tasks** — `TaskCreate(subject="Docs Research", description="Research latest Claude Code documentation for new capabilities")` and `TaskCreate(subject="Docket CLI Audit", description="Audit docket CLI for new/changed commands relevant to agents")`
-3. **Create Phase 1 tasks** — one per target agent
-4. **Create Phase 2 task** — Coherence & Renames (sequenced after all Phase 1 by orchestrator)
-
 ### Phase 0: Documentation Research & Docket CLI Audit
 
 Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign tasks via `TaskUpdate`. After both complete, capture outputs as `{docs_research_findings}` and `{docket_audit_findings}` — both passed to Phase 1.
@@ -99,8 +95,6 @@ Spawn TWO teammates in parallel per the templates below: `docs-researcher` (clau
 ### Phase 1: Review & Improve (parallel)
 
 Spawn one teammate per target using the **matching agent type** (e.g., @senior-engineer reviews `agents/senior-engineer.md`) per the Phase 1 template. **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
-
-Each teammate follows the Phase 1 spawning template (use ultrathink for deep analysis).
 
 **After each Phase 1 teammate completes**, the orchestrator:
 
@@ -133,8 +127,7 @@ After Phase 2 completes:
 
 1. **Shut down the Phase 2 agent** (Phase 0 and Phase 1 agents were shut down in their phases), then `TeamDelete(team_name="evolve-agents-{today_date}")`.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements made, renames/coherence fixes,
-   cross-communication log (who messaged whom and why), and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, and reminder that NO changes have been committed.
 
 ---
 
@@ -218,7 +211,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Rules
 
-- **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
+- **No sub-agents**: Do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`.
 - **No peer-to-peer SendMessage** — the orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
@@ -238,7 +231,7 @@ Read-only cross-cutting coherence review. Orchestrator applies all edits. Substi
 Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
 Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.**
-**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+**No sub-agents** — do NOT invoke `/create-vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -268,6 +261,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 
 1. **Always run Phase 2** — even for single-agent improvements.
 2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-3. **Fail loud.** Detect stalls via `TeammateIdle` hook or >10min without `TaskUpdate`/`SendMessage`. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly.
+3. **Fail loud.** Detect stalls via `TeammateIdle` notification or `Monitor` stream silence. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly.
 4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
 5. **Orchestrator is the single coordination point** — its loss ends the cycle. After compaction or resume, follow Crash & Stall Recovery → Compaction recovery before any new `Agent`/`SendMessage` calls.

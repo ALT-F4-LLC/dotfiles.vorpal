@@ -69,7 +69,7 @@ For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
 - Product Requirements Documents (feature-level specs): use
   `Skill(create-prd, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `specs` skill.
+  code-quality, review-strategy, testing): owned by the `create-specs` skill.
 
 ## Pre-flight
 
@@ -129,9 +129,11 @@ malformed frontmatter.
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required
    Sections). Every section listed MUST appear, in the order shown. Match spec
-   fidelity to problem complexity — sections that do not apply (e.g.,
-   internationalization for a CLI-only flag) may contain a single `N/A.` paragraph
-   with a one-line justification, but omitting them is a defect.
+   fidelity to problem complexity — sections that do not apply to the surface
+   type (e.g., visual design for a CLI flag, internationalization for a
+   server-side log format, accessibility for a non-interactive config schema) may
+   contain a single `N/A.` paragraph with a one-line justification, but omitting
+   them is a defect.
 4. **Mermaid diagrams**: the Mermaid Mandate is **mandatory** for UX specs (per
    `agents/ux-designer.md`). Include at least one Mermaid block — a user flow,
    state transition, or cross-surface journey. ASCII wireframes are encouraged
@@ -178,7 +180,7 @@ Field rules:
 - `maturity` is the doc-class ladder
   (`proof-of-concept | draft | experimental | stable`). New UX specs start at
   `draft`. **UX specs do NOT have a `status` field** — workflow state is tracked
-  via `maturity` (see TDD §4.3).
+  via `maturity`.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@ux-designer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
@@ -220,8 +222,8 @@ Responsibility 1 design spec format.
 Mermaid is **required** for every UX spec — at least one block showing a user
 flow, state transition, or cross-surface journey. Acceptable block fences are
 ` ```mermaid ` (lowercase, no space). This mandate is mandatory per
-`agents/ux-designer.md` and TDD §4.11; UX specs do not have the pure-policy
-override available to TDDs and ADRs.
+`agents/ux-designer.md`; UX specs do not have the pure-policy override available
+to TDDs and ADRs.
 
 ASCII wireframes are encouraged in §3 (Layout & Structure) alongside Mermaid but
 do not satisfy the Mermaid mandate on their own.
@@ -273,7 +275,7 @@ The calling agent owns next steps (vote requests, decomposition, peer notificati
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.
 
-On operator Cancel during the collision dialog or missing-parent prompt: emit
+On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
@@ -289,7 +291,7 @@ For this skill, `{output_dir}` is `docs/ux/` and `{output_path}` is
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| `status` field present in drafted frontmatter | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status' (TDD §4.3).` |
+| `status` field present in drafted frontmatter | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status'.` |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — UX specs require at least one Mermaid block (user flow, state transition, or cross-surface journey).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

@@ -1,4 +1,41 @@
-# Changelog: specs
+# Changelog: create-specs
+
+## 2026-05-06
+
+### Summary
+**Rename: `specs` → `create-specs`** to align with the create-* family. Directory moved, frontmatter `name:` updated, slash command `/specs` → `/create-specs`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/specs/` → `skills/create-specs/`
+- Frontmatter `name: specs` → `name: create-specs`; trigger phrases updated to "create specs", "generate specs", "bootstrap project specs", "create project specifications"
+- Title: `# Specs` → `# Create Specs`
+- Slash command `/specs` → `/create-specs` in argument handling examples
+- Banner: `invoke /vote` → `invoke /create-vote` (companion rename)
+- Cross-references updated in: `skills/create-prd/`, `skills/create-tdd/`, `skills/create-adr/`, `skills/create-ux-spec/` (all "owned by the `specs` skill" → "the `create-specs` skill"), `agents/staff-engineer.md` (skills/specs/SKILL.md path), `agents/project-manager.md`, `README.md`
+- create-prd error messages updated to name `create-specs` ("'{slug}.md' is a reserved name owned by the create-specs skill...")
+- COUPLING comment in create-prd updated to point at `skills/create-specs/SKILL.md`
+- Changelog file moved: `docs/changelog/skills/specs.md` → `create-specs.md`; H1 updated; historical entries left intact
+
+### Dimensions Evaluated
+Rename, Coherence, Spec Alignment
+
+### Rename
+Renamed `specs` → `create-specs` per operator request to align naming with the create-* family.
+
+## 2026-05-06
+
+### Summary
+Updated COUPLING comment to enumerate all 4 dependent create-* skills enforcing the reserved-name list. Net 168→168.
+
+### Changes
+- COUPLING comment above Spec File Reference: now names all 4 dependents (create-prd, create-tdd, create-adr, create-ux-spec) instead of only create-prd. Reason: 4 skills enforce the 7-name reserved list; under-specified coupling risked drift in 3 unmentioned dependents.
+- Rejected: rename, restructure, description trigger expansion (skill is at correct size for scope; CRITICAL banner divergence from create-* is intentional per 2026-05-05 entry).
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
 
 ## 2026-05-05
 

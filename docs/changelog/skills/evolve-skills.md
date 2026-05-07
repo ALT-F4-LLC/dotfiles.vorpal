@@ -1,5 +1,21 @@
 # Changelog: evolve-skills
 
+## 2026-05-06
+
+### Summary
+Removed unverified `disable-model-invocation` from Dimension 1, trimmed Phase 0 docs-researcher template asymmetry vs. docket-auditor sibling, tightened mode threshold wording. Net 295→288.
+
+### Changes
+- Dimension 1: replaced `user-invocable` and `disable-model-invocation` references with `effort`/`argument-hint`/`allowed-tools` — `disable-model-invocation` is not in documented frontmatter and not used in any skill
+- Phase 0 docs-researcher template: folded INSTRUCTIONS into MISSION, collapsed OUTPUT FORMAT to one line — reduces asymmetry with docket-auditor sibling
+- Pre-flight step 4: tightened mode threshold to `>500` / `≤500` to match Rule 9's boundary
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

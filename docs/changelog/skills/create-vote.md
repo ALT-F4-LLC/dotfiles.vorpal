@@ -1,4 +1,45 @@
-# Changelog: vote
+# Changelog: create-vote
+
+## 2026-05-06
+
+### Summary
+**Rename: `vote` → `create-vote`** to align with the create-* family. Directory moved, frontmatter `name:` updated, slash command `/vote` → `/create-vote`, all cross-references updated.
+
+### Changes
+- Directory renamed `skills/vote/` → `skills/create-vote/`
+- Frontmatter `name: vote` → `name: create-vote`; added trigger phrases ("create vote", "vote on this", "consensus vote", "run a vote")
+- Title: `# Vote — Multi-Agent Consensus Protocol` → `# Create Vote — Multi-Agent Consensus Protocol`
+- Slash command `/vote` → `/create-vote` throughout (banner, argument handling, execution mode detection)
+- Delegation protocol: `skill: "vote"` → `skill: "create-vote"`
+- Cross-references updated in: `skills/dev/`, `.claude/skills/evolve-skills/`, `.claude/skills/evolve-agents/`, all 5 agent files (frontmatter `skills:` + body), `docs/spec/review-strategy.md`
+- Changelog file moved: `docs/changelog/skills/vote.md` → `create-vote.md`; H1 updated; historical entries left intact (rule: never modify existing changelog entries)
+- Note: `docket vote` CLI commands and `vote-id` placeholder remain unchanged (CLI subcommand of docket; protocol-internal id)
+
+### Dimensions Evaluated
+Rename, Coherence, Spec Alignment
+
+### Rename
+Renamed `vote` → `create-vote` per operator request to align naming with the create-* family (create-prd, create-tdd, create-adr, create-ux-spec, create-specs).
+
+## 2026-05-06
+
+### Summary
+Removed PBFT terminology, fixed muddled task-ownership in Phase 2, replaced fragile echo-pipe with heredoc, removed cryptic Rule 5, made vote_id detection check explicit, added canonical banner markers. Net 373→370.
+
+### Changes
+- Title and Phase headers: dropped "PBFT" / "Pre-Prepare" / "Prepare" / "Commit or Escalate" — the skill does not implement Practical Byzantine Fault Tolerance; formal phase names misled operators
+- Phase 2 task lifecycle: clarified coordinator owns tasks (not reviewers)
+- Argument Handling vote_id branch: replaced "matches an existing record" with explicit `docket vote show $ARGUMENTS --json; if exit 0` check
+- Removed cryptic Rule 5 ("override up, never down for security") — Pre-flight step 4 already covers caller-specified criticality and the asymmetry isn't enforced
+- Phase 2 vote-casting example: replaced single-quoted multi-line echo with heredoc
+- Reviewer Independence Enforcement: trimmed "non-negotiable" filler
+- Added `<!-- CANONICAL:BANNER:BEGIN/END -->` markers around CRITICAL banner
+
+### Dimensions Evaluated
+Skill Design Quality, Honesty, Actionability, Over-Engineering, Coherence, Spec Alignment, Rename
+
+### Rename
+No rename — `vote` matches `docket vote` CLI exactly.
 
 ## 2026-05-05
 

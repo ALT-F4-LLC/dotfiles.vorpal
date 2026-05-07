@@ -66,8 +66,8 @@ For this skill, substitute `{TYPE}` with `prd` in the usage error.
   that are not meant to live at `docs/spec/`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5 and
-  Failure Modes.
+  `create-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
+  and Failure Modes.
 - Technical Design Documents (architecture, system design, multi-step migration):
   use `Skill(create-tdd, "<topic>")`.
 - Architecture Decision Records (single decisions): use `Skill(create-adr, "<topic>")`.
@@ -112,12 +112,12 @@ malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
 5. **Reserved-name refusal** (PRD-specific). The 7 names enumerated in the Failure
-   Modes Reserved-Name List are owned by the `specs` skill. If `{slug}` matches any
-   reserved name, ABORT with the exact message — there is **no overwrite path** for
-   reserved names:
+   Modes Reserved-Name List are owned by the `create-specs` skill. If `{slug}` matches
+   any reserved name, ABORT with the exact message — there is **no overwrite path**
+   for reserved names:
 
    ```
-   Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.
+   Error: '{slug}.md' is a reserved name owned by the create-specs skill. Pick a different topic or use the create-specs skill to bootstrap project specs.
    ```
 
    Substitute the resolved slug into `{slug}.md`. The reserved-name list is the
@@ -140,13 +140,8 @@ malformed frontmatter.
 5. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
    block (user journey, state map, or component map). PRDs always require at
    least one Mermaid block — there is no pure-policy override for this type.
-6. **Self-check** before proceeding to Validation Before Save:
-   - All frontmatter fields populated (no `TODO`, no empty strings).
-   - All Required Sections present, in order.
-   - At least one Mermaid block present.
-   - No placeholder text (`{slug}`, `{topic}`, `TBD`) leaked into the body.
-   - `maturity` is one of `proof-of-concept | draft | experimental | stable`. PRDs
-     do NOT use a `status` field — that field is reserved for TDDs and ADRs.
+6. **Proceed to Validation Before Save** — that step is the single source of
+   truth for frontmatter, sections, Mermaid, and placeholder checks.
 
 ## Output Contract
 
@@ -172,7 +167,7 @@ Field rules:
   `proof-of-concept | draft | experimental | stable`. New PRDs start at `draft`.
 - **PRDs do NOT use a `status` field.** `status` is reserved for in-flight workflow
   artifacts (TDDs and ADRs). PRDs are living product definitions — they take
-  `maturity` from the `specs` family ladder.
+  `maturity` from the `create-specs` family ladder.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@project-manager`, etc.).
 - `scope` is a one-line description of what the PRD covers — populated by the
@@ -192,7 +187,7 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 3. **Non-Goals** — explicit out-of-scope items, including future-work flags.
 4. **User Stories / Use Cases** — narrative scenarios from the operator/user
    perspective, with priorities.
-5. **Requirements** — functional and non-functional, classified by must/should/could.
+5. **Requirements** — functional and non-functional, prioritized using MoSCoW (Must / Should / Could / Won't).
 6. **Success Metrics** — quantitative measures that validate Goals are met.
 7. **Risks & Open Questions** — risk table (likelihood/impact/mitigation); open
    questions resolved or escalated before commitment.
@@ -201,10 +196,10 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 
 PRDs **always require** at least one Mermaid block — a user journey, state
 diagram, or component map. Acceptable block fences are ` ```mermaid ` (lowercase,
-no space). There is no pure-policy override for PRDs (per TDD §4.11): a feature
-without any visual-able relationships rarely warrants a feature-level PRD in the
-first place. If the PRD truly has no relationship/flow surface, the calling agent
-should reconsider whether a PRD is the right doc class.
+no space). Unlike TDDs, PRDs have no pure-policy override: a feature without any
+visual-able relationships rarely warrants a feature-level PRD. If the PRD truly
+has no relationship/flow surface, the calling agent should reconsider whether a
+PRD is the right doc class.
 
 The skill's Validation Before Save step rejects PRDs without at least one
 ` ```mermaid ` fenced block.
@@ -254,7 +249,7 @@ The calling agent owns next steps (vote requests, decomposition, peer notificati
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.
 
-On operator Cancel during the collision dialog or missing-parent prompt: emit
+On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
@@ -265,10 +260,10 @@ For this skill, `{output_dir}` is `docs/spec/` and `{output_path}` is
 
 ### Reserved-Name List
 
-The 7 names below are owned by the `specs` skill (project-wide engineering specs)
+The 7 names below are owned by the `create-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: reserved-name list mirrors skills/specs/SKILL.md Spec File Reference. Update both in lockstep. -->
+<!-- COUPLING: reserved-name list mirrors skills/create-specs/SKILL.md Spec File Reference. Update both in lockstep. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -285,7 +280,7 @@ testing
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(create-prd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.` No overwrite path. |
+| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the create-specs skill. Pick a different topic or use the create-specs skill to bootstrap project specs.` No overwrite path. |
 | Output file already exists (and slug is not reserved) | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |

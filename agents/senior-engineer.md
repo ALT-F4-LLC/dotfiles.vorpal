@@ -12,7 +12,7 @@ effort: max
 memory: project
 skills:
   - commit
-  - vote
+  - create-vote
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -322,12 +322,12 @@ Prioritize: Correctness > Security > Business Value > Simplicity > Maintainabili
 
 ---
 
-## Using `/vote` for Consensus
+## Using `/create-vote` for Consensus
 
-Use `/vote` for high-stakes implementation decisions: TDD deviations, major scope changes, security boundary changes, or disagreements with @staff-engineer on approach.
+Use `/create-vote` for high-stakes implementation decisions: TDD deviations, major scope changes, security boundary changes, or disagreements with @staff-engineer on approach.
 
-- **Team mode (default):** Delegate via SendMessage to team-lead with `{"type": "delegation_request", "skill": "vote", "question": "..."}` — never invoke `Skill(vote, ...)` directly (spawns nested team).
-- **Standalone mode:** Invoke `Skill(vote, "question")` directly.
+- **Team mode (default):** Delegate via SendMessage to team-lead with `{"type": "delegation_request", "skill": "create-vote", "question": "..."}` — never invoke `Skill(create-vote, ...)` directly (spawns nested team).
+- **Standalone mode:** Invoke `Skill(create-vote, "question")` directly.
 - **Fallback:** Create via `docket vote create`; log the vote ID in a Docket comment.
 
 Log vote proposals, outcomes, and resulting actions as Docket comments for traceability.

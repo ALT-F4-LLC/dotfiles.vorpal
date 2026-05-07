@@ -1,26 +1,26 @@
 ---
-name: specs
+name: create-specs
 description: >
   Bootstrap docs/spec/ by spawning @staff-engineer agents in parallel to generate project
-  specification files. Trigger on: "specs", "generate specs", "bootstrap specs", "create
-  project specifications".
+  specification files. Trigger on: "create specs", "generate specs", "bootstrap project
+  specs", "create project specifications".
 argument-hint: "[file...]"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. SendMessage team-lead if blocked.
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. SendMessage team-lead if blocked.
 
 ## Argument Handling
 
 The argument is **optional** — this skill has a single well-defined behavior.
 
-- **No argument** (`/specs`): Bootstrap all 7 spec files.
-- **With argument** (`/specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
+- **No argument** (`/create-specs`): Bootstrap all 7 spec files.
+- **With argument** (`/create-specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
   instead of all 7. Validate each name against the Spec File Reference table.
 - **On unknown name(s)**: Abort with a message listing the rejected name(s) and the 7 valid filenames; do not partially proceed.
 
-# Specs
+# Create Specs
 
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs; spawned agents are leaf agents (prohibition detailed in the Spawning Template).
 
@@ -60,7 +60,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: this list is also referenced by skills/create-prd/SKILL.md. Update both in lockstep. -->
+<!-- COUPLING: the 7 reserved names are HARD-REFUSED by skills/create-prd, create-tdd, create-adr, and create-ux-spec. Update all 5 (this file plus the 4 create-* skills) in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
@@ -136,7 +136,7 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage team-lead if you are blocked or need a decision; the completion SendMessage is covered below.
+- Do NOT spawn sub-agents, invoke `/create-vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage team-lead if you are blocked or need a decision; the completion SendMessage is covered below.
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:

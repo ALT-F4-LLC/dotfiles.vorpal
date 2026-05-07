@@ -1,5 +1,23 @@
 # Changelog: dev
 
+## 2026-05-06
+
+### Summary
+Coherence pass: wired explicit hand-offs to canonical authoring skills (`create-tdd`, `create-ux-spec`, `create-prd`) and removed two near-duplicate prohibition/delegation blocks. Net 400→394.
+
+### Changes
+- @staff-engineer (TDD) template: now points to `Skill(create-tdd, "<topic>")` as the format authority for docs/tdd/
+- @ux-designer template: now points to `Skill(create-ux-spec, "<topic>")` as the format authority for docs/ux/
+- Large Task pattern: documents PRD entry point via `Skill(create-prd, ...)` for product-defined initiatives — closes claim made in create-prd's "When to Use"
+- Removed duplicate prohibition banner before Spawning Templates (already at line 12)
+- Folded "Handling Delegation Requests" section into Consensus Integration to eliminate duplicated delegation_request schema (canonical site is skills/vote/)
+
+### Dimensions Evaluated
+Coherence, Over-Engineering, Orchestration & Agent Teams, Spec Alignment
+
+### Rename
+No rename.
+
 ## 2026-05-05
 
 ### Summary

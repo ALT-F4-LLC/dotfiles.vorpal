@@ -13,7 +13,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Create PRD — Author a Product Requirements Document
+# PRD — Author a Product Requirements Document
 
 You are the **PRD Author**. You produce a single Product Requirements Document at
 `docs/spec/{slug}.md` and return. The calling agent (typically `@project-manager`)
@@ -57,8 +57,8 @@ For this skill, substitute `{TYPE}` with `prd` in the usage error.
 - The calling agent (typically `@project-manager`) is producing a PRD before
   decomposition into Docket issues so reviewers and implementers share one product
   definition.
-- The `dev` skill's Large Task pattern requests a PRD as the entry point — this skill
-  is the canonical path.
+- The team-lead Large Task pattern (`agents/team-lead.md`) requests a PRD as the
+  entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 
@@ -252,7 +252,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are also HARD-REFUSED by skills/tdd, adr, and ux-spec, and listed in skills/specs/SKILL.md Spec File Reference. Update all 5 in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are HARD-REFUSED by skills/tdd, adr, and ux-spec, and listed in skills/specs/SKILL.md Spec File Reference. Update all 5 (this file plus the 3 sibling doc-authoring skills and specs) in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

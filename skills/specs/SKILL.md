@@ -20,14 +20,14 @@ The argument is **optional** — this skill has a single well-defined behavior.
   instead of all 7. Validate each name against the Spec File Reference table.
 - **On unknown name(s)**: Abort with a message listing the rejected name(s) and the 7 valid filenames; do not partially proceed.
 
-# Create Specs
+# Specs
 
 You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs; spawned agents are leaf agents (prohibition detailed in the Spawning Template).
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
 **Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance is handled by
-`@staff-engineer` during TDD and review workflows (see `dev` skill).
+`@staff-engineer` during TDD and review workflows (see `agents/team-lead.md` Medium/Large Task patterns).
 
 ---
 
@@ -90,9 +90,12 @@ exploration guidance for each — used in the spawning template.
 
 Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
 
+Record each agent's spawn time (`Bash date +%s`) in a local map keyed by agent name; you'll
+need it for the stall check below.
+
 Poll `TaskList()` every ~2 minutes. Classify each task:
 - **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR task is `in_progress` past ~10 min with no SendMessage activity.
+- **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 600s` with no SendMessage activity since spawn.
 - **in_progress** — still working; continue polling.
 
 **On any failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
@@ -106,8 +109,13 @@ After all agents complete, run verification:
 1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
 2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
    delimiter). Flag any file that does not — it indicates a malformed spec.
+3. Run `grep -L '```mermaid' docs/spec/*.md` to flag any spec missing the required Mermaid
+   diagram (per Spawning Template). Diagram presence is a sanity check, not a deep validation —
+   if a spec genuinely has no relationships/flows to diagram, the agent should have noted that
+   in the file; flag it for operator review.
 
-Report which files were created successfully and flag any that are missing or malformed.
+Report which files were created successfully and flag any that are missing, malformed, or
+missing required diagrams.
 
 ---
 

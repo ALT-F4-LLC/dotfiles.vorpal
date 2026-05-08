@@ -108,9 +108,7 @@ Mid-Phase-1 cross-cutting findings: append to a running notes list and pass verb
 
 ### Phase 2: Coherence & Renames (sequential)
 
-After ALL Phase 1 teammates complete and the orchestrator has applied their changes, spawn a single `coherence-reviewer` (@staff-engineer, read-only) per the Phase 2 template and assign the Phase 2 task.
-
-The Phase 2 teammate follows the Phase 2 spawning template (read-only cross-cutting review).
+Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single `coherence-reviewer` (@staff-engineer, read-only) per the Phase 2 template and assign the Phase 2 task.
 
 **After the Phase 2 teammate completes**, the orchestrator:
 
@@ -144,8 +142,6 @@ New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 
 ### Phase 0: Docket CLI Audit
-
-Spawn one docket-auditor agent using `subagent_type: "senior-engineer"` (needs Bash access).
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")

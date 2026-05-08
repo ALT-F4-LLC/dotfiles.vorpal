@@ -13,7 +13,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Create TDD — Author a Technical Design Document
+# TDD — Author a Technical Design Document
 
 You are the **TDD Author**. You produce a single Technical Design Document at
 `docs/tdd/{slug}.md` and return. The calling agent (typically `@staff-engineer`)
@@ -56,8 +56,8 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
   `docs/tdd/{slug}.md` as the authoritative design record.
 - The calling agent (typically `@staff-engineer`) is producing a design that needs to
   go through the draft → questions-resolved → in-review → accepted lifecycle.
-- The `dev` skill's Medium Task pattern asks for a TDD without a separate PRD — this
-  skill is the canonical path.
+- The team-lead orchestrator's Medium Task pattern asks for a TDD without a separate
+  PRD — this skill is the canonical path.
 
 ## When NOT to Use
 

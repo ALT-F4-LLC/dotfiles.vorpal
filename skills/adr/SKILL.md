@@ -14,7 +14,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Create ADR — Author an Architecture Decision Record
+# ADR — Author an Architecture Decision Record
 
 You are the **ADR Author**. You produce a single Architecture Decision Record at
 `docs/tdd/adr/{NNNN}-{slug}.md` and return. The calling agent (typically
@@ -245,16 +245,18 @@ On operator Cancel during the collision dialog: emit
 For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 `docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
-**Post-write race detection (best-effort)**: After Write, re-run `Glob
+**ADR-specific override — insert between canonical steps 3 and 4 (before
+"End.")**: After Write but before emitting the confirmation line, re-run `Glob
 docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is
-returned, ABORT loudly:
+returned, ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
 ```
 
 This catches different-slug concurrent races but NOT same-slug concurrent races
-(see Failure Modes below).
+(see Failure Modes below). On clean Glob (exactly one match), proceed to canonical
+step 4 (Emit confirmation) and end.
 
 ## Failure Modes
 

@@ -13,7 +13,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Create UX Spec — Author a UX Design Spec
+# UX Spec — Author a UX Design Spec
 
 You are the **UX Spec Author**. You produce a single UX design spec at
 `docs/ux/{slug}.md` and return. The calling agent (typically `@ux-designer`) drafts
@@ -140,6 +140,7 @@ malformed frontmatter.
    an unresolved "Open Questions" section. If a question requires another agent's
    input, the calling agent consults them and confirms with the operator before
    re-invoking this skill.
+
 ## Output Contract
 
 ### Required Frontmatter
@@ -272,4 +273,3 @@ On operator Cancel during the collision dialog: emit
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. Common defects include `status` field instead of `maturity`, missing Mermaid block, or missing required section. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
-| Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |

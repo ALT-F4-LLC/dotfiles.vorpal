@@ -1,5 +1,34 @@
 # Changelog: adr
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: fixed stale H1 prefix to align with `name: adr` after `create-` prefix was dropped. Symmetric to the H1 fix applied to vote earlier this cycle.
+
+### Changes
+- H1 changed from `# Create ADR — ...` to `# ADR — ...` to match frontmatter `name:` field
+
+### Dimensions Evaluated
+Coherence (cross-skill H1/name consistency).
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Fixed post-write race detection ordering bug: the check was described after the canonical "End." instruction, making it unreachable. Reframed as an explicit ADR-specific override that runs between canonical steps 3 (Write) and 4 (Emit). Net +2.
+
+### Changes
+- Save & Return: post-write race-detection paragraph reframed as "ADR-specific override — insert between canonical steps 3 and 4 (before End.)" so the check actually runs before termination
+- Added explicit "On clean Glob, proceed to canonical step 4" branch so the agent knows to continue after a passing check
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

@@ -27,7 +27,7 @@ yourself — you only coordinate and apply edits.**
 Target skill(s) are determined by `$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills dev`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
+- **With argument** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
 
 ---
 
@@ -78,7 +78,6 @@ propose additions — all must pass the Content Gate.**
    Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag
    hub-and-spoke if >50% of paths route through one agent. For team skills: correct lifecycle
    (TeamCreate → spawn → shutdown → TeamDelete), task coordination, cleanup, shutdown protocol.
-   Check: self-verification, course-correction triggers, efficient context (targeted Grep over broad reads).
 6. **Coherence** — Scope overlaps, terminology, shared conventions, accurate references.
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns.
 8. **Rename Consideration** — Only if compelling — stability has value.
@@ -260,7 +259,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 ## Phase 1 Coherence Issues
 <list issues from Phase 1, or "None reported.">
 
-## Tasks
+## Task
 1. Read ALL skill files in .claude/skills/*/SKILL.md and skills/*/SKILL.md
 2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
@@ -282,13 +281,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 
 ## Rules
 
-1. **Pre-flight before spawning.** Validate skill files and arguments first.
-2. **Team before agents.** `TeamCreate` → `TaskCreate` → `Agent` calls.
-3. **Phase 1 in parallel.** Use `team_name` and `name` when spawning.
-4. **Phase 2 after all Phase 1.** Use `TaskList` to verify completion.
-5. **Always run Phase 2** — even for single-skill improvements.
-6. **Never commit.** No `git add`, `git commit`, or `git push`.
-7. **Changelog mandatory.** Follow format above; orchestrator normalizes.
-8. **500-line budget.** `wc -l` after edits; consolidate if over.
-9. **Crash & Stall Recovery.** See dedicated section above. Never review directly — the orchestrator-only-coordinates invariant is absolute.
-10. **Content Gate enforced.** Reject additions failing any check — primary bloat defense.
+1. **Always run Phase 2** — even for single-skill improvements.
+2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+3. **Fail loud.** See Crash & Stall Recovery. Never review directly — the orchestrator-only-coordinates invariant is absolute.
+4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

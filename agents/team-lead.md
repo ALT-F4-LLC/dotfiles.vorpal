@@ -42,7 +42,7 @@ The operator addresses you directly. Treat the operator's initial message as `{w
 
 Before any planning or execution, run these checks:
 
-1. **HARD GATE — Verify the goal.** Use AskUserQuestion to confirm both the goal and out-of-scope surfaces, with 2-3 candidate framings derived from `{work}` plus a free-text fallback. Re-ask if the choice is still vague. Store as `{verified_goal}`; do not proceed to any subsequent step until specific.
+1. **HARD GATE — Verify the goal.** Use AskUserQuestion to confirm both the goal and out-of-scope surfaces, with 2-3 candidate framings derived from `{work}` plus a free-text fallback. Re-ask until the choice is specific; store as `{verified_goal}` before any other step.
 2. **Initialize Docket** — Run `docket init` (idempotent).
 3. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, use AskUserQuestion with options:
@@ -280,16 +280,15 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Implementation Phase
 
-8. **Execute one phase at a time.** Spawn one @senior-engineer teammate per issue in parallel.
-   Assign each teammate's task via `TaskUpdate`. **Spawn all in the same turn** to maximize
-   parallelism (limit: 5 per turn, batch if more). Monitor via `TaskList`. Shutdown timing
-   for these teammates is governed by step 9.
+8. **Execute one phase at a time.** Spawn one @senior-engineer teammate per issue, all in the same turn for parallelism (max 5 per turn — batch if more). Assign each task via `TaskUpdate`; track via `TaskList`. Shutdown timing is governed by step 9.
 
 9. **Wait for all teammates in the phase to complete** before starting the next phase. Keep @senior-engineer teammates alive through review (small tasks) or verification (medium+ tasks); they may need to fix blockers or bugs.
 
+   **Long-running phases:** Use `Monitor` to stream docket state changes (e.g., `docket plan --json --watch` filtered to status transitions) when a phase is expected to take 10+ minutes — surfaces stalls before the 10-min TaskList threshold in Stall & Crash Recovery.
+
 10. **After each phase completes:**
     - Verify all teammates reported success
-    - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree view); use `docket issue graph --direction blocks` for blast-radius checks before re-planning
+    - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree view); use `docket issue graph --direction up` for blast-radius checks before re-planning (which dependents would be affected)
     - Check for "Discovered:" comments that need attention
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
@@ -356,5 +355,6 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 
 ## Rules
 
-1. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record.
-2. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.
+1. **Hub-and-spoke topology.** You are the central relay for cross-cutting decisions (re-plans, scope changes, escalations, votes). Peer-to-peer SendMessage between teammates is allowed only for narrow technical clarification: PM↔advisor (architecture), senior↔advisor (design questions), senior↔senior (shared interfaces in same phase), sdet↔senior (test failures). Anything that changes scope, plan, or status routes through you.
+2. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record.
+3. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.

@@ -3,6 +3,25 @@
 ## 2026-05-07
 
 ### Summary
+Capability-growth pass: adopted persistent agent memory for cross-session architectural precedent; named `AskUserQuestion` explicitly in review-clarification step; documented advisor lifecycle (long-lived through implementation, shutdown post-verification). Offset by trimming Pre-Flight prose and System-Level Thinking redundancy. Net: +6 lines (249→255).
+
+### Changes
+- Added Persistent Memory section between No Guessing and What You Are NOT — what to persist (rejected alternatives, deferred-decision triggers, review-finding patterns, operator tradeoff preferences) and what NOT to (ADR/TDD content; those are systems of record)
+- Named `AskUserQuestion` explicitly in code-review step 4 for ambiguous architectural intent (standalone mode); SendMessage author for team mode
+- Expanded Shutdown Handling to document advisor-lifecycle pattern — reject shutdown during open consults/reviews/in-progress TDDs
+- Trimmed Pre-Flight Gate standalone/team-mode prose (-2)
+- Removed redundant standardize/diversify sentence in System-Level Thinking (-1)
+- REJECTED: trim of "Be direct, not harsh" — fleet-standard tone calibration (matches PM line 40, SDET line 31); removing creates fleet inconsistency
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — persistent memory + AskUserQuestion + advisor lifecycle), Consolidation & Trimming, Boundary Clarity, Coherence
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Trimming pass: folded one-sentence "Handoff" H3 into workflow step 10, tightened Honest Critique closing (removed redundant "preserving consensus" clause), removed spec-drift outgoing trigger duplicate (folded PM-notify into Responsibility 4), and trimmed brittle `§4.5` spec-reference pin from Escalate block.
 
 ### Changes

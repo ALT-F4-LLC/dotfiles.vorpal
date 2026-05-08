@@ -1,5 +1,51 @@
 # Changelog: ux-designer
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: extended Persistent memory to capture solutions to recurring design problems.
+
+### Changes
+- Persistent memory now also saves solutions to recurring design problems (symptom → root cause → resolution) so future specs don't re-encounter the same friction
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — memory captures design problem-solution pairs)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: surfaced the sub-agent invocation ban in the CRITICAL banner.
+
+### Changes
+- CRITICAL banner now covers both commit ban AND `/vote`/Skill/Agent/TeamCreate ban (was only commit ban)
+
+### Dimensions Evaluated
+Coherence (PRIMARY — banner uniformity across fleet), Behavioral (clarifies an existing rule that was hidden)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Trim of redundant inter-agent communication structure, surface-table preamble, "How You Work" verb-routing, research framing, and a handoff line that duplicated the ux-spec skill responsibilities. Audit-scoring rubric relocated from "How You Work" into Responsibility 5 / Design QA where it belongs.
+
+### Changes
+- Consolidated "Consult first" + "Notify proactively" trigger lists into a single "Outgoing triggers" list (peer-message preference line dropped — already implied by the trigger list)
+- Trimmed redundant Surface-Specific table caption
+- Compressed Research and Discovery to one declarative paragraph
+- Removed "How You Work" verb-routing table; relocated audit-scoring rubric into Design QA Output
+- Removed `last_updated`/`updated_by` instruction (format authority is `skills/ux-spec/SKILL.md` per the agent's own directive)
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Capability Growth & Cross-Communication, Actionability, Completeness, Spec Alignment
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

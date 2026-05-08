@@ -1,5 +1,49 @@
 # Changelog: project-manager
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: extended Persistent memory to capture solutions to recurring planning problems.
+
+### Changes
+- Persistent memory now also saves solutions to recurring planning problems (symptom → diagnosis → resolution) so future plans don't re-encounter the same pitfall
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — memory captures planning problem-solution pairs)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: surfaced the sub-agent invocation ban in the CRITICAL banner.
+
+### Changes
+- CRITICAL banner now covers both commit ban AND `/vote`/Skill/Agent/TeamCreate ban
+- Existing peer-routing language (Phase 1 hub-and-spoke fix) confirmed consistent with corrected team-lead Rule 1; no body changes required
+
+### Dimensions Evaluated
+Coherence (PRIMARY — banner uniformity across fleet), Behavioral (no rule changes)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Hub-and-spoke compliance: removed direct PM→senior-engineer and PM→sdet notify channels (forbidden by team-lead.md hub-and-spoke topology — PM peer channel is advisor-only). Consolidated those triggers plus the Broadcast bullet into a single team-lead-routed block, preserving the operator-visibility contract via Docket comment mirror. Fixed invalid `blocked` Docket status in Cancellation section (statuses are `backlog | todo | in-progress | review | done`). Net: -5 lines (391→386).
+
+### Changes
+- Replaced "Notify @senior-engineer directly when", "Notify @sdet directly when", and "Broadcast" sections with a single "Route through team-lead" block aligned with hub-and-spoke topology
+- Replaced `todo`/`blocked` with `todo`/`in-progress` in Cancellation section (no `blocked` status exists in Docket)
+
+### Dimensions Evaluated
+Boundary Clarity (PRIMARY — hub-and-spoke conflict resolved), Spec Alignment (Docket status enum correctness), Consolidation & Trimming (-5 lines), Cross-Communication (notify pattern realigned to team-lead canon)
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

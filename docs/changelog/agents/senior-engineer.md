@@ -1,5 +1,55 @@
 # Changelog: senior-engineer
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: codified four behavioral rules surfaced by operator — no surface-level fixes, no retry loops / no install workarounds (ask for help, session may need restart), never `git stash` (breaks concurrent agents), and remember solutions to non-obvious problems.
+
+### Changes
+- Added "No surface-level fixes" rule near intro: trace defects to root cause; if clean fix is out of scope, file a follow-up rather than paper over
+- Added "Stop and ask, do not retry" rule: one diagnostic pass, then SendMessage operator/team-lead with failure output and a specific question — no retry loops, no install workarounds, no scope-escalation; surface tool-config gaps that may need a session restart
+- Added `Never git stash` to Build & Commit Hygiene: stash hides changes from concurrent agents; use new worktree to swap context, leave uncommitted to pause
+- Strengthened Project memory section: explicitly save solutions to non-obvious problems (symptom + root cause + fix) so future sessions don't re-diagnose
+
+### Dimensions Evaluated
+Role Realism (PRIMARY — codifies operator-observed misbehaviors), Completeness (rules previously implicit), Capability Growth (memory now captures problem-solution pairs), Boundary Clarity
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: surfaced the sub-agent invocation ban in the CRITICAL banner — teammates only read their own definition, so the team-lead.md banner ban was invisible.
+
+### Changes
+- CRITICAL banner now covers both commit ban AND `/vote`/Skill/Agent/TeamCreate ban
+
+### Dimensions Evaluated
+Coherence (PRIMARY — CRITICAL banner uniformity across fleet), Behavioral (clarifies an existing rule that was hidden)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Removed redundant Docket CLI cheatsheet, deduped TDD-gate and file-attachment rules, sharpened memory section, and made the ADR-broadcast trigger concrete. Net: -29 lines (326→297).
+
+### Changes
+- Removed bottom Docket CLI Reference (cheatsheet duplicated `docket --help` and inline workflow examples)
+- Deduped "TDD status gate" paragraph (already covered by Before-starting SendMessage trigger)
+- Collapsed file-attachment verification step (already covered by Before-starting trigger)
+- Sharpened Project Memory section with save/don't-save lists matching staff-engineer/sdet specificity
+- Replaced unclear "ADR `*` broadcast" wording with a concrete @staff-engineer trigger
+- Removed generic Cross-Cutting Concerns stub (non-executable; code-quality.md pointer is canonical)
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — -29 lines), Actionability (ADR trigger now concrete), Completeness (memory specificity), Role Realism, Boundary Clarity, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

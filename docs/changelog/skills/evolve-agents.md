@@ -3,6 +3,22 @@
 ## 2026-05-06
 
 ### Summary
+Two redundancy trims plus Phase 2 gate parity with evolve-skills. Net 262→258.
+
+### Changes
+- Phase 2 spawn line: dropped redundant "The Phase 2 teammate follows the Phase 2 spawning template" restatement — preceding sentence already names the template
+- Phase 2 gate: tightened to match evolve-skills — added explicit "all Phase 1 teammates shut down" precondition (was only "complete + applied"); prevents spawning Phase 2 while stalled Phase 1 agents are still alive
+- Phase 0 Docket CLI Audit: removed "Spawn one docket-auditor agent using subagent_type..." preamble — the code block on the next line restates it
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
 Phase 2 coherence: aligned operator-prompt blockquote phrasing with evolve-skills.
 
 ### Changes

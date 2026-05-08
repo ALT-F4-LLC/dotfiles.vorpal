@@ -1,5 +1,35 @@
 # Changelog: evolve-skills
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: replaced deleted `dev` skill name in argument-handling example with current `tdd`.
+
+### Changes
+- `/evolve-skills dev` example changed to `/evolve-skills tdd` — `dev` was deleted earlier this cycle; the example now uses a real skill name and exercises the same Pre-flight step 5 validation path
+
+### Dimensions Evaluated
+Coherence; stale-reference cleanup.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Self-evolution pass: collapsed bloated 10-rule Rules section to 4 rules matching sister evolve-agents (removed duplicates of CRITICAL blockquote, Orchestration Workflow ordering, Changelog Format, and Content Gate). Trimmed Dimension 5 trailing self-instruction. Phase 2 `## Tasks` → `## Task` for sister parity. Net 294→287.
+
+### Changes
+- Rules section: 10 rules → 4 rules; rules 1-5 duplicated Orchestration Workflow ordering, rule 6 duplicated CRITICAL blockquote, rule 7 duplicated Changelog Format, rule 8 duplicated Pre-flight step 4 + template `{mode}`, rule 10 duplicated Content Gate — all fail Content Gate Non-redundant
+- Dimension 5: removed trailing "Check: self-verification, course-correction triggers, efficient context (targeted Grep over broad reads)" — fails Content Gate Behavioral
+- Phase 2 template: `## Tasks` → `## Task` for parity with Phase 1 template (`## Your Task`) and sister evolve-agents
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

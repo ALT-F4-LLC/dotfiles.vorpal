@@ -1,5 +1,35 @@
 # Changelog: specs
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: replaced stale `dev` skill reference with team-lead orchestrator and fixed stale H1 prefix.
+
+### Changes
+- Scope-boundary note now points to `agents/team-lead.md` Medium/Large Task patterns instead of the deleted `dev` skill — accurate ownership for ongoing `docs/spec/` maintenance
+- H1 changed from `# Create Specs` to `# Specs` to match frontmatter `name: specs`. Symmetric to the vote H1 fix
+
+### Dimensions Evaluated
+Coherence; stale-reference cleanup.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Closed two safety-rail gaps: Mermaid-diagram verification (template required it but verification didn't enforce it) and an executable mechanism for the 10-min stall classifier (was unenforceable without recorded spawn times). Net 164→172.
+
+### Changes
+- Step 3: added `grep -L '```mermaid' docs/spec/*.md` sanity check so the Spawning Template's Mermaid requirement is actually enforced; requirement-without-verification was dead text
+- Step 2: added spawn-time recording instruction (`Bash date +%s` keyed by agent name) so the "10 min stall" arm of failed-task classification has an executable timing source — TaskList does not expose age, so prior phrasing was unenforceable
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

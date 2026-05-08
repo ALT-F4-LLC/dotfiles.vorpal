@@ -3,6 +3,28 @@
 ## 2026-05-06
 
 ### Summary
+Trim cycle on largest skill (366→338): fixed stale `# Create Vote` H1 from rename, collapsed triple-redundant rubber-stamp guidance, dropped forward-pointer Pre-flight step, compressed Execution Mode Detection + Phase 2 wait-and-isolate callout + AskUserQuestion shape, removed Rules section (all 4 rules duplicated content stated upstream).
+
+### Changes
+- H1 fix: `# Create Vote` → `# Vote` — rename was incomplete; title contradicted frontmatter `name: vote`
+- Consensus-integrity paragraph collapsed into role declaration sentence; reviewer-prompt template retains the load-bearing instance
+- Pre-flight step 5 (plan reviewer selection) folded into step 4 — was forward-pointer to next section
+- Execution Mode Detection compressed; Delegation Protocol intro sentence removed
+- Phase 2 "Critical constraint" callout merged into preceding paragraph — duplicated wait + no-cross-pollination rules
+- Reviewer Prompt Template: dropped generic "think step by step" — structured output requirement enforces analysis (Content Gate Behavioral)
+- Pre-flight goal-alignment AskUserQuestion shape compressed to single line per evolve-* convention
+- Removed Rules section entirely — all 4 rules duplicate Execution Mode / Phase 2 / Phase 3 content
+- Unmapped `created_by` note tightened to inline blockquote
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Skill Design Quality, Actionability, Completeness, Spec Alignment, Orchestration & Agent Teams, Rename.
+
+### Rename
+No rename. CHANGE 1 above completed the leftover stale H1 from the prior `create-vote` → `vote` rename.
+
+## 2026-05-06
+
+### Summary
 **Rename: `create-vote` → `vote`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-vote` → `/vote`, all cross-references updated.
 
 ### Changes

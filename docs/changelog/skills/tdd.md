@@ -1,5 +1,33 @@
 # Changelog: tdd
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: fixed stale H1 prefix to align with `name: tdd` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
+
+### Changes
+- H1 changed from `# Create TDD — ...` to `# TDD — ...` to match frontmatter `name:` field
+
+### Dimensions Evaluated
+Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Coherence fix: replaced stale `dev` skill reference with team-lead orchestrator in "When to Use" §3. The `dev` skill was deleted in commit 01b6d0c when the team-lead orchestrator took over its responsibilities; the cross-reference was left behind. Net +0.
+
+### Changes
+- "When to Use" §3: "The `dev` skill's Medium Task pattern" → "The team-lead orchestrator's Medium Task pattern" — matches current orchestration model
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

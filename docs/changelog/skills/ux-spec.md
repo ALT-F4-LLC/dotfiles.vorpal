@@ -1,5 +1,34 @@
 # Changelog: ux-spec
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: fixed stale H1 prefix to align with `name: ux-spec` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
+
+### Changes
+- H1 changed from `# Create UX Spec — ...` to `# UX Spec — ...` to match frontmatter `name:` field
+
+### Dimensions Evaluated
+Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Coherence sweep: removed sub-agent prohibition row from Failure Modes (drift vs. tdd/prd/adr — already enforced by BANNER and `allowed-tools`); added missing blank line before `## Output Contract` heading for sibling formatting parity. Net +0.
+
+### Changes
+- Failure Modes: dropped sub-agent prohibition row (redundant with BANNER + `allowed-tools` exclusion of Agent/TeamCreate/TeamDelete/Skill/SendMessage/Edit; not present in tdd/prd/adr siblings)
+- Inserted blank line between Authoring Procedure step 7 and `## Output Contract` heading (formatting parity with sibling doc-authoring skills)
+
+### Dimensions Evaluated
+Coherence, Over-Engineering, Actionability, Completeness, Spec Alignment, Orchestration.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

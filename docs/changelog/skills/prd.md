@@ -1,5 +1,34 @@
 # Changelog: prd
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: fixed stale H1 prefix to align with `name: prd` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
+
+### Changes
+- H1 changed from `# Create PRD — ...` to `# PRD — ...` to match frontmatter `name:` field
+
+### Dimensions Evaluated
+Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-06
+
+### Summary
+Coherence pass: replaced stale `dev` skill reference with the team-lead Large Task pattern (the dev skill was retired in commit 01b6d0c) and made the reserved-name COUPLING comment symmetric with sibling skills. Net +0.
+
+### Changes
+- When to Use: line 60 — "The `dev` skill's Large Task pattern" → "The team-lead Large Task pattern (`agents/team-lead.md`)". Reason: dev skill replaced by team-lead orchestrator; PRD entry-point now lives at agents/team-lead.md:78–85
+- Failure Modes Reserved-Name List COUPLING comment: rephrased to match the symmetric "Update all 5 (this file plus the N siblings) in lockstep" pattern already used in tdd, adr, ux-spec, and specs
+
+### Dimensions Evaluated
+Coherence, Spec Alignment, Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

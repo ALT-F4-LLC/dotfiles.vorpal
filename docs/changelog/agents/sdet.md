@@ -1,5 +1,53 @@
 # Changelog: sdet
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: codified two behavioral rules surfaced by operator — no retry loops on failing test commands (ask for help; session may need restart), and remember solutions to non-obvious test/CI/fixture failures.
+
+### Changes
+- Added "Stop and ask, do not retry" rule: one diagnostic pass on failing test/fixture/CI commands, then SendMessage operator/team-lead with failure output — no retry loops (spams approval prompts), no install workarounds, no silent skip; surface harness tool-config gaps
+- Strengthened Persistent memory: now also captures solutions to non-obvious test/CI/fixture failures (symptom + root cause + fix) so future sessions don't re-diagnose
+
+### Dimensions Evaluated
+Role Realism (PRIMARY — codifies operator-observed misbehaviors), Capability Growth (memory captures problem-solution pairs), Completeness
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: surfaced the sub-agent invocation ban in the CRITICAL banner; aligned testability-trigger vocabulary with ux-designer.
+
+### Changes
+- CRITICAL banner now covers both commit ban AND `/vote`/Skill/Agent/TeamCreate ban
+- Renamed shorthand "error/edge/concurrency" to "error states, edge cases, and concurrency" to match the bidirectional outgoing trigger in ux-designer.md
+
+### Dimensions Evaluated
+Coherence (PRIMARY — banner uniformity, bidirectional trigger phrasing), Behavioral (no rule changes)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Coherence & trimming pass — merged operating-context + agent-memory paragraphs into senior-engineer-style single block, removed three duplicate "no guessing/no issue creation" restatements, compressed Greenfield step 6 and Verification template preamble. Phase 0 capabilities (Monitor, agent-memory, `[SDET→@agent]` visibility, `docket plan --root`, `move review`) already adopted. Net: -6 lines (307→301).
+
+### Changes
+- Merged Operating context + cross-session memory list into one paragraph; added "verify means run the suite" framing matching senior-engineer
+- Removed "is theater" rhetorical flourish + "Do not guess at intent" tail in Check Specs (duplicates No-guessing block at top)
+- Trimmed Verification Output Template ad-hoc preamble (duplicates Bug Reporting + NOT @project-manager)
+- Compressed Greenfield step 6 (removed "flag testing.md if missing" — implicit from step 1)
+- Compressed Verify Issues preamble (boundary already in NOT section)
+
+### Dimensions Evaluated
+All 8: Consolidation & Trimming (PRIMARY), Coherence (3 duplicate-rule sites), Role Realism, Actionability, Boundary Clarity, Completeness, Capability Growth (no additions — already current), Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

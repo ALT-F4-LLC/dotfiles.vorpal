@@ -1,5 +1,48 @@
 # Changelog: team-lead
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: added Persistent memory section to capture solutions to non-obvious orchestration problems.
+
+### Changes
+- Added Persistent memory paragraph at top: save operator priorities, recurring orchestration pitfalls (stall classes, fix-loop offenders, re-plan triggers), AND solutions to non-obvious coordination problems (symptom → root cause → resolution) so future cycles don't re-discover the same gap; explicit do-not-save list (per-cycle plan details, teammate reports — those live in Docket/changelogs)
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — orchestrator now persists cross-cycle learning), Coherence (memory format aligned with fleet bold-prefix paragraph convention)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: broadened Rule 1 hub-and-spoke description to match fleet reality — the prior 4-pair allowlist contradicted documented peer triggers in every teammate file.
+
+### Changes
+- Rule 1 now allows any peer pair for narrow technical clarification (architecture, shared-interface, test-failure, design-QA, spec-feasibility) while reserving team-lead as relay for cross-cutting decisions (re-plans, scope changes, vote delegation, escalations, stall recoveries, plan revisions to in-flight issues)
+
+### Dimensions Evaluated
+Coherence (PRIMARY — canonical→reality alignment), Behavioral (preserves the actual rule that teammates already follow), Concrete (enumerates which classes route through hub vs. peer-to-peer)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Fixed `TaskCreate` API misuse in Team Setup (no `depends_on` parameter exists; dependencies are set via `TaskUpdate` `addBlockedBy`). Removed redundant /vote prohibition from the TDD spawning template — already covered by the file-top CRITICAL banner. Net: -1 line.
+
+### Changes
+- Fixed Team Setup step 2: `TaskCreate ... set depends_on` → `TaskCreate` then `TaskUpdate ... addBlockedBy` (correctness bug — `depends_on` is not a valid TaskCreate parameter; phases would silently lack ordering)
+- Removed `Do NOT invoke /vote for TDD approval` clause from the @staff-engineer (TDD) spawning template — duplicates the CRITICAL banner which already prohibits all teammates from invoking /vote, Skill(), Agent(), TeamCreate
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — TaskCreate API correctness), Consolidation & Trimming, Actionability
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

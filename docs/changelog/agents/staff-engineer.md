@@ -1,5 +1,54 @@
 # Changelog: staff-engineer
 
+## 2026-05-08
+
+### Summary
+Phase 3 operating discipline: codified surface-fix rejection on review side, and remember solutions to recurring architectural problems.
+
+### Changes
+- Added "Surface-level fixes are reject-class" to Honest Technical Critique: block patches that mask symptoms, ignore platform/design limitations, or close off future improvement paths; if proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch
+- Strengthened Persistent memory: now also captures solutions to recurring architectural problems (symptom → root cause → resolution) so future reviews don't re-diagnose the same anti-pattern
+
+### Dimensions Evaluated
+Role Realism (PRIMARY — review-side enforcement of no-surface-fix), Capability Growth (memory captures architectural problem-solution pairs)
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Phase 2 coherence: aligned Operating context label and Persistent Memory format with the other four teammates; surfaced the sub-agent invocation ban in the CRITICAL banner.
+
+### Changes
+- Added `**Operating context**:` labeled paragraph (was unlabeled in role intro)
+- Replaced `## Persistent Memory` H2 with bold-prefix paragraph + save/don't-save shape matching senior-engineer/sdet/ux-designer/project-manager
+- CRITICAL banner now covers both commit ban AND `/vote`/Skill/Agent/TeamCreate ban (was only commit ban)
+- Restored produces TDDs/ADRs/specs and reviews framing in role intro (paired with Operating context label addition)
+
+### Dimensions Evaluated
+Coherence (PRIMARY — uniform scan landmarks across fleet), Behavioral (no rule changes), Non-redundant (tightened memory paragraph), Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-05-08
+
+### Summary
+Consolidation pass: fused two duplicate operator-visibility rationale paragraphs into one block, trimmed intro restatement of frontmatter description + What-You-Are-NOT content, normalized inconsistent (cc operator) annotation, compressed Gather Context parentheticals. No new content — file already encodes Phase 0 findings (persistent memory, AskUserQuestion, advisor lifecycle, peer-to-peer triggers, real-time cc).
+
+### Changes
+- Trimmed intro paragraph — frontmatter description and What You Are NOT cover the produces/reviews/peer attribution; kept the NEVER-write-code sting line
+- Fused two operator-visibility paragraphs (real-time cc preamble + persistent Docket-prefix contract) into one "Operator visibility" block; relocated below Status updates for cleaner flow
+- Removed inconsistent `(cc operator — already direct)` annotation; matches the other six triggers' plain `(cc operator)`
+- Compressed Gather Context parentheticals — dropped generic `(project health)` for docket stats; tightened two others while preserving behavioral cues
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Coherence (annotation normalization), Role Realism, Boundary Clarity, Completeness, Capability Growth (verified Phase 0 findings already present), Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

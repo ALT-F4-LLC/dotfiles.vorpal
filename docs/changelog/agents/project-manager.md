@@ -1,5 +1,35 @@
 # Changelog: project-manager
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: removed duplicate HARD GATE marker on adjacent lines for cleaner gate phrasing.
+
+### Changes
+- Session Initialization step 2: dropped the parenthetical `(HARD GATE):` from the heading line, leaving the canonical `**HARD GATE — Do not proceed...**` imperative on the line below. Single HARD GATE marker per gate matches team-lead's pattern; preserves the intentional inline-in-numbered-list variance (vs. H2+bold pattern used by standalone-flow agents).
+
+### Dimensions Evaluated
+Within-file gate-marker consistency, alignment with team-lead's orchestrator-flow gate pattern.
+
+### Rename
+None.
+
+## 2026-05-07
+
+### Summary
+BALANCED-mode trim pass at 406 lines: removed redundant Operating-context paragraph (covered by fleet pattern), tightened Session Init step 3, SendMessage consult preamble, Notify @senior-engineer block, Status & Observability, Cross-Workstream Coordination, /vote section, and Plan Monitoring preamble. Fixed `docket vote create` short flag (`-r|--rationale`) per Phase 0 CLI audit. Net: -22 lines (406→384).
+
+### Changes
+- Removed Operating-context paragraph (duplicates fleet stateless-subagent pattern + step-1 reconstruction guidance)
+- Tightened Session Init step 3, SendMessage preamble, Notify @senior-engineer, Status & Observability, Cross-Workstream, /vote section, Plan Monitoring preamble
+- Fixed `docket vote create -r|--rationale` short flag in CLI Reference
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY at 406 lines), Spec Alignment (CLI fix), Boundary Clarity, Actionability, Role Realism, Completeness, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

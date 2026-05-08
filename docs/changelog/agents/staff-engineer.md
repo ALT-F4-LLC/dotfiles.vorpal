@@ -1,5 +1,22 @@
 # Changelog: staff-engineer
 
+## 2026-05-07
+
+### Summary
+Trimming pass: folded one-sentence "Handoff" H3 into workflow step 10, tightened Honest Critique closing (removed redundant "preserving consensus" clause), removed spec-drift outgoing trigger duplicate (folded PM-notify into Responsibility 4), and trimmed brittle `§4.5` spec-reference pin from Escalate block.
+
+### Changes
+- Folded "Handoff" subsection into TDD workflow step 10 (one-sentence H3 → inline)
+- Tightened Honest Technical Critique close (rubber-stamp + consensus clauses fused)
+- Removed redundant spec-drift outgoing-trigger bullet; folded PM-notify into Responsibility 4 spec-update guidance
+- Removed brittle `docs/spec/review-strategy.md` §4.5 pin from Escalate-do-not-loop (rule is self-contained)
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Spec Alignment, Completeness, Role Realism, Actionability, Boundary Clarity, Capability Growth & Cross-Communication, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

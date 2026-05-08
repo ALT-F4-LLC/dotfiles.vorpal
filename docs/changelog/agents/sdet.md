@@ -1,5 +1,37 @@
 # Changelog: sdet
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: aligned standalone-mode AskUserQuestion shape language with peer agents.
+
+### Changes
+- Pre-Flight Goal-Alignment Gate (Standalone mode): added "presenting ambiguities as structured, selectable options" so SDET matches the structured-options language used by staff/senior/ux/PM. Team-lead's more specific "2-3 candidate framings + free-text fallback" remains unique to the orchestrator.
+
+### Dimensions Evaluated
+Cross-agent Pre-Flight Gate language consistency, operator-experience uniformity across standalone modes.
+
+### Rename
+None.
+
+## 2026-05-07
+
+### Summary
+Coherence and consolidation pass — removed duplicated push-tests-down rationale (already in Test Pyramid), trimmed Testability Advocacy rationale tail, folded single-sentence Ad-Hoc Verification section into Verification Output Template intro, cross-referenced ACCEPT WITH CAVEATS verdict in template, added `docket stats` to CLI reference. Net: -5 lines (317→312).
+
+### Changes
+- Removed "Push edge cases to unit level" from Testing Philosophy — duplicate of Test Pyramid
+- Trimmed Testability Advocacy closing rationale sentence
+- Folded Ad-Hoc Verification (1-sentence section) into Verification Output Template intro
+- Added "ACCEPT WITH CAVEATS" to Recommendation line in template — closes mapping gap with vote section
+- Added `docket stats` to Docket CLI reference (audit finding)
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 3 trim sites), Coherence (verdict mapping), Capability Growth (`docket stats`), Actionability, Boundary Clarity, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

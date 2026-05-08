@@ -3,6 +3,22 @@
 ## 2026-05-07
 
 ### Summary
+Restored explicit `status`-field and Mermaid-missing rows in Failure Modes table for sibling parity with PRD; clarified Mermaid Mandate for non-GUI surfaces (CLI/API/config) per ux-designer.md cross-surface-journey rule; tightened Open Questions rule to clarify it is conditional. Net 275→284.
+
+### Changes
+- Failure Modes: split the catch-all "Common defects" row into three explicit rows — `status`-field rejection (parity with PRD), Mermaid-missing (parity with PRD/TDD), and the generic validation row. Restores actionable abort messages
+- Mermaid Mandate: added paragraph for non-GUI surfaces — cross-surface journey or input/output state machine satisfies the mandate; single-action CLIs should diagram the surrounding workflow, not the action itself
+- Authoring step 7: scoped "no unresolved Open Questions" rule to "if drafted" — the 9 Required Sections do not include a dedicated Open Questions section, so the rule applies only when the calling agent has drafted one (typically inside §9 Handoff Notes)
+
+### Dimensions Evaluated
+Coherence, Actionability, Completeness, Spec Alignment, Over-Engineering, Orchestration, Skill Design Quality.
+
+### Rename
+No rename. Family-aligned with adr/prd/tdd.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: fixed stale H1 prefix to align with `name: ux-spec` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
 
 ### Changes

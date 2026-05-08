@@ -3,6 +3,24 @@
 ## 2026-05-07
 
 ### Summary
+Self-evolution trim pass: collapsed self-referential orchestrator identity block, removed Behavioral-failing "Self-evolution" blockquote, dropped redundant Phase 0 lifecycle restatement, trimmed Dimension 5 team-lifecycle restatement, and tightened Phase 1 SendMessage triggers parenthetical. Net 287→278.
+
+### Changes
+- Orchestrator identity block: collapsed 5-line block to 1 sentence — "including the `evolve-*` skills themselves" is self-referential (globs already match), "you do not perform reviews yourself" duplicates Rules 2 + 3
+- Removed "Self-evolution" blockquote — general filesystem/LLM knowledge (fails Content Gate Behavioral)
+- Phase 0 description: removed "Then shut down both per lifecycle rules before starting Phase 1" — duplicates lifecycle table row 0
+- Dimension 5: removed trailing team-lifecycle sentence — duplicates lifecycle table + Wrap-up
+- Phase 1 SendMessage triggers: compressed parenthetical, preserving the 2026-05-05 anti-drift rationale via "race conditions across independent edit surfaces" framing
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: replaced deleted `dev` skill name in argument-handling example with current `tdd`.
 
 ### Changes

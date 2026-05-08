@@ -13,12 +13,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Sen
 
 # Evolve Skills
 
-You are the **Skill Evolution Orchestrator**. You MUST create an agent team (TeamCreate) and
-spawn @staff-engineer teammates to review ALL skill files in `.claude/skills/*/SKILL.md` and
-`skills/*/SKILL.md`, including the `evolve-*` skills themselves. **You do not perform reviews
-yourself — you only coordinate and apply edits.**
-
-> **Self-evolution:** Changes to this file take effect on the *next* invocation, not the current one.
+You are the **Skill Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn @staff-engineer teammates to review every `SKILL.md` under `.claude/skills/` and `skills/`. All additions pass through the Content Gate.
 
 ---
 
@@ -74,10 +69,7 @@ propose additions — all must pass the Content Gate.**
 2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
 4. **Over-Engineering (HIGHEST PRIORITY)** — Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
-5. **Orchestration & Agent Teams** — Proper agent use, parallelism, correct types, coordination.
-   Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag
-   hub-and-spoke if >50% of paths route through one agent. For team skills: correct lifecycle
-   (TeamCreate → spawn → shutdown → TeamDelete), task coordination, cleanup, shutdown protocol.
+5. **Orchestration & Agent Teams** — Proper agent use, parallelism, correct types, coordination. Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag hub-and-spoke if >50% of paths route through one agent.
 6. **Coherence** — Scope overlaps, terminology, shared conventions, accurate references.
 7. **Spec Alignment** — Alignment with `docs/spec/` project patterns.
 8. **Rename Consideration** — Only if compelling — stability has value.
@@ -119,8 +111,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research & Docket CLI Audit
 
-Spawn TWO teammates in parallel — `docs-researcher` (claude-code-guide) and `docket-auditor`
-(senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution. Then shut down both per lifecycle rules before starting Phase 1.
+Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -141,12 +132,12 @@ Each teammate (read-only — no file edits):
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 6. Shuts down the teammate (don't wait for siblings — see Agent Lifecycle)
 
-**Phase 1 SendMessage triggers** (to orchestrator only — no peer-to-peer; cross-cutting items consolidate in Phase 2 to prevent contradictory mid-flight edits):
+**Phase 1 SendMessage triggers** (orchestrator-only relay — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items):
 - A finding affects another skill (include affected skill name)
 - The teammate needs delegation (voting, sub-agents)
 - The teammate is blocked
 
-Cross-cutting items append to a running notes list and pass verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. `TaskList()` tracks progress.
+Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. `TaskList()` tracks progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 

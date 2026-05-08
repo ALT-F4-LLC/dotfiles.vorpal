@@ -3,6 +3,38 @@
 ## 2026-05-07
 
 ### Summary
+Phase 2 coherence: removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec; already enforced by CANONICAL:BANNER + `allowed-tools`. Net -1.
+
+### Changes
+- Removed Failure Mode row "Calling agent attempts to spawn sub-agents..." — fully redundant with CANONICAL:BANNER + `allowed-tools` exclusion list (Content Gate: Non-redundant fail). Sibling parity with ux-spec's 2026-05-06 removal.
+
+### Dimensions Evaluated
+Coherence — sibling-skill symmetry.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Two coherence/over-engineering trims (net 273→269): removed pure-policy TDD escape hatch (delegated to ADR — eliminates scope-overlap with `Skill(adr)` for single-decision artifacts) and collapsed Authoring §8 Self-check into a pointer at Validation Before Save (matches PRD's §6 framing).
+
+### Changes
+- Authoring §4 Mermaid clause: dropped pure-policy override; TDDs now always require ≥1 Mermaid block. Pure-policy decisions ("use SemVer", naming conventions) route to `Skill(adr)` per existing "When NOT to Use" delegation
+- Mermaid Mandate subsection: rephrased to "always require"; removed pure-policy override sentence; added explicit ADR-route hint
+- Validation Before Save §5: removed "OR a pure-policy override note" disjunct
+- Failure Modes table: collapsed Mermaid mandate row to single trigger; updated abort message to point to ADR for policy decisions
+- Authoring §8: collapsed redundant alternatives self-check (already enforced by Validation §4) into a pointer at Validation Before Save — symmetric with PRD's §6
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence (ADR/TDD scope-overlap), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with adr/prd/ux-spec.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: fixed stale H1 prefix to align with `name: tdd` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
 
 ### Changes

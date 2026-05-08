@@ -3,6 +3,35 @@
 ## 2026-05-07
 
 ### Summary
+Phase 2 coherence: removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec; already enforced by CANONICAL:BANNER + `allowed-tools`. Net -1.
+
+### Changes
+- Removed Failure Mode row "Calling agent attempts to spawn sub-agents..." — fully redundant with CANONICAL:BANNER + `allowed-tools` exclusion list (Content Gate: Non-redundant fail). Sibling parity with ux-spec's 2026-05-06 removal.
+
+### Dimensions Evaluated
+Coherence — sibling-skill symmetry.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Coherence pass: added missing "When NOT to Use" COUPLING comment for sibling-symmetry with adr/tdd/ux-spec; corrected false claim in reserved-names COUPLING that asserted tdd/adr/ux-spec hard-refuse reserved names (verified they don't — those skills write to different output directories so refusal is unnecessary). Net 280→281.
+
+### Changes
+- When NOT to Use: added `<!-- COUPLING: ... -->` comment above delegation routes; matches symmetric pattern in adr/tdd/ux-spec
+- Failure Modes Reserved-Name List COUPLING: rewrote to reflect actual coupling — reserved-name refusal lives in PRD and specs only because they share `docs/spec/`; tdd/adr/ux-spec write to different directories and do not need refusal. Lockstep is now PRD ↔ specs, not 5-way.
+
+### Dimensions Evaluated
+Coherence (primary), Skill Design Quality, Actionability, Completeness, Over-Engineering, Spec Alignment, Orchestration, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: fixed stale H1 prefix to align with `name: prd` after `create-` prefix was dropped. Symmetric to the vote H1 fix.
 
 ### Changes

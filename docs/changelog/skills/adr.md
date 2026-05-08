@@ -3,6 +3,38 @@
 ## 2026-05-07
 
 ### Summary
+Phase 2 coherence: removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec; already enforced by CANONICAL:BANNER + `allowed-tools`. Net -1.
+
+### Changes
+- Removed Failure Mode row "Calling agent attempts to spawn sub-agents..." — fully redundant with CANONICAL:BANNER + `allowed-tools` exclusion list (Content Gate: Non-redundant fail). Sibling parity with ux-spec's 2026-05-06 removal.
+
+### Dimensions Evaluated
+Coherence — sibling-skill symmetry.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Two fixes (net 276→281): (1) repaired canonical-block contamination in SAVE_AND_RETURN — adr's block diverged from tdd/prd/ux-spec by embedding an ADR-specific renumber step inside the CANONICAL markers; reframed as an explicit pre-Write override outside the canonical region (mirrors the existing post-Write race-detection override). (2) Added optional `superseded_by` frontmatter field so superseded ADRs link forward to their successor.
+
+### Changes
+- SAVE_AND_RETURN canonical block restored to 3-step form (mkdir → Write → Emit) matching tdd/prd/ux-spec; ADR-specific renumber step moved outside the canonical markers
+- Both ADR-specific overrides now sit together below the canonical block with explicit "insert before/between canonical step N" anchors
+- Pre-flight numbering note (sub-step 7) updated to reference the ADR-specific override below the canonical block instead of "Save & Return step 1"
+- Frontmatter contract: optional `superseded_by` added; required only when `status: superseded`
+- Validation Before Save step 1 extended to require `superseded_by` when status is superseded
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: fixed stale H1 prefix to align with `name: adr` after `create-` prefix was dropped. Symmetric to the H1 fix applied to vote earlier this cycle.
 
 ### Changes

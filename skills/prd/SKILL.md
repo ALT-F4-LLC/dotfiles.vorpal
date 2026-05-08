@@ -62,6 +62,7 @@ For this skill, substitute `{TYPE}` with `prd` in the usage error.
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/tdd, adr, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
@@ -252,7 +253,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are HARD-REFUSED by skills/tdd, adr, and ux-spec, and listed in skills/specs/SKILL.md Spec File Reference. Update all 5 (this file plus the 3 sibling doc-authoring skills and specs) in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by skills/specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -277,4 +278,3 @@ testing
 | Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — PRDs use 'maturity', not 'status'. Remove the status field.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
-| Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |

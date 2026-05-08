@@ -42,13 +42,12 @@ The operator addresses you directly. Treat the operator's initial message as `{w
 
 Before any planning or execution, run these checks:
 
-1. **Verify the goal (HARD GATE)** — Use AskUserQuestion to confirm both the goal and out-of-scope surfaces, with 2-3 candidate framings derived from `{work}` plus a free-text fallback. Re-ask if the choice is still vague. Store as `{verified_goal}`; do not proceed until specific.
+1. **HARD GATE — Verify the goal.** Use AskUserQuestion to confirm both the goal and out-of-scope surfaces, with 2-3 candidate framings derived from `{work}` plus a free-text fallback. Re-ask if the choice is still vague. Store as `{verified_goal}`; do not proceed to any subsequent step until specific.
 2. **Initialize Docket** — Run `docket init` (idempotent).
 3. **Check existing issues** — Run `docket issue list --json` to verify there isn't already a
    plan in Docket for this work. If related issues exist, use AskUserQuestion with options:
    "Extend existing plan", "Start fresh (close stale issues first)", "Cancel — let me review existing issues". Include the matching issue IDs/titles in the question header.
-4. **Assess the request** — Determine which orchestration pattern fits using the decision tree
-   below. If the user's request is ambiguous, use AskUserQuestion to present the pattern options (Small Task, Medium Task, Large Task, UX-Heavy Task) with descriptions so the operator can choose.
+4. **Assess the request** — Apply the decision tree below. If ambiguous, use AskUserQuestion with the four pattern options (Small/Medium/Large/UX-Heavy) so the operator chooses.
 
 ### Pattern Decision Tree
 
@@ -286,15 +285,15 @@ Before spawning any agents, create an Agent Team to coordinate:
    parallelism (limit: 5 per turn, batch if more). Monitor via `TaskList`. Shutdown timing
    for these teammates is governed by step 9.
 
-9. **Wait for all teammates in the phase to complete** before starting the next phase. Shut down @senior-engineer teammates after review completes for small tasks; keep them alive through verification for medium+ tasks.
+9. **Wait for all teammates in the phase to complete** before starting the next phase. Keep @senior-engineer teammates alive through review (small tasks) or verification (medium+ tasks); they may need to fix blockers or bugs.
 
 10. **After each phase completes:**
     - Verify all teammates reported success
-    - Confirm issue statuses via `docket plan --json` (shows phased grouping)
+    - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree view); use `docket issue graph --direction blocks` for blast-radius checks before re-planning
     - Check for "Discovered:" comments that need attention
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
-    - If any teammate failed, diagnose before proceeding (see Handling Failures below)
+    - If any teammate failed, diagnose before proceeding (see Teammate Stall & Crash Recovery below)
     - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong —
       scope grew beyond expectations, assumptions broke, dependencies shifted — pause and use
       AskUserQuestion with options: "Re-plan via @project-manager", "Continue with adjustments
@@ -323,7 +322,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 ### Consensus Integration
 
-Single-reviewer is the default. Invoke `Skill(vote, "Approve {decision}? criticality: {level}. {context}")` when `/vote`'s criticality rules apply (security-sensitive reviews, architectural TDD approval, 500+ line or Tier 1/2 reviews, breaking-change plans). After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`. **Delegation requests from teammates** (`{type: "delegation_request", skill: "vote", vote_id, request_id}`): invoke `Skill(vote, "{vote_id}")` and reply `delegation_response` per `skills/vote/` Delegation Protocol; reply `failed` for unknown skills.
+Single-reviewer is the default. Invoke `Skill(vote, "...")` per `/vote`'s criticality rules (TDD approval, security-sensitive or 500+ line reviews, breaking-change plans). After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`. Handle teammate `delegation_request` messages per `skills/vote/` Delegation Protocol; reply `failed` for unknown skills.
 
 ### Verification Phase (medium+ tasks)
 
@@ -357,5 +356,5 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 
 ## Rules
 
-1. **Surface cross-communication.** When teammates SendMessage each other or delegate `/vote`, report the event and outcome to the operator — they cannot see inter-agent messages.
-2. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review loops after 2 cycles, and stalled teammates after one respawn attempt.
+1. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record.
+2. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.

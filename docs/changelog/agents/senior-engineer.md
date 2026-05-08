@@ -1,5 +1,39 @@
 # Changelog: senior-engineer
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: corrected the team-mode coordination model claim that contradicted SE's own SendMessage triggers and the team-wide pattern.
+
+### Changes
+- Operating context: replaced "coordinate via SendMessage to team-lead, never peer-to-peer" (added in Phase 1) with the accurate model — peers SendMessage directly per the triggers section, team-lead is cc'd on high-stakes events. Removes contradiction with the ~15 direct peer SendMessage actions documented in the triggers section and aligns SE with how staff/sdet/ux/PM operate in team mode.
+
+### Dimensions Evaluated
+Internal consistency (Operating context vs SendMessage triggers), cross-agent operating-model coherence, operator-visibility contract preservation.
+
+### Rename
+None.
+
+## 2026-05-07
+
+### Summary
+BALANCED-mode consolidation pass: removed three true duplications between Proactive SendMessage Triggers and Check Specs / Navigate Ambiguity sections (TDD status gate, missing TDD/UX spec, architectural decisions vs TDD deviation). Compressed Pre-Flight "During implementation" restatement and TaskUpdate cadence verbiage. Added one-line note in Operating context that team-lead is the only relay when spawned in a team.
+
+### Changes
+- Merged "TDD status != accepted" Before-starting trigger into the existing Check Specs status gate (single source of truth)
+- Compressed Navigate Ambiguity items 2 & 3 into one line that defers to the Proactive Triggers contract
+- Merged "Architectural decision not covered by TDD" with "Approach deviates from TDD" trigger
+- Trimmed Pre-Flight "During implementation" sub-bullet (covered by Standalone/Team mode + No-Guessing)
+- Trimmed close-out and discoveries Docket bash blocks to one-liners
+- Trimmed SendMessage auto-resume note (redundant with operator-visibility contract)
+- Added team-lead-only-relay clarification to Operating context
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Capability Growth, Cross-Communication, Role Realism, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

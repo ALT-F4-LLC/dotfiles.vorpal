@@ -1,5 +1,34 @@
 # Changelog: ux-designer
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: aligned HARD GATE delimiter style with peer agents.
+
+### Changes
+- Pre-Flight Goal-Alignment Gate: replaced `**HARD GATE:` (colon) with `**HARD GATE —` (em-dash) to match staff/senior/sdet/PM/team-lead. Collapsed two-line bold to one line for consistency with the H2+single-bold-line pattern used by other standalone-flow agents.
+
+### Dimensions Evaluated
+Cross-agent terminology consistency, visual coherence of HARD GATE markers across agent files.
+
+### Rename
+None.
+
+## 2026-05-07
+
+### Summary
+Capability fix + Responsibility 4 trim. Added Monitor to tools frontmatter to match the existing Responsibility 5 mandate (introduced 2026-05-05 without the tool). Trimmed rhetorical filler from Design System Coherence.
+
+### Changes
+- Added `Monitor` to tools frontmatter — closes capability gap with Responsibility 5 ("use Monitor to stream output without blocking" for QA of dev servers/preview builds/watchers)
+- Trimmed rhetorical phrases in Responsibility 4 ("atoms of coherence", "worst-designed moments") and dropped redundant intro line — behavioral content (same semantic intent across surfaces, 2+ team validation gate, treat breaking pattern changes like breaking API changes) preserved
+
+### Dimensions Evaluated
+Completeness (PRIMARY — Monitor capability gap), Consolidation & Trimming (HIGHEST priority offset), Capability Growth, Cross-Communication, Boundary Clarity, Role Realism, Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

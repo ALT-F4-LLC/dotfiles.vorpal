@@ -136,10 +136,12 @@ malformed frontmatter.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
    overloaded, degraded, and concurrent states.
-7. **Resolve open questions**: per `agents/ux-designer.md`, do not save a spec with
-   an unresolved "Open Questions" section. If a question requires another agent's
-   input, the calling agent consults them and confirms with the operator before
-   re-invoking this skill.
+7. **Resolve open questions**: per `agents/ux-designer.md`, do not save a spec
+   with an unresolved "Open Questions" section. The 9 Required Sections do not
+   include a dedicated Open Questions section — if the calling agent has drafted
+   one (typically inside §9 Handoff Notes), every entry must be resolved before
+   save. If a question requires another agent's input, the calling agent consults
+   them and confirms with the operator before re-invoking this skill.
 
 ## Output Contract
 
@@ -209,6 +211,11 @@ flow, state transition, or cross-surface journey. Acceptable block fences are
 `agents/ux-designer.md`; UX specs do not have the pure-policy override available
 to TDDs and ADRs.
 
+For non-GUI surfaces (CLI flag, API endpoint, config schema, log format), a
+cross-surface journey (e.g., `cli invocation → API call → persisted config`) or
+an input/output state machine satisfies the mandate. Single-action CLIs without
+state should diagram the surrounding workflow, not the action itself.
+
 ASCII wireframes are encouraged in §3 (Layout & Structure) alongside Mermaid but
 do not satisfy the Mermaid mandate on their own.
 
@@ -270,6 +277,8 @@ On operator Cancel during the collision dialog: emit
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
-| Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. Common defects include `status` field instead of `maturity`, missing Mermaid block, or missing required section. |
+| Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
+| Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status'. Remove the status field.` |
+| Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — UX specs require at least one mermaid fenced block (user flow, state transition, or cross-surface journey).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

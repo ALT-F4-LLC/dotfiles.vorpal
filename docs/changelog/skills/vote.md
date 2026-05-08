@@ -1,5 +1,27 @@
 # Changelog: vote
 
+## 2026-05-07
+
+### Summary
+Over-engineering pass on the largest skill (338→316): tightened Pre-flight (dropped tautological "Parse the proposal" + forward-pointer to next section), trimmed Phase 1 caller-context aside, deduplicated Phase 2 wait/isolate clause, collapsed Recording Votes preamble + post-bash bullets, removed Reviewer Prompt Template orchestrator-reference blockquote, compressed Edge Cases, merged Audit Trail's two invariants into Output Format, condensed Agent Selection prose, and updated Delegation Protocol step 1 to drop "parse the proposal" reference for consistency.
+
+### Changes
+- Pre-flight: dropped step 2 "Parse the proposal" (tautological) and step 4 forward-pointer to Reviewer Independence Enforcement
+- Delegation Protocol step 1: removed "parse the proposal" from Pre-flight summary for consistency with the trimmed Pre-flight section
+- Phase 1: removed opening "Gather context..." sentence — caller's job, not coordinator's
+- Phase 2: trimmed trailing "Wait for all... never feed output into another's prompt" — duplicates numbered list point 5 + implicit in advancing to Phase 3
+- Recording Votes: removed preamble and bullets; bash example is self-documenting; preserved heredoc-rationale and `--findings-json` alternative inline
+- Reviewer Prompt Template: dropped orchestrator-reference blockquote and trimmed Artifact placeholder enumeration
+- Reviewer Independence Edge Cases: folded critical-vote 4-reviewer math into the pool-smaller-than-required bullet
+- Audit Trail standalone section removed — two invariants relocated to Output Format `### Record` block
+- Agent Selection: condensed "fresh, independent agent instance / Do NOT reuse" — `Agent()` semantics + canonical banner already enforce
+
+### Dimensions Evaluated
+Over-Engineering (primary), Coherence, Skill Design Quality, Actionability, Completeness, Spec Alignment, Orchestration & Agent Teams.
+
+### Rename
+No rename. `vote` matches `docket vote` CLI exactly.
+
 ## 2026-05-06
 
 ### Summary

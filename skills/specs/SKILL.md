@@ -9,7 +9,9 @@ effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
+<!-- CANONICAL:BANNER:BEGIN -->
 > **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. SendMessage team-lead if blocked.
+<!-- CANONICAL:BANNER:END -->
 
 ## Argument Handling
 
@@ -60,7 +62,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are HARD-REFUSED by skills/prd, tdd, adr, and ux-spec. Update all 5 (this file plus the 4 doc-authoring skills) in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|

@@ -3,6 +3,21 @@
 ## 2026-05-07
 
 ### Summary
+Coherence: added missing CANONICAL:BANNER markers around the existing team-spawning CRITICAL banner (parity with vote, adr, prd, tdd, ux-spec); corrected reciprocal reserved-names COUPLING comment to align with PRD's corrected version. Net 172→174.
+
+### Changes
+- Wrapped top-of-file CRITICAL banner with `<!-- CANONICAL:BANNER:BEGIN -->` / `<!-- CANONICAL:BANNER:END -->` markers — banner content unchanged (team-spawning variant)
+- Reserved-names COUPLING comment: rewrote to reflect actual coupling — specs owns the names, PRD hard-refuses because it shares `docs/spec/`, sibling doc-authoring skills (tdd/adr/ux-spec) write to different directories and do not refuse
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: replaced stale `dev` skill reference with team-lead orchestrator and fixed stale H1 prefix.
 
 ### Changes

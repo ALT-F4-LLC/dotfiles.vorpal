@@ -126,9 +126,10 @@ malformed frontmatter.
       where `max` is taken over the captured numeric group as integers.
    5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
-   7. The numbering Glob is re-run inside Save & Return immediately before Write
-      (see Save & Return step 1) — Authoring Procedure can take long enough for a
-      concurrent author to claim the chosen `{NNNN}`.
+   7. The numbering Glob is re-run via the ADR-specific override below the Save
+      & Return canonical block (insert before canonical step 2: Write) —
+      Authoring Procedure can take long enough for a concurrent author to claim
+      the chosen `{NNNN}`.
 
 ## Authoring Procedure
 
@@ -163,6 +164,7 @@ project: "{project_name}"
 last_updated: "{today_date}"
 updated_by: "{updated_by}"
 status: "proposed"
+# superseded_by: "0042-new-decision"  # required only when status is "superseded"
 ---
 ```
 
@@ -174,6 +176,9 @@ Field rules:
 - `status` is one of: `proposed | accepted | superseded`. New ADRs start at
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
   `superseded` is set when a later ADR replaces this one.
+- `superseded_by` is required when `status: superseded` and points to the
+  successor ADR's basename without extension (e.g., `0042-new-decision`).
+  Omit otherwise.
 
 ### Required Sections
 
@@ -199,7 +204,8 @@ Mermaid is a judgment call for ADRs (see Authoring Procedure step 4 for the rule
 Before invoking `Write`, verify in the calling agent's context:
 
 1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`,
-   `status` present and non-empty.
+   `status` present and non-empty. If `status: superseded`, `superseded_by`
+   must also be present and non-empty.
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
 3. **Section order** — the body contains all 4 Required Sections, as `##`
    headings, in the order listed.
@@ -224,9 +230,8 @@ Error: validation failed: {field/section} — {detail}.
 After Validation Before Save passes:
 
 1. `Bash mkdir -p {output_dir}` (idempotent).
-2. **Re-run Pre-flight step 5** (numbering Glob + `next_num` + `{output_path}` resolution) so the chosen `{NNNN}` reflects the latest filesystem state. If `{NNNN}` changed, update the frontmatter / body references before Write.
-3. `Write {output_path}` with the drafted content.
-4. Emit a single confirmation line:
+2. `Write {output_path}` with the drafted content.
+3. Emit a single confirmation line:
 
    ```
    Created {output_path}
@@ -245,18 +250,15 @@ On operator Cancel during the collision dialog: emit
 For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 `docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
-**ADR-specific override — insert between canonical steps 3 and 4 (before
-"End.")**: After Write but before emitting the confirmation line, re-run `Glob
-docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is
-returned, ABORT loudly instead of emitting the confirmation:
+**ADR-specific override — insert before canonical step 2 (Write)**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}` resolution) so the chosen `{NNNN}` reflects the latest filesystem state. If `{NNNN}` changed, update the frontmatter / body references before Write. Authoring can take long enough that a concurrent author claims the originally-chosen number.
+
+**ADR-specific override — insert between canonical steps 2 and 3 (after Write, before Emit)**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
 ```
 
-This catches different-slug concurrent races but NOT same-slug concurrent races
-(see Failure Modes below). On clean Glob (exactly one match), proceed to canonical
-step 4 (Emit confirmation) and end.
+This catches different-slug concurrent races but NOT same-slug concurrent races (see Failure Modes below). On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
 
@@ -272,5 +274,4 @@ step 4 (Emit confirmation) and end.
 | Mermaid mandate not satisfied AND no pure-policy override note | Abort: `Error: validation failed: Mermaid block missing — ADR involves component relationships, state transitions, or flows; include a Mermaid block or record the pure-policy override note in the Decision section.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
-| Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |
 

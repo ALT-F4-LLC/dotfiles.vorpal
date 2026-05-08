@@ -1,5 +1,39 @@
 # Changelog: evolve-agents
 
+## 2026-05-07
+
+### Summary
+Phase 2 coherence: aligned Phase 1 workflow structure and Output Format layout with sister evolve-skills for parity. Lifted teammate's per-task workflow into a numbered list, added explicit Phase 1 SendMessage triggers subsection, reformatted Output Format to multi-line H4-style for readability.
+
+### Changes
+- Phase 1 body: lifted teammate per-task workflow into a 4-item numbered list (parity with evolve-skills lines 130-134)
+- Phase 1 body: added explicit "Phase 1 SendMessage triggers" subsection — preserves the orchestrator-only-relay rationale and consolidation-in-Phase-2 framing
+- Phase 1 template Output Format: reformatted from dense inline-prose to multi-line H4-style — same content, clearer layout matches evolve-skills
+
+### Dimensions Evaluated
+Actionability, Coherence — orchestrator/teammate symmetry across sibling evolve-* skills.
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Five parity/redundancy trims aligning with sister evolve-skills: dropped restated description tail, condensed Phase 1 lead-in mapping example, removed wrap-up step 1 parenthetical covered by Lifecycle table, tightened Phase 1 template Content Gate header, and collapsed template-substitute block triple-restatement. Net 258→254.
+
+### Changes
+- Description: removed "(each agent reviews its own file)" tail — body and template restate the mechanic
+- Phase 1 lead-in: dropped @senior-engineer/agents/senior-engineer.md example — fully specified in substitute block below
+- Wrap-up step 1: removed "(Phase 0 and Phase 1 agents were shut down in their phases)" parenthetical — Lifecycle table covers per-phase shutdown
+- Phase 1 template Content Gate header: tightened to `## Content Gate` — body restates the "reject if ANY fails" assertion
+- Template-substitute block: collapsed 4 lines to 1 by removing the matching-agent-type example (third restatement) — adopts evolve-skills' terser form
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-06
 
 ### Summary

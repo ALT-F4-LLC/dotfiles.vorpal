@@ -127,11 +127,8 @@ malformed frontmatter.
    "or N/A" may contain a single `N/A.` paragraph with a one-line justification —
    omitting them is a defect.
 4. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
-   block where the design involves architecture, sequence, state, or data
-   relationships. For pure-policy TDDs (e.g., "we will use semantic versioning")
-   prose alone is acceptable; record the override as a single line inside the
-   drafted Architecture & System Design section: "Pure-policy TDD — no Mermaid
-   required."
+   block. TDDs always require at least one diagram (component map, sequence,
+   state, or data flow) — pure-policy decisions belong in an ADR, not a TDD.
 5. **Alternatives Considered**: at least two alternatives, each with shape,
    strengths, weaknesses, and a verdict. The chosen alternative should match the
    Architecture & System Design section.
@@ -139,9 +136,9 @@ malformed frontmatter.
    flag any open questions that must be resolved before vote.
 7. **Implementation Phases**: split the work into phases with file scoping and
    per-phase acceptance. The planner consumes this section directly.
-8. **Self-check**: confirm at least two Alternatives Considered are drafted before
-   proceeding. The remaining checks (frontmatter, section order, Mermaid, placeholder
-   scan) are enforced by Validation Before Save below.
+8. **Proceed to Validation Before Save** — that step is the single source of
+   truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
+   checks (matches sibling PRD's §6).
 
 ## Output Contract
 
@@ -205,7 +202,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-Mermaid is **required** where the design involves architecture, sequence, state, or data relationships (see Authoring Procedure §4 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). At minimum, include a high-level component map OR a sequence diagram. Validation Before Save accepts the TDD without a Mermaid block only when the pure-policy override note is present.
+TDDs **always require** at least one Mermaid block — a component map, sequence diagram, state diagram, or data flow (see Authoring Procedure §4 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). Pure-policy decisions ("use SemVer", naming conventions) belong in an ADR — use `Skill(adr, "<topic>")`.
 
 ## Validation Before Save
 
@@ -220,8 +217,7 @@ Before invoking `Write`, verify in the calling agent's context:
    headings, in the order listed.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
    least two `###`-level subsections.
-5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the
-   body, OR a pure-policy override note recorded per the Mermaid Mandate.
+5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
@@ -267,7 +263,6 @@ On operator Cancel during the collision dialog: emit
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| Mermaid mandate not satisfied AND no pure-policy override note | Abort: `Error: validation failed: Mermaid block missing — TDD requires Mermaid where architecture/sequence/state/data relationships are involved, or an explicit pure-policy override note.` |
+| Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
-| Calling agent attempts to spawn sub-agents from inside this skill | Forbidden by the BANNER above and by `allowed-tools`. The skill's tool surface excludes `Agent`, `TeamCreate`, `TeamDelete`, `Skill`, `SendMessage`, and `Edit`. |

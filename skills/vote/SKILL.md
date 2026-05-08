@@ -34,7 +34,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 ### Delegation Protocol (Team Path)
 
-1. **Pre-flight** — Verify docket, parse the proposal, confirm goal-alignment, classify criticality.
+1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
@@ -45,14 +45,12 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 1. **Verify docket is available** — Run `docket vote list --limit 1` via Bash to confirm the
    vote subsystem is operational.
-2. **Parse the proposal** — Extract what is being decided from the argument.
-3. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
+2. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
    until the goal is confirmed.
    - **Standalone mode**: Use `AskUserQuestion` with two questions in order: (1) header `Decision`, options `Confirm` (proceed with framing) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders. Do not proceed until both are answered.
    - **Team mode**: The orchestrator's prompt contains the verified goal — re-verify if your understanding diverges.
-4. **Classify criticality** — Use the table below. If the caller specifies criticality
+3. **Classify criticality** — Use the table below. If the caller specifies criticality
    (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
-   Reviewer selection (proposer exclusion, agent types) is handled by Reviewer Independence Enforcement after Pre-flight.
 
 ---
 
@@ -79,8 +77,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 ## Agent Selection
 
-Select reviewers based on domain relevance to the proposal. Each reviewer is a **fresh,
-independent agent instance**. Do NOT reuse an existing teammate for consensus — spawn new ones.
+Select reviewers based on domain relevance to the proposal. Each `Agent()` call spawns a fresh instance — never reuse a long-lived teammate for consensus.
 
 | Proposal Domain | Primary Reviewer | Secondary Reviewer(s) |
 |---|---|---|
@@ -125,18 +122,13 @@ appear more than once in the `Agent()` calls for a single round.
 
 ### Edge Cases
 
-- **Critical vote needs 4 reviewers with proposer excluded:** use all 4 remaining types; if the domain-required type is the proposer, substitute the closest available and note it in a docket comment.
-- **Pool smaller than required reviewer count:** reduce count to available unique types and add `--escalation-reason "Reduced reviewer count: N unique types after proposer exclusion"` on `docket vote commit`.
+- **Pool smaller than required reviewer count after proposer exclusion** (e.g., domain-required type is the proposer, or critical needs 4 from a 5-type pool): substitute the closest available type, reduce count if needed, and add `--escalation-reason "Reduced reviewer count: N unique types after proposer exclusion"` on `docket vote commit`.
 
 ---
 
 ## Phase 1: Proposal
 
-Create the proposal using the `docket vote create` CLI. Gather context from the proposal
-argument first (read referenced files, run `git diff` if code is mentioned, etc.), then
-construct a description that includes all relevant context for reviewers.
-
-**Create the proposal:**
+Create the proposal using the `docket vote create` CLI:
 
 ```bash
 docket vote create \
@@ -173,7 +165,7 @@ Spawn reviewer agents **in parallel**. Each reviewer receives:
 4. Instructions to produce structured output
 5. **NO information about other reviewers or their verdicts**
 
-Tasks are coordinator-owned for observability — set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value. Wait for all `Agent()` calls to return before Phase 3, and never feed one reviewer's output into another's prompt.
+Tasks are coordinator-owned for observability — set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value before proceeding to Phase 3.
 
 ### Handling Reviewer Failures
 
@@ -185,10 +177,7 @@ Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() err
 
 ### Recording Votes
 
-After each reviewer completes, parse their structured output and record their vote using
-`docket vote cast`. The `-v` flag accepts `approve`, `approve-with-concerns`, or `reject`.
-
-**Cast each vote** (heredoc preserves multi-line findings):
+After each reviewer returns, cast their vote (heredoc preserves multi-line findings; swap `--findings -` for `--findings-json -` if findings are structured JSON):
 
 ```bash
 docket vote cast {vote-id} \
@@ -203,12 +192,7 @@ docket vote cast {vote-id} \
 EOF
 ```
 
-- Use `--findings -` (stdin) to pass multi-line findings, or `--findings-json -` for structured JSON.
-- Use `--summary` for the reviewer's one-line assessment (from their Summary section).
-
 ### Reviewer Prompt Template (Standalone Mode Only)
-
-> In team mode, the orchestrator spawns reviewers — this template is provided for the orchestrator's reference.
 
 ```
 Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
@@ -222,7 +206,7 @@ You are participating in a consensus vote as an independent reviewer.
 - **Rationale**: {rationale}
 
 ## Artifact
-{full artifact content — diff, TDD, plan, design spec, or proposal text}
+{full artifact content}
 
 ## Your Review Task
 Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,
@@ -321,7 +305,7 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-View with: `docket vote show {vote-id}`
+View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.role` for the two pre-commit invariants: no `.role` matches the proposer's mapped agent type, and all `.role` values are unique).
 Full result: `docket vote result {vote-id} --json`
 ```
 
@@ -330,9 +314,3 @@ Full result: `docket vote result {vote-id} --json`
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
 1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each spawned reviewer. Do not wait for acknowledgment.
 2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")`. Failure to clean up wastes resources and causes agent lifecycle issues.
-
----
-
-## Audit Trail
-
-Full audit data lives in `docket vote show {vote-id} --json`. Before commit, verify two non-obvious invariants from that output: (a) no vote `.role` matches the proposer's mapped agent type (proposer exclusion held), and (b) all `.role` values are unique (no duplicate reviewer types).

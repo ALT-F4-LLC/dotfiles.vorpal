@@ -1,8 +1,8 @@
 ---
 name: evolve-agents
 description: >
-  Evolve agent definitions in agents/*.md via multi-agent self-review (each agent reviews its own
-  file). Trigger: "evolve agents", "improve agents", "grow the team", "refine agents".
+  Evolve agent definitions in agents/*.md via multi-agent self-review.
+  Trigger: "evolve agents", "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -93,10 +93,15 @@ Spawn TWO teammates in parallel per the templates below: `docs-researcher` (clau
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one teammate per target using the **matching agent type** (e.g., @senior-engineer reviews `agents/senior-engineer.md`) per the Phase 1 template. **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
+Spawn one teammate per target using the matching agent type per the Phase 1 template (see substitute block below). **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
+
+Each teammate (read-only — no file edits):
+1. Reads target agent file and most recent changelog entry only (first `## <date>` section)
+2. Checks `docs/spec/` selectively — only files relevant to the agent's domain
+3. Reads OTHER agent files — first ~80 lines only for ecosystem context
+4. Evaluates against ALL 8 dimensions, marks task completed, reports structured recommendations
 
 **After each Phase 1 teammate completes**, the orchestrator:
-
 1. Reviews recommendations against the **Content Gate** — reject any failing check
 2. Applies approved changes via Edit; `wc -l` to verify budget; spot-check references/CLI against codebase
 3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
@@ -104,7 +109,12 @@ Spawn one teammate per target using the **matching agent type** (e.g., @senior-e
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 6. Shuts down the teammate (don't wait for sibling Phase 1 agents — see Agent Lifecycle)
 
-Mid-Phase-1 cross-cutting findings: append to a running notes list and pass verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section — do NOT route to in-flight siblings (race condition). `TaskList()` tracks progress.
+**Phase 1 SendMessage triggers** (orchestrator-only relay — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items):
+- A finding affects another agent (include affected agent name)
+- The teammate needs delegation (voting, sub-agents)
+- The teammate is blocked
+
+Cross-cutting items append to a running notes list passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. `TaskList()` tracks progress.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -120,7 +130,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 
 After Phase 2 completes:
 
-1. **Shut down the Phase 2 agent** (Phase 0 and Phase 1 agents were shut down in their phases), then `TeamDelete(team_name="evolve-agents-{today_date}")`.
+1. Shut down the Phase 2 agent and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, and reminder that NO changes have been committed.
 
@@ -157,10 +167,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 1: Self-Review & Improve
 
-Spawn one teammate per target using `team_name`, `name`, and `subagent_type` matching the agent
-name (e.g., `subagent_type: "senior-engineer"` for `agents/senior-engineer.md`). Substitute
-`<name>`, `{today_date}` (from pre-flight step 3), `{verified_goal}` (from step 1),
-and `{experience_feedback}` (from step 2) for each.
+Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each (`subagent_type: "<name>"`).
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
@@ -186,8 +193,7 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 ## Docket CLI Audit Findings
 {docket_audit_findings}
 
-## Content Gate (ALL additions must pass — reject if ANY fails)
-
+## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
 ## Task: Evaluate ALL 8 dimensions. Consolidation & Trimming is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
@@ -209,11 +215,13 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
 ## Output Format
-
-`### Summary` (1-2 sentences + net line change) > `### Recommended Changes` (per change:
-CHANGE/DIMENSION/CONTEXT/NET_LINES/OLD_STRING/NEW_STRING — use `<REMOVE>` to delete,
-`<INSERT_AFTER>` to add) > `### Changelog Entry` (under 20 lines, 4 sections: Summary, Changes,
-Dimensions Evaluated, Rename) > `### Rename Recommendation` > `### Coherence Issues`
+### Summary
+<1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
+### Recommended Changes
+For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
+### Changelog Entry (under 20 lines, 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
+### Rename Recommendation
+### Coherence Issues
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)

@@ -3,6 +3,25 @@
 ## 2026-05-07
 
 ### Summary
+Capability-growth pass: closed worktree-isolation gap (SE is the primary user of `isolation="worktree"` per orchestrator) and project-memory gap. Tightened Pre-Flight gate, Vote section, and self-review handoff bullet to offset additions. Net: -10 lines (336→326).
+
+### Changes
+- Added Worktree mode paragraph to Operating context — closes a real capability gap. SE was the primary user of `isolation="worktree"` spawns but had no behavioral guidance for sibling-worktree cwd, branch HEAD as working ref, absolute paths to non-source assets
+- Added one-line `.claude/agent-memory/senior-engineer/` reference so SE actually consults/writes project memory at session start and after operator-validated approaches
+- Tightened Pre-Flight gate (-7) by collapsing Standalone/Team mode bullets into a single paragraph; preserved "document confirmed assumptions in a Docket comment" behavioral guidance
+- Tightened Vote section (-3) and reframed to make team-lead.md compliance explicit (delegation is the only path under an orchestrator, not "default"); spawning nested teams is forbidden
+- Replaced redundant handoff sub-bullet (line 146) with reference to canonical Before-close triggers
+- REJECTED: `move <id> review` then close-on-APPROVE workflow change — creates ambiguity with sdet's reopen-on-BLOCK assumption that SE closes first. Flagged for Phase 2 coherence review.
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — worktree, agent memory), Consolidation & Trimming, Boundary Clarity (Vote/team-lead.md alignment), Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: corrected the team-mode coordination model claim that contradicted SE's own SendMessage triggers and the team-wide pattern.
 
 ### Changes

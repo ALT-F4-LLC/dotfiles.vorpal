@@ -3,6 +3,23 @@
 ## 2026-05-07
 
 ### Summary
+Capability adoption pass — documented persistent agent-memory dir for SDET-specific recurring-signal tracking (flaky patterns, fixture quirks, defect-class repeats), adopted `docket issue move <id> review` for partial-handoff state. Trimmed NOT-staff-engineer reciprocal-review claim (already in inter-agent table). Net: 0 lines (307→307; +2 from agent-memory offset by -2 from step 5 consolidation).
+
+### Changes
+- Operating context: added `.claude/agent-memory/sdet/` adoption with explicit do/don't list (recurring flaky patterns, fixture quirks, defect-class repeats — NOT per-issue details)
+- Execution Workflow step 5: added `docket issue move <id> review` for partial-handoff state (ACCEPT WITH CAVEATS / BLOCK awaiting rework); `close` remains for clean APPROVE
+- What You Are NOT (@staff-engineer): trimmed reciprocal-review claim duplicating inter-agent table at line 246
+- REJECTED: Trim of "record ambiguity-resolution decisions" paragraph — kept; documents persisting resolutions to Docket which is unique guidance not duplicated by Pre-Flight gate
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — agent-memory + `move review`), Consolidation & Trimming, Boundary Clarity, Coherence, Actionability
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: aligned standalone-mode AskUserQuestion shape language with peer agents.
 
 ### Changes

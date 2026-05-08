@@ -3,6 +3,36 @@
 ## 2026-05-07
 
 ### Summary
+Phase 2 coherence: added persistent agent-memory paragraph aligning ux-designer with sdet/SE/staff/PM fleet pattern. UX-specific guidance on what to persist (operator flag/terminology ergonomics, rejected design alternatives, cross-surface precedent decisions, surface-typed anti-patterns) versus what stays in `docs/ux/`. Net: +6 lines (262→268).
+
+### Changes
+- Added Persistent memory paragraph after Operating context with UX-specific signals to persist; explicit do-not-memorize rule for spec content
+
+### Dimensions Evaluated
+Coherence with Fleet Standards (agent-memory pattern), Capability Growth, Boundary Clarity (memory vs spec separation)
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Closed persistent-advisor lifecycle gap (team-lead.md:169 mandates the orchestrator-side behavior but ux-designer.md previously had no receiving-end guidance). Tightened Operating context paragraph (harness now provides persistent memory) and trimmed cross-agent bookkeeping parenthetical. Net: 0 lines (262→262).
+
+### Changes
+- Added Persistent Advisor Lifecycle section before Shutdown Handling — covers alive-between-spec-and-verification behavior (priority-one inbound peer questions, no unrelated work). Added shutdown-rejection clause when verification is in flight ("verification incomplete" reason)
+- Trimmed "match staff/PM mandate" bookkeeping parenthetical from text-only-medium line — kept the MUST mandate, dropped the cross-agent commentary
+- Tightened Operating context paragraph: replaced "Stateless ... with project-scoped memory" with "fresh conversation context, persistent memory and docs"; preserved heuristic-evaluation/error-log substitution guidance
+
+### Dimensions Evaluated
+Completeness (PRIMARY — persistent advisor gap), Capability Growth & Cross-Communication, Consolidation & Trimming, Coherence
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: aligned HARD GATE delimiter style with peer agents.
 
 ### Changes

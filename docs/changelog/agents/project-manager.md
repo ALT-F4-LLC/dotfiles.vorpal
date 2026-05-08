@@ -3,6 +3,42 @@
 ## 2026-05-07
 
 ### Summary
+Phase 2 coherence: replaced 3 remaining `blocked-by` prose sites with valid CLI relation `depends_on` (Phase 1 fixed runtime invocations; this fixes prose shorthand to prevent LLM agents from copy-pasting invalid tokens). Added persistent agent-memory paragraph aligning PM with sdet/SE/staff fleet pattern, with PM-specific guidance on operator priorities, scope-creep patterns, and stakeholder routing. Net: +6 lines (385→391).
+
+### Changes
+- Replaced `blocked-by remediation task` → `depends_on remediation task` in incoming-trigger row
+- Replaced `Test (blocked-by Implement)` → `Test (depends_on Implement)` in Medium tier shape
+- Replaced `Phase sub-issues (blocked-by chain)` → `Phase sub-issues (depends_on chain)` in Large tier shape
+- Added Persistent memory paragraph after No-guessing rule with PM-specific signals to persist (operator scope-pressure priorities, recurring scope-creep patterns, dependency-discovery surprises, stakeholder routing) — distinct from Docket per-issue details
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — CLI correctness in prose), Coherence with Fleet Standards (agent-memory pattern across 4 of 5 subagents), Capability Growth, Boundary Clarity (memory vs Docket separation)
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
+Correctness fixes for invalid `blocked-by` relation token (rejected by docket CLI; verified at runtime) across three sites: §6 prose, §7 example, and CLI Reference. Documented full relation set and adopted `relates_to` for soft cross-workstream links. Upgraded parent-issue example to `-T epic`. Added `docket stats` to Session Init. Net: +1 line (384→385).
+
+### Changes
+- Replaced invalid `blocked-by` with `depends_on` in §6 prose, §7 example, and CLI Reference (3 sites)
+- Documented full link relation set: `blocks | depends_on | relates_to | duplicates`
+- Adopted `relates_to` for soft cross-workstream links in Cross-Workstream Coordination
+- Upgraded parent-issue example from `-T feature` to `-T epic`
+- Added `docket stats` to Session Init for situational awareness
+- REJECTED: trim of Status & Observability bullet (line 145) — keeps canonical list of planning-status transition triggers; complementary to format rule at lines 98-101 (not duplicative)
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — CLI correctness), Capability Growth (relates_to, stats, epic type), Consolidation & Trimming, Actionability
+
+### Rename
+No rename.
+
+## 2026-05-07
+
+### Summary
 Phase 2 coherence: removed duplicate HARD GATE marker on adjacent lines for cleaner gate phrasing.
 
 ### Changes

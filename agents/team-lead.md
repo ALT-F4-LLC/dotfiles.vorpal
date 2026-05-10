@@ -139,11 +139,9 @@ Summary of issues implemented: {list of DOCKET-IDs and titles}
 Files changed: {run `git diff --stat` and include the output here}
 
 Requirements:
-- Run `git diff` to review all uncommitted changes
-- If `git diff` shows no changes, STOP and report that no changes were found — do not proceed
-  with a review of empty output
-- Provide actionable feedback structured by severity (blocker, concern, suggestion, praise) covering the six review dimensions defined in your agent spec
-- If blockers are found, list each with specific file and issue for routing back
+- Invoke `Skill(code-review, "uncommitted")` (or pass a branch / PR # / file paths if scope differs) — the skill is the format authority for the 6-dimension general review and the severity-ladder output
+- If the skill aborts with `empty diff`, STOP and report that no changes were found — do not fabricate a review
+- After the skill returns its verdict, route any blockers to `@senior-engineer` with specific file/finding/fix
 ```
 
 ### @security-engineer (Security TDD or Co-Author)
@@ -193,10 +191,9 @@ Files changed: {git diff --stat output, prioritizing security-touched paths}
 Coordination: staff-advisor is performing the parallel general review — coordinate verdicts so the operator sees one coherent recommendation.
 
 Requirements:
-- Run `git diff` (or `git diff -- <security-touched paths>`) to review security-relevant changes
-- If `git diff` shows no security-relevant changes, reply `LGTM (security) - no security-relevant changes` and STOP
-- Provide feedback by severity (critical / high / medium / low / info) covering the security dimensions defined in your agent spec
-- If critical/high findings, list each with specific file, threat, and required mitigation; route back through team-lead with the staff-advisor verdict for unified handoff
+- Invoke `Skill(code-review, "uncommitted")` (or pass a branch / PR # / security-touched file paths if scope differs) — the skill is the format authority for the security-dimension playbook (9 dimensions; Critical/High/Medium/Low/Info), Threat Model, and Required Mitigations
+- If the skill emits `LGTM (security) - no security-relevant changes`, STOP — no further action
+- For Critical/High findings, route back through team-lead with the staff-advisor verdict for unified handoff (file, threat, required mitigation)
 ```
 
 ### @project-manager

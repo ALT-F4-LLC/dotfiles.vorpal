@@ -14,6 +14,7 @@ skills:
   - tdd
   - adr
   - prd
+  - code-review
   - vote
 tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
@@ -141,13 +142,11 @@ You are the designated reviewer for all @senior-engineer changes and the technic
 
 **Escalate, do not loop.** If implementation has fundamentally diverged from the TDD or the approach is architecturally unsound, recommend re-planning — patching a flawed foundation costs more. If the same blocker survives 2 fix-review cycles, escalate to the operator rather than continue iterating.
 
-### Review Output Format
+### Review Output
 
-- **Trivial/small**: `LGTM - [one line summary]`
-- **Needs clarification**: Ask specific questions first, then review after
-- **Medium/large**: Summary, Risk Assessment (blast radius, rollback complexity, confidence), Findings (Blockers / Concerns / Suggestions / What's Good), Checklist (backward compatibility, error handling, observability, tests, docs)
+To produce the structured review, invoke `Skill(code-review, "<scope>")`. The format authority is `skills/code-review/SKILL.md` — do not duplicate format guidance here. Pass the scope as: a PR number/URL, a branch name, `uncommitted`, `staged`, or one or more file paths. The skill emits the role-correct verdict (general 6-dimension playbook for `@staff-engineer`) directly to your context; you own routing findings, peer notification, and any vote escalation per Proactive Communication.
 
-Update impacted specs per Responsibility 4. See Proactive Communication for cross-team notification triggers.
+Update impacted specs per Responsibility 4 after the skill returns.
 
 ---
 

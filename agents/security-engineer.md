@@ -17,6 +17,7 @@ permissionMode: dontAsk
 skills:
   - tdd
   - adr
+  - code-review
   - vote
 tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
@@ -202,13 +203,11 @@ with general refactoring — they need separate scrutiny.
 or the approach has a structural security flaw, recommend re-planning. If the same critical/high
 finding survives 2 fix-review cycles, escalate rather than continue iterating.
 
-### Review Output Format
+### Review Output
 
-- **Trivial (no security surface touched)**: `LGTM (security) - no security-relevant changes`
-- **Needs clarification**: Ask specific questions first, review after
-- **Medium/large**: Summary, Threat Model (assumed adversary, in/out scope), Risk Assessment (blast radius, exploit prerequisites, data sensitivity, confidence), Findings (Critical / High / Medium / Low / Info), Required Mitigations, Checklist (every dimension touched: pass / N/A / failed), Recommendation (approve / approve with follow-up / block / split required)
+To produce the structured security review, invoke `Skill(code-review, "<scope>")`. The format authority is `skills/code-review/SKILL.md` — do not duplicate format guidance here. Pass the scope as: a PR number/URL, a branch name, `uncommitted`, `staged`, or one or more file paths. The skill detects your role and emits the security-dimension playbook (9 dimensions; Critical/High/Medium/Low/Info severity) with the Threat Model, Required Mitigations, and Recommendation sections directly to your context. You own routing critical/high to `@senior-engineer`, reconciling with `@staff-engineer`'s parallel general review, and any residual-risk vote escalation per Proactive Communication.
 
-Update `docs/spec/security.md` per Responsibility 4 when review reveals drift. See Proactive Communication for cross-team triggers.
+Update `docs/spec/security.md` per Responsibility 4 when review reveals drift.
 
 ---
 

@@ -3,6 +3,23 @@
 ## 2026-05-09
 
 ### Summary
+Four pain-point fixes (net 276→273): fixed Pre-flight step 1 forward-reference to step 4, normalized Phase 1 template Output Format from H4 to H3 (parity with evolve-skills + changelog format spec), condensed Rule 3 that re-stated Crash & Stall Recovery, and dropped redundant Phase 2 spawn parenthetical.
+
+### Changes
+- Pre-flight step 1: removed forward-reference to step 4 (replaced "follow-up listing inventoried agents from step 4" with "free-text follow-up for the agent name"). The HARD GATE ran before step 4's inventory existed, breaking the flow.
+- Phase 1 template Output Format: switched section headings from `####` to `###` for parity with sister evolve-skills and to match the changelog format spec (which expects H3 sub-sections). Mixed H4/H3 caused level-mismatch when the agent inlined its `### Summary` changelog inside an H4 block.
+- Rule 3 ("Fail loud"): condensed inline restatement of Crash & Stall Recovery to a one-line pointer. The full protocol already lives in the dedicated section.
+- Phase 2 spawn lead-in: dropped `(@staff-engineer, read-only)` parenthetical. The Phase 2 template already declares both fields.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering (HIGHEST), Orchestration & Agent Teams, Coherence (sister evolve-skills parity), Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
 Three operator-pain-point fixes: aligned Pre-flight step 2 pain-point options with evolve-skills + actual operator categories, restructured Phase 1 Output Format to multi-line H4 with explicit Coherence Issues schema, and added `paths:` frontmatter for write-surface declaration.
 
 ### Changes

@@ -3,6 +3,25 @@
 ## 2026-05-09
 
 ### Summary
+Six output-quality fixes (operator pain point 3): added concreteness gates to Success Metrics and Requirements sections, sharpened Docket probe with priority filter, replaced fuzzy "before commitment" with concrete decomposition trigger, added validation rule + failure mode for numeric metric targets.
+
+### Changes
+- Authoring Procedure §2 (Docket probe): added `--sort priority:asc` filter and explicit instruction to consolidate findings under Risks & Open Questions, eliminating the "note candidates where appropriate" ambiguity.
+- Required Sections §5 (Requirements): added testability rule — each requirement must be reviewable as satisfied/unsatisfied without follow-up.
+- Required Sections §6 (Success Metrics): added concreteness rule — each metric names what/how/numeric target. Concrete example included.
+- Required Sections §7 (Risks & Open Questions): replaced fuzzy "before commitment" with "before decomposition into Docket issues".
+- Validation Before Save §7: new gate — Success Metrics section must contain at least one digit or comparison operator per item.
+- Failure Mode table: new row aligning with the Success Metrics concreteness validation failure.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability (primary), Output Quality, Coherence (sibling tdd/adr/ux-spec), Spec Alignment, Over-Engineering (light — additive but bounded), Orchestration (leaf-safety unchanged), Rename.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
 Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 7".
 
 ### Changes

@@ -3,6 +3,22 @@
 ## 2026-05-09
 
 ### Summary
+Three CLI-alignment fixes (operator pain points 1, 3): unified docket liveness probe with the canonical `docket version --quiet` (was vote-subsystem-specific overspecification), promoted `--findings-json` to the primary recording path with plaintext heredoc as fallback, and added the executed `docket vote commit` invocation to the Output Format Record block for audit replay.
+
+### Changes
+- Pre-flight step 1: replaced `docket vote list --limit 1` with `docket version --quiet` for liveness; aligns with senior-engineer.md canonical pattern (the docket CLI ships as one binary, so vote-subsystem-specific probing is overspecification).
+- Phase 2 Recording Votes lead-in: `--findings-json` is now documented as primary (structured reviewer output deserializes cleanly); plaintext `--findings -` heredoc retained as fallback for free-form rationale.
+- Output Format Record block: added `Committed via: docket vote commit {vote-id} --outcome "..."` line so the final report echoes the finalize command for audit replay.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Output Quality, Coherence (sibling code-review, evolve-skills, evolve-agents; senior-engineer.md liveness probe), Spec Alignment (docs/spec/review-strategy.md), Over-Engineering (light — most trim already done), Orchestration (verified delegation correctness, no stale `create-vote` references), Rename.
+
+### Rename
+No rename. `vote` matches `docket vote` CLI exactly.
+
+## 2026-05-09
+
+### Summary
 Fixed silent quorum-poisoning in failure-cast (NON-VOTE summary prefix), tightened Delegation Protocol to make team-lead's responsibility a thin re-invoke (not a parallel implementation), removed Phase 2 numbered list duplicating the Reviewer Prompt Template, adopted `docket vote unlink` for multi-round link hygiene, and surfaced criticality classification as an operator-confirmed AskUserQuestion in standalone Pre-flight.
 
 ### Changes

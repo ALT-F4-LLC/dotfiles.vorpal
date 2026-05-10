@@ -66,7 +66,7 @@ exploration guidance for each — used in the spawning template.
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
-| `architecture.md` | Examine project structure, entry points, module boundaries, and dependency graph. Identify system components, design patterns, integration points, and key architectural decisions. Look at package manifests, config files, and directory layout for structure clues. |
+| `architecture.md` | Examine project structure, entry points, module boundaries, and dependency graph. Identify system components, design patterns, integration points, and key architectural decisions. Look at package manifests, config files, and directory layout for structure clues. Defer style/idiom/naming-convention details to `code-quality.md` and test-architecture details to `testing.md`. |
 | `security.md` | Examine authentication/authorization patterns, secret management, and environment variables. Check for .env files, credential handling, API key patterns, and trust boundaries. Identify security-relevant dependencies and their configurations. |
 | `operations.md` | Check .github/ for CI/CD workflows, Dockerfiles, deployment configs, and infrastructure code. Look for monitoring, logging, observability setup, and operational runbooks. Identify rollback procedures, release processes, and environment management. |
 | `performance.md` | Look for caching strategies, database queries, connection pooling, and concurrency patterns. Identify known bottlenecks, benchmarking tools, and performance-critical paths. Check for lazy loading, pagination, batching, and scaling considerations. |
@@ -84,7 +84,7 @@ exploration guidance for each — used in the spawning template.
 1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
    `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
-3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`:
+3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `Agent()` call itself):
    `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
 4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 
@@ -117,6 +117,7 @@ After all agents complete, run verification:
    diagram (per Spawning Template). Diagram presence is a sanity check, not a deep validation —
    if a spec genuinely has no relationships/flows to diagram, the agent should have noted that
    in the file; flag it for operator review.
+4. Run `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md` (substituting the resolved date) to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
 
 Report which files were created successfully and flag any that are missing, malformed, or
 missing required diagrams.

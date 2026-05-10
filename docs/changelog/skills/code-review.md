@@ -3,6 +3,23 @@
 ## 2026-05-09
 
 ### Summary
+Four trim + actionability fixes (operator pain points 1, 3, 4): added scope-detection ambiguity rules (PR-number-not-found fallthrough, branch/file token tie), added a 50-file pre-review escalation hint, tightened Validation Before Emit by referencing the Output Contract instead of restating template structure, and trimmed Failure Modes table to the rows that introduce new abort text (the rest are specified inline upstream).
+
+### Changes
+- Argument Handling: added explicit ambiguity rules — `^\d+$` first probes `gh pr view` and falls through to branch/file detection on miss; a single token that is both a valid branch and an existing file is treated as a branch unless multi-token or `./`-prefixed.
+- Pre-flight §4: added 50-file escalation hint so the calling agent can recommend Split required before deep review effort is wasted.
+- Validation Before Emit: items 1-2 now reference the Output Contract directly instead of restating banner text + section list; eliminates double maintenance.
+- Failure Modes: table compressed to the two rows with new abort text (`gh` CLI unavailable, severity-ladder cross-mix); other abort paths are specified at the section that introduces them (Argument Handling, Role Detection, Pre-flight, Validation Before Emit) — table now serves as a quick-reference index, not a duplicate spec.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering (HIGHEST PRIORITY — primary cut), Coherence (sibling skills + parent agents), Spec Alignment (`docs/spec/review-strategy.md`, `docs/spec/security.md`), Operator Prompt Quality, Coordination & Handoff.
+
+### Rename
+No rename. Family-aligned with sibling skills; matches operator trigger phrases ("review this PR", "code review", "security review of changes").
+
+## 2026-05-09
+
+### Summary
 Tightened role-gating contract by removing invented caller-identifier synonyms; clarified parallel-reviewer reconciliation as the first post-review action for security-sensitive changes; added `review-strategy.md` to staff-engineer's pre-flight reading list to align with the six-dimension model authority.
 
 ### Changes

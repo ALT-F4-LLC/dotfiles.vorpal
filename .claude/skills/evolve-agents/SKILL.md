@@ -6,6 +6,7 @@ description: >
 argument-hint: "[agent-name]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+paths: ["agents/*.md", "docs/changelog/agents/*.md"]
 ---
 
 > **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
@@ -32,7 +33,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or follow-up listing inventoried agents from step 4), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Agent quality / role realism`, `Coordination & handoff gaps`, `Cross-agent communication visibility`, `File-size bloat / verbosity`, `Workflow gaps or stalls`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `Agent role realism`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -215,13 +216,23 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
 ## Output Format
-### Summary
+
+#### Summary
 <1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
-### Recommended Changes
-For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
-### Changelog Entry (under 20 lines, 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
-### Rename Recommendation
-### Coherence Issues
+
+#### Recommended Changes
+For each change, emit a fenced block with these fields verbatim:
+`CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:`
+Use `<REMOVE>` for deletions and `<INSERT_AFTER>` (with the line you're inserting after) for pure additions.
+
+#### Changelog Entry
+4 sections in order, max 20 lines: `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`.
+
+#### Rename Recommendation
+Single line with reasoning, or "No rename."
+
+#### Coherence Issues
+For each: `ISSUE: <title>` / `AFFECTED_AGENTS: <names>` / `DETAIL: <one-line description + suggested action>`. Or: "None."
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)

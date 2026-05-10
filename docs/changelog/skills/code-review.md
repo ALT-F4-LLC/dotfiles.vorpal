@@ -3,6 +3,22 @@
 ## 2026-05-09
 
 ### Summary
+Tightened role-gating contract by removing invented caller-identifier synonyms; clarified parallel-reviewer reconciliation as the first post-review action for security-sensitive changes; added `review-strategy.md` to staff-engineer's pre-flight reading list to align with the six-dimension model authority.
+
+### Changes
+- Role Detection table now lists only the two real caller identifiers (`@staff-engineer`, `@security-engineer`); removed synonyms (`staff-advisor`, `advisor`, `tdd-author`, `reviewer`, `security-advisor`, `security-reviewer`) that do not appear in agent files and risked ambiguous playbook collapse on a future rename.
+- Pre-flight step 5 (staff-engineer specs list) adds `review-strategy.md` so reviewers consult the documented Tier 1/2/3 risk-area mapping.
+- Save & Return promotes parallel-reviewer reconciliation to the first caller responsibility for security-sensitive scopes; sequencing matters because contradictory verdicts to `@senior-engineer` are the documented coordination failure mode.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Coherence (sibling skills + parent agents), Spec Alignment (`docs/spec/review-strategy.md`, `docs/spec/security.md`), Over-Engineering, Operator Prompt Quality, Coordination & Handoff.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
 Initial creation. New leaf skill that lets `@staff-engineer` and `@security-engineer` produce role-correct code reviews via a single shared format authority. Removes per-agent format duplication: each agent's Responsibility 2 (Review) now points to `Skill(code-review, "<scope>")` instead of restating dimension lists, severity ladders, and output sections inline. Role detection branches the playbook (6 general dimensions for staff; 9 security dimensions for security) and the severity ladder (Blocker/Concern/Suggestion/Question/Praise vs. Critical/High/Medium/Low/Info) so cross-mixing is a validation defect.
 
 ### Changes

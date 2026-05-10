@@ -51,28 +51,23 @@ For this skill, substitute `{TYPE}` with `prd` in the usage error.
 
 ## When to Use
 
-- A feature-level Product Requirements Document is needed for a non-trivial product
-  surface (new feature, UX-driven change, scope-defined initiative) and should land at
-  `docs/spec/{slug}.md` as the authoritative product record.
-- The calling agent (typically `@project-manager`) is producing a PRD before
-  decomposition into Docket issues so reviewers and implementers share one product
-  definition.
-- The team-lead Large Task pattern (`agents/team-lead.md`) requests a PRD as the
-  entry point for product-defined initiatives — this skill is the canonical path.
+- A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
+- The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
+- The team-lead Large Task pattern (`agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/tdd, adr, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
-- Project-wide engineering specs (the 7 reserved names: architecture, security,
-  operations, performance, code-quality, review-strategy, testing): owned by the
-  `specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
-  and Failure Modes.
 - Technical Design Documents (architecture, system design, multi-step migration):
   use `Skill(tdd, "<topic>")`.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
+- Project-wide engineering specs (the 7 reserved names: architecture, security,
+  operations, performance, code-quality, review-strategy, testing): owned by the
+  `specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
+  and Failure Modes.
 
 ## Pre-flight
 
@@ -207,8 +202,9 @@ Before invoking `Write`, verify in the calling agent's context:
 2. **No `status` field** — PRDs use `maturity`, not `status`. Presence of `status`
    in frontmatter is a defect.
 3. **`maturity` value** — one of `proof-of-concept | draft | experimental | stable`.
-4. **Section order** — the body contains all 7 Required Sections, as `##`
-   headings, in the order listed.
+4. **Section order** — the body contains all top-level sections enumerated
+   in "Required Sections" above, as `##` headings, in the order listed
+   (currently 7 sections). Off-by-one against the count is a defect.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.

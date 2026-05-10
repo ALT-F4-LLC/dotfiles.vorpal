@@ -136,12 +136,10 @@ malformed frontmatter.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
    overloaded, degraded, and concurrent states.
-7. **Resolve open questions**: per `agents/ux-designer.md`, do not save a spec
-   with an unresolved "Open Questions" section. The 9 Required Sections do not
-   include a dedicated Open Questions section — if the calling agent has drafted
-   one (typically inside §9 Handoff Notes), every entry must be resolved before
-   save. If a question requires another agent's input, the calling agent consults
-   them and confirms with the operator before re-invoking this skill.
+7. **Resolve open questions before save**: per `agents/ux-designer.md`, no
+   unresolved questions ship with the spec. There is no dedicated Open Questions
+   section — entries belong inside §9 Handoff Notes and must be resolved (or the
+   calling agent re-invokes this skill after consulting peers and the operator).
 
 ## Output Contract
 
@@ -166,7 +164,9 @@ Field rules:
 - `maturity` is the doc-class ladder
   (`proof-of-concept | draft | experimental | stable`). New UX specs start at
   `draft`. **UX specs do NOT have a `status` field** — workflow state is tracked
-  via `maturity`.
+  via `maturity`. (Doc-family convention: PRDs and UX specs use `maturity`
+  only — they are living definitions, not vote-gated workflow artifacts. TDDs
+  use both. ADRs use `status` only.)
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@ux-designer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
@@ -200,8 +200,13 @@ Responsibility 1 design spec format.
 8. **Internationalization / Privacy / Measurement** — scale to project: i18n (text
    expansion, RTL, locale), data minimization (inventory, consent, display),
    metrics (instrumentation points, iteration triggers).
-9. **Handoff Notes** — component breakdown, technology recommendations, MVP vs.
-   polish priorities, resolved design decisions, dependencies.
+9. **Handoff Notes** — the bridge to @project-manager (decomposition) and
+   @senior-engineer (implementation). MUST include: (a) component / surface
+   breakdown with proposed file or module scoping where known; (b) MVP cutline
+   versus polish priorities; (c) resolved design decisions with one-line
+   rationale; (d) cross-spec dependencies (TDDs, PRDs, sibling UX specs); (e)
+   recommended follow-on research, instrumentation, or usability validation
+   the calling agent cannot run. Vague entries ("see TDD", "TBD") are a defect.
 
 ### Mermaid Mandate
 
@@ -216,9 +221,6 @@ cross-surface journey (e.g., `cli invocation → API call → persisted config`)
 an input/output state machine satisfies the mandate. Single-action CLIs without
 state should diagram the surrounding workflow, not the action itself.
 
-ASCII wireframes are encouraged in §3 (Layout & Structure) alongside Mermaid but
-do not satisfy the Mermaid mandate on their own.
-
 ## Validation Before Save
 
 Before invoking `Write`, verify in the calling agent's context:
@@ -230,8 +232,9 @@ Before invoking `Write`, verify in the calling agent's context:
    `status` field is a defect.
 3. **Maturity value** — `maturity` is one of
    `proof-of-concept | draft | experimental | stable`.
-4. **Section order** — the body contains all 9 Required Sections, as `##`
-   headings, in the order listed.
+4. **Section order** — the body contains all top-level sections enumerated
+   in "Required Sections" above, as `##` headings, in the order listed
+   (currently 9 sections). Off-by-one against the count is a defect.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
@@ -270,6 +273,8 @@ On operator Cancel during the collision dialog: emit
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
 ## Failure Modes
+
+### Failure Mode Table
 
 | Trigger | Handling |
 |---|---|

@@ -1,5 +1,36 @@
 # Changelog: evolve-skills
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence pass: inlined the 8 evaluation dimensions inside the Phase 1 reviewer template (stateless agents had no access to the orchestrator's top-level dimensions section), declared `paths:` write surface for orchestrator parity with evolve-agents, and restored an explicit Size Budget block to the Phase 1 template.
+
+### Changes
+- Phase 1 template "Your Task": inlined the 8 evaluation dimensions (Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename) so spawned reviewers have the rubric without needing to read the orchestrator file. Sister evolve-agents already has this pattern.
+- Frontmatter: added `paths: [".claude/skills/*/SKILL.md", "skills/*/SKILL.md", "docs/changelog/skills/*.md"]` for orchestrator write-surface declaration consistency.
+- Phase 1 template: added explicit `## Size Budget` block (TRIM/BALANCED rules) to match evolve-agents prominence.
+
+### Dimensions Evaluated
+Coherence, Actionability, Skill Design Quality.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Trim pass on Phase 1 template Context section: removed two self-referencing bullets that duplicate the immediately-following headers, replacing with a single compact clause. Tightened Pre-flight step 1's option-routing parenthetical, removing forward-reference to step 4. Net 278→275.
+
+### Changes
+- Phase 1 template Context bullets: removed duplicate "review operator experience feedback below" and "review docs research and docket audit findings below" — fail Content Gate Behavioral (sections appear with headers in the next 10 lines). Replaced with single compact clause for parity with evolve-agents.
+- Pre-flight step 1: dropped inline routing parentheticals (`use $ARGUMENTS or list step-4 inventory`, `follow-up multiSelect over the 8 dimensions`) and folded the dimension follow-up into a separate sentence — removes forward-reference to step 4 (which runs later) and reduces operator-prompt verbosity.
+
+### Dimensions Evaluated
+Skill Design Quality (no change), Actionability (no change), Completeness (no change), Over-Engineering (trim x2), Orchestration & Agent Teams (no change), Coherence (improved parity with evolve-agents), Spec Alignment (no change), Rename (no change).
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

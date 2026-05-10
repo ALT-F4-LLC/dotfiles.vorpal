@@ -82,7 +82,7 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: numbering (step 5) picks the next free `{NNNN}`, so a same-path collision is normally impossible. The COLLISION_DIALOG below handles the residual race case if a pre-Write Glob ever returns an existing file.
+4. **Collision handling**: numbering (step 5) picks the next free `{NNNN}`. Concurrent races are caught by the post-write override below; the canonical COLLISION_DIALOG remains for the residual case where a same-path file appears.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -126,10 +126,7 @@ malformed frontmatter.
       where `max` is taken over the captured numeric group as integers.
    5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
-   7. The numbering Glob is re-run via the ADR-specific override below the Save
-      & Return canonical block (insert before canonical step 2: Write) —
-      Authoring Procedure can take long enough for a concurrent author to claim
-      the chosen `{NNNN}`.
+   7. The numbering Glob is re-run before Write (see ADR-specific override below SAVE_AND_RETURN) to handle the case where a concurrent author claims the chosen `{NNNN}` during Authoring.
 
 ## Authoring Procedure
 
@@ -142,11 +139,9 @@ malformed frontmatter.
 3. **Draft each Required Section in order** (see Output Contract → Required
    Sections). Every section listed MUST appear, in the order shown. ADRs are
    intentionally short — aim for tight prose, not exhaustive coverage.
-4. **Mermaid diagrams**: per the Mermaid Mandate, judgment call. ADRs about
-   component relationships, state transitions, or flows MUST include a Mermaid
-   block. ADRs about pure policy decisions ("use SemVer", "license under Apache
-   2.0") may be prose-only. If pure-policy, record an explicit one-line override
-   note in the Decision section: "Pure-policy ADR — no Mermaid required."
+4. **Mermaid diagrams** (optional): include a Mermaid block when it clarifies
+   component relationships, state transitions, or flows. Pure-policy ADRs ("use
+   SemVer", "license under Apache 2.0") are prose-only — no diagram needed.
 5. **Alternatives Considered** (brief): list at least one alternative with a
    one- or two-sentence verdict. ADRs are short; full Alt-A/Alt-B/Alt-C analysis
    belongs in a TDD, not an ADR.
@@ -195,10 +190,6 @@ heading in the drafted document.
 4. **Alternatives Considered** (brief) — at least one alternative with a short
    verdict. Full multi-alternative analysis belongs in a TDD.
 
-### Mermaid Mandate
-
-Mermaid is a judgment call for ADRs (see Authoring Procedure step 4 for the rule). Validation Before Save accepts the ADR without a Mermaid block only when the pure-policy override note ("Pure-policy ADR — no Mermaid required.") is present in the Decision section.
-
 ## Validation Before Save
 
 Before invoking `Write`, verify in the calling agent's context:
@@ -207,14 +198,12 @@ Before invoking `Write`, verify in the calling agent's context:
    `status` present and non-empty. If `status: superseded`, `superseded_by`
    must also be present and non-empty.
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
-3. **Section order** — the body contains all 4 Required Sections, as `##`
-   headings, in the order listed.
+3. **Section order** — the body contains all top-level sections enumerated
+   in "Required Sections" above, as `##` headings, in the order listed
+   (currently 4 sections). Off-by-one against the count is a defect.
 4. **Alternatives count** — Section 4 (Alternatives Considered) names at
    least one alternative.
-5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body,
-   OR the pure-policy override note ("Pure-policy ADR — no Mermaid required.")
-   recorded in the Decision section.
-6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
+5. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `{NNNN}`, `TBD`, or `TODO` text outside of code-fenced
    examples.
 
@@ -271,7 +260,6 @@ This catches different-slug concurrent races but NOT same-slug concurrent races 
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| Mermaid mandate not satisfied AND no pure-policy override note | Abort: `Error: validation failed: Mermaid block missing — ADR involves component relationships, state transitions, or flows; include a Mermaid block or record the pure-policy override note in the Decision section.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
 

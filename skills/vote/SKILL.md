@@ -37,7 +37,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
-4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. The orchestrator spawns reviewers, monitors crashes (see Handling Reviewer Failures), and casts votes on your behalf.
+4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. **team-lead's responsibility on receipt**: invoke `Skill(vote, "{vote-id}")` standalone (the vote_id branch in Argument Handling skips Phase 1 and proceeds directly to reviewer spawn), then SendMessage the delegation_response back when the standalone run completes/fails/escalates. team-lead does NOT spawn reviewers or cast votes itself — vote-as-standalone owns that lifecycle.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
 ---
 
@@ -47,10 +47,9 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
    vote subsystem is operational.
 2. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
    until the goal is confirmed.
-   - **Standalone mode**: Use `AskUserQuestion` with two questions in order: (1) header `Decision`, options `Confirm` (proceed with framing) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders. Do not proceed until both are answered.
-   - **Team mode**: The orchestrator's prompt contains the verified goal — re-verify if your understanding diverges.
-3. **Classify criticality** — Use the table below. If the caller specifies criticality
-   (e.g., "criticality: high" in the prompt), respect it. Otherwise, classify from context.
+   - **Standalone mode**: Use `AskUserQuestion` with three questions in order: (1) header `Decision`, options `Confirm` (proceed with framing) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options derived from the table below — present your classified default first with a one-line rationale, then `low`, `medium`, `high`, `critical` as alternatives. Do not proceed until all three are answered.
+   - **Team mode**: The orchestrator's prompt contains the verified goal and criticality — re-verify if your understanding diverges.
+3. **Classify criticality** — Use the table below as the default basis for the standalone-mode question above. If the caller (team mode) specifies criticality (e.g., "criticality: high" in the prompt), respect it without re-asking.
 
 ---
 
@@ -157,13 +156,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel**. Each reviewer receives:
-
-1. The full proposal artifact (content, not just a reference)
-2. The rationale
-3. Domain-specific review checklist (based on agent type — see below)
-4. Instructions to produce structured output
-5. **NO information about other reviewers or their verdicts**
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, isolation from other reviewers).
 
 Tasks are coordinator-owned for observability — set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value before proceeding to Phase 3.
 
@@ -171,7 +164,7 @@ Tasks are coordinator-owned for observability — set each reviewer's task to `i
 
 Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
 
-- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "reviewer failed: {reason}" --confidence 0.0 --domain-relevance 0.0` so the audit trail is complete, then proceed to Phase 3.
+- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "NON-VOTE (reviewer failed): {reason}" --confidence 0.0 --domain-relevance 0.0` — `confidence × domain-relevance = 0` zeroes the weighted contribution; the `NON-VOTE` summary prefix preserves audit clarity. Then proceed to Phase 3 only if remaining reviewers can still meet the quorum threshold.
 - **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
 - **Two or more reviewers fail in the same round**: abort and escalate. Do not re-spawn the whole panel.
 
@@ -276,7 +269,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
 1. **Finalize the failed round in docket** — `docket vote commit {vote-id} --outcome "Quorum not reached (score: {score})" --escalation-reason "view-change: round {N} of 3"`. This closes the proposal so `docket vote list` reflects accurate state.
 2. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
 3. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
-4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability.
+4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability. **Issue link hygiene**: if the prior round's vote was linked to a Docket issue, run `docket vote unlink {prior-vote-id} --issue {issue-id}` before linking the new vote to the same issue, so the issue's audit trail points only to the active round.
 5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
    - The original proposal
    - All proposal IDs from each round (for `docket vote show {id}`)

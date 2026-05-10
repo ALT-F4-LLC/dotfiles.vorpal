@@ -1,5 +1,37 @@
 # Changelog: ux-spec
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 9".
+
+### Changes
+- Replaced hardcoded "all 9 Required Sections" with self-referential enumeration ("(currently 9 sections). Off-by-one against the count is a defect.") — matches tdd's hardened pattern.
+
+### Dimensions Evaluated
+Coherence, Completeness.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Sharpened §9 Handoff Notes (the single bridge to @project-manager and @senior-engineer) with concrete required sub-bullets and an explicit defect rule for vague entries; removed conditional indirection in Authoring step 7 (Open Questions rule was unenforced); removed duplicate ASCII-wireframes sentence from Mermaid Mandate paragraph 3 (already in Authoring step 4); added cross-reference explaining the doc-family `status`/`maturity` convention; adopted PRD's `### Failure Mode Table` subheading for sibling parity.
+
+### Changes
+- Required Sections §9 (Handoff Notes): expanded from one-line bullet to required sub-list (a–e) with concrete deliverables and explicit "vague entries are a defect" rule. Bridge section to PM/engineer now matches the prescriptiveness of TDD §11 Implementation Phases.
+- Authoring Procedure step 7: collapsed conditional Open Questions explanation; removed indirection because the Validation Before Save step does not check for Open Questions and the rule is a soft norm enforced by the calling agent.
+- Mermaid Mandate: dropped duplicate ASCII-wireframes paragraph — Authoring step 4 already states the same rule.
+- Frontmatter field rules: added cross-reference explaining doc-family convention (PRD/UX = maturity-only living docs, TDD = both, ADR = status-only) — prevents future-reader from re-deriving the asymmetry.
+- Failure Modes: added `### Failure Mode Table` subheading for sibling parity with PRD.
+
+### Dimensions Evaluated
+Actionability, Over-Engineering, Coherence, Spec Alignment, Skill Design Quality, Orchestration.
+
+### Rename
+No rename. Family-aligned with adr/prd/tdd.
+
 ## 2026-05-07
 
 ### Summary

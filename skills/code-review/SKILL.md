@@ -21,12 +21,12 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 
 ## Role Detection
 
-This skill is callable ONLY by `@staff-engineer` or `@security-engineer`. Map the calling agent's identifier (from prompt context) to a role using the table below; if no row matches, ABORT.
+This skill is callable ONLY by `@staff-engineer` or `@security-engineer`. Match the calling agent's identifier (from prompt context) to a role; if neither matches, ABORT.
 
-| Caller identifier matches | Role |
+| Caller identifier | Role |
 |---|---|
-| `@staff-engineer`, `staff-advisor`, `advisor`, `tdd-author`, `reviewer` | `staff-engineer` |
-| `@security-engineer`, `security-advisor`, `security-reviewer` | `security-engineer` |
+| `@staff-engineer` | `staff-engineer` |
+| `@security-engineer` | `security-engineer` |
 
 Abort message:
 
@@ -85,7 +85,7 @@ If extra positional args follow `<scope>`, ignore them silently.
    - `{role}` = the detected role (`staff-engineer` or `security-engineer`).
 4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage.
 5. **Read related design docs** (both roles):
-   - `staff-engineer`: relevant TDDs in `docs/tdd/`, project specs in `docs/spec/` matching the changed files' areas (architecture, code-quality, testing, operations, performance).
+   - `staff-engineer`: relevant TDDs in `docs/tdd/`, project specs in `docs/spec/` matching the changed files' areas (architecture, code-quality, testing, operations, performance, review-strategy).
    - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
    Use `Grep` over the changed-file paths to find authoritative references; do not invent.
 6. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
@@ -309,12 +309,12 @@ The calling agent corrects in its own context and re-invokes `Skill(code-review,
 
 ## Save & Return
 
-This skill does NOT write a file. After Validation Before Emit passes, emit the structured review verbatim to the calling agent's context, then end. The calling agent owns:
+This skill does NOT write a file. After Validation Before Emit passes, emit the structured review verbatim to the calling agent's context, then end. The calling agent owns (in order):
 
-- Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage.
-- Notifying the parallel reviewer (`security-engineer` ↔ `staff-engineer`) for verdict reconciliation on security-sensitive changes.
+- **Reconcile with the parallel reviewer first** — when the change touches auth, secrets, sandbox, trust boundaries, or supply chain (i.e., the parallel reviewer was spawned), SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) with this verdict before routing findings. Verdict reconciliation prevents contradictory handoffs to `@senior-engineer`.
+- Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
-- Triggering `Skill(vote, ...)` if the review meets a vote-criticality (500+ lines, security-critical, breaking-change plan, residual-risk acceptance).
+- Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance).
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

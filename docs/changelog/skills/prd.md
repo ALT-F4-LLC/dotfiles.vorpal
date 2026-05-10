@@ -1,5 +1,34 @@
 # Changelog: prd
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 7".
+
+### Changes
+- Replaced hardcoded "all 7 Required Sections" with self-referential enumeration ("(currently 7 sections). Off-by-one against the count is a defect.") — matches tdd's hardened pattern.
+
+### Dimensions Evaluated
+Coherence, Completeness.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Coherence pass: aligned When NOT to Use delegation ordering with sibling doc-authoring skills (tdd, adr, ux-spec) and sharpened PRD-vs-TDD disambiguation in When to Use.
+
+### Changes
+- When NOT to Use: moved "Project-wide engineering specs" bullet from second position to last, matching sibling skills' delegation-list ordering. Reason: family-wide consistency improves predictability for operators reading the doc-authoring skills in sequence.
+- When to Use bullet 1: appended "Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how." Reason: PRD-vs-TDD is the most load-bearing routing decision for callers; team-lead.md already uses this framing — surface it where the calling agent reads it.
+
+### Dimensions Evaluated
+Coherence (sibling-skill alignment), Output Quality / Actionability (PRD-vs-TDD disambiguation), Operator Prompt Quality, Scope/Budget, Leaf-Skill Safety, Spec Alignment.
+
+### Rename
+No rename. The "prd" name is parallel to adr/tdd/ux-spec siblings.
+
 ## 2026-05-07
 
 ### Summary

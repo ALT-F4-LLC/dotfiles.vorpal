@@ -208,7 +208,6 @@ Experience feedback: {experience_feedback}
 - Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry
 - Read docs/spec/ selectively — only files relevant to the skill's domain
 - Read OTHER skill files — first ~80 lines only (both .claude/skills/ and skills/)
-- Skip WebFetch
 - Prioritize the operator experience feedback and apply the docs research / docket audit findings below
 
 ## Claude Code Documentation Research

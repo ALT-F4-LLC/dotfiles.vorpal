@@ -1,5 +1,23 @@
 # Changelog: sdet
 
+## 2026-05-09
+
+### Summary
+Phase 1 trim + bidirectional coherence — compressed Quality stance, No-guessing, Stop-and-ask, Pre-Flight, Inter-Agent, /vote, Shutdown, and Greenfield blocks per "no over-thinking" feedback; closed @security-engineer coordination gap (zero prior references despite team integration). Net: −24 lines (303 → 279).
+
+### Changes
+- Compressed Quality stance, No-guessing, Stop-and-ask, Pre-Flight Goal-Alignment Gate, Inter-Agent preamble, /vote intro, Shutdown, and Greenfield step 6 (boilerplate / restated rules)
+- Dropped Per-Session Metrics section — already covered by No-guessing block
+- Trimmed Verification Output Template's meta-instruction preamble
+- Added @security-engineer to outgoing triggers: security/data-integrity test fails, abuse-case design needed, supply-chain/CVE in fixtures
+- Added @security-engineer incoming consults: abuse-case/fuzzing-target consult during security TDD authorship, test-infra alignment check before security review
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Capability Growth & Cross-Communication (PRIMARY — @security-engineer integration), Coherence (bidirectional triggers), Output Quality, Role Realism, Actionability, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

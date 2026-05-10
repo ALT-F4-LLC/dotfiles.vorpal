@@ -1,5 +1,41 @@
 # Changelog: senior-engineer
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence: added explicit "NOT @security-engineer" boundary (now that the security consult trigger exists), and closed bidirectional gaps for @staff-engineer Block/Concern verdict and @security-engineer Critical/High verdict review-fix-rereview loops.
+
+### Changes
+- §What You Are NOT: added "NOT @security-engineer" bullet — no threat models, security TDDs/ADRs, or security-dimension review; SendMessage @security-engineer (or `security-advisor`) before locking auth/secrets/validation/sandbox/supply-chain approaches
+- §Proactive SendMessage Triggers / Incoming triggers: added @staff-engineer review verdict (Block / Concern) trigger — address findings, update diff, SendMessage for re-review, do not close while Blockers remain (closes reciprocal to staff-engineer.md outgoing verdict handback)
+- §Proactive SendMessage Triggers / Incoming triggers: added @security-engineer review verdict (Critical / High) trigger — halt patches, address before further work, SendMessage for re-review, do NOT downgrade without a vote per security-engineer.md Consensus Voting
+
+### Dimensions Evaluated
+Coherence (PRIMARY — bidirectional review-fix loops + boundary), Boundary Clarity, Coordination & Handoffs, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Trim-heavy pass aligned with operator feedback (file-size bloat, no overthinking, output quality). Compressed top-of-file principles, Operating-context/Worktree/memory block, Docket workflow intro, Execution Workflow steps, SendMessage Triggers preamble, and System-Level Awareness bullets. Added `--depth` flag to graph reference and a missing @security-engineer SendMessage trigger. Net: −56 lines (304 → 248).
+
+### Changes
+- Compressed four top-of-file principle paragraphs (Rigorous honesty, No guessing, No surface-level fixes, Stop and ask) — behavior preserved, restatement removed
+- Merged Operating context + Worktree mode + Project memory preamble
+- Compressed Docket execute-issues intro and bash example, tightened ad-hoc / trivial-exception carve-out
+- Compressed Execution Workflow team-mode preamble and steps 1, 2, 5, 6, 7
+- Compressed SendMessage Triggers preamble (visibility contract + TaskUpdate cadence merged)
+- Compressed System-Level Awareness; folded backward-compat + serialized-formats bullets; added `docket issue graph --depth N` per Phase 0 audit
+- Added @security-engineer SendMessage trigger for auth/secrets/validation/sandbox/supply-chain — closes team-lead Security Track contract gap
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — −56 lines), Output Quality (less monologue at top of file), Capability Growth & Cross-Communication (security-engineer trigger, --depth flag), Role Realism, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

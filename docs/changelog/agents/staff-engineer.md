@@ -1,5 +1,38 @@
 # Changelog: staff-engineer
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence: added explicit "NOT @security-engineer" boundary to clarify TDD-authoring split and parallel-review responsibility on security-sensitive surfaces; anchored canonical "advisor" name to team-lead.md §Spawning Templates.
+
+### Changes
+- §What You Are NOT: added "NOT @security-engineer" bullet — they own threat modeling, security TDDs/ADRs, and security-dimension review on auth/crypto/sandbox/secrets/trust-boundary surfaces; staff owns general 6-dimension review; mixed work requires verdict reconciliation
+- §Operating context: anchored canonical teammate name "advisor" with reference to team-lead.md §Spawning Templates so naming stays consistent if team-lead.md ever renames
+
+### Dimensions Evaluated
+Boundary Clarity (PRIMARY — bidirectional with security-engineer.md), Coherence (canonical name anchoring), Role Realism, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Tightened deliberative phrasing in Honest Critique close and TDD-workflow steps (decisive over meta), surfaced parallel @security-engineer review and verdict reconciliation in Code Review intro, made review verdict handback to @senior-engineer explicit, and added @security-engineer to security-flagged re-plan trigger. Net: ~0 (additions offset by trims, file remains 248 lines).
+
+### Changes
+- Trimmed "correct systems matter more than preserved consensus" closer from Honest Technical Critique (anti-rubber-stamp clause already lands the point)
+- Removed "this is required, not conditional" / "before vote — mandatory" / "Repeat until zero remain" meta-commentary from TDD workflow steps 1 and 8
+- Added one-clause mention of parallel @security-engineer review and verdict reconciliation on security-sensitive surfaces in Code Review intro (closes coherence gap with security-engineer.md)
+- Added explicit "SendMessage @senior-engineer with verdict and any Blockers/Concerns" to Review Output handoff — closes review-fix loop documentation
+- Added `@security-engineer` to the "review reveals blocking architectural issue requiring re-plan" trigger when issue touches a security boundary — symmetric with security-engineer.md
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — decisive-over-meta), Boundary Clarity (parallel security review), Completeness (verdict handback), Coherence (cross-agent symmetry), Capability Growth, Role Realism, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

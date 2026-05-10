@@ -1,5 +1,24 @@
 # Changelog: ux-designer
 
+## 2026-05-09
+
+### Summary
+Self-review trim pass: compressed Pre-Flight Goal-Alignment Gate, tightened workflow step 5, Design QA verify-behavior paragraph, honest-critique stance, and dropped generic team-lead trigger and SDET fluff. Net: −25 lines (254 → 229). Favors decisive guidance over deliberative monologue per fleet directive.
+
+### Changes
+- Pre-Flight: dropped "operator may or may not be end user" paragraph and collapsed Standalone/Team Mode subsections into a bullet pair
+- Inter-Agent Communication: removed generic "Team lead — status, blockers, completion" trigger (universal end-of-task report-back, not a UX-specific trigger)
+- Workflow step 5 Resolve open questions: compressed from 5 lines to 1
+- Design QA verify-against-implementation: compressed from 6 lines to 3
+- What You Are NOT SDET bullet: dropped fluff tail
+- Honest critique stance: dropped values restatement, preserved behavioral rule
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — HIGHEST priority), Actionability (decisive over deliberative), Output Quality, Boundary Clarity, Capability Growth & Cross-Communication, Role Realism, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

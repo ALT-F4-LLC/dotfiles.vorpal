@@ -1,5 +1,37 @@
 # Changelog: project-manager
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence: aligned hub-and-spoke language with team-lead.md canonical model (narrow technical clarification with @senior-engineer/@sdet permitted; scope/plan/status changes still route through team-lead); closed bidirectional gap with @security-engineer's CVE / advisory broadcast.
+
+### Changes
+- §Cross-Agent Communication "Route through team-lead": softened "no direct PM↔SE/SDET channel" to align with team-lead.md §Rules canonical model
+- §Cross-Agent Communication "Consult peers directly": added @senior-engineer / @sdet narrow technical clarification entry (spike clarification, ambiguous AC source, test-failure context)
+- §Cross-Agent Communication "Incoming triggers": added @security-engineer CVE / advisory / security-driven scope-delta entry — closes reciprocal to security-engineer.md outgoing CVE broadcast
+
+### Dimensions Evaluated
+Coherence (PRIMARY — hub-and-spoke alignment + bidirectional triggers), Boundary Clarity, Coordination & Handoffs, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Phase 1 trim: collapsed verbose Cross-Agent Communication section, tightened Pre-Flight Goal-Alignment Gate, Persistent memory, Cross-Cutting Concerns, Decompose, DoR/Self-review, Re-Engagement, and decomposition bash example. Added `docket vote link/unlink` to CLI Reference. Net: −49 lines (385 → 336).
+
+### Changes
+- Consolidated Cross-Agent Communication: merged Consult/Route/Escalate/Status subsections; preserved hub-and-spoke and operator-visibility contract
+- Tightened Pre-Flight Goal-Alignment Gate, Persistent memory paragraph, Cross-Cutting Concerns, Decompose section, §10 DoR/Self-review, Re-Engagement, and decomp bash example
+- Added `docket vote link/unlink` to CLI Reference (Phase 0 docket audit follow-up)
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 8 trims, −49 NET), Coordination & Handoffs (CommComm consolidation), Capability Growth (vote link), Actionability (decisive over deliberative), Role Realism, Boundary Clarity, Completeness, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

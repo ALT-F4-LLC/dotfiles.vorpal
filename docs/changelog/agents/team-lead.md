@@ -1,5 +1,23 @@
 # Changelog: team-lead
 
+## 2026-05-09
+
+### Summary
+Trimmed redundant spawning-template scaffolding (hoisted common Agent() / Verified goal / `<user_request>` boilerplate into a single preamble), fixed step-numbering collision between Design Phase and Planning Phase (which restarted at 4), promoted TeammateIdle hook as canonical stall signal, and added `docket vote link` post-commit. Net: −95 lines (439 → 344).
+
+### Changes
+- Hoisted common spawning scaffolding into a single preamble; trimmed all 8 templates: @staff-engineer (TDD + Code Review), @security-engineer (TDD + Review), @project-manager, @ux-designer, @senior-engineer, @sdet
+- Fixed step-numbering collision: phases renumbered into a single 1-16 sequence (Team Setup 1-2, Design 3-6, Planning 7-10, Implementation 11-13, Review 14, Verification 15, Wrap-up 16); cross-references updated
+- Added `docket vote link {vote-id} --issue {DOCKET-ID}` to Consensus Integration so votes unblocking a specific issue are traceable
+- Promoted `TeammateIdle` hook to canonical stall signal in Stall & Crash Recovery (cheaper and more accurate than 10-min TaskList polling)
+- Tightened persistent-memory paragraph parenthetical
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 7 of 12 changes), Actionability (step-numbering correctness), Completeness (vote-link integration, TeammateIdle promotion), Capability Growth, Spec Alignment, Boundary Clarity, Role Realism, Rename
+
+### Rename
+No rename.
+
 ## 2026-05-08
 
 ### Summary

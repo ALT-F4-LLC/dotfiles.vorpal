@@ -7,7 +7,6 @@ description: >
 argument-hint: "[file...]"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
-paths: ["docs/spec/*.md"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

@@ -185,7 +185,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md, docs/spec/ selectively, other agent files first ~80 lines only. Skip WebFetch. Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md, docs/spec/ selectively, other agent files first ~80 lines only. Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

@@ -109,23 +109,24 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Parent-PRD probe**: `Glob docs/spec/*.md`. If any spec slug appears as
-   a substring of `<topic>` (case-insensitive), include its relative path in
-   the `dependencies` frontmatter array. The calling agent may add others
-   from broader judgment.
+5. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
+   whose slug appears as a substring of `<topic>` (case-insensitive), include
+   its relative path in the `dependencies` frontmatter array. The calling
+   agent may add others from broader judgment.
 
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
-   parent PRD identified in Pre-flight step 5. Read existing TDDs in `docs/tdd/`
-   that touch adjacent areas — the new TDD should reference, not contradict, prior
-   accepted work.
+   parent PRD or UX spec identified in Pre-flight step 5. Read existing TDDs in
+   `docs/tdd/` that touch adjacent areas — the new TDD should reference, not
+   contradict, prior accepted work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required
-   Sections). Every section listed MUST appear, in the order shown. Sections marked
-   "or N/A" may contain a single `N/A.` paragraph with a one-line justification —
-   omitting them is a defect.
+   Sections). Sections explicitly marked "may be N/A" (Data Models §5, API
+   Contracts §6) may contain a single `N/A.` paragraph with a one-line
+   justification; omitting any required section is a defect — Validation
+   Before Save §3 enforces the full list.
 4. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
    block. TDDs always require at least one diagram (component map, sequence,
    state, or data flow) — pure-policy decisions belong in an ADR, not a TDD.
@@ -202,11 +203,18 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 8. **Risks & Open Questions** — risk table (likelihood/impact/mitigation); open
    questions resolved or escalated before vote.
 9. **Testing Strategy** — test levels, smoke tests, coverage of acceptance
-   criteria, untested-claims inventory.
+   criteria, untested-claims inventory. **For security TDDs** (per §4
+   security-track gating), this section MUST include a named subsection
+   `### Abuse Cases` enumerating adversarial-input tests, not just happy-path
+   coverage.
 10. **Observability & Operational Readiness** — signals, 3am diagnosability,
     production readiness, runbooks.
-11. **Implementation Phases** — partitioned phases with file scoping, per-phase
-    acceptance, effort estimates, out-of-scope flags.
+11. **Implementation Phases** — partitioned phases that the planner consumes
+    directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
+    (paths affected), (c) per-phase acceptance criteria, (d) effort estimate
+    (S/M/L), (e) blocking dependencies on other phases, (f) explicit
+    out-of-scope flags. Phases must be independently shippable or explicitly
+    chained — no implicit ordering.
 
 ### Mermaid Mandate
 
@@ -233,6 +241,9 @@ Before invoking `Write`, verify in the calling agent's context:
    verify §4 (Architecture & System Design) contains three `###`-level
    subsections named exactly `Threat Model`, `Trust Boundaries`, and
    `Security Considerations`. Non-security TDDs skip this check.
+8. **Security-track abuse cases** — if `updated_by` is `@security-engineer`,
+   verify §9 (Testing Strategy) contains a `###`-level subsection named
+   `Abuse Cases`. Non-security TDDs skip this check.
 
 If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
 skill's tools):
@@ -278,5 +289,6 @@ On operator Cancel during the collision dialog: emit
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
 | Security TDD missing Threat Model / Trust Boundaries / Security Considerations subsections | Abort: `Error: validation failed: §4 — security TDD requires Threat Model, Trust Boundaries, and Security Considerations subsections (updated_by={agent}).` |
+| Security TDD missing Abuse Cases subsection in §9 | Abort: `Error: validation failed: §9 — security TDD requires Abuse Cases subsection in Testing Strategy (updated_by={agent}).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

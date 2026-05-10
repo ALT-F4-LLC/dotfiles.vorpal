@@ -3,6 +3,37 @@
 ## 2026-05-09
 
 ### Summary
+Phase 2 coherence: removed the orphaned `### Failure Mode Table` subheading. PRD retains the subheading because it has a load-bearing sibling H3 (`### Reserved-Name List`); ux-spec did not, so the subheading was decorative and diverged from tdd, adr, and code-review.
+
+### Changes
+- Failure Modes section: removed the `### Failure Mode Table` subheading immediately under `## Failure Modes`. The section now goes directly from H2 to the table, matching tdd / adr / code-review's structure. Net -2 lines.
+
+### Dimensions Evaluated
+Coherence (subheading parity across the leaf doc-authoring family).
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Four handoff + actionability fixes (operator pain points 1, 2, 3): added `AskUserQuestion preview` guidance for visual variant comparison, strengthened cross-surface coherence wording in Authoring §1, added per-component implementation priority requirement to §9 Handoff Notes (a) for decomposition handoff, and added explicit missing-section row to Failure Modes for parity with sibling skills.
+
+### Changes
+- Authoring Procedure §5: added guidance that calling agents prefer `AskUserQuestion` with the `preview` field (CLI mockups, ASCII wireframes, copy variants) when resolving §9 design decisions with the operator — visual comparison beats prose for UX variants. Leverages new Claude Code tool capability.
+- Authoring Procedure §1: re-anchored cross-surface naming rule to `agents/ux-designer.md` and matched tdd's "reference, not contradict, prior accepted work" prescriptiveness.
+- Required Sections §9 (a): added per-component implementation priority requirement (P0/P1/P2 or MVP/polish) so @project-manager can sequence Docket issues without re-deriving order — directly addresses decomposition-handoff pain point.
+- Failure Mode Table: added explicit "Required section missing or out of order" row for parity with the prescriptiveness of the Mermaid row and PRD/TDD's pattern.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration (leaf — verified no sub-agent surface), Coherence (sibling prd/tdd/adr alignment), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with adr/prd/tdd.
+
+## 2026-05-09
+
+### Summary
 Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 9".
 
 ### Changes

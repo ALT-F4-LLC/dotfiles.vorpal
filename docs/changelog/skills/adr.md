@@ -3,6 +3,22 @@
 ## 2026-05-09
 
 ### Summary
+Three actionability + coherence fixes (operator pain points 1, 3): made the same-slug race gap explicit with operator-actionable mitigation, trimmed Pre-flight §4 meta-commentary, and added a one-line full-sequence anchor between the canonical SAVE_AND_RETURN block and the ADR-specific overrides for at-a-glance ordering.
+
+### Changes
+- Save & Return post-Write override: replaced the unactionable "see Failure Modes below" punt about same-slug races with an explicit explanation of why same-slug TOCTOU is undetectable here, plus caller-side mitigation guidance and the git-review fallback path.
+- Pre-flight §4: tightened to one sentence — removed the redundant "Concurrent races are caught by the post-write override below" pointer that meta-commented on the override section.
+- Save & Return: added a single-line full-sequence summary (`mkdir → renumber re-Glob → Write → race-detection Glob → Emit`) between the canonical block and the first ADR-specific override so readers see the order without cross-mapping two override blocks.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration (leaf — verified no sub-agent surface), Coherence (sibling tdd/prd/ux-spec/specs alignment), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with tdd/prd/ux-spec.
+
+## 2026-05-09
+
+### Summary
 Phase 2 coherence pass: hardened Validation §3 to self-reference Required Sections instead of hardcoding "all 4".
 
 ### Changes

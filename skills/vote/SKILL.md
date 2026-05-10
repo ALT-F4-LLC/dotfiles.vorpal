@@ -43,8 +43,8 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 ## Pre-flight
 
-1. **Verify docket is available** — Run `docket vote list --limit 1` via Bash to confirm the
-   vote subsystem is operational.
+1. **Verify docket is available** — Run `docket version --quiet` via Bash to confirm the docket
+   CLI is operational (canonical liveness check; the vote subcommand ships in the same binary).
 2. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
    until the goal is confirmed.
    - **Standalone mode**: Use `AskUserQuestion` with three questions in order: (1) header `Decision`, options `Confirm` (proceed with framing) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options derived from the table below — present your classified default first with a one-line rationale, then `low`, `medium`, `high`, `critical` as alternatives. Do not proceed until all three are answered.
@@ -170,7 +170,7 @@ Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() err
 
 ### Recording Votes
 
-After each reviewer returns, cast their vote (heredoc preserves multi-line findings; swap `--findings -` for `--findings-json -` if findings are structured JSON):
+After each reviewer returns, cast their vote. Prefer `--findings-json -` when findings are structured JSON (the reviewer template's Verdict/Confidence/Domain Relevance/Findings sections deserialize cleanly); fall back to the plaintext heredoc below for free-form rationale.
 
 ```bash
 docket vote cast {vote-id} \
@@ -300,6 +300,7 @@ After completing the protocol, report to the caller:
 ### Record
 View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.role` for the two pre-commit invariants: no `.role` matches the proposer's mapped agent type, and all `.role` values are unique).
 Full result: `docket vote result {vote-id} --json`
+Committed via: `docket vote commit {vote-id} --outcome "Approved with score {score}"` (echo the executed command for audit replay).
 ```
 
 ### Cleanup (MANDATORY — standalone mode only)

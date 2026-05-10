@@ -55,6 +55,11 @@ Error: Usage: Skill(code-review, "<scope>") — name what to review (PR number/U
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 
+**Ambiguity rules** (apply when multiple forms could match):
+
+- A token matching `^\d+$` always tries PR-number first via `gh pr view {n} --json number`. If `gh` exits non-zero (no such PR), fall through to branch detection. If both fail, fall through to file-path detection only when the token is a real path.
+- A single token that is BOTH a valid branch name AND an existing file is treated as a branch. To force file-path scope on such a name, supply multiple tokens or prefix with `./` (e.g., `./main`).
+
 If `<scope>` matches none of the above, ABORT:
 
 ```
@@ -83,7 +88,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{role}` = the detected role (`staff-engineer` or `security-engineer`).
-4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage.
+4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Read related design docs** (both roles):
    - `staff-engineer`: relevant TDDs in `docs/tdd/`, project specs in `docs/spec/` matching the changed files' areas (architecture, code-quality, testing, operations, performance, review-strategy).
    - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
@@ -292,8 +297,8 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 
 Before emitting the structured review, verify in the calling agent's context:
 
-1. **Role banner correct** — heading reads `## Review (general — @staff-engineer)` for `staff-engineer` role, or `## Review (security — @security-engineer)` for `security-engineer` role. Trivial-change variants (`LGTM`, `LGTM (security)`) skip the banner check.
-2. **All required sections present** for the chosen format — Summary, Scope Reviewed, Risk Assessment (and Threat Model for security), Findings (every severity bucket), Dimension Checklist, Recommendation, Next Steps.
+1. **Heading matches the role's banner** per the Output Contract.
+2. **Every section in the role's template is present, in order** — see Output Contract for the full list.
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
 4. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
 5. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
@@ -320,13 +325,9 @@ On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emi
 
 ## Failure Modes
 
+The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, empty diff, validation failure, and silently-ignored extras are specified inline at Argument Handling, Role Detection, Pre-flight, and Validation Before Emit. The table below covers only the abort paths that introduce new abort text or scope-specific behavior:
+
 | Trigger | Handling |
 |---|---|
-| `<scope>` missing or empty | Abort: `Error: Usage: Skill(code-review, "<scope>") — name what to review (PR number/URL, branch, "uncommitted", "staged", or file paths).` |
-| Calling agent is not @staff-engineer or @security-engineer | Abort: `Error: Skill(code-review) is restricted to @staff-engineer and @security-engineer. Calling agent: {agent}.` |
-| `<scope>` cannot be resolved (unknown branch, malformed PR ref, file paths do not exist) | Abort: `Error: Could not resolve <scope>: '{scope}'. Expected PR number/URL, branch name, "uncommitted", "staged", or existing file paths.` |
-| Resolved scope produces an empty diff | Abort: `Error: Resolved scope produced an empty diff — nothing to review.` |
 | `gh` CLI unavailable for a PR scope | Abort: `Error: gh CLI required to resolve PR scope. Re-invoke with the branch name or "uncommitted".` |
-| Validation Before Emit fails | Abort: `Error: validation failed: {section/field} — {detail}.` No retry — calling agent re-invokes after correction. |
 | Severity ladder cross-mixed (e.g., security review uses "Blocker" instead of "Critical") | Abort: `Error: validation failed: severity ladder — {role} review must use {ladder}. Found: {wrong-label}.` |
-| Caller passes additional positional args beyond `<scope>` | Ignore extras silently. |

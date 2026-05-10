@@ -126,9 +126,10 @@ malformed frontmatter.
    already in `docs/spec/`. Read any TDDs in `docs/tdd/` or design specs in
    `docs/ux/` that touch the same surface — the new PRD should reference, not
    contradict, prior accepted product definitions.
-2. **Probe Docket** (informational): `Bash docket issue list --json` to surface any
-   active tickets that pre-date this PRD. Note candidates in the body where
-   appropriate.
+2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json`
+   via Bash to surface high-priority active tickets that pre-date this PRD. If any
+   intersect the PRD's surface, list them in the **Risks & Open Questions** section
+   under a "Pre-existing Docket issues" sub-bullet — do NOT scatter them through the body.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required
@@ -183,10 +184,13 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 3. **Non-Goals** — explicit out-of-scope items, including future-work flags.
 4. **User Stories / Use Cases** — narrative scenarios from the operator/user
    perspective, with priorities.
-5. **Requirements** — functional and non-functional, prioritized using MoSCoW (Must / Should / Could / Won't).
-6. **Success Metrics** — quantitative measures that validate Goals are met.
+5. **Requirements** — functional and non-functional, prioritized using MoSCoW (Must / Should / Could / Won't). Each requirement MUST be testable: a reviewer must be able to point at a behavior and say "this satisfies / does not satisfy" without a follow-up clarification.
+6. **Success Metrics** — quantitative measures that validate Goals are met. Each
+   metric MUST name (a) what is measured, (b) the measurement method, and (c) a
+   numeric target or threshold. "Improve UX" is a defect; "p95 first-token latency
+   under 800ms measured via /metrics endpoint" is acceptable.
 7. **Risks & Open Questions** — risk table (likelihood/impact/mitigation); open
-   questions resolved or escalated before commitment.
+   questions resolved or escalated before decomposition into Docket issues.
 
 ### Mermaid Mandate
 
@@ -208,6 +212,9 @@ Before invoking `Write`, verify in the calling agent's context:
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
+7. **Success Metrics concreteness** — every bullet/item under the Success Metrics
+   section contains at least one digit OR a comparison operator (`<`, `>`, `≤`, `≥`,
+   `=`). A Success Metrics section with zero numeric targets is a defect.
 
 If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
 skill's tools):
@@ -272,5 +279,6 @@ testing
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — PRD requires at least one mermaid fenced block (user journey, state, or component map).` |
 | Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — PRDs use 'maturity', not 'status'. Remove the status field.` |
+| Success Metrics section has no numeric targets | Abort: `Error: validation failed: Success Metrics — every metric must include a numeric target or threshold (e.g., 'p95 < 800ms'). Vague metrics are rejected.` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

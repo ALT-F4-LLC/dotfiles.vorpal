@@ -31,7 +31,7 @@ Target agent(s) are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or follow-up listing inventoried agents from step 4), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or free-text follow-up for the agent name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `Agent role realism`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
@@ -118,7 +118,7 @@ Cross-cutting items append to a running notes list passed verbatim into the Phas
 
 ### Phase 2: Coherence & Renames (sequential)
 
-Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single `coherence-reviewer` (@staff-engineer, read-only) per the Phase 2 template and assign the Phase 2 task.
+Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single `coherence-reviewer` per the Phase 2 template and assign the Phase 2 task.
 
 **After the Phase 2 teammate completes**, the orchestrator:
 
@@ -216,21 +216,21 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Output Format
 
-#### Summary
+### Summary
 <1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
 
-#### Recommended Changes
+### Recommended Changes
 For each change, emit a fenced block with these fields verbatim:
 `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:`
 Use `<REMOVE>` for deletions and `<INSERT_AFTER>` (with the line you're inserting after) for pure additions.
 
-#### Changelog Entry
+### Changelog Entry
 4 sections in order, max 20 lines: `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`.
 
-#### Rename Recommendation
+### Rename Recommendation
 Single line with reasoning, or "No rename."
 
-#### Coherence Issues
+### Coherence Issues
 For each: `ISSUE: <title>` / `AFFECTED_AGENTS: <names>` / `DETAIL: <one-line description + suggested action>`. Or: "None."
 ```
 
@@ -272,5 +272,5 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 
 1. **Always run Phase 2** — even for single-agent improvements.
 2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-3. **Fail loud.** Detect stalls via `TeammateIdle` notification or `Monitor` stream silence. Follow Crash & Stall Recovery: re-spawn ONCE with resume context, then skip with a "No review performed" changelog entry on second failure. Never review directly. After compaction, follow Compaction recovery before any new `Agent`/`SendMessage` call.
+3. **Fail loud.** See Crash & Stall Recovery. Never review directly — the orchestrator-only-coordinates invariant is absolute.
 4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

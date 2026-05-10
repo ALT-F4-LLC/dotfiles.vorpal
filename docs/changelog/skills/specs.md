@@ -3,6 +3,23 @@
 ## 2026-05-09
 
 ### Summary
+Three small actionability + coherence fixes (operator pain points 1, 3): added `last_updated` regression check to Step 3 verification, clarified that template substitutions apply to the Spawning Template body (not the `Agent()` call), and added a reciprocal architecture↔code-quality cross-link to mirror the existing code-quality↔siblings deferral. Also notes that the prior entry's `paths:` addition has since been reverted (commit f8b18a2 removed `paths:` skill-wide); current frontmatter contains no `paths:` field, which is correct.
+
+### Changes
+- Step 3 Verify: added `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md` — closes a regression path the existing `head -1` frontmatter check missed (an agent could write valid YAML with a stale or hardcoded date and slip past).
+- Step 1 #3: added a one-line clarifier that the substitutions apply to the Spawning Template body, not to the `Agent()` call itself — prevents new operators from misreading the substitution scope.
+- Spec File Reference: added reciprocal cross-link in `architecture.md` row deferring style/idiom and test-architecture details to their owning specs (mirrors the pre-existing code-quality.md cross-link); prevents content overlap when agents work in parallel.
+- Note: the prior `## 2026-05-09` entry below documented adding `paths:` frontmatter, which was subsequently removed in commit f8b18a2 as part of a skill-wide cleanup. The prior entry remains as historical record (per the never-modify-existing-entries rule); current frontmatter correctly contains no `paths:` field.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence (sibling vote, evolve-skills, evolve-agents), Spec Alignment (verified against `docs/spec/` actual files), Rename.
+
+### Rename
+No rename. Family-aligned with `prd`, `tdd`, `adr`, `ux-spec`.
+
+## 2026-05-09
+
+### Summary
 Phase 2 coherence pass: declared `paths:` write surface for orchestrator parity with evolve-agents and evolve-skills.
 
 ### Changes

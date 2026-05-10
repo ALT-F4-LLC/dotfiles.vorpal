@@ -115,7 +115,8 @@ malformed frontmatter.
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` (broader than the
    pre-flight scan — include `docs/spec/`, `docs/tdd/`, `docs/ux/`). Read any
    adjacent specs that touch the same surface or terminology — the new UX spec
-   should reuse established names and patterns rather than inventing parallel ones.
+   should reference, not contradict, prior accepted UX specs and design tokens
+   (per `agents/ux-designer.md`: same concept gets the same name across all surfaces).
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required
@@ -132,7 +133,10 @@ malformed frontmatter.
 5. **Propose actual copy**: per `agents/ux-designer.md` content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
    states, and tooltips. No placeholder strings. The same concept gets the same
-   name across all surfaces.
+   name across all surfaces. **When the calling agent must resolve copy or layout
+   variants with the operator before save, prefer `AskUserQuestion` with the
+   `preview` field** (CLI mockup, ASCII wireframe, or copy variants) so the
+   operator can compare alternatives visually rather than from prose descriptions.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
    overloaded, degraded, and concurrent states.
@@ -202,7 +206,9 @@ Responsibility 1 design spec format.
    metrics (instrumentation points, iteration triggers).
 9. **Handoff Notes** — the bridge to @project-manager (decomposition) and
    @senior-engineer (implementation). MUST include: (a) component / surface
-   breakdown with proposed file or module scoping where known; (b) MVP cutline
+   breakdown with proposed file or module scoping where known, AND a per-component
+   implementation priority (P0/P1/P2 or MVP/polish) so @project-manager can
+   sequence Docket issues without re-deriving the order; (b) MVP cutline
    versus polish priorities; (c) resolved design decisions with one-line
    rationale; (d) cross-spec dependencies (TDDs, PRDs, sibling UX specs); (e)
    recommended follow-on research, instrumentation, or usability validation
@@ -274,8 +280,6 @@ On operator Cancel during the collision dialog: emit
 
 ## Failure Modes
 
-### Failure Mode Table
-
 | Trigger | Handling |
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(ux-spec, "<topic>") — describe the artifact in 3-10 words.` |
@@ -283,6 +287,7 @@ On operator Cancel during the collision dialog: emit
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
+| Required section missing or out of order | Abort: `Error: validation failed: section §N — Required section '{name}' missing or out of order. UX specs require all 9 sections in the order listed.` |
 | Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status'. Remove the status field.` |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — UX specs require at least one mermaid fenced block (user flow, state transition, or cross-surface journey).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

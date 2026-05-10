@@ -3,6 +3,26 @@
 ## 2026-05-09
 
 ### Summary
+Seven trim + parity fixes (operator pain points 1-4): wrapped CRITICAL block in `<!-- CANONICAL:BANNER -->` markers, dropped stale `paths` frontmatter reference (commit f8b18a2 deleted the field), tightened Pre-flight step 1 options + step 4 inventory, condensed Phase 1 Context bullets into prose, restructured Wrap-up as a numbered list, and trimmed the redundant Shutdown protocol restatement. Net change: -8 lines.
+
+### Changes
+- Top of file: wrapped CRITICAL block in `<!-- CANONICAL:BANNER:BEGIN/END -->` (matches leaf skills `vote`, `specs`, `code-review`).
+- Pre-flight step 1: tightened option list and dropped forward-reference to the not-yet-run inventory step (matches sister evolve-agents fix).
+- Pre-flight step 4: condensed 4-line TRIM/BALANCED definition to 1 line — definitions also live in Phase 1 template's Size Budget.
+- Wrap-up: prose paragraph → 3-step numbered list (parity with sister evolve-agents) and named the `wc -l` paths explicitly.
+- Shutdown protocol: removed the "no teammate reused" sentence (lifecycle table covers) and "treat as dead" forward-reference (Crash & Stall Recovery defines).
+- Phase 1 template Context: 5-bullet flat list → 2-line prose (parity with sister evolve-agents), same content.
+- Phase 1 template Dimension 1: removed `paths` from the frontmatter check list — the field was deleted from skill frontmatter in commit f8b18a2; reviewers were being told to evaluate a field that no longer exists.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering (HIGHEST), Coherence (sister evolve-agents), Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
 Phase 2 coherence pass: inlined the 8 evaluation dimensions inside the Phase 1 reviewer template (stateless agents had no access to the orchestrator's top-level dimensions section), declared `paths:` write surface for orchestrator parity with evolve-agents, and restored an explicit Size Budget block to the Phase 1 template.
 
 ### Changes

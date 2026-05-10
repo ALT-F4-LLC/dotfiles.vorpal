@@ -3,6 +3,26 @@
 ## 2026-05-09
 
 ### Summary
+Four handoff + actionability fixes (operator pain points 1, 3): added UX-spec input probe to mirror PRD probing, sharpened Implementation Phases §11 with the 6 PM-decomposable fields, encoded the security-track Abuse Cases contract in Testing Strategy §9 (mirrors security-engineer.md:142), and trimmed Authoring §3 redundancy with Validation §3.
+
+### Changes
+- Pre-flight §5: renamed "Parent-PRD probe" to "Related-doc probe" and extended Glob to `docs/spec/*.md docs/ux/*.md` so TDDs touching user-facing surfaces consume existing UX specs as input dependencies (closes asymmetry with prd's Authoring §1).
+- Authoring §1: now reads candidate parent PRD OR UX spec from Pre-flight step 5.
+- Required Sections §11 (Implementation Phases): expanded to specify the 6 fields the planner consumes directly (goal, file scope, acceptance, effort estimate, blocking dependencies, out-of-scope flags). Phases must be independently shippable or explicitly chained.
+- Required Sections §9 (Testing Strategy): added security-track Abuse Cases subsection contract gated on `updated_by: @security-engineer` (mirrors security-engineer.md:142 mandate).
+- Validation Before Save §8: enforces Abuse Cases subsection for security TDDs.
+- Failure Modes table: new row for the Abuse Cases validation failure.
+- Authoring §3: trimmed redundancy with Validation §3 ("Every section listed MUST appear, in the order shown" was duplicated); kept the "may be N/A" guidance and added a forward-pointer to Validation §3 as the enforcement gate.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration (leaf — verified no sub-agent surface), Coherence (sibling prd / adr / ux-spec; security-engineer.md, ux-designer.md), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with prd/adr/ux-spec.
+
+## 2026-05-09
+
+### Summary
 Coordination & Handoff fix: encoded the Threat Model / Trust Boundaries / Security Considerations subsection contract for security TDDs (security-engineer.md declares them mandatory but the format authority did not enforce them). Two minor trims — collapsed Mermaid Mandate triple-restatement vestige; tightened Pre-flight §5 Parent-PRD probe from advisory note into a deterministic substring rule. Hardened Validation §3 against off-by-one drift as the section list grows.
 
 ### Changes

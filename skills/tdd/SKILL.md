@@ -109,10 +109,10 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Parent-PRD probe**: `Glob docs/spec/*.md` and scan filenames for any that
-   plausibly relate to `<topic>`. If candidates exist, note them for the
-   `dependencies` frontmatter field. If none seem to apply, proceed with
-   `dependencies: []` — the calling agent's judgment is authoritative.
+5. **Parent-PRD probe**: `Glob docs/spec/*.md`. If any spec slug appears as
+   a substring of `<topic>` (case-insensitive), include its relative path in
+   the `dependencies` frontmatter array. The calling agent may add others
+   from broader judgment.
 
 ## Authoring Procedure
 
@@ -184,7 +184,15 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 3. **Alternatives Considered** — at least two; shape, strengths, weaknesses,
    verdict per alternative.
 4. **Architecture & System Design** — the chosen approach, with sub-sections as
-   needed (component map, data flow, sequencing, contracts).
+   needed (component map, data flow, sequencing, contracts). **For security
+   TDDs** (calling agent is `@security-engineer`, or the design crosses trust
+   boundaries / changes authn/authz / handles secrets / changes the
+   sandbox/permission model), this section MUST include three named
+   subsections: `### Threat Model` (assumed adversary, capabilities,
+   out-of-scope threats), `### Trust Boundaries` (where untrusted data
+   enters, where privileges escalate, what each boundary enforces), and
+   `### Security Considerations` (mitigations, residual risks, defense
+   layers). Non-security TDDs may omit these subsections.
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation
@@ -202,7 +210,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-TDDs **always require** at least one Mermaid block — a component map, sequence diagram, state diagram, or data flow (see Authoring Procedure §4 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). Pure-policy decisions ("use SemVer", naming conventions) belong in an ADR — use `Skill(adr, "<topic>")`.
+TDDs **always require** at least one ` ```mermaid ` fenced block (lowercase, no space) — see Authoring §4 for diagram types. Pure-policy decisions belong in an ADR.
 
 ## Validation Before Save
 
@@ -213,13 +221,18 @@ Before invoking `Write`, verify in the calling agent's context:
    non-empty (`dependencies` may be the empty list `[]`).
 2. **Status value** — `status` is one of `draft | questions-resolved |
    in-review | accepted | superseded`.
-3. **Section order** — the body contains all 11 Required Sections, as `##`
-   headings, in the order listed.
+3. **Section order** — the body contains all top-level sections enumerated
+   in "Required Sections" above, as `##` headings, in the order listed
+   (currently 11 sections). Off-by-one against the count is a defect.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
    least two `###`-level subsections.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
+7. **Security-track subsections** — if `updated_by` is `@security-engineer`,
+   verify §4 (Architecture & System Design) contains three `###`-level
+   subsections named exactly `Threat Model`, `Trust Boundaries`, and
+   `Security Considerations`. Non-security TDDs skip this check.
 
 If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
 skill's tools):
@@ -264,5 +277,6 @@ On operator Cancel during the collision dialog: emit
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
+| Security TDD missing Threat Model / Trust Boundaries / Security Considerations subsections | Abort: `Error: validation failed: §4 — security TDD requires Threat Model, Trust Boundaries, and Security Considerations subsections (updated_by={agent}).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

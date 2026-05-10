@@ -1,5 +1,38 @@
 # Changelog: adr
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence pass: hardened Validation §3 to self-reference Required Sections instead of hardcoding "all 4".
+
+### Changes
+- Replaced hardcoded "all 4 Required Sections" with self-referential enumeration ("(currently 4 sections). Off-by-one against the count is a defect.") — matches tdd's hardened pattern so the count stays in sync if Required Sections evolve.
+
+### Dimensions Evaluated
+Coherence, Completeness.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Phase 1 over-engineering pass: dropped the Mermaid Mandate (operator-hostile magic-string validation for single-decision records — ADRs are short, judgment is sufficient); trimmed two pieces of meta-commentary in Pre-flight §4 and §5.7. Net 277→255.
+
+### Changes
+- Authoring §4 reframed: Mermaid is now optional with a one-line guideline (judgment-based), no validation pressure
+- Mermaid Mandate subsection removed entirely (was redundant with Authoring §4)
+- Validation §5 (Mermaid presence) removed; placeholder scan renumbered
+- Failure Modes row for "Mermaid mandate not satisfied" removed
+- Pre-flight §4 preamble compressed (4 lines → 1 line) — collision-handling rationale was meta-commentary
+- Pre-flight §5.7 forward-reference compressed (4 lines → 1 line) — duplicated the override block below
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with tdd/prd/ux-spec.
+
 ## 2026-05-07
 
 ### Summary

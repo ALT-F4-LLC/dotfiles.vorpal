@@ -1,5 +1,23 @@
 # Changelog: vote
 
+## 2026-05-09
+
+### Summary
+Fixed silent quorum-poisoning in failure-cast (NON-VOTE summary prefix), tightened Delegation Protocol to make team-lead's responsibility a thin re-invoke (not a parallel implementation), removed Phase 2 numbered list duplicating the Reviewer Prompt Template, adopted `docket vote unlink` for multi-round link hygiene, and surfaced criticality classification as an operator-confirmed AskUserQuestion in standalone Pre-flight.
+
+### Changes
+- Phase 2 Handling Reviewer Failures: failure-cast summary now prefixed `NON-VOTE (reviewer failed): ...` so audits read accurately; clarified proceed condition is "remaining can meet quorum".
+- Delegation Protocol step 4: team-lead's responsibility re-anchored — invoke `Skill(vote, "{vote-id}")` standalone (vote_id branch skips Phase 1) and forward the result; closes asymmetric contract with team-lead's Consensus Integration.
+- Phase 2: removed 5-item numbered list duplicating the Reviewer Prompt Template.
+- View Change step 4: added `docket vote unlink` before relinking on round N+1; closes audit-trail gap.
+- Pre-flight standalone goal-alignment: added third AskUserQuestion for criticality with classified default + override options; addresses operator-prompt-quality pain point.
+
+### Dimensions Evaluated
+Skill Design Quality (correctness), Coordination & Handoff, Operator Prompt Quality, Output Quality / Actionability, Over-Engineering, Spec/Docket CLI Alignment, Cross-Skill Coherence, Rename.
+
+### Rename
+No rename. `vote` matches `docket vote` CLI exactly.
+
 ## 2026-05-07
 
 ### Summary

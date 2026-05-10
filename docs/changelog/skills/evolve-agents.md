@@ -1,5 +1,21 @@
 # Changelog: evolve-agents
 
+## 2026-05-09
+
+### Summary
+Three operator-pain-point fixes: aligned Pre-flight step 2 pain-point options with evolve-skills + actual operator categories, restructured Phase 1 Output Format to multi-line H4 with explicit Coherence Issues schema, and added `paths:` frontmatter for write-surface declaration.
+
+### Changes
+- Pre-flight step 2: replaced stale option set (`Agent quality / role realism`, `Cross-agent communication visibility`, `File-size bloat / verbosity`, `Workflow gaps or stalls`) with operator-reported categories matching evolve-skills (`Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `Agent role realism`, `File-size bloat`). Reason: prior list didn't reflect what operators actually report.
+- Phase 1 template Output Format: lifted from dense single-line prose to multi-line H4 layout; added explicit field schema for Coherence Issues (`ISSUE` / `AFFECTED_AGENTS` / `DETAIL`). Reason: stateless spawned agents need explicit templates; Coherence Issues had no schema and produced vague output.
+- Frontmatter: added `paths: ["agents/*.md", "docs/changelog/agents/*.md"]` for write-surface declaration in orchestrator skills.
+
+### Dimensions Evaluated
+Skill Design Quality (frontmatter), Actionability (output schema), Boundary Clarity (n/c), Completeness (pain-point options), Consolidation & Trimming (no over-budget), Capability Growth (paths declaration), Spec Alignment (n/a meta-tooling), Rename (none).
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

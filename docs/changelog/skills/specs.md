@@ -1,5 +1,35 @@
 # Changelog: specs
 
+## 2026-05-09
+
+### Summary
+Phase 2 coherence pass: declared `paths:` write surface for orchestrator parity with evolve-agents and evolve-skills.
+
+### Changes
+- Frontmatter: added `paths: ["docs/spec/*.md"]` — orchestrator skill writes to docs/spec/ via spawned teammates; aligns with evolve-agents/evolve-skills convention.
+
+### Dimensions Evaluated
+Coherence, Skill Design Quality.
+
+### Rename
+No rename.
+
+## 2026-05-09
+
+### Summary
+Three small operator-experience and coordination-clarity fixes: added Architecture/maintainability emphasis option, distinguished spawned-agent failure handling from harness-level orchestrator crash recovery, and tightened code-quality.md exploration guidance to reduce overlap with sibling specs. Net 174→183.
+
+### Changes
+- Pre-flight Emphasis options: added `Architecture & maintainability` so operators with architecture-focused goals don't fall back to free-text re-prompting.
+- Step 2 failure handling: scoped "On any failure" → "On any spawned-agent failure" and added a one-line note that orchestrator crashes are harness-handled (single auto re-spawn + Resume) so future readers don't add redundant manual restart logic.
+- Spec File Reference: tightened `code-quality.md` exploration guidance to defer architecture and test-pattern questions to their owning specs.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename. Operator pain points: Operator prompt quality, Output actionability, Coordination & handoff gaps.
+
+### Rename
+No rename.
+
 ## 2026-05-07
 
 ### Summary

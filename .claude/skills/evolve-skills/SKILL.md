@@ -7,6 +7,7 @@ description: >
 argument-hint: "[skill-name]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+paths: [".claude/skills/*/SKILL.md", "skills/*/SKILL.md", "docs/changelog/skills/*.md"]
 ---
 
 > **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
@@ -32,7 +33,7 @@ Before spawning any agents:
 
 > **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
 
-1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (use `$ARGUMENTS` or list step-4 inventory), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (→ step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill", "Specific dimension(s)", "Address operator-reported pain"; on Specific-dimension selection, follow up with a multiSelect over the 8 dimensions. Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
@@ -198,14 +199,18 @@ Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode:
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
 
+## Size Budget
+
+500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions.
+**BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
+
 ## Context
 - Today's date: {today_date} (for changelog entries)
 - Read docs/changelog/skills/<name>.md — ONLY the most recent `## <date>` entry
 - Read docs/spec/ selectively — only files relevant to the skill's domain
 - Read OTHER skill files — first ~80 lines only (both .claude/skills/ and skills/)
-- Review operator experience feedback below — prioritize addressing reported pain points and friction.
-- Review docs research and docket audit findings below for new capabilities and correct CLI usage
 - Skip WebFetch
+- Prioritize the operator experience feedback and apply the docs research / docket audit findings below
 
 ## Claude Code Documentation Research
 {docs_research_findings}
@@ -217,7 +222,16 @@ Experience feedback: {experience_feedback}
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.
 
 ## Your Task
-Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Do not default to approval — your value is in identifying weaknesses, bloat, and flawed assumptions, not validating what exists.
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
+
+1. **Skill Design Quality**: Frontmatter (`effort`, `argument-hint`, `allowed-tools`, `paths`), argument handling, structure-brevity balance.
+2. **Actionability**: Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
+3. **Completeness**: Edge cases, error conditions, pre-flight checks, all workflow paths.
+4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value sections to trim or consolidate. Every addition offset here.
+5. **Orchestration & Agent Teams**: Proper agent use, parallelism, correct types, coordination. Templates must include explicit SendMessage triggers — flag hub-and-spoke if >50% of paths route through one agent.
+6. **Coherence**: Scope overlaps, terminology, shared conventions, accurate references.
+7. **Spec Alignment**: Alignment with `docs/spec/` project patterns.
+8. **Rename**: Only if compelling — stability has value.
 
 ## Rules
 - **Read-only** — analyze and recommend only; orchestrator applies all edits.

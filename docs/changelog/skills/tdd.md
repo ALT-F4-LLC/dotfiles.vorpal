@@ -1,5 +1,23 @@
 # Changelog: tdd
 
+## 2026-05-09
+
+### Summary
+Coordination & Handoff fix: encoded the Threat Model / Trust Boundaries / Security Considerations subsection contract for security TDDs (security-engineer.md declares them mandatory but the format authority did not enforce them). Two minor trims — collapsed Mermaid Mandate triple-restatement vestige; tightened Pre-flight §5 Parent-PRD probe from advisory note into a deterministic substring rule. Hardened Validation §3 against off-by-one drift as the section list grows.
+
+### Changes
+- Required Sections §4: added security-track subsection contract (Threat Model, Trust Boundaries, Security Considerations) gated on `updated_by: @security-engineer` or trust-boundary-crossing designs.
+- Validation Before Save: added §7 enforcing the security-track subsections; added Failure Mode row.
+- Mermaid Mandate subsection: collapsed to 1 line + ADR-routing pointer (already enforced in Authoring §4 + Validation §5).
+- Validation §3: replaced hardcoded "11" with self-referential "all top-level sections enumerated above (currently 11)" to surface drift.
+- Pre-flight §5 Parent-PRD probe: tightened from advisory glob-and-judge into deterministic substring-match rule.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence (security-engineer cross-reference, sibling family symmetry), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with adr/prd/ux-spec.
+
 ## 2026-05-07
 
 ### Summary

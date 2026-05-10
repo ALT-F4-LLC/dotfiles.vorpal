@@ -7,6 +7,7 @@ description: >
 argument-hint: "[file...]"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+paths: ["docs/spec/*.md"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -40,7 +41,7 @@ Before spawning any agents:
 1. **Goal alignment (HARD GATE)** — Do not proceed to context resolution or file checks until the goal is verified.
    - **If invoked directly by the operator** (no verified goal in the prompt): Use a single `AskUserQuestion` call with two questions:
      1. `header: "Scope"` — "Which spec files should be generated?" Options: `All 7 specs` (default), `Custom subset` (multiSelect — present the 7 filenames so the operator can pick), `Cancel`.
-     2. `header: "Emphasis"` — "Any dimension to emphasize during exploration?" Options: `Balanced (no emphasis)` (default), `Security posture`, `Operational readiness`, `Testing maturity`. Single-select.
+     2. `header: "Emphasis"` — "Any dimension to emphasize during exploration?" Options: `Balanced (no emphasis)` (default), `Security posture`, `Operational readiness`, `Testing maturity`, `Architecture & maintainability`. Single-select.
      If `$ARGUMENTS` was passed, skip question 1 (the subset is already declared) and only ask question 2.
    - **If invoked by an orchestrator with a verified goal** (the prompt contains a verified goal statement): Use it as the starting point. Re-verify alignment if your understanding diverges. Extract the goal and carry it forward.
    - Capture the verified goal (including any selected emphasis) as `{verified_goal}` for use in the spawning template.
@@ -70,7 +71,7 @@ exploration guidance for each — used in the spawning template.
 | `security.md` | Examine authentication/authorization patterns, secret management, and environment variables. Check for .env files, credential handling, API key patterns, and trust boundaries. Identify security-relevant dependencies and their configurations. |
 | `operations.md` | Check .github/ for CI/CD workflows, Dockerfiles, deployment configs, and infrastructure code. Look for monitoring, logging, observability setup, and operational runbooks. Identify rollback procedures, release processes, and environment management. |
 | `performance.md` | Look for caching strategies, database queries, connection pooling, and concurrency patterns. Identify known bottlenecks, benchmarking tools, and performance-critical paths. Check for lazy loading, pagination, batching, and scaling considerations. |
-| `code-quality.md` | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. |
+| `code-quality.md` | Check for linter configs (eslint, clippy, ruff, etc.), formatters, and editor settings. Identify naming conventions, error handling patterns, and design patterns in use. Look at existing code style, module organization, and project-specific conventions. Defer architecture-shape questions to `architecture.md` and test-pattern questions to `testing.md` — focus this spec on style, idiom, and consistency rules. |
 | `review-strategy.md` | Identify areas of high risk, complex logic, and frequent change. Determine which review dimensions matter most for this specific project. Look for existing PR templates, review checklists, contribution guidelines, and CI quality gates. |
 | `testing.md` | Check for test directories, test runners, test configs, and CI test steps. Identify the test pyramid breakdown: unit, integration, e2e, and their proportions. Look at coverage tools, test utilities, fixtures, and mocking patterns. If no tests exist, state that explicitly. |
 <!-- RESERVED-NAMES:END -->
@@ -100,7 +101,9 @@ Poll `TaskList()` every ~2 minutes. Classify each task:
 - **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 600s` with no SendMessage activity since spawn.
 - **in_progress** — still working; continue polling.
 
-**On any failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+
+> Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
 
 Proceed to Step 3 once every task is `completed` OR the operator has resolved every failure.
 

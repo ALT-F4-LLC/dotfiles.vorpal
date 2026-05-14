@@ -1,5 +1,20 @@
 # Changelog: evolve-agents
 
+## 2026-05-13
+
+### Summary
+Two sister-evolve-skills parity fixes (net 276→279): added CANONICAL banner markers around the CRITICAL block (matches docs research recommendation + evolve-skills convention) and reformatted Phase 2 template Output from inline `>`-chained schema to clean H3 list with field schemas (matches Phase 1 layout + sister skill).
+
+### Changes
+- Wrapped CRITICAL banner in `<!-- CANONICAL:BANNER:BEGIN/END -->` markers. Reason: explicit format-authority declaration per new Claude Code convention; brings parity with sister evolve-skills.
+- Phase 2 template Output Format: replaced inline `>`-chained schema with separated H3 headings carrying per-line field schemas. Reason: matches Phase 1 template normalized 2026-05-09 and sister evolve-skills Phase 2; easier for stateless spawned agent to parse.
+
+### Dimensions Evaluated
+Coherence (sister parity + CANONICAL markers), Actionability (Phase 2 template readability), Over-Engineering (no net bloat — +3 lines offset by clearer schemas).
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

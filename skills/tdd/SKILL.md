@@ -186,14 +186,17 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    verdict per alternative.
 4. **Architecture & System Design** — the chosen approach, with sub-sections as
    needed (component map, data flow, sequencing, contracts). **For security
-   TDDs** (calling agent is `@security-engineer`, or the design crosses trust
-   boundaries / changes authn/authz / handles secrets / changes the
-   sandbox/permission model), this section MUST include three named
-   subsections: `### Threat Model` (assumed adversary, capabilities,
-   out-of-scope threats), `### Trust Boundaries` (where untrusted data
-   enters, where privileges escalate, what each boundary enforces), and
-   `### Security Considerations` (mitigations, residual risks, defense
-   layers). Non-security TDDs may omit these subsections.
+   TDDs** (`updated_by` is `@security-engineer`), this section MUST include
+   three named subsections: `### Threat Model` (assumed adversary,
+   capabilities, out-of-scope threats), `### Trust Boundaries` (where
+   untrusted data enters, where privileges escalate, what each boundary
+   enforces), and `### Security Considerations` (mitigations, residual risks,
+   defense layers) — enforced by Validation §7. **For mixed TDDs** where a
+   `@staff-engineer`-authored design crosses trust boundaries / changes
+   authn-authz / handles secrets / changes the sandbox-permission model, the
+   calling agent should ask team-lead to spawn `@security-engineer` to
+   co-author these three subsections (see `agents/security-engineer.md`
+   Responsibility 1). Non-security TDDs may omit these subsections.
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation

@@ -89,15 +89,15 @@ If extra positional args follow `<scope>`, ignore them silently.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{role}` = the detected role (`staff-engineer` or `security-engineer`).
 4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
-5. **Read related design docs** (both roles):
-   - `staff-engineer`: relevant TDDs in `docs/tdd/`, project specs in `docs/spec/` matching the changed files' areas (architecture, code-quality, testing, operations, performance, review-strategy).
-   - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
-   Use `Grep` over the changed-file paths to find authoritative references; do not invent.
-6. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
+5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 
    ```
    Error: Resolved scope produced an empty diff — nothing to review.
    ```
+6. **Read related design docs** (both roles, scoped to what the diff touches — do NOT read specs whose domain is not in the changed-file paths):
+   - `staff-engineer`: relevant TDDs in `docs/tdd/`; project specs in `docs/spec/` matching the changed areas only (e.g., `architecture.md` for module/dependency changes, `performance.md` for hot-path edits, `testing.md` for test changes — skip the rest).
+   - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
+   Use `Grep` over the changed-file paths to find authoritative references; do not invent.
 
 ## Review Procedure
 
@@ -108,7 +108,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 Apply the **6 dimensions**, weighted by what the change touches. Mark unaffected dimensions `N/A` in the checklist:
 
 1. **Architecture** — pattern fit, module boundaries, dependency direction, second-order effects, cross-cutting impact, precedent set.
-2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel security review.
+2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to SendMessage `@security-engineer` for a dedicated security pass before merge.
 3. **Operations** — observability hooks, runbook impact, deploy/rollback story, 3am-diagnosability, configuration footprint.
 4. **Performance** — algorithmic complexity, N+1 patterns, allocation hotspots, latency-budget impact, regression risk.
 5. **Code Quality** — readability, naming, error-handling discipline, dead code, test factoring, duplication.
@@ -302,7 +302,7 @@ Before emitting the structured review, verify in the calling agent's context:
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
 4. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
 5. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
-6. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{role}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
+6. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
 If any check fails, ABORT:
 
@@ -319,7 +319,17 @@ This skill does NOT write a file. After Validation Before Emit passes, emit the 
 - **Reconcile with the parallel reviewer first** — when the change touches auth, secrets, sandbox, trust boundaries, or supply chain (i.e., the parallel reviewer was spawned), SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) with this verdict before routing findings. Verdict reconciliation prevents contradictory handoffs to `@senior-engineer`.
 - Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
-- Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance).
+- Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
+
+### Recommendation → Vote Verdict Map
+
+| This skill's Recommendation | Vote verdict (for `docket vote cast -v`) |
+|---|---|
+| Approve / Approve (security) | `approve` |
+| Approve with follow-up | `approve-with-concerns` |
+| Request changes | `approve-with-concerns` (with explicit Concerns in findings) |
+| Block / Block (security) | `reject` |
+| Split required | Do NOT escalate to vote — return Split-required to caller and let them re-scope before any vote |
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

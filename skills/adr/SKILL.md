@@ -82,7 +82,7 @@ For this skill, substitute `{TYPE}` with `adr` in the usage error.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: numbering (step 5) picks a free `{NNNN}`, so same-path collisions are rare. Run the COLLISION_DIALOG below as a safety net if the resolved `{output_path}` exists.
+4. **Collision handling**: if the resolved `{output_path}` exists after numbering (step 5), run the COLLISION_DIALOG below.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -241,15 +241,15 @@ For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 
 ADR-specific full sequence: `mkdir → renumber re-Glob → Write → race-detection Glob → Emit`.
 
-**ADR-specific override — insert before canonical step 2 (Write)**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}` resolution) so the chosen `{NNNN}` reflects the latest filesystem state. If `{NNNN}` changed, update the frontmatter / body references before Write. Authoring can take long enough that a concurrent author claims the originally-chosen number.
+**Before Write**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}`). If `{NNNN}` changed, update frontmatter / body references before Write.
 
-**ADR-specific override — insert between canonical steps 2 and 3 (after Write, before Emit)**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
+**After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
 ```
 
-This catches different-slug concurrent races. **Same-slug races** (two authors pick the identical topic and identical `next_num` simultaneously) cannot be detected here — both writes target the same path, so the post-Write Glob sees one file and the second Write silently overwrote the first. Mitigation: the calling agent confirms the intended `<topic>` is not already in flight before invoking this skill. Detection happens later, at git review time (two ADRs claim the same number across branches). On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
+This catches different-slug concurrent races. **Same-slug races** (two authors choose identical topics simultaneously) are not detectable here — both writes target the same path. Calling agent must verify the topic is not already in flight before invoking. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
 

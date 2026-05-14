@@ -80,8 +80,9 @@ Select reviewers based on domain relevance to the proposal. Each `Agent()` call 
 
 | Proposal Domain | Primary Reviewer | Secondary Reviewer(s) |
 |---|---|---|
-| Architecture / System Design | @staff-engineer | @senior-engineer (feasibility) |
-| Code | @staff-engineer | @sdet (coverage); add @senior-engineer for security-tagged proposals |
+| Architecture / System Design | @staff-engineer | @senior-engineer (feasibility); add @security-engineer if security-tagged |
+| Security-sensitive (auth, crypto, secrets, sandbox, trust boundaries, supply chain) | @security-engineer | @staff-engineer (architecture fit) |
+| Code | @staff-engineer | @sdet (coverage); add @security-engineer for security-tagged proposals |
 | Plan / Scope / Prioritization | @staff-engineer (feasibility) | @senior-engineer (effort) |
 | Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
 | UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
@@ -106,6 +107,7 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 | `created_by` value | Excluded agent type |
 |---|---|
 | `"staff-engineer"`, `"tdd-author"`, `"advisor"` | `staff-engineer` |
+| `"security-engineer"`, `"security-advisor"`, `"security-tdd-author"` | `security-engineer` |
 | `"senior-engineer"`, or starts with `"impl-"` | `senior-engineer` |
 | `"project-manager"`, `"planner"` | `project-manager` |
 | `"sdet"`, or starts with `"verifier-"` | `sdet` |
@@ -170,9 +172,10 @@ Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() err
 
 ### Recording Votes
 
-After each reviewer returns, cast their vote. Prefer `--findings-json -` when findings are structured JSON (the reviewer template's Verdict/Confidence/Domain Relevance/Findings sections deserialize cleanly); fall back to the plaintext heredoc below for free-form rationale.
+After each reviewer returns, cast their vote using the JSON block from the reviewer's output (see Reviewer Prompt Template `### Findings JSON`) as the primary path; fall back to the plaintext heredoc only when the JSON block is malformed or absent.
 
 ```bash
+# Primary: structured JSON (preferred — preserves blocker/concern/suggestion arrays for docket aggregation)
 docket vote cast {vote-id} \
   --voter "{vote-id}-reviewer-{N}" \
   --role "{agent-type}" \
@@ -180,7 +183,12 @@ docket vote cast {vote-id} \
   --confidence {confidence} \
   --domain-relevance {domain_relevance} \
   --summary "{one-line reviewer summary}" \
-  --findings - <<'EOF'
+  --findings-json - <<'EOF'
+{"blockers":[...], "concerns":[...], "suggestions":[...]}
+EOF
+
+# Fallback: plaintext heredoc when JSON block is missing or malformed
+docket vote cast {vote-id} ... --findings - <<'EOF'
 {multi-line findings text}
 EOF
 ```
@@ -229,6 +237,12 @@ One of: approve, approve-with-concerns, reject
 **Suggestions** (consider for this or future work):
 - {or "None"}
 
+### Findings JSON
+```json
+{"blockers": ["..."], "concerns": ["..."], "suggestions": ["..."]}
+```
+Emit `[]` for any category with no items. The coordinator passes this block verbatim to `docket vote cast --findings-json -`; if absent or malformed, the coordinator falls back to the markdown text.
+
 ### Summary
 One paragraph summarizing your overall assessment.
 
@@ -239,6 +253,7 @@ One paragraph summarizing your overall assessment.
 | Agent | Checklist Focus |
 |---|---|
 | @staff-engineer | Architecture fit, backward compatibility, operational readiness, cross-cutting concerns, pattern adherence |
+| @security-engineer | Authn/authz, input validation, secret/crypto handling, trust boundaries, sandbox/isolation, supply chain, logging-leak risk, DoS surfaces |
 | @senior-engineer | Implementation feasibility, effort accuracy, code quality, testability, dependency impact, edge cases |
 | @sdet | Test coverage adequacy, testability of design, risk coverage, acceptance criteria clarity, regression risk |
 | @project-manager | Scope accuracy, dependency completeness, parallelism validity, effort estimates, risk identification |

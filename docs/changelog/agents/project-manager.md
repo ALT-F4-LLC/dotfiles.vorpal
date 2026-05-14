@@ -1,5 +1,37 @@
 # Changelog: project-manager
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: corrected CRITICAL banner (removed incorrect `Skill() for vote/prd` ban — PM authors PRDs directly via `Skill(prd, ...)` per workflow). Added `security-advisor` persistent-name alias to Consult peers list.
+
+### Changes
+- CRITICAL banner: removed `prd` from forbidden Skill() list; only `vote` is correctly forbidden (only nested-team-spawning operation)
+- §Cross-Agent Communication "Consult peers directly": added @security-engineer (security-advisor) entry for security-feasibility consults and CVE remediation scoping; annotated @staff-engineer with `advisor` persistent-name alias
+
+### Dimensions Evaluated
+Bug fix (banner contradiction with workflow), Cross-Communication (security-advisor handoff), Coherence (persistent-name aliases)
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Added explicit "Direct-to-Issues vs Formal Docs" decision rule addressing operator pain (formal docs generated for work that should go direct). Default is direct-to-issues; TDD/UX-spec/PRD required only when specific triggers fire. Plus consolidation trims. Net: -4 lines (338 → 334).
+
+### Changes
+- Added Direct-to-Issues vs Formal Docs subsection under §Plan Complexity Tiers with explicit triggers for TDD/UX-spec/PRD vs go-direct
+- Trimmed §Authoring Feature-Level PRDs to mechanism-only (when-triggers moved to Tiers)
+- Banner now bans Skill() for vote AND prd; renamed §Consensus Voting and compressed to one paragraph
+- Trimmed CLI Reference trailing comment, §Decompose tautology, §Plan Tiers opener, §Persistent memory enumeration
+
+### Dimensions Evaluated
+Completeness (doc-vs-direct gap), Actionability, Consolidation, Boundary Clarity, Coherence (banner), Spec Alignment
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

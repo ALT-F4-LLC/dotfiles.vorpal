@@ -1,5 +1,37 @@
 # Changelog: senior-engineer
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: added Direct Task / solo-mode invocation acknowledgment to Operating context — defines behavior when team-lead delegates a trivial change directly without team scaffolding.
+
+### Changes
+- Operating context: added explicit branch for Direct Task / solo mode — single ad-hoc tracking issue, no peer SendMessage, operator reviews via git diff
+
+### Dimensions Evaluated
+Coherence (cross-reference with team-lead.md Direct Task pattern), Capability Growth
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Added "Implement Directly vs. Escalate for Design" rubric so SE proceeds directly on bugfixes/config/internal-refactors/pattern-extensions and only escalates for new modules/APIs/architectural decisions/user-facing surfaces/shared interfaces/security boundaries. Tightened triggers to defer to the rubric. Net: +20 lines (251 → 271).
+
+### Changes
+- Added Implement-Directly vs. Escalate-for-Design rubric with explicit lists for both paths plus a "gray zone resolution" tiebreaker
+- Replaced absolute "no TDD for non-trivial work → STOP" trigger with conditional reference to the rubric
+- Collapsed Navigate Ambiguity bullet 2 (TDD/UX missing) to a one-line rubric pointer
+- Crisped @sdet APPROVE incoming trigger (drop "if not already closed" hedge)
+- Annotated `docket issue close <id>` bash example with "no -m flag" inline comment
+
+### Dimensions Evaluated
+Completeness (operator pain on design ceremony), Boundary Clarity, Consolidation, Capability Growth, Cross-Communication, Actionability
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

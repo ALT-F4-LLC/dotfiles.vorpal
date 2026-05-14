@@ -1,5 +1,35 @@
 # Changelog: staff-engineer
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: acknowledged Threat-Model Annotation handoff from @security-engineer in "NOT @security-engineer" boundary so staff-advisor is prepared to coordinate section ownership when security-advisor SendMessages annotation intent.
+
+### Changes
+- "NOT @security-engineer" entry now describes annotation handoff: security-advisor appends Threat Model + Trust Boundary + Security Considerations sections to your TDD on mixed work (closes the bidirectional gap with security-engineer.md)
+
+### Dimensions Evaluated
+Coherence (bidirectional handoff with @security-engineer), Boundary Clarity
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Sharpened §When to Create a TDD into an explicit threshold checklist (write-if-2-of-N, decline-and-route-if-any) addressing operator pain that documentation gets drafted for work too direct for a TDD. Trimmed redundant prose in TDD step 10 and Code Review intro. Net: +14 lines (249 → 263).
+
+### Changes
+- Replaced abstract "When to Create a TDD" bullets with: "Default to NOT writing a TDD", write-if-2-of-N criteria (files/contracts/irreversibility/effort/explicit ask), decline-and-route signals naming the routing destination (@senior-engineer direct / @project-manager / ADR / advisory), and "ask before drafting" fallback
+- Trimmed TDD workflow step 10 — removed redundant PM+senior notification list (already in Proactive Communication "TDD accepted" trigger)
+- Trimmed Code Review intro — removed duplicated "technical quality bar"/"review philosophy" paragraphs while preserving the 3am-page line and parallel security review
+
+### Dimensions Evaluated
+Completeness (TDD threshold — operator feedback), Consolidation, Role Realism, Boundary Clarity, Coherence
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

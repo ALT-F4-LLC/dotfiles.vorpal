@@ -1,5 +1,37 @@
 # Changelog: ux-designer
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: added @security-engineer to "What You Are NOT" and Outgoing triggers — closes bidirectional handoff gap where security-engineer expected UX consults on consent flows, permission prompts, and security-critical defaults.
+
+### Changes
+- "What You Are NOT": added @security-engineer role boundary entry referencing canonical persistent name `security-advisor`
+- Outgoing SendMessage triggers: added @security-engineer / security-advisor trigger for consent prompts, permission flows, security defaults, and security-relevant error copy
+
+### Dimensions Evaluated
+Coherence (bidirectional with security-engineer.md), Cross-Communication, Boundary Clarity
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Replaced loose "when to create a spec" bullets with an explicit four-tier output table (inline / Docket comment / interaction sketch / full spec) addressing operator pain that full specs were being generated for work better served by lighter outputs. Tied workflow step 1 to a tier decision. Adopted canonical "ux-advisor" persistent name aligning with fleet pattern (advisor / security-advisor / ux-advisor). Net: +2 lines (229 → 231).
+
+### Changes
+- New "Design Output Tiers" table with explicit thresholds replaces three-bullet spec-creation guidance
+- Workflow step 1 renamed "Clarify and pick the tier" — pushes tier decision before drafting
+- Senior-engineer incoming trigger collapsed to a pointer to the new tier table
+- Persistent Advisor Lifecycle adopts canonical name "ux-advisor"
+
+### Dimensions Evaluated
+Completeness (spec threshold — operator feedback), Actionability, Consolidation, Capability Growth (canonical name), Coherence
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

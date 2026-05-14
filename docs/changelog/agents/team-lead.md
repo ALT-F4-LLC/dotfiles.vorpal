@@ -1,5 +1,39 @@
 # Changelog: team-lead
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: renamed UX persistent teammate spawn to canonical "ux-advisor" (aligns with advisor/security-advisor pattern); annotated `docket issue close` with no-`-m` clarification in @senior-engineer Spawning Template.
+
+### Changes
+- @ux-designer Spawning Template: `name="ux-spec-author"` → `name="ux-advisor"`; matches ux-designer.md canonical persistent name
+- Wrap-up shutdown list updated: `ux-spec-author if spawned` → `ux-advisor if spawned`
+- @senior-engineer Spawning Template close-out: added `(no -m flag)` annotation inline
+
+### Dimensions Evaluated
+Coherence (canonical persistent-name alignment), Actionability (close-flag annotation)
+
+### Rename
+ux-spec-author → ux-advisor (spawn name in team-lead.md only; aligns with canonical persistent-teammate naming).
+
+## 2026-05-13
+
+### Summary
+Added **Direct Task** orchestration pattern (single @senior-engineer, no PM/review/team) addressing operator pain — documentation overhead generated for trivial work. Sharpened Pattern Decision Tree thresholds with concrete quantification (file counts, phase counts) and explicit "default to the lightest pattern" bias. Offset via trims to Review parallel-explainer, Re-plan block, Monitor block, and minor edits. Net: -2 lines (344 → 342).
+
+### Changes
+- New **Direct Task** pattern: trivial single-edit work (rename, typo, dep bump, log tweak, ≤3 files, no design) spawns ONE @senior-engineer in solo mode, no TeamCreate, no @project-manager planning, no @staff-engineer review
+- Sharpened Pattern Decision Tree: 5 sizing steps (was 4), explicit file-count/phase-count thresholds, "default to lightest" footer
+- Pre-flight step 4 ambiguity AskUserQuestion now includes Direct (5 options), biased to lighter
+- Team Setup marks TeamCreate as skipped for Direct Task
+- Trimmed Re-plan on divergence (3 lines), parallel-review explainer (security-vs-general dimension list now lives only in Security Track and security-engineer Spawning Template), Monitor block, HARD GATE phrasing, persistent-memory line, Wrap-up final bullet
+
+### Dimensions Evaluated
+Completeness (operator pain on over-documentation; Direct Task), Actionability, Consolidation, Coherence, Role Realism, Boundary Clarity, Capability Growth
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

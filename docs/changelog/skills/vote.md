@@ -1,5 +1,23 @@
 # Changelog: vote
 
+## 2026-05-13
+
+### Summary
+Reconciled `--findings-json` "primary path" claim with the Reviewer Template's markdown output by adding a `### Findings JSON` block reviewers emit alongside markdown; the coordinator passes the JSON block verbatim to `docket vote cast --findings-json -` with the plaintext heredoc as documented fallback. Closed @security-engineer coherence gap with team-lead Security Track: added security row to Agent Selection table, proposer-exclusion mapping, and Domain-Specific Checklist so security-sensitive votes route correctly and proposer-independence holds.
+
+### Changes
+- Recording Votes: reframed `--findings-json` as primary path consuming the reviewer's emitted JSON block; plaintext heredoc demoted to "fallback when JSON missing or malformed".
+- Reviewer Prompt Template: added `### Findings JSON` section between Findings and Summary so reviewers emit a structured JSON object for direct passthrough to `--findings-json -`.
+- Agent Selection: added "Security-sensitive" row (primary @security-engineer); replaced incorrect "@senior-engineer for security-tagged" with "@security-engineer for security-tagged".
+- Reviewer Independence Mapping: added `@security-engineer` row covering `security-engineer`/`security-advisor`/`security-tdd-author` `created_by` values.
+- Domain-Specific Checklist: added @security-engineer row (authn/authz, input validation, secrets/crypto, trust boundaries, sandbox, supply chain, logging-leak, DoS).
+
+### Dimensions Evaluated
+Skill Design Quality (JSON contract correctness), Actionability, Completeness (security role end-to-end), Coherence (team-lead Security Track, code-review role detection), Orchestration & Agent Teams.
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

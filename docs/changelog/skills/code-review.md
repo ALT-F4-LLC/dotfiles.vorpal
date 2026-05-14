@@ -1,5 +1,23 @@
 # Changelog: code-review
 
+## 2026-05-13
+
+### Summary
+Four targeted fixes: reordered Pre-flight so empty-diff guard fires before spec-read, scoped design-doc reads to changed-file domains, added escalation path when staff surfaces security specifics with no parallel security reviewer in flight, added Recommendation→Vote Verdict mapping to make review-to-vote handoff deterministic, dropped dead `{role}` placeholder scan.
+
+### Changes
+- Pre-flight: moved empty-diff guard ahead of design-doc reads so a no-op review aborts before any Read cost.
+- Pre-flight (renumbered): scoped spec-read to changed-file domains only — reviewers were previously instructed to read up to 6 spec files unconditionally.
+- Staff playbook dimension 2: explicit Concern + SendMessage handoff when auth/crypto/sandbox specifics surface in a routine review and no parallel `@security-engineer` reviewer is running.
+- Save & Return: added Recommendation → Vote Verdict mapping table so escalating to `Skill(vote, ...)` is deterministic; references `--findings-json` for severity-bucket preservation.
+- Validation Before Emit: dropped `{role}` from placeholder scan — token is never substituted (role names are hard-coded in role-template H2 banners).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — Pre-flight scope cut), Skill Design Quality, Actionability, Coherence (vote skill `--findings-json` path), Orchestration (staff↔security handoff).
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

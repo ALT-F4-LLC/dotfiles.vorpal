@@ -1,5 +1,36 @@
 # Changelog: evolve-skills
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: removed orphan Evaluation Dimensions pointer block. Phase 1 collapsed the full 8-item rubric to a single-paragraph pointer; coherence review found even the pointer was non-behavioral duplication of inlined Phase 1 template content (fails Content Gate "Behavioral"). Restores symmetry with sister evolve-agents (no equivalent top-level block). Net -6 lines.
+
+### Changes
+- Removed top-level `## Evaluation Dimensions` section entirely — dimensions live as source of truth inside the Phase 1 Spawning Template's "Your Task" block. Closes Phase 1 review-evolve-agents coherence issue #1.
+
+### Dimensions Evaluated
+Coherence (primary), Over-Engineering.
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Trim duplicate Evaluation Dimensions block (orchestrator level was a verbatim copy of inlined Phase 1 template), reorder Pre-flight operator-prompts blockquote for sister-skill parity, drop redundant tail in final Rule 3, restore stronger Dimension 4 wording in the surviving template instance. Net change: -8 lines (290 → 282).
+
+### Changes
+- Collapsed top-level Evaluation Dimensions section to a compact pointer — 8-item list is inlined in the Phase 1 template (source of truth for stateless reviewers); orchestrator verifies Content Gate compliance, not full rubric. Saves 10 lines of pure duplication.
+- Pre-flight: moved "Operator prompts" blockquote above "Before spawning any agents:" for sister evolve-agents parity (reads as global guidance, not step-internal).
+- Final Rule 3: dropped redundant "Never review directly — invariant is absolute" tail. Enforced by CANONICAL banner, Rule 2, and Crash & Stall Recovery line.
+- Phase 1 template Dimension 4: restored "Every addition from other dimensions MUST be offset here" (stronger phrasing migrated from now-trimmed top-level block).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — trim x2), Coherence (sister parity x2). No other dimensions touched.
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

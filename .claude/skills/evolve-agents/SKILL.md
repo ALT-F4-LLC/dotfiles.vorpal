@@ -8,7 +8,9 @@ effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
+<!-- CANONICAL:BANNER:BEGIN -->
 > **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+<!-- CANONICAL:BANNER:END -->
 
 # Evolve Agents
 
@@ -259,11 +261,16 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
 
-## Output
+## Output Format
 
-`### Renames` (RENAME/FRONTMATTER_UPDATE/REFERENCES_TO_UPDATE/CHANGELOG_RENAME or "No renames needed")
-> `### Coherence Fixes` (FIX/FILE/OLD_STRING/NEW_STRING/REASON or "No issues found") >
-`### Changelog Entries` (4 sections, max 20 lines per agent) > `### Remaining Issues`
+### Renames
+For each: `RENAME: <old> → <new>` with FRONTMATTER_UPDATE, REFERENCES_TO_UPDATE, CHANGELOG_RENAME. Or: "No renames needed."
+### Coherence Fixes
+For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`. Or: "No issues found."
+### Changelog Entries
+Standard format (4 sections, max 20 lines) per affected agent.
+### Remaining Issues
+<Unresolvable issues, or "None">
 ```
 
 ---

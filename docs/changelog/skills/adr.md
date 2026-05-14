@@ -1,5 +1,21 @@
 # Changelog: adr
 
+## 2026-05-13
+
+### Summary
+Over-engineering pass: trimmed meta-commentary around numbering and race handling. Same-slug race paragraph compressed to actionable core; ADR-specific override anchors deduplicated against the full-sequence summary line; Pre-flight §4 collision note tightened.
+
+### Changes
+- Save & Return same-slug race block: compressed multi-sentence mechanism explanation and redundant git-review fallback to two sentences; "Manual resolution required" already implies the git-review escape hatch.
+- Save & Return ADR-specific overrides: removed "insert before/between canonical step N" anchor framing — full-sequence line above already conveys ordering.
+- Pre-flight §4: trimmed "numbering picks a free NNNN, so same-path collisions are rare" preamble — non-executable context.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Skill Design Quality, Actionability, Coherence (sibling tdd/prd/ux-spec/specs alignment confirmed).
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

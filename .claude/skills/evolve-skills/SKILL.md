@@ -30,9 +30,9 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
-Before spawning any agents:
-
 > **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+
+Before spawning any agents:
 
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
@@ -56,22 +56,6 @@ Before spawning any agents:
 2. **Behavioral** — Does removing it change the skill's output? Reject: general LLM knowledge.
 3. **Non-redundant** — Already expressed elsewhere in the file? Reject duplicates even if reworded.
 4. **Concrete** — Specific action, check, or output format? Reject aspirational fluff ("think holistically", "drive excellence").
-
----
-
-## Evaluation Dimensions
-
-Every @staff-engineer reviewer evaluates against ALL 8 dimensions. **Dimensions 1, 3, and 5
-propose additions — all must pass the Content Gate.**
-
-1. **Skill Design Quality** — Frontmatter (`effort`, `argument-hint`, `allowed-tools`), argument handling, structure-brevity balance.
-2. **Actionability** — Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
-3. **Completeness** — Edge cases, error conditions, pre-flight checks, all workflow paths.
-4. **Over-Engineering (HIGHEST PRIORITY)** — Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
-5. **Orchestration & Agent Teams** — Proper agent use, parallelism, correct types, coordination. Templates must include **explicit SendMessage triggers** for peer-to-peer communication — flag hub-and-spoke if >50% of paths route through one agent.
-6. **Coherence** — Scope overlaps, terminology, shared conventions, accurate references.
-7. **Spec Alignment** — Alignment with `docs/spec/` project patterns.
-8. **Rename Consideration** — Only if compelling — stability has value.
 
 ---
 
@@ -225,7 +209,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIG
 1. **Skill Design Quality**: Frontmatter (`effort`, `argument-hint`, `allowed-tools`), argument handling, structure-brevity balance.
 2. **Actionability**: Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness**: Edge cases, error conditions, pre-flight checks, all workflow paths.
-4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, low-value sections to trim or consolidate. Every addition offset here.
+4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
 5. **Orchestration & Agent Teams**: Proper agent use, parallelism, correct types, coordination. Templates must include explicit SendMessage triggers — flag hub-and-spoke if >50% of paths route through one agent.
 6. **Coherence**: Scope overlaps, terminology, shared conventions, accurate references.
 7. **Spec Alignment**: Alignment with `docs/spec/` project patterns.
@@ -286,5 +270,5 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 
 1. **Always run Phase 2** — even for single-skill improvements.
 2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-3. **Fail loud.** See Crash & Stall Recovery. Never review directly — the orchestrator-only-coordinates invariant is absolute.
+3. **Fail loud.** See Crash & Stall Recovery.
 4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

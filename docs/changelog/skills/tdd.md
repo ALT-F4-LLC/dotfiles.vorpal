@@ -1,5 +1,19 @@
 # Changelog: tdd
 
+## 2026-05-13
+
+### Summary
+Coherence/Completeness fix: tightened §4 security-gating prose to match what Validation §7 actually enforces, and surfaced the co-author handoff path for mixed @staff-engineer/@security-engineer TDDs per security-engineer.md Responsibility 1. The prior prose mandated three subsections for any auth/secrets/sandbox-touching design, but Validation only checked `updated_by == @security-engineer`, creating an unenforced "should".
+
+### Changes
+- Required Sections §4: narrowed the prose mandate to `updated_by: @security-engineer` (matches Validation §7) and added explicit pointer to the team-lead co-author handoff in `agents/security-engineer.md` for mixed-scope TDDs.
+
+### Dimensions Evaluated
+Coherence (security-engineer.md co-author model; own Validation §7/§8), Completeness, Skill Design Quality, Orchestration.
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

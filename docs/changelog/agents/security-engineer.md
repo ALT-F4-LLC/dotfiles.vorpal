@@ -1,5 +1,24 @@
 # Changelog: security-engineer
 
+## 2026-05-13
+
+### Summary
+Rebalanced documentation-vs-direct-action axis per operator pain. Added Threat-Model Annotation tier between full security TDD and inline review note. Tightened ADR threshold, trimmed Consensus Voting over-prescription, compressed Pre-Flight Gate and Shutdown sections. Added Docket CLI cheatsheet for review/voting surface. Net: -8 lines (327 → 319).
+
+### Changes
+- Added "scope test" gate + Threat-Model Annotation tier in §When to Create a Security TDD; reframed Proactively to require BOTH new surface AND non-trivial threat model
+- Tightened ADR threshold (skip when rationale fits in PR comment with no future "why?" cost)
+- Added Docket CLI cheatsheet (`docket vote create/cast/commit/link`, `docket issue file list`, `docket plan --root`) under Responsibility 2
+- Compressed Pre-Flight Gate, Consensus Voting, Shutdown Handling, System-Level Thinking
+- Strengthened @staff-engineer boundary to prefer annotation over parallel TDD on mixed changes
+- Added proactive trigger for annotation-grown-too-large → split escalation
+
+### Dimensions Evaluated
+Completeness (operator pain on over-documentation; docket audit gap), Consolidation, Actionability, Boundary Clarity, Cross-Communication, Role Realism, Spec Alignment
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

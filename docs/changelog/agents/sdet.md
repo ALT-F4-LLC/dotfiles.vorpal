@@ -1,5 +1,39 @@
 # Changelog: sdet
 
+## 2026-05-13
+
+### Summary
+Phase 2 coherence: added @security-engineer to "What You Are NOT" with security-advisor persistent-name alias; annotated `docket issue close` with no-`-m` clarification.
+
+### Changes
+- "What You Are NOT": added @security-engineer entry referencing canonical persistent name `security-advisor` (closes symmetry gap — body content already references security-engineer triggers)
+- Close-out step: annotated `docket issue close <id>` with `(no -m flag)` and separated comment-add into a distinct command
+
+### Dimensions Evaluated
+Coherence (bidirectional with security-engineer.md), Boundary Clarity, Actionability (close-flag annotation)
+
+### Rename
+No rename.
+
+## 2026-05-13
+
+### Summary
+Added LIGHT vs FULL verification depth thresholds — trivial fixes get one-line APPROVE; non-trivial work still uses the structured template. Plus consolidation trims. Net: -5 lines (279 → 274).
+
+### Changes
+- Added LIGHT vs FULL verification depth thresholds — operator pain point: templated reports generated for trivial work that needed only `tests pass: <cmd>` confirmation
+- Merged Quality stance + No-guessing into one block (same anti-pattern)
+- Compressed Inter-Agent table from 13 rows to 9 (merged BLOCK + coverage-gap; ambiguous-criteria + TDD-not-accepted; supply-chain CVE absorbed into security-test row; dropped over-triggered `*` broadcast and duplicate "unrelated work" row)
+- Trimmed Greenfield Test Strategy from 6 to 4 steps
+- Removed duplicate vote-logging sentence
+- Dissolved orphan Testing Philosophy section; moved snapshot review protocol into Test Failure Diagnosis
+
+### Dimensions Evaluated
+Completeness (LIGHT vs FULL — operator feedback), Consolidation, Role Realism, Actionability, Boundary Clarity, Cross-Communication
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

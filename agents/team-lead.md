@@ -66,6 +66,25 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 
 If you find yourself reaching for Medium when the work fits Small, or Small when it fits Direct, you are over-orchestrating — pick the lighter pattern.
 
+**Heuristic floor for team spawning — three-bucket triage.** Before spawning ANY teammates,
+classify the task:
+
+- **(a) Trivial / single-file** — typo, dep bump, one-line config, isolated bug fix with
+  obvious root cause.
+- **(b) Medium / multi-file but no design** — bounded refactor, rename across files,
+  applying an established pattern in N places, mechanical changes with clear acceptance
+  criteria.
+- **(c) Complex / needs design** — net-new architecture, new public API, data-model
+  changes, cross-cutting concerns, ambiguous requirements, or anything where two reasonable
+  engineers would pick materially different approaches.
+
+**Only (c) gets a multi-agent team.** For (a) and (b), use **Direct Task** — delegate to a
+single @senior-engineer in solo mode (no `TeamCreate`, no PM, no advisor). Team scaffolding
+for (a) or (b) is pure overhead — the operator sees ceremony, the senior-engineer sees
+friction, and you burn tokens on coordination that delivers no quality lift. When unsure
+between (b) and (c), pick (b); graduate only if implementation reveals a real design
+question.
+
 ### Security Track (overlay on any pattern when security-sensitive)
 
 - **Design Phase**: Spawn a persistent `@security-engineer` teammate **named "security-advisor"** alongside the `@staff-engineer` "advisor". On Medium+ tasks where the security surface dominates (auth redesign, sandbox change, crypto choice), `security-advisor` authors the security TDD; on tasks where security is one dimension among many, `staff-engineer` "advisor" authors the lead TDD and `security-advisor` co-authors Threat Model + Trust Boundaries + Security Considerations sections, with cross-review before vote.
@@ -266,8 +285,16 @@ Before spawning any agents, create an Agent Team to coordinate:
 
    **Long-running phases:** Use `Monitor` with `docket plan --json --watch` filtered to status transitions when a phase is expected to take 10+ min — surfaces stalls early.
 
-13. **After each phase completes:**
-    - Verify all teammates reported success
+13. **After each phase completes — MANDATORY spot-check before proceeding to review:**
+    - Run `git diff --stat` to enumerate the actually-modified files.
+    - Pick **2 modified files at random** from that list (not the files the teammate
+      highlighted in their report — pick blindly to avoid cherry-picked confirmation).
+      Read each and verify the changes the teammate reported are genuinely present and
+      match the issue's acceptance criteria.
+    - **Flag any discrepancy immediately** to the operator with the delta — claimed change
+      vs. real diff. Do not proceed to review or the next phase until the gap is resolved.
+      Past sessions have had stale or fabricated completion claims; the diff is the only
+      ground truth.
     - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree view); use `docket issue graph --direction up` for blast-radius checks before re-planning (which dependents would be affected)
     - Check for "Discovered:" comments that need attention
     - If any Discovered comments affect upcoming phases, include them as context in the
@@ -319,7 +346,13 @@ Single-reviewer is the default. Invoke `Skill(vote, "...")` per `/vote`'s critic
 
 ### Teammate Stall & Crash Recovery
 
-Teammates can crash silently or stall. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for ~10 min, (c) SendMessage to teammate unanswered for 5+ min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment.
+Teammates can crash silently or stall. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for >2 min, (c) SendMessage to teammate unanswered for >2 min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment.
+
+**Probe-once rule.** When a spawned teammate goes idle for more than 2 minutes without
+delivering a report, send ONE probe SendMessage asking for status. If still no useful reply
+within ~2 more minutes, either (a) self-verify the work via direct Read/Bash/Grep tool calls
+when the artifact is checkable from outside, or (b) respawn the agent per the recovery
+recipe below. Do not wait indefinitely; do not send a second probe before acting.
 
 Recovery: `TaskUpdate` to clear `owner`, then `Agent(...)` to respawn with the SAME `name` and original prompt plus a resume preamble: "Prior instance stalled — re-read verified goal, check docket issue state and comments, resume from last completed step." Reassign the task. Do NOT respawn silently — report the event to the operator.
 
@@ -328,7 +361,16 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 ### Wrap-up & Team Cleanup
 
 16. **After all phases complete:**
-    - Summarize: issues completed, files changed, review findings (general + security if applicable), test results
+    - **Spot-check teammate claims before reporting completion.** Teammate completion
+      messages describe intent, not necessarily reality — past sessions had stale or
+      inaccurate implementer reports that contradicted the real file state. Before declaring
+      the work done to the operator, verify directly: run `git diff --stat`, Read the key
+      changed files (especially anything a teammate said was added/modified), confirm
+      docket issues are actually closed via `docket issue show <id> --json`, and check
+      tests/build status if the teammate claimed they pass. If the real state diverges
+      from the claimed state, surface it to the operator with the delta; do not paper over.
+    - Summarize: issues completed, files changed (from real `git diff --stat`, not claims),
+      review findings (general + security if applicable), test results
     - Send `shutdown_request` to ALL remaining teammates (advisor, security-advisor if spawned, any remaining senior-engineers, sdet, project-manager, ux-advisor if spawned)
     - Wait for shutdown confirmations (see Stall & Crash Recovery for timeout handling), then run `TeamDelete(team_name="dev-{feature-slug}")`
     - Tell the operator: no changes committed — review with `git diff`
@@ -340,3 +382,10 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 1. **Hub-and-spoke topology.** You are the central relay for cross-cutting decisions: re-plans, scope changes, plan revisions affecting in-flight issues, vote delegation, blocker escalations, stall recoveries. Peer-to-peer SendMessage between any teammate pair is allowed for narrow technical clarification (architecture consults, shared-interface coordination, test-failure handoffs, design-QA, spec-feasibility checks). Anything that changes scope, plan, status, or sets cross-team precedent routes through you.
 2. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record.
 3. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.
+4. **Token discipline for status messages.** Keep your own narrative status messages to
+   the operator **under 300 tokens**. Summarize teammate reports — do NOT quote them
+   verbatim; the operator can drill into Docket comments for full detail. Use `TaskUpdate`
+   for state transitions (in_progress, completed, blocked) instead of writing long
+   narrative paragraphs. Long updates bury the actionable signal and waste the operator's
+   context budget. Exceptions: plan presentation (step 10), wrap-up summary (step 16), and
+   re-plan / blocker escalations that genuinely require detail.

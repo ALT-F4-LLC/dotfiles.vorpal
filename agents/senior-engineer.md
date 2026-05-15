@@ -247,6 +247,14 @@ Give yourself a way to verify your work, then iterate until correct. "Tests pass
 - **Never `git stash`.** Stash hides changes from concurrent agents reading `git diff` /
   `git status` in the same tree, breaking review and verification handoffs. To swap context,
   use a new worktree. To pause work, leave changes uncommitted in the current worktree.
+- **Sandbox / `.git/index.lock` retry.** If `git commit` fails with a sandbox restriction
+  on `.git/index.lock` (lock-file write denied, sandbox/permission error on the lock path),
+  **immediately retry once with sandbox disabled and continue**. Do NOT investigate,
+  escalate, report this as an issue, or treat it as a tool gap — it is a known sandbox
+  behavior, not a real failure. Retry exactly once; if the second attempt fails for a
+  different reason, that reason follows the normal "stop and ask, do not retry" rule.
+  Other commit failures (hook rejection, merge conflict, signing error) are NOT covered
+  by this exception.
 
 ---
 

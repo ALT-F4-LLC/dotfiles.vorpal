@@ -1,5 +1,22 @@
 # Changelog: security-engineer
 
+## 2026-05-16
+
+### Summary
+Added Communication Discipline (rules 1-6) with rule 5 (verify load-bearing claims) emphasized for security sign-off; fixed misleading `docket vote commit --outcome` enum syntax to free-text; trimmed "What You Are NOT" and Proactive Communication outgoing-trigger duplication.
+
+### Changes
+- Added Communication Discipline section (+15) — closed-loop, ack, saturation, blocker, verify-evidence-this-session, one-turn shutdown.
+- Fixed Docket cheatsheet: `vote commit --outcome` is free-text ("Approved: <summary>" / "Rejected: <reason>"), not an enum; clarified `--findings` vs `--findings-json`.
+- Trimmed "What You Are NOT" entries to one-line per role (-6).
+- Consolidated 7 Proactive Communication triggers into 5 by merging scope-delta + annotation-split, and TDD-accepted + cross-cutting ADR (-11).
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

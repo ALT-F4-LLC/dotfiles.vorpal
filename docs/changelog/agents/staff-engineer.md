@@ -1,5 +1,37 @@
 # Changelog: staff-engineer
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: remove stale "Change 2/3" reference in Communication Discipline rule 3.
+
+### Changes
+- Replaced "skipping the verification step in Change 2/3" with "missing detail" — aligns rule 3 vocabulary with team-lead.md §Context-saturation handoff.
+
+### Dimensions Evaluated
+Cross-agent coherence, saturation-signal vocabulary alignment.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Added Communication Discipline (rules 1-6) with rule 5 reinforced at the two highest-risk gates — TDD acceptance (verify before vote, not just save) and Code Review (new step 7 verification gate before Approve).
+
+### Changes
+- Added Communication Discipline section (+21) — 6 rules with rule 5 cross-referenced to workflow gates.
+- Code Review: added step 7 "Verify before approval (rule 5)" — verify SDK signatures, file contents, test results before any Approve verdict; document what was verified.
+- TDD step 6 reframed as "Verify load-bearing claims (rule 5)" gated before vote (not just save).
+- Pre-Flight Gate condensed from 7 lines to 2 (-5).
+- Shutdown Handling cross-references rule 6 one-turn SLA (-3).
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

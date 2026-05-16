@@ -1,5 +1,37 @@
 # Changelog: ux-designer
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: normalize security-advisor canonical form; drop redundant parenthetical.
+
+### Changes
+- "(canonical name: `security-advisor`)" → "(canonical persistent name: `security-advisor`)" — matches sdet.md and security-engineer.md.
+- Dropped redundant "(or `security-advisor`)" later in same file — canonical form established earlier.
+
+### Dimensions Evaluated
+Security-advisor aliasing consistency.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Added Communication Discipline (rules 1-6) with rules 1-3 emphasized for ux-advisor's implementation-phase persistence; strengthened Design QA to require behavior verification before any Pass verdict.
+
+### Changes
+- Added Communication Discipline section (+24) — closed-loop, ack, saturation, blocker, verify, one-turn shutdown.
+- Persistent Advisor Lifecycle cross-references rules 1-3 as mandatory for ux-advisor.
+- Design QA "Verify behavior, not code" strengthened: never accept @senior-engineer's intent statement as evidence — walk workflow before Pass verdict.
+- Trimmed Operating Context preamble, Shutdown Handling timing redundancy, "What You Are NOT" SDET entry collapsed into implementer/PM line.
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

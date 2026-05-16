@@ -1,5 +1,38 @@
 # Changelog: project-manager
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: add @security-engineer to "What You Are NOT" (bidirectional gap); normalize security-advisor canonical form.
+
+### Changes
+- Added @security-engineer bullet to "What You Are NOT" — closes bidirectional cross-reference gap (all 6 other agents list security-engineer).
+- Normalized first @security-engineer reference to canonical "(canonical persistent name: `security-advisor`)" form.
+
+### Dimensions Evaluated
+Bidirectional cross-references, security-advisor aliasing consistency.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Added Communication Discipline section enforcing closed-loop replies, receipt ack, blocker surfacing, verify-before-signoff, and saturation self-monitor; tightened Shutdown Handling to "within one turn"; documented Docket status enum and grooming foot-guns.
+
+### Changes
+- Added Communication Discipline block (+14) encoding operator rules 1-5 for PM role.
+- Shutdown Handling: explicit "within one turn" reply (-3).
+- Docket reference: added canonical status enum and `--orphan` deletion foot-gun (+2).
+- Plan Monitoring/Re-Engagement/Cross-Workstream consolidated to prose blocks (-6).
+- Merged "Rigorous honest mentor" + "No guessing" into one block (-8).
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

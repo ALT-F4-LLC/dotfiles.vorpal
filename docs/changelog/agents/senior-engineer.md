@@ -1,5 +1,39 @@
 # Changelog: senior-engineer
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: normalize security-advisor canonical form across three references.
+
+### Changes
+- First @security-engineer reference now uses canonical "(canonical persistent name: `security-advisor`)" phrasing.
+- Dropped two subsequent redundant parentheticals — canonical form established earlier.
+
+### Dimensions Evaluated
+Security-advisor aliasing consistency.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Consolidated all 8 operator communication-discipline rules into a non-negotiable block (closed-loop, ack, claim-first-Rule-7, 10-min progress-Rule-8, immediate blocker, saturation, one-turn shutdown, verify-claims) and reordered Execution Workflow so `docket issue move <id> in-progress` is step 1.
+
+### Changes
+- Added Communication discipline (non-negotiable) block — 8 rules with Rule 7/8 explicit.
+- Execution Workflow: Claim immediately is now step 1 (was step 3).
+- Added `docket issue reopen` to rework workflow for post-close regressions.
+- Shutdown Handling: explicit one-turn reply (Rule 6).
+- "Blocked >15min" split into same-turn-surface vs 15min-cc-escalation to remove "wait 15min" reading.
+- Trimmed Project memory paragraph.
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

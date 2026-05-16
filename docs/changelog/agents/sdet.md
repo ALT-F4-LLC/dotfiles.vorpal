@@ -1,5 +1,38 @@
 # Changelog: sdet
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: align Communication Discipline rule numbering with brief's canonical map (rule 7 = claim-first, rule 8 = 10-min progress).
+
+### Changes
+- Inserted new Rule 7 ("Claim before work") matching senior-engineer.md Rule 7; renumbered prior progress-signal rule 7 → rule 8.
+- Updated `TeammateIdle` stall-signal pointer from "rule 1, 2, or 7" to "rule 1, 2, 7, or 8".
+
+### Dimensions Evaluated
+Cross-agent rule-number coherence, claim-first ordering parity.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Encoded 8 operator communication-discipline rules (closed-loop reply, ack, saturation, blocker, verify, shutdown, claim-first, 10-min progress) and elevated `docket issue move <id> in-progress` to step 1 of Execution Workflow.
+
+### Changes
+- Added Communication Discipline section (rules 1-6, 8) + TeammateIdle hook reference.
+- Reordered Execution Workflow: Find → Claim FIRST → Review → Do work.
+- Shutdown Handling cross-references comm rule 6 timing.
+- Inter-Agent header notes SendMessage auto-resume.
+- Trimmed: merged quality+stop-ask blocks, banner one-liner, Pre-Flight escalation dedup, snapshot prose, "Snapshot review protocol" compressed.
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename — "sdet" is canonical industry abbreviation.
+
 ## 2026-05-13
 
 ### Summary

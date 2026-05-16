@@ -1,5 +1,38 @@
 # Changelog: evolve-skills
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence pass: AskUserQuestion preamble extended with multiSelect+fixed-catalog carve-out to match actual 6-option pain-class usage in step 2.
+
+### Changes
+- Operator-prompts banner: extended option-count contract to permit "up to 8 options when multiSelect AND fixed dimension catalog" — resolves contradiction between 2-4 cap and step 2's 6-option pain-class multiSelect.
+
+### Dimensions Evaluated
+Operator prompt quality (AskUserQuestion contract honesty), Coherence (sister parity with evolve-agents).
+
+### Rename
+No rename.
+
+## 2026-05-16
+
+### Summary
+Wired up the friction-driven-evolution `[friction-driven-evolution: cluster-{id}]` payload contract end-to-end (Pre-flight step 2 + Phase 1 template) so downstream-routed runs preserve `proposed_edit.target` and `severity` signal. Closed cross-root coordination gap (`.claude/skills/` vs `skills/`) in Phase 1 SendMessage triggers and Pre-flight step 5 collision handling. Trimmed redundant Rule 1 (duplicated by Phase 2 gate) and removed unnecessary Phase 1 template lead-in.
+
+### Changes
+- Pre-flight step 2: recognize friction-driven-evolution structured `experience_feedback` payload (prioritize `proposed_edit.target`, weight by `severity`). Closes silent-integration gap.
+- Phase 1 template: substitution guidance for structured friction payload — reviewers cite `example_session_refs` in CONTEXT.
+- Pre-flight step 5: explicit handling for name collision across `.claude/skills/` and `skills/` roots via `AskUserQuestion`.
+- Phase 1 template SendMessage trigger: include which root when reporting cross-cutting findings.
+- Final Rules: removed Rule 1 (duplicated by Phase 2 gate and lifecycle table).
+- Phase 1 template: removed redundant "Use the @staff-engineer agent..." lead-in.
+
+### Dimensions Evaluated
+Coordination & handoff gaps (primary — friction integration + cross-root), Over-Engineering (x2), Output quality, Skill Design Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

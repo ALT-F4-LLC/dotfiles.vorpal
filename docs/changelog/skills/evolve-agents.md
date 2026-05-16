@@ -1,5 +1,37 @@
 # Changelog: evolve-agents
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence pass: friction-payload recognition mirrored from evolve-skills (Pre-flight + Phase 1 template); AskUserQuestion preamble extended with multiSelect+fixed-catalog carve-out to match actual 7-option usage.
+
+### Changes
+- Pre-flight step 2: recognize friction-driven-evolution structured `experience_feedback` payload — mirrors evolve-skills this cycle so agent-targeted clusters route identically.
+- Phase 1 template: substitution guidance for structured friction payload (cite `example_session_refs` in CONTEXT) — mirrors evolve-skills.
+- Operator-prompts banner: extended option-count contract to permit "up to 8 options when multiSelect AND fixed dimension catalog" — resolves contradiction with step 2's 7-option multiSelect.
+
+### Dimensions Evaluated
+Coordination & handoff (friction-payload sister-parity), Operator prompt quality (AskUserQuestion contract honesty), Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-16
+
+### Summary
+Three over-engineering trims (net 283→276): merged Pre-flight inventory-validation steps 5+6 into a single abort check, replaced redundant Phase 1 SendMessage triggers body subsection with a pointer to the canonical site (Phase 1 template Rules), and dropped the exhortation tail on Rule 3 already covered by Crash & Stall Recovery.
+
+### Changes
+- Pre-flight: merged steps 5 (specific-agent validation) and 6 (no-files-found abort) into a single "Validate inventory" step. Reason: both were abort-checks against the inventory from step 4.
+- Body Phase 1 SendMessage triggers subsection: replaced 5-line block with one-line pointer to canonical site in Phase 1 template Rules. Reason: spawned agents read the template; duplicate sites desynchronize.
+- Rule 3 "Fail loud": dropped "Never review directly — orchestrator-only-coordinates invariant is absolute" tail. Reason: already stated in Crash & Stall Recovery step 2.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — all 3), Skill Design Quality, Coherence (sister parity flag for evolve-skills).
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

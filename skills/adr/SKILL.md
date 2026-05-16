@@ -126,13 +126,13 @@ malformed frontmatter.
       where `max` is taken over the captured numeric group as integers.
    5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
-   7. The numbering Glob is re-run before Write (see ADR-specific override below SAVE_AND_RETURN) to handle the case where a concurrent author claims the chosen `{NNNN}` during Authoring.
+   7. Numbering Glob is re-run before Write — see Save & Return override below.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/` to find related
-   ADRs that may be superseded, reinforced, or contradicted by this decision. Read
-   any candidate predecessors so the new ADR cites them in `Context`.
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
+   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
+   Read any candidate predecessors so the new ADR cites them in `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
@@ -145,9 +145,7 @@ malformed frontmatter.
 5. **Alternatives Considered** (brief): list at least one alternative with a
    one- or two-sentence verdict. ADRs are short; full Alt-A/Alt-B/Alt-C analysis
    belongs in a TDD, not an ADR.
-6. **Consequences**: enumerate positive, negative, and neutral consequences.
-   Future readers consult this section first when deciding whether the ADR still
-   applies.
+6. **Consequences**: enumerate positive, negative, and neutral consequences. Include what becomes easier and what becomes harder.
 
 ## Output Contract
 
@@ -249,7 +247,7 @@ ADR-specific full sequence: `mkdir → renumber re-Glob → Write → race-detec
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
 ```
 
-This catches different-slug concurrent races. **Same-slug races** (two authors choose identical topics simultaneously) are not detectable here — both writes target the same path. Calling agent must verify the topic is not already in flight before invoking. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
+This catches different-slug concurrent races at the same `{NNNN}`. Same-slug races (two authors picking identical topics simultaneously) are undetectable — both writes target the same path. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
 

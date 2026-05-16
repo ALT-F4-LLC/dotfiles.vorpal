@@ -123,13 +123,19 @@ malformed frontmatter.
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read related PRDs
-   already in `docs/spec/`. Read any TDDs in `docs/tdd/` or design specs in
-   `docs/ux/` that touch the same surface — the new PRD should reference, not
-   contradict, prior accepted product definitions.
-2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json`
-   via Bash to surface high-priority active tickets that pre-date this PRD. If any
-   intersect the PRD's surface, list them in the **Risks & Open Questions** section
-   under a "Pre-existing Docket issues" sub-bullet — do NOT scatter them through the body.
+   already in `docs/spec/` (the 7 reserved engineering specs — architecture, security,
+   operations, performance, code-quality, review-strategy, testing — are project-level
+   conventions, not PRDs; skip them here unless the PRD genuinely depends on one).
+   Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that touch the same
+   surface — the new PRD should reference, not contradict, prior accepted product
+   definitions.
+2. **Probe Docket** (informational): run two reads via Bash —
+   (a) `docket issue list --sort priority:asc --json` to surface high-priority active
+   tickets that pre-date this PRD, and (b) `docket issue list --tree` to surface
+   existing epics whose decomposition may overlap this PRD's surface. If any results
+   from either probe intersect the PRD's surface, list them in the **Risks & Open
+   Questions** section under a "Pre-existing Docket issues" sub-bullet — do NOT scatter
+   them through the body.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required
@@ -183,7 +189,9 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 2. **Goals** — concrete, testable outcomes the PRD commits to.
 3. **Non-Goals** — explicit out-of-scope items, including future-work flags.
 4. **User Stories / Use Cases** — narrative scenarios from the operator/user
-   perspective, with priorities.
+   perspective, with explicit per-story priority (P0/P1/P2 or MVP/polish — pick one
+   scheme and apply it consistently). Bare "with priorities" without a named scheme
+   is a defect.
 5. **Requirements** — functional and non-functional, prioritized using MoSCoW (Must / Should / Could / Won't). Each requirement MUST be testable: a reviewer must be able to point at a behavior and say "this satisfies / does not satisfy" without a follow-up clarification.
 6. **Success Metrics** — quantitative measures that validate Goals are met. Each
    metric MUST name (a) what is measured, (b) the measurement method, and (c) a

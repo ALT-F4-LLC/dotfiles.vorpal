@@ -30,18 +30,17 @@ Target skill(s) are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each, max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
 
 Before spawning any agents:
 
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, treat it as a structured payload (fields: `friction_class`, `frequency`, `severity`, `example_session_refs`, `proposed_edit.target`, `root_cause`) — Phase 1 reviewers must prioritize the `proposed_edit.target` location and weight changes by `severity`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
 4. **Inventory skill files and sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
-5. **If targeting a specific skill** — Verify the argument matches an existing skill directory in
-   either `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If no match, inform user and abort.
+5. **If targeting a specific skill** — Verify the argument matches exactly one of `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
@@ -179,11 +178,10 @@ Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line
 ```
 Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_type="staff-engineer", prompt="...")
 
-Use the @staff-engineer agent to review and improve a skill definition:
-
 Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
+  > If `Experience feedback` begins with `[friction-driven-evolution: cluster-`, it is a structured payload: prioritize `proposed_edit.target` as the change locus and weight your recommendations by `severity`. Cite `example_session_refs` in your CONTEXT field.
 
 ## Size Budget
 
@@ -219,7 +217,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIG
 - **Read-only** — analyze and recommend only; orchestrator applies all edits.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 - **No peer-to-peer SendMessage** — orchestrator is the only relay.
-- **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name), (b) scope expansion beyond target, or (c) blocker.
+- **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name AND which root: `.claude/skills/` or `skills/`), (b) scope expansion beyond target, or (c) blocker.
 
 ## Output Format
 ### Summary
@@ -268,7 +266,6 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 
 ## Rules
 
-1. **Always run Phase 2** — even for single-skill improvements.
-2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-3. **Fail loud.** See Crash & Stall Recovery.
-4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
+1. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+2. **Fail loud.** See Crash & Stall Recovery.
+3. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

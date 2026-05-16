@@ -37,19 +37,19 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
-4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. **team-lead's responsibility on receipt**: invoke `Skill(vote, "{vote-id}")` standalone (the vote_id branch in Argument Handling skips Phase 1 and proceeds directly to reviewer spawn), then SendMessage the delegation_response back when the standalone run completes/fails/escalates. team-lead does NOT spawn reviewers or cast votes itself — vote-as-standalone owns that lifecycle.
+4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
+
 ---
 
 ## Pre-flight
 
 1. **Verify docket is available** — Run `docket version --quiet` via Bash to confirm the docket
    CLI is operational (canonical liveness check; the vote subcommand ships in the same binary).
-2. **Confirm goal-alignment** — HARD GATE: Do not proceed to criticality classification
-   until the goal is confirmed.
-   - **Standalone mode**: Use `AskUserQuestion` with three questions in order: (1) header `Decision`, options `Confirm` (proceed with framing) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options derived from the table below — present your classified default first with a one-line rationale, then `low`, `medium`, `high`, `critical` as alternatives. Do not proceed until all three are answered.
-   - **Team mode**: The orchestrator's prompt contains the verified goal and criticality — re-verify if your understanding diverges.
-3. **Classify criticality** — Use the table below as the default basis for the standalone-mode question above. If the caller (team mode) specifies criticality (e.g., "criticality: high" in the prompt), respect it without re-asking.
+2. **Classify criticality** — Apply the Criticality Classification table below to the proposal. In team mode, prefer caller-specified criticality (e.g., "criticality: high") and skip re-classification.
+3. **Confirm goal-alignment (HARD GATE)** — Do not proceed past this gate until the goal is confirmed.
+   - **Standalone mode**: `AskUserQuestion` with three questions: (1) header `Decision`, options `Confirm` (framing is accurate) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options `Confirm {classified-level}` (with one-line rationale in description) / `Override` (follow-up free-text or 4-option pick: `low`/`medium`/`high`/`critical`).
+   - **Team mode**: Re-verify if your understanding diverges from the orchestrator's prompt.
 
 ---
 
@@ -321,5 +321,5 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 ### Cleanup (MANDATORY — standalone mode only)
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request"})` for each spawned reviewer. Do not wait for acknowledgment.
+1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request", reason: "vote complete"})` for each spawned reviewer. Do not wait for acknowledgment.
 2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")`. Failure to clean up wastes resources and causes agent lifecycle issues.

@@ -67,7 +67,7 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
   `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `specs` skill.
 
@@ -195,8 +195,10 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    `@staff-engineer`-authored design crosses trust boundaries / changes
    authn-authz / handles secrets / changes the sandbox-permission model, the
    calling agent should ask team-lead to spawn `@security-engineer` to
-   co-author these three subsections (see `agents/security-engineer.md`
-   Responsibility 1). Non-security TDDs may omit these subsections.
+   append these three subsections via Edit to the saved TDD (the
+   Threat-Model Annotation pattern per `agents/security-engineer.md`
+   Responsibility 1 — not by re-invoking this skill, which would hit the
+   collision dialog). Non-security TDDs may omit these subsections.
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation
@@ -218,10 +220,6 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags. Phases must be independently shippable or explicitly
     chained — no implicit ordering.
-
-### Mermaid Mandate
-
-TDDs **always require** at least one ` ```mermaid ` fenced block (lowercase, no space) — see Authoring §4 for diagram types. Pure-policy decisions belong in an ADR.
 
 ## Validation Before Save
 

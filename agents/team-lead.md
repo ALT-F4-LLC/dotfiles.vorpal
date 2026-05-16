@@ -209,7 +209,7 @@ Requirements:
 
 ### @senior-engineer
 
-name="impl-{DOCKET-ID}", `isolation="worktree"`. Context block:
+name="impl-{DOCKET-ID}". Context block:
 - Docket Issue: {DOCKET-ID} — {title}; full description; scoped files
 - {If Discovered comments from prior phases}: include relevant context
 - @staff-engineer "advisor" via SendMessage for architectural questions — consult before deviating from the TDD; NOT for routine choices

@@ -1,5 +1,22 @@
 # Changelog: adr
 
+## 2026-05-16
+
+### Summary
+Four small fixes prioritizing over-engineering pass: stripped unactionable "verify topic not in flight" advice from same-slug race guidance, compressed Pre-flight §5.7 forward-reference, removed meta-commentary tail from Authoring §6 (Consequences), and broadened Authoring §1 prior-art Grep scope to match sibling tdd.
+
+### Changes
+- Save & Return same-slug race block: dropped unactionable "calling agent must verify the topic is not already in flight" mitigation — leaf-skill caller has no in-flight registry; honest framing is "undetectable race".
+- Pre-flight §5.7: compressed forward-reference paragraph — override block below self-announces.
+- Authoring §6 Consequences: removed "Future readers consult this section first" rationale tail; folded "easier/harder" prompt into §6 where it guides drafting.
+- Authoring §1 Gather Prior Art: Grep scope broadened from `docs/tdd/adr/` to also include `docs/tdd/`, `docs/spec/`, `docs/ux/` — ADRs may supersede TDD approaches or contradict UX spec conventions.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Skill Design Quality, Actionability, Coherence (sibling tdd/prd/ux-spec/specs).
+
+### Rename
+No rename. Family-aligned with tdd/prd/ux-spec.
+
 ## 2026-05-13
 
 ### Summary

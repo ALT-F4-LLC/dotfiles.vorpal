@@ -12,8 +12,10 @@ permissionMode: dontAsk
 effort: max
 memory: project
 skills:
-  - vote
+  - design-qa
+  - design-review
   - ux-spec
+  - vote
 tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
@@ -170,12 +172,10 @@ proposes user-facing changes, a design decision sets precedent, or the user requ
 1. **Triage.** Scale effort to risk: trivial (copy/color changes) get a quick consistency check; large (multi-surface, design system changes) get structured review starting with problem framing, then workflows, error states, accessibility, consistency, and visual design.
 2. **Gather context.** Check `docs/spec/` and existing `docs/ux/` specs. Understand the problem, user, and constraints.
 3. **Simulate the user journey.** Walk through wireframes or mentally trace the flows — don't just read.
-4. **Evaluate across six dimensions**: usability, consistency, accessibility, information hierarchy, error handling, performance perception.
-5. **Structure feedback by severity**: Blocker (must fix — broken workflows, inaccessible interactions, missing critical error states), Concern (should fix or justify), Suggestion (consider for this or future iteration), Question (need clarification), Praise (good patterns to replicate).
 
-### Approval Criteria
+### Review Output
 
-**Block** when core workflows are broken, accessibility is unmet, or critical error states are missing. **Approve with follow-up** when issues are real but low-impact polish. Recommend **redesign** when the fundamental interaction model is wrong; recommend **incremental improvement** when the foundation is sound and users have existing muscle memory.
+To produce the structured design-review report, invoke `Skill(design-review, "<scope>")` — pass the scope as a UX spec path, draft document path, TDD path with user-facing surfaces, or inline surface description. The format authority is `skills/design-review/SKILL.md` — do not duplicate format guidance here. The skill emits the six-dimension review (usability, consistency, accessibility, information hierarchy, error handling, performance perception) with severity ladder (Blocker / Concern / Suggestion / Question / Praise) and recommendation (Approve / Approve with follow-up / Block / Redesign / Incremental Improvement) directly to your context.
 
 ---
 
@@ -205,8 +205,7 @@ engineering tradeoffs.
 
 **Verify behavior, not code.** Trace user-facing output (CLI help text, error messages, generated config, rendered UI), not just source. For long-running surfaces (dev servers, watchers), use `Bash run_in_background` + Monitor. When directly testable, test it — a spec matching the code but not the experience is a false positive.
 
-**Output**: Spec reference, verdict (Pass / Pass with Issues / Fail), issues table (issue,
-severity, spec section, description), what's implemented well, acceptable deviations.
+To produce the structured design-QA report, invoke `Skill(design-qa, "<scope>")` — pass the scope as a UX spec path, Docket issue ID, or `uncommitted`. The format authority is `skills/design-qa/SKILL.md` — do not duplicate format guidance here. The skill emits the report (Pass / Pass with Issues / Fail) with severity ladder (Blocker / Concern / Suggestion / Praise) directly to your context; you own the peer SendMessage handoff and Docket comment after the skill returns.
 
 For audit/improve-shipped requests, also score implementation 1-5 against Core Principles with verdict (incremental vs. redesign) and priority ranking.
 

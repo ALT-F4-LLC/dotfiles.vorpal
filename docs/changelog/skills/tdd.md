@@ -1,5 +1,21 @@
 # Changelog: tdd
 
+## 2026-05-16
+
+### Summary
+Three coherence/over-engineering fixes: clarified §4 security-track prose to name the Threat-Model Annotation mechanism (append via Edit to the saved TDD, not re-invoke this skill); added defer-down clause to "When NOT to Use" so TDDs touching user-facing surfaces reference the UX spec rather than inline interaction design; removed the vestigial one-line "Mermaid Mandate" subsection.
+
+### Changes
+- Required Sections §4: replaced ambiguous "co-author" prose with explicit Threat-Model Annotation mechanism — @security-engineer appends sections via Edit, not by re-invoking this skill (which would hit the collision dialog).
+- When NOT to Use (ux-spec route): added clause directing TDDs that touch user-facing surfaces to reference, not restate, the UX spec.
+- Removed standalone "### Mermaid Mandate" subsection — vestigial restatement; rule lives in Authoring §4, Validation §5, and Failure Modes.
+
+### Dimensions Evaluated
+Coherence (security-engineer.md Threat-Model Annotation; ux-spec defer-down), Over-Engineering (Mermaid restatement collapse), Skill Design Quality.
+
+### Rename
+No rename. Family-aligned with prd/adr/ux-spec.
+
 ## 2026-05-13
 
 ### Summary

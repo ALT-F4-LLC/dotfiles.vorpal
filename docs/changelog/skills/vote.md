@@ -1,5 +1,22 @@
 # Changelog: vote
 
+## 2026-05-16
+
+### Summary
+Restructured Pre-flight goal-alignment Q3 to conform to AskUserQuestion contract (was 5 inline options with default-with-rationale jammed into the option list; now Confirm/Override pair after deterministic classification). Trimmed Delegation Protocol step 4 by extracting team-lead's responsibility narrative to a one-line pointer at team-lead.md Consensus Integration. Reordered Pre-flight steps. Small formatting + reviewer-shutdown reason consistency fixes.
+
+### Changes
+- Pre-flight: swapped step ordering so step 2 is "Classify criticality" (deterministic) and step 3 is "Confirm goal-alignment (HARD GATE)" — Q3 now uses `Confirm {classified-level}`/`Override`, satisfying AskUserQuestion 2-4 options contract.
+- Delegation Protocol step 4: trimmed team-lead-responsibility prose; replaced with pointer to team-lead.md Consensus Integration. Eliminates duplicated contract drift risk.
+- Output Format Cleanup step 1: added `reason: "vote complete"` to `shutdown_request` payload for consistency with evolve-* shutdown protocol.
+- Delegation Protocol step 5: added missing blank line before the `---` separator.
+
+### Dimensions Evaluated
+Operator Prompt Quality (primary), Coordination & Handoff (Delegation Protocol clarity), Over-Engineering, Coherence (team-lead.md, evolve-* shutdown protocol).
+
+### Rename
+No rename. `vote` matches `docket vote` CLI exactly.
+
 ## 2026-05-13
 
 ### Summary

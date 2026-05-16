@@ -76,9 +76,12 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
-- Test verification or acceptance-criteria checking — that's `@sdet`'s role, not a skill.
+- Acceptance-criteria verification against a Docket issue — use `Skill(verify, ...)`, callable by `@sdet`.
+- Design QA against a `docs/ux/` spec for shipped user-facing surfaces — use `Skill(design-qa, ...)`, callable by `@ux-designer`.
+- Peer design review of a draft UX spec or design proposal — use `Skill(design-review, ...)`, callable by `@ux-designer`.
 - Plan/scope/dependency review on a Docket plan — handled inline by the calling agent's advisory output.
 
 ## Pre-flight
@@ -94,10 +97,9 @@ If extra positional args follow `<scope>`, ignore them silently.
    ```
    Error: Resolved scope produced an empty diff — nothing to review.
    ```
-6. **Read related design docs** (both roles, scoped to what the diff touches — do NOT read specs whose domain is not in the changed-file paths):
-   - `staff-engineer`: relevant TDDs in `docs/tdd/`; project specs in `docs/spec/` matching the changed areas only (e.g., `architecture.md` for module/dependency changes, `performance.md` for hot-path edits, `testing.md` for test changes — skip the rest).
+6. **Read related design docs** — scope reads to what the diff touches; do not read specs outside the changed-file paths:
+   - `staff-engineer`: TDDs in `docs/tdd/`; project specs in `docs/spec/` matching changed areas only (`architecture.md` for module/dependency changes, `performance.md` for hot-path edits, `testing.md` for test changes).
    - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
-   Use `Grep` over the changed-file paths to find authoritative references; do not invent.
 
 ## Review Procedure
 
@@ -150,7 +152,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 
 ### Common Discipline (both roles)
 
-- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion`. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Calibrate to value.** Comment on real risks and pattern violations. Skip stylistic preferences and what `cargo clippy` / `cargo audit` should catch automatically.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
@@ -303,6 +305,7 @@ Before emitting the structured review, verify in the calling agent's context:
 4. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
 5. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
 6. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
+7. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 
 If any check fails, ABORT:
 
@@ -314,7 +317,13 @@ The calling agent corrects in its own context and re-invokes `Skill(code-review,
 
 ## Save & Return
 
-This skill does NOT write a file. After Validation Before Emit passes, emit the structured review verbatim to the calling agent's context, then end. The calling agent owns (in order):
+No file is written (Output Contract owns the emission rules). End with the confirmation line:
+
+```
+Code review emitted ({recommendation}).
+```
+
+where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`). The calling agent owns (in order):
 
 - **Reconcile with the parallel reviewer first** — when the change touches auth, secrets, sandbox, trust boundaries, or supply chain (i.e., the parallel reviewer was spawned), SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) with this verdict before routing findings. Verdict reconciliation prevents contradictory handoffs to `@senior-engineer`.
 - Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage with file/finding/fix triplets.

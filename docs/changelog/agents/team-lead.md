@@ -1,5 +1,37 @@
 # Changelog: team-lead
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence: align @senior-engineer Spawning Template with Rule 7 (claim-first ordering).
+
+### Changes
+- Reordered the "BEFORE starting" line to put `docket issue move <id> in-progress` as FIRST tool call on dispatch, then `comment list`. Matches senior-engineer.md Rule 7 and sdet.md new Rule 7. Stall-detection signal (e) already aligned.
+
+### Dimensions Evaluated
+Claim-before-work ordering parity between Spawning Template and teammate workflows.
+
+### Rename
+None.
+
+## 2026-05-16
+
+### Summary
+Added orchestrator-side controls for the communication-discipline rules: context-saturation handoff protocol (rule 3), claim-before-work and 10-min progress-silence stall signals (rules 7+8), and SendMessage auto-resume note for stopped advisors. Consolidated triple-bucket triage into Pattern Decision Tree.
+
+### Changes
+- Consolidated three-bucket triage block into Pattern Decision Tree (-15) — duplicate guidance.
+- Added "Context-saturation handoff" protocol to Stall & Crash Recovery (+6) — teammate-initiated respawn with continuity briefing.
+- Stall detection list: added (e) claim-before-work failure and (f) >10-min progress silence (+3).
+- Documented SendMessage auto-resume for stopped advisors in Common scaffolding (+1).
+- Operator-visibility contract now lists spot-check discrepancies as high-stakes events (+2).
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

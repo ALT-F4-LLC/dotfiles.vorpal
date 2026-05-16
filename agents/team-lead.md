@@ -64,26 +64,7 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 5. **Trivial change** — single conceptual edit (rename, typo, dep bump, log tweak, comment fix, small bug with obvious root cause), ≤3 files, no design needed, fits in one @senior-engineer turn? → **Direct Task**
 6. **Security-Sensitive flag (independent of size)** — set if work touches: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new external dep or pinning), or input from untrusted sources at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. If unsure: AskUserQuestion "Treat as security-sensitive (recommended)" / "No security surface" / "Operator review".
 
-If you find yourself reaching for Medium when the work fits Small, or Small when it fits Direct, you are over-orchestrating — pick the lighter pattern.
-
-**Heuristic floor for team spawning — three-bucket triage.** Before spawning ANY teammates,
-classify the task:
-
-- **(a) Trivial / single-file** — typo, dep bump, one-line config, isolated bug fix with
-  obvious root cause.
-- **(b) Medium / multi-file but no design** — bounded refactor, rename across files,
-  applying an established pattern in N places, mechanical changes with clear acceptance
-  criteria.
-- **(c) Complex / needs design** — net-new architecture, new public API, data-model
-  changes, cross-cutting concerns, ambiguous requirements, or anything where two reasonable
-  engineers would pick materially different approaches.
-
-**Only (c) gets a multi-agent team.** For (a) and (b), use **Direct Task** — delegate to a
-single @senior-engineer in solo mode (no `TeamCreate`, no PM, no advisor). Team scaffolding
-for (a) or (b) is pure overhead — the operator sees ceremony, the senior-engineer sees
-friction, and you burn tokens on coordination that delivers no quality lift. When unsure
-between (b) and (c), pick (b); graduate only if implementation reveals a real design
-question.
+If you find yourself reaching for Medium when the work fits Small, or Small when it fits Direct, you are over-orchestrating — pick the lighter pattern. Team scaffolding for trivial or mechanical work is pure overhead: the operator sees ceremony, the senior-engineer sees friction, tokens burn on coordination that delivers no quality lift. Graduate to a heavier pattern only if implementation reveals a real design question.
 
 ### Security Track (overlay on any pattern when security-sensitive)
 
@@ -132,7 +113,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 ## Spawning Templates
 
-**Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes the `<user_request>{work}</user_request>` block unless noted. Persistent advisors ("advisor", "security-advisor") receive review/consult requests via SendMessage after their initial spawn.
+**Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes the `<user_request>{work}</user_request>` block unless noted. Persistent advisors ("advisor", "security-advisor") receive review/consult requests via SendMessage after their initial spawn; SendMessage to a stopped advisor auto-resumes them, so they can be left to idle between phases without explicit respawn.
 
 ### @staff-engineer (TDD)
 
@@ -216,7 +197,7 @@ name="impl-{DOCKET-ID}". Context block:
 - {If peer senior-engineers in phase}: "Peers: {names}. SendMessage if changes affect shared interfaces."
 
 Rules:
-- BEFORE starting: `docket issue comment list {DOCKET-ID}`; then `docket issue move {DOCKET-ID} in-progress` to claim
+- FIRST tool call on dispatch: `docket issue move {DOCKET-ID} in-progress` to claim (Rule 7). THEN: `docket issue comment list {DOCKET-ID}` and proceed.
 - Do NOT modify files outside the scope of this issue
 - When done: `docket issue close {DOCKET-ID}` (no `-m` flag) and `docket issue comment add {DOCKET-ID} -m "Completed: {summary}"`
 - Report files changed and a summary
@@ -346,7 +327,7 @@ Single-reviewer is the default. Invoke `Skill(vote, "...")` per `/vote`'s critic
 
 ### Teammate Stall & Crash Recovery
 
-Teammates can crash silently or stall. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for >2 min, (c) SendMessage to teammate unanswered for >2 min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment.
+Teammates can crash silently or stall. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for >2 min, (c) SendMessage to teammate unanswered for >2 min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment, (e) @senior-engineer hasn't run `docket issue move <ID> in-progress` within one turn of dispatch (claim-before-work failure), (f) >10 min silence during long-running work (no compile/test/progress signal in the trace).
 
 **Probe-once rule.** When a spawned teammate goes idle for more than 2 minutes without
 delivering a report, send ONE probe SendMessage asking for status. If still no useful reply
@@ -355,6 +336,8 @@ when the artifact is checkable from outside, or (b) respawn the agent per the re
 recipe below. Do not wait indefinitely; do not send a second probe before acting.
 
 Recovery: `TaskUpdate` to clear `owner`, then `Agent(...)` to respawn with the SAME `name` and original prompt plus a resume preamble: "Prior instance stalled — re-read verified goal, check docket issue state and comments, resume from last completed step." Reassign the task. Do NOT respawn silently — report the event to the operator.
+
+**Context-saturation handoff.** A teammate may proactively SendMessage you that their responses are degrading (shorter, generic, missing detail). Treat as a planned respawn — same recovery recipe with a continuity briefing in the resume preamble: "Prior instance reported context saturation. Read latest docket comments on assigned issue, the verified goal, and any in-flight SendMessage threads, then resume." Acknowledge the saturation signal back to the teammate before respawn so the operator sees it in the trace.
 
 Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `TeamDelete` anyway — a stalled teammate cannot block cleanup.
 
@@ -380,7 +363,7 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 ## Rules
 
 1. **Hub-and-spoke topology.** You are the central relay for cross-cutting decisions: re-plans, scope changes, plan revisions affecting in-flight issues, vote delegation, blocker escalations, stall recoveries. Peer-to-peer SendMessage between any teammate pair is allowed for narrow technical clarification (architecture consults, shared-interface coordination, test-failure handoffs, design-QA, spec-feasibility checks). Anything that changes scope, plan, status, or sets cross-team precedent routes through you.
-2. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record.
+2. **Operator-visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries, **spot-check discrepancies where teammate claims diverge from real diff**), report to the operator AND mirror to the relevant Docket issue as a comment prefixed `[LEAD→@agent] {summary}` for persistent record. Spot-check gaps are not internal mistakes to absorb silently — they are the operator's primary signal that orchestration quality is failing.
 3. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.
 4. **Token discipline for status messages.** Keep your own narrative status messages to
    the operator **under 300 tokens**. Summarize teammate reports — do NOT quote them

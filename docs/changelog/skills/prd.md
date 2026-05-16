@@ -1,5 +1,21 @@
 # Changelog: prd
 
+## 2026-05-16
+
+### Summary
+Three small actionability fixes targeting operator pain on output quality and Docket integration: named the priority scheme in User Stories §4 (was undefined), added `docket issue list --tree` as a second Docket probe to surface pre-existing epics, and clarified that `docs/spec/` contains both PRDs and the 7 reserved engineering specs.
+
+### Changes
+- Required Sections §4 (User Stories): require an explicit per-story priority scheme (P0/P1/P2 or MVP/polish), mirroring ux-spec §9; bare "with priorities" is now a defect.
+- Authoring Procedure §2 (Docket probe): added `docket issue list --tree` as second probe — PRDs precede epic decomposition, so tree view is the right Docket lens for overlap detection.
+- Authoring Procedure §1 (prior art): clarified that the 7 reserved engineering specs in `docs/spec/` are not PRDs and should be skipped unless the PRD genuinely depends on one.
+
+### Dimensions Evaluated
+Actionability (primary), Output Quality, Coherence (sibling ux-spec §9 pattern), Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-05-09
 
 ### Summary

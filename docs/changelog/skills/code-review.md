@@ -1,5 +1,37 @@
 # Changelog: code-review
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence pass: Common Discipline now includes the AskUserQuestion structural contract (added to design-review this cycle); Save & Return collapsed to "Output Contract owns the emission rules" per family-wide pattern.
+
+### Changes
+- Common Discipline: added "with 1-4 questions, each having 2-4 options and a `header` ≤12 chars" to the AskUserQuestion guidance — parity with design-review/design-qa/verify.
+- Save & Return: replaced verbose preamble with "No file is written (Output Contract owns the emission rules)" — matches verify/design-qa/design-review post-Phase-2.
+
+### Dimensions Evaluated
+Coherence (operator-prompt contract; family Save & Return phrasing), Over-Engineering.
+
+### Rename
+No rename.
+
+## 2026-05-16
+
+### Summary
+Added trailing `Code review emitted ({recommendation}).` confirmation line to align with sibling report-emission family (verify, design-qa, design-review); enforced via Validation Before Emit. Trimmed two Pre-flight/When-NOT redundancies for BALANCED-mode tightening.
+
+### Changes
+- Save & Return: added `Code review emitted ({recommendation}).` confirmation line — same deterministic end-of-skill signal that verify/design-qa/design-review emit.
+- Validation Before Emit: added check 7 enforcing the new confirmation line so silent omission is a defect.
+- Pre-flight §6: collapsed "both roles" scoping parenthetical and removed dangling Grep instruction restating the same scoping rule.
+- When NOT to Use: trimmed `Skill(verify, ...)` bullet's redundant editorial sentence.
+
+### Dimensions Evaluated
+Coherence (HIGHEST — sibling family parity), Over-Engineering, Skill Design Quality, Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-13
 
 ### Summary

@@ -35,6 +35,8 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 
 ## Pre-flight
 
+> **Operator prompts:** All operator-facing `AskUserQuestion` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
+
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Do not proceed to context resolution or file checks until the goal is verified.
@@ -113,11 +115,12 @@ After all agents complete, run verification:
 1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
 2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
    delimiter). Flag any file that does not — it indicates a malformed spec.
-3. Run `grep -L '```mermaid' docs/spec/*.md` to flag any spec missing the required Mermaid
+3. Run `grep -L '```mermaid' docs/spec/*.md 2>/dev/null` to flag any spec missing the required Mermaid
    diagram (per Spawning Template). Diagram presence is a sanity check, not a deep validation —
    if a spec genuinely has no relationships/flows to diagram, the agent should have noted that
    in the file; flag it for operator review.
-4. Run `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md` (substituting the resolved date) to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
+4. Run `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md 2>/dev/null` (substituting the resolved date) to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
+5. Run `grep -L "^## Gaps & Risks" docs/spec/*.md 2>/dev/null` to flag any spec missing the required Gaps & Risks section — enforces the structural home for the rigorous-honesty directive.
 
 Report which files were created successfully and flag any that are missing, malformed, or
 missing required diagrams.
@@ -146,8 +149,9 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage team-lead if you are blocked or need a decision; the completion SendMessage is covered below.
+- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage the orchestrator that spawned you (the agent that sent you this prompt — in team mode that is `team-lead`; in standalone mode the orchestrator's name appears in your team roster) if you are blocked or need a decision. The completion SendMessage uses the same recipient (covered below).
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
+- Structure the body with at least 3 H2 sections appropriate to the spec's domain (e.g. `architecture.md`: Components, Boundaries, Decisions; `security.md`: Trust Boundaries, Controls, Threat Model). Every spec MUST include a final H2 named exactly `## Gaps & Risks` — this is the structural home for the rigorous-honesty directive. If no gaps exist, write "None identified at this time" under it.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:
   ```yaml
@@ -163,7 +167,7 @@ Requirements:
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
 - After saving the file, mark your task as completed via TaskUpdate and send a completion
-  message via SendMessage(to="team-lead", message="Completed docs/spec/{filename}")
+  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`.
 ```
 
 ---
@@ -173,5 +177,5 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down surviving teammates** — for each spawned agent whose task is `completed` (per Step 2 classification), send `shutdown_request` in the SAME turn. Skip agents whose task was marked `failed` (no process to terminate).
+2. **Shut down surviving teammates** — for each spawned agent whose task is `completed` (per Step 2 classification), send `SendMessage(to="<name>", message={type: "shutdown_request", reason: "specs bootstrap complete"})` in the SAME turn. Skip agents whose task was marked `failed` (no process to terminate).
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`

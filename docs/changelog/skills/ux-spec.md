@@ -1,5 +1,20 @@
 # Changelog: ux-spec
 
+## 2026-05-16
+
+### Summary
+Coherence: added cross-family delegation routes to design-review (peer review of UX spec drafts) and design-qa (implementation verification against UX spec) in "When NOT to Use" — closes asymmetric drift where the two new report-emission siblings cross-reference ux-spec but ux-spec did not reciprocate. Hardened the missing-section Failure Mode row to self-reference Required Sections instead of hardcoding "9".
+
+### Changes
+- When NOT to Use: added two delegation rows for `Skill(design-review, ...)` (peer review of drafts) and `Skill(design-qa, ...)` (verify implementation). Updated COUPLING comment to flag the cross-family bridge.
+- Failure Modes: replaced hardcoded "all 9 sections in the order listed" with self-referential "all sections enumerated in Required Sections, in the listed order" — matches Validation §4's hardened pattern.
+
+### Dimensions Evaluated
+Coherence (cross-skill family bridge, internal consistency), Over-Engineering, Spec Alignment, Skill Design Quality.
+
+### Rename
+No rename. Family-aligned with prd/tdd/adr.
+
 ## 2026-05-09
 
 ### Summary

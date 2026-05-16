@@ -1,5 +1,37 @@
 # Changelog: specs
 
+## 2026-05-16
+
+### Summary
+Phase 2 coherence pass: shutdown_request payload now specifies full `{type, reason}` shape (uniform with vote/evolve-*); AskUserQuestion preamble extended with multiSelect+fixed-catalog carve-out for Scope question's 7-file subset.
+
+### Changes
+- Wrap-up step 2: shutdown_request now uses `SendMessage(to="<name>", message={type: "shutdown_request", reason: "specs bootstrap complete"})` — uniform schema across orchestrator-family skills.
+- Operator-prompts banner: extended option-count contract to permit "up to 8 options when multiSelect AND fixed dimension catalog" — covers Scope question's Custom-subset multiSelect over 7 spec files.
+
+### Dimensions Evaluated
+Coordination (shutdown payload uniformity), Operator prompt quality (AskUserQuestion contract honesty), Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-16
+
+### Summary
+Four operator-pain fixes: added canonical "Operator prompts" banner (coherence with evolve-skills/evolve-agents); hardened Verification globs against empty-glob expansion errors; resolved leaf-agent SendMessage recipient ambiguity between team/standalone modes; added minimum structural contract (3 H2s + required `## Gaps & Risks` section).
+
+### Changes
+- Pre-flight: added canonical "Operator prompts" banner — locks AskUserQuestion contract across the 4 call sites in this skill.
+- Step 3 Verify: added `2>/dev/null` to both grep -L commands — prevents noisy "No such file or directory" false positives.
+- Spawning Template: replaced hardcoded `SendMessage(to="team-lead", ...)` with role-resolved recipient — fixes standalone-mode handoff where team-lead may not exist.
+- Spawning Template + Step 3 Verify: added minimum structural requirement (≥3 H2s + required `## Gaps & Risks` section) and matching grep verification check.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Over-Engineering (no bloat), Orchestration & Agent Teams (recipient ambiguity), Coherence (canonical banner with evolve-* siblings).
+
+### Rename
+No rename. Family-aligned with `prd`, `tdd`, `adr`, `ux-spec`.
+
 ## 2026-05-09
 
 ### Summary

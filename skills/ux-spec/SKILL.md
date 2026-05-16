@@ -61,9 +61,13 @@ For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, adr, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, adr, and specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
+- Peer review of a draft UX spec or design proposal (no file written, report into
+  the calling agent's context): use `Skill(design-review, "<scope>")`.
+- QA of shipped implementation against an accepted UX spec (no file written, report
+  into the calling agent's context): use `Skill(design-qa, "<scope>")`.
 - Technical Design Documents (architecture/system design): use
   `Skill(tdd, "<topic>")`.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
@@ -287,7 +291,7 @@ On operator Cancel during the collision dialog: emit
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| Required section missing or out of order | Abort: `Error: validation failed: section §N — Required section '{name}' missing or out of order. UX specs require all 9 sections in the order listed.` |
+| Required section missing or out of order | Abort: `Error: validation failed: section §N — Required section '{name}' missing or out of order. UX specs require all sections enumerated in Required Sections, in the listed order.` |
 | Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — UX specs use 'maturity', not 'status'. Remove the status field.` |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — UX specs require at least one mermaid fenced block (user flow, state transition, or cross-surface journey).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

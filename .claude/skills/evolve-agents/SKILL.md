@@ -32,16 +32,16 @@ Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options each — `multiSelect: true` does NOT raise the cap; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, reproductions, large diffs, verbatim quotes) and only AFTER an option-led question routes them there.
 
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or free-text follow-up for the agent name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, treat it as a structured payload (fields: `friction_class`, `frequency`, `severity`, `example_session_refs`, `proposed_edit.target`, `root_cause`) — Phase 1 reviewers must prioritize the `proposed_edit.target` location and weight changes by `severity`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options covering common pain-point classes: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `Agent role realism`, `File-size bloat`, `Other (free-text follow-up)`. If `Other` is selected, ask a follow-up free-text question for the specifics. Store the combined response as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, treat it as a structured payload (fields: `friction_class`, `frequency`, `severity`, `example_session_refs`, `proposed_edit.target`, `root_cause`) — Phase 1 reviewers must prioritize the `proposed_edit.target` location and weight changes by `severity`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Role & coordination gaps`, `Operator prompts & output quality`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, ask a follow-up free-text question. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. This both lists discoverable files and records line counts. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `30`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
@@ -96,7 +96,7 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 
 Spawn THREE teammates in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 7 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent, scoped to the agents under review here, and feeds Phase 1 reviewers directly — no clustering, no routing.
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent, scoped to the agents under review here, and feeds Phase 1 reviewers directly.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -116,7 +116,7 @@ Each teammate (read-only — no file edits):
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 6. Shuts down the teammate (don't wait for sibling Phase 1 agents — see Agent Lifecycle)
 
-**Phase 1 SendMessage triggers** are declared canonically in the Phase 1 spawning template's Rules section (orchestrator-only relay; Phase 2 consolidates cross-cutting items). Cross-cutting items append to a running notes list passed verbatim into the Phase 2 spawning prompt's "Phase 1 Coherence Issues" section. `TaskList()` tracks progress.
+Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section.
 
 ### Phase 2: Coherence & Renames (sequential)
 
@@ -158,18 +158,15 @@ New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docket-auditor", subagent_type="senior-engineer", prompt="...")
 
-Audit the docket CLI for agent evolution reviewers.
-
-1. Run `--help` on every docket command and subcommand.
-2. Grep for `docket ` across `agents/` and `.claude/skills/` for current usage.
-3. Cross-reference: new/changed/deprecated commands vs. codebase usage.
+Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
+usage in `agents/` and `.claude/skills/`.
 
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
 
 ### Phase 0: Historical Audit (per-agent)
 
-Skip spawning if pre-flight step 7 flagged SKIPPED. Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`). Distinct from `friction-driven-evolution`: per-agent, no clustering, feeds Phase 1 directly.
+Skip spawning if pre-flight step 7 flagged SKIPPED. Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`).
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
@@ -179,13 +176,13 @@ Window: last {history_days} days (cutoff {history_cutoff_iso}).
 Target agents: {target_agents}
 
 ## Task
-For EACH target agent, mine read-only sources for signals that the agent is failing, stalling, or misused. Agent memory is the PRIMARY source (directly scoped per-agent); transcripts add invocation/stall evidence; `history.jsonl` is weak for agents (operators rarely `@<agent>` directly) but still checked.
+For EACH target agent, mine read-only sources for signals the agent is failing, stalling, or misused.
 
 1. **Agent memory (PRIMARY — read fully, it is small)**:
    - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md`. Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
 2. **Transcripts** (under `~/.claude/projects/`):
    - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -${history_days} -print0`.
-   - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'` and also grep `"@<agent-name>"` mentions in SendMessage payloads.
+   - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
    - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
    - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
 3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
@@ -234,8 +231,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions.
-**BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
+500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change.
 
 ## Context
 

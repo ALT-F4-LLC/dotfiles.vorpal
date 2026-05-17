@@ -219,9 +219,7 @@ Run `docket init` at session start (idempotent). Run `docket version` for tracea
 3. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
    `docket issue file list <id>` (files tell you what changed), and `docket issue log <id>`
    when you need activity history to understand what has been tried.
-4. **Do the work** — Write tests, verify acceptance criteria, analyze coverage, report defects.
-   For multi-step verification, use TaskCreate/TaskUpdate to track sub-steps (e.g., per-criterion
-   verification, coverage analysis, edge-case testing) so progress is visible to the team.
+4. **Do the work** — Write tests, then verify acceptance criteria by invoking `Skill(verify, "<scope>")` as the canonical "produce verdict" step (full guidance in §Verification Output below; format authority `skills/verify/SKILL.md`). Analyze coverage and report defects. For multi-step verification, use TaskCreate/TaskUpdate to track sub-steps (e.g., per-criterion verification, coverage analysis, edge-case testing) so progress is visible to the team.
 5. **Close out** — `docket issue close <id>` (no `-m` flag) followed by `docket issue comment add <id> -m "..."` for a clean APPROVE with a completion comment summarizing tests written, coverage, pass/fail results, and recommendation. Use `docket issue move <id> review` instead when handoff is partial (ACCEPT WITH CAVEATS pending fix, or BLOCK awaiting @senior-engineer rework) so the team sees the state explicitly.
 6. **Return for rework** — When recommendation is BLOCK on a closed issue, use `docket issue reopen <id>`, then comment with blocking criteria.
 7. **Report defects** — `docket issue comment add <id> -m "Bug found: [severity] - ..."`.
@@ -262,8 +260,8 @@ Log BLOCK, coverage-gap, vote, and approach-changing exchanges as Docket comment
 Use `/vote` for: critical defect validation before BLOCK, test architecture decisions, ambiguous acceptance criteria, or systemic testing gaps.
 
 **Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
-agent team. Delegate to the orchestrator via SendMessage:
-`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "skill": "vote", "question": "Should we block issue {id} due to {defect}? Severity: {assessment}. Evidence: {test output}"})`
+agent team. First create the proposal via `docket vote create -c CRITICALITY -d "<question/evidence>" -n VOTERS --created-by "@sdet" --json` to capture `vote_id`, then delegate to the orchestrator via SendMessage:
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "protocol_version": "1", "skill": "vote", "request_id": "{uuid}", "vote_id": "{vote-id}", "from": "@sdet", "summary": "Should we block issue {id} due to {defect}? Severity: {assessment}."})` per `skills/vote/` Delegation Protocol. The authoritative proposal (full evidence) lives in docket; `summary` is an operator-observability hint. Sending raw context without `vote_id` triggers a `failed` response.
 
 **Standalone mode:** Invoke directly via `Skill(vote, "question")`.
 

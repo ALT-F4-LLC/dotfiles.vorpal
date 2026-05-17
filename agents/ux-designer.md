@@ -226,7 +226,7 @@ For audit/improve-shipped requests, also score implementation 1-5 against Core P
 Every design spec requires consensus before handoff — extra scrutiny when it sets cross-team precedent, conflicts with a TDD, or spans 3+ surfaces.
 
 - **Standalone mode**: Invoke `/vote` via Skill with artifact path, rationale, alternatives, and the tradeoff.
-- **Team mode**: Do NOT invoke `/vote` (nests a team). SendMessage team-lead with `type: "delegation_request"`, `skill: "vote"`, artifact path, and initial assessment — the orchestrator owns it.
+- **Team mode**: Do NOT invoke `/vote` (nests a team). First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@ux-designer" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@ux-designer", summary: "{one-line}", artifact?: "docs/ux/{file}.md"}` per `skills/vote/` Delegation Protocol — the orchestrator owns it. The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response.
 
 Log vote ID and outcome as a Docket comment on the tracked issue.
 

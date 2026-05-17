@@ -32,12 +32,12 @@ Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, reproductions, large diffs, verbatim quotes) AFTER a structured option-led question routes them there.
 
 Before spawning any agents:
 
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, treat it as a structured payload (fields: `friction_class`, `frequency`, `severity`, `example_session_refs`, `proposed_edit.target`, `root_cause`) — Phase 1 reviewers must prioritize the `proposed_edit.target` location and weight changes by `severity`. Otherwise call `AskUserQuestion` with `multiSelect: true` and options: `Coordination & handoff gaps`, `Operator prompt quality`, `Output quality / actionability`, `Scope or budget mismatch`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, pass through verbatim — the Phase 1 template's substitution guidance instructs reviewers on payload handling. Otherwise call `AskUserQuestion` with `multiSelect: true` and 4 options: `Coordination, handoff & orchestration gaps`, `Operator-prompt or output quality`, `Scope, budget or file-size mismatch`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -196,8 +196,8 @@ For EACH target skill, mine three read-only sources for signals that the skill i
    - Re-invocation within the same `sessionId`: count occurrences per session; ≥2 invocations of the same skill in one session is a failure signal.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
    - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ epoch-ms of `{history_cutoff_iso}`). Surface 1-2 representative `display` prompts per skill.
-3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo):
-   - `grep -lri '<skill-name>' .claude/agent-memory/ 2>/dev/null` — these are persistent agent learnings to incorporate into recommendations.
+3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
+   - `grep -lri '<skill-name>' .claude/agent-memory/ 2>/dev/null` — persistent agent learnings to incorporate into recommendations.
 
 ## Output Format (per skill)
 Emit one block per target skill, then SendMessage the orchestrator with all blocks verbatim:
@@ -237,8 +237,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions.
-**BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
+500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions. **BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
 
 ## Context
 

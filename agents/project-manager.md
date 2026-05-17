@@ -308,7 +308,7 @@ Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (ev
 
 ## Consensus Voting
 
-Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: create the record with `docket vote create`, then SendMessage team-lead a `delegation_request` per `skills/vote/` — never invoke the skill directly.
+Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@project-manager" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@project-manager", summary: "{one-line}"}` per `skills/vote/` Delegation Protocol — never invoke the skill directly. The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response.
 
 ---
 

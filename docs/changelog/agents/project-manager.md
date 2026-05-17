@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-05-17
+
+### Summary
+Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle). project-manager was closest to canonical pre-edit; this entry brings it byte-aligned with siblings.
+
+### Changes
+- Consensus Voting §Team mode: replaced abbreviated `delegation_request` pointer with full canonical payload (`{type, protocol_version, skill, request_id, vote_id, from, summary?}`). The `docket vote create` prerequisite was already documented; this clarifies the resulting payload shape and the `failed` response on missing `vote_id`.
+
+### Dimensions Evaluated
+Cross-skill coherence (vote-skill payload contract), Coordination & Handoff.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

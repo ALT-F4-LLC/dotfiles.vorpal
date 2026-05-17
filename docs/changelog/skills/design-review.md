@@ -1,5 +1,22 @@
 # Changelog: design-review
 
+## 2026-05-17
+
+### Summary
+Phase 1 trim pass: removed redundant Role Detection note, dropped Failure Modes row that pure-restates a Validation inline abort, tightened Validation rule #2 and Failure Modes preamble. Net -22 lines, no behavioral change.
+
+### Changes
+- Role Detection: removed "Note" block restating @staff-engineer/@security-engineer routing — already covered by When NOT to Use + abort message.
+- Failure Modes: removed "Recommendation/severity mismatch" row — pure-restates Validation rule #2's abort, matching the 2026-05-16 trim criterion.
+- Validation Before Emit rule #2: tightened wording, dropped parenthetical that duplicated Recommendation Ladder content.
+- Failure Modes preamble: compressed enumeration of inline-abort locations to one sentence.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Skill Design Quality, Actionability, Coherence (vs design-qa).
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

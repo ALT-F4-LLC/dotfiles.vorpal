@@ -1,11 +1,9 @@
 ---
 name: design-qa
 description: >
-  Perform design QA on an implemented user-facing surface against its `docs/ux/` spec and
-  emit a structured QA report. Loaded into the calling agent's context; the calling agent
-  (`@ux-designer`) drives the walkthrough, the skill enforces the format authority —
-  verdict ladder, severity, required sections, validation rules. No file written; the report
-  is emitted into the agent's context.
+  Post-implementation QA of a shipped user-facing surface against its `docs/ux/` spec; emits
+  a structured QA report. Driven by `@ux-designer`; format authority for verdict/severity/sections.
+  Invoke after the spec is implemented (not for spec review — that's `design-review`).
   Trigger: "design QA", "run design QA", "verify implementation against UX spec", "design quality assurance".
 argument-hint: "<scope>"
 effort: max
@@ -48,11 +46,6 @@ Error: Usage: Skill(design-qa, "<scope>") — name what to QA (UX spec path, Doc
 | Docket issue ID | `docket issue show {scope} --json` exits 0 | Read issue + comments + file attachments; locate the linked UX spec via attachments or `docket issue comment list` |
 | Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD`; calling agent identifies the relevant spec from changed paths |
 
-**Ambiguity rules**:
-
-- A token matching the Docket issue ID pattern tries issue resolution first; on failure, fall through to path detection.
-- A path resolving inside `docs/ux/` always takes precedence over branch-name detection — `docs/ux/foo.md` is a spec, not a ref.
-
 If `<scope>` matches none of the above, ABORT:
 
 ```
@@ -65,7 +58,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 <!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - `@senior-engineer` reports user-facing implementation complete against a `docs/ux/` spec and `@ux-designer` is performing the QA pass.
-- `@sdet` reports a design deviation during verification and `@ux-designer` is evaluating whether the spec or the implementation is wrong.
+- `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
 - Operator or team-lead requests a design audit against an existing spec.
 
 ## When NOT to Use
@@ -171,16 +164,15 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 
 Before emitting the report, verify in the calling agent's context:
 
-1. **Spec reference resolves** — `Path:` line names an existing file (`Bash test -e` returns 0). The calling agent must have read it during Pre-flight; this is a re-confirmation, not a re-Read.
-2. **Verdict is on the ladder** — exactly one of Pass / Pass with Issues / Fail.
-3. **Verdict matches severity counts** —
+1. **Verdict is on the ladder** — exactly one of Pass / Pass with Issues / Fail.
+2. **Verdict matches severity counts** —
    - Any Blocker finding → Verdict MUST be Fail.
    - Any Concern finding (no Blockers) → Verdict MUST be Pass with Issues.
    - No Blockers and no Concerns → Verdict MUST be Pass.
-4. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Suggestions and Praise may use "Cross-surface" or general references.
-5. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
-6. **Required sections present, in order** — Spec Reference, Verdict, Issues, What's Implemented Well, Acceptable Deviations, Recommendation. Off-by-one omissions are defects.
-7. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
+3. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Suggestions and Praise may use "Cross-surface" or general references.
+4. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
+5. **Required sections present, in order** — Spec Reference, Verdict, Issues, What's Implemented Well, Acceptable Deviations, Recommendation. Off-by-one omissions are defects.
+6. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
 If any check fails, ABORT:
 
@@ -210,7 +202,7 @@ On any abort during Pre-flight, QA Procedure, or Validation Before Emit: emit `E
 
 ## Failure Modes
 
-The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, missing spec, empty implementation, and validation failure are specified inline at Argument Handling, Role Detection, Pre-flight, and Validation Before Emit. The table below covers only abort paths that introduce new abort text or scope-specific behavior:
+Inline aborts (missing/invalid `<scope>`, role mismatch, unresolvable scope, missing spec, empty implementation, validation failure) are specified at Argument Handling, Role Detection, Pre-flight, and Validation Before Emit. The table covers only new abort text or scope-specific behavior:
 
 | Trigger | Handling |
 |---|---|

@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-05-17
+
+### Summary
+Replaced brittle curly-placeholder trigger `"design spec for {surface}"` with a concrete operator-typeable example (`"design spec for the new CLI"`). The placeholder form was effectively dead — operators don't type curly braces. Orphan hypothesis from historical audit disconfirmed: `agents/ux-designer.md` line 17 lists ux-spec in `skills:`.
+
+### Changes
+- Frontmatter description trigger list: replaced `"design spec for {surface}"` with `"design spec for the new CLI"`.
+
+### Dimensions Evaluated
+Skill Design Quality (trigger phrase actionability), Over-Engineering (no removable waste), Coherence (sibling parity preserved).
+
+### Rename
+No rename. Family-aligned with prd/tdd/adr.
+
 ## 2026-05-16
 
 ### Summary

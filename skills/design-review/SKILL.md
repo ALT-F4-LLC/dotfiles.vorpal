@@ -24,8 +24,6 @@ You are the **Design Reviewer**. You conduct a peer design review on the artifac
 
 This skill is callable ONLY by `@ux-designer`. Match the calling agent's identifier (from prompt context); if the caller is not `@ux-designer`, ABORT.
 
-> Note: `@staff-engineer` and `@security-engineer` review designs through `Skill(code-review, ...)` when the design is embedded in implementation, or through inline advisory on TDDs. They do NOT use this skill.
-
 Abort message:
 
 ```
@@ -200,9 +198,9 @@ Before emitting the report, verify in the calling agent's context:
 
 1. **Recommendation is on the ladder** — exactly one of Approve / Approve with follow-up / Block / Redesign / Incremental Improvement.
 2. **Recommendation matches severity counts** —
-   - Any Blocker → Recommendation MUST be Block, Redesign, or Incremental Improvement (if the foundation is sound and Blockers are bounded).
+   - Any Blocker → Recommendation MUST be Block, Redesign, or Incremental Improvement.
    - Any Concern (no Blockers) → Recommendation MUST be Approve with follow-up, Redesign, or Incremental Improvement. Approve is forbidden.
-   - No Blockers and no Concerns → Recommendation MAY be Approve. Redesign and Incremental Improvement are still permitted when the body argues a fundamental rethink or a bounded improvement path regardless of citable severity.
+   - No Blockers and no Concerns → Recommendation MAY be Approve; Redesign or Incremental Improvement still permitted when the body argues a fundamental rethink or bounded improvement path.
 3. **Every Blocker cites a dimension** — the `[dimension]` tag at the start of each Blocker bullet must name one of the six dimensions.
 4. **Every Concern names a spec section or workflow** — the bullet body must reference the artifact section, workflow, or surface it affects.
 5. **Every Blocker has an alternative or required fix** — a Blocker bullet without `—` separator and an alternative/fix fragment is a defect.
@@ -239,10 +237,9 @@ On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emi
 
 ## Failure Modes
 
-The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, empty artifact, and validation failure are specified inline at Argument Handling, Role Detection, and Pre-flight. The table below covers abort paths that introduce new abort text or scope-specific behavior:
+Most abort paths are specified inline (Argument Handling, Role Detection, Pre-flight, Validation Before Emit). The table below covers only scope-specific abort behavior:
 
 | Trigger | Handling |
 |---|---|
 | Artifact is empty or too thin to review (no design content) | Abort: `Error: Resolved scope contains no reviewable design content — expand the description or pass a non-empty file.` |
-| Recommendation/severity mismatch (e.g., Approve emitted with a Blocker present) | Abort: `Error: validation failed: Recommendation — {recommendation} inconsistent with {N} Blocker(s) present.` |
 | Caller passes additional positional args beyond `<scope>` | Ignore extras silently. |

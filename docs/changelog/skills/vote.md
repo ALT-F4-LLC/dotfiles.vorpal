@@ -1,5 +1,23 @@
 # Changelog: vote
 
+## 2026-05-17
+
+### Summary
+Tightened team-mode delegation payload contract to close coherence gap with calling agents (staff/security/sdet/senior/ux currently document divergent payloads). Added "When to invoke (high bar)" rule (historical audit shows 3 invocations vs code-review's 125 — healthy but unstated). Clarified `from` field's role in operator-visibility relay. Restated frontmatter rationale.
+
+### Changes
+- Delegation Protocol step 2: made "Create proposal first" explicit + added `failed` contract on payloads missing vote_id.
+- Delegation Protocol step 3: added optional summary/artifact operator-observability hints; clarified docket is authoritative.
+- Header: added "When to invoke (high bar)" decision rule + do-not-vote-on list.
+- Output Format step 4: callee resolves invoking agent via from field; cc team-lead for operator-visibility.
+- Execution Mode Detection: parenthetical noting frontmatter Agent/TeamCreate/TeamDelete are for standalone path only.
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (primary), Coherence (with team-lead.md, staff/security/sdet/senior/ux agent files), Skill Design Quality, Actionability.
+
+### Rename
+No rename. `vote` matches `docket vote` CLI exactly.
+
 ## 2026-05-16
 
 ### Summary

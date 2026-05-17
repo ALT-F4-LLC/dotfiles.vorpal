@@ -29,7 +29,7 @@ Optional `[days=30]` overrides the harvest window (e.g. `/friction-driven-evolut
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options: logs, reproductions, large diffs, or verbatim quotes — and only AFTER a structured option-led question routes them there.
+> **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, reproductions, large diffs, verbatim quotes) AFTER a structured option-led question routes them there.
 
 Before harvesting:
 
@@ -46,7 +46,7 @@ Before harvesting:
 
 ## Detection Patterns
 
-Each class lists: **scope** (transcript / memory / both), **root-cause sketch**, **exact grep/jq command**. The harvest emits one JSON record per hit: `{class, session_ref, ts, agent, excerpt}`.
+Each class lists: **scope** (transcript / memory / both), **root-cause sketch**, **exact grep/jq command**. Hit shape is defined in Phase 0 findings JSON.
 
 ### 1. Idle teammates / stalls (two-stage filter)
 - **Scope**: transcripts.
@@ -220,7 +220,7 @@ Where `<argument>` is the skill/agent name (for evolve-*) or a brief instruction
 **`experience_feedback` payload** — a single human-readable string that satisfies the downstream skill's HARD GATE (it stores the value verbatim into `{experience_feedback}`; nothing parses it). Format:
 
 ```
-[friction-driven-evolution: cluster-{id}] friction_class={class}, frequency={N}/{days}d, severity={low|med|high}, target={absolute path}, root_cause={one sentence}, example_refs={path1}; {path2}, proposed_edit={one-line OLD→NEW summary}
+[friction-driven-evolution: cluster-{id}] friction_class={class}, frequency={N}/{days}d, severity={low|med|high}, proposed_edit.target={absolute path}, root_cause={one sentence}, example_session_refs={path1}; {path2}, proposed_edit.summary={one-line OLD→NEW summary}
 ```
 
 The downstream skill (`evolve-skills` / `evolve-agents`) owns its review pipeline, Content Gate, and its own changelog entry — friction-driven-evolution does NOT write changelogs. For `update-config`, the orchestrator passes the proposal as the user instruction; that skill validates and applies the settings.json change per its own flow.
@@ -325,7 +325,4 @@ REASONING: <2-3 sentences citing example session refs and why this prevents recu
 ## Rules
 
 1. **No scheduling.** Manual trigger only. Do not add cron/loop integration or invoke `schedule`/`loop`.
-2. **No parallel changelogs.** Downstream skills own their changelogs. This skill never writes to `docs/changelog/`.
-3. **Verify no commits in wrap-up.** `git status --short` — flag any staging. Banner covers the prohibition itself.
-4. **Fail loud.** See Crash & Stall Recovery. Never propose directly when an agent fails twice.
-5. **Bypass downstream HARD GATE only by pre-answering, not by skipping.** The `experience_feedback` payload IS the answer; do not attempt to disable the gate.
+2. **Fail loud.** See Crash & Stall Recovery. Never propose directly when an agent fails twice.

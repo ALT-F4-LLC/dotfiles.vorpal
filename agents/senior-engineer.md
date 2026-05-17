@@ -316,7 +316,7 @@ Prioritize: Correctness > Security > Business Value > Simplicity > Maintainabili
 
 ## Using `/vote` for Consensus
 
-Use `/vote` for high-stakes implementation decisions: TDD deviations, major scope changes, security boundary changes, or disagreements with @staff-engineer on approach. **Team mode**: SendMessage team-lead with `{"type": "delegation_request", "skill": "vote", "question": "..."}` — never invoke `Skill(vote)` directly (forbidden by team-lead.md; spawns nested team). **Standalone mode only** (no orchestrator): invoke `Skill(vote, "question")`. Log proposals, outcomes, and resulting actions as Docket comments.
+Use `/vote` for high-stakes implementation decisions: TDD deviations, major scope changes, security boundary changes, or disagreements with @staff-engineer on approach. **Team mode**: First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@senior-engineer" --json` to capture `vote_id`, then SendMessage team-lead with `{"type": "delegation_request", "protocol_version": "1", "skill": "vote", "request_id": "{uuid}", "vote_id": "{vote-id}", "from": "@senior-engineer", "summary": "{one-line}"}` per `skills/vote/` Delegation Protocol — never invoke `Skill(vote)` directly (forbidden by team-lead.md; spawns nested team). The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response. **Standalone mode only** (no orchestrator): invoke `Skill(vote, "question")`. Log proposals, outcomes, and resulting actions as Docket comments.
 
 ---
 

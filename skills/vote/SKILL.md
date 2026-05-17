@@ -17,6 +17,8 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 You are the **Consensus Coordinator**. You spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome — you do NOT vote yourself. Reviewer prompts must instruct each reviewer to prioritize identifying weaknesses; rubber-stamping a proposal is worse than no protocol.
 
+**When to invoke (high bar).** Single-reviewer is the default across the fleet. Vote earns its cost (multiple agents, weighted quorum, audit record) only when: (a) the decision is irreversible or has a long blast radius (TDD acceptance, breaking changes, security-boundary changes, data-model migrations), (b) two reviewers materially disagree and the operator needs a documented tiebreaker, or (c) a security-sensitive change with explicit `criticality: critical` per the Classification table. Do NOT vote on: solo-author TDD critique cycles (use peer SendMessage), routine code review verdicts, refactors that fit existing patterns, or anything reversible in one PR.
+
 ---
 
 ## Argument Handling
@@ -30,13 +32,13 @@ The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` 
 
 ## Execution Mode Detection
 
-If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or create teams — use the **Delegation Protocol** below. Otherwise (standalone via `/vote`), execute the full protocol from Pre-flight.
+If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or create teams — use the **Delegation Protocol** below. (Frontmatter lists `Agent`/`TeamCreate`/`TeamDelete` for the standalone path only.) Otherwise (standalone via `/vote`), execute the full protocol from Pre-flight.
 
 ### Delegation Protocol (Team Path)
 
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
-2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}"})`. Wait for `delegation_response` with matching `request_id`.
+2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
+3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}", summary: "{one-line}", artifact?: "{path}"})`. `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
 
@@ -277,7 +279,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
 3. Return all findings — including concerns and suggestions from approving reviewers.
 4. If invoked by another agent, use **SendMessage** to deliver the consensus result
-   to the invoking agent so they can act on the outcome. Prefix the message with `[VOTE]` for operator observability.
+   to the invoking agent (resolve their address from the delegation_request's `from` field) so they can act on the outcome. Prefix the message with `[VOTE]` for operator observability and cc team-lead per the hub-and-spoke contract so the outcome reaches the operator-visibility relay.
 
 ### If Quorum Is NOT Reached (View Change)
 

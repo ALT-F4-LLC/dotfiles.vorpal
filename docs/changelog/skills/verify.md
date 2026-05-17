@@ -1,5 +1,25 @@
 # Changelog: verify
 
+## 2026-05-17
+
+### Summary
+Workflow-boundary cleanup: removed PR scope (dead surface for @sdet, who is Docket-issue centric per `agents/sdet.md`); strengthened Pre-flight §5 with "do not substitute completion comment for diff" warning lifted from @sdet's load-bearing rule; deduplicated peer-SendMessage and vote-trigger guidance against canonical banner and agent file.
+
+### Changes
+- Argument Handling: dropped PR-number and PR-URL rows from scope table; updated usage error to redirect PR review to Skill(code-review).
+- Argument Handling: dropped `gh`-availability ambiguity rule (unreachable after PR removal).
+- Pre-flight §5: added "do not substitute completion comment for diff" warning (from agents/sdet.md §Verification Workflow §2).
+- Pre-flight §7: dropped redundant scoping preamble.
+- Save & Return: vote-trigger bullet now defers to agents/sdet.md.
+- Common Discipline: dropped redundant peer-SendMessage sentence (canonical banner owns this).
+- Failure Modes: dropped `gh`-CLI-unavailable row.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (workflow boundary with code-review, @sdet agent file), Actionability (Pre-flight §5).
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

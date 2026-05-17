@@ -1,5 +1,35 @@
 # Changelog: friction-driven-evolution
 
+## 2026-05-17
+
+### Summary
+Phase 2 coherence sync: corrected false AskUserQuestion "multiSelect lifts the 4-option cap" carve-out to match sister evolve-skills / evolve-agents corrections this cycle. The API hard-rejects >4 options regardless of multiSelect.
+
+### Changes
+- Operator-prompts blockquote: replaced "up to 8 options when multiSelect AND fixed dimension catalog" with "max 4 regardless of multiSelect" + routing-question pattern for >4-option dimensions. Sister-parity with evolve-skills + evolve-agents Phase 1 fix.
+
+### Dimensions Evaluated
+Coherence (cross-orchestrator parity), Skill Design Quality (operator-prompt contract correctness).
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Fixed payload-contract mismatch with downstream consumers (evolve-skills/evolve-agents): renamed `example_refs` → `example_session_refs` and nested `target`/summary under `proposed_edit.*` to match the field names those skills look for. Trimmed redundant Rules section.
+
+### Changes
+- Phase 3 experience_feedback payload: renamed `example_refs` → `example_session_refs` and restructured `target=` and the OLD→NEW summary as `proposed_edit.target=` / `proposed_edit.summary=` so downstream skills' field-name expectations match emission.
+- Rules section: removed rules 2/3/5 — each restated content already canonical earlier in the file. Kept Rules 1 (No scheduling) and 4 (Fail loud) as non-derivable constraints.
+- Detection Patterns intro: removed duplicate hit-shape declaration; Phase 0 JSON schema is the single source of truth.
+
+### Dimensions Evaluated
+Coherence (payload contract with evolve-skills/evolve-agents — primary), Over-Engineering.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

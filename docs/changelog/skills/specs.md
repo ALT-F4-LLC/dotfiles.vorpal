@@ -1,5 +1,34 @@
 # Changelog: specs
 
+## 2026-05-17
+
+### Summary
+Phase 2 coherence sync: corrected false AskUserQuestion "multiSelect lifts the 4-option cap" carve-out (matches sister orchestrator-skill corrections this cycle — the API hard-rejects >4 options regardless of multiSelect).
+
+### Changes
+- Operator-prompts blockquote: replaced "up to 8 options when multiSelect AND fixed dimension catalog" with "max 4 regardless of multiSelect" + routing-question pattern. Sister-parity with evolve-skills / evolve-agents / friction-driven-evolution this cycle.
+
+### Dimensions Evaluated
+Coherence (cross-skill parity on AskUserQuestion contract), Skill Design Quality (correctness).
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Respawn arm now explicitly reassigns task ownership and re-records spawn time so polling credits the replacement agent; description tightened to signal one-time-bootstrap character and surface re-invocation safety (historical-audit signal that operators may re-type /specs mid-project).
+
+### Changes
+- Step 2 respawn arm: added explicit `TaskUpdate(... owner=..., status="in_progress")` and spawn-time re-record instruction. Closes gap where TaskList polling and 600s stall classifier would still credit the dead agent after respawn.
+- Frontmatter description: added "One-time bootstrap" framing and one-line note that re-invocation prompts before overwrite; ongoing maintenance is @staff-engineer's. Trigger phrases unchanged.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Orchestration & Agent Teams.
+
+### Rename
+No rename. Family-aligned with prd/tdd/adr/ux-spec.
+
 ## 2026-05-16
 
 ### Summary

@@ -1,5 +1,21 @@
 # Changelog: code-review
 
+## 2026-05-17
+
+### Summary
+Trimmed 12-principle restatement in Code Quality dimension (skill already pointed to senior-engineer.md as full text); documented R1+R2 re-invocation pattern per historical audit (9 sessions confirmed); fixed Validation Before Emit numbering bug (3a → renumbered 3-8). Net -8 lines.
+
+### Changes
+- Code Quality dimension: replaced 12 inline principle paraphrases with brief pointer to senior-engineer.md, naming only the 4 principles that fire hard gates (G1-G4) and listing the other 8 by name. Eliminates dual-maintenance.
+- When to Use: added explicit bullet documenting R1+R2 re-invocation pattern (Round-1 PR, Round-2 uncommitted after fix) so reviewers know this is expected, not duplication.
+- Validation Before Emit: renumbered 3, 3a, 4, 5, 6, 7 → 3, 4, 5, 6, 7, 8 for clean ordinal sequence.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Orchestration & Agent Teams, Coherence, Skill Design Quality, Actionability, Completeness, Spec Alignment, Rename.
+
+### Rename
+No rename — highest-volume skill (125 invocations); stability has compounding value.
+
 ## 2026-05-16
 
 ### Summary

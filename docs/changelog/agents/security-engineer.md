@@ -1,5 +1,36 @@
 # Changelog: security-engineer
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Cross-agent coherence: added canonical `TeammateIdle` stall-signal line and Read-before-Edit/Write reflex.
+
+### Changes
+- Communication Discipline: appended TeammateIdle canonical-signal line below rule 6.
+- Communication Discipline: added Read-before-Edit/Write reflex (TDD/ADR/security.md authoring).
+
+### Dimensions Evaluated
+Cross-agent terminology coherence; tool-gate reflexes.
+
+### Rename
+No rename.
+
+## 2026-05-17 (pass 2)
+
+### Summary
+Trimmed three blocks for parity with peers and to remove intra-doc duplication: Design Review's dimension list redirected to Responsibility 2 (was duplicated); Communication Discipline rules 1-4/6 compressed; two @senior-engineer mid-impl incoming triggers merged. Net -12 lines. No behavioral change.
+
+### Changes
+- Design Review: replaced duplicated security-dimension list with cross-reference to Responsibility 2 step 3; kept operational-readiness emphasis and output ladder.
+- Communication Discipline: tightened rules 1-4 and 6; rule 5 (verify load-bearing claims) left intact as it carries the security-specific load.
+- Incoming triggers: merged @senior-engineer proactive-consult + reactive-discovery into one trigger.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Boundary Clarity, Coordination & Handoffs, Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

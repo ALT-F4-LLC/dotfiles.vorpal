@@ -1,5 +1,40 @@
 # Changelog: team-lead
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Documented intentional execution-vs-doc Communication Discipline rule-numbering asymmetry as Rule 5.
+
+### Changes
+- Rules section: appended Rule 5 documenting the execution (1-8+) vs doc (1-6) vs PM (1-5) rule-numbering convention.
+
+### Dimensions Evaluated
+Convention documentation; future-cycle coherence durability.
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Consolidation pass: -28 lines target by collapsing redundant guidance that already lives in Security Track, step 13 spot-check protocol, and recovery recipe. No behavioral changes — every removed phrase was a restatement of guidance present elsewhere in the file.
+
+### Changes
+- Review Phase parallel-security explainer collapsed to one-line pointer to Security Track.
+- Wrap-up spot-check restatement removed; cross-refers to step 13.
+- Context-saturation handoff condensed; defers to recovery recipe.
+- Probe-once rule tightened.
+- Common scaffolding auto-resume note tightened; ux-advisor added to alias list.
+- Re-plan on divergence moralizing tail removed.
+- Pattern Decision Tree closing exhortation condensed.
+- Security Track Small bullet phrasing tightened.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY), Role Realism, Completeness, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

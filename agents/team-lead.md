@@ -64,7 +64,7 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 5. **Trivial change** — single conceptual edit (rename, typo, dep bump, log tweak, comment fix, small bug with obvious root cause), ≤3 files, no design needed, fits in one @senior-engineer turn? → **Direct Task**
 6. **Security-Sensitive flag (independent of size)** — set if work touches: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new external dep or pinning), or input from untrusted sources at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. If unsure: AskUserQuestion "Treat as security-sensitive (recommended)" / "No security surface" / "Operator review".
 
-If you find yourself reaching for Medium when the work fits Small, or Small when it fits Direct, you are over-orchestrating — pick the lighter pattern. Team scaffolding for trivial or mechanical work is pure overhead: the operator sees ceremony, the senior-engineer sees friction, tokens burn on coordination that delivers no quality lift. Graduate to a heavier pattern only if implementation reveals a real design question.
+Reaching for Medium when Small fits, or Small when Direct fits, is over-orchestration — team scaffolding for mechanical work is pure overhead. Graduate to a heavier pattern only when implementation reveals a real design question.
 
 ### Security Track (overlay on any pattern when security-sensitive)
 
@@ -72,7 +72,7 @@ If you find yourself reaching for Medium when the work fits Small, or Small when
 - **Implementation Phase**: `security-advisor` stays alive; `@senior-engineer` teammates can SendMessage for auth/secret/validation consults.
 - **Review Phase**: `security-advisor` runs a **parallel security-dimension review** on the diff alongside `advisor`'s general review. Coordinate verdicts so the operator sees one coherent recommendation, not two contradictory ones.
 - **Verification Phase**: `@sdet` consults `security-advisor` on abuse-case design.
-- **Small + security-sensitive**: Skip the security TDD but spawn `security-advisor` for the review phase only (parallel security review is non-negotiable on any security surface).
+- **Small + security-sensitive**: Skip the security TDD; still spawn `security-advisor` for the review phase (parallel security review is non-negotiable on any security surface).
 
 ## Orchestration Patterns
 
@@ -113,7 +113,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 ## Spawning Templates
 
-**Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes the `<user_request>{work}</user_request>` block unless noted. Persistent advisors ("advisor", "security-advisor") receive review/consult requests via SendMessage after their initial spawn; SendMessage to a stopped advisor auto-resumes them, so they can be left to idle between phases without explicit respawn.
+**Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted. Persistent advisors ("advisor", "security-advisor", "ux-advisor") receive consults via SendMessage after spawn; SendMessage auto-resumes a stopped advisor — leave them idle between phases.
 
 ### @staff-engineer (TDD)
 
@@ -281,7 +281,7 @@ Before spawning any agents, create an Agent Team to coordinate:
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
     - If any teammate failed, diagnose before proceeding (see Teammate Stall & Crash Recovery below)
-    - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong (scope grew, assumptions broke, dependencies shifted), pause and AskUserQuestion: "Re-plan via @project-manager", "Continue with adjustments (note deltas)", "Pause for operator review". Include a one-line divergence summary. Re-planning is cheaper than executing a flawed plan.
+    - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong (scope grew, assumptions broke, dependencies shifted), pause and AskUserQuestion: "Re-plan via @project-manager", "Continue with adjustments (note deltas)", "Pause for operator review". Include a one-line divergence summary.
     - Proceed to the next phase
 
 ### Review Phase
@@ -290,16 +290,7 @@ Before spawning any agents, create an Agent Team to coordinate:
     spawning a new @staff-engineer. Provide the `git diff --stat` output so the reviewer
     can focus on the right files. Assign the review task via `TaskUpdate`.
 
-    **If security-sensitive flag is set**: ALSO send a parallel review request to `security-advisor` per its Spawning Template. Gather both verdicts and present a unified recommendation. On conflict, the security verdict is binding for security findings — surface the conflict, do not paper over it.
-
-    **For large tasks (20+ files changed):** The advisors review their respective dimensions
-    on the overall diff. Consider spawning additional ephemeral teammates for parallel
-    file-group reviews using `git diff -- <paths>` — additional @staff-engineer for general,
-    additional @security-engineer for security if multiple security surfaces touched.
-
-    If blockers (general or security) are found, route them back to @senior-engineer for fixes
-    (the implementation teammates are still alive), then ask the relevant advisor(s) to
-    re-review.
+    **If security-sensitive**: send a parallel request to `security-advisor` per Security Track; on conflict, security verdict is binding for security findings. **Large tasks (20+ files)**: spawn ephemeral reviewers scoped to file groups via `git diff -- <paths>`. Route blockers back to live @senior-engineer teammates, then re-review.
 
     **Review-fix loop limit:** If the same blocker persists after 2 fix-review cycles, use
     AskUserQuestion with options: "Re-plan this issue via @project-manager", "Accept current
@@ -329,31 +320,19 @@ Single-reviewer is the default. Invoke `Skill(vote, "...")` per `/vote`'s critic
 
 Teammates can crash silently or stall. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for >2 min, (c) SendMessage to teammate unanswered for >2 min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment, (e) @senior-engineer hasn't run `docket issue move <ID> in-progress` within one turn of dispatch (claim-before-work failure), (f) >10 min silence during long-running work (no compile/test/progress signal in the trace).
 
-**Probe-once rule.** When a spawned teammate goes idle for more than 2 minutes without
-delivering a report, send ONE probe SendMessage asking for status. If still no useful reply
-within ~2 more minutes, either (a) self-verify the work via direct Read/Bash/Grep tool calls
-when the artifact is checkable from outside, or (b) respawn the agent per the recovery
-recipe below. Do not wait indefinitely; do not send a second probe before acting.
+**Probe-once rule.** If a teammate is idle >2 min without a report, send ONE status probe. If no useful reply within ~2 more min, either (a) self-verify the work via Read/Bash/Grep when the artifact is externally checkable, or (b) respawn per the recovery recipe. Never send a second probe before acting.
 
 Recovery: `TaskUpdate` to clear `owner`, then `Agent(...)` to respawn with the SAME `name` and original prompt plus a resume preamble: "Prior instance stalled — re-read verified goal, check docket issue state and comments, resume from last completed step." Reassign the task. Do NOT respawn silently — report the event to the operator.
 
-**Context-saturation handoff.** A teammate may proactively SendMessage you that their responses are degrading (shorter, generic, missing detail). Treat as a planned respawn — same recovery recipe with a continuity briefing in the resume preamble: "Prior instance reported context saturation. Read latest docket comments on assigned issue, the verified goal, and any in-flight SendMessage threads, then resume." Acknowledge the saturation signal back to the teammate before respawn so the operator sees it in the trace.
+**Context-saturation handoff.** If a teammate SendMessages that their responses are degrading, acknowledge, then apply the recovery recipe above with a continuity preamble: "Prior instance reported context saturation. Re-read docket comments on assigned issue, verified goal, and in-flight SendMessage threads; resume."
 
 Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `TeamDelete` anyway — a stalled teammate cannot block cleanup.
 
 ### Wrap-up & Team Cleanup
 
 16. **After all phases complete:**
-    - **Spot-check teammate claims before reporting completion.** Teammate completion
-      messages describe intent, not necessarily reality — past sessions had stale or
-      inaccurate implementer reports that contradicted the real file state. Before declaring
-      the work done to the operator, verify directly: run `git diff --stat`, Read the key
-      changed files (especially anything a teammate said was added/modified), confirm
-      docket issues are actually closed via `docket issue show <id> --json`, and check
-      tests/build status if the teammate claimed they pass. If the real state diverges
-      from the claimed state, surface it to the operator with the delta; do not paper over.
-    - Summarize: issues completed, files changed (from real `git diff --stat`, not claims),
-      review findings (general + security if applicable), test results
+    - Run a final spot-check (per step 13) against `git diff --stat` and `docket issue show <id> --json` for the closed issues; surface any divergence from claims.
+    - Summarize: issues completed, files changed (real diff, not claims), review findings (general + security if applicable), test results
     - Send `shutdown_request` to ALL remaining teammates (advisor, security-advisor if spawned, any remaining senior-engineers, sdet, project-manager, ux-advisor if spawned)
     - Wait for shutdown confirmations (see Stall & Crash Recovery for timeout handling), then run `TeamDelete(team_name="dev-{feature-slug}")`
     - Tell the operator: no changes committed — review with `git diff`
@@ -372,3 +351,4 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
    narrative paragraphs. Long updates bury the actionable signal and waste the operator's
    context budget. Exceptions: plan presentation (step 10), wrap-up summary (step 16), and
    re-plan / blocker escalations that genuinely require detail.
+5. **Communication Discipline rule-numbering convention.** Cross-agent coherence depends on intentional asymmetry: issue-claiming execution agents (`@senior-engineer`, `@sdet`) carry rules 1-8+ (standard 1-5 + shutdown + claim-before-work + ~10-min progress + Read-before-Write); doc/review agents (`@staff-engineer`, `@security-engineer`, `@ux-designer`) carry rules 1-6 (standard 1-4 + Read-before-Write or verify + shutdown); `@project-manager` carries 1-5 (no claim/progress — doesn't execute Docket issues). Future evolve-agents cycles should preserve this asymmetry; flag as drift if a doc agent acquires claim-first or an execution agent loses it.

@@ -1,9 +1,11 @@
 ---
 name: evolve-agents
 description: >
-  Evolve agent definitions in agents/*.md via multi-agent self-review.
+  Evolve agent definitions in agents/*.md via multi-agent self-review. Phase 0 includes a
+  per-agent historical audit of recent Claude Code transcripts, history, agent memory, and
+  stall signals (TeammateIdle, -r2 respawns, shutdown-rejection).
   Trigger: "evolve agents", "improve agents", "grow the team", "refine agents".
-argument-hint: "[agent-name]"
+argument-hint: "[agent-name] [days=N]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
@@ -20,10 +22,11 @@ You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) 
 
 ## Argument Handling
 
-Target agent(s) are determined by `$ARGUMENTS`:
+Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 
-- **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`.
-- **With argument** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
+- **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`. Historical audit window defaults to 30 days.
+- **Agent name only** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
+- **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `30`. Reject values outside `1..90` and abort with a usage note.
 
 ---
 
@@ -41,6 +44,7 @@ Before spawning any agents:
 4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. This both lists discoverable files and records line counts. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
+7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `30`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
 
 ---
 
@@ -70,11 +74,11 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 ### Team Setup & Agent Lifecycle
 
 1. `TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`.
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor` | Spawn parallel → both complete → shut down both before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` (skip the third if pre-flight step 7 flagged SKIPPED) | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
@@ -88,9 +92,11 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 - **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
-### Phase 0: Documentation Research & Docket CLI Audit
+### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution.
+Spawn THREE teammates in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 7 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
+
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent, scoped to the agents under review here, and feeds Phase 1 reviewers directly — no clustering, no routing.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -161,6 +167,57 @@ Audit the docket CLI for agent evolution reviewers.
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
 
+### Phase 0: Historical Audit (per-agent)
+
+Skip spawning if pre-flight step 7 flagged SKIPPED. Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`). Distinct from `friction-driven-evolution`: per-agent, no clustering, feeds Phase 1 directly.
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
+
+You are the historical auditor. Read-only. No file edits. No commits. No sub-agents.
+Window: last {history_days} days (cutoff {history_cutoff_iso}).
+Target agents: {target_agents}
+
+## Task
+For EACH target agent, mine read-only sources for signals that the agent is failing, stalling, or misused. Agent memory is the PRIMARY source (directly scoped per-agent); transcripts add invocation/stall evidence; `history.jsonl` is weak for agents (operators rarely `@<agent>` directly) but still checked.
+
+1. **Agent memory (PRIMARY — read fully, it is small)**:
+   - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md`. Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
+2. **Transcripts** (under `~/.claude/projects/`):
+   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -${history_days} -print0`.
+   - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'` and also grep `"@<agent-name>"` mentions in SendMessage payloads.
+   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
+   - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
+3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
+   - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
+   - `-r2` respawn convention (canonical from `agents/team-lead.md` and `friction-driven-evolution`'s detection pattern): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Every hit means the agent stalled once.
+   - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
+4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input):
+   - `grep -E '"display":"[^"]*@<agent-name>' ~/.claude/history.jsonl` to count operator-typed `@<agent>` mentions in the window (filter by `timestamp` ≥ epoch-ms of `{history_cutoff_iso}`). Expect low signal — operators rarely `@<agent>` directly; capture `none` if empty.
+
+## Output Format (per agent)
+Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
+
+```
+### Agent: <agent-name>
+- Invocations (window): N (transcripts) + M (history.jsonl)
+- Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
+- Error/abort signals: <count> with example
+- Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
+- Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
+- Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
+```
+
+If a category is empty for an agent, write `none` — do not omit the line.
+
+## Rules
+- Read-only. Do NOT use Edit/Write. Do NOT commit.
+- No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
+- No peer-to-peer SendMessage — orchestrator is the only relay.
+- Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB).
+- Do not cluster or rank across agents — that is `friction-driven-evolution`'s job. Stay per-agent.
+```
+
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each (`subagent_type: "<name>"`).
@@ -189,6 +246,10 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Docket CLI Audit Findings
 {docket_audit_findings}
+
+## Historical Audit Findings
+{historical_audit_findings}
+> Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps.
 
 ## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.

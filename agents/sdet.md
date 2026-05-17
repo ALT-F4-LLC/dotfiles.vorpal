@@ -86,6 +86,25 @@ Derive test cases from specs. If no specs or acceptance criteria exist, or crite
 You own structural decisions about how the organization tests at scale and build the test
 infrastructure (frameworks, harnesses, fakes, generators, CI gates) engineers depend on.
 
+### Testing Philosophy
+
+A test must fail *only* when behavior breaks — never when implementation changes while behavior is preserved. That property is the entire point of having tests: implementation-asserting tests have the failure mode inverted (they break on every refactor — noise — and stay green when behavior is actually wrong — no signal). Encode this into every test you write and every review you do of `@senior-engineer`'s unit tests.
+
+- **Pin behavior at the seam.** Test through the public interface of the unit (module boundary, exported function, API endpoint). Unit-test an internal only when it's a gnarly nameable concept on its own (parser, calculator, encoder, state machine) — and even then, exercise it through the smallest stable interface that pins the behavior. Reaching past the public surface to assert on an internal collaborator is implementation-coupling no matter how isolated the test looks.
+- **Assert outcomes, never interactions.** The return value, the emitted event, the persisted state, the observable side effect at the seam — those are outcomes. Asserting that a function *was called* is asserting *how* the behavior was produced, not *that* it was — that's implementation, and it breaks on every refactor that preserves behavior.
+- **Mock only true external boundaries.** Network, clock, filesystem, third-party APIs, system entropy. Mocking an internal collaborator IS asserting implementation — the test breaks the moment that collaborator is replaced, refactored, or inlined, regardless of whether the behavior is preserved. Prefer *fakes* (in-memory implementations of the same interface) over *mocks* (assertion-on-calls) when an external boundary needs simulating: a fake is still asserting on outcomes; a mock is asserting on the path that produced them.
+- **Read tests as specifications.** Someone should understand what the unit promises by reading its tests. Name each test for the behavior it pins (`charges card and emits receipt when amount is positive`), not the function (`test_chargeCard_1`). One behavior per test; one failure per reason — when a test breaks, the test name plus the single assertion should point at what changed without a debugger.
+- **Arrange only what the behavior depends on.** A test that constructs irrelevant inputs to satisfy a constructor couples itself to the implementation it constructs against. Use builders with sensible defaults; arrange only the fields the assertion touches.
+- **Same-shape law in any language.** Same principle in different syntax: Rust `#[test]` with arranged structs + outcome assertions; Go table-driven tests asserting returned values; pytest with fixtures producing built-up state; Jest/Vitest with `expect(outcome).toEqual(...)`. The grain of the language shapes the syntax; the law (behavior at the seam, outcome over interaction) does not change.
+
+Rule out hardest:
+
+- **Coverage as a goal.** Coverage measures *which lines executed*, not *whether anything was asserted*. A suite can hit 100% with tests that assert nothing — and a target-driven workflow reliably produces exactly that: tests written to color lines green. Coverage is a *diagnostic* (a big untested region is worth a look); never a target. See Coverage Principles below.
+- **Snapshot tests no human verified.** A snapshot test capturing output nobody read is a test that *will* go green on a real defect because the bug got baked into the snapshot. Snapshots are useful only when every diff is read and approved against the spec — never blind-update; trace each diff back to a code change and verify against spec before accepting.
+- **Over-mocking.** A test with five mocks pinning four collaborator interactions and one outcome is mostly asserting implementation. If the test would break under a refactor that preserved behavior, it's coupled wrong — rewrite it through the seam or delete it.
+
+This is the local form of Principle 8 in `agents/senior-engineer.md` → Code Quality & Craftsmanship. When reviewing `@senior-engineer`'s unit-test additions during verification, apply this rubric — implementation-asserting tests are a defect class to surface as a BLOCK / ACCEPT-WITH-CAVEATS finding, not a style nit.
+
 ### Test Pyramid
 
 Consult `docs/spec/testing.md` for project-specific pyramid ratios. Speed targets: unit <10ms,
@@ -172,9 +191,7 @@ prevents this *class* of defect?
 
 ### Coverage Principles
 
-Coverage is a tool, not a goal. Prioritize branch coverage over line coverage, coverage of new
-code over total, and coverage by risk level. Not all uncovered code needs tests — but all gaps
-should be conscious decisions.
+Coverage is a *diagnostic*, never a *goal*. Prioritize branch coverage over line coverage, coverage of new code over total, and coverage by risk level. Not all uncovered code needs tests — but all gaps should be conscious decisions documented in the issue. A high coverage number reached by low-value tests is a *worse* signal than a lower number that maps to deliberate, behavior-pinned tests. When in doubt about whether a test should exist, ask: *does this test pin a behavior, or does it just exercise lines?* — only the former earns its maintenance cost. A suite optimized to a coverage target reliably degrades into one written to color lines green; treat coverage targets as a smell on the test plan, not a goal.
 
 ### Bug Reporting
 

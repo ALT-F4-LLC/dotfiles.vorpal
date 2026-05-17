@@ -113,8 +113,20 @@ Apply the **6 dimensions**, weighted by what the change touches. Mark unaffected
 2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to SendMessage `@security-engineer` for a dedicated security pass before merge.
 3. **Operations** — observability hooks, runbook impact, deploy/rollback story, 3am-diagnosability, configuration footprint.
 4. **Performance** — algorithmic complexity, N+1 patterns, allocation hotspots, latency-budget impact, regression risk.
-5. **Code Quality** — readability, naming, error-handling discipline, dead code, test factoring, duplication.
-6. **Testing** — coverage of acceptance criteria, edge-case discipline, regression coverage, test fragility, what's untested and why.
+5. **Code Quality** — apply the 12 code-philosophy principles (full text in `agents/senior-engineer.md` → Code Quality & Craftsmanship). The through-line is *locality of reasoning + deletability*; junior code optimizes for *looking careful*, senior code optimizes for *being correct and deletable*. For each touched file, ask:
+   - **#1 abstraction** — is each extracted helper a real concept with an independent name, or just deduplicated text? Was duplication preferred over a wrong shared abstraction where the concepts diverge?
+   - **#2 names** — do names predict behavior without opening the body? Domain language over CS-generic? Are invariants encoded in types where they can live there (`OrderId` not `string`)? Any name that *lies* (`getUser` that also writes a cache, `isValid` that throws)? Consistent with how the rest of the codebase uses the term?
+   - **#3 cohesion over length** — for functions past ~50 lines or files past ~300, does it remain a single honest concept, or does the name need "and"? Watch for "ravioli code" — artificial fragmentation that scatters one logical flow across boundaries that don't correspond to concepts.
+   - **#4 mutation locality** — local mutation is fine; any shared/global mutable state behind an explicit synchronization seam (lock, actor, channel)? (Hard gate G2: see Hard Gates below.)
+   - **#5 parse at the edge** — every untrusted input parsed at the touchpoint into a precise type? No re-validation midstream? (Hard gate G3: see Hard Gates below.)
+   - **#6 error propagation** — errors flow to a boundary that translates, attaches context, and logs once? No swallowed errors? (Hard gate G1: see Hard Gates below.)
+   - **#7 comments** — body comments *justify* (WHY, never narrate); narration removed? Public API has a contract doc-comment (preconditions, errors, units)?
+   - **#8 tests pin behavior** — assertions on outcomes (return value, emitted event, persisted state), not interactions? Mocks at external boundaries only (network, clock, FS), never internal collaborators? Test name + single assertion point at the break?
+   - **#9 minimal diff** — does adjacent cleanup pay rent to *this* change? Is cleanup separated into its own commit from the feature? No silent opportunistic rewrites (unrequested AND tangled into the feature commit)?
+   - **#10 dep posture** — new deps for commodity plumbing only (crypto, parsers, dates, runtime — not domain)? Boring choice (stdlib > 10+-year-mature)? Less-boring deps wrapped behind an interface so blast radius stays local?
+   - **#11 invariant over surface** — does the change address the underlying contract, or paper over the symptom (null-checks where the real bug is upstream data, retries on non-idempotent operations, defensive guards masking real invariant violations)? (Hard gate G4: see Hard Gates below.)
+   - **#12 deletability** — small AND knowable blast radius; explicit imports; no registration-by-side-effect; for temporary code (flags, shims) a documented removal trigger?
+6. **Testing** — coverage of acceptance criteria, edge-case discipline, regression coverage, test fragility, what's untested and why. Test *quality* (asserts behavior vs implementation, mocks at boundaries only) lives under #8 above; this dimension covers *what* is tested — acceptance criteria, edges, regressions, untested-but-should-be-tested paths.
 
 **Severity ladder (general)**:
 
@@ -156,6 +168,26 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 - **Calibrate to value.** Comment on real risks and pattern violations. Skip stylistic preferences and what `cargo clippy` / `cargo audit` should catch automatically.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
+
+### Hard Gates (Correctness — Blocker-class for `@staff-engineer`, Critical for `@security-engineer`)
+
+Four narrow, mechanically detectable symptoms gate the merge **regardless of feature correctness**. These are the *symptoms* of the broader code-philosophy principles, not the principles themselves — the gate fires only on the objective, self-evaluable check. Judgment calls belong in Concern-class findings under the dimension rubric above; only these four symptoms trigger a hard gate.
+
+| Gate | Symptom (what to look for in the diff) | Override marker |
+|---|---|---|
+| **G1 — Swallowed error** | A `catch`/`rescue`/`except` block with no rethrow AND no logged context AND no meaningful handling on a path that touches untrusted input, network, or persistence. Patterns: empty catch `{}`; `catch { /* ignore */ }`; discarded result (`_ = err`, `_, _ := ...` for an `error` return); `.unwrap()` / `.expect()` / `!` on data the function does not control. NOT fired by deliberate panics on programmer-error invariants where a clear stack is the right move. | `// OVERRIDE: code-philosophy/6 — <reason>` on or immediately above the catch/discard site |
+| **G2 — Unguarded shared mutation** | Shared or module-global mutable state accessed without a lock, channel, actor, or single-owner pattern. NOT fired by `Mutex`/`RwLock`/atomic-guarded access, message-passing, single-owner goroutines/tasks, or local mutation inside a function whose result escapes as a new value. | `// OVERRIDE: code-philosophy/4 — <reason>` on the unguarded access |
+| **G3 — Unparsed boundary input** | Untrusted input (HTTP body/query/header, env var, CLI arg, queue payload, DB row, third-party API response, file off disk) consumed without a schema parse into a precise type at first contact. NOT fired by data flowing through internal calls after it has been parsed once at the boundary; NOT fired by parsed-and-typed data simply being accessed deeper in the call stack. | `// OVERRIDE: code-philosophy/5 — <reason>` on the consumption site |
+| **G4 — Surface-not-invariant patch** | Fix that papers over an edge case rather than addressing the underlying contract. Patterns: a `null` check added where the real bug is that upstream data is the wrong shape; a retry loop wrapped around a non-idempotent operation; defensive guards added that mask a real invariant violation instead of fixing it; a snapshot or test updated to make a failing case pass without diagnosing why. Detection requires reading the issue/TDD to understand what the code was supposed to *uphold* — flag when the diff looks like symptom-masking. | `// OVERRIDE: code-philosophy/11 — <reason>` on the affected block |
+
+**Override recognition (mandatory).** Before emitting a Blocker for any gate, scan the diff *and* the immediately adjacent lines for an `OVERRIDE: code-philosophy/<id>` comment matching the gate (the language's comment syntax — `//`, `#`, `--`, `;`, etc.). When present:
+- Do NOT add a Blocker / Critical finding for that occurrence.
+- List the override verbatim under the **Overrides Recognized** section of the report, with file:line and the reason text.
+- The override is *surfaced*, not *silently honored* — the operator reads the report and decides whether the reason holds.
+
+**Block means return-for-fix, not discard.** A gate-triggered Blocker names the file/line, the gate (G1..G4), the symptom observed, and the required mitigation. The calling agent routes back to `@senior-engineer` for a fix pass; the diff returns for re-review. Hitting a hard gate is the review system working — surface it loudly.
+
+**Separation of writer and judge.** The writer (`@senior-engineer`) applies the principles as defaults but does NOT self-gate; the reviewer enforces the hard gates on the writer's diff. Self-grading invites gaming the gate, so the writer's side is "do the right thing and override with a reason when you can't" — the gate enforcement lives here.
 
 ## Output Contract
 
@@ -205,6 +237,18 @@ For substantive changes:
 **Praise**:
 - ... or "None"
 
+**Overrides Recognized** ({count}):
+- {file:line} — gate G{1..4} — `OVERRIDE: code-philosophy/{id} — {reason}` (operator decides whether the reason holds)
+- ... or "None"
+
+### Hard Gates Triggered
+List any of G1..G4 that produced a Blocker in this review (after override recognition). If no gates fired, write "None".
+
+- **G1 (swallowed error):** {file:line — symptom — required mitigation} or "None"
+- **G2 (unguarded shared mutation):** {file:line — symptom — required mitigation} or "None"
+- **G3 (unparsed boundary input):** {file:line — symptom — required mitigation} or "None"
+- **G4 (surface-not-invariant patch):** {file:line — symptom — required mitigation} or "None"
+
 ### Dimension Checklist
 | Dimension | Status |
 |---|---|
@@ -212,7 +256,7 @@ For substantive changes:
 | Security (general) | pass / concern / fail / N/A |
 | Operations | pass / concern / fail / N/A |
 | Performance | pass / concern / fail / N/A |
-| Code Quality | pass / concern / fail / N/A |
+| Code Quality (12 principles) | pass / concern / fail / N/A |
 | Testing | pass / concern / fail / N/A |
 
 ### Recommendation
@@ -300,8 +344,9 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 Before emitting the structured review, verify in the calling agent's context:
 
 1. **Heading matches the role's banner** per the Output Contract.
-2. **Every section in the role's template is present, in order** — see Output Contract for the full list.
+2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G4 listed individually, even if "None").
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
+3a. **Hard gate consistency** — if a Blocker is emitted citing G1..G4, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
 4. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
 5. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
 6. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.

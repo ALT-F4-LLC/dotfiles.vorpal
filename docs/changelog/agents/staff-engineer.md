@@ -1,5 +1,35 @@
 # Changelog: staff-engineer
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Added @security-engineer critical/high re-plan incoming trigger for bidirectional handoff coherence.
+
+### Changes
+- Incoming triggers: added @security-engineer Critical/High re-plan or arch re-review entry.
+
+### Dimensions Evaluated
+Cross-agent handoff bidirectionality.
+
+### Rename
+No rename.
+
+## 2026-05-17 (pass 2)
+
+### Summary
+Cycle 2026-05-17: addressed three Phase 0 audit findings — interrupt-recovery / TeammateIdle stall vocabulary (2 `interrupted` events unique to staff-engineer), Read-before-Write reinforcement (20 in-window "File has not been read yet" errors, joint-top non-sandbox error class), and trimming (Hard Gates enumeration duplicated skill content, Rule 5 was meta-only). Net -12 lines.
+
+### Changes
+- Replaced degenerate Communication Discipline Rule 5 (pure cross-reference) with substantive "Read before Write/Edit" imperative. Promoted "Verify load-bearing claims" to rule 6; shutdown is now rule 7. Added `TeammateIdle` canonical stall-signal line + interrupt-recovery one-liner below the rule list.
+- Compressed Hard Gates G1-G4 enumeration in Code Review section — `skills/code-review/SKILL.md` is the format authority; agent file now references rather than duplicates.
+- Trimmed Approval Judgment "Block on …" sentence (duplicates step 6 severity ladder); kept Request-split / Approve-with-follow-up / Escalate-do-not-loop guidance.
+
+### Dimensions Evaluated
+Actionability (Rule 5 substantive), Consolidation & Trimming (PRIMARY — Hard Gates + Approval Judgment + meta-rule), Spec Alignment (TeammateIdle vocabulary, code-review skill as authority), Boundary Clarity.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

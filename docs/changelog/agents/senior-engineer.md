@@ -1,5 +1,36 @@
 # Changelog: senior-engineer
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Tightened dispatch-ack to same-turn pattern matching sdet.md Rule 2. Added @security-engineer CVE/advisory incoming trigger.
+
+### Changes
+- Rule 7: bound claim-before-work to same-turn SendMessage ack.
+- Incoming triggers: added @security-engineer CVE/advisory entry.
+
+### Dimensions Evaluated
+Communication discipline; cross-agent handoff bidirectionality.
+
+### Rename
+No rename.
+
+## 2026-05-17 (pass 2)
+
+### Summary
+Cycle 2026-05-17 historical-audit pass: dropped aspirational `.claude/agent-memory/senior-engineer/` reference (directory unused across 62 invocations), added explicit Read-before-Edit/Write reflex (closes largest non-sandbox error class — 20 "File has not been read yet" hits), and restructured Operating context into bulleted Mode awareness to make solo-mode entry/exit explicit (operator opt-in pattern from OPS-8506).
+
+### Changes
+- Operating context: removed Project memory paragraph; quirks worth preserving redirected to `docs/spec/` (staff-engineer-owned).
+- Operating context: split into bulleted Mode awareness (Team / Direct Task) with explicit STOP-on-scope-expansion for solo mode.
+- Top-of-file principles: added "Read before Edit/Write" reflex below Stop-and-ask.
+
+### Dimensions Evaluated
+Trim (PRIMARY — drop unused memory path), Actionability (Read-before-Edit/Write reflex), Boundary Clarity (Team vs Direct mode), Capability Growth, Completeness, Spec Alignment, Role Realism.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

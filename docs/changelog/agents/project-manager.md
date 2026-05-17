@@ -1,5 +1,35 @@
 # Changelog: project-manager
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Added ADR `*` broadcast incoming trigger to match staff-engineer's outgoing broadcast pattern.
+
+### Changes
+- Incoming triggers: added ADR `*` broadcast entry for planning conventions.
+
+### Dimensions Evaluated
+Cross-agent handoff bidirectionality.
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Align Communication Discipline with peer-agent canonical form (numbered rules 1–5 + `TeammateIdle` canonical stall signal). Minor trims offset additions; net 0.
+
+### Changes
+- §Communication Discipline: numbered rules 1–5, promoted lead-in sentence to rule 1 (close-the-loop), added canonical `TeammateIdle` signal reference. Rules 6–8 from peer agents intentionally omitted — PM does not execute issues (no claim-before-work, no 10-min progress signal) and shutdown lives in §Shutdown Handling.
+- §Cross-Agent Communication closing: removed duplicate "AND a Docket comment" requirement (already in §Operator-visibility contract).
+- §Plan Monitoring: split comma-spliced re-engagement sentence into two clauses for scanability.
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming (HIGHEST) · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

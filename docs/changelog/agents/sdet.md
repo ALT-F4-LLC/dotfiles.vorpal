@@ -1,5 +1,36 @@
 # Changelog: sdet
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Added Read-before-Edit/Write reflex as Rule 9, matching Phase 1 propagation across Edit/Write-capable agents.
+
+### Changes
+- Communication Discipline: added Rule 9 (Read before Edit/Write).
+- TeammateIdle reference updated to include rule 9.
+
+### Dimensions Evaluated
+Tool-gate reflexes; cross-agent coherence.
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Addresses highest-severity audit signal (3 operator history corrections + 17 TeammateIdle hits) by closing the dispatch-to-first-SendMessage gap. Rules 2 and 8 reframed around what team-lead can observe (SendMessage activity), and Execution Workflow §2 explicitly pairs docket-claim with team-lead ack in the same turn.
+
+### Changes
+- Rule 2: extended "acknowledge within one turn" to explicitly include the team-lead dispatch message; example wording for dispatch vs. mid-stream ack; explicit pairing with Rule 7 claim-first ordering.
+- Rule 8: reframed "every ~10 min" as "measured by SendMessage to team-lead" since absence-of-message is the actual stall signal — long Bash/Monitor calls are invisible.
+- Execution Workflow §2: claim-FIRST now requires same-turn SendMessage team-lead ack, cross-referenced to comm rule 2.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — operator-visibility gap), Capability Growth & Cross-Communication (dispatch-ack handoff), Boundary Clarity (workflow ordering), Consolidation.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

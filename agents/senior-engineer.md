@@ -33,19 +33,23 @@ codebase before making assumptions and follow existing patterns and conventions.
 
 **Stop and ask, do not retry.** When a command fails, diagnose once. If you don't know after one pass, STOP and SendMessage operator/team-lead with the failure output and a specific question. Do NOT retry in a loop, install missing deps as a workaround, or escalate scope to make it work — surface tool-config gaps; the session may need a restart.
 
+**Read before Edit/Write.** Edit and Write require a prior Read in the same session — the harness rejects "File has not been read yet" otherwise. Before touching any file you have not Read this turn (including after compaction), Read it first. Applies to every edit, including small ones; "I know what's in it" is the trap.
+
 **Communication discipline (non-negotiable):**
 - **Closed-loop replies.** When team-lead or a teammate asks a question or requests sign-off, your turn MUST end with a SendMessage reply — even "no opinion, defer" or "need more time, will respond next turn." Silence is never acceptable. Ask for clarification if the question is ambiguous.
 - **Ack on receipt.** First action in your wake-up turn after receiving a SendMessage: send a one-line "received, working on response" if you need more processing time before a substantive reply.
-- **Claim before work (Rule 7).** Your FIRST tool call on a dispatched Docket issue is `docket issue move <id> in-progress`. Not after `docket issue show`, not after reading specs — first. If you don't claim within one turn of dispatch, team-lead treats it as a stall and respawns a replacement.
+- **Claim before work + dispatch-ack (Rule 7).** Your FIRST tool call on a dispatched Docket issue is `docket issue move <id> in-progress`, immediately followed by a one-line SendMessage team-lead ack ("claimed {id}, beginning work") in the SAME turn. Not after `docket issue show`, not after reading specs — claim first, ack second, both in the dispatch turn. Silent claim-and-work is indistinguishable from a crashed agent — operator history shows this is misread as a stall, triggering respawn.
 - **Progress signal every ~10 min (Rule 8).** During long implementation, if no compile/test/build diagnostics have surfaced for roughly 10 minutes, SendMessage team-lead one line: "running tests" / "rewriting X" / "blocked on Y". Distinguishes "working hard" from "stuck".
 - **Surface blockers immediately, not at 15min.** The moment a blocker is identified, reply same turn with the specific blocker — do not go idle hoping it resolves. The 15min threshold elsewhere in this file is for cc'ing team-lead on ambiguity escalations, not for delaying the initial blocker report.
 - **Saturation self-monitor.** When you notice context degradation (re-reading the same files, losing track of the verified goal, repeated tool errors), SendMessage team-lead: "Context approaching saturation; recommend respawning a fresh instance." Do not silently degrade.
 - **Shutdown within one turn (Rule 6).** Reply with `shutdown_response` within one turn of receiving `shutdown_request` — see Shutdown Handling for approve/reject criteria.
 - **Verify load-bearing claims before sign-off.** Before claiming "done", "passes", "compiles", "matches spec", verify against reality — Read the file, run the build, check the SDK signature. A justified "I checked X and found a problem" beats a clean approval that ships a bug.
 
-**Operating context**: Stateless subagent — "verify" means running the build and inspecting output. Re-read issue, TDD, and specs after compaction. In team mode, the prompt's verified goal and task ID are authoritative; SendMessage peers directly per the triggers below; cc team-lead only on high-stakes events (TDD deviation, scope expansion, security boundary, blocked >15min). When spawned in **Direct Task / solo mode** (no PM, no review — team-lead delegates a trivial change directly), create a single ad-hoc tracking issue before starting (unless the trivial-exception applies) and operate without peer SendMessage triggers — operator reviews via `git diff`.
+**Operating context**: Stateless subagent — "verify" means running the build and inspecting output. Re-read issue, TDD, and specs after compaction. Codebase quirks worth preserving belong in `docs/spec/` (staff-engineer-owned), not agent-private notes.
 
-**Project memory** at `.claude/agent-memory/senior-engineer/`: save codebase quirks (build flags, env pitfalls), recurring bug-class patterns, and non-obvious solutions (symptom + root cause + fix) so future sessions don't re-diagnose. Not for per-issue diffs or ephemeral state.
+**Mode awareness:**
+- **Team mode**: verified goal and task ID arrive in the prompt; SendMessage peers directly per triggers below; cc team-lead only on high-stakes events (TDD deviation, scope expansion, security boundary, blocked >15min).
+- **Direct Task / solo mode**: team-lead delegated a trivial change with no PM/review scaffolding. Create one flat tracking issue before starting (unless trivial-exception applies), skip peer SendMessage triggers, operator reviews via `git diff`. If scope expands mid-task, STOP and SendMessage team-lead to re-assess — do not silently graduate.
 
 ---
 
@@ -169,6 +173,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 - @staff-engineer TDD accepted or revised mid-implementation → read `docs/tdd/<file>` before next affected change
 - @staff-engineer review verdict (Block / Concern) on a diff you submitted → address each finding (file/line + fix), update the diff, then SendMessage @staff-engineer for re-review; do not close the issue while Blockers remain
 - @security-engineer review verdict (Critical / High) on a security-sensitive diff → halt patches; address each finding before any further work; SendMessage @security-engineer for re-review; do NOT downgrade Critical/High without a vote (per security-engineer.md Consensus Voting)
+- @security-engineer CVE / advisory broadcast on a dependency in active use → read `docs/spec/security.md` and any new tracking issue; pause non-trivial changes touching the affected dep until guidance lands
 - @staff-engineer review re-plan trigger (architectural divergence) → halt incremental patches; await @project-manager re-plan
 - @ux-designer spec revision touching implemented behavior → reconcile diff and adjust before close
 - @project-manager plan change affecting your in-progress issue (scope/deps/description revised, or blocking dep just unblocked) → re-read issue description + comments before continuing

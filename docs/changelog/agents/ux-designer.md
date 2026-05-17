@@ -1,5 +1,35 @@
 # Changelog: ux-designer
 
+## 2026-05-17 (Phase 2 coherence)
+
+### Summary
+Added canonical `TeammateIdle` stall-signal line for cross-agent terminology coherence.
+
+### Changes
+- Communication Discipline: appended TeammateIdle canonical-signal line below rule 6.
+
+### Dimensions Evaluated
+Cross-agent terminology coherence.
+
+### Rename
+No rename.
+
+## 2026-05-17 (pass 2)
+
+### Summary
+Addressed two historical-audit findings: highest per-session "File has not been read yet" rate (11/11 sessions) via explicit Read-before-Edit/Write rule, and least-used-specialist discoverability via a "Dispatch me when" anchor. Deduplicated Design-QA verify-behavior paragraph against Communication Discipline rule 5.
+
+### Changes
+- Added "Read before Edit/Write" rule paired with the honest-critique paragraph — Read-first applies to every Edit/Write target including docs/ux/ specs across sessions and post-compaction.
+- Added "Dispatch me when" 4-trigger anchor under Core responsibilities for peer discoverability — addresses lowest in-window invocation count.
+- Compressed standalone Design-QA "Verify behavior" paragraph against Communication Discipline rule 5 — preserved unique long-running-surface tooling (Monitor) reference.
+
+### Dimensions Evaluated
+Actionability (Read-before-Edit — primary), Boundary Clarity (dispatch anchor), Consolidation & Trimming (verify-behavior dedup), Capability Growth.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

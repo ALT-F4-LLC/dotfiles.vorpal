@@ -1,5 +1,35 @@
 # Changelog: evolve-skills
 
+## 2026-05-17
+
+### Summary
+Phase 2 sister-parity trim: condensed Phase 1 template Size Budget block from 2 lines to 1 line, matching evolve-agents' equivalent trim applied earlier this cycle. Net -1 line; no behavioral change.
+
+### Changes
+- Phase 1 template Size Budget: collapsed 2-line restatement to 1 line. Restores byte-parity with sister evolve-agents Phase 1 template.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (sister evolve-agents parity).
+
+### Rename
+No rename.
+
+## 2026-05-17
+
+### Summary
+Corrected false AskUserQuestion "multiSelect lifts the 4-option cap" carve-out (API hard-rejects >4 even with multiSelect — verified live this cycle when 6-option step 2 enum failed pre-flight). Documented `.claude/agent-memory/` may be absent. Collapsed step 2 options to 4 and removed duplicate friction-payload field list (Phase 1 template is the load-bearing copy).
+
+### Changes
+- Operator-prompts blockquote: replaced "up to 8 options when multiSelect" with "max 4 regardless of multiSelect" plus a routing-question pattern for >4-option dimensions.
+- Pre-flight step 2: collapsed 6 options to 4 (merged Coordination+Orchestration, Operator+Output quality, Scope+Budget+File-size); removed duplicate friction-payload field list (load-bearing copy lives in Phase 1 template).
+- Phase 0 historical-audit template: noted `.claude/agent-memory/` may not exist; auditor treats absence as `none`.
+
+### Dimensions Evaluated
+Skill Design Quality (correctness — primary), Completeness, Over-Engineering (HIGHEST), Coherence (sister evolve-agents + friction-driven-evolution carry same false carve-out — Phase 2 will sync).
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

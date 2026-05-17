@@ -1,5 +1,19 @@
 # Changelog: security-engineer
 
+## 2026-05-17
+
+### Summary
+Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle). `threat_summary` retained as an optional observability hint.
+
+### Changes
+- Consensus Voting §Team mode: replaced ad-hoc payload with canonical shape (`{type, protocol_version, skill, request_id, vote_id, from, summary?, artifact?, threat_summary?}`). Added `docket vote create ... --json` step; documented `failed` response on missing `vote_id`. Authoritative proposal (including threat model) lives in docket.
+
+### Dimensions Evaluated
+Cross-skill coherence (vote-skill payload contract), Coordination & Handoff.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

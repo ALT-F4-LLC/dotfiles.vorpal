@@ -1,5 +1,19 @@
 # Changelog: ux-designer
 
+## 2026-05-17
+
+### Summary
+Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle). Narrative payload replaced with structured form.
+
+### Changes
+- Design Spec Approval §Team mode: replaced narrative payload ("artifact path, and initial assessment") with canonical structured shape (`{type, protocol_version, skill, request_id, vote_id, from, summary?, artifact?}`). Added `docket vote create ... --json` prerequisite; documented `failed` response on missing `vote_id`.
+
+### Dimensions Evaluated
+Cross-skill coherence (vote-skill payload contract), Coordination & Handoff.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

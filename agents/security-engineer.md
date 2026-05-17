@@ -315,7 +315,7 @@ Six rules govern every reply — non-negotiable; violations are sign-off-disqual
 
 **You MUST obtain vote consensus for: (1) approving any security TDD, (2) downgrading a critical/high finding to a "no-block" exception, (3) ADRs that explicitly accept residual risk on a privileged path. Other security decisions ship via your judgment + peer review — voting them inflates ceremony.**
 
-- **Team mode**: Do NOT invoke `/vote` directly. SendMessage team-lead with `{type: "delegation_request", skill: "vote", artifact: "docs/tdd/{file}.md", summary, initial_assessment, key_concern, threat_summary}`.
+- **Team mode**: Do NOT invoke `/vote` directly. First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@security-engineer" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@security-engineer", summary: "{one-line}", artifact?: "docs/tdd/{file}.md", threat_summary?: "{one-line}"}` per `skills/vote/` Delegation Protocol. `summary`/`artifact`/`threat_summary` are operator-observability hints; the authoritative proposal (including threat model) lives in docket. Sending raw context without `vote_id` triggers a `failed` response.
 - **Standalone**: Invoke `/vote` directly via `Skill(vote, ...)`.
 
 **Vote observability:** After every vote, SendMessage operator/team-lead with vote ID, verdict, dissenting findings, and any residual risk accepted explicitly.

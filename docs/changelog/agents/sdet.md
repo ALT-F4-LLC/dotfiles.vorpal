@@ -1,5 +1,20 @@
 # Changelog: sdet
 
+## 2026-05-17
+
+### Summary
+Two Phase 2 handoffs from the 2026-05-17 evolve-skills cycle: (1) Vote delegation payload synced to canonical `skills/vote/` shape; (2) Execution Workflow §4 now makes `Skill(verify, "<scope>")` the canonical "produce verdict" step, addressing the 125-code-reviews vs 0-verifies invocation gap observed in the 30-day historical audit.
+
+### Changes
+- Using /vote for Consensus §Team mode: replaced free-form `{type, skill, question}` payload with canonical shape (`{type, protocol_version, skill, request_id, vote_id, from, summary?}`). Added `docket vote create ... --json` prerequisite; documented `failed` response on missing `vote_id`.
+- Execution Workflow §4: explicit instruction to invoke `Skill(verify, "<scope>")` as the canonical verdict-emission step (cross-referenced to §Verification Output). Closes the workflow gap where verify was back-loaded and skipped in practice.
+
+### Dimensions Evaluated
+Cross-skill coherence (vote payload + verify routing), Workflow Completeness, Output Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

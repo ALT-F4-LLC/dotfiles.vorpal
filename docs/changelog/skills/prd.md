@@ -1,5 +1,19 @@
 # Changelog: prd
 
+## 2026-05-17
+
+### Summary
+One over-engineering trim from the 2026-05-17 broad sweep: de-duplicated the reserved-name error string. Pre-flight §5 was restating the same error message already canonical in the Failure Mode table — Pre-flight now states the trigger and points to the table.
+
+### Changes
+- Pre-flight §5 (Reserved-name refusal): removed inline error-string code block and trailing "Substitute the resolved slug..." sentence; replaced with one-paragraph trigger + pointer to the Failure Mode table. Failure Mode table row remains the single source of the error text.
+
+### Dimensions Evaluated
+Over-Engineering (primary — Non-redundant Content Gate), Coherence (sibling parity with prior Mermaid trim), Spec Alignment, Skill Design Quality, Actionability, Completeness, Orchestration, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

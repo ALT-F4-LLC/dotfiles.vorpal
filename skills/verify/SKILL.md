@@ -36,7 +36,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(verify, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths).
+Error: Usage: Skill(verify, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths). PR-scope review is @staff-engineer's via Skill(code-review, ...).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -44,8 +44,6 @@ Error: Usage: Skill(verify, "<scope>") — name what to verify (Docket issue ID,
 | Form | Detection | Sources |
 |---|---|---|
 | Docket issue ID | `docket issue show {scope} --json` exits 0 | Pull issue + acceptance criteria + comments + file attachments via `docket issue show`, `docket issue comment list`, `docket issue file list`, `docket issue log` |
-| GitHub PR number | matches `^\d+$` AND not a Docket issue ID | `gh pr view {n}` (description) + `gh pr diff {n}` (diff) |
-| GitHub PR URL | contains `/pull/` | extract `n`; same as PR number |
 | Branch name | `git rev-parse --verify {scope}` exits 0 | `git diff main...{scope}` + `git log main...{scope} --oneline` + `git diff --stat main...{scope}` |
 | Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD` |
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
@@ -54,13 +52,12 @@ Error: Usage: Skill(verify, "<scope>") — name what to verify (Docket issue ID,
 **Ambiguity rules** (apply when multiple forms could match):
 
 - A token matching the Docket issue ID pattern (e.g., `DKT-123`, `ISS-45`) always tries Docket-issue resolution first. If `docket issue show` exits non-zero (no such issue), fall through to subsequent forms.
-- A token matching `^\d+$` tries PR-number next via `gh pr view {n} --json number`. If `gh` exits non-zero, fall through to branch/file detection.
 - A single token that is BOTH a valid branch name AND an existing file is treated as a branch. To force file-path scope, supply multiple tokens or prefix with `./` (e.g., `./main`).
 
 If `<scope>` matches none of the above, ABORT:
 
 ```
-Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, PR number/URL, branch name, "uncommitted", "staged", or existing file paths.
+Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch name, "uncommitted", "staged", or existing file paths.
 ```
 
 If extra positional args follow `<scope>`, ignore them silently.
@@ -87,13 +84,13 @@ If extra positional args follow `<scope>`, ignore them silently.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
 4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (supersede description), file attachments, and activity log when context is unclear. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
-5. **Gather diff** per the resolved scope's source.
+5. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe intent; the diff describes reality. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
 6. **Empty-artifact guard**: if the resolved diff/scope produces no inspectable content (no files, no acceptance criteria, empty issue), ABORT:
 
    ```
    Error: Resolved scope produced no verifiable content — nothing to verify.
    ```
-7. **Read related design docs** (scoped to what the diff touches — do NOT read docs whose domain is not in the changed paths):
+7. **Read related design docs** (scope to what the diff touches):
    - TDDs in `docs/tdd/` that the issue references. **TDD status gate**: only verify against TDDs with `status: accepted`. If the referenced TDD is `draft`, `proposed`, or `in-review`, ABORT:
 
      ```
@@ -154,7 +151,7 @@ Apply the full procedure. Scale evidence to risk.
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
 
@@ -241,7 +238,7 @@ The calling agent owns (in order):
 
 - Closing or moving the Docket issue: on APPROVE, `docket issue close <id>` followed by `docket issue comment add <id> -m "..."`; on ACCEPT WITH CAVEATS or BLOCK, `docket issue move <id> review` instead so the team sees the partial state explicitly.
 - SendMessage to peers per the `agents/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
-- Triggering `Skill(vote, ...)` for critical defect validation, ambiguous criteria, or test-architecture decisions per the vote-criticality table.
+- Triggering `Skill(vote, ...)` per the vote triggers in `agents/sdet.md`.
 
 On any abort during Pre-flight, Verification Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
 
@@ -252,5 +249,4 @@ The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolv
 | Trigger | Handling |
 |---|---|
 | Docket CLI unavailable for an issue-ID scope | Abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` |
-| `gh` CLI unavailable for a PR scope | Abort: `Error: gh CLI required to resolve PR scope. Re-invoke with branch name or "uncommitted".` |
 | Caller passes additional positional args beyond `<scope>` | Ignore extras silently. |

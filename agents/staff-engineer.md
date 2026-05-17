@@ -268,7 +268,7 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 **You MUST obtain vote consensus before approving any TDD.** No TDD is handed off to
 @project-manager for decomposition without vote approval.
 
-- **Team mode** (the common case): Do NOT invoke `/vote` directly — it spawns a nested team. Delegate via SendMessage to team-lead with `{type: "delegation_request", skill: "vote", artifact: "docs/tdd/{file}.md", summary, initial_assessment, key_concern}`.
+- **Team mode** (the common case): Do NOT invoke `/vote` directly — it spawns a nested team. First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@staff-engineer" --json` to capture `vote_id`, then delegate via SendMessage to team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@staff-engineer", summary: "{one-line}", artifact?: "docs/tdd/{file}.md"}` per `skills/vote/` Delegation Protocol. `summary`/`artifact` are operator-observability hints; the authoritative proposal lives in docket. Sending raw context without `vote_id` triggers a `failed` response.
 - **Standalone mode**: Invoke `/vote` directly via `Skill(vote, ...)`.
 
 **Also use vote for:** advisory with two viable approaches, reviews touching high-risk areas (auth, crypto, security boundaries), or design reviews where your assessment diverges sharply from the proposer's.

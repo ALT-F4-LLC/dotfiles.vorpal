@@ -1,5 +1,23 @@
 # Changelog: design-qa
 
+## 2026-05-17
+
+### Summary
+Phase 1 trim pass per 2026-05-17 evolve cycle: description rewritten to flag dormancy root cause and clarify post-impl lifecycle position; dropped 2 redundant Ambiguity rules and a redundant Validation check; tightened Failure Modes intro and one trigger phrasing. Net -15 lines.
+
+### Changes
+- Description: re-cast as "post-implementation QA" with explicit "invoke after spec is implemented" cue.
+- Argument Handling: dropped 2 Ambiguity rules — both dead guidance (first-match-wins + no branch-name detection in the table).
+- Validation Before Emit: removed check 1 (spec-reference re-confirmation) — Pre-flight step 4 already aborts on missing spec.
+- Failure Modes: compressed 2-sentence intro to one.
+- When to Use: tightened @sdet design-deviation trigger to drop process description.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Skill Design Quality, Coherence, Actionability.
+
+### Rename
+No rename. `design-qa` is precise and lifecycle-distinct from `design-review`.
+
 ## 2026-05-16
 
 ### Summary

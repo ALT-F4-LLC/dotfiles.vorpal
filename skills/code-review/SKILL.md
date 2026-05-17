@@ -73,6 +73,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 - The calling agent (`@staff-engineer` or `@security-engineer`) is performing a code review at any scope (PR, branch, uncommitted, staged, files).
 - The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.
 - Security-sensitive changes: BOTH advisors invoke this skill in parallel — each in their own role. The two reviews scope to different dimensions and do not duplicate work; team-lead reconciles the verdicts.
+- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior Blockers/Concerns, the original reviewer re-invokes `Skill(code-review, "<scope>")` for a Round-2 pass on the new diff (typical: PR number first, then `uncommitted` after the fix lands locally). The Round-2 review focuses on whether the original findings are resolved; it does not re-do the full dimension sweep unless new code introduces new risk.
 
 ## When NOT to Use
 
@@ -113,19 +114,7 @@ Apply the **6 dimensions**, weighted by what the change touches. Mark unaffected
 2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to SendMessage `@security-engineer` for a dedicated security pass before merge.
 3. **Operations** — observability hooks, runbook impact, deploy/rollback story, 3am-diagnosability, configuration footprint.
 4. **Performance** — algorithmic complexity, N+1 patterns, allocation hotspots, latency-budget impact, regression risk.
-5. **Code Quality** — apply the 12 code-philosophy principles (full text in `agents/senior-engineer.md` → Code Quality & Craftsmanship). The through-line is *locality of reasoning + deletability*; junior code optimizes for *looking careful*, senior code optimizes for *being correct and deletable*. For each touched file, ask:
-   - **#1 abstraction** — is each extracted helper a real concept with an independent name, or just deduplicated text? Was duplication preferred over a wrong shared abstraction where the concepts diverge?
-   - **#2 names** — do names predict behavior without opening the body? Domain language over CS-generic? Are invariants encoded in types where they can live there (`OrderId` not `string`)? Any name that *lies* (`getUser` that also writes a cache, `isValid` that throws)? Consistent with how the rest of the codebase uses the term?
-   - **#3 cohesion over length** — for functions past ~50 lines or files past ~300, does it remain a single honest concept, or does the name need "and"? Watch for "ravioli code" — artificial fragmentation that scatters one logical flow across boundaries that don't correspond to concepts.
-   - **#4 mutation locality** — local mutation is fine; any shared/global mutable state behind an explicit synchronization seam (lock, actor, channel)? (Hard gate G2: see Hard Gates below.)
-   - **#5 parse at the edge** — every untrusted input parsed at the touchpoint into a precise type? No re-validation midstream? (Hard gate G3: see Hard Gates below.)
-   - **#6 error propagation** — errors flow to a boundary that translates, attaches context, and logs once? No swallowed errors? (Hard gate G1: see Hard Gates below.)
-   - **#7 comments** — body comments *justify* (WHY, never narrate); narration removed? Public API has a contract doc-comment (preconditions, errors, units)?
-   - **#8 tests pin behavior** — assertions on outcomes (return value, emitted event, persisted state), not interactions? Mocks at external boundaries only (network, clock, FS), never internal collaborators? Test name + single assertion point at the break?
-   - **#9 minimal diff** — does adjacent cleanup pay rent to *this* change? Is cleanup separated into its own commit from the feature? No silent opportunistic rewrites (unrequested AND tangled into the feature commit)?
-   - **#10 dep posture** — new deps for commodity plumbing only (crypto, parsers, dates, runtime — not domain)? Boring choice (stdlib > 10+-year-mature)? Less-boring deps wrapped behind an interface so blast radius stays local?
-   - **#11 invariant over surface** — does the change address the underlying contract, or paper over the symptom (null-checks where the real bug is upstream data, retries on non-idempotent operations, defensive guards masking real invariant violations)? (Hard gate G4: see Hard Gates below.)
-   - **#12 deletability** — small AND knowable blast radius; explicit imports; no registration-by-side-effect; for temporary code (flags, shims) a documented removal trigger?
+5. **Code Quality** — apply the 12 code-philosophy principles (full text + worked examples in `agents/senior-engineer.md` → Code Quality & Craftsmanship). Through-line: *locality of reasoning + deletability* — junior code optimizes for *looking careful*, senior code optimizes for *being correct and deletable*. Four principles carry mechanical Hard Gates enforced here: **#4 mutation locality** (G2), **#5 parse at the edge** (G3), **#6 error propagation** (G1), **#11 invariant over surface** (G4) — see Hard Gates below. The other eight (#1 abstraction, #2 names, #3 cohesion-over-length, #7 comments-justify, #8 tests-pin-behavior, #9 minimal-diff, #10 dep-posture, #12 deletability) belong to the Concern/Suggestion rubric — read senior-engineer.md for the per-principle prompts and apply them per touched file.
 6. **Testing** — coverage of acceptance criteria, edge-case discipline, regression coverage, test fragility, what's untested and why. Test *quality* (asserts behavior vs implementation, mocks at boundaries only) lives under #8 above; this dimension covers *what* is tested — acceptance criteria, edges, regressions, untested-but-should-be-tested paths.
 
 **Severity ladder (general)**:
@@ -346,11 +335,11 @@ Before emitting the structured review, verify in the calling agent's context:
 1. **Heading matches the role's banner** per the Output Contract.
 2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G4 listed individually, even if "None").
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
-3a. **Hard gate consistency** — if a Blocker is emitted citing G1..G4, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
-4. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
-5. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
-6. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
-7. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
+4. **Hard gate consistency** — if a Blocker is emitted citing G1..G4, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
+5. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
+6. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
+7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
+8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 
 If any check fails, ABORT:
 

@@ -107,18 +107,10 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Reserved-name refusal** (PRD-specific). The 7 names enumerated in the Failure
-   Modes Reserved-Name List are owned by the `specs` skill. If `{slug}` matches
-   any reserved name, ABORT with the exact message — there is **no overwrite path**
-   for reserved names:
-
-   ```
-   Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.
-   ```
-
-   Substitute the resolved slug into `{slug}.md`. The reserved-name list is the
-   authority — see Failure Modes for the canonical list and the coupling
-   cross-reference.
+5. **Reserved-name refusal** (PRD-specific). If `{slug}` matches any name in the
+   Failure Modes Reserved-Name List (owned by the `specs` skill), ABORT with the
+   exact error message defined in the Failure Mode table. There is **no overwrite
+   path** for reserved names.
 
 ## Authoring Procedure
 

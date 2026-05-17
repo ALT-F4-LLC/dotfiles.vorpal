@@ -1,5 +1,25 @@
 # Changelog: evolve-agents
 
+## 2026-05-17
+
+### Summary
+Corrected AskUserQuestion option cap (multiSelect does NOT raise the 4-option limit — verified live this cycle when step 2's 7-option call would have failed), collapsed step 2 options to 4, plus 8 mirror-with-evolve-skills trims. Net -23 lines.
+
+### Changes
+- Operator-prompts banner: replaced false "up to 8 options when multiSelect" carve-out with "≤4 regardless of multiSelect".
+- Pre-flight step 2: collapsed 7 options to 4 (Role & coordination gaps, Operator prompts & output quality, File-size bloat, Other) to comply with cap.
+- Pre-flight step 4: dropped self-evident "lists files and records counts" parenthetical.
+- Phase 0 Docket-Audit template: tightened to sister evolve-skills' 2-line form.
+- Phase 0 historical-auditor template: removed duplicate friction-distinction, trimmed Task preamble, dropped secondary @-grep, removed redundant tail in body distinction.
+- Phase 1 body: collapsed SendMessage-triggers pointer paragraph.
+- Phase 1 template Size Budget: condensed 4-line restatement to one line.
+
+### Dimensions Evaluated
+Skill Design Quality (correctness), Over-Engineering (HIGHEST), Coherence (sister evolve-skills + friction-driven-evolution), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

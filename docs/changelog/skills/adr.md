@@ -1,5 +1,21 @@
 # Changelog: adr
 
+## 2026-05-17
+
+### Summary
+Three over-engineering / coherence fixes: collapsed duplicated Authoring §3-§6 into a pointer at Required Sections + Validation, dropped stale §5.7 forward-reference (reported fixed 2026-05-13 but still present), removed leftover Mermaid-override sentence in Required Sections §2.
+
+### Changes
+- Authoring §3-§6 collapsed to 2 entries (section-order pointer + "proceed to Validation Before Save"); removes verbatim restatement of Required Sections §3+§4 and parallels sibling tdd §8.
+- Pre-flight §5.7 forward-reference deleted; override block below self-announces with bold "Before Write:" heading.
+- Required Sections §2 (Decision): removed sentence instructing author to drop a "Pure-policy ADR — no Mermaid required." override note. Mermaid Mandate was deleted 2026-05-09; override has no consumer.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (sibling tdd/prd/ux-spec/specs symmetry), Skill Design Quality, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with tdd/prd/ux-spec/specs.
+
 ## 2026-05-16
 
 ### Summary

@@ -126,7 +126,6 @@ malformed frontmatter.
       where `max` is taken over the captured numeric group as integers.
    5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
    6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
-   7. Numbering Glob is re-run before Write — see Save & Return override below.
 
 ## Authoring Procedure
 
@@ -138,14 +137,11 @@ malformed frontmatter.
    review/vote loop, not by this skill.
 3. **Draft each Required Section in order** (see Output Contract → Required
    Sections). Every section listed MUST appear, in the order shown. ADRs are
-   intentionally short — aim for tight prose, not exhaustive coverage.
-4. **Mermaid diagrams** (optional): include a Mermaid block when it clarifies
-   component relationships, state transitions, or flows. Pure-policy ADRs ("use
-   SemVer", "license under Apache 2.0") are prose-only — no diagram needed.
-5. **Alternatives Considered** (brief): list at least one alternative with a
-   one- or two-sentence verdict. ADRs are short; full Alt-A/Alt-B/Alt-C analysis
-   belongs in a TDD, not an ADR.
-6. **Consequences**: enumerate positive, negative, and neutral consequences. Include what becomes easier and what becomes harder.
+   intentionally short — aim for tight prose, not exhaustive coverage. Mermaid
+   is optional; include a block only when it clarifies component, state, or
+   flow relationships.
+4. **Proceed to Validation Before Save** — single source of truth for
+   frontmatter, section order, alternatives count, and placeholder checks.
 
 ## Output Contract
 
@@ -181,8 +177,7 @@ heading in the drafted document.
 1. **Context** — the decision-driver: what situation, constraint, or trigger forced
    this decision. Cite related TDDs, PRDs, ADRs, or incidents.
 2. **Decision** — the chosen approach, stated affirmatively in one or two
-   paragraphs. If the ADR is pure policy, the override note ("Pure-policy ADR —
-   no Mermaid required.") lives here.
+   paragraphs.
 3. **Consequences** — positive, negative, and neutral consequences. Include
    what becomes easier and what becomes harder.
 4. **Alternatives Considered** (brief) — at least one alternative with a short

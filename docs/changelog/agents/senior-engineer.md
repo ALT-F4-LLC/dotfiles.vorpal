@@ -1,5 +1,19 @@
 # Changelog: senior-engineer
 
+## 2026-05-17
+
+### Summary
+Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle).
+
+### Changes
+- Using /vote for Consensus §Team mode: replaced ad-hoc `{type, skill, question}` payload with canonical shape (`{type, protocol_version, skill, request_id, vote_id, from, summary?}`). Added `docket vote create ... --json` prerequisite; documented `failed` response on missing `vote_id`.
+
+### Dimensions Evaluated
+Cross-skill coherence (vote-skill payload contract), Coordination & Handoff.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

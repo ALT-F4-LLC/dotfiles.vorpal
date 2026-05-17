@@ -1,9 +1,10 @@
 ---
 name: specs
 description: >
-  Bootstrap docs/spec/ by spawning @staff-engineer agents in parallel to generate project
-  specification files. Trigger on: "create specs", "generate specs", "bootstrap project
-  specs", "create project specifications".
+  One-time bootstrap of docs/spec/ — spawns @staff-engineer agents in parallel to generate
+  project specification files. Re-invocation prompts before overwriting existing specs;
+  ongoing maintenance is handled by @staff-engineer during TDD/review work, not by this skill.
+  Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
 argument-hint: "[file...]"
 effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
@@ -35,7 +36,7 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing `AskUserQuestion` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call, 2-4 options for single-select; up to 8 options when `multiSelect: true` AND options enumerate a fixed dimension catalog; max 12-char `header`). Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
+> **Operator prompts:** All operator-facing `AskUserQuestion` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
 
 Before spawning any agents:
 
@@ -102,7 +103,7 @@ Poll `TaskList()` every ~2 minutes. Classify each task:
 - **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 600s` with no SendMessage activity since spawn.
 - **in_progress** — still working; continue polling.
 
-**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling and stall classification credit the new agent, and record the replacement's spawn time in the spawn-time map), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
 
 > Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
 

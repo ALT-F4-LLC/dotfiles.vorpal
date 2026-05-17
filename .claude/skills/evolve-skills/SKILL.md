@@ -2,9 +2,10 @@
 name: evolve-skills
 description: >
   Review and improve skill definitions via parallel @staff-engineer agents. Evaluates 8
-  dimensions, enforces Content Gate and 500-line budget. Trigger: "evolve skills", "improve
-  skills", "refine skills".
-argument-hint: "[skill-name]"
+  dimensions, enforces Content Gate and 500-line budget. Phase 0 includes a per-skill
+  historical audit of recent Claude Code transcripts, history, and agent memory.
+  Trigger: "evolve skills", "improve skills", "refine skills".
+argument-hint: "[skill-name] [days=N]"
 effort: max
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
@@ -21,10 +22,11 @@ You are the **Skill Evolution Orchestrator**. Create an agent team (TeamCreate) 
 
 ## Argument Handling
 
-Target skill(s) are determined by `$ARGUMENTS`:
+Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
 
-- **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`.
-- **With argument** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
+- **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 30 days.
+- **Skill name only** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
+- **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `30`. Reject values outside `1..90` and abort with a usage note.
 
 ---
 
@@ -44,6 +46,7 @@ Before spawning any agents:
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
+8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `30`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
 
 ---
 
@@ -73,11 +76,11 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 ### Team Setup & Agent Lifecycle
 
 1. `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`.
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor` | Spawn parallel → both complete → shut down both before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` (skip the third if pre-flight step 8 flagged SKIPPED) | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
@@ -91,9 +94,11 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 - **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
-### Phase 0: Documentation Research & Docket CLI Audit
+### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn TWO teammates in parallel per the templates below: `docs-researcher` (claude-code-guide) and `docket-auditor` (senior-engineer, needs Bash). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}` and `{docket_audit_findings}` for Phase 1 template substitution.
+Spawn THREE agents in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
+
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill, scoped to the skills under review here, and feeds Phase 1 reviewers directly — no clustering, no routing.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -170,6 +175,53 @@ usage in `agents/` and `.claude/skills/`.
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
 
+### Phase 0: Historical Audit (per-skill)
+
+Skip spawning if pre-flight step 8 flagged SKIPPED. Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). Distinct from `friction-driven-evolution`: per-skill, no clustering, feeds Phase 1 directly.
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
+
+You are the historical auditor. Read-only. No file edits. No commits. No sub-agents.
+Window: last {history_days} days (cutoff {history_cutoff_iso}).
+Target skills: {target_skills}
+
+## Task
+For EACH target skill, mine three read-only sources for signals that the skill is failing or misused:
+
+1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
+   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -${history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
+   - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts.
+   - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
+   - Re-invocation within the same `sessionId`: count occurrences per session; ≥2 invocations of the same skill in one session is a failure signal.
+2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
+   - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ epoch-ms of `{history_cutoff_iso}`). Surface 1-2 representative `display` prompts per skill.
+3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo):
+   - `grep -lri '<skill-name>' .claude/agent-memory/ 2>/dev/null` — these are persistent agent learnings to incorporate into recommendations.
+
+## Output Format (per skill)
+Emit one block per target skill, then SendMessage the orchestrator with all blocks verbatim:
+
+```
+### Skill: <skill-name>
+- Invocations (window): N (transcripts) + M (history.jsonl)
+- Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
+- Error/abort signals: <count> with example
+- Re-invocation signals: <count of sessions with ≥2 invocations>
+- Memory references: <list of .claude/agent-memory paths, or "none">
+- Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
+```
+
+If a category is empty for a skill, write `none` — do not omit the line.
+
+## Rules
+- Read-only. Do NOT use Edit/Write. Do NOT commit.
+- No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
+- No peer-to-peer SendMessage — orchestrator is the only relay.
+- Per-skill grep is mandatory — never load wholesale (~/.claude/projects/ is ~1GB).
+- Do not cluster or rank across skills — that is `friction-driven-evolution`'s job. Stay per-skill.
+```
+
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
@@ -197,6 +249,10 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Docket CLI Audit Findings
 {docket_audit_findings}
+
+## Historical Audit Findings
+{historical_audit_findings}
+> Prioritize the Suggested focus areas from your skill's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals.
 
 ## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check.

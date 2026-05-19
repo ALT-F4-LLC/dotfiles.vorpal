@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-05-18
+
+### Summary
+Surfaced the calling agent's Design Output Tiers gating directly in `When NOT to Use` — adds an explicit "skip to lighter tier" route for internal-only surfaces, single-tier design fits, and Tier 1–3 work. Addresses the 30-day adoption-gap finding (0 invocations) by making the skip path explicit at the point of decision.
+
+### Changes
+- When NOT to Use: added skip-to-lighter-tier delegation row before the design-review row. References `agents/ux-designer.md` Responsibility 1 Tiers 1–3 as the authority for lighter alternatives.
+
+### Dimensions Evaluated
+Completeness (skip-path documentation), Coherence (sibling family parity preserved), Skill Design Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

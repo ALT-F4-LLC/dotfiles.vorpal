@@ -25,12 +25,11 @@ The argument is **optional** — this skill has a single well-defined behavior.
 
 # Specs
 
-You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs; spawned agents are leaf agents (prohibition detailed in the Spawning Template).
+You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs.
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
-**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance is handled by
-`@staff-engineer` during TDD and review workflows (see `agents/team-lead.md` Medium/Large Task patterns).
+**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `agents/team-lead.md` (Medium/Large Task patterns).
 
 ---
 
@@ -111,17 +110,13 @@ Proceed to Step 3 once every task is `completed` OR the operator has resolved ev
 
 ### Step 3: Verify
 
-After all agents complete, run verification:
+After all agents complete, run verification **scoped to files generated this run** (`{generated_files}` = the set whose tasks reached `completed` in Step 2; on the "Skip existing" path this excludes pre-existing files this run did not produce):
 
-1. Run `ls docs/spec/` and confirm all expected files exist. Flag any missing files.
-2. Run `head -1 docs/spec/*.md` and confirm every file starts with `---` (YAML frontmatter
-   delimiter). Flag any file that does not — it indicates a malformed spec.
-3. Run `grep -L '```mermaid' docs/spec/*.md 2>/dev/null` to flag any spec missing the required Mermaid
-   diagram (per Spawning Template). Diagram presence is a sanity check, not a deep validation —
-   if a spec genuinely has no relationships/flows to diagram, the agent should have noted that
-   in the file; flag it for operator review.
-4. Run `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md 2>/dev/null` (substituting the resolved date) to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
-5. Run `grep -L "^## Gaps & Risks" docs/spec/*.md 2>/dev/null` to flag any spec missing the required Gaps & Risks section — enforces the structural home for the rigorous-honesty directive.
+1. Confirm every file in the expected target set exists on disk (`ls docs/spec/` and intersect with the target set). Flag any missing files.
+2. Run `head -1 {generated_files}` and confirm every file starts with `---` (YAML frontmatter delimiter). Flag any file that does not — it indicates a malformed spec.
+3. Run `grep -L '```mermaid' {generated_files} 2>/dev/null` to flag any newly-generated spec missing the required Mermaid diagram (per Spawning Template). Diagram presence is a sanity check; if a spec genuinely has no relationships/flows to diagram, the agent should have noted that — flag it for operator review.
+4. Run `grep -L "last_updated: \"{today_date}\"" {generated_files} 2>/dev/null` to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
+5. Run `grep -L "^## Gaps & Risks" {generated_files} 2>/dev/null` to flag any newly-generated spec missing the required Gaps & Risks section — enforces the structural home for the rigorous-honesty directive.
 
 Report which files were created successfully and flag any that are missing, malformed, or
 missing required diagrams.

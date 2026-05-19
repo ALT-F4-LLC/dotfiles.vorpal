@@ -1,5 +1,19 @@
 # Changelog: friction-driven-evolution
 
+## 2026-05-18
+
+### Summary
+Added a one-line operator-visible dispatch trace before each Phase 3 `Skill()` invocation so downstream-skill chaining is observable in the transcript. Resolves a historical-audit gap (2 invocations across 30d showed zero transcript-visible chaining; existing per-cluster recording was internal-only until wrap-up).
+
+### Changes
+- Phase 3 preamble: orchestrator now emits `Dispatching cluster {id} ({class}, {target_file_basename}) → {downstream_skill}` immediately before each `Skill()` call. Recording schema and wrap-up reporting unchanged.
+
+### Dimensions Evaluated
+Actionability (real-time operator visibility), Spec Alignment (closes historical-audit instrumentation gap).
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

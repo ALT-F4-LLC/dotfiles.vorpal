@@ -1,5 +1,35 @@
 # Changelog: design-qa
 
+## 2026-05-19
+
+### Summary
+Phase 2 coherence — Epistemic Discipline parity with the report-emission family. Added the canonical banned-phrase list to Common Discipline and a Validation Before Emit scan so the rule is gate-enforced. Net +2 lines.
+
+### Changes
+- Common Discipline "Honest critique + concrete fix shape": appended the canonical banned-phrases list.
+- Validation Before Emit: added check #7 — Epistemic Discipline scan across Issues / What's Implemented Well / Acceptable Deviations / Recommendation.
+
+### Dimensions Evaluated
+Coherence, Epistemic Discipline, Report-Emission Family Parity.
+
+### Rename
+No rename.
+
+## 2026-05-18
+
+### Summary
+Resolved Validation/Procedure contradiction on "Cross-surface" Spec Section (cross-surface precedent violations are Blocker-class per the Severity ladder and must be allowed in that column at any severity); added "pair Blocker with concrete fix shape" rule to Common Discipline for parity with design-review and to reinforce the existing Output Contract column. Net -1 line.
+
+### Changes
+- Validation Before Emit (check 3): allow `"Cross-surface"` for Blockers/Concerns on cross-surface precedent findings, not just Suggestions/Praise.
+- Common Discipline: merged "Honest critique" + "concrete fix shape" rule (parity with design-review). Reinforces the "expected per spec + observed" requirement.
+
+### Dimensions Evaluated
+Coherence (HIGHEST — cross-skill parity + internal contradiction), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

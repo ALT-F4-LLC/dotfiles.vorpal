@@ -1,5 +1,21 @@
 # Changelog: specs
 
+## 2026-05-18
+
+### Summary
+Closed verification-scope bug (false-flagging pre-existing specs on "Skip existing" path) and trimmed two layers of redundant leaf-agent prohibition + an inflated scope-boundary cross-reference.
+
+### Changes
+- Step 3 Verify: scoped all four grep checks and `head -1` to `{generated_files}` (the Step 2 `completed` set) instead of `docs/spec/*.md`. Closes a false-flag bug where verification on the "Skip existing" path scanned pre-existing files whose Gaps section uses organic headings and incorrectly reported them missing the required section.
+- Role paragraph: removed parenthetical "(prohibition detailed in the Spawning Template)" — the CRITICAL banner and Spawning Template already state the leaf-agent rule.
+- Scope boundary: trimmed two-line cross-reference paragraph to a single line.
+
+### Dimensions Evaluated
+Actionability (HIGHEST — verification-scope bug), Over-Engineering, Skill Design Quality, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

@@ -1,5 +1,23 @@
 # Changelog: code-review
 
+## 2026-05-18
+
+### Summary
+Added Epistemic Discipline enforcement to Common Discipline + Validation Before Emit (banned-words check propagates the agent-level rule into the review-output surface); removed dead `{today_date}` resolution from Pre-flight §3 (templates never consume it); trimmed Failure Modes intro and Code Quality dimension prose. Net -3 lines.
+
+### Changes
+- Common Discipline: added Epistemic Discipline bullet — bans confidence phrases (clearly/obviously/should work/100%/guaranteed) in review findings; requires evidence anchoring.
+- Validation Before Emit: added check 9 enforcing the banned-phrase scan so silent slips become defects at emit time.
+- Pre-flight §3: dropped `{today_date}` resolution — templates never reference it.
+- Failure Modes: collapsed 3-line preamble to one sentence.
+- Code Quality dimension: cut essayistic through-line; kept the principle→gate mapping and the senior-engineer.md pointer.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (cross-agent Epistemic Discipline propagation), Actionability, Skill Design Quality, Completeness, Spec Alignment, Orchestration, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

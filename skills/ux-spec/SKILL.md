@@ -64,6 +64,13 @@ For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, adr, and specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
+- Internal-only surfaces (agent-to-agent protocols, internal scripts, build
+  tooling without external users), single-tier design fits (CLI flag rename,
+  copy tweak, one-shot error message), or work that fits the calling agent's
+  Design Output Tiers 1–3 (`agents/ux-designer.md` Responsibility 1) — use the
+  appropriate lighter tier instead. Full UX specs are reserved for Tier 4
+  (new interaction pattern, multi-surface, core workflow change,
+  precedent-setting).
 - Peer review of a draft UX spec or design proposal (no file written, report into
   the calling agent's context): use `Skill(design-review, "<scope>")`.
 - QA of shipped implementation against an accepted UX spec (no file written, report

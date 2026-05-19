@@ -68,6 +68,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 - `@sdet` is verifying a Docket issue's acceptance criteria against the implementation diff at any scope (issue, uncommitted, staged, branch, files).
 - A non-trivial change requires the FULL verification template with verdict ladder, evidence per criterion, and Issues Found.
 - A trivial change (typo, formatting, docs-only) may use LIGHT mode — see Verification Procedure below.
+- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior BLOCK / ACCEPT-WITH-CAVEATS findings, `@sdet` re-invokes `Skill(verify, "<scope>")` for a Round-2 pass on the new diff. The Round-2 verification focuses on the criteria/findings flagged in the prior round; criteria that previously PASSed and whose evidence files are untouched by the new diff may carry the prior PASS forward without re-running their evidence command. Always re-run the suite end-to-end; never carry forward a failed criterion.
 
 ## When NOT to Use
 
@@ -83,7 +84,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
-4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (supersede description), file attachments, and activity log when context is unclear. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
+4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
 5. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe intent; the diff describes reality. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
 6. **Empty-artifact guard**: if the resolved diff/scope produces no inspectable content (no files, no acceptance criteria, empty issue), ABORT:
 
@@ -153,6 +154,7 @@ Apply the full procedure. Scale evidence to risk.
 
 - **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
+- **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `agents/sdet.md` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
 
 ## Output Contract
@@ -215,6 +217,7 @@ Before emitting the report, verify in the calling agent's context:
 6. **FULL: verdict consistency** — BLOCK requires at least one Critical or High issue OR at least one FAIL on a criterion; ACCEPT WITH CAVEATS requires at least one Medium/Low issue or an Additional Testing gap; APPROVE has no Critical/High and no FAIL.
 7. **Recommendation is on the verdict ladder** — exactly one of APPROVE / ACCEPT WITH CAVEATS / BLOCK.
 8. **Placeholder scan** — body contains no literal `{Issue ID}`, `{count}`, `{evidence}`, `TBD`, or `TODO` text outside of code-fenced examples.
+9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Acceptance Criteria evidence, Additional Testing, Issues Found, or Recommendation. Use evidence-anchored language ("ran X — saw Y," "verified at {file:line}," "unverified — assumption"). A hit is a defect.
 
 If any check fails, ABORT:
 

@@ -1,5 +1,19 @@
 # Changelog: adr
 
+## 2026-05-18
+
+### Summary
+No-change verdict. Skill is mature and family-aligned with prd/tdd/ux-spec/specs after 13 prior changelog entries. Each candidate trim was evaluated against family-parity and rejected.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — no remaining slack), Skill Design Quality, Actionability, Completeness, Orchestration, Coherence (sibling parity confirmed), Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

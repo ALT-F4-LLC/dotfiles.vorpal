@@ -1,5 +1,19 @@
 # Changelog: prd
 
+## 2026-05-18
+
+### Summary
+One completeness fix: added Failure Mode row for invalid `maturity` value (proof-of-concept | draft | experimental | stable). Validation §3 enumerated the allowed set but the Failure Mode table had no matching abort row, asymmetric with the existing `status`-field defect row.
+
+### Changes
+- Failure Mode table: new row for `maturity` value outside the allowed set, with the specific abort message naming the allowed set.
+
+### Dimensions Evaluated
+Completeness (primary), Coherence (sibling-symmetry with status row).
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

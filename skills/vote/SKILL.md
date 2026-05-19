@@ -160,9 +160,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, isolation from other reviewers).
-
-Tasks are coordinator-owned for observability — set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value before proceeding to Phase 3.
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value before proceeding to Phase 3.
 
 ### Handling Reviewer Failures
 

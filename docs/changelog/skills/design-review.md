@@ -1,5 +1,35 @@
 # Changelog: design-review
 
+## 2026-05-19
+
+### Summary
+Phase 2 coherence — added explicit Epistemic Discipline Validation check (new check #10) so the banned-phrases rule from Common Discipline is gate-enforced, matching code-review's check #9. Net +1 line.
+
+### Changes
+- Validation Before Emit: added check #10 — scan What's Strong / What Needs Work / Open Questions / Next Steps for banned confidence phrases; a hit is a defect.
+
+### Dimensions Evaluated
+Coherence, Epistemic Discipline, Report-Emission Family Parity.
+
+### Rename
+No rename.
+
+## 2026-05-18
+
+### Summary
+Phase 1 trim + Epistemic Discipline pass: removed incorrect "Stream long inspections" bullet (design-review is PRE-impl — nothing runs), collapsed Pre-flight empty-artifact guard to Failure Modes reference, folded banned-hedge list into Honest Critique bullet. Net -5 lines, behavior unchanged.
+
+### Changes
+- Common Discipline: removed "Stream long inspections" bullet — design-review has no binary/dev-server scope.
+- Common Discipline "Honest critique" → "Honest critique with evidence": added requirement to cite the grounding artifact and listed banned hedges per Epistemic Discipline.
+- Pre-flight step 6: collapsed inline abort code-fence to a one-line reference pointing at Failure Modes table.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Skill Design Quality, Coherence (vs design-qa, family parity), Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

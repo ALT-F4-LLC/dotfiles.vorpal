@@ -1,5 +1,37 @@
 # Changelog: senior-engineer
 
+## 2026-05-19 (Phase 2 coherence)
+
+### Summary
+Added `ux-advisor` canonical-name reference for symmetry with existing `security-advisor` / `advisor` patterns. Existing UX consult trigger (line 159, 164) gains discoverability from the role-boundary section.
+
+### Changes
+- §What You Are NOT (@ux-designer): added `(canonical persistent name: ux-advisor)` and explicit SendMessage trigger for pattern/consistency questions on user-facing surfaces not resolvable from `docs/ux/`.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — canonical-name symmetry).
+
+### Rename
+No rename.
+
+## 2026-05-19
+
+### Summary
+Cycle 2026-05-19 historical-audit pass. Closes the DKT-2 close-without-verify failure mode (strongest single signal in the audit) with an executable docket-state precondition before posting "Completed:", hardens Read-before-Edit against 16 fleet hits (compaction-resets-Read clause + Edit `new_string` callout for 4 hits of that error), and closes the visibility-mirror prefix gap on @sdet APPROVE confirmations.
+
+### Changes
+- Execution Workflow step 6: split into close-then-verify-then-comment with mandatory `docket issue show <id> --json` status assertion before posting Completed comment.
+- "Read before Edit/Write": added compaction-resets-Read clause + Edit `new_string` callout (covers fleet errors #2 and #4).
+- Communication Discipline "Ack on receipt": unconditional dispatch-ack paired with Rule 7 in same turn.
+- Incoming triggers @sdet APPROVE: now uses `[SE→@sdet] verification-confirmed` prefix per visibility contract; references Execution Workflow step 6 close-verify-comment sequence.
+- Saturation + Verify-claims: tightened preambles; added DKT-2 cross-reference to canonicalize the example.
+
+### Dimensions Evaluated
+Role Realism · Actionability (PRIMARY — close-without-verify + Read-before-Edit) · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

@@ -1,5 +1,23 @@
 # Changelog: team-lead
 
+## 2026-05-19
+
+### Summary
+Tightened orchestrator contracts around the vote-skill handoff, tool envelope, and operator-visibility convention based on historical audit findings (delegation `from`-field gap, Edit-tool errors, prefix-convention drift, AskUserQuestion option-cap errors). Net +4 lines (355 → 359), within BALANCED budget.
+
+### Changes
+- Consensus Integration: added explicit Delegation relay contract — verify `skill`/`vote_id`, run standalone vote, relay result to `delegation_request.from`, mirror to operator.
+- Lead role declaration: stated tool envelope explicitly (no Edit/Write) to prevent unsupported-tool errors.
+- Operator-visibility Rule 2: codified `[{ROLE}→@{recipient}]` prefix convention beyond `[LEAD→]`.
+- Pre-flight step 4 + new hard rule: AskUserQuestion ≤4 options per question.
+- Direct Task pattern footer: trimmed redundant decision-tree restatement.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — vote handoff) · Boundary Clarity (tool envelope) · Cross-Agent Coherence (prefix table) · Actionability (option-cap rule) · Consolidation (Direct Task trim).
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

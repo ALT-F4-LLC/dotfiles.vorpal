@@ -1,5 +1,34 @@
 # Changelog: project-manager
 
+## 2026-05-19 (Phase 2 coherence)
+
+### Summary
+Canonical "Visibility contract" heading alignment + cross-cutting-fallback clause + `[PM→team-lead]` escalation prefix for fleet symmetry. Universal-mirror rule was already correct.
+
+### Changes
+- §Cross-Agent Communication: renamed "Operator-visibility contract" → "Visibility contract" (canonical heading); added cross-cutting-fallback clause (pick most-affected issue when no single issue applies); added `[PM→team-lead]` escalation prefix for parity with siblings.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — canonical heading + escalation prefix).
+
+### Rename
+No rename.
+
+## 2026-05-19
+
+### Summary
+Sibling-coherence: add `ux-advisor` canonical persistent name for @ux-designer consults. Trim duplication between the "no guessing" framing and Epistemic Discipline / §What You Are NOT.
+
+### Changes
+- §Cross-Agent Communication peer-consult list: added `(canonical persistent name: `ux-advisor`)` to @ux-designer entry, matching the form used for `advisor` and `security-advisor`.
+- §intro: collapsed the "Rigorous, honest, no guessing" paragraph to the unique pushback framing; verify-don't-invent intent is carried by Epistemic Discipline (rule 6), and the "never write code" boundary is already in the frontmatter, §What You Are NOT, and §Rules.
+
+### Dimensions Evaluated
+Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming (HIGHEST) · Capability Growth & Cross-Communication · Spec Alignment · Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

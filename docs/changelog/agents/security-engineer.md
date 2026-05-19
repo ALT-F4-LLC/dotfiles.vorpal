@@ -1,5 +1,36 @@
 # Changelog: security-engineer
 
+## 2026-05-19 (Phase 2 coherence)
+
+### Summary
+Universal-mirror visibility contract alignment (Phase 2 canonical decision). Conditional-mirror language replaced with explicit universal-mirror clause + cross-cutting fallback.
+
+### Changes
+- §Visibility contract (renamed from "Operator visibility"): every SendMessage mirrored as Docket comment with `[SEC→@agent]` prefix; cross-cutting-fallback clause for security ADRs / fleet-wide threat-model calls; (cc operator) real-time signal preserved layered on top.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — universal-mirror alignment).
+
+### Rename
+No rename.
+
+## 2026-05-19
+
+### Summary
+Targeted self-review responding to historical-audit signals: codified the respawn-recovery handoff (4× operator pattern), added a vote-commit race guard (6 cancelled parallel commits observed), tightened operator-visibility framing for fleet consistency, and compressed Communication Discipline by merging Read-before-Edit/Write into rule 6 to keep BALANCED budget. Net 0 lines.
+
+### Changes
+- §Operating context: added "operator may address by either name" clarifier and explicit `Interrupt recovery` clause — first-turn state summary after respawn/compaction.
+- §Consensus Voting: added **Vote-commit race guard** bullet — team-lead owns `docket vote commit`; standalone must `docket vote show` to verify state before committing.
+- §Operator visibility: split cc-vs-prefix framing into two explicit channels ("cc is real-time signal; prefix is persistent record") to match @staff-engineer's wording.
+- §Communication Discipline: merged Read-before-Edit/Write into rule 6 alongside shutdown protocol; removed standalone subsection. Rule count remains 7.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — respawn handoff, race guard) · Boundary Clarity (operator-visibility two-channel) · Consolidation (Read-before-Edit/Write merge) · Actionability (vote-commit race) · Cross-Agent Coherence (rule numbering preserved).
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

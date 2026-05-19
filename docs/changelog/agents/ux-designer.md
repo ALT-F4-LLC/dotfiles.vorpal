@@ -1,5 +1,22 @@
 # Changelog: ux-designer
 
+## 2026-05-19
+
+### Summary
+Addressed the "highest-leverage coherence fix" flagged by historical audit: promoted Visibility contract from conditional mirroring ("When an exchange ties to a Docket issue") to universal mirroring matching senior-engineer.md and project-manager.md fleet pattern. Added explicit guidance for cross-spec/precedent exchanges with no single bound issue. Trimmed Communication Discipline preface that restated rule 1 and duplicated Persistent Advisor Lifecycle's ux-advisor cross-reference. Net: -2 lines (249 → 247).
+
+### Changes
+- Renamed "Operator-visibility contract" → "Visibility contract" matching senior-engineer/project-manager.
+- Changed mirroring from conditional ("When an exchange ties to a Docket issue") to universal ("Every SendMessage is mirrored").
+- Added pick-most-relevant-issue guidance for cross-spec exchanges; added "cc is real-time signal; prefix is persistent record" framing.
+- Removed Communication Discipline preface line (duplicated rule 1 and Persistent Advisor Lifecycle ux-advisor reference).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — universal-mirror promotion) · Spec Alignment (fleet visibility-contract pattern) · Consolidation & Trimming (preface dedup offset).
+
+### Rename
+No rename. Canonical persistent name `ux-advisor` already codified at line 244.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

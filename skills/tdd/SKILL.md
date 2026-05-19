@@ -123,10 +123,9 @@ malformed frontmatter.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required
-   Sections). Sections explicitly marked "may be N/A" (Data Models §5, API
-   Contracts §6) may contain a single `N/A.` paragraph with a one-line
-   justification; omitting any required section is a defect — Validation
-   Before Save §3 enforces the full list.
+   Sections). Sections marked "may be N/A" (Data Models §5, API Contracts §6)
+   may contain a single `N/A.` paragraph with a one-line justification.
+   Validation §3 is the gate for the full section list.
 4. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
    block. TDDs always require at least one diagram (component map, sequence,
    state, or data flow) — pure-policy decisions belong in an ADR, not a TDD.
@@ -162,7 +161,7 @@ status: "draft"
 Field rules:
 
 - `project` = `basename $(git rev-parse --show-toplevel)`.
-- `maturity` is the doc-class ladder (how settled the *content* is) and `status` is the workflow ladder (where the doc sits in the review-and-vote lifecycle). Both fields are required for TDDs because the two ladders are orthogonal — a TDD can be `status: accepted` while still `maturity: experimental` (design signed off, but the underlying approach is provisional). This is intentional: PRDs/UX specs use only `maturity` (no vote workflow), ADRs use only `status` (no maturity arc), TDDs need both.
+- `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: accepted` while `maturity: experimental` (design signed off, approach still provisional).
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
@@ -187,18 +186,11 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 4. **Architecture & System Design** — the chosen approach, with sub-sections as
    needed (component map, data flow, sequencing, contracts). **For security
    TDDs** (`updated_by` is `@security-engineer`), this section MUST include
-   three named subsections: `### Threat Model` (assumed adversary,
-   capabilities, out-of-scope threats), `### Trust Boundaries` (where
-   untrusted data enters, where privileges escalate, what each boundary
-   enforces), and `### Security Considerations` (mitigations, residual risks,
-   defense layers) — enforced by Validation §7. **For mixed TDDs** where a
-   `@staff-engineer`-authored design crosses trust boundaries / changes
-   authn-authz / handles secrets / changes the sandbox-permission model, the
-   calling agent should ask team-lead to spawn `@security-engineer` to
-   append these three subsections via Edit to the saved TDD (the
-   Threat-Model Annotation pattern per `agents/security-engineer.md`
-   Responsibility 1 — not by re-invoking this skill, which would hit the
-   collision dialog). Non-security TDDs may omit these subsections.
+   three `###` subsections — `Threat Model`, `Trust Boundaries`, and
+   `Security Considerations` — enforced by Validation §7. Non-security TDDs
+   may omit them. (Mixed-scope routing — when @security-engineer appends
+   these to a @staff-engineer TDD via the Threat-Model Annotation pattern
+   — is owned by `agents/security-engineer.md`, not this skill.)
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation

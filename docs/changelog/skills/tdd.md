@@ -1,5 +1,21 @@
 # Changelog: tdd
 
+## 2026-05-18
+
+### Summary
+Three trim-class fixes: collapsed §4 security-track prose bloat that duplicated agents/security-engineer.md Threat-Model Annotation mechanics (skill keeps the validation contract; agent owns routing), condensed the maturity/status orthogonality rationale to its load-bearing fact, and removed the defect-restatement in Authoring §3 now that Validation §3 is the gate. Net -19.
+
+### Changes
+- Required Sections §4: trimmed 14-line security-track paragraph to the validation rule the skill enforces; routing of mixed-scope Threat-Model Annotation deferred to `agents/security-engineer.md`.
+- Field rules §`maturity`: condensed 5-line ladder-rationale paragraph to the orthogonality fact.
+- Authoring §3: removed defect-restatement now redundant with Validation §3; forward-pointer retained.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (security-engineer.md routing ownership), Skill Design Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-16
 
 ### Summary

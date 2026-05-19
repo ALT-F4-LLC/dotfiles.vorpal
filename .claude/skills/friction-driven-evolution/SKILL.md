@@ -209,7 +209,7 @@ Reject and re-spawn (`-r2`) once on validation failure. Persist accepted proposa
 
 ### Phase 3: Review handoff (sequential per cluster)
 
-Orchestrator-only. For each accepted proposal, invoke the downstream skill **sequentially** (parallel `Skill()` calls share orchestrator state and confuse the operator-prompt path):
+Orchestrator-only. For each accepted proposal, invoke the downstream skill **sequentially** (parallel `Skill()` calls share orchestrator state and confuse the operator-prompt path). Before each dispatch, emit a one-line operator-visible trace so chaining is observable in the transcript: `Dispatching cluster {id} ({class}, {target_file_basename}) → {downstream_skill}`. Then:
 
 ```
 Skill("<DOWNSTREAM_SKILL>", "<argument>")

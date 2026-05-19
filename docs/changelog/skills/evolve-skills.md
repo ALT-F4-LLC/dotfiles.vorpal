@@ -1,5 +1,21 @@
 # Changelog: evolve-skills
 
+## 2026-05-18
+
+### Summary
+Closed the historical-auditor ISO→epoch-ms conversion gap that produced the wrong cutoff (1808066891000 = 2027-04-18 instead of 2026-04-18) in this cycle's audit. Pre-flight now computes both `{history_cutoff_iso}` and `{history_cutoff_epoch_ms}`; historical-auditor template substitutes the epoch-ms value directly instead of asking the auditor to convert inline. Net +2 lines.
+
+### Changes
+- Pre-flight step 8: compute `{history_cutoff_epoch_ms}` alongside `{history_cutoff_iso}` (macOS/Linux Bash commands) so the auditor never has to convert.
+- Phase 0 historical-auditor template header: include `epoch-ms {history_cutoff_epoch_ms}` alongside the ISO cutoff.
+- Phase 0 historical-auditor template step 2: replace `epoch-ms of {history_cutoff_iso}` with direct `{history_cutoff_epoch_ms}` substitution.
+
+### Dimensions Evaluated
+Completeness (HIGHEST), Actionability, Skill Design Quality, Over-Engineering.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

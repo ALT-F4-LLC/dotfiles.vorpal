@@ -1,5 +1,34 @@
 # Changelog: evolve-agents
 
+## 2026-05-19
+
+### Summary
+Phase 2 coherence pass — aligned operator-prompt banner to evolve-skills' stronger phrasing (explicit ≤4-options API constraint + routing-question fallback). Net 0 lines (rewrap only). Behavior unchanged for ≤4-option callers; corrects misleading "doesn't raise the cap" phrasing for the >4-option path.
+
+### Changes
+- Pre-flight operator-prompts banner: aligned verbatim with `evolve-skills/SKILL.md:35` — adds the explicit "API rejects >4" callout and the route-first-then-narrow recipe for >4-option scenarios.
+
+### Dimensions Evaluated
+Coherence, Operator Prompts, Family Parity.
+
+### Rename
+No rename.
+
+## 2026-05-18
+
+### Summary
+Fixed the date-to-epoch-ms gap in the historical-auditor's history.jsonl filter (pre-flight step 7 now computes `{history_cutoff_epoch_ms}`; step 4 of the historical-audit template uses it via a concrete jq one-liner). Net +2 lines. Sister `evolve-skills` got the identical fix.
+
+### Changes
+- Pre-flight step 7: added macOS/Linux command to compute `{history_cutoff_epoch_ms}` from `{history_days}` so the auditor can compare history.jsonl `timestamp` epoch-ms directly.
+- Historical-audit template step 4: replaced unworkable `grep`+`epoch-ms of ISO-string` directive with a concrete `jq` one-liner that uses the new `{history_cutoff_epoch_ms}` substitution.
+
+### Dimensions Evaluated
+Actionability (HIGHEST — closed a silent-failure path), Coherence (sister evolve-skills parity), Completeness.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

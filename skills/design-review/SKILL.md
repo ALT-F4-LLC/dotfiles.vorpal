@@ -86,11 +86,7 @@ If extra positional args follow `<scope>`, ignore them silently.
    - `Grep -r "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs, and project specs.
    - `Glob docs/tdd/adr/*.md` to identify accepted ADRs that may constrain the design.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
-6. **Empty-artifact guard**: if the artifact has no inspectable design content (empty file, description under 10 words), ABORT:
-
-   ```
-   Error: Resolved scope contains no reviewable design content — expand the description or pass a non-empty file.
-   ```
+6. **Empty-artifact guard**: abort if the artifact has no inspectable design content (empty file or description under 10 words) — see Failure Modes.
 
 ## Review Procedure
 
@@ -130,9 +126,8 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 ### Common Discipline
 
 - **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars; provide a default recommendation in the first option's description. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
-- **Honest critique.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve.
+- **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
-- **Stream long inspections.** If reviewing a TUI/CLI surface requires running the binary, use `Bash run_in_background` + `Monitor` with an until-loop on a terminal pattern.
 
 ## Output Contract
 
@@ -208,6 +203,7 @@ Before emitting the report, verify in the calling agent's context:
 7. **Empty severity buckets explicit** — every bucket (Blockers/Concerns/Suggestions/Questions) reads `None` or lists items. Silent omission is a defect.
 8. **Required sections present, in order** — Assessment, Artifact, What's Strong, What Needs Work, Open Questions, Dimension Checklist, Recommendation, Next Steps.
 9. **Placeholder scan** — body contains no literal `{Artifact Title}`, `{dimension}`, `{count}`, `TBD`, or `TODO` text outside of code-fenced examples.
+10. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in What's Strong, What Needs Work, Open Questions, or Next Steps. Use evidence-anchored language ("verified at {section}," "the workflow at {path} shows …," "assumption: …"). A hit is a defect.
 
 If any check fails, ABORT:
 

@@ -1,5 +1,19 @@
 # Changelog: vote
 
+## 2026-05-18
+
+### Summary
+Minor over-engineering trim in Phase 2 — folded "coordinator-owned tasks" editorial into the existing actionable sentence. No behavioral or contract changes; CLI flags verified intact against `docket vote --help`; cross-caller Delegation Protocol payloads (6 agent files) confirmed coherent.
+
+### Changes
+- Phase 2: removed standalone "Tasks are coordinator-owned for observability" paragraph; merged the TaskUpdate sentence into the spawn paragraph.
+
+### Dimensions Evaluated
+Over-Engineering (primary), Coherence, Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

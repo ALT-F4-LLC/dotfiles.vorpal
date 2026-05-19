@@ -1,5 +1,35 @@
 # Changelog: verify
 
+## 2026-05-19
+
+### Summary
+Phase 2 coherence — added explicit Epistemic Discipline Validation check (new check #9) so the banned-framings rule in Common Discipline (referencing agents/sdet.md) is gate-enforced. Net +1 line.
+
+### Changes
+- Validation Before Emit: added check #9 — scan criterion evidence / Additional Testing / Issues Found / Recommendation for banned confidence phrases; a hit is a defect.
+
+### Dimensions Evaluated
+Coherence, Epistemic Discipline, Report-Emission Family Parity.
+
+### Rename
+No rename.
+
+## 2026-05-18
+
+### Summary
+Round-2 scoping + Epistemic Discipline parity. Adds explicit re-invocation guidance to scope Round-2 verifications to changed criteria (addresses 9-per-session re-verification rate from historical audit); mirrors Epistemic Discipline rule into Common Discipline so evidence-free PASS/FAIL claims fail validation; tightens "comments supersede description" phrasing.
+
+### Changes
+- When to Use: added "Re-invocation after fix is expected" bullet — Round-2 may carry forward PASS criteria whose evidence files are untouched, but always re-run the suite end-to-end.
+- Common Discipline: added "Evidence over assertion" bullet referencing agents/sdet.md Epistemic Discipline rule.
+- Pre-flight §4: clarified "comments supersede description" → "comments (which supersede the description on conflict)".
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (Epistemic Discipline cross-agent parity), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-17
 
 ### Summary

@@ -89,9 +89,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Resolve context**:
-   - `{today_date}` = `Bash date +%Y-%m-%d`.
-   - `{role}` = the detected role (`staff-engineer` or `security-engineer`).
+3. **Resolve context**: `{role}` = the detected role (`staff-engineer` or `security-engineer`).
 4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 
@@ -114,7 +112,7 @@ Apply the **6 dimensions**, weighted by what the change touches. Mark unaffected
 2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to SendMessage `@security-engineer` for a dedicated security pass before merge.
 3. **Operations** — observability hooks, runbook impact, deploy/rollback story, 3am-diagnosability, configuration footprint.
 4. **Performance** — algorithmic complexity, N+1 patterns, allocation hotspots, latency-budget impact, regression risk.
-5. **Code Quality** — apply the 12 code-philosophy principles (full text + worked examples in `agents/senior-engineer.md` → Code Quality & Craftsmanship). Through-line: *locality of reasoning + deletability* — junior code optimizes for *looking careful*, senior code optimizes for *being correct and deletable*. Four principles carry mechanical Hard Gates enforced here: **#4 mutation locality** (G2), **#5 parse at the edge** (G3), **#6 error propagation** (G1), **#11 invariant over surface** (G4) — see Hard Gates below. The other eight (#1 abstraction, #2 names, #3 cohesion-over-length, #7 comments-justify, #8 tests-pin-behavior, #9 minimal-diff, #10 dep-posture, #12 deletability) belong to the Concern/Suggestion rubric — read senior-engineer.md for the per-principle prompts and apply them per touched file.
+5. **Code Quality** — apply the 12 code-philosophy principles per `agents/senior-engineer.md` → Code Quality & Craftsmanship (format authority). Four principles carry mechanical Hard Gates enforced below: **#4 mutation locality** (G2), **#5 parse at the edge** (G3), **#6 error propagation** (G1), **#11 invariant over surface** (G4). The other eight (#1 abstraction, #2 names, #3 cohesion-over-length, #7 comments-justify, #8 tests-pin-behavior, #9 minimal-diff, #10 dep-posture, #12 deletability) belong to the Concern/Suggestion rubric — apply per touched file.
 6. **Testing** — coverage of acceptance criteria, edge-case discipline, regression coverage, test fragility, what's untested and why. Test *quality* (asserts behavior vs implementation, mocks at boundaries only) lives under #8 above; this dimension covers *what* is tested — acceptance criteria, edges, regressions, untested-but-should-be-tested paths.
 
 **Severity ladder (general)**:
@@ -157,6 +155,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 - **Calibrate to value.** Comment on real risks and pattern violations. Skip stylistic preferences and what `cargo clippy` / `cargo audit` should catch automatically.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
+- **Epistemic discipline in the review body.** Every load-bearing finding cites evidence (file:line, command output, spec section). Banned phrases in findings/praise/recommendations: "clearly," "obviously," "should work," "definitely," "I'm sure," "100%," "guaranteed." Prefer "verified at {file:line}," "ran X — saw Y," "unverified — assumption," or qualify with what was checked vs. assumed. A confident wrong claim is worse than an honest "did not verify."
 
 ### Hard Gates (Correctness — Blocker-class for `@staff-engineer`, Critical for `@security-engineer`)
 
@@ -340,6 +339,7 @@ Before emitting the structured review, verify in the calling agent's context:
 6. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
 7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
 8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
+9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
 
 If any check fails, ABORT:
 
@@ -378,7 +378,7 @@ On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emi
 
 ## Failure Modes
 
-The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, empty diff, validation failure, and silently-ignored extras are specified inline at Argument Handling, Role Detection, Pre-flight, and Validation Before Emit. The table below covers only the abort paths that introduce new abort text or scope-specific behavior:
+Most abort paths are specified inline (Argument Handling, Role Detection, Pre-flight, Validation Before Emit). The table covers only abort paths with new abort text:
 
 | Trigger | Handling |
 |---|---|

@@ -1,5 +1,35 @@
 # Changelog: staff-engineer
 
+## 2026-05-19 (Phase 2 coherence)
+
+### Summary
+Universal-mirror visibility contract alignment (Phase 2 canonical decision: every SendMessage mirrors to Docket; conditional mirroring deprecated fleet-wide). Added `Git lock recovery` paragraph for `index.lock` sandbox-retry pattern observed 19× in audit.
+
+### Changes
+- §Visibility contract (renamed from "Operator visibility"): universal mirror + cross-cutting-fallback clause; (cc operator) real-time signal preserved as layered behavior.
+- §Operating context: appended `Git lock recovery` paragraph — retry once with `dangerouslyDisableSandbox: true`; do NOT `rm -f .git/index.lock`.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — universal-mirror alignment) · Actionability (git-lock recovery).
+
+### Rename
+No rename.
+
+## 2026-05-19
+
+### Summary
+Cycle 2026-05-19 self-review across 8 dimensions. File is in good shape (282 lines); vote delegation payload already canonical per 2026-05-17 sync (historical-audit flag was stale; verified against line 270). Two adjustments: acknowledge respawn-as-revision as a normal pattern (operators respawn named TDD-author teammates for revision intent, not failure), and trim soft "evaluate the system as a whole" preamble in System-Level Thinking. Net 0 lines.
+
+### Changes
+- Communication Discipline: added "Respawn-as-revision is normal" note below the TeammateIdle/interrupt-recovery line. Distinguishes operator-initiated revision-respawn (re-Read artifact, address directive, respond same turn) from agent-initiated saturation-respawn (rule 3).
+- System-Level Thinking: merged "You evaluate the system as a whole... Think in platforms" preamble into the Proactive Health Assessment lead — same content, one fewer stanza.
+
+### Dimensions Evaluated
+Boundary Clarity (respawn-as-revision distinction) · Capability Growth & Cross-Communication (named-teammate revision flow) · Consolidation & Trimming (System-Level preamble) · plus full sweep across remaining 5 dimensions confirming current text holds.
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

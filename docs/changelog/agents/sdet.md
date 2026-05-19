@@ -1,5 +1,37 @@
 # Changelog: sdet
 
+## 2026-05-19 (Phase 2 coherence)
+
+### Summary
+Universal-mirror visibility contract alignment (replaces narrower "BLOCK / coverage-gap / vote / approach-changing" trigger). Added `ux-advisor` canonical-name symmetry for fleet discoverability.
+
+### Changes
+- §Inter-Agent Communication: replaced conditional trigger list with universal-mirror `Visibility contract` clause + cross-cutting-fallback for defect rollups / fleet-wide test-infra concerns.
+- §What You Are NOT (@ux-designer): added `(canonical persistent name: ux-advisor)` for symmetry with existing `security-advisor` reference.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — universal-mirror alignment, canonical-name symmetry).
+
+### Rename
+No rename.
+
+## 2026-05-19
+
+### Summary
+Closes audit gaps: verification-evidence specificity (real-vs-mocked at trust boundaries), `index.lock` recovery (fleet-wide #1 error, sdet=8), `docket export` under-use. Consolidates two duplicated Incoming Consults entries into merged staff/security testability triggers. NET +0.
+
+### Changes
+- Verification Workflow §4: real-system evidence requirement at external trust boundaries.
+- Test Failure Diagnosis: appended `Git lock recovery` paragraph pointing at sandbox-disabled retry.
+- Incoming Consults: merged @staff-engineer test-infra/TDD entries and @security-engineer abuse-case/test-infra entries (4 → 2 lines).
+- Bug Reporting: added `docket export -o markdown` trigger for cross-issue defect rollups.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — verification-evidence + git-lock) · Consolidation & Trimming (PRIMARY — consults dedup) · Capability Growth (docket export) · Boundary Clarity · Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-05-17 (Phase 2 coherence)
 
 ### Summary

@@ -61,12 +61,18 @@ If extra positional args follow `<scope>`, ignore them silently.
 - `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
 - Operator or team-lead requests a design audit against an existing spec.
 
+## Doubling Rule
+
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), the doubling rule applies: the calling layer spawns ≥2 reviewers in parallel — the persistent `ux-advisor` + one ephemeral `design-qa-2` — per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2. Both dispatched in the SAME turn (eager parallel dispatch, §4.3 rule 8). The ephemeral `design-qa-2` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with dedupe; contradictions surface to operator) per §4.3. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+
 ## When NOT to Use
 
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Authoring or revising the UX spec itself — use `Skill(ux-spec, ...)`.
+
+See `docs/tdd/reviewer-doubling-lifecycle.md` for the doubling-rule rationale and the strict ephemeral lifecycle contract.
 
 ## Pre-flight
 

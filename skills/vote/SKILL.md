@@ -65,14 +65,20 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 | Code review (<500 lines), plan approval, scope decisions | medium |
 | Style, naming, tooling, documentation, low-risk config | low |
 
-**Reviewer count by criticality:**
+**Reviewer count by criticality** (doubled per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2; see Doubling Rule note below):
 
 | Criticality | Reviewers | Quorum Threshold | Additional Constraint |
 |---|---|---|---|
-| low | 2 | 50% weighted approval | None |
-| medium | 2 | 60% weighted approval | No more than 1 reject |
-| high | 3 | 75% weighted approval | Zero rejects |
-| critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
+| low | 4 | 50% weighted approval | None |
+| medium | 4 | 60% weighted approval | No more than 2 rejects |
+| high | 6 | 75% weighted approval | Zero rejects |
+| critical | 8 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
+
+**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `docs/tdd/reviewer-doubling-lifecycle.md` first. Cap at 8 holds; if a future change would push past 8 it must amend the TDD first.
+
+**Recursive doubling applies independently per phase** (TDD §8.2 decision 5 / §4.2 rule 3). When `Skill(vote, ...)` is invoked from inside an already-doubled review/QA/verification phase (e.g., a security-sensitive review hits a contradiction and team-lead invokes `vote` at `critical` to break the tie), the vote panel sizes from the doubled criticality table above independently of the originating phase's reviewer count — a security-sensitive review (already 4 reviewers) at `critical` criticality spawns an additional 8-voter panel for the vote, for 4+8=12 active reviewers across the two phases. Two activities, two doubled phases. The 8-cap holds per phase.
+
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per TDD §4.4: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 

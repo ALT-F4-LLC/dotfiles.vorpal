@@ -62,6 +62,16 @@ Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch na
 
 If extra positional args follow `<scope>`, ignore them silently.
 
+## Doubling rule
+
+When invoked under team-lead orchestration, the calling layer spawns TWO parallel ephemeral `@sdet` verifiers — `verifier-criteria` (per-issue acceptance-criteria checks) and `verifier-integration` (cross-issue / cross-file consistency). Both ephemeral, both exit after delivering verdict; there is no single-verifier mode under orchestration — the pair is the unit of verification. Dispatch is eager: both verifiers are spawned in the same turn (no lazy or sister-anchored variant) per `docs/tdd/reviewer-doubling-lifecycle.md` §4.3 rule 8.
+
+Verdict reconciliation per `docs/tdd/reviewer-doubling-lifecycle.md` §4.3: any `BLOCK` from either verifier blocks the consolidated verdict; non-blocker findings merge with dedupe by `(file, symbol)`. Degraded fallback: if one verifier fails twice (probe-once + respawn both abort), the calling layer falls back to the sister verifier's verdict alone and annotates the consolidated message verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`.
+
+Fix-loop semantics: bugs route to a fresh `impl-{DOCKET-ID}-fix-{N}` ephemeral implementer (not a kept-alive instance), and re-verification spawns a FRESH `verifier-criteria` + `verifier-integration` pair — never reuse a prior verifier instance.
+
+Standalone-mode invocations (operator-driven, no team-lead orchestration) follow the calling agent's own discretion on count.
+
 ## When to Use
 
 <!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
@@ -105,6 +115,7 @@ If extra positional args follow `<scope>`, ignore them silently.
      ```
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
+8. **Doubling-rule reference** — under team-lead orchestration, this skill is invoked once per ephemeral verifier in the `verifier-criteria` + `verifier-integration` pair; see `docs/tdd/reviewer-doubling-lifecycle.md` §4.2–§4.3 for the doubling rule and verdict reconciliation rationale.
 
 ## Verification Procedure
 

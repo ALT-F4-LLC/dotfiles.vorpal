@@ -59,7 +59,20 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The doubling-rule note below is also part of this family — keep its shape in sync across siblings per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2. -->
+
+### Reviewer count / Doubling rule
+
+Under team-lead orchestration (via `@ux-designer`), peer design review runs with **2 reviewers in parallel** per the doubling rule (`docs/tdd/reviewer-doubling-lifecycle.md` §4.2 row "design-review"): the persistent `ux-advisor` (consulted via SendMessage — NOT a fresh spawn) AND one ephemeral `design-review-2` (`Agent()` spawn). Both are dispatched in the SAME turn (eager parallel dispatch per TDD §4.3 rule 8); lazy / serial dispatch is forbidden because it would let the persistent advisor anchor the ephemeral’s frame. Each reviewer invokes `Skill(design-review, <scope>)` independently and returns its verdict to the calling layer.
+
+**Reconciliation** is the calling layer’s responsibility per TDD §4.3: any `Blocker` from either reviewer blocks (Approve + Block resolves to Block); non-blocker findings merge with `(file, symbol)` near-duplicate dedupe; contradictory non-blocker recommendations surface to the operator (AskUserQuestion or `Skill(vote, ...)`); reviewers never address the operator directly.
+
+**Ephemeral lifecycle.** `design-review-2` is ephemeral — it emits `shutdown_request` immediately after delivering its verdict to the calling layer. The persistent `ux-advisor` stays idle until the next consult; auto-respawn on idle is forbidden (TDD §4.4 rule 5).
+
+**Degraded fallback.** If `design-review-2` fails twice (probe-once + respawn both abort or return empty), the calling layer falls back to the `ux-advisor`’s verdict alone and annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` per TDD §4.3 rule 7. Non-degraded reconciliations do not carry the annotation; recurring degraded fallbacks on this skill are an evolve-skills signal.
+
+**Standalone mode.** When invoked outside team-lead orchestration, reviewer count follows the calling agent’s own discretion (no automatic doubling); the calling agent owns reconciliation and lifecycle.
+
 - Reviewing a draft UX spec authored by another agent (peer review before consensus).
 - Reviewing a `@staff-engineer` TDD that proposes user-facing surfaces (CLI, API, config format, error copy).
 - Reviewing a `@senior-engineer` design proposal embedded in a design comment or chat.

@@ -75,6 +75,16 @@ If extra positional args follow `<scope>`, ignore them silently.
 - Security-sensitive changes: BOTH advisors invoke this skill in parallel — each in their own role. The two reviews scope to different dimensions and do not duplicate work; team-lead reconciles the verdicts.
 - **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior Blockers/Concerns, the original reviewer re-invokes `Skill(code-review, "<scope>")` for a Round-2 pass on the new diff (typical: PR number first, then `uncommitted` after the fix lands locally). The Round-2 review focuses on whether the original findings are resolved; it does not re-do the full dimension sweep unless new code introduces new risk.
 
+## Doubling Rule (under team-lead orchestration)
+
+When invoked under team-lead orchestration, the calling layer spawns **≥2 reviewers in parallel per phase** per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2: routine general review runs `advisor` (persistent) + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel reviewers). Each reviewer invokes this skill independently and emits its own structured report in this format — this skill remains the single-reviewer output-format authority. The calling layer (team-lead) reconciles the verdicts per TDD §4.3 (any Blocker from any reviewer blocks; findings merge by `(file, symbol)` with dedupe; Approve+Block → Block; contradictions surface via `AskUserQuestion` or `vote`).
+
+**Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict (TDD §4.4). Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
+
+**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Recurring degraded fallbacks on the same skill are an evolve-skills signal.
+
+**Standalone mode.** Outside team-lead orchestration, doubling is at the calling agent's discretion — this skill itself does not spawn reviewers (leaf skill; no `Agent()` / `SendMessage`).
+
 ## When NOT to Use
 
 <!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
@@ -86,6 +96,8 @@ If extra positional args follow `<scope>`, ignore them silently.
 - Plan/scope/dependency review on a Docket plan — handled inline by the calling agent's advisory output.
 
 ## Pre-flight
+
+> **Doubling-rule rationale** — see `docs/tdd/reviewer-doubling-lifecycle.md` for why review/QA/verification phases run ≥2 reviewers under team-lead orchestration.
 
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.

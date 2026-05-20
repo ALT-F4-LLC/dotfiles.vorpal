@@ -1,5 +1,21 @@
 # Changelog: vote
 
+## 2026-05-20
+
+### Summary
+Light trim cycle: removed self-duplicated cap-at-8 sentence, collapsed recursive-doubling paragraph to a one-line pointer (full semantics live in `team-lead.md` + reviewer-doubling-lifecycle TDD), and sharpened Argument Handling dispatch comments so team-mode callers don't pass free-text args (signal: captured session 962bb9d0 where vote was invoked with free-text proposal in team-mode).
+
+### Changes
+- Criticality Classification: removed duplicated second sentence of cap-at-8 note.
+- Recursive-doubling paragraph: collapsed 5-line cross-document duplicate to 2-line pointer referencing `docs/tdd/reviewer-doubling-lifecycle.md` §8.2 decision 5.
+- Argument Handling: clarified vote_id branch is the canonical team-lead relay path; flagged proposal-description branch as standalone-only.
+
+### Dimensions Evaluated
+Over-Engineering (primary), Coherence (team-lead.md, reviewer-doubling-lifecycle.md), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

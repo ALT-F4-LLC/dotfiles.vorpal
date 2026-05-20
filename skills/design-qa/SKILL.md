@@ -4,7 +4,7 @@ description: >
   Post-implementation QA of a shipped user-facing surface against its `docs/ux/` spec; emits
   a structured QA report. Driven by `@ux-designer`; format authority for verdict/severity/sections.
   Invoke after the spec is implemented (not for spec review — that's `design-review`).
-  Trigger: "design QA", "run design QA", "verify implementation against UX spec", "design quality assurance".
+  Trigger: "design QA", "run design QA", "verify implementation against UX spec", "QA the shipped UX".
 argument-hint: "<scope>"
 effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]

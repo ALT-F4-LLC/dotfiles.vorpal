@@ -62,7 +62,7 @@ Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch na
 
 If extra positional args follow `<scope>`, ignore them silently.
 
-## Doubling rule
+## Doubling Rule
 
 When invoked under team-lead orchestration, the calling layer spawns TWO parallel ephemeral `@sdet` verifiers — `verifier-criteria` (per-issue acceptance-criteria checks) and `verifier-integration` (cross-issue / cross-file consistency). Both ephemeral, both exit after delivering verdict; there is no single-verifier mode under orchestration — the pair is the unit of verification. Dispatch is eager: both verifiers are spawned in the same turn (no lazy or sister-anchored variant) per `docs/tdd/reviewer-doubling-lifecycle.md` §4.3 rule 8.
 
@@ -94,8 +94,9 @@ Standalone-mode invocations (operator-driven, no team-lead orchestration) follow
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
-4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
-5. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe intent; the diff describes reality. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
+4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. The calling agent (`@sdet`) has already claimed the issue via `docket issue move <id> in-progress` per `agents/sdet.md` Rule 7 before invoking this skill — do not re-claim. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
+4a. **Prior-verdict awareness** (Round-2+ re-verifications only). Before scoring criteria, scan `docket issue comment list {id}` for prior verification reports. For each acceptance criterion previously marked PASS whose evidence file/test was NOT touched by the current diff (`git diff --stat` vs the prior round's commit), cite the prior round's verdict in the new report's evidence (`PASS — unchanged since round {N}: {prior evidence}`) rather than re-running its evidence command. Re-run the full test suite end-to-end regardless; never carry forward a FAILed criterion or an Additional Testing gap. Reduces per-round token spend on multi-round fix-loops (driven by audit session 8442dc39 — 17× re-verifications per issue with stable format authority).
+5. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe what the implementer intended to ship; the diff describes what reached HEAD. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
 6. **Empty-artifact guard**: if the resolved diff/scope produces no inspectable content (no files, no acceptance criteria, empty issue), ABORT:
 
    ```

@@ -1,5 +1,20 @@
 # Changelog: design-review
 
+## 2026-05-20
+
+### Summary
+Coherence + Over-Engineering: promoted Doubling Rule from a 4-paragraph nested H3 inside `When to Use` to a single-paragraph top-level `## Doubling Rule` section matching sibling design-qa structure and density. Trimmed Failure Modes row that pure-restated Argument Handling. Net -9 lines.
+
+### Changes
+- `When to Use` → `## Doubling Rule`: promoted to top-level H2 (was H3 inside `When to Use`); collapsed Reviewer count / Reconciliation / Ephemeral lifecycle / Degraded fallback / Standalone-mode paragraphs into one dense paragraph mirroring design-qa.
+- Failure Modes: removed "Caller passes additional positional args" row — restates Argument Handling per 2026-05-17 trim criterion.
+
+### Dimensions Evaluated
+Coherence (HIGHEST — vs design-qa family parity), Over-Engineering (HIGHEST), Skill Design Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

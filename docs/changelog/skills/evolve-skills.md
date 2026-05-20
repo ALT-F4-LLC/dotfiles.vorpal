@@ -1,5 +1,21 @@
 # Changelog: evolve-skills
 
+## 2026-05-20
+
+### Summary
+Two sister-parity trims (Phase 1 Context clause restating section headers below; Phase 0 Distinction-from-friction negative-form tail duplicating affirmative clause) plus cross-cutting `${history_days}` shell-var leak fix in Phase 0 historical-auditor template (same defect identified in sister evolve-agents). Net 0 lines (text-internal rewording).
+
+### Changes
+- Phase 1 template Context: dropped `and apply the docs research / docket audit findings below` — section headers within 3-9 lines below prompt application; fails Behavioral check.
+- Phase 0 Distinction-from-friction: dropped `— no clustering, no routing` tail — implied by `feeds Phase 1 reviewers directly`; fails Non-redundant check.
+- Phase 0 historical-auditor template: `-mtime -${history_days}` → `-mtime -{history_days}` — sister-cross-cutting defect; orchestrator substitutes `{...}` not `${...}`.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — trim x2), Coherence (sister evolve-agents parity x3), Skill Design Quality (defect fix).
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

@@ -1,5 +1,21 @@
 # Changelog: tdd
 
+## 2026-05-20
+
+### Summary
+Added non-blocking near-duplicate-slug probe to Pre-flight (closes gap surfaced by sessions dd8cea9d/962bb9d0 where near-identical args derived to different slugs and silently produced adjacent docs/tdd/ files — exact-match collision dialog can't catch this). Collapsed Authoring §4 Mermaid restatement now that Validation §5 + Failure Modes carry the gate. Renumbered Related-doc probe (was §5, now §6). Net +1 line.
+
+### Changes
+- Pre-flight: added §5 near-duplicate probe (advisory `Glob docs/tdd/{slug[:12]}*.md`, non-blocking note to calling agent).
+- Pre-flight: renumbered existing §5 "Related-doc probe" → §6; Authoring §1 cross-reference "Pre-flight step 5" → "step 6".
+- Authoring §4 Mermaid clause: trimmed restatement of Validation §5 + ADR routing (load-bearing gates live elsewhere).
+
+### Dimensions Evaluated
+Completeness (HIGHEST — near-duplicate slug gap from historical audit), Over-Engineering.
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

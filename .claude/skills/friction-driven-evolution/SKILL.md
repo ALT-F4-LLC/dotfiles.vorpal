@@ -35,7 +35,7 @@ Before harvesting:
 
 1. **Verify scope (HARD GATE)** — `AskUserQuestion` with two questions in order:
    - Header `Scope`, options: `Confirm` (proceed with 30-day full sweep), `Narrow` (operator picks classes), `Adjust days` (free-text follow-up for window), `Abort`.
-   - If `Narrow`: follow up with header `Classes`, `multiSelect: true`, options: `Idle/stalls`, `Sandbox blocks`, `Stale reports`, `Token limits`, `Unverified claims`. Capture as `{enabled_classes}` (default: all five).
+   - If `Narrow`: ask TWO consecutive questions (5 classes exceed the 4-option API cap). Q1 header `Classes A`, `multiSelect: true`, options: `Idle/stalls`, `Sandbox blocks`, `Stale reports`, `Token limits`. Q2 header `Classes B`, options: `Include unverified claims`, `Skip unverified`. Merge selections into `{enabled_classes}` (default: all five).
    - Do NOT proceed past this gate without an answer. Store outcome as `{verified_goal}`.
 2. **Resolve today's date** — `date +%Y-%m-%d` via Bash, store as `{today_date}`.
 3. **Compute window** — `{days}` from argument or `30`. Store window cutoff as `{cutoff_iso}` (`date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux — detect via `uname`).
@@ -112,7 +112,7 @@ grep -lriE 'idle|stall|sandbox|denied|truncat|max.token|stale|fabricat|unverif' 
   .claude/agent-memory/*/MEMORY.md .claude/agent-memory/*/*.md \
   docs/changelog/agents/*.md docs/changelog/skills/*.md 2>/dev/null
 ```
-Append memory/changelog hits as `confirmation_refs` on the cluster record. A cluster with ≥1 confirmation_ref outranks one with none at equal frequency.
+Append memory/changelog hits as `confirmation_refs` on the cluster record. A cluster with ≥1 confirmation_ref outranks one with none at equal frequency. **Note:** `.claude/agent-memory/` is optional and currently absent in this repo — the grep silently returns zero memory hits and confirmation_refs come entirely from `docs/changelog/` until memory adoption begins.
 
 ---
 
@@ -171,9 +171,10 @@ Read this file back into orchestrator context before Phase 1.
 2. **Group by root cause, not surface symptom.** Multiple sandbox failures hitting `~/.aws/*` cluster as one root cause ("AWS credentials access pattern"); failures hitting `~/.ssh/*` cluster separately. Idle stalls in `@project-manager` cluster separately from stalls in `@sdet`.
 3. **Rank** by `score = frequency × severity_weight × (1 + confirmation_count × 0.2)`. Severity defaults: idle=med, sandbox=high, stale=high, token-limit=med, unverified=high. Operator may override in step 5.
 4. Take top 5 (or fewer if total clusters < 5).
-5. **Confirm with operator** via `AskUserQuestion`:
-   - Header `Top 5`, `multiSelect: true`, options = the five cluster names with frequency suffix (e.g. `AWS sandbox (8x)`, `PM idle stalls (5x)`). Operator deselects any to drop.
-   - If `Unverified claims` cluster is in the top 5, ALWAYS add a confirmation question (header `Unverified`, free-text after option-led: paste 1-2 example session refs for operator to triage).
+5. **Confirm with operator** via `AskUserQuestion` (split when ≥5 clusters — 4-option API cap):
+   - Q1 header `Top 1-4`, `multiSelect: true`, options = clusters 1-4 with frequency suffix (e.g. `AWS sandbox (8x)`). Operator deselects any to drop.
+   - If a 5th cluster exists: Q2 header `Cluster 5`, options: `Keep <name (Nx)>`, `Drop`, `Need example refs` (free-text follow-up to paste 1-2 session refs).
+   - If `Unverified claims` is in the kept set, ALWAYS add a confirmation question (header `Unverified`, free-text after option-led: paste 1-2 example session refs for operator to triage).
 6. Persist the confirmed cluster list to `$TMPDIR/friction-clusters-{today_date}.json` with shape:
    ```json
    {"clusters": [{"id": 1, "name": "...", "class": "...", "frequency": 8, "severity": "high",

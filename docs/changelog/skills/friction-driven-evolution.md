@@ -1,5 +1,21 @@
 # Changelog: friction-driven-evolution
 
+## 2026-05-20
+
+### Summary
+Fixed two AskUserQuestion runtime failures (5-option questions exceeding the 4-option API cap; introduced when the 2026-05-17 entry removed the multiSelect carve-out without splitting the protected questions). Pre-flight Classes and Phase 1 Top 5 now use the routing pattern prescribed by the operator-prompt contract. Acknowledged absent `.claude/agent-memory/` so memory/changelog cross-reference behavior is honest. Net +1 line.
+
+### Changes
+- Pre-flight step 1 Classes: split 5 friction classes into two consecutive AskUserQuestion calls (Q1 covers 4 with multiSelect; Q2 covers Unverified claims as include/skip). Prevents API rejection.
+- Phase 1 step 5 Top 5: split into Q1 (clusters 1-4 multiSelect) + Q2 (cluster 5 keep/drop with optional free-text). Preserves "top 5" framing while satisfying 4-option cap.
+- Detection Patterns Memory & changelog confirmation: noted `.claude/agent-memory/` is optional and currently absent — confirmation_refs flow from `docs/changelog/` only until memory adoption.
+
+### Dimensions Evaluated
+Skill Design Quality (operator-prompt contract correctness — fixes runtime failures), Completeness.
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

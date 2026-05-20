@@ -82,6 +82,7 @@ For this skill, substitute `{TYPE}` with `tdd` in the usage error.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
 4. **Check collision**: `Glob docs/tdd/{slug}.md`. If a file exists at
    `{output_path}`, run the COLLISION_DIALOG below.
+5. **Near-duplicate probe** (advisory, non-blocking): if `len(slug) >= 12`, run `Glob "docs/tdd/{slug[:12]}*.md"` and exclude `{output_path}` itself from the results. If any hits remain, surface them to the calling agent context as a one-line note: `Near-duplicate TDD(s) detected: {paths}. Proceed only if this is intentionally distinct work.` The calling agent decides whether to continue or re-derive a more specific slug; no automatic block. This catches near-identical args (different punctuation, suffix words) that derive to different but adjacent slugs.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -109,7 +110,7 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
+6. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
    whose slug appears as a substring of `<topic>` (case-insensitive), include
    its relative path in the `dependencies` frontmatter array. The calling
    agent may add others from broader judgment.
@@ -117,7 +118,7 @@ malformed frontmatter.
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
-   parent PRD or UX spec identified in Pre-flight step 5. Read existing TDDs in
+   parent PRD or UX spec identified in Pre-flight step 6. Read existing TDDs in
    `docs/tdd/` that touch adjacent areas — the new TDD should reference, not
    contradict, prior accepted work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
@@ -126,9 +127,9 @@ malformed frontmatter.
    Sections). Sections marked "may be N/A" (Data Models §5, API Contracts §6)
    may contain a single `N/A.` paragraph with a one-line justification.
    Validation §3 is the gate for the full section list.
-4. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
-   block. TDDs always require at least one diagram (component map, sequence,
-   state, or data flow) — pure-policy decisions belong in an ADR, not a TDD.
+4. **Mermaid diagrams**: draft at least one Mermaid block appropriate to the
+   design — component map, sequence, state, or data flow. Validation §5 is
+   the gate; Failure Modes routes pure-policy decisions to ADR.
 5. **Alternatives Considered**: at least two alternatives, each with shape,
    strengths, weaknesses, and a verdict. The chosen alternative should match the
    Architecture & System Design section.

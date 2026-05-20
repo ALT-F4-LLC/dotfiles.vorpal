@@ -1,5 +1,19 @@
 # Changelog: design-qa
 
+## 2026-05-20
+
+### Summary
+Tightened description trigger-phrase set per evolve-skills 2026-05-20 cycle: replaced verbose "design quality assurance" with lifecycle-anchored "QA the shipped UX" to add a cleanly distinct routing hook vs design-review without adding bulk. Net 0 lines.
+
+### Changes
+- Description trigger list: swapped "design quality assurance" → "QA the shipped UX".
+
+### Dimensions Evaluated
+Skill Design Quality, Coherence (disambiguation from design-review).
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

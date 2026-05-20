@@ -1,5 +1,22 @@
 # Changelog: code-review
 
+## 2026-05-20
+
+### Summary
+Trimmed redundancies surfaced by historical audit (115 invocations across 12 sessions; 30x/19x/14x re-invocation patterns): removed Pre-flight doubling-rule callout (duplicated in section above), collapsed When-to-Use bullets 2-3 into bullet 1 (covered by Doubling Rule + agent docs), dropped Save & Return catch-all abort-echo line (each abort site emits its own error), and merged Standalone-mode footnote into Degraded-fallback paragraph. Net -6 lines.
+
+### Changes
+- Pre-flight: removed redundant `Doubling-rule rationale` blockquote — referenced ~15 lines above in Doubling Rule.
+- When to Use: collapsed 4 bullets to 2 — team-lead delegation + parallel security review covered by Doubling Rule + agent docs.
+- Save & Return: dropped catch-all "On any abort" sentence — each section specifies its own abort format inline.
+- Doubling Rule: merged Standalone-mode footnote into Degraded-fallback paragraph (leaf-skill non-spawning is in CANONICAL banner).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (sibling-family redundancy), Skill Design Quality.
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

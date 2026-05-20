@@ -1,5 +1,35 @@
 # Changelog: evolve-agents
 
+## 2026-05-20
+
+### Summary
+Phase 2 coherence pass: aligned Changelog Rules format with sister evolve-skills — promoted normalization actions from trailing prose to `**Normalization:**` labelled sub-statement for scannability parity.
+
+### Changes
+- Promoted normalization actions to a labelled sub-statement (`**Normalization:**` prefix) instead of trailing prose, matching evolve-skills line 73 scannability.
+
+### Dimensions Evaluated
+Coherence (cross-skill format parity).
+
+### Rename
+No rename.
+
+## 2026-05-20
+
+### Summary
+Fixed `${history_days}` shell-var leak in Phase 0 historical-auditor template (orchestrator substitutes `{...}` braces, not shell-var `${...}` — auditor subshell had no env var, find expanded to literal `-mtime -` and silently returned zero results), declared `{history_cutoff_epoch_ms}` on the auditor Window line for sister evolve-skills parity, and split Pre-flight step 7 mega-paragraph into sub-bullets matching evolve-skills step 8 layout. Net +3 lines.
+
+### Changes
+- Phase 0 historical-auditor template: `-mtime -${history_days}` → `-mtime -{history_days}` — closes silent zero-result failure path.
+- Window line: added `epoch-ms {history_cutoff_epoch_ms}` declaration so substitution used downstream is declared upstream.
+- Pre-flight step 7: split mega-paragraph into sub-bullets for the two epoch computations and probe; matches evolve-skills step 8 layout.
+
+### Dimensions Evaluated
+Skill Design Quality (HIGHEST — defect fix), Coherence (sister evolve-skills parity), Consolidation & Trimming.
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

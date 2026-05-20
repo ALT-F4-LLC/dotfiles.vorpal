@@ -44,7 +44,10 @@ Before spawning any agents:
 4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
-7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Also compute `{history_cutoff_epoch_ms}` for `history.jsonl` filtering: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
+7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
+   - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
+   - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
+   Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
 
 ---
 
@@ -65,7 +68,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. After applying changes, the orchestrator normalizes ONLY the new entry it just prepended: fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries.
 
 ---
 
@@ -172,7 +175,7 @@ Skip spawning if pre-flight step 7 flagged SKIPPED. Substitute `{target_agents}`
 Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
 
 You are the historical auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}).
+Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
 Target agents: {target_agents}
 
 ## Task
@@ -181,7 +184,7 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
 1. **Agent memory (PRIMARY — read fully, it is small)**:
    - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md`. Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
 2. **Transcripts** (under `~/.claude/projects/`):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -${history_days} -print0`.
+   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
    - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
    - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
    - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.

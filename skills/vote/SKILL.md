@@ -25,8 +25,8 @@ You are the **Consensus Coordinator**. You spawn independent reviewers, collect 
 
 The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` — describe what you want voted on." Otherwise dispatch:
 
-- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json`; if exit 0, treat as vote_id): Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2.
-- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
+- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json`; if exit 0, treat as vote_id): Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
+- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. Standalone operator path only. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
 
 ---
 
@@ -74,9 +74,9 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 | high | 6 | 75% weighted approval | Zero rejects |
 | critical | 8 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `docs/tdd/reviewer-doubling-lifecycle.md` first. Cap at 8 holds; if a future change would push past 8 it must amend the TDD first.
+**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `docs/tdd/reviewer-doubling-lifecycle.md` first.
 
-**Recursive doubling applies independently per phase** (TDD §8.2 decision 5 / §4.2 rule 3). When `Skill(vote, ...)` is invoked from inside an already-doubled review/QA/verification phase (e.g., a security-sensitive review hits a contradiction and team-lead invokes `vote` at `critical` to break the tie), the vote panel sizes from the doubled criticality table above independently of the originating phase's reviewer count — a security-sensitive review (already 4 reviewers) at `critical` criticality spawns an additional 8-voter panel for the vote, for 4+8=12 active reviewers across the two phases. Two activities, two doubled phases. The 8-cap holds per phase.
+**Recursive doubling applies independently per phase.** When invoked from inside an already-doubled review/QA/verification phase, the vote panel sizes from the table above independently of the originating phase's reviewer count; the 8-cap holds per phase. See `docs/tdd/reviewer-doubling-lifecycle.md` §8.2 decision 5 for the worked example.
 
 **Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per TDD §4.4: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 

@@ -81,9 +81,7 @@ When invoked under team-lead orchestration, the calling layer spawns **≥2 revi
 
 **Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict (TDD §4.4). Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
 
-**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Recurring degraded fallbacks on the same skill are an evolve-skills signal.
-
-**Standalone mode.** Outside team-lead orchestration, doubling is at the calling agent's discretion — this skill itself does not spawn reviewers (leaf skill; no `Agent()` / `SendMessage`).
+**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Recurring degraded fallbacks on the same skill are an evolve-skills signal. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
 ## When NOT to Use
 
@@ -96,8 +94,6 @@ When invoked under team-lead orchestration, the calling layer spawns **≥2 revi
 - Plan/scope/dependency review on a Docket plan — handled inline by the calling agent's advisory output.
 
 ## Pre-flight
-
-> **Doubling-rule rationale** — see `docs/tdd/reviewer-doubling-lifecycle.md` for why review/QA/verification phases run ≥2 reviewers under team-lead orchestration.
 
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
@@ -385,8 +381,6 @@ where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `B
 | Request changes | `approve-with-concerns` (with explicit Concerns in findings) |
 | Block / Block (security) | `reject` |
 | Split required | Do NOT escalate to vote — return Split-required to caller and let them re-scope before any vote |
-
-On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 
 ## Failure Modes
 

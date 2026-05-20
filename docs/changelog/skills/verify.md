@@ -1,5 +1,35 @@
 # Changelog: verify
 
+## 2026-05-20
+
+### Summary
+Phase 2 coherence pass: Title-Cased Doubling Rule heading to match three siblings (code-review, design-qa, design-review); added one-line acknowledgment in Pre-flight §4 that calling `@sdet` has already claimed the Docket issue per Rule 7.
+
+### Changes
+- Heading `## Doubling rule` → `## Doubling Rule` to match siblings. Cross-family heading-case parity.
+- Pre-flight §4: added note acknowledging `@sdet` Rule 7 issue claim already happened, preventing redundant `docket issue move` calls. Phase 1 open item #5 (skill ↔ agent contract sync).
+
+### Dimensions Evaluated
+Coherence (sibling-family heading parity); Cross-communication contract (skill/agent claim handshake).
+
+### Rename
+No rename.
+
+## 2026-05-20
+
+### Summary
+Operationalized prior-verdict awareness as enforced Pre-flight step (driven by historical audit session 8442dc39: 121 invocations across ~17 ephemeral fix-loop rounds × 7 DKT issues, where Round-N verifiers re-ran full criteria sweeps with no awareness of prior round's evidence). Reduces per-round token spend on multi-round fix-loops while preserving "always re-run suite end-to-end" guarantee. Tightened Pre-flight §5 completion-comment-vs-diff phrasing. Net +1 line.
+
+### Changes
+- Pre-flight §4a (new): Round-2+ verifications scan `docket issue comment list {id}` for prior verify reports; PASS criteria whose evidence files are untouched by current diff cite the prior round's evidence instead of re-running. Suite still re-runs end-to-end; never carries forward FAIL or Additional Testing gap.
+- Pre-flight §5: replaced "completion claims describe intent; diff describes reality" with "completion claims describe what the implementer intended to ship; the diff describes what reached HEAD" — names concrete failure mode.
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (HIGHEST — audit-driven), Actionability, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

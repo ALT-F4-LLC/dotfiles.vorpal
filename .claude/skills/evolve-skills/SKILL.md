@@ -101,7 +101,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 Spawn THREE agents in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill, scoped to the skills under review here, and feeds Phase 1 reviewers directly — no clustering, no routing.
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill, scoped to the skills under review here, and feeds Phase 1 reviewers directly.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -193,7 +193,7 @@ Target skills: {target_skills}
 For EACH target skill, mine three read-only sources for signals that the skill is failing or misused:
 
 1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -${history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
+   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
    - Re-invocation within the same `sessionId`: count occurrences per session; ≥2 invocations of the same skill in one session is a failure signal.
@@ -244,7 +244,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files first ~80 lines only (both .claude/skills/ and skills/). Prioritize the operator experience feedback and apply the docs research / docket audit findings below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files first ~80 lines only (both .claude/skills/ and skills/). Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

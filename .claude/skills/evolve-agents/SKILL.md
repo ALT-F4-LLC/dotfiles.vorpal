@@ -24,9 +24,9 @@ You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) 
 
 Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 
-- **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`. Historical audit window defaults to 30 days.
+- **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`. Historical audit window defaults to 7 days.
 - **Agent name only** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
-- **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `30`. Reject values outside `1..90` and abort with a usage note.
+- **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 
 ---
 
@@ -44,7 +44,7 @@ Before spawning any agents:
 4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
-7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `30`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Also compute `{history_cutoff_epoch_ms}` for `history.jsonl` filtering: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
+7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`). Also compute `{history_cutoff_epoch_ms}` for `history.jsonl` filtering: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
 
 ---
 

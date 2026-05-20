@@ -1,5 +1,25 @@
 # Changelog: team-lead
 
+## 2026-05-19 (P1 brief-authoring + lifecycle hygiene + memory activation)
+
+### Summary
+Encoded the operator's P1 lesson (DKT-6 brief-authoring contradiction) as a Closed-vs-Open dimension rule + detector in the @senior-engineer Spawning Template. Added a TeamCreate lifecycle pre-flight to eliminate 24 recurring `Already leading team` errors. Activated the dormant agent-memory channel via a wrap-up nudge gated on "recurring pitfall." Offset with three exhortation-tail trims plus an Epistemic Discipline annotation. Net +5 lines (359 → 364).
+
+### Changes
+- @senior-engineer Spawning Template: added Brief-Authoring Discipline (Closed vs Open per dimension) + detector — author MUST grep own brief for prescriptive overlap with the consult list and collapse to one.
+- Team Setup step 1: added Lifecycle pre-flight — on `Already leading team` error, run TeamDelete on the named prior team and retry.
+- Wrap-up step 16: added Memory check — append `symptom → root cause → resolution` entry to `.claude/agent-memory/team-lead/pitfalls.md` ONLY on recurring pitfalls.
+- Step 13: removed moralizing tail about stale-claim history; behavior is already in the Flag-discrepancy line.
+- Rule 2: removed exhortation tail; the spot-check-as-high-stakes-event is already enumerated.
+- Pattern Decision Tree: removed over-orchestration restatement; L60 already prescribes lightest-pattern-default.
+- Step 12 Long-running phases: annotated `docket plan --json --watch` as unverified per Rule 6.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — P1 brief-authoring rule + detector) · Capability Growth (lifecycle hygiene + memory activation) · Consolidation (three exhortation trims) · Epistemic Discipline (unverified-CLI annotation).
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

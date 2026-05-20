@@ -1,5 +1,19 @@
 # Changelog: staff-engineer
 
+## 2026-05-19 (Phase 2 coherence — memory channel activation)
+
+### Summary
+Activated the dormant `.claude/agent-memory/staff-engineer/` channel via a shutdown-time memory check, parallel to team-lead's Phase 1 wrap-up nudge. Gated on "recurring, non-obvious" to prevent per-cycle journal bloat.
+
+### Changes
+- Shutdown Handling: added memory check before approving shutdown — append recurring architectural pitfalls (rejected-alternative patterns, deferred-decision triggers, anti-pattern symptom→root-cause→resolution) to `.claude/agent-memory/staff-engineer/pitfalls.md`. Skip if nothing recurring surfaced.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — dormant channel activated) · Coherence (parallel to team-lead's wrap-up nudge at the same lifecycle moment).
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence)
 
 ### Summary

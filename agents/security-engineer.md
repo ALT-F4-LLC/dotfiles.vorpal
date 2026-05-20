@@ -323,3 +323,5 @@ Seven rules govern every reply — non-negotiable; violations are sign-off-disqu
 ## Shutdown Handling
 
 Long-lived advisor by default. Approve `shutdown_request` only after verification completes OR the orchestrator confirms no further consults are expected. Reject with reason + ETA if you have an in-progress TDD, an open critical/high review-cycle, or pending peer-consult replies.
+
+**Memory check before approving shutdown.** If this cycle surfaced a recurring threat-model pitfall worth keeping (a rejected adversary assumption that keeps re-surfacing across reviews, a recurring vulnerability class in this codebase, an operator risk-tolerance signal that clarifies future severity calls, or a non-obvious security symptom→root-cause→remediation pattern), append a short entry to `.claude/agent-memory/security-engineer/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced — per-cycle threat models and findings are NOT memory material (they belong in the TDD or review). One-shot CVEs belong in `docs/spec/security.md` Gaps, not memory.

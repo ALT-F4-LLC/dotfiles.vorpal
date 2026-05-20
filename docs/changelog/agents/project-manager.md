@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-05-19 (Phase 2 coherence — memory channel activation)
+
+### Summary
+Activated the dormant `.claude/agent-memory/project-manager/` channel via a shutdown-time memory check. Reinforces the existing memory-description examples (scope-pressure priorities, scope-creep patterns) with a behavioral trigger.
+
+### Changes
+- Shutdown Handling: added memory check before approving shutdown — append recurring planning pitfalls (operator priority signal under scope pressure, recurring scope-creep pattern by codebase area, stakeholder routing preference, non-obvious planning symptom→diagnosis→resolution) to `.claude/agent-memory/project-manager/pitfalls.md`. Skip if nothing recurring surfaced.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — dormant channel activated) · Coherence (parallel to team-lead + staff-engineer + security-engineer wrap-up nudges).
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence)
 
 ### Summary

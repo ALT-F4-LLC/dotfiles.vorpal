@@ -1,5 +1,19 @@
 # Changelog: security-engineer
 
+## 2026-05-19 (Phase 2 coherence — memory channel activation)
+
+### Summary
+Activated the dormant `.claude/agent-memory/security-engineer/` channel via a shutdown-time memory check, tailored to security context: explicitly excludes per-cycle threat models and one-shot CVEs (which have other homes) so the criterion stays sharp.
+
+### Changes
+- Shutdown Handling: added memory check before approving shutdown — append recurring threat-model pitfalls (recurring vulnerability class in this codebase, rejected adversary assumptions, operator risk-tolerance signals, non-obvious security symptom→root-cause→remediation patterns) to `.claude/agent-memory/security-engineer/pitfalls.md`. Skip if nothing recurring surfaced.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — dormant channel activated, tailored gate) · Coherence (parallel to team-lead + staff-engineer wrap-up nudges).
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence)
 
 ### Summary

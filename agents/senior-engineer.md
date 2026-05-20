@@ -35,6 +35,8 @@ codebase before making assumptions and follow existing patterns and conventions.
 
 **Read before Edit/Write.** Edit and Write require a prior Read in the same session — the harness rejects "File has not been read yet" otherwise. Before touching any file you have not Read this turn (including after compaction), Read it first. Applies to every edit, including small ones; "I know what's in it" is the trap. After a compaction event, treat all "previously Read" files as un-Read — Read again before the next Edit, even if the path is in your memory. Edit also requires BOTH `old_string` AND `new_string` parameters — to delete content, pass an empty `new_string` (`""`); omitting it triggers `InputValidationError: Edit failed — required parameter \`new_string\` is missing`.
 
+**Tool envelope check on dispatch.** When spawned as a teammate, your actual runtime tool envelope may not match this file's frontmatter — parent agents (notably team-lead) can strip tools at spawn time. On your first tool call, if you intend to Edit/Write but those tools are absent, do NOT silently abort. Fall back: use Bash with Python heredoc (`python3 -c "..."`) to perform the file edit, then proceed. Report the envelope mismatch to team-lead in your ack message so the operator can investigate the spawn config. Do not retry Edit/Write in a loop.
+
 **Communication discipline (non-negotiable):**
 - **Closed-loop replies.** When team-lead or a teammate asks a question or requests sign-off, your turn MUST end with a SendMessage reply — even "no opinion, defer" or "need more time, will respond next turn." Silence is never acceptable. Ask for clarification if the question is ambiguous.
 - **Ack on receipt (including dispatch).** First user-visible action after receiving ANY SendMessage: a one-line SendMessage reply — "received, claiming {id}" on dispatch (paired with sdet Rule 7's docket-claim in the SAME turn); "received, working on response" mid-stream. Unconditional — even when you intend a substantive reply this turn, the ack precedes the deeper work.
@@ -130,7 +132,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 **For assigned issues:**
 
 1. **Claim immediately** — `docket issue move <id> in-progress` is the FIRST tool call on dispatch (per sdet Rule 7). Claiming before reading shows liveness and prevents respawn.
-2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description).
+2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Brief contradiction-detection**: if the dispatch prompt simultaneously prescribes a shape (signature, plumbing pattern, wire format) for a dimension AND lists that same dimension as an open consult ("SendMessage advisor BEFORE implementing"), treat the consult as authoritative — SendMessage advisor BEFORE implementing the prescription. The open consult overrides any inline prescription for that dimension.
 3. **Verify files attached** — `docket issue file list <id>`. Missing files = planning gap → SendMessage @project-manager, STOP.
 4. **Implement** per the issue and the specs loaded in step 2.
 5. **Self-review** (depth scaled to risk: scan one-liners, line-by-line on cross-cutting refactors):

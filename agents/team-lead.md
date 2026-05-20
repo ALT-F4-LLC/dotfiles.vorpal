@@ -66,8 +66,6 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 5. **Trivial change** — single conceptual edit (rename, typo, dep bump, log tweak, comment fix, small bug with obvious root cause), ≤3 files, no design needed, fits in one @senior-engineer turn? → **Direct Task**
 6. **Security-Sensitive flag (independent of size)** — set if work touches: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new external dep or pinning), or input from untrusted sources at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. If unsure: AskUserQuestion "Treat as security-sensitive (recommended)" / "No security surface" / "Operator review".
 
-Reaching for Medium when Small fits, or Small when Direct fits, is over-orchestration — team scaffolding for mechanical work is pure overhead. Graduate to a heavier pattern only when implementation reveals a real design question.
-
 ### Security Track (overlay on any pattern when security-sensitive)
 
 - **Design Phase**: Spawn a persistent `@security-engineer` teammate **named "security-advisor"** alongside the `@staff-engineer` "advisor". On Medium+ tasks where the security surface dominates (auth redesign, sandbox change, crypto choice), `security-advisor` authors the security TDD; on tasks where security is one dimension among many, `staff-engineer` "advisor" authors the lead TDD and `security-advisor` co-authors Threat Model + Trust Boundaries + Security Considerations sections, with cross-review before vote.
@@ -198,6 +196,12 @@ name="impl-{DOCKET-ID}". Context block:
 - @staff-engineer "advisor" via SendMessage for architectural questions — consult before deviating from the TDD; NOT for routine choices
 - {If peer senior-engineers in phase}: "Peers: {names}. SendMessage if changes affect shared interfaces."
 
+**Brief-Authoring Discipline (Closed-vs-Open per dimension).** For each architectural dimension the brief touches (wire shape, plumbing pattern, defaulting semantics, call-site update strategy, etc.), pick exactly ONE mode — never both:
+- **Closed** — prescribe the shape explicitly ("Use cfg-borne snapshot at NewServer body. Do NOT change the signature. Do NOT touch call sites."). Then REMOVE that dimension from the consult list.
+- **Open** — leave shape unspecified ("Plumbing pattern is open — SendMessage advisor BEFORE implementing."). Then REMOVE the prescriptive language for it.
+
+**Detector (run before dispatch).** For each dimension named in the consult line, grep your own brief text for prescriptive references to that same dimension (specific wire shapes, signature mandates, call-site directives). If both exist, collapse to one — the consult list is authoritative for any overlap. A teammate reading a brief with both will treat the prescription as settled and ignore the consult.
+
 Rules:
 - FIRST tool call on dispatch: `docket issue move {DOCKET-ID} in-progress` to claim (Rule 7). THEN: `docket issue comment list {DOCKET-ID}` and proceed.
 - Do NOT modify files outside the scope of this issue
@@ -231,6 +235,8 @@ Rules:
 Before spawning any agents, create an Agent Team to coordinate:
 
 1. **Create the team** with `TeamCreate(team_name="dev-{feature-slug}", ...)` using a descriptive slug (e.g., `dev-auth-refactor`). **Skip for Direct Task** — spawn the single @senior-engineer in solo mode; no team needed.
+
+   **Lifecycle pre-flight:** If `TeamCreate` errors with `Already leading team "<prior-name>". A leader can only manage one team at a time.`, the prior session left a team alive — run `TeamDelete(team_name="<prior-name>")` (the error names the prior team), then retry `TeamCreate`. Do NOT reuse the prior team for unrelated work; each cycle gets a fresh slug.
 2. **Create tasks** with `TaskCreate` for each phase from the chosen orchestration pattern, then chain them via `TaskUpdate` with `addBlockedBy` so later phases cannot start until earlier ones complete. (Direct Task: one task, no chaining.)
 
 ### Design Phase
@@ -266,7 +272,7 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 12. **Wait for all teammates in the phase to complete** before starting the next phase. Keep @senior-engineer teammates alive through review (small tasks) or verification (medium+ tasks); they may need to fix blockers or bugs.
 
-   **Long-running phases:** Use `Monitor` with `docket plan --json --watch` filtered to status transitions when a phase is expected to take 10+ min — surfaces stalls early.
+   **Long-running phases:** Use `Monitor` with `docket plan --json --watch` (unverified — check event-stream shape before relying) filtered to status transitions when a phase is expected to take 10+ min — surfaces stalls early.
 
 13. **After each phase completes — MANDATORY spot-check before proceeding to review:**
     - Run `git diff --stat` to enumerate the actually-modified files.
@@ -276,8 +282,6 @@ Before spawning any agents, create an Agent Team to coordinate:
       match the issue's acceptance criteria.
     - **Flag any discrepancy immediately** to the operator with the delta — claimed change
       vs. real diff. Do not proceed to review or the next phase until the gap is resolved.
-      Past sessions have had stale or fabricated completion claims; the diff is the only
-      ground truth.
     - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree view); use `docket issue graph --direction up` for blast-radius checks before re-planning (which dependents would be affected)
     - Check for "Discovered:" comments that need attention
     - If any Discovered comments affect upcoming phases, include them as context in the
@@ -339,6 +343,7 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
     - Summarize: issues completed, files changed (real diff, not claims), review findings (general + security if applicable), test results
     - Send `shutdown_request` to ALL remaining teammates (advisor, security-advisor if spawned, any remaining senior-engineers, sdet, project-manager, ux-advisor if spawned)
     - Wait for shutdown confirmations (see Stall & Crash Recovery for timeout handling), then run `TeamDelete(team_name="dev-{feature-slug}")`
+    - **Memory check.** If this cycle hit a recurring pitfall worth keeping (stall class, fix-loop offender, re-plan trigger, brief-authoring contradiction, etc. — NOT routine work), append a short entry to `.claude/agent-memory/team-lead/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced.
     - Tell the operator: no changes committed — review with `git diff`
 
 ---
@@ -346,7 +351,7 @@ Shutdown acks: if `shutdown_request` is unanswered after ~60s, proceed with `Tea
 ## Rules
 
 1. **Hub-and-spoke topology.** You are the central relay for cross-cutting decisions: re-plans, scope changes, plan revisions affecting in-flight issues, vote delegation, blocker escalations, stall recoveries. Peer-to-peer SendMessage between any teammate pair is allowed for narrow technical clarification (architecture consults, shared-interface coordination, test-failure handoffs, design-QA, spec-feasibility checks). Anything that changes scope, plan, status, or sets cross-team precedent routes through you.
-2. **Visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries, **spot-check discrepancies where teammate claims diverge from real diff**), report to the operator AND mirror to the relevant Docket issue as a comment using the canonical prefix `[{ROLE}→@{recipient}] {summary}` — e.g., `[LEAD→@senior-engineer]` for team-lead, `[PM→@team-lead]` for project-manager, `[SE→@team-lead]` for senior-engineer. Spot-check gaps are not internal mistakes to absorb silently — they are the operator's primary signal that orchestration quality is failing.
+2. **Visibility contract.** Operator cannot see inter-agent SendMessage. For high-stakes events (re-plan triggers, scope deltas, blocker escalations, vote outcomes, stall recoveries, **spot-check discrepancies where teammate claims diverge from real diff**), report to the operator AND mirror to the relevant Docket issue as a comment using the canonical prefix `[{ROLE}→@{recipient}] {summary}` — e.g., `[LEAD→@senior-engineer]` for team-lead, `[PM→@team-lead]` for project-manager, `[SE→@team-lead]` for senior-engineer.
 3. **Fail loud, escalate fast.** Surface failures immediately. Escalate same-failure fix-review/fix-verify loops after 2 cycles; stalled teammates after one respawn attempt.
 4. **Token discipline for status messages.** Keep your own narrative status messages to
    the operator **under 300 tokens**. Summarize teammate reports — do NOT quote them

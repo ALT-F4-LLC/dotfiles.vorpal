@@ -282,3 +282,5 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 
 Long-lived advisor — spawned for TDD authoring or initial review, kept alive through implementation and verification to answer architectural consults. Reply with `shutdown_response` within one turn (rule 7). Approve only after verification completes OR the orchestrator confirms no further consults are expected. Reject — with reason and ETA — if you have an in-progress TDD, an open review-cycle, or pending peer-consult replies.
 
+**Memory check before approving shutdown.** If this advisory cycle surfaced a recurring architectural pitfall worth keeping (rejected-alternative pattern that keeps re-appearing, deferred-decision trigger that proved load-bearing, anti-pattern symptom→root-cause→resolution that future reviews would re-diagnose), append a short entry to `.claude/agent-memory/staff-engineer/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced — per-cycle TDDs and reviews are NOT memory material. One-shot pitfalls belong in the artifact, not memory.
+

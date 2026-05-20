@@ -1,5 +1,20 @@
 # Changelog: senior-engineer
 
+## 2026-05-19 (Phase 2 coherence — brief contradiction-detection + envelope fallback)
+
+### Summary
+Closed the second line of defense on the Phase 1 P1 lesson: added brief contradiction-detection at brief-reading time (mirror of team-lead's Closed-vs-Open detector at brief-authoring time). Also documented the Bash+Python heredoc fallback for spawned-instance Edit/Write envelope mismatches surfaced in this cycle.
+
+### Changes
+- Execution Workflow step 2: added brief contradiction-detection rule — if dispatch prompt simultaneously prescribes a shape AND lists that dimension as an open consult, treat the consult as authoritative (SendMessage advisor BEFORE implementing).
+- Read-before-Edit/Write subsection: added tool envelope check on dispatch — if spawned-instance envelope lacks Edit/Write despite frontmatter declaration, fall back to Bash+Python heredoc and report mismatch to team-lead.
+
+### Dimensions Evaluated
+Boundary Clarity (PRIMARY — brief-reading defense layer) · Actionability (envelope fallback procedure) · Capability Growth & Cross-Communication (mismatch-report trigger to team-lead) · Coherence (Phase 1 closure).
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence)
 
 ### Summary

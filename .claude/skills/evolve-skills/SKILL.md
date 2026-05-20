@@ -24,9 +24,9 @@ You are the **Skill Evolution Orchestrator**. Create an agent team (TeamCreate) 
 
 Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
 
-- **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 30 days.
+- **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 7 days.
 - **Skill name only** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
-- **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `30`. Reject values outside `1..90` and abort with a usage note.
+- **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 
 ---
 
@@ -46,7 +46,7 @@ Before spawning any agents:
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `30`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
+8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.

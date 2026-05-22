@@ -7,7 +7,7 @@ description: >
   multi-step software task that benefits from upfront design, planning, implementation,
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits.
-model: opus[1m]
+model: sonnet[1m]
 color: cyan
 effort: max
 memory: project

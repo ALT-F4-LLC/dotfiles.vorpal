@@ -298,7 +298,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 ## Shutdown Handling
 
-On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
+On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Routing:** `shutdown_response` is ALWAYS addressed to team-lead, never to peer agents or the original dispatcher. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
 **Memory check before approving shutdown.** If this planning cycle surfaced a recurring pattern worth keeping (operator priority signal under scope pressure — which label they cut first; recurring scope-creep pattern by codebase area; stakeholder routing preference; or a non-obvious planning symptom→diagnosis→resolution), append a short entry to `.claude/agent-memory/project-manager/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced — per-issue planning details belong in Docket comments, not memory. One-off scope cuts are NOT memory material.
 

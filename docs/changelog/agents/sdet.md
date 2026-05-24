@@ -1,5 +1,19 @@
 # Changelog: sdet
 
+## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
+
+### Summary
+Closed the 6 historical `is_error:true` "shutdown_response must be sent to team-lead" routing errors by making the routing rule explicit at rule 6 (shutdown within one turn). Verifier ephemerals communicate with multiple peers mid-task; the routing rule must be at rule-6 visibility. No file-size change.
+
+### Changes
+- Communication Discipline rule 6: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher, even when the request arrives in a thread previously routed to a peer (e.g., @senior-engineer source-clarification consult, @security-engineer abuse-case reply).
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility for verifier-criteria / verifier-integration ephemerals)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence)
 
 ### Summary

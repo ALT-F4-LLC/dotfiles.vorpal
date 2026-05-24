@@ -1,5 +1,19 @@
 # Changelog: staff-engineer
 
+## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
+
+### Summary
+Closed the 6 historical `is_error:true` shutdown-routing errors by making the routing rule explicit at rule 7 (shutdown protocol). Covers persistent `advisor` AND every ephemeral spawn form (`tdd-author`, `reviewer-2`, `tdd-author-fix-{N}`, TDD secondary reviewers, ad-hoc consults). No file-size change.
+
+### Changes
+- Communication Discipline rule 7: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to every spawn form.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility across persistent + ephemeral spawn forms)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence — memory channel activation)
 
 ### Summary

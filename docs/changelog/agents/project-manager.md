@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
+
+### Summary
+Closed the 6 historical shutdown-routing errors by adding the routing rule to the Shutdown Handling section. `planner` ephemerals shut down after operator plan approval and routinely have active SendMessage threads with multiple peers (@staff-engineer for arch consults, team-lead for plan delivery) — routing rule belongs adjacent to the timing rule. No file-size change.
+
+### Changes
+- Shutdown Handling: inserted Routing clause inline — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or the original dispatcher.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility for `planner` / `planner-fix-{N}` ephemerals)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence — memory channel activation)
 
 ### Summary

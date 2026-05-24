@@ -1,5 +1,19 @@
 # Changelog: ux-designer
 
+## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
+
+### Summary
+Closed the 6 historical shutdown-routing errors by making the routing rule explicit at Communication Discipline rule 6. `design-review-2` and `design-qa-2` ephemerals exit immediately after verdicts and are common shutdown participants. No file-size change.
+
+### Changes
+- Communication Discipline rule 6: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to `ux-advisor` and every ephemeral spawn (`design-review-2`, `design-qa-2`, ad-hoc spec authors).
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility for design-review-2 / design-qa-2 ephemerals)
+
+### Rename
+No rename.
+
 ## 2026-05-19
 
 ### Summary

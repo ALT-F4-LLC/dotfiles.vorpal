@@ -1,5 +1,20 @@
 # Changelog: security-engineer
 
+## 2026-05-24 (Phase 2 coherence — shutdown routing + advisor-idle parity)
+
+### Summary
+Two coherence fixes. (1) Closed the 6 historical shutdown-routing errors by making the routing rule explicit at rule 6. Security review doubling (4 parallel reviewers) makes peer-vs-team-lead recipient confusion especially likely. (2) Strengthened persistent-advisor idle-is-normal rule to name `TeammateIdle` explicitly and cite TDD §4.4 rule 5 — achieves parity with staff-engineer.md and ux-designer.md. No file-size change.
+
+### Changes
+- Communication Discipline rule 6: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to `security-advisor` and every ephemeral spawn (`security-reviewer-2`, sibling security-TDD authors, ad-hoc consults).
+- Lifecycle contract paragraph: strengthened persistent-advisor idle phrasing — names `TeammateIdle` signal explicitly, cites TDD §4.4 rule 5, states "does NOT trigger auto-respawn" (parity with staff-engineer.md line 40 and ux-designer.md line 277).
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — both fixes) · Actionability (routing visibility on doubled security track) · Boundary Clarity (advisor-idle rule self-contained)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence — memory channel activation)
 
 ### Summary

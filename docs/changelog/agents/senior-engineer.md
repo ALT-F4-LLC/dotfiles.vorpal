@@ -1,5 +1,19 @@
 # Changelog: senior-engineer
 
+## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
+
+### Summary
+Closed the 6 historical `is_error:true` "shutdown_response must be sent to team-lead" routing errors (per historical-auditor) by making the routing rule explicit at the rule-level shutdown statement in Communication Discipline. No file-size change — phrase appended inline.
+
+### Changes
+- Communication Discipline → "Shutdown within one turn" bullet: appended Routing clause — `shutdown_response` is ALWAYS addressed to team-lead, never to peer agents or the original dispatcher, even when the `shutdown_request` arrives in a thread previously routed to a peer (review handoff, verification consult).
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — closes shared routing bug) · Actionability (rule visibility at the right scope)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (Phase 2 coherence — brief contradiction-detection + envelope fallback)
 
 ### Summary

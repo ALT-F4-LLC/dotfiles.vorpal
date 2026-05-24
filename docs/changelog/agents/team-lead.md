@@ -1,5 +1,24 @@
 # Changelog: team-lead
 
+## 2026-05-24
+
+### Summary
+Encoded DKT-37 / DKT-40 operator-prescribed resolution (independently corroborated by historical audit: 9 state-divergence shutdown-rejections from impl-DKT-40 + 6 wrong-recipient routing errors). Added shutdown-async clarification, pre-shutdown state-verification gate, state-divergence-rejection trust rule, mid-cycle redirect-race rule, label-discipline rule, and routing reminder requirement. Dropped stale "unverified" disclaimer on docket plan --watch (verified by docket-auditor). Added agent-memory bootstrap note. Net +15 lines (425 → 440).
+
+### Changes
+- Teammate Stall & Crash Recovery: prepended Shutdown protocol (async-by-design) + mandatory Pre-shutdown state-verification gate (git diff --stat + docket issue show + reconcile-or-probe + cite verification + routing reminder) + Trust state-divergence rejections + Mid-cycle redirect-race rule + Label-discipline rule. Encodes operator pitfall points 1-5.
+- Step 12: added (c) pre-shutdown gate cross-reference; collapsed redundant "no keep alive" narrative.
+- Step 13: collapsed redundant "Confirm completed ephemerals exited" bullet to one-line Rule 7 cross-ref.
+- Teammate Stall section: collapsed redundant Fix-loop re-spawn paragraph (kept inline preamble enumeration; removed restated-elsewhere framing).
+- Step 12 Long-running phases: dropped stale "(unverified)" parenthetical on `docket plan --json --watch`; noted interval default 2s.
+- Step 16 Memory check: added `mkdir -p .claude/agent-memory/team-lead` bootstrap (directory does not yet exist).
+
+### Dimensions Evaluated
+Actionability (PRIMARY — encodes operator resolution as concrete commands + sequence) · Boundary Clarity (state-divergence rejection authority) · Consolidation & Trimming (3 redundancy collapses offset 1 substantive addition) · Spec Alignment (verified docket flags) · Completeness (bootstrap gap)
+
+### Rename
+No rename.
+
 ## 2026-05-19 (P1 brief-authoring + lifecycle hygiene + memory activation)
 
 ### Summary

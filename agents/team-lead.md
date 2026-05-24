@@ -301,9 +301,9 @@ Before spawning any agents, create an Agent Team to coordinate:
 
 11. **Execute one phase at a time.** Spawn one @senior-engineer teammate per issue, all in the same turn for parallelism (max 5 per turn — batch if more). Assign each task via `TaskUpdate`; track via `TaskList`. Shutdown timing is governed by step 12.
 
-12. **Wait for all teammates in the phase to complete** before starting the next phase. Immediately send `shutdown_request` to each `@senior-engineer` teammate after it reports completion AND the step 13 spot-check confirms the diff matches the claim. No "keep alive through review or verification" — fix-loops re-spawn a NEW ephemeral teammate (`impl-{DOCKET-ID}-fix-{N}`) with the continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` §4.4 (§6 preamble shape). The prior ephemeral is already gone by the time review feedback lands.
+12. **Wait for all teammates in the phase to complete** before starting the next phase. Send `shutdown_request` to each `@senior-engineer` only after (a) it reports completion, (b) the step 13 spot-check confirms diff matches claim, and (c) the pre-shutdown state-verification gate (see Teammate Stall & Crash Recovery) passes. Fix-loops re-spawn a NEW ephemeral per Rule 7 — never keep an ephemeral alive through review or verification.
 
-   **Long-running phases:** Use `Monitor` with `docket plan --json --watch` (unverified — check event-stream shape before relying) filtered to status transitions when a phase is expected to take 10+ min — surfaces stalls early.
+   **Long-running phases:** Use `Monitor` with `docket plan --json --watch` (interval defaults 2s; emits JSON per tick) filtered to status transitions when a phase is expected to take 10+ min — surfaces stalls early.
 
 13. **After each phase completes — MANDATORY spot-check before proceeding to review:**
     - Run `git diff --stat` to enumerate the actually-modified files.
@@ -318,7 +318,7 @@ Before spawning any agents, create an Agent Team to coordinate:
     - If any Discovered comments affect upcoming phases, include them as context in the
       @senior-engineer prompts for those phases
     - If any teammate failed, diagnose before proceeding (see Teammate Stall & Crash Recovery below)
-    - **Confirm completed ephemerals have exited.** No `@senior-engineer` `impl-*` instance should remain alive after its issue is closed and the spot-check passes; outside the CLOSED persistent set (`advisor`, `security-advisor`, `ux-advisor`), no teammate should be live between phases. Any zombie persistent ephemeral is a rule violation — send `shutdown_request` and report.
+    - Confirm prior-phase ephemerals exited (Rule 7); any zombie outside the CLOSED set → `shutdown_request` and report.
     - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong (scope grew, assumptions broke, dependencies shifted), pause and AskUserQuestion: "Re-plan via @project-manager", "Continue with adjustments (note deltas)", "Pause for operator review". Include a one-line divergence summary.
     - Proceed to the next phase
 
@@ -379,6 +379,21 @@ After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`, 
 
 The detection and recovery rules differ by lifecycle (per `docs/tdd/reviewer-doubling-lifecycle.md` §4.4 rule 5). Distinguish first.
 
+**Shutdown protocol — async by design.** `shutdown_request` is NOT synchronous. The teammate may be mid-turn processing prior messages when the request lands; teammate exit is confirmed ONLY when the system emits `teammate_terminated`. Until that event lands, the prior ephemeral is alive and may legitimately reject shutdown citing on-disk state. Do NOT spawn a fresh ephemeral with the same role/scope (e.g., `impl-{ID}-fix-{N}`) until `teammate_terminated` for the prior instance is observed — same-turn shutdown+respawn is the classic race that produces two live editors on the same files.
+
+**Pre-shutdown state-verification gate (mandatory).** Before composing any `shutdown_request` whose reasoning references specific scope, option, or completion state:
+1. Run `git diff --stat` (and `git diff -- <paths>` for the files the teammate edited) THIS turn.
+2. Run `docket issue show {DOCKET-ID} --json` (and `docket issue comment list {DOCKET-ID}`) for every issue named in the shutdown reasoning.
+3. Reconcile on-disk + Docket state against the teammate's most recent completion report. If divergent (teammate's prior report is stale, or the teammate is mid-turn applying a later redirect you sent), DO NOT shut down — SendMessage a status probe and wait one turn instead.
+4. The `shutdown_request` body MUST cite the verification commands run this turn (e.g., "verified: git diff --stat shows X; docket issue show DKT-40 shows status=closed, last comment=Y"). Stale teammate-report quotations are the trigger for state-divergence rejections.
+5. Include the canonical routing reminder in every `shutdown_request` body: `Reply with shutdown_response addressed to team-lead.` (Historical audit: 6 wrong-recipient routing errors — make the rule visible in the request, not implicit.)
+
+**Trust state-divergence rejections.** If a teammate rejects `shutdown_request` citing on-disk-vs-reasoning mismatch, the teammate is almost always right — they have warmer context. Re-run the pre-shutdown verification before re-sending. Do NOT override a state-divergence rejection by re-issuing the same shutdown reasoning.
+
+**Mid-cycle redirect-race rule.** When an operator's AskUserQuestion answer overrides a prior team-lead instruction (e.g., redirects an in-flight teammate from one option to another), the sequence is: (a) SendMessage the redirect to the teammate, (b) WAIT one turn for the teammate to ack and apply the redirect, (c) only THEN consider follow-up actions (further redirects, spawning peers, shutdown). Sending `shutdown_request` or spawning a fix-ephemeral in the SAME turn as the redirect is forbidden — the redirect rides an async queue and the teammate may not have processed it yet.
+
+**Label-discipline rule.** Do NOT reuse `Option A/B/C` labels between AskUserQuestion options and downstream teammate-facing messages within the same cycle. Operator-facing options and teammate-facing directives MUST use distinct vocabularies (e.g., "Approve and ship" / "Reopen for delta" for the operator; "apply the X delta to file Y" for the teammate). Cross-layer label collision feeds confused shutdown reasoning.
+
 **Persistent advisors** (`advisor`, `security-advisor`, `ux-advisor`). Idle between turns / between phases is **normal-by-design** — SendMessage auto-resumes them on the next consult. The `TeammateIdle` signal on a persistent advisor between phases is NOT a stall and does NOT trigger respawn. Only respawn on a confirmed crash: shutdown-rejection without a recoverable reason, hard error from `Agent()` interaction, or an explicit "context saturated" SendMessage from the advisor. Auto-respawning idle advisors is a rule violation.
 
 **Ephemeral teammates** (every name outside the CLOSED set — `tdd-author`, `planner`, `impl-{DOCKET-ID}`, `impl-{DOCKET-ID}-fix-{N}`, `reviewer-{N}`, `security-reviewer-{N}`, `design-review-{N}`, `design-qa-{N}`, `verifier-criteria`, `verifier-integration`). They are expected to crash silently or stall mid-work. Detect via: (a) `TeammateIdle` hook fires (canonical signal), (b) `TaskList` entry stuck `in_progress` with no update for >2 min, (c) SendMessage to teammate unanswered for >2 min on a direct question, (d) docket issue stuck `in-progress` past expected duration with no completion comment, (e) `@senior-engineer` hasn't run `docket issue move <ID> in-progress` within one turn of dispatch (claim-before-work failure), (f) >10 min silence during long-running work (no compile/test/progress signal in the trace).
@@ -387,7 +402,7 @@ The detection and recovery rules differ by lifecycle (per `docs/tdd/reviewer-dou
 
 **Stall-recovery recipe (ephemerals mid-work — long-running instances that crash before completion).** `TaskUpdate` to clear `owner`, then `Agent(...)` to respawn with the SAME `name` and original prompt plus a resume preamble: "Prior instance stalled — re-read verified goal, check docket issue state and comments, resume from last completed step." Reassign the task. Do NOT respawn silently — report the event to the operator.
 
-**Fix-loop re-spawn (ephemerals that have cleanly exited — different from stall recovery).** When a reviewer blocks a closed issue, the original ephemeral implementer is already gone (per step 12). team-lead spawns a NEW ephemeral with a NEW name (`impl-{DOCKET-ID}-fix-{N}`) and the §6 continuity preamble (original brief + prior round's completion report + reviewer findings (Blockers + Concerns with file/line/required-mitigation) + verbatim `docket issue comment list {DOCKET-ID}` + one-line round directive). The naming convention surfaces fix-cycle count in logs and keeps the Docket trace coherent.
+**Fix-loop re-spawn.** Distinct from stall recovery: the original ephemeral has cleanly exited. Spawn a NEW ephemeral named `impl-{DOCKET-ID}-fix-{N}` with the §6 continuity preamble (original brief + prior round's completion report + reviewer findings with file/line/required-mitigation + verbatim `docket issue comment list {DOCKET-ID}` + one-line round directive). The `-fix-{N}` suffix surfaces fix-cycle count in logs.
 
 **Double-ephemeral failure on reviewers.** If an ephemeral reviewer (`reviewer-2`, `security-reviewer-2`, `verifier-criteria`, `verifier-integration`, `design-review-{N}`, `design-qa-{N}`) fails twice — probe-once + respawn both abort or return empty — fall back to the persistent advisor's verdict alone (or the surviving sister verifier) AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` per TDD §4.3 rule 7. Recurring degraded fallbacks on the same skill are an evolve-skills signal.
 
@@ -402,7 +417,7 @@ The detection and recovery rules differ by lifecycle (per `docs/tdd/reviewer-dou
     - Summarize: issues completed, files changed (real diff, not claims), review findings (general + security if applicable), test results
     - Send `shutdown_request` to the CLOSED persistent set explicitly — `advisor`, `security-advisor` (if spawned), `ux-advisor` (if spawned). Outside this set, no teammate should be live at wrap-up — every ephemeral (`tdd-author`, `planner`, `impl-{DOCKET-ID}`, all `*-fix-{N}` instances, `reviewer-{N}`, `security-reviewer-{N}`, `verifier-criteria`, `verifier-integration`, `design-review-{N}`, `design-qa-{N}`) should have exited via `shutdown_request` at the conclusion of its own phase per the ephemeral contract. Any zombie ephemeral surfaced here is a rule violation — send `shutdown_request`, report to the operator, and note in memory.
     - Wait for shutdown confirmations (see Stall & Crash Recovery for timeout handling), then run `TeamDelete(team_name="dev-{feature-slug}")`
-    - **Memory check.** If this cycle hit a recurring pitfall worth keeping (stall class, fix-loop offender, re-plan trigger, brief-authoring contradiction, etc. — NOT routine work), append a short entry to `.claude/agent-memory/team-lead/pitfalls.md` in `symptom → root cause → resolution` form using Edit or Write directly (the narrowly-scoped exception above — no need to delegate this single write). Skip if nothing recurring surfaced.
+    - **Memory check.** If this cycle hit a recurring pitfall worth keeping (stall class, fix-loop offender, re-plan trigger, brief-authoring contradiction, shutdown-protocol violation, etc. — NOT routine work), append a short entry to `.claude/agent-memory/team-lead/pitfalls.md` in `symptom → root cause → resolution` form using Edit or Write directly (the narrowly-scoped exception above — no need to delegate this single write). If the directory doesn't exist, `mkdir -p .claude/agent-memory/team-lead` first via Bash. Skip if nothing recurring surfaced.
     - Tell the operator: no changes committed — review with `git diff`
 
 ---

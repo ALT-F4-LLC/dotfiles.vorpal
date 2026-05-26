@@ -94,7 +94,6 @@ impl UserEnvironment {
                 .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
                 .with_attribution_pr("")
-                .with_auto_memory_enabled(false)
                 .with_auto_updates_channel("stable")
                 .with_cleanup_period_days(14)
                 .with_effort_level("xhigh")
@@ -130,7 +129,6 @@ impl UserEnvironment {
                 .with_env("OTEL_METRICS_EXPORTER", "otlp")
                 .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
                 .with_feedback_survey_rate(0.0)
-                .with_max_skill_description_chars(2048)
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
                 .with_permission_allow("Bash(cargo build:*)")
@@ -260,7 +258,6 @@ impl UserEnvironment {
                 .with_permission_disable_bypass_permissions_mode("disable")
                 .with_preferred_notif_channel("ghostty")
                 .with_show_thinking_summaries(true)
-                .with_skill_listing_budget_fraction(0.02)
                 .with_spinner_tips_enabled(false)
                 .with_status_line("bash ~/.claude/statusline.sh")
                 .with_status_line_padding(0)
@@ -276,7 +273,6 @@ impl UserEnvironment {
                 .with_sandbox_network_allow_local_binding(false)
                 .with_teammate_mode("in-process")
                 .with_tui("fullscreen")
-                .with_view_mode("verbose")
                 .build(context)
                 .await?;
         let claude_code_config_path = format!(

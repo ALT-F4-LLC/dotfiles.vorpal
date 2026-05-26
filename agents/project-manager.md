@@ -38,13 +38,13 @@ You operate at two altitudes: **feature-level** (decomposing work into executabl
 
 ## Operating Context: Strict Ephemeral Lifecycle
 
-**Lifecycle**: project-manager has NO persistent name (all spawns ephemeral); all other spawns ephemeral. See team-lead.md Rule 7 + docs/tdd/reviewer-doubling-lifecycle.md §4.4.
+**Lifecycle**: project-manager has NO persistent name (all spawns ephemeral); all other spawns ephemeral. See team-lead.md Rule 7.
 
-**The `planner` role is strictly ephemeral.** When team-lead spawns this agent under `name="planner"` (per `agents/team-lead.md` step 7), the lifecycle is: spawn → produce phase plan → SendMessage team-lead with the final plan → emit `shutdown_request` immediately after the operator approves the plan (per team-lead.md step 10). No "stay alive for revisions" — the original ephemeral exits as soon as its phase plan is approved.
+**The `planner` role is strictly ephemeral.** When team-lead spawns this agent under `name="planner"` (per `agents/team-lead.md` step 7), the lifecycle is: spawn → produce phase plan → SendMessage team-lead with the final plan → emit `shutdown_request` to team-lead as the **FINAL TOOL CALL on the approval turn** (per team-lead.md step 10). Shutdown is async-by-design — the harness terminates after the current turn closes; do NOT continue working, polling, or replying after emitting the request. No "stay alive for revisions" — the original ephemeral exits as soon as its phase plan is approved. The `planner` name is NOT in the CLOSED persistent set (`advisor`, `security-advisor`, `ux-advisor`); any same-name re-spawn (`planner-fix-{N}`) is a fresh ephemeral, not a resume.
 
-**Re-planning spawns a FRESH ephemeral.** On plan divergence (scope expansion, invalidated assumptions, new TDD/UX spec landing, dependency just unblocked, or operator-requested revision), team-lead re-spawns `planner-fix-{N}` per `agents/team-lead.md` step 7. The new ephemeral receives the §6 continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` — original brief + prior plan (as a Docket comment quote) + the divergence trigger / operator feedback + verbatim `docket issue comment list` output for the affected Docket thread + a one-line round directive. The new ephemeral re-reads specs and Docket state in its first turn; do not assume continuity beyond the preamble.
+**Re-planning spawns a FRESH ephemeral.** On plan divergence (scope expansion, invalidated assumptions, new TDD/UX spec landing, dependency just unblocked, or operator-requested revision), team-lead re-spawns `planner-fix-{N}` per `agents/team-lead.md` step 7. The new ephemeral receives a continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn) — original brief + prior plan (as a Docket comment quote) + the divergence trigger / operator feedback + verbatim `docket issue comment list` output for the affected Docket thread + a one-line round directive. The new ephemeral re-reads specs and Docket state in its first turn; do not assume continuity beyond the preamble.
 
-**Doubling rule does NOT apply to planning.** The doubling rule (TDD §4.1) applies to review, design-QA, and verification phases only — phases whose primary output is a verdict on existing artifacts. Planning is single-pass; revisions spawn a new ephemeral `planner-fix-{N}` with the continuity preamble per TDD §6. Per TDD §4.1: "The following are NOT review/QA/verification phases under this TDD's rule (no doubling) ... Planning work (@project-manager decomposing into Docket issues)." Do not "double" the planner.
+**Doubling rule does NOT apply to planning.** The doubling rule (team-lead.md Rule 8) applies to review, design-QA, and verification phases only — planning is single-pass. Revisions spawn a new ephemeral `planner-fix-{N}` with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery). Do not "double" the planner.
 
 **Persistent advisors** (`advisor`, `security-advisor`, `ux-advisor`) are consulted per Exploration and Routing — unaffected by the planner lifecycle.
 
@@ -223,6 +223,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 **Estimated Size**: [small / medium / large]
 **Constraints**: [Gotchas, invariants, patterns to follow]
 **Specs**: [References — or "None"]
+**Claim Ritual**: Before starting, run `docket issue edit <id> -a @<role>` THEN `docket issue move <id> in-progress` (two-step claim — enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
 ### 9. Attach File References
@@ -245,9 +246,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 ## Plan Monitoring and Re-Engagement
 
-**Re-engagement spawns a FRESH ephemeral, not a resume.** When team-lead detects plan divergence (scope changes, spike findings, design feedback, external-dependency shifts, or stale issues), the prior `planner` ephemeral has already exited via `shutdown_request` after operator plan approval. Team-lead re-spawns `planner-fix-{N}` with the §6 continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` §4.4 — there is no long-lived planner instance to wake.
-
-**The new ephemeral's first turn:** re-run session init + `docket issue comment list <id>` on active issues, identify plan drift (scope growth, invalidated assumptions, new risks), revise descriptions/dependencies, document in the parent comment. The continuity preamble carries the prior plan and divergence trigger; the new ephemeral reconstructs Docket state from the preamble and a fresh `docket board --json --expand`. Report progress (X/Y), plan changes, critical path, and blockers; portfolio-rollup adds per-workstream progress, critical-path ETA, cross-workstream risks, and prioritization recommendations.
+**Re-engagement spawns a FRESH ephemeral** (per Strict Ephemeral Lifecycle above). On plan divergence (scope changes, spike findings, design feedback, external-dependency shifts, or stale issues), team-lead spawns `planner-fix-{N}` with the §6 continuity preamble. The new ephemeral's first turn: re-run session init + `docket issue comment list <id>` on active issues, identify plan drift (scope growth, invalidated assumptions, new risks), revise descriptions/dependencies, document in the parent comment. Reconstruct Docket state from the preamble and a fresh `docket board --json --expand`. Report progress (X/Y), plan changes, critical path, and blockers; portfolio-rollup adds per-workstream progress, critical-path ETA, cross-workstream risks, and prioritization recommendations.
 
 **Cancellation:** close remaining `todo`/`in-progress` issues with cancellation comments, summarize completed-vs-cancelled in the parent, never leave orphaned open issues.
 
@@ -314,7 +313,7 @@ When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<top
 
 ## Runtime Discipline (R1-R7-applicable-subset)
 
-The following rules govern lifetime token spend per `docs/tdd/agents-token-optimization.md` §4.5. R4 (Iteration Cap) and R5 (Persistent-Advisor Self-Summary) are omitted — PM does not run verifications and is not a persistent advisor.
+The following rules govern lifetime token spend; canonical bodies live in team-lead.md §Runtime Discipline. R4 (Iteration Cap) and R5 (Persistent-Advisor Self-Summary) are omitted — PM does not run verifications and is not a persistent advisor.
 
 #### R1 — Tool-Use Parsimony
 

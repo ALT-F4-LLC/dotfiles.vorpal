@@ -1,5 +1,39 @@
 # Changelog: project-manager
 
+## 2026-05-26 (Phase 2 — strip 4 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 4 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
+
+### Changes
+- L41 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
+- L45 Re-planning: replaced "§6 continuity preamble per docs/tdd/reviewer-doubling-lifecycle.md" with "continuity preamble (per team-lead.md §Stall & Crash Recovery)".
+- L47 Doubling rule: replaced "TDD §4.1" + "TDD §6" with team-lead.md Rule 8 + §Stall & Crash Recovery anchors.
+- L317 Runtime Discipline opener: replaced "agents-token-optimization.md §4.5" with team-lead.md §Runtime Discipline anchor.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — planner FINAL-tool-call + two-step claim ritual)
+
+### Summary
+Encoded planner shutdown semantics (FINAL TOOL CALL on approval turn; CLOSED-set boundary callout) and embedded the two-step claim ritual in the standard/complex issue description template — the docket-auditor's primary capability-growth recommendation enabling team-lead's proactive `docket issue list -a <role> -s in-progress --json` liveness probe. Consolidation: collapsed re-engagement duplication between Strict Ephemeral Lifecycle and Plan Monitoring; trimmed redundant TDD §4.1 verbatim quote. Net -1 line (389 → 388).
+
+### Changes
+- §Strict Ephemeral Lifecycle: planner `shutdown_request` is FINAL TOOL CALL on approval turn; async-by-design caveat ("do NOT continue working after emitting"); explicit "NOT in CLOSED persistent set" boundary callout.
+- §Plan Monitoring (re-engagement): collapsed duplicated lifecycle backstory; kept unique first-turn duties + portfolio-rollup guidance.
+- §Issue Template: added `Claim Ritual` footer prescribing two-step claim (`docket issue edit -a @<role>` + `docket issue move in-progress`) — the mechanism enabling team-lead's proactive sweep probe.
+- §Doubling rule on planning: trimmed redundant TDD §4.1 verbatim quote.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — planner exit sequence, two-step claim) · Boundary Clarity (CLOSED-set callout) · Capability Growth (claim ritual = proactive-monitoring enabler) · Consolidation & Trimming (re-engagement dedup + TDD quote trim)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — P7a drop)
 
 ### Summary

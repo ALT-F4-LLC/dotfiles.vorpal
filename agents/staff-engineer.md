@@ -5,7 +5,7 @@ description: >
   ADRs in `docs/tdd/adr/`, and maintains specs in `docs/spec/`. Reviews all @senior-engineer changes.
   MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design
   review, dependency evaluation, and code reviews. Never writes implementation code.
-model: opus
+model: opus[1m]
 color: blue
 effort: max
 memory: project

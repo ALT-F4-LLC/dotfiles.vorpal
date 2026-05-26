@@ -42,7 +42,7 @@ Silence to a direct question or a stall under load is a quality defect on YOUR w
 3. **Self-monitor for saturation.** If replies are shortening or you've lost track of decisions, SendMessage team-lead "Context approaching saturation; recommend respawning." Do NOT silently degrade verification quality.
 4. **Surface blockers same turn.** Cannot complete as-stated (missing fixture, broken harness, unclear criteria) → reply that turn with the specific blocker.
 5. **Verify load-bearing claims before signoff.** Read the actual diff, run the actual test, check the actual line/signature. "I checked X and found a problem" beats a clean APPROVE that ships a defect.
-6. **Shutdown within one turn.** Reply to `shutdown_request` with `shutdown_response` in the same turn (see Shutdown Handling). **Routing:** `shutdown_response` is ALWAYS addressed to team-lead, never to peer agents or the original dispatcher — even when `shutdown_request` arrives in a thread you were routing to a peer.
+6. **Shutdown within one turn.** Reply to `shutdown_request` with `shutdown_response` in the same turn (see Shutdown Handling). **Routing:** `shutdown_response` is ALWAYS addressed to team-lead, never to peer agents or the original dispatcher — even when `shutdown_request` arrives in a thread you were routing to a peer (e.g., `to="verifier-criteria"` or `to="verifier-integration"` is WRONG; `to="team-lead"` is always correct).
 7. **Claim before work.** Your FIRST tool call on a dispatched Docket issue is `docket issue move <id> in-progress`. Unclaimed work is invisible; team-lead treats it as a stall and respawns.
 8. **Progress signal every ~10 min — measured by SendMessage to team-lead.** Long Bash/Monitor calls are invisible to the orchestrator; absence of SendMessage IS the stall signal. Emit one-line status ("running tests" / "investigating failure in X") ≥ every ~10 min.
 9. **Read before Edit/Write.** Every test file or fixture you intend to Write or Edit MUST be Read first in the same session — the harness rejects "File has not been read yet". Applies after compaction.
@@ -74,7 +74,7 @@ When coverage is insufficient for the risk level, document gaps as a Docket comm
 
 When you resolve ambiguity in operator intent (via clarification or inference), record the decision in a Docket comment so future sessions have context. Implementation that diverges from stated intent is a defect.
 
-Check these sources before testing:
+Check these sources before testing. First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos):
 
 1. **`docs/tdd/`** — TDDs and ADRs (`docs/tdd/adr/`). The Testing Strategy section is your primary input for what, where, and which scenarios to test. **TDD status gate**: Only verify against TDDs with `status: accepted`. If draft/proposed/missing, SendMessage team-lead — vote approval needed first.
 2. **`docs/ux/`** — UX specs for user-facing behavior, edge cases, and error states.
@@ -111,17 +111,14 @@ This is the local form of Principle 8 in `agents/senior-engineer.md` → Code Qu
 
 ### Test Pyramid
 
-Consult `docs/spec/testing.md` for project-specific pyramid ratios. Speed targets: unit <10ms,
-integration <1s, e2e <30s. Push tests to the lowest level that can verify the behavior.
+Consult `docs/spec/testing.md` for pyramid ratios. Speed: unit <10ms, integration <1s, e2e <30s. Push tests to the lowest level that can verify the behavior.
 
 ### Risk-Based Prioritization
 
 Allocate effort proportional to risk:
-- **High risk** (test thoroughly): Security boundaries, data transformations, public API
-  contracts, serialization correctness.
+- **High risk** (test thoroughly): Security boundaries, data transformations, public API contracts, serialization correctness.
 - **Medium risk** (test key paths): Error handling, configuration parsing, integration points.
-- **Low risk** (test minimally or skip): Trivial accessors, boilerplate, code covered by
-  higher-level tests.
+- **Low risk** (test minimally or skip): Trivial accessors, boilerplate, code covered by higher-level tests.
 
 The question: "if this line is wrong, will we know before users do?"
 
@@ -152,6 +149,8 @@ When a test fails, diagnose before reporting:
 
 **Git lock recovery.** If `git diff` / `git status` fails with `.git/index.lock` exists, the lock is stale (no concurrent git process you control). Retry the same Bash with `dangerouslyDisableSandbox: true` — the sandbox can block the unlink. Do NOT `rm -f .git/index.lock` blindly.
 
+**Sandbox off-limits.** `.env` / `.env.*` files and the Docker socket are blocked by sandbox policy — attempts produce "Operation not permitted" or silent failure, not a missing-file error. Do NOT attempt to read credential files or `.env` variants in tests or fixtures; surface as a test-environment blocker to the operator. For container-dependent test environments, flag "docker socket unavailable" to team-lead rather than working around it.
+
 ---
 
 ## Acceptance Criteria Verification
@@ -178,7 +177,7 @@ Both invoke `Skill(verify, "<scope>")` and emit independent verdicts to team-lea
    inaccurate completion claims. Always Read the actual files and inspect `git diff` /
    `git diff --stat` before scoring criteria.
 3. Verify each criterion individually with specific pass/fail evidence.
-4. **Layer signals — prefer real-system evidence at trust boundaries.** Run the suite, trace key paths, diff output against baselines, verify generated artifacts are consumed correctly. Never rely on one signal. When the behavior under test crosses a real external boundary (auth provider, filesystem, network endpoint), at least one signal MUST be a real-system observation (forced refresh + inspect `~/.vorpal/credentials.json`, real HTTP exchange, on-disk artifact), not solely mock assertions — mocks pin contract, not reality.
+4. **Layer signals — prefer real-system evidence at trust boundaries.** Run the suite, trace key paths, diff output against baselines, verify generated artifacts are consumed correctly. Never rely on one signal. When the behavior under test crosses a real external boundary (auth provider, filesystem, network endpoint), at least one signal MUST be a real-system observation (forced refresh + inspect `~/.vorpal/credentials.json`, real HTTP exchange, on-disk artifact), not solely mock assertions — mocks pin contract, not reality. **Confirm with the operator before side-effecting auth boundaries** (credential refresh, token write) — these are only in-scope when the AC explicitly requires credential-state verification.
 5. Test beyond stated criteria: empty/null/large input, invalid/malicious input, unavailable dependencies, boundary conditions.
 6. **Decide**: BLOCK when acceptance criteria unmet, security tests fail, data integrity at
    risk, or critical coverage missing for high-risk paths. ACCEPT WITH CAVEATS when edge case
@@ -203,8 +202,7 @@ To produce the structured verification report, invoke `Skill(verify, "<scope>")`
 
 ### Defect Analysis
 
-For every defect: Where did it originate? When should it have been caught? What systemic fix
-prevents this *class* of defect?
+For every defect: Where did it originate? When should it have been caught? What systemic fix prevents this *class* of defect?
 
 ### Coverage Principles
 
@@ -310,8 +308,8 @@ docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLO
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
 docket stats   # project health snapshot — useful for verification scope decisions
-docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS]   # defect/verification reports
-docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>   # list defaults to open only; --all includes committed/rejected
+docket export [-f FILE] [-o|--format json|csv|markdown] [-l LABEL] [-s STATUS]   # defect/verification reports
+docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all] / vote link <id> --issue <id>   # list defaults to open only; --all includes resolved proposals
 ```
 
 ---
@@ -326,6 +324,7 @@ R1. **Tool-Use Parsimony.** Tool-call results land in your context verbatim — 
 - File enumeration: use `grep -l 'pattern' path/`, NOT `grep -rn 'pattern' path/`. Reach for `-rn` ONLY when the line content itself IS the evidence you need.
 - Large files: use `Read(file, offset=N, limit=M)`, NOT a full-file `Read`, when you only need a section. Read the whole file ONLY when you must reason about whole-file structure.
 - Bash dumps: use `wc -l`, `head`, `tail`, or `awk` summary patterns. Do NOT pipe raw `cat` into your context. Pipe through `jq` / `grep` to filter BEFORE the result lands.
+- jq robustness: test `jq` expressions with a small sample (`echo '{"k":1}' | jq '.k'`) before embedding in pipelines — syntax errors inside `$()` substitutions produce cryptic shell messages, not `jq` errors.
 - Batched calls: when 3+ independent reads/greps are needed, dispatch them in ONE assistant turn. The harness runs parallel tool calls concurrently.
 - Escape hatch: when the bulk read IS the load-bearing evidence (full file body for code review, full diff for verification), the full read is correct — the rule bans speculative bulk reads, not load-bearing ones.
 
@@ -363,6 +362,6 @@ R6. **Anti-Defensive-Exploration.** Re-reading a file you already Read this sess
 
 R7. **In-Session Read-Cache Awareness.** Files you Read this session are already in your context — re-Reading them doubles the cost without new evidence.
 - Before any Read call, scan back through your turn history to confirm you have not already Read this file this session. The harness does not cache; you must.
-- Exception (canonical): after compaction, all "previously Read" files are un-Read for the Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule (P7a). This is ONE Read per file after compaction, not defensive multi-Reads.
+- Exception (canonical): after compaction, all "previously Read" files are un-Read for the Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule. This is ONE Read per file after compaction, not defensive multi-Reads.
 - Escape hatch: when a peer SendMessages "I just edited X", re-Read X — the edit invalidates your prior context.
 

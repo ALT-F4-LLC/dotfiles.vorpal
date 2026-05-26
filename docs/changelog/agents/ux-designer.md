@@ -1,5 +1,37 @@
 # Changelog: ux-designer
 
+## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, sec-incoming trigger, P7a drop)
+
+### Summary
+Three coherence fixes: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 (fleet parity); (2) added @security-engineer feasibility-consult incoming trigger to close bidirectionality gap (security-engineer already had both outgoing+incoming for consent/defaults; ux-designer only had outgoing); (3) dropped dead "(P7a)" cross-reference from R7.
+
+### Changes
+- Comm Discipline rule 6: appended WRONG/RIGHT (`to="design-review-2"`/`"design-qa-2"` WRONG; `to="team-lead"` RIGHT)
+- §Inter-Agent Communication Incoming triggers: added @security-engineer feasibility-consult entry after @staff-engineer
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — bidirectional sec↔ux trigger pair + shutdown example) · Actionability (P7a dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — Read-before-Edit compaction + doubled-reviewer consolidation)
+
+### Summary
+Closed the own-session `File has not been read yet` error (session 435785d7) by promoting compaction-awareness from buried R7 exception to the top-level Read-before-Edit/Write rule (mirrors senior-engineer.md line 33 phrasing). Consolidated near-identical "Doubled Reviewer Pattern" subsections from Responsibility 2 (design-review) and Responsibility 5 (design-QA) into one canonical block under Responsibility 5; Responsibility 2 now references it with the `design-review-2` slot-substitution. Added explicit memory save trigger to address persistent memory-gap.
+
+### Changes
+- §Read before Edit/Write rule (line 34): appended compaction-awareness clause mirroring senior-engineer.md phrasing — addresses session 435785d7 error
+- §Persistent memory: appended explicit save trigger ("after every design-QA verdict that surfaced a recurring root cause; after every cross-surface precedent decision") to address memory-gap-despite-active-invocations audit finding
+- §Responsibility 2 → Doubled Reviewer Pattern: collapsed to a one-line reference pointing to the canonical block under Responsibility 5 (slot-substitute `design-review-2` for `design-qa-2`)
+
+### Dimensions Evaluated
+Actionability (PRIMARY — own-session Read-before-Edit fix) · Consolidation & Trimming (doubled-reviewer subsection merge) · Cross-Agent Coherence (Read-before-Edit phrasing aligned with senior-engineer canonical form) · Capability Growth (memory save trigger)
+
+### Rename
+No rename.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
 
 ### Summary

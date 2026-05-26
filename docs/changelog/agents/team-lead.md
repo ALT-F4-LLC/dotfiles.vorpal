@@ -1,5 +1,37 @@
 # Changelog: team-lead
 
+## 2026-05-25 (Phase 2 coherence — P7a drop)
+
+### Summary
+Single coherence fix: dropped dead "(P7a)" cross-reference from R7 canonical body (fleet-wide cleanup; no agent canonically labels its Read rule as P7a).
+
+### Changes
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Actionability (dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — 5 memory pitfalls + CRITICAL shutdown inversion bug)
+
+### Summary
+Encoded 5 active memory pitfalls (solution-dimension HARD GATE, ls-before-dispatch, budget-table per-row arithmetic, mechanical-fix shortcut + cycle-bloat surfacing) and closed the CRITICAL shutdown_response inversion bug from session 4785313c. Consolidated stale coordination-note bullet (already encoded in Rule 8) to offset new dispatch-hygiene bullet. Net +4 lines (464 → 468).
+
+### Changes
+- Pre-flight step 1 HARD GATE: AskUserQuestion now spans goal axes, out-of-scope surfaces, AND solution dimensions (how-to-cut). Closes memory pitfall #1 (dev-agents-token-opt).
+- Spawning Templates Common context-block: replaced stale coordination-note bullet with consolidated Dispatch hygiene bullet — `ls -d` file-target verification + ephemeral first-tool-call/final-report mandate + review/verify `Mandatory verification commands` subsection requirement. Closes memory pitfalls #2, #4 + audit-suggested ephemeral delivery discipline.
+- Step 13 spot-check: added budget-table per-row arithmetic sub-bullet. Closes memory pitfall #2.
+- Step 14 Review-fix loop: added Mechanical-fix shortcut (BOTH reviewers mechanical + <5 LOC → team-lead self-applies, skip re-doubled-review) + Cycle bloat surfacing (>40 implementation turns → AskUserQuestion offering accelerated-wrap). Closes memory pitfall #4.
+- Step 16 wrap-up: added Shutdown direction bullet — team-lead is sender of shutdown_request / receiver of shutdown_response; emits shutdown_response ONLY to operator. Closes CRITICAL audit finding from session 4785313c (dev-weft-auth).
+
+### Dimensions Evaluated
+Actionability (PRIMARY — 5 memory pitfalls + critical shutdown bug encoded) · Boundary Clarity (shutdown direction) · Completeness (solution-dimension axis) · Capability Growth (mechanical-fix + cycle-bloat shortcuts) · Consolidation & Trimming (coordination-note removal offsets dispatch-hygiene addition) · Epistemic Discipline (cite-results requirement in dispatch briefs)
+
+### Rename
+No rename.
+
 ## 2026-05-24
 
 ### Summary

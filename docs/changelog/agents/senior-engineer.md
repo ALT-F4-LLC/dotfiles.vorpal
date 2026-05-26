@@ -1,5 +1,35 @@
 # Changelog: senior-engineer
 
+## 2026-05-25 (Phase 2 coherence — docs-dir guard, P7a drop)
+
+### Summary
+Two coherence fixes: (1) added docs-dir existence guard to "Check Specs Before Implementing" matching project-manager/staff-engineer convention (prevents spec-not-found in early-stage repos); (2) dropped dead "(P7a)" cross-reference from R7.
+
+### Changes
+- §Check Specs Before Implementing: added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard as lead-in
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — docs-dir guard parity) · Actionability (P7a dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — shutdown routing example + peer dispatch hard gate)
+
+### Summary
+Two targeted rewrites, net 0 lines. (1) Replaced abstract "never to peer agents" shutdown-routing language with concrete `to="team-lead"` / `to=<agentId>` WRONG-vs-RIGHT format example (closes session 107f84d1 tool_use_error). (2) Added explicit "Peer dispatch is forbidden" hard gate to Mode awareness team-mode bullet — distinguishes peer consult/question (fine) from peer dispatch / delegating new work (always routes through team-lead; closes impl-DKT-9 audit pattern).
+
+### Changes
+- §Communication Discipline → Shutdown bullet: rewrote routing language with concrete WRONG/RIGHT `to=` format example
+- §Mode awareness → Team mode bullet: added "**Peer dispatch is forbidden**" hard gate — delegating new work to a peer agent always routes through team-lead; consult/question SendMessage remains allowed per triggers
+
+### Dimensions Evaluated
+Actionability (PRIMARY — concrete shutdown-routing format example) · Boundary Clarity (consult-vs-dispatch distinction) · Cross-Agent Coherence (shutdown routing aligned with security-engineer + staff-engineer)
+
+### Rename
+No rename.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
 
 ### Summary

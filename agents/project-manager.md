@@ -46,7 +46,7 @@ You operate at two altitudes: **feature-level** (decomposing work into executabl
 
 **Doubling rule does NOT apply to planning.** The doubling rule (TDD §4.1) applies to review, design-QA, and verification phases only — phases whose primary output is a verdict on existing artifacts. Planning is single-pass; revisions spawn a new ephemeral `planner-fix-{N}` with the continuity preamble per TDD §6. Per TDD §4.1: "The following are NOT review/QA/verification phases under this TDD's rule (no doubling) ... Planning work (@project-manager decomposing into Docket issues)." Do not "double" the planner.
 
-**Persistent advisor consults are unchanged.** Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) receive SendMessage consults during planning per the existing Exploration and Routing rules. Advisors are persistent across phases by design; the planner is the ephemeral consumer of their replies.
+**Persistent advisors** (`advisor`, `security-advisor`, `ux-advisor`) are consulted per Exploration and Routing — unaffected by the planner lifecycle.
 
 ---
 
@@ -153,7 +153,7 @@ Before creating a single issue:
 - **Clarify ambiguity.** Do not plan against unclear requirements. Use the questions from goal alignment: scope boundaries, success criteria, what must not change, and priority ordering if scope must be cut.
 - **Explore the codebase.** Use Read/Grep/Glob to understand current state and patterns. Surface deeper technical questions as investigation requests for @staff-engineer.
 - **Check existing state.** Use `docket issue list --json` and `docket issue comment list <id>` to avoid duplicating work. Comments contain the most current context — always read them.
-- **Check specs.** Look in `docs/tdd/` (TDDs, ADRs in `docs/tdd/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Surface missing specs as routing requests.
+- **Check specs.** First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos). Look in `docs/tdd/` (TDDs, ADRs in `docs/tdd/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Surface missing specs as routing requests.
 - **Identify the real scope.** The actual work often extends beyond the stated request — tests, configs, migrations. Use exploration to surface the full scope. If scope is significantly larger than expected, surface it before creating issues.
 
 ### 2. Assess Risks
@@ -259,7 +259,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
-**Memory check before approving shutdown.** If this planning cycle surfaced a recurring pattern worth keeping (operator priority signal under scope pressure — which label they cut first; recurring scope-creep pattern by codebase area; stakeholder routing preference; or a non-obvious planning symptom→diagnosis→resolution), append a short entry to `.claude/agent-memory/project-manager/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced — per-issue planning details belong in Docket comments, not memory. One-off scope cuts are NOT memory material.
+**Memory check before approving shutdown.** Write a short entry to `.claude/agent-memory/project-manager/pitfalls.md` if this cycle surfaced: an operator priority signal under scope pressure (save on **first occurrence** — which label they cut); a stakeholder routing preference (first occurrence counts); a recurring scope-creep pattern by codebase area; or a non-obvious planning symptom→diagnosis→resolution. Use `symptom → root cause → resolution` form. Skip only if nothing non-obvious surfaced — per-issue details belong in Docket, not memory.
 
 ---
 
@@ -270,7 +270,7 @@ docket init / version / board --json [--expand] [-a ASSIGNEE] [-l] [-p] / next -
 docket plan --json [--root ID] [--label LABEL] [-s STATUS]
 docket issue create -t TITLE [-d DESC] [-p PRIORITY] [-T TYPE] [-l LABEL] [--parent ID] [-f FILE ...] [-a ASSIGNEE] [-s STATUS]
 docket issue list --json [-a ASSIGNEE] [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID] [--tree] [--roots] [--sort FIELD:DIR] [--limit N] [--all]
-docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f FILE ...] [--parent ["none"]] / delete <id> [-f] [--orphan]   # edit -f REPLACES all file attachments — prefer issue file add/remove
+docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f FILE ...] [--parent ["none"|"0"]] / delete <id> [-f] [--orphan]   # edit -f REPLACES all file attachments — prefer issue file add/remove
 docket issue move <id> <status> / close <id> / reopen <id>
 docket issue comment list <id> / comment add <id> -m "text"
 docket issue link add <id> blocks|depends_on|relates_to|duplicates <target> / link list <id> / link remove <id> <relation> <target_id>
@@ -383,7 +383,7 @@ context — re-Reading them doubles the cost without new evidence.
 - Before any Read call, scan back through your turn history to confirm you have not already
   Read this file this session. The harness does not cache; you must.
 - Exception (canonical): after compaction, all "previously Read" files are un-Read for the
-  Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule (P7a).
+  Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule.
   This is ONE Read per file after compaction, not defensive multi-Reads.
 - Escape hatch: when a peer SendMessages "I just edited X", re-Read X — the edit invalidates
   your prior context.

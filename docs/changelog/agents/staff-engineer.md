@@ -1,5 +1,38 @@
 # Changelog: staff-engineer
 
+## 2026-05-25 (Phase 2 coherence — compaction clause on rule 5, P7a drop)
+
+### Summary
+Two coherence fixes: (1) added explicit compaction-awareness clause to Comm Discipline rule 5 (Read before Write/Edit) matching senior-engineer L33 and ux-designer L34 — `advisor` ephemerals run long sessions across compactions while Editing docs/tdd/ + docs/spec/ heavily; (2) dropped dead "(P7a)" cross-reference from R7.
+
+### Changes
+- Comm Discipline rule 5: appended "After a compaction event, treat all 'previously Read' files as un-Read — Read again before the next Edit"
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — Read-before-Edit/Write phrasing alignment with senior/ux) · Actionability (P7a dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — memory→definition pitfall promotion)
+
+### Summary
+Promoted 4 pitfalls from actively-maintained memory (`pitfalls.md`) into the agent definition: advisor topology rule (NEW Comm Discipline rule 9), directory existence check (No Guessing append), reversal state-probe (new Proactive Communication bullet), and TDD step 6 regex-execution + inverted-scope grep gates. Also reinforced rule 7 shutdown routing with a WRONG/RIGHT negative example. Net +10 (341 → 351 lines, 149 headroom remaining).
+
+### Changes
+- §Communication Discipline rule 7: appended WRONG/RIGHT negative-example clause for shutdown routing
+- §Communication Discipline rule 9 (NEW): advisor topology — persistent `advisor` MUST NOT SendMessage in-flight impl ephemerals with directive content; recommendations route through team-lead (hub-and-spoke)
+- §No Guessing: added Directory existence check — `ls -d <path>/` before referencing `docs/ux/`, `docs/tdd/`, `docs/tdd/adr/`, `docs/spec/`
+- §Proactive Communication: new "Before recommending a mid-cycle directive REVERSAL" trigger — state-probe team-lead first
+- §TDD Workflow step 6: appended Regex execution gate (grep -lE before marking AC complete; broaden escape-arms for markdown) and Inverted-scope grep rule on namespace expansion
+
+### Dimensions Evaluated
+Role Realism (PRIMARY — 4 memory→definition promotions) · Capability Growth & Cross-Communication (advisor topology + reversal state-probe) · Boundary Clarity (directory existence) · Cross-Agent Coherence (shutdown routing negative example mirrored from security-engineer)
+
+### Rename
+No rename.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
 
 ### Summary

@@ -1,5 +1,36 @@
 # Changelog: security-engineer
 
+## 2026-05-25 (Phase 2 coherence — P7a drop)
+
+### Summary
+Single coherence fix: dropped dead "(P7a)" cross-reference from R7 exception clause. No agent canonically labels its Read-before-Edit/Write rule as "P7a"; the parenthetical was fleet-wide dead reference.
+
+### Changes
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Actionability (dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — `.env*` workaround + shutdown negative example)
+
+### Summary
+Two audit-driven additions plus a trim. Closed the recurring `.env*` sandbox-block on legitimate secret audits (5 historical denied-read errors in one session) by adding a §No Guessing bullet prescribing the documented detour (`ls -la`, grep usage sites, consult `docs/spec/security.md`, route to operator). Reinforced rule 6 shutdown routing with a concrete WRONG/RIGHT negative example for the doubled-security-track recipient ambiguity. Trimmed Cross-agent pointers from 4 bullets to 1 inline sentence. Net −3 (280 → 277). Note: reviewer applied edits directly during review (read-only protocol violation); team-lead accepted since changes pass Content Gate.
+
+### Changes
+- §No Guessing: new bullet — `.env*` sandbox-denied alternatives (`ls -la`, grep `dotenv\|process.env\|std::env::var\|os.environ`, `docs/spec/security.md`, operator escalation for real values)
+- §Communication Discipline rule 6: appended WRONG/RIGHT negative-example clause for shutdown routing on doubled security tracks
+- §Cross-agent pointers: collapsed 4-bullet list to 1 inline sentence; dropped Epistemic Discipline pointer (covered by rule 7)
+- §Operating context: prose cleanup (semicolon merge)
+
+### Dimensions Evaluated
+Actionability (PRIMARY — `.env*` workaround unblocks recurring audit detour) · Cross-Agent Coherence (negative-example pattern proposed fleet-wide for shutdown routing) · Consolidation & Trimming
+
+### Rename
+No rename.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown routing + advisor-idle parity)
 
 ### Summary

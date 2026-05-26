@@ -258,6 +258,7 @@ impl UserEnvironment {
                 .with_permission_disable_bypass_permissions_mode("disable")
                 .with_preferred_notif_channel("ghostty")
                 .with_show_thinking_summaries(true)
+                .with_skill_listing_budget_fraction(0.2)
                 .with_spinner_tips_enabled(false)
                 .with_status_line("bash ~/.claude/statusline.sh")
                 .with_status_line_padding(0)
@@ -271,7 +272,6 @@ impl UserEnvironment {
                     "git".to_string(),
                 ])
                 .with_sandbox_network_allow_local_binding(false)
-                .with_teammate_mode("in-process")
                 .with_tui("fullscreen")
                 .build(context)
                 .await?;

@@ -1,5 +1,42 @@
 # Changelog: security-engineer
 
+## 2026-05-26 (Phase 2 — strip 8 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 8 dangling citations to `docs/tdd/reviewer-doubling-lifecycle.md` (Phase 0 verified file does not exist in this repo). Redirected references to team-lead.md anchors (Rule 7, Rule 8, step 14 reconciliation rules, §Runtime Discipline).
+
+### Changes
+- L34 idle-semantics bullet: dropped "+ reviewer-doubling-lifecycle.md §4.4" tail.
+- L37 cross-agent pointers: dropped "+ reviewer-doubling-lifecycle.md §4.2 row 2" tail.
+- L101 step 9 secondary review: replaced "TDD §4.4 rule 8" + "TDD §4.3" with team-lead Rule 8 + step 14 anchors.
+- L110 doubled-track block: replaced "TDD §4.3" with team-lead step 14 anchor.
+- L112 degraded fallback: replaced "TDD §4.3 rule 7" with team-lead step 14 reconciliation rule 7 anchor.
+- L133 Review Output: replaced "TDD §4.3" with step 14 anchor.
+- L171 divergence trigger: replaced "docs/tdd/reviewer-doubling-lifecycle.md §4.3" with step 14 anchor.
+- L223 Runtime Discipline opener: replaced "§4.5 applicability matrix" with team-lead.md §Runtime Discipline anchor.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — per-name idle semantics + verdict→shutdown sequence)
+
+### Summary
+Closed the dev-dkt-3-shadow-validators stall by encoding per-name idle semantics (`security-advisor` idle-OK vs `security-reviewer-N` ephemeral) and numbered verdict→`shutdown_request` SAME-turn sequence with the documented incident named as the negative example. Split Shutdown Handling by name; added `background_tasks`/`session_crons` drain caveat (async-shutdown is by design). Net +4 lines (277 → 281).
+
+### Changes
+- §Operating Context + Lifecycle: replaced "Stateless subagent" framing (contradicted persistent-advisor model); restructured Lifecycle into named-lifecycle distinction — `security-advisor` (idle NORMAL) vs `security-reviewer-N` (idle after verdict = STALL).
+- §Ephemeral peer review: encoded numbered verdict→shutdown sequence — (1) SendMessage verdict, (2) `shutdown_request` as FINAL tool call same turn, (3) await `shutdown_approved`. Documented `security-reviewer-2` 1.5min idle in `dev-dkt-3-shadow-validators` as the negative example.
+- §Shutdown Handling: split by name — `security-advisor` long-lived approve criteria; `security-reviewer-N` mandatory same-turn shutdown_request + `background_tasks`/`session_crons` drain before emitting.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — verdict→shutdown sequence) · Boundary Clarity (per-name idle semantics) · Capability Growth (drain rule + documented incident as exemplar) · Completeness (async-shutdown caveat)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — P7a drop)
 
 ### Summary

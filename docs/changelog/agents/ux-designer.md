@@ -1,5 +1,41 @@
 # Changelog: ux-designer
 
+## 2026-05-26 (Phase 2 — strip 6 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 6 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
+
+### Changes
+- L168 design-review Fix-loop: replaced "§6 continuity preamble per docs/tdd/reviewer-doubling-lifecycle.md" with §Stall & Crash Recovery anchor.
+- L185 Doubled reviewer pattern: dropped "+ reviewer-doubling-lifecycle.md §4.2 row design-qa" tail.
+- L197 design-QA Fix-loop: same fix as L168 (parity).
+- L210 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
+- L213 ux-advisor idle: replaced "TDD §4.4 rule 5" with team-lead.md §Stall & Crash Recovery anchor.
+- L216 ephemeral roles: replaced "§6" + "TDD §4.3 rule 7" with §Stall & Crash Recovery + step 14 anchors.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — proactive ephemeral self-shutdown vs idle-OK persistent)
+
+### Summary
+Distinguished ephemeral (`design-review-{N}`, `design-qa-{N}`) verdict-then-self-shutdown discipline from persistent `ux-advisor` idle-OK lifecycle. Encoded verdict-then-`shutdown_request` SAME turn as the canonical ephemeral exit sequence; pluralized hardcoded `design-review-2`/`design-qa-2` to `{N}`/`{N+1}` to match team-lead spawn naming. Precautionary parity edit — historical profile is clean (TeammateIdle=0). Net +4 lines (331 → 335).
+
+### Changes
+- §Shutdown Handling: expanded to three sub-sections — Ephemeral (verdict-then-`shutdown_request` SAME turn), Persistent `ux-advisor` (idle-OK by design), Inbound shutdown_request reply rule.
+- §Ephemeral `@ux-designer` roles: explicit exit sequence "deliver final report → emit shutdown_request → stop"; pluralized `{N}`.
+- §Responsibility 2 (design-review) Fix-loop continuity: replaced "exit on shutdown_request" passive framing with "self-shutdown after delivering verdict (SAME turn)".
+- §Responsibility 5 (design-qa) Fix-loop continuity: parity edit with above; pluralized.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — proactive self-shutdown) · Boundary Clarity (ephemeral vs `ux-advisor` lifecycle distinction) · Capability Growth (verdict-then-shutdown parity with fleet)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, sec-incoming trigger, P7a drop)
 
 ### Summary

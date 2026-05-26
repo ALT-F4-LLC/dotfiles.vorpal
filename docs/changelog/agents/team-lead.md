@@ -1,5 +1,38 @@
 # Changelog: team-lead
 
+## 2026-05-26 (Phase 2 — strip 12 dangling docs/tdd/* citations)
+
+### Summary
+Stripped all 12 dangling citations to `docs/tdd/reviewer-doubling-lifecycle.md` and `docs/tdd/agents-token-optimization.md` (files do not exist in this repo per Phase 0 verification). Each citation replaced with intra-team-lead anchor pointing at the inline rule it claimed to reference (Rule 7, Rule 8, step 14 reconciliation rules 1-8, §Teammate Stall & Crash Recovery, §Runtime Discipline).
+
+### Changes
+- 12 strip-only edits across L188, L206, L240, L242, L244, L256, L274, L282, L306, L331, L334, L340, L346.
+- Common patterns: "TDD §4.3" → "step 14 rules" / "reconciliation rule N in step 14"; "TDD §4.4" → "Rule 7"; "TDD §4.2" → "Rule 8"; "§6 continuity preamble" → "continuity preamble (per Stall & Crash Recovery)"; "§4.5 applicability matrix" → "this section is the source of truth".
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed) · Boundary Clarity (intra-file anchors are unambiguous)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — proactive shutdown sweep + claim ritual + anti-inversion)
+
+### Summary
+Encoded proactive shutdown-coordination per operator directive. New end-of-turn shutdown sweep step (probes `docket issue list -a @<role> -s in-progress --json`); two-step claim ritual in @senior-engineer Requirements; async-shutdown-as-FINAL-tool-call in common Dispatch hygiene; stronger anti-inversion rule in step 16 grounded in audit's 11 misroutes. R5 per-advisor variants collapsed -5 lines to offset +3 substantive additions. Net -3 lines (470 → 467).
+
+### Changes
+- Step 13 area: NEW "Shutdown sweep" sub-bullet — proactive monitoring via `docket issue list -a @<role> -s in-progress --json` (every turn during steps 11-16, NOT gated by spot-check predicate). Only CLOSED-set advisors may idle.
+- @senior-engineer Requirements (line 175): two-step claim ritual `docket issue edit -a @senior-engineer` + `docket issue move in-progress` (enables the sweep probe); explicit `shutdown_request` as FINAL tool call this turn after close.
+- Dispatch hygiene bullet (common scaffolding): added explicit FINAL-tool-call shutdown requirement for ephemerals; CLOSED-set exempt per Rule 7.
+- Step 16 Shutdown direction: strengthened — team-lead MUST NOT reply with `shutdown_response`, MUST NOT address raw agent-IDs, MUST NOT address peer ephemeral names. Historical context (11 misroutes: 4 UUIDs, 7 peer names) cited; silence is correct response to shutdown approval.
+- R5 per-advisor variants (lines 437-441): 5-line bulleted block collapsed to 1 inline line preserving all three triggers.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — proactive sweep, FINAL-tool-call, anti-inversion) · Boundary Clarity (shutdown direction) · Completeness (proactive monitoring step) · Capability Growth (two-step claim ritual + liveness probe) · Consolidation & Trimming (R5 collapse offsets net additions)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — P7a drop)
 
 ### Summary

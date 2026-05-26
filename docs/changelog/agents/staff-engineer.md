@@ -1,5 +1,42 @@
 # Changelog: staff-engineer
 
+## 2026-05-26 (Phase 2 — strip 7 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 7 dangling citations to `docs/tdd/reviewer-doubling-lifecycle.md` and `docs/tdd/agents-token-optimization.md` (Phase 0 verified files do not exist in this repo). Redirected references to team-lead.md anchors (Rule 7, Rule 8, step 14 rules, §Teammate Stall & Crash Recovery, §Runtime Discipline).
+
+### Changes
+- L30 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
+- L32 Doubled reviewer pattern: dropped "+ reviewer-doubling-lifecycle.md §4.2" tail.
+- L104 TDD Workflow step 9: collapsed 4 danglers (§4.2/§4.4 rule 8, §4.3 rule 8, §8.2 decision 3/4, §4.3) into team-lead anchors.
+- L111 Responsibility 2 opener: replaced "§4.2" + "§4.3 rule 8" + "§4.3" with Rule 8 + step-14 anchors.
+- L225 Shutdown Handling Persistent: replaced "§4.4" + "TDD §4.4 rule 5" with team-lead Rule 7 + §Stall & Crash Recovery anchor.
+- L227 Shutdown Handling Ephemeral: dropped "§6 continuity preamble per TDD §4.4 rule 2" — replaced with §Stall & Crash Recovery anchor.
+- L235 Runtime Discipline header: replaced "agents-token-optimization.md §4.5" with team-lead.md §Runtime Discipline anchor.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — ephemeral shutdown contract + spawn-form canonical list)
+
+### Summary
+Tightened ephemeral shutdown contract for unambiguous same-turn FINAL-tool-call discipline. Added `tdd-reviewer-{N}` and `coherence-reviewer` to canonical spawn-form list (Rule 7 + Lifecycle + Shutdown Handling); added "expect shutdown_approved, NOT shutdown_response" framing to close 4 historical receive-side misroutes; rewrote Shutdown Handling Ephemeral block as 4-step pre-shutdown checklist (deliver report → drain background_tasks → memory write → emit shutdown_request last). Net unchanged in file (no net lines counted — surfaces present as longer-text-on-same-line).
+
+### Changes
+- §Lifecycle (line 30): surfaced `tdd-reviewer-{N}` and `coherence-reviewer` in the ephemeral roster; narrowed idle privilege to the three CLOSED-set names.
+- §Comm Discipline Rule 7: expanded spawn-form enumeration; added async-shutdown caveat (FINAL TOOL CALL same turn); added explicit "await `shutdown_approved`, do NOT expect `shutdown_response`" to close 4 historical receive-side misroute paths.
+- §TDD Workflow step 9: tightened doubled-secondary-review paragraph; bound reviewer exit to FINAL TOOL CALL same turn; deduped §4.4 rule 8 cross-refs.
+- §Shutdown Handling: rewrote Ephemeral block as 4-step pre-shutdown checklist (deliver report → drain `background_tasks`/`session_crons` → memory write → emit `shutdown_request` last); explicit "idle ephemerals are a defect signal".
+
+### Dimensions Evaluated
+Actionability (PRIMARY — FINAL-tool-call discipline) · Boundary Clarity (canonical spawn-form list, idle-privilege narrowed) · Capability Growth (background-task drain checklist) · Completeness (await `shutdown_approved` not `shutdown_response`)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — compaction clause on rule 5, P7a drop)
 
 ### Summary

@@ -1,5 +1,40 @@
 # Changelog: sdet
 
+## 2026-05-26 (Phase 2 — strip 4 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 4 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
+
+### Changes
+- L34 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
+- L162 Verifier Composition: dropped "+ reviewer-doubling-lifecycle.md §4.2 row 3" tail.
+- L167 reconciliation note: replaced "TDD §4.3" with team-lead.md step 14 anchor.
+- L319 Runtime Discipline opener: replaced "§4.5 applicability matrix" with team-lead.md §Runtime Discipline anchor.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — shutdown coordination: proactive emit + drain)
+
+### Summary
+Five edits encoding proactive ephemeral self-shutdown (verdict-then-`shutdown_request` as FINAL TOOL CALL same turn) per operator directive. Lifecycle, Comm Rule 6, Verifier Composition, Verification Output, and Shutdown Handling all clarified. Background-task drain rule added. Sister-verifier coordination clarified as peer-only (not joint persistence). Net +4 lines (367 → 371).
+
+### Changes
+- §Lifecycle: enumerated three ephemeral spawn names; explicit "not one of the three sanctioned idle advisors"; sequence ends with `shutdown_request` as FINAL TOOL CALL the same turn.
+- §Comm Rule 6: split into proactive-emit (default for sdet, post-verdict) vs reactive-reply; routing rule strengthened.
+- §Verifier Composition: sister coordination is peer messaging only — each verifier shuts down independently.
+- §Verification Output: explicit 3-step closeout sequence ending in `shutdown_request`.
+- §Shutdown Handling: proactive subsection added; `background_tasks`/`session_crons` drain rule added; "only the three advisors stay idle" framing.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — verdict-then-shutdown as final tool call) · Boundary Clarity (sister-verifier peer-only) · Capability Growth (proactive emission + drain rule) · Completeness (background-task drain)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, docs-dir guard, P7a drop)
 
 ### Summary

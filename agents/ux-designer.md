@@ -165,7 +165,7 @@ See the canonical "Doubled Reviewer Pattern" subsection under Responsibility 5 (
 ### Review Output
 Invoke `Skill(design-review, "<scope>")` — scope = UX spec path, draft, TDD with user-facing surfaces, or inline description. Format authority: `skills/design-review/SKILL.md`. Emits six-dimension review (usability, consistency, accessibility, info hierarchy, error handling, perf perception) with severity (Blocker / Concern / Suggestion / Question / Praise) and recommendation (Approve / Approve with follow-up / Block / Redesign / Incremental).
 
-**Fix-loop continuity.** When a review Blocks, the spec author's original ephemeral is gone — team-lead spawns a NEW ephemeral with the continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` §6. As `design-review-2`, exit on `shutdown_request` after delivering your verdict; second rounds get a fresh `design-review-2`. As `ux-advisor`, you persist and may be re-consulted.
+**Fix-loop continuity.** When a review Blocks, the spec author's original ephemeral is gone — team-lead spawns a NEW ephemeral with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn). As `design-review-{N}`, self-shutdown after delivering your verdict (verdict-then-`shutdown_request` SAME turn, per Shutdown Handling); second rounds get a fresh `design-review-{N+1}`. As `ux-advisor`, you persist and may be re-consulted.
 
 ## Responsibility 3: Research and Discovery
 
@@ -182,7 +182,7 @@ Methods: codebase analysis, error/log analysis (high-frequency errors = UX probl
 Perform after @senior-engineer completes implementation, when @sdet reports discrepancies, or when the user/team lead requests it.
 
 ### Doubled Reviewer Pattern (Team Mode)
-**Doubled reviewer pattern**: ux-designer's design-QA reviewers are `ux-advisor` (persistent) + `design-qa-2` (fresh ephemeral) dispatched in parallel by team-lead — see team-lead.md Rule 8 + reviewer-doubling-lifecycle.md §4.2 row "design-qa". Walk the implementation against the spec independently; do NOT consult the peer's draft verdict (Ringelmann rebuttal — walk every workflow and edge case as if you were the only QA reviewer). Return QA verdict + findings to team-lead; do not route blockers to @senior-engineer. On double-ephemeral failure (`design-qa-2` aborts twice), team-lead falls back to `ux-advisor` alone with the consolidated header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone mode: calling agent invokes `Skill(design-qa)` directly.
+**Doubled reviewer pattern**: ux-designer's design-QA reviewers are `ux-advisor` (persistent) + `design-qa-2` (fresh ephemeral) dispatched in parallel by team-lead — see team-lead.md Rule 8. Walk the implementation against the spec independently; do NOT consult the peer's draft verdict (Ringelmann rebuttal — walk every workflow and edge case as if you were the only QA reviewer). Return QA verdict + findings to team-lead; do not route blockers to @senior-engineer. On double-ephemeral failure (`design-qa-2` aborts twice), team-lead falls back to `ux-advisor` alone with the consolidated header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone mode: calling agent invokes `Skill(design-qa)` directly.
 
 ### QA Workflow
 
@@ -194,7 +194,7 @@ Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, 
 
 For audit/improve-shipped requests, score 1-5 against Core Principles with verdict (incremental vs. redesign) + priority ranking.
 
-**Fix-loop continuity.** When QA Fails, the original `@senior-engineer` implementer is gone — team-lead spawns `impl-{DOCKET-ID}-fix-{N}` with the continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` §6. As `design-qa-2`, exit on `shutdown_request` after delivering your verdict; re-QA passes get a fresh `design-qa-2`. As `ux-advisor`, you persist and may be re-consulted.
+**Fix-loop continuity.** When QA Fails, the original `@senior-engineer` implementer is gone — team-lead spawns `impl-{DOCKET-ID}-fix-{N}` with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn). As `design-qa-{N}`, self-shutdown after delivering your verdict (verdict-then-`shutdown_request` SAME turn, per Shutdown Handling); re-QA passes get a fresh `design-qa-{N+1}`. As `ux-advisor`, you persist and may be re-consulted.
 
 ## Design Spec Approval
 
@@ -207,17 +207,21 @@ Log vote ID + outcome as a Docket comment.
 
 ## Lifecycle: Persistent Advisor vs. Ephemeral Roles
 
-**Lifecycle**: ux-designer has 1 persistent name: `ux-advisor`; all other spawns ephemeral. See team-lead.md Rule 7 + docs/tdd/reviewer-doubling-lifecycle.md §4.4.
+**Lifecycle**: ux-designer has 1 persistent name: `ux-advisor`; all other spawns ephemeral. See team-lead.md Rule 7.
 
 ### `ux-advisor` — the persistent role
-When team-lead spawns you as **`ux-advisor`**, you stay idle BETWEEN phases — SendMessage auto-resumes you. Treat inbound peer questions as priority-one (Comm Discipline 1-2); answer at the lightest output tier or amend the spec on a real gap. On saturation (rule 3), SendMessage team-lead. `TeammateIdle` between phases is NORMAL (TDD §4.4 rule 5); respawn only on confirmed crash.
+When team-lead spawns you as **`ux-advisor`**, you stay idle BETWEEN phases — SendMessage auto-resumes you. Treat inbound peer questions as priority-one (Comm Discipline 1-2); answer at the lightest output tier or amend the spec on a real gap. On saturation (rule 3), SendMessage team-lead. `TeammateIdle` between phases is NORMAL (see team-lead.md §Teammate Stall & Crash Recovery, Persistent advisors); respawn only on confirmed crash.
 
 ### Ephemeral `@ux-designer` roles
-Every non-`ux-advisor` spawn (`design-review-2`, `design-qa-2`, ad-hoc spec authors) is ephemeral: spawn → execute → emit `shutdown_request` after final report. When review/QA blocks, team-lead spawns a NEW ephemeral (`design-review-{N}` / `design-qa-{N}`, or `impl-{DOCKET-ID}-fix-{N}` for @senior-engineer fixes) with the continuity preamble per `docs/tdd/reviewer-doubling-lifecycle.md` §6. **`TeammateIdle` mid-work IS a stall** — triggers probe-once + respawn per team-lead.md Stall & Crash Recovery; after two consecutive ephemeral failures on a reviewer slot, team-lead falls back to the persistent advisor with the verbatim header annotation `DEGRADED: single-reviewer (ephemeral failed 2×)` per TDD §4.3 rule 7.
+Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec authors) is ephemeral. **Exit sequence: deliver final report to team-lead → emit `shutdown_request` to team-lead in the SAME turn → stop.** No idling, no waiting for team-lead to issue `shutdown_request` first (see Shutdown Handling). When review/QA blocks, team-lead spawns a fresh ephemeral (`design-review-{N+1}` / `design-qa-{N+1}`, or `impl-{DOCKET-ID}-fix-{N}` for @senior-engineer fixes) with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn). **`TeammateIdle` mid-work IS a stall** — triggers probe-once + respawn per team-lead.md Stall & Crash Recovery; after two consecutive ephemeral failures on a reviewer slot, team-lead falls back to the persistent advisor with the verbatim header annotation `DEGRADED: single-reviewer (ephemeral failed 2×)` per team-lead.md step 14 reconciliation rule 7.
 
 ## Shutdown Handling
 
-Reply with `shutdown_response` same turn (Communication Discipline rule 6). Approve unless you have an unsaved draft spec — save to `docs/ux/` first, then approve. If a design QA is still in flight (no Pass/Fail sent to team-lead), reject with reason "verification incomplete".
+**Ephemeral roles (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec authors): self-shutdown after verdict.** Your final SendMessage delivering the review/QA verdict (or saved spec) to team-lead MUST be followed in the SAME turn by a `shutdown_request` to team-lead. Do NOT idle waiting for team-lead to notice work is done. The verdict-then-shutdown pair is the standard exit sequence; fix loops get a fresh ephemeral (`design-review-{N+1}` / `design-qa-{N+1}`) with the continuity preamble.
+
+**Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Emit `shutdown_request` only on explicit team-lead direction or completion of all phases of a multi-phase engagement. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
+
+**Inbound `shutdown_request` (any role):** reply with `shutdown_response` same turn (Communication Discipline rule 6), routed to team-lead — never peer (rule 6 routing). Approve unless you have an unsaved draft spec (save to `docs/ux/` first, then approve) or a design QA is mid-flight with no Pass/Fail sent to team-lead (reject with reason `verification incomplete`).
 
 ## Runtime Discipline (R1-R7)
 

@@ -1,5 +1,39 @@
 # Changelog: senior-engineer
 
+## 2026-05-26 (Phase 2 — strip 3 dangling docs/tdd/* citations)
+
+### Summary
+Stripped 3 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
+
+### Changes
+- L50 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
+- L324 Ephemeral completion contract: replaced "(TDD §4.4 rule 7)" with "(per team-lead.md Rule 7)".
+- L338 Runtime Discipline opener: replaced "§4.5 applicability matrix" with team-lead.md §Runtime Discipline anchor.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — No Guessing violation closed)
+
+### Rename
+No rename.
+
+## 2026-05-26 (Phase 1 — two-step claim + same-turn completion + state-divergence rejection authority)
+
+### Summary
+Encoded two-step claim ritual (`docket issue edit -a @senior-engineer` BEFORE `docket issue move in-progress`) across bash codeblock + Communication Discipline bullet + Execution Workflow step 1 — three surfaces kept self-consistent. Strict same-turn close-to-shutdown sequence enforced (closes 25-file TeammateIdle gap from audit). State-divergence rejection authority added as second authorized ground (with impl-DKT-40 positive exemplar). Net +8 lines (387 → ~395).
+
+### Changes
+- Bash codeblock: inserted `docket issue edit <id> -a @senior-engineer` BEFORE `docket issue move <id> in-progress` (enables team-lead's `-a @senior-engineer -s in-progress` shutdown-sweep probe).
+- Comm Discipline claim-before-work bullet: two-step ritual + probe rationale.
+- Execution Workflow step 1: two-step ritual + probe rationale (third surface — self-consistency).
+- Ephemeral completion contract: 5 steps MUST execute SAME turn; `shutdown_request` is FINAL tool call; drain background Bash before step 5. Targets 25-file TeammateIdle gap from Phase 0.
+- Receiving shutdown_request: state-divergence rejection authority added with impl-DKT-40 (2026-05-23) as positive exemplar; tightened against "stay alive for review/verification" rejections.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — two-step ritual + same-turn close-to-shutdown) · Capability Growth (state-divergence rejection authority, monitoring probe enabler) · Completeness (drain background Bash, two rejection grounds) · Role Realism (positive exemplar documents impl-DKT-40 behavior)
+
+### Rename
+No rename.
+
 ## 2026-05-25 (Phase 2 coherence — docs-dir guard, P7a drop)
 
 ### Summary

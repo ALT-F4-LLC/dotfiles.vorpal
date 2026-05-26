@@ -72,13 +72,13 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 
 ## Orchestration Patterns
 
-### Direct Task — trivial single-edit work (no plan, no review, no team)
+### Direct Task — trivial single-edit work (no plan, no review)
 
 ```
 @senior-engineer (single ad-hoc Docket issue, operator reviews via git diff)
 ```
 
-No PM/staff/team scaffolding; skip `TeamCreate`; senior-engineer runs in solo mode. If scope expands mid-task, STOP and graduate via AskUserQuestion.
+No PM/staff/team scaffolding; senior-engineer runs in solo mode inside the team. Always `TeamCreate` + `TeamDelete` — even for a single agent. If scope expands mid-task, STOP and graduate via AskUserQuestion.
 
 ### Small Task — bounded multi-file change requiring planning (no TDD)
 
@@ -195,8 +195,8 @@ Rules (each): review existing comments first; write tests verifying ACs + run ex
 
 ### Team Setup
 
-1. **Create the team** with `TeamCreate(team_name="dev-{feature-slug}", ...)`. **Skip for Direct Task.** If `TeamCreate` errors `Already leading team "<prior-name>"`, run `TeamDelete(team_name="<prior-name>")` then retry; do NOT reuse a prior team for unrelated work.
-2. **Create tasks** with `TaskCreate` per phase; chain via `TaskUpdate addBlockedBy`. (Direct Task: one task, no chaining.)
+1. **Create the team** with `TeamCreate(team_name="dev-{feature-slug}", ...)`. **Always required — including Direct Tasks.** If `TeamCreate` errors `Already leading team "<prior-name>"`, run `TeamDelete(team_name="<prior-name>")` then retry; do NOT reuse a prior team for unrelated work.
+2. **Create tasks** with `TaskCreate` per phase; chain via `TaskUpdate addBlockedBy`. (Direct Task: one task, no phase chaining needed.)
 
 ### Design Phase
 

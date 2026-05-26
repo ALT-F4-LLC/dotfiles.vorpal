@@ -9,7 +9,7 @@ description: >
   supply-chain decisions, sandbox/permission models, and any change touching security-sensitive
   surfaces. Aligns security posture with business goals and risk tolerance. Never writes
   implementation code.
-model: opus[1m]
+model: opus
 color: orange
 effort: max
 memory: project
@@ -235,6 +235,7 @@ R1. **Tool-Use Parsimony.** Tool-call results land in your context verbatim — 
 R2. **Skill Invocation Restraint.** Every `Skill(name, ...)` call loads the entire SKILL.md body into your context.
 - Invoke a skill ONLY on a real trigger match. NEVER pre-load a skill "in case I need it later".
 - Your role-canonical skills (per the frontmatter `skills:` list) are the ones you legitimately invoke routinely. Treat occasional skills (e.g., `vote` for non-staff agents) as trigger-dispatched, NOT defensive.
+- **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
 - Escape hatch: when the operator or team-lead directs `/skill-name` explicitly, invoke per the directive.
 
 #### R3 — SendMessage Terseness

@@ -1,5 +1,21 @@
 # Changelog: vote
 
+## 2026-05-25
+
+### Summary
+Closed team-mode direct-invocation loophole by hoisting delegation gate into the canonical banner (root cause of session 04db218a operator-rejection where agent invoked Skill(vote) directly in team context because Execution Mode Detection gate was buried below the load-time banner). Two minor clarifications: Output Format marks base-vs-doubled table for audit clarity; vote_id detection rule made visually distinct. Net +3 lines.
+
+### Changes
+- Canonical banner: added clause 3 forbidding team-mode direct invocation of Skill(vote) — delegation via SendMessage to team-lead is the only team-mode path; standalone /vote remains operator entry. Closes load-time gap.
+- Output Format Reviewers line: appended `— {base|doubled} table` so audit record self-documents which sizing was used (base table is new default per 2026-05-25).
+- Argument Handling vote_id branch: extracted "Detection:" sub-clause clarifying dispatch keys on `docket vote show` exit code, not string-shape heuristics.
+
+### Dimensions Evaluated
+Orchestration (HIGHEST — delegation gate), Output Quality, Actionability, Coherence (team-lead.md reviewer-defaults base-table).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

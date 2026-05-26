@@ -1,5 +1,35 @@
 # Changelog: verify
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: trimmed AskUserQuestion structural-contract restatement (lockstep with code-review/design-qa).
+
+### Changes
+- Replaced AskUserQuestion structural-contract restatement with pointer to calling agent's contract (Item 4 lockstep).
+
+### Dimensions Evaluated
+Coherence, Consolidation.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+Three audit-driven additions: silent-completion self-check in Save & Return (cross-cutting with code-review/design-review/design-qa per staff-engineer pitfalls); Mandatory verification commands caller-contract check (Pre-flight §9, team-lead pitfall on review-phase dispatch); cross-issue contamination guard for multi-issue sessions (Pre-flight §7a — 154 invocations / 45 sessions = ~3.4 issues per session typical). Net +18 lines (267 → 285).
+
+### Changes
+- Save & Return: added Silent-completion self-check paragraph — verdict in skill context is working artifact; SendMessage IS the deliverable; trailing confirmation line is not a delivery signal.
+- Pre-flight §9 (new): Mandatory verification commands caller-contract check — surfaces brief gap as Pre-flight finding, derives commands from ACs as fallback.
+- Pre-flight §7a (new): Cross-issue contamination guard — multi-issue sessions reset persistent test artifacts before running current issue's tests, OR surface contamination risk as Test Coverage finding.
+
+### Dimensions Evaluated
+Orchestration (HIGHEST — silent-completion fix), Actionability (Mandatory verification commands), Skill Design Quality (cross-issue contamination), Coherence (cross-family Save & Return parity).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

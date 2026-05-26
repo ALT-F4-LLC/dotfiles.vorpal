@@ -47,8 +47,6 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 8. Use `truncated` as `{slug}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
-For this skill, substitute `{TYPE}` with `tdd` in the usage error.
-
 ## When to Use
 
 - A Technical Design Document is needed for non-trivial work (architecture, system
@@ -224,8 +222,8 @@ Before invoking `Write`, verify in the calling agent's context:
 2. **Status value** — `status` is one of `draft | questions-resolved |
    in-review | accepted | superseded`.
 3. **Section order** — the body contains all top-level sections enumerated
-   in "Required Sections" above, as `##` headings, in the order listed
-   (currently 11 sections). Off-by-one against the count is a defect.
+   in "Required Sections" above, as `##` headings, in the order listed.
+   Off-by-one against the listed sections is a defect.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
    least two `###`-level subsections.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.

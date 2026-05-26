@@ -1,5 +1,34 @@
 # Changelog: tdd
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: removed TYPE substitution note (lockstep with prd/adr/ux-spec) and removed stale "(currently 11 sections)" hardcoded count from Validation §3.
+
+### Changes
+- Removed `For this skill, substitute {TYPE} with tdd in the usage error.` — Item 1 lockstep.
+- Removed stale section-count token from Validation §3 (mirrors prd's Phase 1 fix; Required Sections list is source of truth).
+
+### Dimensions Evaluated
+Coherence, Consolidation.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+No-change verdict. Skill is mature — 186 sessions in 7d with zero operator corrections, 288 LOC under 500 cap, four trim-class entries in last 30 days already addressed coherence/over-engineering. Three historical-audit focus areas (stale-token verification, per-row arithmetic, missing-directory preamble) surfaced @staff-engineer/team-lead pitfalls but are NOT TDD-skill-content gaps — wrong layer (review/verification skills or team-lead spot-check own those defects).
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — no remaining slack), Skill Design Quality, Actionability, Completeness, Orchestration, Coherence (sibling parity), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with prd/adr/ux-spec/specs.
+
 ## 2026-05-20
 
 ### Summary

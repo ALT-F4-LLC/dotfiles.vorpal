@@ -159,7 +159,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 
 ### Common Discipline (both roles)
 
-- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Calibrate to value.** Comment on real risks and pattern violations. Skip stylistic preferences and what `cargo clippy` / `cargo audit` should catch automatically.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
@@ -175,6 +175,7 @@ Four narrow, mechanically detectable symptoms gate the merge **regardless of fea
 | **G2 — Unguarded shared mutation** | Shared or module-global mutable state accessed without a lock, channel, actor, or single-owner pattern. NOT fired by `Mutex`/`RwLock`/atomic-guarded access, message-passing, single-owner goroutines/tasks, or local mutation inside a function whose result escapes as a new value. | `// OVERRIDE: code-philosophy/4 — <reason>` on the unguarded access |
 | **G3 — Unparsed boundary input** | Untrusted input (HTTP body/query/header, env var, CLI arg, queue payload, DB row, third-party API response, file off disk) consumed without a schema parse into a precise type at first contact. NOT fired by data flowing through internal calls after it has been parsed once at the boundary; NOT fired by parsed-and-typed data simply being accessed deeper in the call stack. | `// OVERRIDE: code-philosophy/5 — <reason>` on the consumption site |
 | **G4 — Surface-not-invariant patch** | Fix that papers over an edge case rather than addressing the underlying contract. Patterns: a `null` check added where the real bug is that upstream data is the wrong shape; a retry loop wrapped around a non-idempotent operation; defensive guards added that mask a real invariant violation instead of fixing it; a snapshot or test updated to make a failing case pass without diagnosing why. Detection requires reading the issue/TDD to understand what the code was supposed to *uphold* — flag when the diff looks like symptom-masking. | `// OVERRIDE: code-philosophy/11 — <reason>` on the affected block |
+| **G5 — Unexecuted AC regex** | TDD/spec/AC diff introduces or modifies a regex (`grep -E`, `\bword\b`, alternation arms) intended to gate verification, with no evidence the regex was executed against the actual target files. Patterns: AC text says "match `Lifecycle:.*persistent name`" but the target file uses `**Lifecycle**:` (markdown-bold inserts `**` between word and colon); AC requires literal adjacency where target uses intervening words; expected hit count in the AC does not match actual `grep -lE` output. Detection: when a diff edits regex in `docs/tdd/` or `docs/spec/`, the reviewer MUST run the regex against the named target files and compare hit count to the AC's claimed file-set. A mismatch is a Blocker. | `// OVERRIDE: code-philosophy/5 — <reason>` on the AC block (G5 maps to principle #5, parse-at-the-edge, since AC regex is the verification's parse contract) |
 
 **Override recognition (mandatory).** Before emitting a Blocker for any gate, scan the diff *and* the immediately adjacent lines for an `OVERRIDE: code-philosophy/<id>` comment matching the gate (the language's comment syntax — `//`, `#`, `--`, `;`, etc.). When present:
 - Do NOT add a Blocker / Critical finding for that occurrence.
@@ -238,12 +239,13 @@ For substantive changes:
 - ... or "None"
 
 ### Hard Gates Triggered
-List any of G1..G4 that produced a Blocker in this review (after override recognition). If no gates fired, write "None".
+List any of G1..G5 that produced a Blocker in this review (after override recognition). If no gates fired, write "None".
 
 - **G1 (swallowed error):** {file:line — symptom — required mitigation} or "None"
 - **G2 (unguarded shared mutation):** {file:line — symptom — required mitigation} or "None"
 - **G3 (unparsed boundary input):** {file:line — symptom — required mitigation} or "None"
 - **G4 (surface-not-invariant patch):** {file:line — symptom — required mitigation} or "None"
+- **G5 (unexecuted AC regex):** {file:line — regex — expected hit count vs actual hit count — required mitigation} or "None"
 
 ### Dimension Checklist
 | Dimension | Status |
@@ -342,7 +344,7 @@ Before emitting the structured review, verify in the calling agent's context:
 1. **Heading matches the role's banner** per the Output Contract.
 2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G4 listed individually, even if "None").
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
-4. **Hard gate consistency** — if a Blocker is emitted citing G1..G4, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
+4. **Hard gate consistency** — if a Blocker is emitted citing G1..G5, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
 5. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
 6. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
 7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
@@ -365,7 +367,11 @@ No file is written (Output Contract owns the emission rules). End with the confi
 Code review emitted ({recommendation}).
 ```
 
-where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`). The calling agent owns (in order):
+where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
+
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to the calling agent (team-lead in team mode) containing the structured verdict body. The in-context emission is the calling agent's working artifact, not the handoff. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict to the calling agent in this same turn?* If no, the turn is incomplete regardless of how complete the in-context emission feels. Silent-completion of the verdict is the dominant defect class on this skill family (`code-review`, `verify`, `design-review`, `design-qa`).
+
+The calling agent owns (in order):
 
 - **Reconcile with the parallel reviewer first** — when the change touches auth, secrets, sandbox, trust boundaries, or supply chain (i.e., the parallel reviewer was spawned), SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) with this verdict before routing findings. Verdict reconciliation prevents contradictory handoffs to `@senior-engineer`.
 - Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage with file/finding/fix triplets.

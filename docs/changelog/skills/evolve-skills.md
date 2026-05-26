@@ -1,5 +1,23 @@
 # Changelog: evolve-skills
 
+## 2026-05-25
+
+### Summary
+Five changes: trimmed Phase 1 post-review-loop shutdown bullet (duplicates lifecycle table), trimmed orchestrator-identity workflow restatement, bolded Phase 1 "spawn all in same turn" pattern, trimmed Phase 0 "scoped here" wrap-clause, clarified shutdown-response routing to orchestrator (mirrored from evolve-agents). Net -3 lines.
+
+### Changes
+- Phase 1 post-review loop step 6: removed — duplicates lifecycle table row 1.
+- Orchestrator identity: dropped TeamCreate/spawn workflow restatement — duplicates Team Setup + Phase 1 template.
+- Phase 1 spawn instruction: bolded "**Spawn all in the same turn**" for evolve-agents parity.
+- Phase 0 friction-distinction: removed "scoped to the skills under review here" wrap.
+- Shutdown protocol: added "addressed to the orchestrator (never to a peer)" clause — mirrored from evolve-agents per team-lead pitfall on routing ambiguity.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — trim x3), Coherence (sister evolve-agents parity x2), Orchestration (routing clarity).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

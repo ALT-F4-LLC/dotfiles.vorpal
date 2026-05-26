@@ -3,7 +3,7 @@ name: prd
 description: >
   Author a single Product Requirements Document at docs/spec/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the PRD per the format authority below.
-  Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/".
+  Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/", "write up requirements for", "scope this feature".
 argument-hint: "<topic>"
 effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
@@ -46,8 +46,6 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
 8. Use `truncated` as `{slug}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
-
-For this skill, substitute `{TYPE}` with `prd` in the usage error.
 
 ## When to Use
 
@@ -107,10 +105,7 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **Reserved-name refusal** (PRD-specific). If `{slug}` matches any name in the
-   Failure Modes Reserved-Name List (owned by the `specs` skill), ABORT with the
-   exact error message defined in the Failure Mode table. There is **no overwrite
-   path** for reserved names.
+5. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path).
 
 ## Authoring Procedure
 
@@ -121,20 +116,12 @@ malformed frontmatter.
    Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that touch the same
    surface — the new PRD should reference, not contradict, prior accepted product
    definitions.
-2. **Probe Docket** (informational): run two reads via Bash —
-   (a) `docket issue list --sort priority:asc --json` to surface high-priority active
-   tickets that pre-date this PRD, and (b) `docket issue list --tree` to surface
-   existing epics whose decomposition may overlap this PRD's surface. If any results
-   from either probe intersect the PRD's surface, list them in the **Risks & Open
-   Questions** section under a "Pre-existing Docket issues" sub-bullet — do NOT scatter
-   them through the body.
+2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues under a "Pre-existing Docket issues" sub-bullet in Risks & Open Questions.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required
    Sections). Every section listed MUST appear, in the order shown.
-5. **Mermaid diagrams**: per the Mermaid Mandate, include at least one Mermaid
-   block (user journey, state map, or component map). PRDs always require at
-   least one Mermaid block — there is no pure-policy override for this type.
+5. **Mermaid diagrams**: per the Mermaid Mandate subsection below, include at least one Mermaid block.
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, Mermaid, and placeholder checks.
 
@@ -194,7 +181,7 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-PRDs **always require** at least one Mermaid block — a user journey, state diagram, or component map (see Authoring Procedure §5 for the rule). Acceptable fences are ` ```mermaid ` (lowercase, no space). Unlike TDDs, there is no pure-policy override; Validation Before Save rejects PRDs without a Mermaid block.
+PRDs require at least one ` ```mermaid ` (lowercase, no space) fenced block — user journey, state diagram, or component map. Unlike TDDs, there is no pure-policy override; Validation §5 enforces this.
 
 ## Validation Before Save
 
@@ -206,9 +193,7 @@ Before invoking `Write`, verify in the calling agent's context:
 2. **No `status` field** — PRDs use `maturity`, not `status`. Presence of `status`
    in frontmatter is a defect.
 3. **`maturity` value** — one of `proof-of-concept | draft | experimental | stable`.
-4. **Section order** — the body contains all top-level sections enumerated
-   in "Required Sections" above, as `##` headings, in the order listed
-   (currently 7 sections). Off-by-one against the count is a defect.
+4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.

@@ -49,8 +49,6 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 8. Use `truncated` as `{slug}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
-For this skill, substitute `{TYPE}` with `adr` in the usage error.
-
 ## When to Use
 
 - A single architectural or design decision needs to be recorded as an immutable

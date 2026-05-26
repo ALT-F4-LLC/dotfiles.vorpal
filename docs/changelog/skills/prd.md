@@ -1,5 +1,38 @@
 # Changelog: prd
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: removed redundant TYPE substitution note (canonical ARGUMENT_HANDLING block's placeholder is self-explanatory).
+
+### Changes
+- Removed `For this skill, substitute {TYPE} with prd in the usage error.` — Item 1 lockstep across 5-skill COUPLING family (prd/tdd/adr/ux-spec).
+
+### Dimensions Evaluated
+Coherence (cross-skill meta-instruction redundancy).
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+Six edits: broadened trigger phrases to catch informal asks ("write up requirements for", "scope this feature") addressing zero-invocation signal, plus five over-engineering trims (Mermaid Mandate cross-ref triple-restatement, Authoring §5 Mermaid step duplication, Pre-flight §5 reserved-name verbosity, Validation §4 "currently 7 sections" editorial, Authoring §2 Docket probe verbosity). Net -10 lines.
+
+### Changes
+- Description: added "write up requirements for" and "scope this feature" trigger phrases for informal operator language.
+- Mermaid Mandate: collapsed to single sentence + Validation pointer (was triple-restating the rule).
+- Authoring §5: reduced to one-line pointer to Mermaid Mandate subsection.
+- Pre-flight §5 reserved-name refusal: collapsed to single sentence.
+- Validation §4: removed "(currently 7 sections). Off-by-one..." editorial.
+- Authoring §2 Docket probe: condensed verbose multi-line instruction.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 5 trims), Skill Design Quality (trigger broadening from historical signal).
+
+### Rename
+No rename.
+
 ## 2026-05-18
 
 ### Summary

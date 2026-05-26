@@ -65,9 +65,18 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 | Code review (<500 lines), plan approval, scope decisions | medium |
 | Style, naming, tooling, documentation, low-risk config | low |
 
-**Reviewer count by criticality** (doubled per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2; see Doubling Rule note below):
+**Reviewer count by criticality (DEFAULT — base table).** This is the new default as of 2026-05-25. The doubled table is reserved for explicit opt-in.
 
 | Criticality | Reviewers | Quorum Threshold | Additional Constraint |
+|---|---|---|---|
+| low | 2 | 50% weighted approval | None |
+| medium | 2 | 60% weighted approval | No more than 1 reject |
+| high | 3 | 75% weighted approval | Zero rejects |
+| critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
+
+**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `agents/team-lead.md` Consensus Integration, or passes a `--double` flag / `doubled=true` hint alongside the criticality. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
+
+| Criticality | Reviewers (doubled) | Quorum Threshold | Additional Constraint |
 |---|---|---|---|
 | low | 4 | 50% weighted approval | None |
 | medium | 4 | 60% weighted approval | No more than 2 rejects |
@@ -76,7 +85,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 **Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `docs/tdd/reviewer-doubling-lifecycle.md` first.
 
-**Recursive doubling applies independently per phase.** When invoked from inside an already-doubled review/QA/verification phase, the vote panel sizes from the table above independently of the originating phase's reviewer count; the 8-cap holds per phase. See `docs/tdd/reviewer-doubling-lifecycle.md` §8.2 decision 5 for the worked example.
+**Recursive doubling applies independently per phase (only when the doubled table is in use).** When the doubled table is in effect AND invoked from inside an already-doubled review/QA/verification phase, the vote panel sizes from the doubled table independently of the originating phase's reviewer count; the 8-cap holds per phase. Under the default base table, recursive doubling does not apply.
 
 **Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per TDD §4.4: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 

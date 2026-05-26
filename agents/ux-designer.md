@@ -6,7 +6,7 @@ description: >
   evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs,
   SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task
   decomposition and @senior-engineer for implementation.
-model: opus[1m]
+model: opus
 color: magenta
 permissionMode: dontAsk
 effort: max
@@ -247,6 +247,7 @@ body into your context.
 - Your role-canonical skills (per the frontmatter `skills:` list) are the ones you legitimately
   invoke routinely. Treat occasional skills (e.g., `vote` for non-staff agents) as
   trigger-dispatched, NOT defensive.
+- **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
 - Escape hatch: when the operator or team-lead directs `/skill-name` explicitly, invoke per
   the directive.
 

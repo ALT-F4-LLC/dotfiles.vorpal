@@ -1,5 +1,33 @@
 # Changelog: adr
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: removed redundant TYPE substitution note (lockstep with prd/tdd/ux-spec).
+
+### Changes
+- Removed `For this skill, substitute {TYPE} with adr in the usage error.` — Item 1 lockstep.
+
+### Dimensions Evaluated
+Coherence.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+No-change verdict. Skill remains mature and family-aligned with prd/tdd/ux-spec/specs after 14+ prior cycles. Three Phase 0 historical-audit focus areas evaluated; none warrant a skill-level change. Parallel-dispatch duplication and worktree project-name detection escalated as cross-cutting concerns (separate from this skill).
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — no remaining slack), Skill Design Quality, Actionability, Completeness, Orchestration (leaf surface confirmed), Coherence (sibling parity), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with prd/tdd/ux-spec/specs.
+
 ## 2026-05-18
 
 ### Summary

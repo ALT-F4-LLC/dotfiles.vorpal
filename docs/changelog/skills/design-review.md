@@ -1,5 +1,20 @@
 # Changelog: design-review
 
+## 2026-05-25
+
+### Summary
+Orchestration + Over-Engineering: added silent-completion self-check to Save & Return per the cross-family pitfall resolution (cross-cutting with code-review, verify, design-qa); trimmed AskUserQuestion structural rehearsal in Common Discipline that pure-restates `@ux-designer` canonical contract. Net +3 lines.
+
+### Changes
+- Save & Return: added "Self-check before ending the turn" callout addressing silent-completion pitfall (skill emits verdict to context; calling agent silently idles without SendMessage to team-lead).
+- Common Discipline: trimmed AskUserQuestion structural contract restatement (1-4 questions / 2-4 options / ≤12-char header / default in first option); replaced with pointer to calling agent's structural contract.
+
+### Dimensions Evaluated
+Orchestration (HIGHEST — silent-completion family parity), Over-Engineering (AskUserQuestion duplication trim), Coherence (vs design-qa/code-review/verify).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

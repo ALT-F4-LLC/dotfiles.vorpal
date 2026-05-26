@@ -130,7 +130,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 ### Common Discipline
 
-- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars; provide a default recommendation in the first option's description. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
 
@@ -233,6 +233,8 @@ The calling agent owns (in order):
 - SendMessage to the artifact author with the verdict and any Blockers/Concerns so they can revise.
 - Triggering `Skill(vote, ...)` if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold per `agents/ux-designer.md`.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
+
+**Self-check before ending the turn**: "Did I SendMessage the verdict (structured, not summarized) to team-lead in this same turn?" The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

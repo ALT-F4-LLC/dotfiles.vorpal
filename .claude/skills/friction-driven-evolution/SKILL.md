@@ -40,7 +40,7 @@ Before harvesting:
 2. **Resolve today's date** — `date +%Y-%m-%d` via Bash, store as `{today_date}`.
 3. **Compute window** — `{days}` from argument or `30`. Store window cutoff as `{cutoff_iso}` (`date -u -v-${days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux — detect via `uname`).
 4. **Calibrate detection patterns** — For each enabled friction class, pick the 3 newest transcripts (`find ~/.claude/projects -name '*.jsonl' -mtime -${days} -print0 | xargs -0 ls -t | head -3`) and run the grep/jq pattern from the Detection Patterns section below against a 10-line sample (`head -200 <file>`). If the pattern returns **zero hits across all 3 sampled transcripts**, flag it `MISCALIBRATED` and surface to the operator via `AskUserQuestion` (header `Patterns`, options: `Proceed anyway`, `Skip this class`, `Abort`) before clustering. Do NOT silently report zero friction.
-5. **Confirm transcript availability** — If `find ~/.claude/projects -name '*.jsonl' -mtime -${days}` returns no files, abort with "No transcripts in window."
+5. **Confirm transcript availability and cadence** — Run `find ~/.claude/projects -name '*.jsonl' -mtime -${days} | wc -l` for count and `find ~/.claude/projects -name '*.jsonl' -mtime -${days} -print0 | xargs -0 ls -tU | tail -1` for earliest. If count is zero, abort with "No transcripts in window." If count is `< 5`, surface to operator via `AskUserQuestion` (header `Low signal`, options: `Proceed`, `Adjust days`, `Abort`) before continuing — low transcript counts produce thin or stale clusters and the operator should opt in explicitly.
 
 ---
 
@@ -112,7 +112,7 @@ grep -lriE 'idle|stall|sandbox|denied|truncat|max.token|stale|fabricat|unverif' 
   .claude/agent-memory/*/MEMORY.md .claude/agent-memory/*/*.md \
   docs/changelog/agents/*.md docs/changelog/skills/*.md 2>/dev/null
 ```
-Append memory/changelog hits as `confirmation_refs` on the cluster record. A cluster with ≥1 confirmation_ref outranks one with none at equal frequency. **Note:** `.claude/agent-memory/` is optional and currently absent in this repo — the grep silently returns zero memory hits and confirmation_refs come entirely from `docs/changelog/` until memory adoption begins.
+Append memory/changelog hits as `confirmation_refs` on the cluster record. A cluster with ≥1 confirmation_ref outranks one with none at equal frequency. **Note:** the grep is intentionally project-scoped — `~/.claude/agent-memory/` (user-level memory, currently active for senior-engineer / staff-engineer / team-lead) is out of scope by design. Until the project-repo `.claude/agent-memory/` is populated, confirmation_refs come entirely from `docs/changelog/`.
 
 ---
 
@@ -210,7 +210,14 @@ Reject and re-spawn (`-r2`) once on validation failure. Persist accepted proposa
 
 ### Phase 3: Review handoff (sequential per cluster)
 
-Orchestrator-only. For each accepted proposal, invoke the downstream skill **sequentially** (parallel `Skill()` calls share orchestrator state and confuse the operator-prompt path). Before each dispatch, emit a one-line operator-visible trace so chaining is observable in the transcript: `Dispatching cluster {id} ({class}, {target_file_basename}) → {downstream_skill}`. Then:
+Orchestrator-only. For each accepted proposal, invoke the downstream skill **sequentially** (parallel `Skill()` calls share orchestrator state and confuse the operator-prompt path).
+
+**Risk-tier gate (security-sensitive proposals).** Before dispatching, classify each proposal:
+- `security-sensitive` if TARGET_FILE is `.claude/settings.json` AND the OLD/NEW_STRING touches `permissions.deny`, `permissions.allow` entries containing `.env`/`.ssh`/`.aws`/`.gnupg`/`.netrc`/`.kube`/`credentials`/`secret`/`token`, `dangerouslyDisableSandbox`, or any `denyOnly`/`denyWithinAllow` entry. Otherwise `routine`.
+- For each `security-sensitive` proposal, before its dispatch trace fires: `AskUserQuestion` (header `Sec change`, options: `Apply`, `Skip`, `Abort all`). Quote the OLD→NEW summary verbatim in the question description. `Skip` records the cluster as outcome `rejected` with reason `operator-declined-security`; `Abort all` halts Phase 3 entirely and proceeds to Wrap-up with remaining clusters marked `skipped`.
+- `routine` proposals dispatch without per-cluster confirmation (the Phase 1 cluster-list gate already approved them).
+
+Before each dispatch (both tiers), emit the operator-visible trace so chaining is observable in the transcript: `Dispatching cluster {id} ({class}, {target_file_basename}, tier={routine|security-sensitive}) → {downstream_skill}`. Then:
 
 ```
 Skill("<DOWNSTREAM_SKILL>", "<argument>")

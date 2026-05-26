@@ -1,5 +1,21 @@
 # Changelog: friction-driven-evolution
 
+## 2026-05-25
+
+### Summary
+Added Phase 3 risk-tier gate requiring per-cluster operator confirmation for security-sensitive proposals (settings.json deny-boundary/sandbox/credential-allowlist changes) — addresses the historical-audit signal where the only documented run aborted when a security-boundary change was bundled with a routine allowlist tweak. Surface transcript count/cadence before harvesting. Clarified memory cross-reference is project-scoped by design. Net +9 lines.
+
+### Changes
+- Phase 3: introduced `security-sensitive` vs `routine` classification; security-sensitive proposals require per-cluster `AskUserQuestion` (Apply/Skip/Abort all) before dispatch. Dispatch trace now includes `tier=...`.
+- Pre-flight step 5: now surfaces transcript count + earliest timestamp; if count < 5, prompts operator before continuing.
+- Detection Patterns footnote: replaced "currently absent in this repo" with clearer statement that lookup is project-scoped and user-level memory is out of scope by design.
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (HIGHEST — Phase 3 coordination/handoff gap from historical audit), Skill Design Quality (transcript-count visibility), Completeness (memory-lookup honesty).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

@@ -1,5 +1,36 @@
 # Changelog: design-qa
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: AskUserQuestion structural trim, explicit Praise routing for family parity with design-review, removed duplicate reviewer-doubling-lifecycle cross-reference.
+
+### Changes
+- Replaced AskUserQuestion structural-contract restatement with pointer to calling agent's contract (Item 4 lockstep).
+- Added explicit Praise routing to `What's Implemented Well` (Item 5 family parity with design-review:119).
+- Removed redundant `See docs/tdd/reviewer-doubling-lifecycle.md...` pointer — same cross-ref already cited inline within Doubling Rule paragraph (Item 6).
+
+### Dimensions Evaluated
+Coherence, Family parity.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+Phase 2 coherence + orchestration: added silent-completion self-check to Save & Return (cross-cutting with code-review per pitfalls.md "silent-completion of Skill output"). Mirrored design-review's canonical Doubling Rule phrasing for family parity — explicit `Agent()` spawn mechanic, `(spec section, surface)` dedupe key, and `AskUserQuestion`/`Skill(vote, ...)` contradiction-surfacing path. Net +3 lines.
+
+### Changes
+- Save & Return: added "Self-check before ending the turn" paragraph reminding the calling agent that in-context emission is the working artifact and the SendMessage is the deliverable. Lands in lockstep with code-review/verify/design-review.
+- Doubling Rule: matched design-review's canonical phrasing — added `Agent()` spawn mechanic, `(spec section, surface)` dedupe key, and explicit AskUserQuestion / Skill(vote, ...) contradiction-surface path.
+
+### Dimensions Evaluated
+Orchestration (HIGHEST — silent-completion fix), Coherence (Doubling Rule family parity), Over-Engineering (evidence-backed additions only).
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

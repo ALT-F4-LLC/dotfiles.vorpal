@@ -10,7 +10,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol.
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol. (3) **Team-mode callers MUST NOT invoke `Skill(vote)` directly** — delegate via SendMessage to team-lead per the Delegation Protocol below; direct invocation spawns a nested team and is rejected. Standalone `/vote` invocation by the operator is the only direct entry.
 <!-- CANONICAL:BANNER:END -->
 
 # Vote — Multi-Agent Consensus Protocol
@@ -25,7 +25,7 @@ You are the **Consensus Coordinator**. You spawn independent reviewers, collect 
 
 The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` — describe what you want voted on." Otherwise dispatch:
 
-- **Argument is a vote_id** (run `docket vote show $ARGUMENTS --json`; if exit 0, treat as vote_id): Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
+- **Argument is a vote_id** — Detection: run `docket vote show $ARGUMENTS --json`; treat as vote_id iff exit 0 (do NOT pattern-match the string shape). Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
 - **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. Standalone operator path only. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
 
 ---
@@ -318,7 +318,7 @@ After completing the protocol, report to the caller:
 
 **Proposal**: {one-line summary}
 **Criticality**: {level}
-**Reviewers**: {count} ({agent types})
+**Reviewers**: {count} ({agent types}) — {base|doubled} table
 **Approval Score**: {score} (threshold: {threshold})
 **Rounds**: {count}
 

@@ -16,7 +16,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Sen
 
 # Evolve Skills
 
-You are the **Skill Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn @staff-engineer teammates to review every `SKILL.md` under `.claude/skills/` and `skills/`. All additions pass through the Content Gate.
+You are the **Skill Evolution Orchestrator**. All additions pass through the Content Gate.
 
 ---
 
@@ -87,7 +87,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response`. If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery.
 
 ### Crash & Stall Recovery
 
@@ -101,11 +101,11 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 Spawn THREE agents in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill, scoped to the skills under review here, and feeds Phase 1 reviewers directly.
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill and feeds Phase 1 reviewers directly.
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer teammate per target skill (all in the same turn for parallelism).
+Spawn one @staff-engineer teammate per target skill. **Spawn all in the same turn** to maximize parallelism.
 Assign tasks via `TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")`.
 
 Each teammate (read-only — no file edits):
@@ -120,7 +120,6 @@ Each teammate (read-only — no file edits):
 3. Writes/normalizes `docs/changelog/skills/<name>.md` per Changelog Format
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
-6. Shuts down the teammate (don't wait for siblings — see Agent Lifecycle)
 
 **Phase 1 SendMessage triggers** (orchestrator-only relay — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items):
 - A finding affects another skill (include affected skill name)

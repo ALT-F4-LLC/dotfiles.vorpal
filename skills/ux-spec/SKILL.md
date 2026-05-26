@@ -47,8 +47,6 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 8. Use `truncated` as `{slug}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
-For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
-
 ## When to Use
 
 - A UX design spec is needed for a user-facing surface (CLI, TUI, API, agent prompt,
@@ -75,8 +73,7 @@ For this skill, substitute `{TYPE}` with `ux-spec` in the usage error.
   the calling agent's context): use `Skill(design-review, "<scope>")`.
 - QA of shipped implementation against an accepted UX spec (no file written, report
   into the calling agent's context): use `Skill(design-qa, "<scope>")`.
-- Technical Design Documents (architecture/system design): use
-  `Skill(tdd, "<topic>")`.
+- Technical Design Documents (architecture/system design): use `Skill(tdd, "<topic>")`. When a UX spec implies non-trivial backend or system design, the architecture portions belong in a sibling TDD; this spec references it rather than restating it.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
   `Skill(prd, "<topic>")`.
@@ -123,20 +120,10 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` (broader than the
-   pre-flight scan — include `docs/spec/`, `docs/tdd/`, `docs/ux/`). Read any
-   adjacent specs that touch the same surface or terminology — the new UX spec
-   should reference, not contradict, prior accepted UX specs and design tokens
-   (per `agents/ux-designer.md`: same concept gets the same name across all surfaces).
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/spec/ docs/tdd/ docs/ux/`. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `agents/ux-designer.md`: same concept gets the same name across all surfaces).
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
-3. **Draft each Required Section in order** (see Output Contract → Required
-   Sections). Every section listed MUST appear, in the order shown. Match spec
-   fidelity to problem complexity — sections that do not apply to the surface
-   type (e.g., visual design for a CLI flag, internationalization for a
-   server-side log format, accessibility for a non-interactive config schema) may
-   contain a single `N/A.` paragraph with a one-line justification, but omitting
-   them is a defect.
+3. **Draft each Required Section in order** (see Output Contract → Required Sections). Every section listed MUST appear, in the order shown. Match spec fidelity to problem complexity — sections that do not apply to the surface type (e.g., accessibility for a non-interactive config schema) may contain a single `N/A.` paragraph with a one-line justification, but omitting them is a defect.
 4. **Mermaid diagrams**: the Mermaid Mandate is **mandatory** for UX specs (per
    `agents/ux-designer.md`). Include at least one Mermaid block — a user flow,
    state transition, or cross-surface journey. ASCII wireframes are encouraged
@@ -227,11 +214,7 @@ Responsibility 1 design spec format.
 
 ### Mermaid Mandate
 
-Mermaid is **required** for every UX spec — at least one block showing a user
-flow, state transition, or cross-surface journey. Acceptable block fences are
-` ```mermaid ` (lowercase, no space). This mandate is mandatory per
-`agents/ux-designer.md`; UX specs do not have the pure-policy override available
-to TDDs and ADRs.
+Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `agents/ux-designer.md`.
 
 For non-GUI surfaces (CLI flag, API endpoint, config schema, log format), a
 cross-surface journey (e.g., `cli invocation → API call → persisted config`) or
@@ -250,8 +233,8 @@ Before invoking `Write`, verify in the calling agent's context:
 3. **Maturity value** — `maturity` is one of
    `proof-of-concept | draft | experimental | stable`.
 4. **Section order** — the body contains all top-level sections enumerated
-   in "Required Sections" above, as `##` headings, in the order listed
-   (currently 9 sections). Off-by-one against the count is a defect.
+   in "Required Sections" above, as `##` headings, in the order listed.
+   Off-by-one against the listed sections is a defect.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
@@ -279,8 +262,7 @@ After Validation Before Save passes:
    Created {output_path}
    ```
 
-End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
-The calling agent owns next steps (vote requests, decomposition, peer notification).
+End. Do NOT echo the file body. The calling agent owns next steps (vote requests, decomposition, peer notification).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.

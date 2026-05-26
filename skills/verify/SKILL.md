@@ -116,7 +116,9 @@ Standalone-mode invocations (operator-driven, no team-lead orchestration) follow
      ```
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
+7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`. Audit-driven: 154 invocations / 45 sessions = ~3.4 issues per session typical.
 8. **Doubling-rule reference** — under team-lead orchestration, this skill is invoked once per ephemeral verifier in the `verifier-criteria` + `verifier-integration` pair; see `docs/tdd/reviewer-doubling-lifecycle.md` §4.2–§4.3 for the doubling rule and verdict reconciliation rationale.
+9. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
 
 ## Verification Procedure
 
@@ -164,7 +166,7 @@ Apply the full procedure. Scale evidence to risk.
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when intent is ambiguous. Use `AskUserQuestion` with 1-4 questions, each having 2-4 options and a `header` ≤12 chars. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `agents/sdet.md` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
@@ -254,6 +256,8 @@ The calling agent owns (in order):
 - Closing or moving the Docket issue: on APPROVE, `docket issue close <id>` followed by `docket issue comment add <id> -m "..."`; on ACCEPT WITH CAVEATS or BLOCK, `docket issue move <id> review` instead so the team sees the partial state explicitly.
 - SendMessage to peers per the `agents/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
 - Triggering `Skill(vote, ...)` per the vote triggers in `agents/sdet.md`.
+
+**Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's inbox. Before ending the turn, answer: "Did I SendMessage the structured verdict body (not summarized) to team-lead this same turn?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the SendMessage IS the deliverable.
 
 On any abort during Pre-flight, Verification Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
 

@@ -1,5 +1,35 @@
 # Changelog: code-review
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: trimmed AskUserQuestion structural-contract restatement to point at the calling agent's contract (lockstep with design-qa/verify).
+
+### Changes
+- Replaced `1-4 questions, each having 2-4 options and a header ≤12 chars` restatement with pointer `per the calling agent's structural contract` (Item 4 lockstep, mirrors design-review's Phase 1 trim).
+
+### Dimensions Evaluated
+Coherence, Consolidation.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+Two pitfall-driven additions from highest-usage skill (186 sessions, 208 calls): added explicit silent-completion self-check to Save & Return (staff-engineer pitfall #4 — advisor invokes skill, verdict lands in context, advisor idles without SendMessaging team-lead) and added G5 Hard Gate for unexecuted AC regex (pitfall #5 — TDD AC amendments introduce regex without grep-against-actual-files execution). Net +12 lines.
+
+### Changes
+- Save & Return: prepended MUST statement clarifying trailing confirmation line is not the deliverable; SendMessage to calling agent IS the deliverable; added self-check question. Cross-cutting fix — same pattern applied to design-qa; verify/design-review to follow when their reports land.
+- Hard Gates: added G5 (unexecuted AC regex) — mechanically detectable defect class where TDD/spec diffs introduce regex without execution against actual target files.
+- Output template + Validation Before Emit: extended G1..G4 → G1..G5 in `Hard Gates Triggered` section and validation check 4.
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (HIGHEST — silent-completion defect), Completeness (G5 gate), Actionability, Coherence (cross-skill propagation flagged), Over-Engineering (3 narrow edits within 108-line headroom).
+
+### Rename
+No rename — highest-volume skill; stability load-bearing.
+
 ## 2026-05-20
 
 ### Summary

@@ -1,5 +1,38 @@
 # Changelog: ux-spec
 
+## 2026-05-25
+
+### Summary
+Phase 2 coherence: removed TYPE substitution note (lockstep) and removed stale "(currently 9 sections)" count from Validation §4 (mirrors tdd fix).
+
+### Changes
+- Removed `For this skill, substitute {TYPE} with ux-spec in the usage error.` — Item 1 lockstep.
+- Removed stale section-count token from Validation §4 (stale-token risk identical to tdd/prd).
+
+### Dimensions Evaluated
+Coherence, Consolidation.
+
+### Rename
+No rename.
+
+## 2026-05-25
+
+### Summary
+Five over-engineering trims and one sibling-parity hardening: dropped dead "broader than pre-flight scan" parenthetical (2026-05-06 removed that step), collapsed Mermaid Mandate 4× "mandatory" restatement, hardened tdd reciprocal route to mirror tdd's prescriptiveness, trimmed Authoring §3 N/A allowance to one example, removed third repetition of orchestration prohibitions in SAVE_AND_RETURN. Net -6 lines.
+
+### Changes
+- Authoring §1: dropped dead "broader than the pre-flight scan" parenthetical (2026-05-06 removed Pre-flight step 5); folded dir list into Grep command.
+- Mermaid Mandate: collapsed 4× "mandatory" restatements to 1×; removed override-comparison clause.
+- When NOT to Use → tdd route: hardened to mirror tdd's reciprocal "interaction-design portions belong in UX spec" prescriptiveness.
+- Authoring §3 N/A allowance: collapsed three example surface×section pairs to one.
+- SAVE_AND_RETURN: dropped third repetition of orchestration prohibitions (CRITICAL banner + allowed-tools exclusion already cover it).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 4 trims), Coherence (sibling tdd parity), Spec Alignment, Skill Design Quality.
+
+### Rename
+No rename. Family-aligned with adr/prd/tdd.
+
 ## 2026-05-18
 
 ### Summary

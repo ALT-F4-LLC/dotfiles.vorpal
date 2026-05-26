@@ -1,5 +1,23 @@
 # Changelog: evolve-agents
 
+## 2026-05-25
+
+### Summary
+Seven changes addressing 46% pre-flight abort signal and shutdown-routing ambiguity from team-lead memory: added scope-confirmation HARD GATE, clarified shutdown-response routing to orchestrator, followed-through step renumbering (7→8), plus mirrored trims from evolve-skills. Net +4 lines (338→342).
+
+### Changes
+- New pre-flight step 7: scope-confirmation HARD GATE in all-agents mode (>3 agents) surfacing planned cycle weight before Phase 0 spawn. Closes 46% abort-after-spawn signal.
+- Shutdown protocol: added "addressed to the orchestrator (never to a peer)" clause per canonical staff-engineer routing rule.
+- Step renumbering (7→8) followed through three internal references for coherence.
+- Phase 1 post-review-loop step 6: removed — mirrors evolve-skills; lifecycle table is source of truth.
+- Phase 0 friction-distinction: removed "scoped to the agents under review here" wrap — mirrors evolve-skills.
+
+### Dimensions Evaluated
+Completeness (HIGHEST — historical signal), Orchestration (routing + scope gate), Coherence (renumbering + sister parity), Consolidation.
+
+### Rename
+No rename.
+
 ## 2026-05-20
 
 ### Summary

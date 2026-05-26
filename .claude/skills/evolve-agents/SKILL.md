@@ -44,7 +44,8 @@ Before spawning any agents:
 4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
-7. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
+7. **Scope-confirmation gate (HARD GATE)** — If `$ARGUMENTS` is empty (all-agents mode) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
+8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
@@ -81,11 +82,11 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` (skip the third if pre-flight step 7 flagged SKIPPED) | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` (skip the third if pre-flight step 8 flagged SKIPPED) | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response`. If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery.
 
 ### Crash & Stall Recovery
 
@@ -97,9 +98,9 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn THREE teammates in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 7 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
+Spawn THREE teammates in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent, scoped to the agents under review here, and feeds Phase 1 reviewers directly.
+**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent and feeds Phase 1 reviewers directly.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -117,7 +118,6 @@ Each teammate (read-only — no file edits):
 3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
-6. Shuts down the teammate (don't wait for sibling Phase 1 agents — see Agent Lifecycle)
 
 Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section.
 
@@ -169,7 +169,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-agent)
 
-Skip spawning if pre-flight step 7 flagged SKIPPED. Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`).
+Skip spawning if pre-flight step 8 flagged SKIPPED. Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`).
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")

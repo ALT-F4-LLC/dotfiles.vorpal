@@ -1,5 +1,39 @@
 # Changelog: sdet
 
+## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, docs-dir guard, P7a drop)
+
+### Summary
+Three coherence fixes from Phase 2 audit: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 for fleet parity with security/staff/senior-engineer; (2) added docs-dir existence guard (`ls -d docs/tdd docs/ux docs/spec`) to "Check Specs Before Testing" matching project-manager/staff-engineer convention; (3) dropped dead "(P7a)" cross-reference from R7 (no agent canonically labels its Read rule as P7a).
+
+### Changes
+- Comm Discipline rule 6: appended concrete WRONG/RIGHT example (`to="verifier-criteria"`/`"verifier-integration"` WRONG; `to="team-lead"` RIGHT)
+- §Check Specs Before Testing: added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard as lead-in
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — fleet parity on shutdown example + docs-dir guard) · Actionability (P7a dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — sandbox awareness + jq robustness + auth consent + CLI alignment)
+
+### Summary
+Three behavioral gaps from 10+ sandbox-blocked errors and 2 operator over-reach interruptions in historical audit: sandbox off-limits documentation, jq robustness discipline, and auth-boundary operator-consent qualifier. Two spec-alignment fixes (docket vote list wording, export --format alias). Four line-wrap compressions for balance. Verified `docket issue move <id> review` IS a valid docket status (tested live) — no doc change needed. NET +1 line (368 → 369).
+
+### Changes
+- §Test Failure Diagnosis: added `Sandbox off-limits` paragraph — `.env*` and Docker socket are sandbox-blocked (policy, not missing files); surface as environment blocker, never work around
+- §Runtime Discipline R1: added `jq robustness` bullet — test expressions in isolation before pipeline embedding
+- §Verification Workflow step 4: added operator-consent qualifier for auth-boundary side-effects (credential refresh, token write) — only in-scope when AC explicitly requires credential-state verification
+- §Docket CLI Reference: `vote list --all` wording aligned to CLI ("resolved proposals"); `export` documents `--format` as long form of `-o`
+- Consolidation: Test Pyramid, Risk-Based high/low risk bullets, Defect Analysis — 4 line-wrap compressions (−4 lines)
+
+### Dimensions Evaluated
+Actionability (PRIMARY — sandbox + jq) · Boundary Clarity (PRIMARY — auth over-reach) · Spec Alignment (vote/export) · Consolidation
+
+### Rename
+No rename — "sdet" is canonical.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
 
 ### Summary

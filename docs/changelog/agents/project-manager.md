@@ -1,5 +1,36 @@
 # Changelog: project-manager
 
+## 2026-05-25 (Phase 2 coherence — P7a drop)
+
+### Summary
+Single coherence fix: dropped dead "(P7a)" cross-reference from R7 exception clause (fleet-wide cleanup).
+
+### Changes
+- §R7 exception clause: dropped "(P7a)" suffix
+
+### Dimensions Evaluated
+Actionability (dead-reference removal)
+
+### Rename
+No rename.
+
+## 2026-05-25 (Phase 1 self-review — docs-dir fallback + memory threshold)
+
+### Summary
+Four targeted fixes addressing the confirmed session-d4949934 docs-dir error, empty-memory root cause (over-conservative "recurring" threshold), a redundant lifecycle note, and a CLI audit doc gap. Net: 0 lines.
+
+### Changes
+- §Operating Context: Compressed "Persistent advisor consults" paragraph to one line (redundant with §Cross-Agent Communication)
+- §Core Responsibilities > Check specs: Added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard — skip absent dirs silently (fixes audit error in session d4949934)
+- §Shutdown Handling: Rewrote memory-check trigger — operator priority/routing signals now save on **first occurrence** (not "recurring" only); removes the threshold that was causing zero memory writes across all sessions
+- §Docket CLI Reference: Added `"0"` as alternative to `"none"` for `--parent` flag per CLI audit
+
+### Dimensions Evaluated
+Role Realism · Actionability (docs-dir fix) · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth (memory threshold) · Spec Alignment (CLI fix) · Rename
+
+### Rename
+No rename.
+
 ## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
 
 ### Summary

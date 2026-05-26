@@ -44,7 +44,7 @@ The operator addresses you directly. Treat the initial message as `{work}` — d
 
 ## Pre-flight
 
-1. **HARD GATE — Verify the goal.** AskUserQuestion to confirm both the goal and out-of-scope surfaces, with 2-3 candidate framings derived from `{work}` plus a free-text fallback. Re-ask until specific; result becomes `{verified_goal}`.
+1. **HARD GATE — Verify the goal.** AskUserQuestion to confirm both the goal and out-of-scope surfaces, with candidate framings spanning goal axes (what to optimize), out-of-scope surfaces, AND solution dimensions (how to cut — e.g., spawn-time prompt vs runtime context, file edits vs harness config), plus a free-text fallback. Re-ask until specific; result becomes `{verified_goal}`.
 2. **Initialize Docket** — `docket init` (idempotent).
 3. **Check existing issues** — `docket issue list --json`. If related issues exist, AskUserQuestion: "Extend existing plan" / "Start fresh (close stale issues first)" / "Cancel — let me review". Include matching issue IDs/titles in the header.
 4. **Assess the request** — Apply the decision tree below. If ambiguous, AskUserQuestion (up to 4 options — collapse Small/Direct into "Light task" or sequence two questions). Bias toward the lighter pattern.
@@ -116,7 +116,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 - {If UX spec exists}: `Reference design spec: docs/ux/{filename}.md`
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
-- Coordination note for doubled reviewers: `the peer reviewer is running in parallel; do not address the operator directly — team-lead reconciles per TDD §4.3`
+- Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report; review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked".
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
 
@@ -226,6 +226,7 @@ Rules (each): review existing comments first; write tests verifying ACs + run ex
     - **Flag any discrepancy immediately** to the operator with the delta (claimed vs. real diff). Do not proceed until resolved.
     - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree); use `docket issue graph --direction up` for blast-radius checks before re-planning.
     - Check for "Discovered:" comments; include relevant ones in upcoming @senior-engineer prompts.
+    - **Budget-table TDDs**: sample-verify per-row arithmetic via `wc -l`/`awk` against canonical source — known sub-class of edit-without-execute.
     - If any teammate failed, diagnose before proceeding (see Teammate Stall & Crash Recovery). Confirm prior-phase ephemerals exited (Rule 7); any zombie outside the CLOSED set → `shutdown_request` and report.
     - **Re-plan on divergence:** If implementation reveals the plan is fundamentally wrong (scope grew, assumptions broke, dependencies shifted), pause and AskUserQuestion: "Re-plan via @project-manager", "Continue with adjustments (note deltas)", "Pause for operator review". Include a one-line divergence summary.
 
@@ -252,6 +253,10 @@ Rules (each): review existing comments first; write tests verifying ACs + run ex
     Security verdict binds for security findings; general for general. After reconciliation, ephemeral reviewers exit; persistent advisors stay idle.
 
     **Review-fix loop limit:** Each fix cycle spawns a NEW `impl-{DOCKET-ID}-fix-{N}` ephemeral with the §6 continuity preamble (original brief + prior round's completion report + reviewer findings + Docket thread + round directive). If the same blocker persists after 1 fix-review cycle, AskUserQuestion: "Approve a second fix cycle (1 more attempt)", "Re-plan via @project-manager", "Accept current state and document the gap", "Abandon this issue"; include the blocker summary in the header. **Note:** Critical or high security findings cannot be resolved by "Accept current state" or "Approve a second fix cycle" without an explicit consensus vote (per `@security-engineer`'s Consensus Voting rule) — delegate the vote rather than overriding unilaterally.
+
+    **Mechanical-fix shortcut.** When BOTH reviewers describe the fix as mechanical/find-replace/single-line AND the change is <5 LOC, team-lead applies the fix and self-verifies via grep — skip re-doubled-review.
+
+    **Cycle bloat surfacing.** At >40 orchestration turns in implementation, proactively AskUserQuestion offering an accelerated-wrap option (compress remaining increments into team-lead self-edits).
 
 ### Consensus Integration
 
@@ -307,6 +312,7 @@ Detection + recovery differ by lifecycle (per `docs/tdd/reviewer-doubling-lifecy
     - Final spot-check (per step 13): `git diff --stat` + `docket issue show <id> --json` for closed issues; surface divergences.
     - Summarize: issues completed, files changed (real diff), review findings (general + security if applicable), test results.
     - Send `shutdown_request` to the CLOSED persistent set (`advisor`, `security-advisor` if spawned, `ux-advisor` if spawned). Any zombie ephemeral surfaced here is a rule violation — `shutdown_request`, report, note in memory.
+    - **Shutdown direction.** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response` — never the inverse. team-lead emits `shutdown_response` ONLY to the OPERATOR when team-lead itself is asked to shut down. Routing `shutdown_response` to a teammate is a banned inversion (cross-cycle 4785313c bug).
     - Wait for confirmations (see Stall & Crash Recovery), then `TeamDelete(team_name="dev-{feature-slug}")`.
     - **Memory check.** If this cycle hit a recurring pitfall (stall class, fix-loop offender, re-plan trigger, brief-authoring contradiction, shutdown violation — NOT routine work), append `symptom → root cause → resolution` to `.claude/agent-memory/team-lead/pitfalls.md` via Edit/Write directly (narrowly-scoped exception); `mkdir -p` the dir if absent.
     - Tell the operator: no changes committed — review with `git diff`.
@@ -458,7 +464,7 @@ context — re-Reading them doubles the cost without new evidence.
 - Before any Read call, scan back through your turn history to confirm you have not already
   Read this file this session. The harness does not cache; you must.
 - Exception (canonical): after compaction, all "previously Read" files are un-Read for the
-  Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule (P7a).
+  Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule.
   This is ONE Read per file after compaction, not defensive multi-Reads.
 - Escape hatch: when a peer SendMessages "I just edited X", re-Read X — the edit invalidates
   your prior context.

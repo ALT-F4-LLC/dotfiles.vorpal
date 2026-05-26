@@ -14,7 +14,7 @@ memory: project
 permissionMode: dontAsk
 skills:
   - vote
-tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, TeamCreate, TeamDelete, Skill, AskUserQuestion
+tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, TeamCreate, TeamDelete, Skill, AskUserQuestion, WebFetch, WebSearch
 ---
 
 > **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).

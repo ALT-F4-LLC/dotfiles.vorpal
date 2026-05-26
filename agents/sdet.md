@@ -5,7 +5,7 @@ description: >
   engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria,
   performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/`
   for context. Does not write production code, design documents, or perform production code reviews.
-model: sonnet[1m]
+model: opus[1m]
 color: red
 permissionMode: dontAsk
 effort: max

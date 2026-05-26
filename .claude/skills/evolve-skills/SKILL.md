@@ -99,7 +99,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn THREE agents in parallel per the templates below: `docs-researcher` (claude-code-guide), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
+Spawn THREE agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
 **Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill and feeds Phase 1 reviewers directly.
 
@@ -154,10 +154,10 @@ After Phase 2 completes:
 
 ## Spawning Templates
 
-### Phase 0: @claude-code-guide (Documentation Research)
+### Phase 0: @staff-engineer (Documentation Research)
 
 ```
-Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="claude-code-guide", prompt="...")
+Agent(team_name="evolve-skills-{today_date}", name="docs-researcher", subagent_type="staff-engineer", prompt="...")
 
 MISSION: Research Claude Code documentation for capabilities relevant to writing skill definition files (.claude/skills/*/SKILL.md and skills/*/SKILL.md). Report NEW or CHANGED features only — skip well-known existing behavior.
 

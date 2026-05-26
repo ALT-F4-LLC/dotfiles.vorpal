@@ -13,7 +13,7 @@ memory: project
 skills:
   - verify
   - vote
-tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet
+tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
 > **CRITICAL:** No commits unless explicitly instructed. In team mode, delegate `/vote` via SendMessage to team-lead — never invoke `Skill(vote)`, `Agent()`, or `TeamCreate`.

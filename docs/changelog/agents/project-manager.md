@@ -1,5 +1,23 @@
 # Changelog: project-manager
 
+## 2026-05-26
+
+### Summary
+Codified the P0 historical signal — explicitly close the parent epic after all children close (children do NOT auto-close the parent). Applied SubagentStop drain doctrine to the Monitor auto-shutdown procedure (TaskStop the watch before emitting shutdown_request). Dropped redundant `docket stats` from session init per CLI audit. Consolidated Risks bullets and Persistent-advisors lifecycle clause. Net: -7 lines (326 → 319).
+
+### Changes
+- §Plan Monitoring §Cancellation/completion: explicit `docket issue close <epic-id>` after children close — child closure does NOT cascade.
+- §Session Initialization: dropped `docket stats` (redundant with `board --json` + `plan --json`).
+- §Shutdown Handling §Auto-shutdown on idle: TaskStop the Monitor watch before emitting shutdown_request (drain doctrine, v2.1.145).
+- §Assess Risks: four single-sentence bullets inlined into lede paragraph (-5 lines).
+- §Strict Ephemeral Lifecycle: folded "Persistent advisors unaffected" clause into Lifecycle opener (-2 lines).
+
+### Dimensions Evaluated
+Capability Growth (epic-close rule, drain doctrine) · Consolidation & Trimming (Risks inline, Persistent-advisors fold, docket stats drop) · Completeness (docs research v2.1.145)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 4 dangling docs/tdd/* citations)
 
 ### Summary

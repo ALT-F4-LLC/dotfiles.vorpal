@@ -1,5 +1,21 @@
 # Changelog: staff-engineer
 
+## 2026-05-26
+
+### Summary
+Three targeted edits grounded in Docs Research (subagent-as-teammate `skills:`/`mcpServers:` frontmatter ignored), Docket CLI audit (`docket export -o markdown -l <label>` rollup opportunity), and content-gate cleanup (Lifecycle duplicating §Shutdown Handling Ephemeral). Net 0 lines.
+
+### Changes
+- §Lifecycle (L30): removed redundant "Ephemerals MUST shut down immediately" + Fix-loops sentence (canonical in §Shutdown Handling); added "§Shutdown Handling" pointer; tightened "CLOSED-set advisor names" → "CLOSED-set names".
+- §TDD Workflow step 6 (L103): appended "Teammate-mode envelope assumption" — TDDs prescribing skills/MCP for downstream agents must use explicit `Skill(<name>)` invocation in Implementation Notes, not assume frontmatter loads (IGNORED for teammates per Docs Research v2.1.117).
+- §Review Workflow step 2 (L123): added `docket export -o markdown -l <label>` to gather-context CLI list for cross-issue architectural rollups.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — teammate-envelope caveat + docket-export rollup) · Consolidation & Trimming (Lifecycle/Shutdown Handling de-dup) · Spec Alignment (Phase 2 anchor-citation pattern preserved)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 7 dangling docs/tdd/* citations)
 
 ### Summary

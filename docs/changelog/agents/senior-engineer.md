@@ -1,5 +1,35 @@
 # Changelog: senior-engineer
 
+## 2026-05-26 (Phase 2 coherence)
+
+### Summary
+Two coherence fixes from Phase 2 cross-agent review. (1) §Proactive SendMessage Triggers ux-designer line was vacuous when `docs/ux/` is empty (current repo state) — "not resolvable from docs/ux/" read as always-true OR never-true. Reworded as "Introducing a new user-facing pattern OR an existing docs/ux/ spec is ambiguous." (2) §Shutdown Handling auto-shutdown block now matches project-manager.md's inline `TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources)` per drain-doctrine symmetry.
+
+### Changes
+- §Proactive SendMessage Triggers (L165): reword ux-designer trigger from "not resolvable from docs/ux/" to "Introducing a new pattern OR existing spec is ambiguous" — unambiguous when docs/ux/ is empty.
+- §Shutdown Handling §Auto-shutdown on idle bullet: add inline TaskStop the Monitor watch per PM symmetry.
+
+### Dimensions Evaluated
+Actionability (PRIMARY — vacuous trigger now concrete) · Spec Alignment (drain doctrine fleet-symmetric)
+
+### Rename
+No rename.
+
+## 2026-05-26
+
+### Summary
+Two targeted changes net -7 lines (360 → 353). (1) Added TDD deep-read gate to Execution Workflow step 2 — when issue cites a TDD, read end-to-end and consult @staff-engineer/advisor on any WHY ambiguity BEFORE first line of code. Directly targets the audit's dominant rework signal: 32 fix-round ephemerals (DKT-3 fix-3, DKT-15/31/122/138 fix-2) indicating impl-to-TDD divergence surfaced only after code lands. One pre-impl consult is cheaper than a fix-loop respawn. (2) Compressed Override Convention subsection — format authority already stated inline at §Code Quality opener and through-line.
+
+### Changes
+- Execution Workflow step 2 (L139): appended "**TDD deep-read gate**" clause — when issue cites TDD, read end-to-end pre-impl; ambiguous WHY → SendMessage advisor BEFORE coding (citing the 32 fix-round audit signal as load-bearing context).
+- §Code Quality / Override Convention: compressed prose block to a one-paragraph spec preserving the `OVERRIDE: code-philosophy/<id> — <reason>` format and visible-not-silent principle.
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY — pre-impl consult gate targets dominant rework signal) · Actionability (concrete checkpoint inside existing workflow step) · Consolidation & Trimming (Override Convention compression)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 3 dangling docs/tdd/* citations)
 
 ### Summary

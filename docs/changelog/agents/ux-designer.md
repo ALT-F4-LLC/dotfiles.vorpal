@@ -1,5 +1,20 @@
 # Changelog: ux-designer
 
+## 2026-05-26
+
+### Summary
+Realigned R2/R5 "Doubled Reviewer Pattern" subsections with team-lead.md Rule 8 (default = single reviewer `ux-advisor` via SendMessage; doubled = opt-up). Previous framing implied doubled was default, contradicting Rule 8's "single verdict is final, no ephemeral peer spawn." Renamed subsections to "Reviewer Panel" to capture both modes. Pluralized hardcoded `design-qa-2` / `design-review-2` to `{N}` for naming-convention parity with team-lead spawn names. Net 0 lines (text content shifted; line count preserved).
+
+### Changes
+- R5 §Reviewer Panel (L186-187): renamed "Doubled Reviewer Pattern" → "Reviewer Panel"; prepend default-single + opt-up-doubled framing; pluralize `design-qa-2` → `design-qa-{N}`.
+- R2 §Reviewer Panel (L158-159): mirror rename + pluralization in the pointer subsection.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — closes Rule 8 default-mismatch) · Cross-Agent Coherence (team-lead spawn-naming parity) · Actionability (default-vs-opt-up clarity for ux-advisor receiving design-QA requests)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 6 dangling docs/tdd/* citations)
 
 ### Summary

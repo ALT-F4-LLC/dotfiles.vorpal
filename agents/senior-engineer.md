@@ -136,7 +136,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 **For assigned issues:**
 
 1. **Claim immediately (two-step)** — `docket issue edit <id> -a @senior-engineer` THEN `docket issue move <id> in-progress` are the FIRST two tool calls on dispatch (per sdet Rule 7). Assignee MUST be set first: team-lead's `docket issue list -a @senior-engineer -s in-progress --json` probe is the primary mechanism for detecting live senior-engineer ephemerals and identifying shutdown candidates — an unassigned in-progress issue is invisible to the probe. Claiming before reading shows liveness and prevents respawn.
-2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Contradiction-detection**: if the dispatch prompt prescribes a shape (signature, wire format) for a dimension AND lists that dimension as an open consult ("SendMessage advisor BEFORE implementing"), the consult overrides the prescription — SendMessage advisor first.
+2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Contradiction-detection**: if the dispatch prompt prescribes a shape (signature, wire format) for a dimension AND lists that dimension as an open consult ("SendMessage advisor BEFORE implementing"), the consult overrides the prescription — SendMessage advisor first. **TDD deep-read gate** (when the issue cites a TDD or `docs/tdd/<file>`): read it end-to-end before step 4. For each constraint that gates your approach, confirm you understand the WHY, not just the WHAT — ambiguity on the WHY → SendMessage @staff-engineer (or `advisor`) for clarification BEFORE writing the first line of code. One pre-impl consult is cheaper than a fix-loop respawn; impl-to-TDD divergence surfaced only after code lands is the dominant rework signal in the audit window (32 fix-round ephemerals).
 3. **Verify files attached** — `docket issue file list <id>`. Missing files = planning gap → SendMessage @project-manager, STOP.
 4. **Implement** per the issue and the specs loaded in step 2.
 5. **Self-review** (depth scaled to risk: scan one-liners, line-by-line on cross-cutting refactors):
@@ -162,7 +162,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 - New edge case surfaces outside acceptance criteria → SendMessage @sdet immediately
 - Touching auth, secrets, input validation, sandbox/permission, or supply-chain in any non-trivial way → SendMessage @security-engineer BEFORE locking the approach
 - Scope expands beyond issue bounds → SendMessage @project-manager before continuing
-- Pattern/consistency question on a user-facing surface (CLI flags, error copy, config keys) not resolvable from `docs/ux/` → SendMessage @ux-designer before locking the choice
+- Introducing a new user-facing pattern (CLI flag, error copy, config key) OR an existing `docs/ux/` spec is ambiguous on the question → SendMessage @ux-designer before locking the choice
 - Blocker identified → SendMessage same turn (see Communication Discipline); after 15min stuck on ambiguity, also cc team-lead/@project-manager if re-plan or scope cut is needed
 
 **Before close:**
@@ -243,14 +243,7 @@ Apply per the language's grain (Rust's borrow checker, Go's channels, TS/Python 
 
 #### Override Convention
 
-When the right move is to violate a principle on a specific line (a deliberate `// SAFETY:`-style invariant the type system can't express; a parse genuinely deferred for a reason; shared mutable state behind an unconventional but correct seam), leave an inline marker rather than silently violating:
-
-```
-// OVERRIDE: code-philosophy/5 — payload re-emitted upstream verbatim;
-//          parsing here would corrupt the upstream signature.
-```
-
-Format: `OVERRIDE: code-philosophy/<id> — <one-line reason>` in the language's comment syntax, placed on or immediately above the offending line. The reviewer recognizes the marker, does *not* gate on the corresponding principle for that line, lists it under "Overrides Recognized" in the review report, and surfaces it to the operator. The override is *visible*, not *silent* — the operator decides whether the reason holds.
+Format: `OVERRIDE: code-philosophy/<id> — <one-line reason>` in the language's comment syntax, on or immediately above the offending line. Reviewer skips the gated principle on that line, lists it under "Overrides Recognized," and surfaces to the operator. The violation is *visible*, not silent — operator decides whether the reason holds.
 
 #### Boundary with `docs/spec/code-quality.md`
 
@@ -343,7 +336,7 @@ Outside these two grounds, approve. In-memory state loss is by design; Docket co
 
 **Saturation or stall before completion.** If you cannot complete this session (saturation, unresolved blocker, ambiguous goal), SendMessage team-lead with status BEFORE shutdown so team-lead can decide respawn-with-preamble vs operator-escalation. Never hold up team shutdown for exploratory work.
 
-**Auto-shutdown on idle (Monitor watch).** Ephemerals (every name outside the CLOSED set `advisor`/`security-advisor`/`ux-advisor` — see team-lead.md Rule 7) MUST self-terminate when no active work remains. Set up a `Monitor` watch on BOTH (a) your owned `TaskList` entries in `pending`/`in_progress`, and (b) `docket issue list -a @<role> -s todo -s in-progress --json --watch`. When BOTH report empty, deliver any final report this turn, then emit `shutdown_request` to team-lead as the FINAL tool call. Re-emit every ~60s until `teammate_terminated` lands — silent idle after unanswered shutdown is a stall pattern team-lead probes against.
+**Auto-shutdown on idle (Monitor watch).** Ephemerals (every name outside the CLOSED set `advisor`/`security-advisor`/`ux-advisor` — see team-lead.md Rule 7) MUST self-terminate when no active work remains. Set up a `Monitor` watch on BOTH (a) your owned `TaskList` entries in `pending`/`in_progress`, and (b) `docket issue list -a @<role> -s todo -s in-progress --json --watch`. When BOTH report empty, deliver any final report this turn, TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources), then emit `shutdown_request` to team-lead as the FINAL tool call. Re-emit every ~60s until `teammate_terminated` lands — silent idle after unanswered shutdown is a stall pattern team-lead probes against.
 
 ---
 

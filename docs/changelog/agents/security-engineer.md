@@ -1,5 +1,22 @@
 # Changelog: security-engineer
 
+## 2026-05-26
+
+### Summary
+Clarified `security-reviewer-1`/`-2` are PARALLEL-panel for consensus voting (NOT sequential rework rounds, per audit hint flagging operator-transcript ambiguity); introduced `security-reviewer-fix-{N}` for fix-loop respawns matching @staff-engineer's `tdd-author-fix-{N}` convention. Consolidated §Shutdown Handling restatement to defer the verdict→shutdown sequence to its §Ephemeral peer review canonical home, retaining only unique drain/peer-consult caveats. Added one-line `docket export -o markdown -l <label>` surface in §System-Level Security Thinking for cross-issue vuln-class rollups. Net 0 lines (text density shifted; bullets stayed single-line).
+
+### Changes
+- L33 Lifecycle: spelled out `security-reviewer-1`/`-2` as parallel-panel pair (not sequential rounds) + `security-reviewer-fix-{N}` for fix-loops.
+- §Ephemeral peer review: fix-loop respawn name aligned to `security-reviewer-fix-{N}`.
+- §Shutdown Handling: dropped redundant verdict→shutdown sequence restatement; deferred to §Ephemeral peer review; retained drain + peer-consult caveats.
+- §System-Level Security Thinking: added `docket export -o markdown -l <label>` for recurring vuln-class trend rollups.
+
+### Dimensions Evaluated
+Boundary Clarity (PRIMARY — paired-panel vs sequential-rounds disambiguation) · Consolidation (shutdown sequence dedup) · Capability Growth (docket export surface)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 8 dangling docs/tdd/* citations)
 
 ### Summary

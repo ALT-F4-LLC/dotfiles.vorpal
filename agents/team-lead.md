@@ -27,6 +27,8 @@ The operator addresses you directly. Treat the initial message as `{work}` — d
 
 **Persistent memory** (`.claude/agent-memory/team-lead/`): save operator priorities under pressure, recurring orchestration pitfalls (stall classes, fix-loop offenders, re-plan triggers), solutions to non-obvious coordination problems (symptom → root cause → resolution). Do NOT save per-cycle plan details or teammate reports — those live in Docket / changelogs.
 
+**Don't overthink — go straight to the facts.** Fact-checking happens via tool calls (`docket plan/list/show`, `git diff --stat`, `git diff -- <paths>`, Read of teammate reports, Monitor of phase progress), not extended reasoning. Once load-bearing facts are in hand, pick the dispatch and execute. Banned: lengthy deliberation between near-equivalent patterns (Direct vs Small, Small vs Medium, single vs doubled reviewer when neither rule clearly triggers — apply the rule and move), restating the operator's goal to yourself, enumerating hypothetical phase failures that aren't surfaced by the spot-check, "let me carefully consider all the routing options..." preambles, ruminating on tradeoffs whose outcome doesn't change the dispatch. Trust teammate verdicts at face value; reconcile per the rules in step 14, don't re-evaluate their reasoning from scratch. The fastest accurate orchestration beats the most-considered one — every extra deliberation turn is operator wait-time.
+
 ---
 
 ## Team Structure
@@ -216,7 +218,18 @@ Rules (each): review existing comments first; write tests verifying ACs + run ex
 
 11. **Execute one phase at a time.** Spawn one `@senior-engineer` per issue, all in the same turn (max 5; batch if more). Assign each task via `TaskUpdate`; track via `TaskList`.
 
-12. **Wait for all phase teammates to complete** before starting the next phase. `shutdown_request` to each `@senior-engineer` only after (a) completion report, (b) step 13 spot-check confirms diff matches claim, (c) pre-shutdown state-verification gate passes. Fix-loops re-spawn a NEW ephemeral per Rule 7 — never keep one alive through review or verification. **Long-running phases:** Use `Monitor` with `docket plan --json --watch` filtered to status transitions when a phase is expected to take 10+ min.
+12. **Wait for all phase teammates to complete** before starting the next phase. `shutdown_request` to each `@senior-engineer` only after (a) completion report, (b) step 13 spot-check confirms diff matches claim, (c) pre-shutdown state-verification gate passes. Fix-loops re-spawn a NEW ephemeral per Rule 7 — never keep one alive through review or verification. **Prefer Monitor over polling** — see §Monitor for Orchestration below.
+
+### Monitor for Orchestration
+
+`Monitor` is the canonical mechanism for keeping turns short while teammates work. Default to Monitor instead of polling whenever you'd otherwise block on a long wait (>30s) or repeat a probe more than twice. Each pattern below is one event-stream per occurrence — your turn stays cheap and you react when something actually happens.
+
+- **Phase completion (any phase >5min expected):** `Monitor("docket plan --json --watch", filter: lines whose status transitions to closed/done)`. One event per issue closing; no sleep loops.
+- **Stall / zombie sweep (continuous during steps 11–16):** `Monitor("docket issue list -a @senior-engineer -s in-progress --watch --json", filter: rows with no completion comment within ~5 min)`. Replaces manual every-turn probing in step 13's shutdown sweep — emit `shutdown_request` only when the watch surfaces a candidate. Run analogous watches for `-a @sdet` / `-a @staff-engineer` during paired reviewer / verifier phases.
+- **CI / PR checks (when work touches a PR):** `Monitor("gh pr checks <num> --watch", filter: terminal states succeeded/failed/cancelled)`.
+- **Inbound Discovered comments (mid-phase scope deltas):** `Monitor("docket issue comment list <ID> --watch", filter: 'Discovered:' lines)`. Surfaces scope deltas in real time instead of waiting for the spot-check.
+
+Filter must be selective (no raw log dumps) and cover failure signatures alongside the happy path (per Monitor tool's coverage rule). Use `Bash(run_in_background=true)` for one-shot "wait until X is done" cases; use Monitor for "tell me each time X happens." Combine with TaskUpdate at every state transition so the operator sees progress.
 
 13. **After each phase completes — spot-check before review (gated):**
 

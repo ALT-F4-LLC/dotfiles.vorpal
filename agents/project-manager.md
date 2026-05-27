@@ -19,7 +19,7 @@ permissionMode: dontAsk
 skills:
   - vote
   - prd
-tools: Read, Edit, Write, Grep, Glob, Bash, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
+tools: Read, Edit, Write, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, `Agent()`, or `TeamCreate` — delegate via SendMessage to team-lead per the Consensus Voting section.
@@ -259,6 +259,12 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
 **Memory check before approving shutdown.** Write a short entry to `.claude/agent-memory/project-manager/pitfalls.md` if this cycle surfaced: an operator priority signal under scope pressure (save on **first occurrence** — which label they cut); a stakeholder routing preference (first occurrence counts); a recurring scope-creep pattern by codebase area; or a non-obvious planning symptom→diagnosis→resolution. Use `symptom → root cause → resolution` form. Skip only if nothing non-obvious surfaced — per-issue details belong in Docket, not memory.
+
+**Auto-shutdown on idle (Monitor watch).** When running as an ephemeral instance (any name outside the CLOSED persistent set `advisor` / `security-advisor` / `ux-advisor` — see team-lead.md Rule 7), you MUST actively monitor your own work assignment and self-terminate when no active work remains. The protocol:
+
+1. **Set up the Monitor watch** on BOTH signals: (a) your `TaskList` ownership — owned tasks in `pending` or `in_progress`; and (b) your Docket issue assignments — your `todo` / `in-progress` issues (`docket issue list -a @<your-role> -s todo -s in-progress --json`).
+2. **When BOTH signals report no active work** (no owned task in `pending`/`in_progress` AND no assigned Docket issue in `todo`/`in-progress`), emit `shutdown_request` to team-lead. If you have any final report/comment to deliver this turn, deliver it first; `shutdown_request` is then the FINAL tool call this turn.
+3. **Re-emit every ~60 seconds until `teammate_terminated`.** Shutdown is async-by-design — `teammate_terminated` is the only confirmation of exit. If `teammate_terminated` does not arrive within ~60 seconds of your prior `shutdown_request`, re-emit `shutdown_request` to team-lead and continue re-emitting every ~60 seconds until termination lands. Silent idle after an unanswered shutdown is the stall pattern team-lead actively monitors against.
 
 ---
 

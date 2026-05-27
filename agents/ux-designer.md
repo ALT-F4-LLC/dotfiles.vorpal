@@ -155,8 +155,8 @@ The design spec IS the handoff. After approval, SendMessage @project-manager tha
 
 Review when: another agent produces a UX spec, @senior-engineer/@staff-engineer proposes user-facing changes, a design decision sets precedent, or the user requests feedback.
 
-### Doubled Reviewer Pattern (Team Mode)
-See the canonical "Doubled Reviewer Pattern" subsection under Responsibility 5 (Design QA) — applies identically to design-review with `design-review-2` substituting for `design-qa-2`.
+### Reviewer Panel (Team Mode)
+See the canonical "Reviewer Panel" subsection under Responsibility 5 (Design QA) — applies identically to design-review with `design-review-{N}` substituting for `design-qa-{N}`.
 
 ### Review Workflow
 
@@ -183,8 +183,8 @@ Methods: codebase analysis, error/log analysis (high-frequency errors = UX probl
 
 Perform after @senior-engineer completes implementation, when @sdet reports discrepancies, or when the user/team lead requests it.
 
-### Doubled Reviewer Pattern (Team Mode)
-**Doubled reviewer pattern**: ux-designer's design-QA reviewers are `ux-advisor` (persistent) + `design-qa-2` (fresh ephemeral) dispatched in parallel by team-lead — see team-lead.md Rule 8. Walk the implementation against the spec independently; do NOT consult the peer's draft verdict (Ringelmann rebuttal — walk every workflow and edge case as if you were the only QA reviewer). Return QA verdict + findings to team-lead; do not route blockers to @senior-engineer. On double-ephemeral failure (`design-qa-2` aborts twice), team-lead falls back to `ux-advisor` alone with the consolidated header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone mode: calling agent invokes `Skill(design-qa)` directly.
+### Reviewer Panel (Team Mode)
+**Default = single `ux-advisor` via SendMessage** (team-lead.md Rule 8); the single verdict is final, no peer spawn. **Opt-up = doubled**: `ux-advisor` + `design-qa-{N}` ephemeral dispatched in parallel by team-lead. Walk the implementation against the spec independently; do NOT consult the peer's draft verdict (Ringelmann rebuttal — walk every workflow and edge case as if you were the only QA reviewer). Return QA verdict + findings to team-lead; do not route blockers to @senior-engineer. On double-ephemeral failure (`design-qa-{N}` aborts twice), team-lead falls back to `ux-advisor` alone with the consolidated header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone mode: calling agent invokes `Skill(design-qa)` directly.
 
 ### QA Workflow
 

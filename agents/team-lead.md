@@ -62,7 +62,7 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 3. **Net-new architecture, data-model change, or cross-cutting concern** needing upfront design (not "touches 3 files in different dirs")? → **Medium Task**
 4. **Bounded change** — 1-4 phases, no architectural decisions, but needs planning to avoid file collisions or to enforce acceptance criteria? → **Small Task**
 5. **Trivial change** — single conceptual edit (rename, typo, dep bump, log tweak, comment fix, small bug with obvious root cause), ≤3 files, no design needed, fits in one @senior-engineer turn? → **Direct Task**
-6. **Security-Sensitive flag (independent of size)** — set if work touches: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new external dep or pinning), or input from untrusted sources at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. Trigger the AskUserQuestion only when the change actually touches one of the enumerated surfaces (auth/secrets/crypto/sandbox/permissions/supply-chain/untrusted input at privilege boundaries). If the change does NOT touch any enumerated surface, do NOT ask — assume not security-sensitive. If unsure: AskUserQuestion "No security surface" / "Treat as security-sensitive" / "Operator review".
+6. **Security-Sensitive flag (independent of size)** — set when work touches trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new dep / pinning), or untrusted input at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. Default: not security-sensitive if no enumerated surface touched (do NOT ask). If unsure: AskUserQuestion "No security surface" / "Treat as security-sensitive" / "Operator review".
 
 ### Security Track (overlay on any pattern when security-sensitive)
 
@@ -119,6 +119,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
 - Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked".
+- Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review, verify, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
 
@@ -158,7 +159,7 @@ Requirements: explore via Read/Grep/Glob; create issues via `docket issue create
 
 ### @ux-designer — name=`ux-advisor` (persistent)
 
-Stays alive on UX-heavy tasks through verification for design-intent SendMessage. Peer design review + design-QA: doubled per Rule 8 (`ux-advisor` + ephemeral `design-review-{N}` / `design-qa-{N}`).
+Stays alive on UX-heavy tasks through verification for design-intent SendMessage. Peer design review + design-QA: default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled (`ux-advisor` + ephemeral `design-review-{N}` / `design-qa-{N}`) per Rule 8 conditions.
 
 Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for docs/ux/{slug}.md); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
 
@@ -168,11 +169,10 @@ Exits after closing the Docket issue and team-lead's spot-check completes (step 
 
 Context: `Docket Issue {DOCKET-ID} — {title}; full description; scoped files`; relevant Discovered comments from prior phases; `advisor` via SendMessage for architectural questions (before TDD deviation; NOT routine); `{If peer senior-engineers}: Peers: {names}; SendMessage on shared-interface changes.`
 
-**Brief-Authoring Discipline (Closed-vs-Open per dimension).** For each architectural dimension the brief touches (wire shape, plumbing pattern, defaulting semantics, call-site update strategy, etc.), pick exactly ONE mode — never both:
-- **Closed** — prescribe the shape explicitly ("Use cfg-borne snapshot at NewServer body. Do NOT change the signature. Do NOT touch call sites."). Then REMOVE that dimension from the consult list.
-- **Open** — leave shape unspecified ("Plumbing pattern is open — SendMessage advisor BEFORE implementing."). Then REMOVE the prescriptive language for it.
-
-**Detector (run before dispatch).** For each dimension named in the consult line, grep your own brief text for prescriptive references. If both exist, collapse to one — the consult list is authoritative for any overlap. A teammate reading a brief with both treats the prescription as settled and ignores the consult.
+**Brief-Authoring Discipline (Closed-vs-Open per dimension).** For each architectural dimension the brief touches (wire shape, plumbing pattern, defaulting semantics, call-site update strategy), pick ONE mode:
+- **Closed** — prescribe the shape ("Use cfg-borne snapshot at NewServer body. Do NOT change the signature.") AND remove that dimension from the consult list.
+- **Open** — leave shape unspecified ("Plumbing pattern is open — SendMessage advisor BEFORE implementing.") AND remove any prescriptive language for it.
+- **Detector (pre-dispatch):** grep your brief for prescriptive refs to each consult-line dimension; collapse overlap to one — the consult list is authoritative; a brief with both reads the prescription as settled.
 
 Rules: FIRST tool calls on dispatch (same turn, two-step claim): `docket issue edit {DOCKET-ID} -a @senior-engineer` THEN `docket issue move {DOCKET-ID} in-progress` to claim (Rule 7 + enables team-lead's `-a @senior-engineer -s in-progress` shutdown-sweep probe), THEN `docket issue comment list {DOCKET-ID}` and proceed. Do NOT modify files outside the issue scope. When done: `docket issue close {DOCKET-ID}` (no `-m`) + `docket issue comment add {DOCKET-ID} -m "Completed: {summary}"` + report files changed + emit `shutdown_request` to team-lead as the FINAL tool call this turn (async — exit confirmed next turn). Extra work surfacing: `docket issue comment add {DOCKET-ID} -m "Discovered: {description}"` — do NOT do the extra work.
 
@@ -235,7 +235,7 @@ Filter must be selective (no raw log dumps) and cover failure signatures alongsi
 
     **SKIP this step when phase touched <5 files AND no security-sensitive paths AND no Discovered comments. Otherwise proceed with the spot-check below.**
 
-    - `git diff --stat` to enumerate modified files. Pick **2 at random** (not the files the teammate highlighted — pick blindly to avoid cherry-picked confirmation); Read each; verify reported changes are present and match the issue's acceptance criteria.
+    - `git diff --stat` to enumerate modified files. Pick **2 at random** (not the files the teammate highlighted — pick blindly to avoid cherry-picked confirmation); Read each; verify reported changes are present and match the issue's acceptance criteria. **Sandbox-masked diff caveat:** if a teammate references files absent from your diff, retry with `dangerouslyDisableSandbox=true` — sandbox may hide paths outside the allowlist (operator-visible-scope ≠ orchestrator-visible-scope).
     - **Flag any discrepancy immediately** to the operator with the delta (claimed vs. real diff). Do not proceed until resolved.
     - Confirm issue statuses via `docket plan --json` (or `--root <id>` for a subtree); use `docket issue graph --direction up` for blast-radius checks before re-planning.
     - Check for "Discovered:" comments; include relevant ones in upcoming @senior-engineer prompts.
@@ -250,19 +250,17 @@ Filter must be selective (no raw log dumps) and cover failure signatures alongsi
 
     **Routine review (DEFAULT — 1 reviewer):** SendMessage `advisor` (`@staff-engineer`) solo. Advisor runs `Skill(code-review, "uncommitted")` (or branch / PR # / file paths). Verdict is final; the reconciliation rules below do not apply.
 
-    **Opt up to the doubled panel** per Rule 8 conditions (TDD secondary review, security-sensitive, diff ≥500 LOC, operator flag). When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch — see reconciliation rule 8 below) — lazy/serial dispatch is forbidden because it lets the persistent advisor anchor the ephemeral's frame:
+    **Opt up to the doubled panel** per Rule 8 conditions (TDD secondary review, security-sensitive, diff ≥500 LOC, operator flag). When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch) — lazy/serial dispatch is forbidden because it lets the persistent advisor anchor the ephemeral's frame:
     - **Doubled general (2 reviewers):** SendMessage `advisor` + `Agent()`-spawn ephemeral `reviewer-2`. Both run `Skill(code-review, "uncommitted")` in parallel.
     - **Security-sensitive (4 reviewers, per Rule 8):** Add SendMessage `security-advisor` + `Agent()`-spawn ephemeral `security-reviewer-2` (`@security-engineer`). All four receive identical context (security-touched paths prioritized for the security track).
 
     **Verdict reconciliation rule (applies when ≥2 reviewers dispatched):**
     1. **Any Blocker / Critical blocks.** If ANY reviewer issues a `Blocker` (staff/UX severity ladder), `Critical` or `High` (security severity ladder), or `BLOCK` (verification verdict), the consolidated verdict is **Block** regardless of the other reviewer's verdict.
     2. **Findings merge with near-duplicate dedupe.** Non-blocker findings (Concerns, Suggestions, Questions, Praise; Mediums/Lows/Infos on security) merge into a single list; dedupe by `(file, symbol)` tuple — substantively similar fix language collapses into one entry crediting both reviewers. A finding from only one reviewer is kept as-is.
-    3. **Approve + Block → Block wins.** A split where one reviewer says Approve and the other says Block resolves to Block. Peer cross-check is only useful if the dissenting voice prevails.
-    4. **Contradictory non-blocker recommendations surface to operator.** If reviewers issue contradictory but non-blocking recommendations (e.g., "extract this helper" vs "inline this code"), team-lead does NOT silently pick one — AskUserQuestion with both options, or invoke `Skill(vote, ...)` to break the tie.
-    5. **Reviewers never address the operator directly.** Each reviewer's structured output goes to team-lead. Team-lead produces ONE consolidated message for the operator.
-    6. **Reconciliation output format.** Consolidated message includes (a) synthesized verdict, (b) the source verdicts, (c) merged findings list (Blockers/Concerns/Suggestions/Praise, in that order), (d) any surfaced contradictions, (e) the next step (route Blockers to fix-loop ephemeral, request a vote, escalate to operator for re-plan).
-    7. **Degraded single-reviewer fallback.** When an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), fall back to the persistent advisor's verdict alone AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Non-degraded reconciliations do not carry the annotation. Recurring degraded fallbacks on the same skill are an evolve-skills signal.
-    8. **Eager parallel dispatch** is mandated (above) — `reviewer-2` (and `security-reviewer-2` on security-sensitive work) spawn in the same turn team-lead SendMessages the persistent advisor(s).
+    3. **Contradictory non-blocker recommendations surface to operator.** If reviewers issue contradictory but non-blocking recommendations (e.g., "extract this helper" vs "inline this code"), team-lead does NOT silently pick one — AskUserQuestion with both options, or invoke `Skill(vote, ...)` to break the tie.
+    4. **Reviewers never address the operator directly.** Each reviewer's structured output goes to team-lead. Team-lead produces ONE consolidated message for the operator.
+    5. **Reconciliation output format.** Consolidated message includes (a) synthesized verdict, (b) the source verdicts, (c) merged findings list (Blockers/Concerns/Suggestions/Praise, in that order), (d) any surfaced contradictions, (e) the next step (route Blockers to fix-loop ephemeral, request a vote, escalate to operator for re-plan).
+    6. **Degraded single-reviewer fallback.** When an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), fall back to the persistent advisor's verdict alone AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Non-degraded reconciliations do not carry the annotation. Recurring degraded fallbacks on the same skill are an evolve-skills signal.
 
     Security verdict binds for security findings; general for general. After reconciliation, ephemeral reviewers exit; persistent advisors stay idle.
 
@@ -316,7 +314,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 
 **Fix-loop re-spawn.** Distinct from stall recovery: the original ephemeral has cleanly exited. Spawn a NEW `impl-{DOCKET-ID}-fix-{N}` ephemeral with the §6 continuity preamble (original brief + prior round's completion report + reviewer findings with file/line/required-mitigation + verbatim `docket issue comment list {DOCKET-ID}` + one-line round directive). `-fix-{N}` suffix surfaces cycle count in logs.
 
-**Double-ephemeral failure on reviewers.** If an ephemeral reviewer (`reviewer-2`, `security-reviewer-2`, `verifier-criteria`, `verifier-integration`, `design-review-{N}`, `design-qa-{N}`) fails twice (probe-once + respawn both abort/empty), fall back to the persistent advisor's verdict (or surviving sister verifier) AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` (per reconciliation rule 7 in step 14 above). Recurring degraded fallbacks on the same skill are an evolve-skills signal.
+**Double-ephemeral failure on reviewers.** If an ephemeral reviewer (`reviewer-2`, `security-reviewer-2`, `verifier-criteria`, `verifier-integration`, `design-review-{N}`, `design-qa-{N}`) fails twice (probe-once + respawn both abort/empty), fall back to the persistent advisor's verdict (or surviving sister verifier) AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` (per reconciliation rule 6 in step 14 above). Recurring degraded fallbacks on the same skill are an evolve-skills signal.
 
 **Context-saturation + shutdown acks.** Ephemeral degradation SendMessage → ack + apply stall-recovery with continuity preamble. Persistent advisor saturation → SendMessage team-lead operator notification AND respawn with continuity preamble (rare). `shutdown_request` unanswered after ~60s → proceed with `TeamDelete` anyway.
 
@@ -350,7 +348,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
     - (c) Diff ≥500 LOC (`git diff --stat` totals).
     - (d) Operator explicitly flags doubling.
 
-    team-lead decides — no AskUserQuestion required. When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch — see reconciliation rule 8 in step 14) and reconcile per the rules in step 14 (any Blocker blocks; findings merge with dedupe; Approve+Block → Block wins; contradictions surface via AskUserQuestion or vote; reviewers never address the operator directly; one consolidated verdict). Verification (step 15) follows the same default-1 rule with its own opt-up conditions documented in that step. On double-ephemeral failure (probe-once + respawn both abort) under the opted-up panel, fall back to the persistent advisor's verdict alone AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` — never silently drop to single-reviewer.
+    team-lead decides — no AskUserQuestion required. When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch) and reconcile per the rules in step 14 (any Blocker blocks; findings merge with dedupe; Approve+Block → Block wins; contradictions surface via AskUserQuestion or vote; reviewers never address the operator directly; one consolidated verdict). Verification (step 15) follows the same default-1 rule with its own opt-up conditions documented in that step. On double-ephemeral failure (probe-once + respawn both abort) under the opted-up panel, fall back to the persistent advisor's verdict alone AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` — never silently drop to single-reviewer.
 
 ---
 

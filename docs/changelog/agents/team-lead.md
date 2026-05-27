@@ -1,5 +1,38 @@
 # Changelog: team-lead
 
+## 2026-05-26 (Phase 2 coherence)
+
+### Summary
+Two coherence fixes from Phase 2 cross-agent review. (1) §Spawning Templates @ux-designer line said "doubled per Rule 8" — but Rule 8 DEFAULTS to single, opts up to doubled. ux-designer.md Responsibility 5 had it right; team-lead Spawning Template was the outlier. Rewritten to match (default single ux-advisor via SendMessage; opt up to doubled). (2) Added one-line frontmatter `skills:`/`mcpServers:` caveat to §Spawning Templates Common context-block — spawned-teammate mode IGNORES frontmatter `skills:` (only `--agent` main-thread honors them per v2.1.117 docs). Single fleet-wide note avoids 6x duplication across agents that declare skills.
+
+### Changes
+- §Spawning Templates @ux-designer (L161): "doubled per Rule 8" → "default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled per Rule 8 conditions".
+- §Spawning Templates Common context-block: new bullet — frontmatter `skills:`/`mcpServers:` caveat with the 9 team-relied-upon skills listed.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — Spawning Template now matches Rule 8) · Boundary Clarity (frontmatter caveat prevents future silent-fail when adding skills)
+
+### Rename
+No rename.
+
+## 2026-05-26
+
+### Summary
+Deleted 2 redundant reconciliation rules in step 14 (rule 3 "Approve+Block→Block wins" restated rule 1; rule 8 "Eager parallel dispatch" restated section intro). Renumbered remaining 4-7 → 3-6; updated 3 cross-references at lines 253 (intro), 319 (Stall & Crash Recovery), 353 (Rule 8). Added sandbox-masked-diff caveat to step 13 spot-check (ports CC-1 from cross-project pitfalls.md into the rule body). Compressed Brief-Authoring Discipline (5→4 lines via Detector inline) and Security-Sensitive flag enumeration (deduped trigger list). Net: -3 lines (480 → 477).
+
+### Changes
+- Step 14 reconciliation rules: deleted rule 3 + rule 8 (-2 lines); renumbered 4-7 → 3-6.
+- Cross-references updated at 3 sites (intro at line 253, Stall & Crash Recovery at 319, Rule 8 at 353) — "rule 8" / "rule 7" stripped or renumbered to "rule 6".
+- Step 13 spot-check `git diff --stat` bullet: appended "Sandbox-masked diff caveat" — retry with `dangerouslyDisableSandbox=true` when teammate references files absent from your diff.
+- Pattern Decision Tree step 6: Security-Sensitive trigger enumeration deduplicated (was stated twice).
+- @senior-engineer Brief-Authoring Discipline: folded Detector paragraph into bulleted list (-1 line).
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — net-negative achieved despite ceiling pressure) · Spec Alignment (cross-project pitfalls.md item ported; 3 stale cross-refs healed)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 — strip 12 dangling docs/tdd/* citations)
 
 ### Summary

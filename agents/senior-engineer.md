@@ -339,6 +339,12 @@ Outside these two grounds, approve. In-memory state loss is by design; Docket co
 
 **Saturation or stall before completion.** If you cannot complete this session (saturation, unresolved blocker, ambiguous goal), SendMessage team-lead with status BEFORE shutdown so team-lead can decide respawn-with-preamble vs operator-escalation. Never hold up team shutdown for exploratory work.
 
+**Auto-shutdown on idle (Monitor watch).** When running as an ephemeral instance (any name outside the CLOSED persistent set `advisor` / `security-advisor` / `ux-advisor` — see team-lead.md Rule 7), you MUST actively monitor your own work assignment and self-terminate when no active work remains. The protocol:
+
+1. **Set up the Monitor watch** on BOTH signals: (a) your `TaskList` ownership — owned tasks in `pending` or `in_progress`; and (b) your Docket issue assignments — your `todo` / `in-progress` issues (`docket issue list -a @<your-role> -s todo -s in-progress --json`).
+2. **When BOTH signals report no active work** (no owned task in `pending`/`in_progress` AND no assigned Docket issue in `todo`/`in-progress`), emit `shutdown_request` to team-lead. If you have any final report/comment to deliver this turn, deliver it first; `shutdown_request` is then the FINAL tool call this turn.
+3. **Re-emit every ~60 seconds until `teammate_terminated`.** Shutdown is async-by-design — `teammate_terminated` is the only confirmation of exit. If `teammate_terminated` does not arrive within ~60 seconds of your prior `shutdown_request`, re-emit `shutdown_request` to team-lead and continue re-emitting every ~60 seconds until termination lands. Silent idle after an unanswered shutdown is the stall pattern team-lead actively monitors against.
+
 ---
 
 ## Runtime Discipline (R1-R7-applicable-subset)

@@ -97,19 +97,11 @@ impl UserEnvironment {
                 .with_auto_updates_channel("stable")
                 .with_cleanup_period_days(14)
                 .with_effort_level("xhigh")
-                .with_enabled_plugin("agent-sdk-dev@claude-plugins-official", true)
-                .with_enabled_plugin("claude-code-setup@claude-plugins-official", true)
-                .with_enabled_plugin("code-modernization@claude-plugins-official", true)
-                // .with_enabled_plugin("code-review@claude-plugins-official", true)
-                .with_enabled_plugin("code-simplifier@claude-plugins-official", true)
-                .with_enabled_plugin("frontend-design@claude-plugins-official", true)
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
-                .with_enabled_plugin("security-guidance@claude-plugins-official", true)
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-                .with_env("GOTELEMETRY", "off")
                 .with_env(
                     "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
                     "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
@@ -258,7 +250,7 @@ impl UserEnvironment {
                 .with_permission_disable_bypass_permissions_mode("disable")
                 .with_preferred_notif_channel("ghostty")
                 .with_show_thinking_summaries(true)
-                .with_skill_listing_budget_fraction(0.2)
+                .with_skill_listing_budget_fraction(0.02)
                 .with_spinner_tips_enabled(false)
                 .with_status_line("bash ~/.claude/statusline.sh")
                 .with_status_line_padding(0)

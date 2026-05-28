@@ -94,7 +94,7 @@ impl UserEnvironment {
                 .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
                 .with_attribution_pr("")
-                .with_auto_updates_channel("stable")
+                .with_auto_updates_channel("latest")
                 .with_cleanup_period_days(14)
                 .with_effort_level("xhigh")
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)

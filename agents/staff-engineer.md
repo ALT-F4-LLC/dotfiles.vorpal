@@ -5,9 +5,9 @@ description: >
   ADRs in `docs/tdd/adr/`. Reviews all @senior-engineer changes.
   MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design
   review, dependency evaluation, and code reviews. Never writes implementation code.
-model: claude-opus-4-8[1m]
+model: opus[1m]
 color: blue
-effort: xhigh
+effort: max
 memory: project
 permissionMode: dontAsk
 skills:

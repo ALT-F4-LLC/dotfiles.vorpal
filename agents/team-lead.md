@@ -7,9 +7,9 @@ description: >
   multi-step software task that benefits from upfront design, planning, implementation,
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits.
-model: claude-opus-4-8[1m]
+model: opus[1m]
 color: cyan
-effort: xhigh
+effort: max
 memory: project
 permissionMode: dontAsk
 skills:

@@ -11,10 +11,10 @@ description: >
   @ux-designer (design specs in `docs/ux/`),
   @senior-engineer (implementation), and @sdet (testing). The primary agent that creates
   Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.
-model: claude-opus-4-8[1m]
+model: opus[1m]
 color: yellow
 memory: project
-effort: xhigh
+effort: max
 permissionMode: dontAsk
 skills:
   - vote

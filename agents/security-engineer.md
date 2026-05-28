@@ -9,9 +9,9 @@ description: >
   supply-chain decisions, sandbox/permission models, and any change touching security-sensitive
   surfaces. Aligns security posture with business goals and risk tolerance. Never writes
   implementation code.
-model: opus[1m]
+model: claude-opus-4-8[1m]
 color: orange
-effort: max
+effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:

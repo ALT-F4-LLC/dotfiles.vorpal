@@ -5,10 +5,10 @@ description: >
   and ad-hoc work — writing code, editing source files, and producing working software. Checks
   `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed
   by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.
-model: opus[1m]
+model: claude-opus-4-8[1m]
 color: green
 permissionMode: dontAsk
-effort: max
+effort: xhigh
 memory: project
 skills:
   - commit

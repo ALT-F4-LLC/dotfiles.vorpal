@@ -1,5 +1,36 @@
 # Changelog: evolve-agents
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: mirrored evolve-skills' transcript-replication guards into the historical-auditor, added orchestrator-only-relay rationale to the Phase 1 narrative, consolidated the SKIPPED-skip guidance (4×→2×), and added a shutdown-idiom clarifying note. Net +1.
+
+### Changes
+- De-dupe-before-counting bullet (DISTINCT sessionId, ~10x inflation guard); `-r2` respawn count → DISTINCT events by name+sessionId.
+- Phase 1 narrative gains race-condition rationale for orchestrator-only relay.
+- "skip historical-auditor if SKIPPED" consolidated 4×→2× (removed table parenthetical + template-header sentence).
+- One-line note: orchestrator-originated shutdown is intentional vs leaf-review self-initiate (`agents/team-lead.md` Rule 7).
+
+### Dimensions Evaluated
+Coherence, Over-Engineering (consolidation), Orchestration & cross-communication.
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Added an absent/empty-dir guard to the Phase 0 historical-auditor's agent-memory read step (parity with evolve-skills), preventing undefined read behavior on the confirmed-empty `.claude/agent-memory/<agent>/` dirs. Net 0 lines.
+
+### Changes
+- Phase 0 historical-auditor template (line 185): agent-memory read step now guards "(dir may be absent or empty — treat as `none`)" matching evolve-skills — closes the only undefined-behavior path in the read step. Rejected an unsound convergence/stop-criterion gate (a net-0 prior cycle does not imply net-0 now; fresh upstream findings change weekly).
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (HIGHEST — operator coordination priority), Coherence (sister parity), Over-Engineering (offset discipline).
+
+### Rename
+No rename.
+
 ## 2026-05-25
 
 ### Summary

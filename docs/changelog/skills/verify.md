@@ -1,5 +1,35 @@
 # Changelog: verify
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to `agents/team-lead.md`.
+
+### Changes
+- Eager same-turn dispatch ref → `agents/team-lead.md` Rule 8.
+- Verdict reconciliation ref → `agents/team-lead.md` step 14.
+
+### Dimensions Evaluated
+Coherence (accurate references).
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Disambiguated from the external bundled runtime-verify skill (indistinguishable `"skill":"verify"` name collision, wrong-skill-load risk): front-loaded "static, evidence-based — NOT runtime app-behavior verification" in the description and dropped the generic "run verification"/"verify issue" triggers. Offset by trimming the redundant Pre-flight §8 doubling-rule back-reference (renumber §9→§8). Net 0 lines.
+
+### Changes
+- Description/Trigger: added runtime-verify disambiguator; trigger now "verify acceptance criteria"/"verify Docket issue"/"produce verification report" + NOT-clause; family-parity phrasing preserved.
+- Pre-flight: removed §8 (pure back-reference to the in-file Doubling Rule section); renumbered §9→§8.
+
+### Dimensions Evaluated
+Skill Design Quality + Coherence (name collision — operator priority), Over-Engineering (HIGHEST — §8 trim), Orchestration, Spec Alignment, Actionability, Completeness.
+
+### Rename
+No rename (operator decision, 2026-05-28). A cross-file rename to `verify-ac` was considered to eliminate the bundled-runtime-verify collision; the operator chose to keep `verify` and rely on the description disambiguation above (no observed wrong-skill-loads; stability + 7-ref blast radius across agents/sdet.md, agents/staff-engineer.md, code-review, design-qa, design-review). Revisit only if collisions occur.
+
 ## 2026-05-25
 
 ### Summary

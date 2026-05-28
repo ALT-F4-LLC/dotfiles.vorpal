@@ -6,7 +6,7 @@ description: >
   playbook — @staff-engineer runs the 6-dimension general review, @security-engineer runs
   the security-dimension review. The format authority for both roles' output lives here.
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
-argument-hint: "<scope>"
+argument-hint: "<scope — PR#, branch, uncommitted, staged, or path [path …]>"
 effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
@@ -55,6 +55,8 @@ Error: Usage: Skill(code-review, "<scope>") — name what to review (PR number/U
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 
+**Path-list normalization (canonical grammar).** The canonical multi-file form is bare space-separated paths — `Skill(code-review, "src/a.rs tests/b.rs")`. Before applying the table, strip a leading `files`/`files:` keyword if present, then split the argument on commas and/or whitespace; resolve the resulting tokens via the File paths row. This collapses the three observed call forms — `path path`, `files path path`, `files: path, path` — to one token list. (Single bare tokens are unaffected: no prefix, no comma, so branch/PR detection still wins per the table order.)
+
 **Ambiguity rules** (apply when multiple forms could match):
 
 - A token matching `^\d+$` always tries PR-number first via `gh pr view {n} --json number`. If `gh` exits non-zero (no such PR), fall through to branch detection. If both fail, fall through to file-path detection only when the token is a real path.
@@ -71,15 +73,13 @@ If extra positional args follow `<scope>`, ignore them silently.
 ## When to Use
 
 - The calling agent (`@staff-engineer` or `@security-engineer`) is performing a code review at any scope (PR, branch, uncommitted, staged, files).
-- The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.
-- Security-sensitive changes: BOTH advisors invoke this skill in parallel — each in their own role. The two reviews scope to different dimensions and do not duplicate work; team-lead reconciles the verdicts.
-- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior Blockers/Concerns, the original reviewer re-invokes `Skill(code-review, "<scope>")` for a Round-2 pass on the new diff (typical: PR number first, then `uncommitted` after the fix lands locally). The Round-2 review focuses on whether the original findings are resolved; it does not re-do the full dimension sweep unless new code introduces new risk.
+- The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior Blockers/Concerns, the original reviewer re-invokes `Skill(code-review, "<scope>")` for a Round-2 pass on the new diff (typical: PR number first, then `uncommitted` after the fix lands locally). The Round-2 review focuses on whether the original findings are resolved; it does not re-do the full dimension sweep unless new code introduces new risk.
 
 ## Doubling Rule (under team-lead orchestration)
 
-When invoked under team-lead orchestration, the calling layer spawns **≥2 reviewers in parallel per phase** per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2: routine general review runs `advisor` (persistent) + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel reviewers). Each reviewer invokes this skill independently and emits its own structured report in this format — this skill remains the single-reviewer output-format authority. The calling layer (team-lead) reconciles the verdicts per TDD §4.3 (any Blocker from any reviewer blocks; findings merge by `(file, symbol)` with dedupe; Approve+Block → Block; contradictions surface via `AskUserQuestion` or `vote`).
+When invoked under team-lead orchestration, the calling layer spawns **≥2 reviewers in parallel per phase** per `agents/team-lead.md` Rule 8: routine general review runs `advisor` (persistent) + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel reviewers). Each reviewer invokes this skill independently and emits its own structured report in this format — this skill remains the single-reviewer output-format authority. team-lead reconciles the verdicts (its step 14): any Blocker from any reviewer blocks; findings merge by `(file, symbol)` with dedupe; Approve+Block → Block; contradictions surface via `AskUserQuestion` or `vote`.
 
-**Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict (TDD §4.4). Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
+**Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict. Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
 
 **Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Recurring degraded fallbacks on the same skill are an evolve-skills signal. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
@@ -105,7 +105,7 @@ When invoked under team-lead orchestration, the calling layer spawns **≥2 revi
    Error: Resolved scope produced an empty diff — nothing to review.
    ```
 6. **Read related design docs** — scope reads to what the diff touches; do not read specs outside the changed-file paths:
-   - `staff-engineer`: TDDs in `docs/tdd/`; project specs in `docs/spec/` matching changed areas only (`architecture.md` for module/dependency changes, `performance.md` for hot-path edits, `testing.md` for test changes).
+   - `staff-engineer`: TDDs in `docs/tdd/`; project specs in `docs/spec/` matching changed areas, where present (`architecture.md`, `performance.md`, `testing.md`).
    - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
 
 ## Review Procedure
@@ -182,10 +182,7 @@ Four narrow, mechanically detectable symptoms gate the merge **regardless of fea
 - List the override verbatim under the **Overrides Recognized** section of the report, with file:line and the reason text.
 - The override is *surfaced*, not *silently honored* — the operator reads the report and decides whether the reason holds.
 
-**Block means return-for-fix, not discard.** A gate-triggered Blocker names the file/line, the gate (G1..G4), the symptom observed, and the required mitigation. The calling agent routes back to `@senior-engineer` for a fix pass; the diff returns for re-review. Hitting a hard gate is the review system working — surface it loudly.
-
-**Separation of writer and judge.** The writer (`@senior-engineer`) applies the principles as defaults but does NOT self-gate; the reviewer enforces the hard gates on the writer's diff. Self-grading invites gaming the gate, so the writer's side is "do the right thing and override with a reason when you can't" — the gate enforcement lives here.
-
+**Block means return-for-fix, not discard.** A gate-triggered Blocker names the file/line, the gate (G1..G5), the symptom observed, and the required mitigation. The calling agent routes back to `@senior-engineer` for a fix pass; the diff returns for re-review. Hitting a hard gate is the review system working — surface it loudly.
 ## Output Contract
 
 Emit the review verbatim to the calling agent's context using the role-specific format below. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
@@ -337,12 +334,16 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 {What the calling agent should do — e.g., notify @staff-engineer of the parallel verdict for unified handoff, route critical/high to @senior-engineer, escalate to operator if threat model diverges from TDD, request a vote for residual-risk acceptance}
 ```
 
+### Round-N Re-Review (compact)
+
+On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
+
 ## Validation Before Emit
 
 Before emitting the structured review, verify in the calling agent's context:
 
 1. **Heading matches the role's banner** per the Output Contract.
-2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G4 listed individually, even if "None").
+2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G5 listed individually, even if "None"). **Round-N exception:** a compact Re-Review emission validates against its three-section template (Prior Findings Disposition, New Findings, Recommendation) instead.
 3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
 4. **Hard gate consistency** — if a Blocker is emitted citing G1..G5, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
 5. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.

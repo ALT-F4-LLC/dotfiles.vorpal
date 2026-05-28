@@ -1,5 +1,23 @@
 # Changelog: friction-driven-evolution
 
+## 2026-05-28
+
+### Summary
+Documented WHEN to reach for this vs invoking evolve-skills/evolve-agents directly and the 30d-vs-7d window rationale (closes the historical-audit "0 in-window use of the cross-skill router" + divergent-default gaps). Hardened the Phase 3 downstream handoff (pre-satisfy the step-1 goal HARD GATE so dispatch can't re-prompt the operator) and added the missing SendMessage-return trigger to the Phase 2 proposer template. Collapsed a verbatim-duplicate Target-File Resolution rule. Net -1 line.
+
+### Changes
+- Intro: added "when to reach for this vs evolve-* directly" routing note (observed-but-unattributed pain → harvest; known file → invoke downstream directly).
+- Argument Handling: documented the deliberate 30-day default vs evolve-*'s 7-day.
+- Phase 3: dispatch now pre-satisfies the downstream step-1 goal HARD GATE via `{verified_goal}`.
+- Phase 2 template: Output Format now carries an explicit SendMessage-return trigger (parity with the harvester template).
+- Phase 2 prose: collapsed the duplicate Target-File Resolution rule to a pointer (authoritative copy retained in the Phase 2 template, line 299).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — duplicate-rule collapse), Orchestration & Coherence (HIGHEST — Phase 3 goal-gate handoff, proposer SendMessage trigger), Actionability + Completeness (when-to-use, window rationale).
+
+### Rename
+No rename.
+
 ## 2026-05-25
 
 ### Summary

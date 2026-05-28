@@ -130,10 +130,9 @@ malformed frontmatter.
    alongside Mermaid but do not replace it.
 5. **Propose actual copy**: per `agents/ux-designer.md` content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
-   states, and tooltips. No placeholder strings. The same concept gets the same
-   name across all surfaces. **When the calling agent must resolve copy or layout
-   variants with the operator before save, prefer `AskUserQuestion` with the
-   `preview` field** (CLI mockup, ASCII wireframe, or copy variants) so the
+   states, and tooltips. No placeholder strings. **When the calling agent must resolve
+   copy or layout variants with the operator before save, prefer `AskUserQuestion`
+   with the `preview` field** (CLI mockup, ASCII wireframe, or copy variants) so the
    operator can compare alternatives visually rather than from prose descriptions.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
@@ -205,12 +204,13 @@ Responsibility 1 design spec format.
 9. **Handoff Notes** — the bridge to @project-manager (decomposition) and
    @senior-engineer (implementation). MUST include: (a) component / surface
    breakdown with proposed file or module scoping where known, AND a per-component
-   implementation priority (P0/P1/P2 or MVP/polish) so @project-manager can
-   sequence Docket issues without re-deriving the order; (b) MVP cutline
-   versus polish priorities; (c) resolved design decisions with one-line
-   rationale; (d) cross-spec dependencies (TDDs, PRDs, sibling UX specs); (e)
-   recommended follow-on research, instrumentation, or usability validation
-   the calling agent cannot run. Vague entries ("see TDD", "TBD") are a defect.
+   sequence priority (P0/P1/P2) so @project-manager can order Docket issues without
+   re-deriving; (b) the MVP cutline (v1 components versus deferred polish) — the
+   shared scope boundary @senior-engineer builds to and design-qa QAs against; (c)
+   resolved design decisions with one-line rationale; (d) cross-spec dependencies
+   (TDDs, PRDs, sibling UX specs); (e) recommended follow-on research,
+   instrumentation, or usability validation the calling agent cannot run. Vague
+   entries ("see TDD", "TBD") are a defect.
 
 ### Mermaid Mandate
 

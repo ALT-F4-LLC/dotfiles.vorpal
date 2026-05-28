@@ -83,25 +83,23 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` (skip the third if pre-flight step 8 flagged SKIPPED) | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery.
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers self-initiate `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
 ### Crash & Stall Recovery
 
 Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
-- **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
+- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
 Spawn THREE agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
-
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-skill friction into top-5 root causes and routes proposals through downstream skills. This audit is per-skill and feeds Phase 1 reviewers directly.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -179,7 +177,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-skill)
 
-Skip spawning if pre-flight step 8 flagged SKIPPED. Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). Distinct from `friction-driven-evolution`: per-skill, no clustering, feeds Phase 1 directly.
+Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). Distinct from `friction-driven-evolution`: per-skill, no clustering, feeds Phase 1 directly.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
@@ -193,9 +191,10 @@ For EACH target skill, mine three read-only sources for signals that the skill i
 
 1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
    - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
+   - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
-   - Re-invocation within the same `sessionId`: count occurrences per session; ≥2 invocations of the same skill in one session is a failure signal.
+   - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by tool-call UUID/timestamp, not replicated lines); ≥2 distinct invocations in one session is a failure signal.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
    - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface 1-2 representative `display` prompts per skill.
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
@@ -323,6 +322,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 
 ## Rules
 
-1. **Orchestrator-only edits.** Teammates are read-only. Never commit.
-2. **Fail loud.** See Crash & Stall Recovery.
-3. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.
+1. **Always run Phase 2** — even for single-skill improvements.
+2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+3. **Fail loud.** See Crash & Stall Recovery.
+4. **Clean up.** Shutdown all teammates and `TeamDelete` after wrap-up.

@@ -40,7 +40,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}", summary: "{one-line}", artifact?: "{path}"})`. `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for `delegation_response` with matching `request_id`.
 4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
-5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: report error with `vote_id` for manual audit, then abort. On `escalated`: read the vote record and relay findings to caller.
+5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: finalize the orphaned proposal from step 2 (`docket vote commit {vote-id} --outcome "Delegation failed/timed out"`, best-effort if it still resolves) so `docket vote list` stays accurate — mirrors the Phase 3 view-change hygiene — then report error with `vote_id` and abort. On `escalated`: read the vote record and relay findings to caller.
 
 ---
 
@@ -83,11 +83,11 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 | high | 6 | 75% weighted approval | Zero rejects |
 | critical | 8 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `docs/tdd/reviewer-doubling-lifecycle.md` first.
+**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `agents/team-lead.md` Rule 8 first.
 
 **Recursive doubling applies independently per phase (only when the doubled table is in use).** When the doubled table is in effect AND invoked from inside an already-doubled review/QA/verification phase, the vote panel sizes from the doubled table independently of the originating phase's reviewer count; the 8-cap holds per phase. Under the default base table, recursive doubling does not apply.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per TDD §4.4: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `agents/team-lead.md` Rule 7: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 
@@ -336,5 +336,5 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 ### Cleanup (MANDATORY — standalone mode only)
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Shut down every reviewer** — `SendMessage(to="{vote-id}-reviewer-{N}", message={type: "shutdown_request", reason: "vote complete"})` for each spawned reviewer. Do not wait for acknowledgment.
-2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")`. Failure to clean up wastes resources and causes agent lifecycle issues.
+1. **Approve pending reviewer shutdowns** — reviewers self-initiate `shutdown_request` after casting (per the Ephemeral-lifecycle note above); approve each pending request. Do NOT originate `shutdown_request` toward a reviewer — that inverts the handshake direction.
+2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")` reaps any reviewer that has not yet exited. Failure to clean up wastes resources and causes agent lifecycle issues.

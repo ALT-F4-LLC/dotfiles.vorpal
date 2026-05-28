@@ -1,5 +1,20 @@
 # Changelog: specs
 
+## 2026-05-28
+
+### Summary
+Fixed a crossed shutdown handshake in the parallel-spawn flow: orchestrator now APPROVES each spawned agent's self-initiated `shutdown_request` (per @staff-engineer agent def + ephemeral lifecycle) instead of originating competing requests, and the Spawning Template now instructs self-shutdown explicitly. Removes idle/stuck-ephemeral risk. Net 0 (inline; reviewer estimated +2).
+
+### Changes
+- Spawning Template: spawned `@staff-engineer` now emits `shutdown_request` to the orchestrator as its final tool call after the completion message, awaiting `shutdown_approved`. Aligns with sister skills (code-review, design-qa, design-review, vote).
+- Wrap-up step 2: reframed from orchestrator-originated shutdown to "approve each self-initiated request; originate only as fallback; `TeamDelete` reaps failed/stalled."
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (operator priority — crossed handshake), Completeness (idle-ephemeral), Over-Engineering (HIGHEST — no trim candidates), Coherence (shutdown idiom aligned with family).
+
+### Rename
+No rename. Family-aligned with prd/tdd/adr/ux-spec.
+
 ## 2026-05-25
 
 ### Summary

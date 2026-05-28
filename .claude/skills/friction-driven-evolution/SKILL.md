@@ -19,11 +19,13 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Sen
 
 You are the **Friction Evolution Orchestrator**. Scan recent session activity for recurring pain, cluster the top 5 by root cause, propose precise edits to the responsible skill/agent/settings file, and route each proposal through the appropriate downstream skill (`evolve-skills`, `evolve-agents`, or `update-config`) which owns the actual file change and its own changelog. You do NOT write changelogs and you do NOT commit.
 
+**When to reach for this vs invoking `evolve-skills`/`evolve-agents` directly:** use friction-driven-evolution when pain is observed but unattributed — you don't yet know which skill, agent, or setting is at fault, so it harvests evidence, clusters by root cause, then routes each cluster. When the offending file is already known, invoke the downstream skill directly and skip the harvest.
+
 ---
 
 ## Argument Handling
 
-Optional `[days=30]` overrides the harvest window (e.g. `/friction-driven-evolution 14`). Default `30`. Reject values outside `1..90` and abort with a usage note.
+Optional `[days=30]` overrides the harvest window (e.g. `/friction-driven-evolution 14`). Default `30`. Reject values outside `1..90` and abort with a usage note. The 30-day default (vs evolve-*'s 7-day) is deliberate: friction recurs rarely and across many sessions, so clustering ≥1 confirmed recurrence needs a wider net than evolve-*'s per-file review signal. Narrow with `[days=N]` when signal is dense.
 
 ---
 
@@ -185,10 +187,7 @@ Read this file back into orchestrator context before Phase 1.
 
 `TeamCreate(team_name="friction-evolution-{today_date}", description="Friction-driven proposals for {today_date}")`. Spawn one @staff-engineer per confirmed cluster in the same turn using the Phase 2 template below. Each proposer is read-only — it returns a structured proposal; the orchestrator captures it.
 
-**Target-file resolution rule (passed into each prompt):**
-- Cluster root cause is settings/permissions/allowlist → target `.claude/settings.json`, downstream `update-config`.
-- Cluster root cause is agent behavior (idle, missing trigger, stale TaskUpdate by a specific role) → target `agents/<role>.md`, downstream `evolve-agents`.
-- Cluster root cause is skill workflow (orchestration gap, missing operator prompt, weak content gate) → target `.claude/skills/<name>/SKILL.md`, downstream `evolve-skills`.
+Each prompt embeds the **Target-File Resolution** rule defined in the Phase 2 template below (settings/permissions → `update-config`; agent behavior → `evolve-agents`; skill workflow → `evolve-skills`).
 
 Each agent returns:
 ```
@@ -223,7 +222,7 @@ Before each dispatch (both tiers), emit the operator-visible trace so chaining i
 Skill("<DOWNSTREAM_SKILL>", "<argument>")
 ```
 
-Where `<argument>` is the skill/agent name (for evolve-*) or a brief instruction (for update-config). The orchestrator passes the friction context by **pre-answering** the downstream skill's `experience_feedback` operator prompt — the downstream skill's HARD GATE asks "what experience feedback should we apply?"; the orchestrator answers with the structured payload below, satisfying the gate without re-prompting the operator.
+Where `<argument>` is the skill/agent name (for evolve-*) or a brief instruction (for update-config). The orchestrator passes the friction context by **pre-answering** the downstream skill's `experience_feedback` operator prompt — the downstream skill's HARD GATE asks "what experience feedback should we apply?"; the orchestrator answers with the structured payload below, satisfying the gate without re-prompting the operator. The downstream skill executes in this orchestrator's already-goal-verified context, so its step-1 goal HARD GATE is also pre-satisfied by `{verified_goal}` — adopt it and do NOT re-prompt the operator for goal or feedback.
 
 **`experience_feedback` payload** — a single human-readable string that satisfies the downstream skill's HARD GATE (it stores the value verbatim into `{experience_feedback}`; nothing parses it). Format:
 
@@ -315,7 +314,7 @@ Apply the canonical 4-check gate (Executable, Behavioral, Non-redundant, Concret
 - One proposal per cluster. If you find multiple root causes, SendMessage the orchestrator — do not bundle.
 - OLD_STRING must appear verbatim in TARGET_FILE (single occurrence preferred). Use `<NEW_FILE_OR_SETTINGS_PATCH>` sentinel only for pure additions to settings.json.
 
-## Output Format
+## Output Format — SendMessage the orchestrator with exactly this block (plain output in your turn is NOT visible to the orchestrator):
 PROPOSAL {cluster_id}
 TARGET_FILE: <absolute path>
 DOWNSTREAM_SKILL: <evolve-skills | evolve-agents | update-config>

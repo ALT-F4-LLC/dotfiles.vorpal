@@ -1,5 +1,19 @@
 # Changelog: tdd
 
+## 2026-05-28
+
+### Summary
+No-change verdict. Flagged top item (slug determinism for mixed clean-slug/freeform args) is already resolved by the deterministic 8-step ARGUMENT_HANDLING derivation (canonical, family-shared) plus collision dialog and near-duplicate probe — freeform topics slugify deterministically by construction; no bug. argument-hint `<topic>` kept for 4-sibling parity. Zero docket/vote CLI to drift. 286 lines, ~43% under cap; Over-Engineering found no slack.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+Skill Design Quality (argument handling — top item), Over-Engineering (HIGHEST), Orchestration/handoff, Coherence (adr/prd/ux-spec parity), Vote handoff, Actionability, Completeness, Spec Alignment, Rename.
+
+### Rename
+No rename. `tdd` is the established, family-consistent name.
+
 ## 2026-05-25
 
 ### Summary

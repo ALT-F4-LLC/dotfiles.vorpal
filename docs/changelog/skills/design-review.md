@@ -1,5 +1,36 @@
 # Changelog: design-review
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (COUPLING comment + body; file does not exist) to `agents/team-lead.md` Rule 8 + step 14.
+
+### Changes
+- COUPLING "keep shape in sync" pointer → `agents/team-lead.md` Rule 8.
+- Body topology/dispatch → Rule 8; reconciliation → step 14.
+
+### Dimensions Evaluated
+Coherence (accurate references).
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Coordination/handoff: unified the verdict-routing target, which was inconsistent across three locations (self-check said "team-lead"; Save & Return + Next Steps said "artifact author") and diverged from the family-canonical phrasing in code-review/design-qa. Net 0 lines.
+
+### Changes
+- Self-check: "to team-lead" → "the calling agent (team-lead in team mode)", matching code-review/design-qa (reachable in standalone mode too).
+- Save & Return bullet 1: direct-to-author SendMessage → route per `agents/ux-designer.md` triggers (through team-lead under orchestration, who reconciles both reviewers before routing to author) — fixes hub-and-spoke violation under the Doubling Rule.
+- Next Steps example: removed non-existent agent name `@ux-designer-author`; aligned routing to calling-agent/team-lead deliverable.
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (HIGHEST), Coherence (code-review/design-qa family parity), Over-Engineering (no bloat found; all changes net 0), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-25
 
 ### Summary

@@ -1,5 +1,33 @@
 # Changelog: design-qa
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: repointed the line-66 dead `docs/tdd/reviewer-doubling-lifecycle.md` references (file does not exist) to `agents/team-lead.md` Rule 8 + step 14.
+
+### Changes
+- Topology + eager dispatch → `agents/team-lead.md` Rule 8; verdict reconciliation → step 14. Inline behavior preserved.
+
+### Dimensions Evaluated
+Coherence (accurate references).
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Over-engineering trim: collapsed the Failure Modes table — all 3 rows were verbatim duplicates of inline aborts (Pre-flight lines 86 & 92, Argument Handling line 55), contradicting the section's own "only new abort text" intro. Replaced with a per-section abort-location pointer, aligning design-qa with design-review's family pattern. Net -6 lines. Verified duplication via grep before trimming.
+
+### Changes
+- Failure Modes: removed 3 duplicate rows (no-spec-attached, no-implementation, extras-ignored — all specified verbatim inline); kept heading + a per-section abort-location pointer for structural family parity.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST), Coherence (Failure Modes family pattern), Orchestration, Actionability, Completeness, Spec Alignment, Skill Design Quality, Rename.
+
+### Rename
+No rename. `design-qa` is precise and lifecycle-distinct from `design-review`.
+
 ## 2026-05-25
 
 ### Summary

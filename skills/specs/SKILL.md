@@ -162,8 +162,8 @@ Requirements:
   ---
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
-- After saving the file, mark your task as completed via TaskUpdate and send a completion
-  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`.
+- After saving the file, mark your task as completed via TaskUpdate, send a completion
+  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then emit a `shutdown_request` to that same orchestrator as your FINAL tool call and await `shutdown_approved`. Do not idle awaiting further work.
 ```
 
 ---
@@ -173,5 +173,5 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down surviving teammates** — for each spawned agent whose task is `completed` (per Step 2 classification), send `SendMessage(to="<name>", message={type: "shutdown_request", reason: "specs bootstrap complete"})` in the SAME turn. Skip agents whose task was marked `failed` (no process to terminate).
+2. **Approve teammate shutdowns** — each `@staff-engineer` self-initiates a `shutdown_request` in its completion turn (per its agent definition and the Spawning Template), arriving in Step 2 alongside the completion message; approve each rather than originating your own. Originate a `shutdown_request` only for a `completed` agent that did not self-initiate one. Skip `failed`/stalled agents — `TeamDelete` (next step) reaps any remaining processes.
 3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`

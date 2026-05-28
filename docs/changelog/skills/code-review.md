@@ -1,5 +1,22 @@
 # Changelog: code-review
 
+## 2026-05-28
+
+### Summary
+Standardized the multi-file argument grammar (top historical inconsistency — 3 call forms), added a compact Round-N re-review output for the dominant fix→re-review loop (28 sessions), repointed dead `docs/tdd/reviewer-doubling-lifecycle.md` citations to `agents/team-lead.md` Rule 8 / step 14 (verified the file is absent), and fixed stale G1..G4 → G1..G5. Net +1 (additions offset by 2 redundant-block removals).
+
+### Changes
+- Argument Handling: path-list normalization (strip `files`/`files:`, split on comma/whitespace) + richer argument-hint — collapses `path path`, `files path path`, `files: path, path` to one grammar.
+- Output Contract: compact Round-N re-review format (Prior Findings Disposition / New Findings delta / Recommendation) + Validation check-2 carve-out.
+- Coherence: dead doubling-TDD refs → `agents/team-lead.md` Rule 8 + step 14; G1..G4 → G1..G5 (two stale spots).
+- Over-Engineering offsets: removed redundant When-to-Use security bullet + Separation-of-writer-and-judge para; tightened Pre-flight docs/spec tolerance.
+
+### Dimensions Evaluated
+Skill Design Quality (arg grammar — top), Completeness + Orchestration (Round-N), Coherence (cross-skill dead ref, G-numbering), Over-Engineering (HIGHEST — 2 cuts offset adds), Spec Alignment, Actionability.
+
+### Rename
+No rename — highest-volume skill (188 occurrences); name accurate, stability load-bearing.
+
 ## 2026-05-25
 
 ### Summary

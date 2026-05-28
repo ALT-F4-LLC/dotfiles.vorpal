@@ -1,5 +1,38 @@
 # Changelog: evolve-skills
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: added "Always run Phase 2" parity rule (matching evolve-agents Rule 1), consolidated SKIPPED-skip guidance in tandem with evolve-agents (4×→2×), and added the shutdown-idiom clarifying note. Net +1.
+
+### Changes
+- New Rule 1 "Always run Phase 2 — even for single-skill improvements" (parity with evolve-agents).
+- "skip historical-auditor if SKIPPED" consolidated 4×→2× (removed table parenthetical + template-header sentence).
+- One-line note: orchestrator-originated shutdown is intentional vs leaf-review self-initiate (`agents/team-lead.md` Rule 7).
+
+### Dimensions Evaluated
+Coherence, Over-Engineering (consolidation), Completeness (Phase 2 guarantee).
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Closed coordination/handoff gaps: de-dup transcript counts in the historical-auditor (raw grep hits ~10x inflated by replication), made the re-invocation signal replication-safe, and added a Phase 0-auditor crash→placeholder rule so Phase 1 templates never get dangling substitutions. Offset by trimming the triple-stated friction distinction. Net -1.
+
+### Changes
+- Historical-auditor template: added "De-dupe before counting" bullet — report DISTINCT `sessionId` counts, not raw line hits.
+- Re-invocation signal: count DISTINCT invocation events (UUID/timestamp), not replicated lines — prevents false ≥2 signals.
+- Crash & Stall "Second failure": Phase 0 auditors now substitute an `UNAVAILABLE` placeholder for their findings token so Phase 1 templates stay valid.
+- Removed redundant workflow-narrative friction distinction — template preamble (line 182) + rule (line 224) already carry it.
+
+### Dimensions Evaluated
+Orchestration (handoff/crash-substitution), Actionability (de-dup), Over-Engineering (HIGHEST — offset trim), Coherence.
+
+### Rename
+No rename.
+
 ## 2026-05-25
 
 ### Summary

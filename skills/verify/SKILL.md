@@ -1,11 +1,12 @@
 ---
 name: verify
 description: >
-  Verify a Docket issue's acceptance criteria against implementation and emit a structured
-  verification report. Loaded into the calling agent's context; the calling agent (`@sdet`)
-  drives verification, the skill enforces the format authority — verdict ladder, required
-  sections, validation rules. No file written; the report is emitted into the agent's context.
-  Trigger: "verify acceptance criteria", "run verification", "verify issue", "produce verification report".
+  Verify a Docket issue's acceptance criteria against the implementation diff (static, evidence-based — NOT
+  runtime app-behavior verification) and emit a structured verification report. Loaded into the calling
+  agent's context; the calling agent (`@sdet`) drives verification, the skill enforces the format authority
+  — verdict ladder, required sections, validation rules. No file written; the report is emitted into the
+  agent's context.
+  Trigger: "verify acceptance criteria", "verify Docket issue", "produce verification report" — NOT app/PR runtime checks (that is the bundled runtime-verify skill).
 argument-hint: "<scope>"
 effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
@@ -64,9 +65,9 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration, the calling layer spawns TWO parallel ephemeral `@sdet` verifiers — `verifier-criteria` (per-issue acceptance-criteria checks) and `verifier-integration` (cross-issue / cross-file consistency). Both ephemeral, both exit after delivering verdict; there is no single-verifier mode under orchestration — the pair is the unit of verification. Dispatch is eager: both verifiers are spawned in the same turn (no lazy or sister-anchored variant) per `docs/tdd/reviewer-doubling-lifecycle.md` §4.3 rule 8.
+When invoked under team-lead orchestration, the calling layer spawns TWO parallel ephemeral `@sdet` verifiers — `verifier-criteria` (per-issue acceptance-criteria checks) and `verifier-integration` (cross-issue / cross-file consistency). Both ephemeral, both exit after delivering verdict; there is no single-verifier mode under orchestration — the pair is the unit of verification. Dispatch is eager: both verifiers are spawned in the same turn (no lazy or sister-anchored variant) per `agents/team-lead.md` Rule 8.
 
-Verdict reconciliation per `docs/tdd/reviewer-doubling-lifecycle.md` §4.3: any `BLOCK` from either verifier blocks the consolidated verdict; non-blocker findings merge with dedupe by `(file, symbol)`. Degraded fallback: if one verifier fails twice (probe-once + respawn both abort), the calling layer falls back to the sister verifier's verdict alone and annotates the consolidated message verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`.
+Verdict reconciliation per `agents/team-lead.md` step 14: any `BLOCK` from either verifier blocks the consolidated verdict; non-blocker findings merge with dedupe by `(file, symbol)`. Degraded fallback: if one verifier fails twice (probe-once + respawn both abort), the calling layer falls back to the sister verifier's verdict alone and annotates the consolidated message verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`.
 
 Fix-loop semantics: bugs route to a fresh `impl-{DOCKET-ID}-fix-{N}` ephemeral implementer (not a kept-alive instance), and re-verification spawns a FRESH `verifier-criteria` + `verifier-integration` pair — never reuse a prior verifier instance.
 
@@ -117,8 +118,7 @@ Standalone-mode invocations (operator-driven, no team-lead orchestration) follow
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`. Audit-driven: 154 invocations / 45 sessions = ~3.4 issues per session typical.
-8. **Doubling-rule reference** — under team-lead orchestration, this skill is invoked once per ephemeral verifier in the `verifier-criteria` + `verifier-integration` pair; see `docs/tdd/reviewer-doubling-lifecycle.md` §4.2–§4.3 for the doubling rule and verdict reconciliation rationale.
-9. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
+8. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
 
 ## Verification Procedure
 

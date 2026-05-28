@@ -1,5 +1,35 @@
 # Changelog: vote
 
+## 2026-05-28
+
+### Summary
+Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to canonical `agents/team-lead.md`.
+
+### Changes
+- Cap-of-8 amendment pointer → `agents/team-lead.md` Rule 8 (reviewer panel sizing).
+- Ephemeral vote-reviewer lifecycle "per TDD §4.4" → `agents/team-lead.md` Rule 7 (ephemeral contract).
+
+### Dimensions Evaluated
+Coherence (accurate references).
+
+### Rename
+No rename.
+
+## 2026-05-28
+
+### Summary
+Two coordination fixes at net 0 lines: (1) team-mode delegation finalizes the orphaned `open` proposal on `failed`/timeout; (2) reconciled a crossed shutdown handshake — standalone Cleanup no longer originates `shutdown_request` toward reviewers (which inverted the self-initiated lifecycle), now approves pending requests + `TeamDelete` reaps. CHANGE 2 confirms the specs reviewer's cross-skill flag.
+
+### Changes
+- Delegation Protocol step 5: finalize the orphaned proposal on `failed`/timeout before aborting (best-effort `docket vote commit`), mirroring Phase 3 view-change hygiene; no `vote delete` exists.
+- Cleanup step 1: approve reviewer self-shutdowns instead of originating `shutdown_request` (fixes the line-90 ↔ line-339 contradiction + aligns with fleet shutdown canon).
+
+### Dimensions Evaluated
+Orchestration/handoff (HIGHEST — delegation failure path + crossed handshake), Completeness, Over-Engineering (net 0), Coherence (team-lead.md relay contract + shutdown canon).
+
+### Rename
+No rename. Referenced by name across team-lead.md + 6 agent files.
+
 ## 2026-05-25
 
 ### Summary

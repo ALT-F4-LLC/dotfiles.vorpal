@@ -63,7 +63,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), the calling layer spawns ≥2 reviewers in parallel — the persistent `ux-advisor` (consulted via SendMessage, NOT a fresh spawn) + one ephemeral `design-qa-2` (`Agent()` spawn) — per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2. Both dispatched in the SAME turn (eager parallel dispatch, §4.3 rule 8). The ephemeral `design-qa-2` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per §4.3. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), the calling layer spawns ≥2 reviewers in parallel — the persistent `ux-advisor` (consulted via SendMessage, NOT a fresh spawn) + one ephemeral `design-qa-2` (`Agent()` spawn) — per `agents/team-lead.md` Rule 8. Both dispatched in the SAME turn (eager parallel dispatch, Rule 8). The ephemeral `design-qa-2` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
@@ -209,10 +209,4 @@ On any abort during Pre-flight, QA Procedure, or Validation Before Emit: emit `E
 
 ## Failure Modes
 
-Inline aborts (missing/invalid `<scope>`, role mismatch, unresolvable scope, missing spec, empty implementation, validation failure) are specified at Argument Handling, Role Detection, Pre-flight, and Validation Before Emit. The table covers only new abort text or scope-specific behavior:
-
-| Trigger | Handling |
-|---|---|
-| `<scope>` is a Docket issue ID but no UX spec is attached | Abort: `Error: Could not locate UX spec for <scope>: '{scope}'. Attach the spec to the issue or pass the spec path directly.` |
-| Spec exists but no implementation surface ships yet | Abort: `Error: No implementation surface found for spec '{spec_path}'. Design QA requires shipped implementation — use Skill(design-review, ...) for spec-only review.` |
-| Caller passes additional positional args beyond `<scope>` | Ignore extras silently. |
+All abort paths are specified inline at their point of enforcement — Argument Handling (missing/invalid `<scope>`, unresolvable scope, extra args ignored), Role Detection (caller not `@ux-designer`), Pre-flight (missing spec, empty implementation surface), and Validation Before Emit (format defects). No abort text or scope-specific behavior is unique to this section.

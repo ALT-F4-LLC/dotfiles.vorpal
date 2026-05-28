@@ -110,12 +110,12 @@ malformed frontmatter.
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read related PRDs
-   already in `docs/spec/` (the 7 reserved engineering specs — architecture, security,
-   operations, performance, code-quality, review-strategy, testing — are project-level
-   conventions, not PRDs; skip them here unless the PRD genuinely depends on one).
-   Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that touch the same
-   surface — the new PRD should reference, not contradict, prior accepted product
-   definitions.
+   already in `docs/spec/` (the 7 reserved engineering specs — see the Reserved-Name
+   List — are project-level conventions, not PRDs; skip them unless the PRD genuinely
+   depends on one). Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that
+   touch the same surface — the new PRD should reference, not contradict, prior accepted
+   product definitions, and record each one the PRD builds on in the `dependencies`
+   frontmatter field so reviewers and decomposition can trace the lineage.
 2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues under a "Pre-existing Docket issues" sub-bullet in Risks & Open Questions.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.

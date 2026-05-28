@@ -13,6 +13,7 @@ memory: project
 skills:
   - commit
   - vote
+  - simplify-scout
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 

@@ -59,7 +59,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The doubling-rule note below is also part of this family — keep its shape in sync across siblings per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The doubling-rule note below is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 
 - Reviewing a draft UX spec authored by another agent (peer review before consensus).
 - Reviewing a `@staff-engineer` TDD that proposes user-facing surfaces (CLI, API, config format, error copy).
@@ -68,7 +68,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), the calling layer spawns ≥2 reviewers in parallel — the persistent `ux-advisor` (consulted via SendMessage, NOT a fresh spawn) + one ephemeral `design-review-2` (`Agent()` spawn) — per `docs/tdd/reviewer-doubling-lifecycle.md` §4.2. Both dispatched in the SAME turn (eager parallel dispatch, §4.3 rule 8). The ephemeral `design-review-2` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(file, symbol)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per §4.3. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), the calling layer spawns ≥2 reviewers in parallel — the persistent `ux-advisor` (consulted via SendMessage, NOT a fresh spawn) + one ephemeral `design-review-2` (`Agent()` spawn) — per `agents/team-lead.md` Rule 8. Both dispatched in the SAME turn (eager parallel dispatch, Rule 8). The ephemeral `design-review-2` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(file, symbol)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
@@ -189,7 +189,7 @@ Emit the review verbatim to the calling agent's context. Do NOT echo the raw art
 One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **Incremental Improvement**
 
 ### Next Steps
-{What the calling agent should do — e.g., SendMessage @ux-designer-author with the verdict, escalate to vote for cross-surface precedent, route Blockers to author for revision, propose redesign with concrete starting points}
+{What the calling agent should do — e.g., deliver the structured verdict to the calling agent / team-lead, escalate to vote for cross-surface precedent, route Blockers to the author for revision, propose redesign with concrete starting points}
 ```
 
 ## Validation Before Emit
@@ -230,11 +230,11 @@ where `{recommendation}` is one of Approve / Approve with follow-up / Block / Re
 
 The calling agent owns (in order):
 
-- SendMessage to the artifact author with the verdict and any Blockers/Concerns so they can revise.
+- SendMessage the verdict per `agents/ux-designer.md` Inter-Agent Communication triggers (under team-lead orchestration, to team-lead — who reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; standalone, to the author directly).
 - Triggering `Skill(vote, ...)` if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold per `agents/ux-designer.md`.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: "Did I SendMessage the verdict (structured, not summarized) to team-lead in this same turn?" The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
+**Self-check before ending the turn**: "Did I SendMessage the verdict (structured, not summarized) to the calling agent (team-lead in team mode) in this same turn?" The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

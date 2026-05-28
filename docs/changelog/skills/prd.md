@@ -1,5 +1,19 @@
 # Changelog: prd
 
+## 2026-05-28
+
+### Summary
+One coordination fix (net 0): linked Authoring §1 prior-art discovery to the `dependencies` frontmatter field so downstream reviewers/decomposition can trace PRD lineage; offset by removing the redundant 3rd inline restatement of the 7 reserved names (now points to the Reserved-Name List).
+
+### Changes
+- Authoring Procedure §1: instruct recording each prior-art doc the PRD builds on in the `dependencies` frontmatter field; replaced inline 7-name enumeration with a pointer to the Reserved-Name List. CANONICAL:SAVE_AND_RETURN left untouched (verified byte-identical across prd/tdd/adr).
+
+### Dimensions Evaluated
+Orchestration & Coordination (primary — handoff traceability), Over-Engineering (offset — Non-redundant Gate), Coherence (SAVE_AND_RETURN parity verified), Spec Alignment, Skill Design Quality, Actionability, Completeness, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-25
 
 ### Summary

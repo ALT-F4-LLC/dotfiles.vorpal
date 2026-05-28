@@ -1,5 +1,20 @@
 # Changelog: ux-spec
 
+## 2026-05-28
+
+### Summary
+Closed a §9 Handoff Notes coordination gap (operator priority): orthogonalized the two priority axes — (a) is now the sequence axis (P0/P1/P2 for @project-manager ordering), (b) is the MVP cutline as the shared scope boundary @senior-engineer builds to and design-qa QAs against. Removed the duplicate "same concept = same name" rule from Authoring §5 (already stated in §1). Net 0 lines.
+
+### Changes
+- §9(a)/(b): split overlapping "P0/P1/P2 or MVP/polish" into sequence axis (a) vs scope cutline (b); named design-qa + @senior-engineer as cutline consumers.
+- Authoring §5: dropped duplicate cross-surface naming rule (retained in §1).
+
+### Dimensions Evaluated
+Orchestration & Coordination (operator priority), Over-Engineering (HIGHEST — offset the addition), Coherence, Spec Alignment.
+
+### Rename
+No rename. Family-aligned with adr/prd/tdd/specs.
+
 ## 2026-05-25
 
 ### Summary

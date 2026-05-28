@@ -6,10 +6,10 @@ description: >
   evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs,
   SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task
   decomposition and @senior-engineer for implementation.
-model: opus[1m]
+model: claude-opus-4-8[1m]
 color: magenta
 permissionMode: dontAsk
-effort: max
+effort: xhigh
 memory: project
 skills:
   - design-qa

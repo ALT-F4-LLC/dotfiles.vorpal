@@ -37,7 +37,7 @@ Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
 Before spawning any agents:
 
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, pass through verbatim — the Phase 1 template's substitution guidance instructs reviewers on payload handling. Otherwise call `AskUserQuestion` with `multiSelect: true` and 4 options: `Coordination, handoff & orchestration gaps`, `Operator-prompt or output quality`, `Scope, budget or file-size mismatch`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and 4 options: `Coordination, handoff & orchestration gaps`, `Operator-prompt or output quality`, `Scope, budget or file-size mismatch`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -177,7 +177,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-skill)
 
-Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). Distinct from `friction-driven-evolution`: per-skill, no clustering, feeds Phase 1 directly.
+Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). This audit is per-skill, does no clustering, and feeds Phase 1 directly.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
@@ -220,7 +220,7 @@ If a category is empty for a skill, write `none` — do not omit the line.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
 - Per-skill grep is mandatory — never load wholesale (~/.claude/projects/ is ~1GB).
-- Do not cluster or rank across skills — that is `friction-driven-evolution`'s job. Stay per-skill.
+- Do not cluster or rank across skills. Stay per-skill.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -234,7 +234,6 @@ Agent(team_name="evolve-skills-{today_date}", name="review-<name>", subagent_typ
 Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
-  > If `Experience feedback` begins with `[friction-driven-evolution: cluster-`, it is a structured payload: prioritize `proposed_edit.target` as the change locus and weight your recommendations by `severity`. Cite `example_session_refs` in your CONTEXT field.
 
 ## Size Budget
 

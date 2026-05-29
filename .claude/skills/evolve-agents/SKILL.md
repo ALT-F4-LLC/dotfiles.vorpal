@@ -37,7 +37,7 @@ Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or free-text follow-up for the agent name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. If it begins with `[friction-driven-evolution: cluster-`, treat it as a structured payload (fields: `friction_class`, `frequency`, `severity`, `example_session_refs`, `proposed_edit.target`, `root_cause`) — Phase 1 reviewers must prioritize the `proposed_edit.target` location and weight changes by `severity`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Role & coordination gaps`, `Operator prompts & output quality`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, ask a follow-up free-text question. Store as `{experience_feedback}`.
+2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Role & coordination gaps`, `Operator prompts & output quality`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, ask a follow-up free-text question. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
@@ -100,7 +100,7 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 
 Spawn THREE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-**Distinction from `friction-driven-evolution`:** that skill clusters cross-cutting friction into top-5 root causes and routes proposals downstream. This audit is per-agent and feeds Phase 1 reviewers directly.
+This audit is per-agent and feeds Phase 1 reviewers directly — it does not cluster or rank friction across agents.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -191,7 +191,7 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
    - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
 3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
-   - `-r2` respawn convention (canonical from `agents/team-lead.md` and `friction-driven-evolution`'s detection pattern): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
+   - `-r2` respawn convention (canonical from `agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
    - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Expect low signal — operators rarely `@<agent>` directly; capture `none` if empty.
@@ -216,7 +216,7 @@ If a category is empty for an agent, write `none` — do not omit the line.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
 - Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB).
-- Do not cluster or rank across agents — that is `friction-driven-evolution`'s job. Stay per-agent.
+- Do not cluster or rank across agents. Stay per-agent.
 ```
 
 ### Phase 1: Self-Review & Improve
@@ -231,7 +231,6 @@ Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to
 Target: agents/<name>.md | Size: {line_count} lines | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
-  > If `Experience feedback` begins with `[friction-driven-evolution: cluster-`, it is a structured payload: prioritize `proposed_edit.target` as the change locus and weight your recommendations by `severity`. Cite `example_session_refs` in your CONTEXT field.
 
 ## Size Budget
 

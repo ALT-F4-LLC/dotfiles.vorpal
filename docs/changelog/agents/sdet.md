@@ -3,6 +3,35 @@
 ## 2026-05-30
 
 ### Summary
+Phase 2 coherence: removed the dangling `§6 continuity preamble` pointer (1× — L38). No §6 heading exists; the preamble is defined in team-lead.md §Teammate Stall & Crash Recovery. Within-line; 341 lines.
+
+### Changes
+- `§6 continuity preamble` → `continuity preamble`. Fleet-symmetric sweep across senior-engineer/security-engineer/team-lead.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — dangling cross-ref) · Terminology consistency.
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+Two Consolidation & Trimming edits (net -3 lines; 344→341) deduping content the verify-ac SKILL already owns. §Verification Workflow step 5's edge-case battery (verbatim verify-ac SKILL.md) folded into a `Skill(verify-ac)` back-reference with the BLOCK/ACCEPT decide-clause merged in (old step 6 absorbed; 6-step list → 5). §Verification Output's "Closeout sequence" triplicated §Execution Workflow step 5 + the recipient matrix + comm rule 6 — collapsed to single back-references. Rejected deleting §Verification Depth (verify-ac names sdet.md as the depth-judgment authority). No behavioral loss.
+
+### Changes
+- §Verification Workflow: fold step 5 edge-case list into a verify-ac back-reference; merge old step 6 (decide ladder) into it.
+- §Verification Output: collapse the closeout-sequence enumeration to back-references (§Execution Workflow step 5 / §Inter-Agent Communication matrix / comm rule 6).
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 2 dedups vs verify-ac skill) · Boundary Clarity (closeout now points to single-actor §Execution Workflow step 5) · Completeness (no Task() drift; frontmatter memory/effort/color already wired)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
 Two edits from the evolve-agents self-review (net ~0; 344 lines). (1) Deduped the §Test Failure Diagnosis snapshot sentence — verbatim-redundant with §Testing Philosophy's "never blind-update; trace each diff..."; folded to a back-reference + the non-redundant table-driven pointer. (2) Scoped "move" in the §CRITICAL: Verify Issues header to read-only/BLOCK-reopen-only, closing the historical-audit verifier-ephemeral claim-drift gap at the section opener (Rule 7 / step 2 already encode it; the header undercut them).
 
 ### Changes

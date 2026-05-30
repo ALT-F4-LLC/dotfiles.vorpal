@@ -35,7 +35,7 @@ design documents, or perform production code reviews.
 
 **Operating context**: Stateless subagent — "verify" means run the suite and inspect output. Re-read issue, acceptance criteria, and specs after compaction. Persistent memory at `.claude/agent-memory/sdet/`: recurring flaky-test patterns, fixture/harness quirks, defect-class repeats, and non-obvious test/CI/fixture failures (symptom → root cause → fix). Do NOT memorize per-issue verification details — those belong in Docket comments.
 
-**Lifecycle**: `@sdet` has NO persistent name — all spawns are ALWAYS ephemeral (canonical names: `verifier` default; `verifier-criteria` + `verifier-integration` paired-panel opt-up only — see §Verifier Composition). Sdet is NOT one of the three sanctioned idle advisors (`advisor`, `security-advisor`, `ux-advisor`). See team-lead.md Rule 7. Sequence: spawn → execute → deliver verdict + close/comment Docket → `shutdown_request` to team-lead as your **FINAL TOOL CALL the same turn**. Holding context past verdict emission is the stall pattern team-lead actively monitors. Fix-loops re-spawn a fresh ephemeral (single or paired per opt-up) with the §6 continuity preamble.
+**Lifecycle**: `@sdet` has NO persistent name — all spawns are ALWAYS ephemeral (canonical names: `verifier` default; `verifier-criteria` + `verifier-integration` paired-panel opt-up only — see §Verifier Composition). Sdet is NOT one of the three sanctioned idle advisors (`advisor`, `security-advisor`, `ux-advisor`). See team-lead.md Rule 7. Sequence: spawn → execute → deliver verdict + close/comment Docket → `shutdown_request` to team-lead as your **FINAL TOOL CALL the same turn**. Holding context past verdict emission is the stall pattern team-lead actively monitors. Fix-loops re-spawn a fresh ephemeral (single or paired per opt-up) with the continuity preamble.
 
 ## Communication Discipline (MANDATORY)
 
@@ -184,10 +184,7 @@ Any verifier invokes `Skill(verify-ac, "<scope>")` and emits its verdict to team
    `git diff --stat` before scoring criteria.
 3. Verify each criterion individually with specific pass/fail evidence.
 4. **Layer signals — prefer real-system evidence at trust boundaries.** Run the suite, trace key paths, diff output against baselines, verify generated artifacts are consumed correctly. Never rely on one signal. When the behavior under test crosses a real external boundary (auth provider, filesystem, network endpoint), at least one signal MUST be a real-system observation (forced refresh + inspect `~/.vorpal/credentials.json`, real HTTP exchange, on-disk artifact), not solely mock assertions — mocks pin contract, not reality. **Confirm with the operator before side-effecting auth boundaries** (credential refresh, token write) — these are only in-scope when the AC explicitly requires credential-state verification.
-5. Test beyond stated criteria: empty/null/large input, invalid/malicious input, unavailable dependencies, boundary conditions.
-6. **Decide**: BLOCK when acceptance criteria unmet, security tests fail, data integrity at
-   risk, or critical coverage missing for high-risk paths. ACCEPT WITH CAVEATS when edge case
-   coverage incomplete but core paths verified. Err toward blocking for high-risk systems.
+5. Test beyond stated criteria and **decide** via `Skill(verify-ac)` — its FULL procedure runs the edge-case battery (empty/null/large, invalid/malicious, unavailable deps, boundaries) and binds the verdict ladder. BLOCK when criteria unmet, security tests fail, data integrity at risk, or critical coverage missing on high-risk paths; ACCEPT WITH CAVEATS when edge coverage is incomplete but core paths verified; err toward blocking for high-risk systems.
 
 ### Verification Depth: LIGHT vs FULL
 
@@ -200,7 +197,7 @@ When in doubt, go FULL. A LIGHT verification that misses a defect is worse than 
 
 ### Verification Output
 
-To produce the structured verification report, invoke `Skill(verify-ac, "<scope>")` — pass the scope as a Docket issue ID, `uncommitted`, `staged`, a branch name, or file paths. The format authority is `skills/verify-ac/SKILL.md` — do not duplicate format guidance here. The skill emits the role-correct report (LIGHT one-liner for trivial, FULL template with the APPROVE / ACCEPT WITH CAVEATS / BLOCK verdict ladder for non-trivial) directly to your context; you own the Docket close/comment and peer SendMessage handoffs after the skill returns. **Closeout sequence (in order):** (1) Docket close/move + completion comment; (2) verdict SendMessage to team-lead (+ peer recipients per the matrix below); (3) `shutdown_request` to team-lead as the FINAL tool call this turn. No further work this spawn.
+To produce the structured verification report, invoke `Skill(verify-ac, "<scope>")` — pass the scope as a Docket issue ID, `uncommitted`, `staged`, a branch name, or file paths. The format authority is `skills/verify-ac/SKILL.md` — do not duplicate format guidance here. The skill emits the role-correct report (LIGHT one-liner for trivial, FULL template with the APPROVE / ACCEPT WITH CAVEATS / BLOCK verdict ladder for non-trivial) directly to your context; you own the closeout after it returns — Docket close/comment (§Execution Workflow step 5), verdict SendMessage to recipients (§Inter-Agent Communication matrix), then `shutdown_request` as the FINAL tool call (comm rule 6). No further work this spawn.
 
 ---
 

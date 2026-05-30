@@ -1,5 +1,36 @@
 # Changelog: team-lead
 
+## 2026-05-30
+
+### Summary
+Phase 2 coherence: (1) removed the dangling `§6 continuity preamble` pointer (6× — L128/154/168/287/313/344); team-lead is the file that DEFINES the preamble (§Teammate Stall & Crash Recovery, Fix-loop re-spawn), so `§6` was pure noise. (2) Corrected the Rule 5 numbering table: `@staff-engineer 1-8` → `1-9` (staff carries a 9th Advisor-topology rule; the table was the stale side — a wrong count risks a future evolve cycle deleting a real rule). Within-line; 481 lines.
+
+### Changes
+- `§6 continuity preamble` → `continuity preamble` (×6).
+- Rule 5: `@staff-engineer 1-8` → `1-9`, noting the 9th Advisor-topology rule (recommendations route through team-lead).
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — self-referential dangling ptr + table-vs-reality drift) · Rule-numbering convention accuracy.
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+Three within-line correctness fixes (net 0; 481 lines). (1) Healed the dangling `§4.3 reconciliation rules` pointer (2× — step 15 + Rule 8; no §4.3 heading exists, rules live in step 14) → "step 14 reconciliation rules", and corrected the wrong "(1-8)" count → "(1-6)" (step 14 has exactly 6 rules). (2+3) Reworded two phrasings that read like fabricated docket subcommands (Phase 0 docket-audit items) — "docket issue stuck `in-progress`" → noun phrase, and resume-preamble "check docket issue state" → "run `docket issue show <id>`". No speculative consolidation near the 500 ceiling.
+
+### Changes
+- Step 15 + Rule 8: `§4.3 reconciliation rules` → `step 14 reconciliation rules`; `(1-8)` → `(1-6)`.
+- §Stall & Crash Recovery detection bullet (d): "docket issue stuck `in-progress`" → "a docket issue sitting in `in-progress`".
+- §Stall & Crash Recovery resume preamble: "check docket issue state + comments" → "run `docket issue show <id>` + comment list".
+
+### Dimensions Evaluated
+Spec Alignment / Cross-Agent Coherence (PRIMARY — 2 dangling pointers + 1 wrong count) · Actionability (2 Docket-CLI clarity rewordings) · Consolidation & Trimming (declined near-ceiling churn)
+
+### Rename
+No rename.
+
 ## 2026-05-30 (Phase 2 — coherence)
 
 ### Summary

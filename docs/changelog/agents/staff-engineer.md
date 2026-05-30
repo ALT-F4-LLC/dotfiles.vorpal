@@ -3,6 +3,21 @@
 ## 2026-05-30
 
 ### Summary
+Corrected the Doubling-Rule default: staff-engineer was the lone sibling declaring "Doubled-reviewer is the default," contradicting team-lead.md Rule 8 (default=1, opt-up=doubled) and out of step with sdet/ux-designer. Two in-line corrections (net 0; 248 lines). TDD-secondary-review's mandatory two-ephemeral author-recusal preserved as the always-doubled exception.
+
+### Changes
+- §Responsibility 2 opener (L113): "Doubled-reviewer is the default" → "Single reviewer is the default … opts up to the doubled panel per Rule 8 conditions"; reconciliation scoped to the opted-up case.
+- §Lifecycle (L32): "Doubled reviewer pattern" → "Reviewer panel" — general review defaults to `advisor` alone, opt-up to doubled / 4-reviewer security track; TDD-secondary-review kept as the always-doubled recusal exception.
+
+### Dimensions Evaluated
+Spec Alignment (PRIMARY — Rule 8 default-1 alignment) · Boundary Clarity (security-track parallel preserved) · Consolidation & Trimming (net 0)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
 Two pure-consolidation trims removing verbatim duplication of canonical clauses (248 lines; within-line). No Rename / Docs-Research / CLI changes — docs-research recommendations already satisfied in this def.
 
 ### Changes

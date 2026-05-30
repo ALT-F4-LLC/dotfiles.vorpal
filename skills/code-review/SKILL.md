@@ -334,7 +334,7 @@ For substantive security-relevant changes:
 One of: **Approve (security)** / **Approve with follow-up** / **Block (security)** / **Split required**
 
 ### Next Steps
-{What the calling agent should do — e.g., notify @staff-engineer of the parallel verdict for unified handoff, route critical/high to @senior-engineer, escalate to operator if threat model diverges from TDD, request a vote for residual-risk acceptance}
+{What the calling agent should do — e.g., deliver this verdict to team-lead for step-14 reconciliation (security verdict binds for security findings), surface any security-vs-general track contradiction, escalate to operator if the threat model diverges from the TDD, request a vote for residual-risk acceptance. Standalone (no orchestrator): notify the parallel reviewer for unified handoff and route critical/high to @senior-engineer.}
 ```
 
 ### Round-N Re-Review (compact)
@@ -377,8 +377,8 @@ where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `B
 
 The calling agent owns (in order):
 
-- **Reconcile with the parallel reviewer first** — when the change touches auth, secrets, sandbox, trust boundaries, or supply chain (i.e., the parallel reviewer was spawned), SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) with this verdict before routing findings. Verdict reconciliation prevents contradictory handoffs to `@senior-engineer`.
-- Routing blockers / concerns / critical / high to `@senior-engineer` via SendMessage with file/finding/fix triplets.
+- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery — eager parallel dispatch is anti-anchoring, and pre-delivery cross-talk lets one reviewer anchor the other's verdict. (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
+- Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never SendMessage `@senior-engineer` directly, per the team-lead spawn templates). Standalone: SendMessage `@senior-engineer` with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
 - Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
 

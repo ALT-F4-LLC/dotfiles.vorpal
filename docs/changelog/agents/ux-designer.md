@@ -3,6 +3,20 @@
 ## 2026-05-30
 
 ### Summary
+One consolidation fix (net 0 lines; single-line paragraph, 245 unchanged). §Shutdown Handling's ephemeral paragraph restated the verdict-then-shutdown exit sequence + fresh-ephemeral mechanic already canonical in §Ephemeral `@ux-designer` roles; trimmed to a pointer preserving only its unique fact — an ad-hoc spec-author ephemeral delivers a saved `docs/ux/` spec, not a review/QA verdict.
+
+### Changes
+- §Shutdown Handling (ephemeral paragraph): full mechanic restatement → 1-line pointer to §Ephemeral `@ux-designer` roles; retains the verdict-vs-saved-spec deliverable distinction.
+
+### Dimensions Evaluated
+Consolidation (PRIMARY — cross-section dedup) · Boundary Clarity (What-You-Are-NOT intact) · Cross-Communication (team-lead cross-refs resolve: Rule 7/8, reconciliation rule 6, R1-R7) · Spec Alignment (docs/ux + docs/spec empty — n/a)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
 Three coherence/consolidation fixes driven from first-principles + cross-agent coherence (zero in-window historical signal — lowest-invocation role, empty docs/ux + docs/spec). (1) Gated AskUserQuestion to standalone-only at the Honest-critique line and Spec Workflow step 5 — the teammate path cannot call it (docs-validated); team mode routes via SendMessage team-lead, matching the staff/security fleet pattern. (2) Corrected a dangling cross-ref: the DEGRADED fallback is team-lead step 14 reconciliation rule 6, not 7. (3) Consolidated the verdict-then-shutdown / continuity-preamble mechanic stated 4× (R2, R5, Ephemeral roles, Shutdown Handling); trimmed the two R2/R5 Fix-loop blocks to pointers preserving each unique fact. Content trimmed; 245 lines (single-line paragraphs, count unchanged).
 
 ### Changes

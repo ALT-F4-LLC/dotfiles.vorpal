@@ -3,6 +3,34 @@
 ## 2026-05-30
 
 ### Summary
+Phase 2 coherence: removed the dangling `§6 continuity preamble` pointer (5 occurrences — the full phrase ×4 at L42/L54/L174/L326 + a `§6 preamble` variant at L340). No §6 heading exists; the continuity preamble is defined in team-lead.md §Teammate Stall & Crash Recovery (Fix-loop re-spawn). Within-line; 358 lines.
+
+### Changes
+- `§6 continuity preamble` → `continuity preamble` (×4) and `§6 preamble` → `continuity preamble` (×1). Self-defining term; fleet-symmetric with the same sweep across sdet/security-engineer/team-lead.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — dangling cross-ref) · Terminology consistency.
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+One consolidation (net 0 lines; ~120 fewer duplicated words). Compressed the frontmatter `**No code comments.**` block to a terse rule + pointer; Code Quality principle 7 is the canonical home for the full remedy, the machine-required-directives allowlist, and the override path — the frontmatter block restated all three and already forward-referenced "rule 7". Up-front hard-rule placement preserved (sibling-parity with sdet.md).
+
+### Changes
+- Frontmatter `**No code comments.**`: full restatement (allowlist + remedy + override path) → rule + remove-on-changed-lines + pointer to principle 7 / Override Convention. Behavior unchanged (principle 7 governs identically).
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — frontmatter/principle-7 dedup) · Completeness (12 code-philosophy principles audited; each a distinct gate — NOT a consolidation target) · Boundary Clarity (ad-hoc-issue carve-out intact) · Cross-references (sdet 6/7/8, security Consensus Voting, team-lead Rule 7 — stable)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
 Two self-contained edits (net -1; 359→358). Removed the dead `commit` skill from `skills:` frontmatter (no such skill exists anywhere — verified — and it contradicted the no-commit CRITICAL banner) and trimmed the frozen "(32 fix-round ephemerals)" audit count from the TDD deep-read gate. The recommended closure-authority gate was DEFERRED to Phase 2 coherence — it is paired with a team-lead brief-template change that review-team-lead declined, and an unpaired flag would never fire (fails the Behavioral gate).
 
 ### Changes

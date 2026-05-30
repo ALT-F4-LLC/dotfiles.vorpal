@@ -50,6 +50,7 @@ Before spawning any agents:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
+9. **Scope-confirmation gate (HARD GATE)** — If `$ARGUMENTS` is empty (all-skills mode) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total line count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
 
 ---
 

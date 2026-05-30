@@ -1,5 +1,19 @@
 # Changelog: tdd
 
+## 2026-05-29
+
+### Summary
+Corrected the same factually-incorrect `allowed-tools`-excludes-Edit rationale found in prd/ux-spec (per Claude Code docs, allowed-tools does not restrict the tool pool). Reframed the no-fix-and-retry abort as the intended single-pass validate-then-write design. Slug-batching contract reviewed — sound, no change.
+
+### Changes
+- Validation Before Save: replaced "`Edit` is excluded from this skill's tools" / "it has its own tools" with a design-intent rationale (validate-then-write once; caller owns repair). Fixed in lockstep with prd/ux-spec.
+
+### Dimensions Evaluated
+Skill Design Quality (factual accuracy), Completeness (slug disambiguation when batching multiple TDDs/session — verified robust), Over-Engineering (no trim), Orchestration (leaf), Coherence (doc-authoring family), Actionability, Spec Alignment, Rename.
+
+### Rename
+No rename — tdd is the established, family-consistent name.
+
 ## 2026-05-28
 
 ### Summary

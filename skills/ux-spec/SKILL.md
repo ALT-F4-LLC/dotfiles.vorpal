@@ -49,13 +49,12 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When to Use
 
-- A UX design spec is needed for a user-facing surface (CLI, TUI, API, agent prompt,
-  config format, doc structure) and should land at `docs/ux/{slug}.md` as the
-  authoritative design record.
+- A new or significantly revised user-facing surface (CLI, TUI, API, agent prompt,
+  config format, doc structure) needs design guidance — wireframes, interaction
+  flows, error states, accessibility — before implementation, and should land at
+  `docs/ux/{slug}.md` as the authoritative design record.
 - The calling agent (typically `@ux-designer`) is producing a design spec per
   Responsibility 1 of the agent prompt (`agents/ux-designer.md`).
-- A new or significantly revised user-facing surface needs design guidance before
-  implementation — wireframes, interaction flows, error states, accessibility.
 
 ## When NOT to Use
 
@@ -239,15 +238,15 @@ Before invoking `Write`, verify in the calling agent's context:
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
-If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
-skill's tools):
+If any check fails, ABORT (no fix-and-retry — the skill validates then writes
+in a single pass; repair is the calling agent's responsibility):
 
 ```
 Error: validation failed: {field/section} — {detail}.
 ```
 
-The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(ux-spec, "<topic>")`.
+The calling agent fixes the issue in its own context and re-invokes
+`Skill(ux-spec, "<topic>")`.
 
 ## Save & Return
 

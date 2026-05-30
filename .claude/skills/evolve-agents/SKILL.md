@@ -54,7 +54,7 @@ Before spawning any agents:
 
 ## Content Gate
 
-**Every addition MUST pass ALL checks. Reject if ANY fails.**
+**Every proposed addition MUST pass ALL 4 checks. Reject content that fails ANY check.**
 
 1. **Executable** — Can Claude do this in a stateless session? Reject: mentoring, meetings, relationship-building, career development.
 2. **Behavioral** — Does removing it change the agent's output? Reject: general knowledge a capable LLM already has.

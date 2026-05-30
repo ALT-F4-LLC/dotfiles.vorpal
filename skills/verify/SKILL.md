@@ -63,15 +63,11 @@ Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch na
 
 If extra positional args follow `<scope>`, ignore them silently.
 
+**Comma-batched Docket IDs.** A `<scope>` of comma-separated Docket issue IDs (`DKT-45,DKT-46,DKT-47`) is N distinct verifications, not one merged scope — each issue carries its own acceptance criteria and verdict. Split on commas and run the full Pre-flight → Verification → Output cycle once per ID, emitting one report per issue. (Contrast `code-review`'s comma path-list, which forms a single scope: there the tokens are files in one diff; here they are independent issues.)
+
 ## Doubling Rule
 
-When invoked under team-lead orchestration, the calling layer spawns TWO parallel ephemeral `@sdet` verifiers — `verifier-criteria` (per-issue acceptance-criteria checks) and `verifier-integration` (cross-issue / cross-file consistency). Both ephemeral, both exit after delivering verdict; there is no single-verifier mode under orchestration — the pair is the unit of verification. Dispatch is eager: both verifiers are spawned in the same turn (no lazy or sister-anchored variant) per `agents/team-lead.md` Rule 8.
-
-Verdict reconciliation per `agents/team-lead.md` step 14: any `BLOCK` from either verifier blocks the consolidated verdict; non-blocker findings merge with dedupe by `(file, symbol)`. Degraded fallback: if one verifier fails twice (probe-once + respawn both abort), the calling layer falls back to the sister verifier's verdict alone and annotates the consolidated message verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`.
-
-Fix-loop semantics: bugs route to a fresh `impl-{DOCKET-ID}-fix-{N}` ephemeral implementer (not a kept-alive instance), and re-verification spawns a FRESH `verifier-criteria` + `verifier-integration` pair — never reuse a prior verifier instance.
-
-Standalone-mode invocations (operator-driven, no team-lead orchestration) follow the calling agent's own discretion on count.
+Each verifier (whether paired `verifier-criteria` + `verifier-integration` under orchestration, or a standalone single invocation) runs this skill independently and emits its own report in this format — this skill is the single-verifier output-format authority, not the orchestrator. Spawning, eager dispatch, verdict reconciliation, degraded-fallback annotation, and fix-loop re-spawn are owned by the calling layer per `agents/team-lead.md` (Rule 7, Rule 8, step 14, step 15). Do not duplicate that logic here.
 
 ## When to Use
 

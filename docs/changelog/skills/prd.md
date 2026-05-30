@@ -1,5 +1,19 @@
 # Changelog: prd
 
+## 2026-05-29
+
+### Summary
+Corrected a factually-incorrect frontmatter rationale: `allowed-tools` does NOT remove `Edit` from the skill's tool pool (per Claude Code docs, every tool stays callable). Reframed the no-fix-and-retry abort as the intended single-pass validate-then-write design.
+
+### Changes
+- Validation Before Save: replaced "`Edit` is excluded from this skill's tools" and "it has its own tools" with a design-intent rationale (validate-then-write once; the calling agent owns repair). Verified against code.claude.com/docs/en/skills.
+
+### Dimensions Evaluated
+Skill Design Quality (factual accuracy), Actionability, Over-Engineering (no trim warranted), Orchestration (leaf), Coherence (shared wrong string with tdd/ux-spec — fixed in lockstep), Spec Alignment, Completeness, Rename.
+
+### Rename
+No rename — prd consistent with the doc-authoring family (tdd/adr/ux-spec/specs).
+
 ## 2026-05-28
 
 ### Summary

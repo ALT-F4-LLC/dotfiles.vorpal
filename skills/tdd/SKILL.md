@@ -237,15 +237,15 @@ Before invoking `Write`, verify in the calling agent's context:
    verify §9 (Testing Strategy) contains a `###`-level subsection named
    `Abuse Cases`. Non-security TDDs skip this check.
 
-If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
-skill's tools):
+If any check fails, ABORT (no fix-and-retry — the skill validates then writes
+in a single pass; repair is the calling agent's responsibility):
 
 ```
 Error: validation failed: {field/section} — {detail}.
 ```
 
-The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(tdd, "<topic>")`.
+The calling agent fixes the issue in its own context and re-invokes
+`Skill(tdd, "<topic>")`.
 
 ## Save & Return
 

@@ -1,5 +1,19 @@
 # Changelog: evolve-skills
 
+## 2026-05-29
+
+### Summary
+Added a scope-confirmation HARD GATE to Pre-flight (new step 9), achieving parity with evolve-agents step 7 (Phase 2 coherence).
+
+### Changes
+- New Pre-flight step 9: in standalone all-skills mode with >3 skills, surface planned scope + total line count via AskUserQuestion before committing (skips in single-skill and team mode). Closes a real gap — step 1 is a routing question that runs before inventory and cannot show cycle weight; all-skills mode (~13 skills) is the heaviest cycle yet had no cost checkpoint. Placed as step 9 to avoid renumbering the step-8 reference. Net +1 (327→328; BALANCED, well under 500). [Phase 2 coherence item 6b]
+
+### Dimensions Evaluated
+Sibling-skill parity; operator-prompt safety; over-engineering skepticism (no-op in team mode; value concentrated in standalone all-skills).
+
+### Rename
+No rename.
+
 ## 2026-05-28
 
 ### Summary

@@ -9,7 +9,7 @@ description: >
   commits.
 model: opus[1m]
 color: cyan
-effort: max
+effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:

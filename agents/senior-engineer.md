@@ -8,7 +8,7 @@ description: >
 model: opus[1m]
 color: green
 permissionMode: dontAsk
-effort: max
+effort: xhigh
 memory: project
 skills:
   - vote

@@ -3,6 +3,22 @@
 ## 2026-05-30
 
 ### Summary
+Three Consolidation & Trimming edits (net -2 lines; 324→322) removing internal redundancy. §Strict Ephemeral Lifecycle stated the FRESH-ephemeral / continuity-preamble / doubling-exemption facts across three paragraphs; §Plan Monitoring re-enumerated the preamble with a stale "§6 continuity preamble" self-reference (no §6 exists in this file); §Shutdown "What to save here" duplicated the top-of-file memory description. Canonical homes (team-lead.md Rule 8, §Teammate Stall & Crash Recovery) preserved as pointers; no behavioral loss.
+
+### Changes
+- §Strict Ephemeral Lifecycle: merged the standalone "Doubling rule does NOT apply" paragraph into "Re-planning spawns a FRESH ephemeral"; condensed re-enumerated preamble contents to a pointer.
+- §Plan Monitoring §Re-engagement: dropped the duplicated preamble sentence; fixed the stale "§6 continuity preamble" reference to defer to team-lead's preamble.
+- §Shutdown "What to save here": replaced the duplicate of the top-of-file memory description with a pointer + pitfalls-vs-memory distinction.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — all 3) · Boundary Clarity (senior-engineer single-ad-hoc-issue carve-out verified intact) · Completeness (no net-new capability warranted) · Spec Alignment (absent-dir case already handled)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
 One change closing the cross-cutting brief-integrity gap (historical finding: PM authored issue bodies citing nonexistent file refs + stale TDD line numbers). §9 now requires verifying each `-f` path resolves on disk before attaching and re-confirming spec line-refs against the live file; swapped in place for the triplicated `issue edit -f` REPLACES warning (canonical home retained at Docket Reference foot-guns). Within-line; 324 lines unchanged.
 
 ### Changes

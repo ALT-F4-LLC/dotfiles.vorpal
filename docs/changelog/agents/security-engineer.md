@@ -1,5 +1,34 @@
 # Changelog: security-engineer
 
+## 2026-05-30
+
+### Summary
+Phase 2 coherence: removed the dangling `§6 continuity preamble` pointer (2× — L35, L114). No §6 heading exists; the preamble is defined in team-lead.md §Teammate Stall & Crash Recovery. Within-line; 234 lines.
+
+### Changes
+- `§6 continuity preamble` → `continuity preamble` (×2). Fleet-symmetric sweep across sdet/senior-engineer/team-lead.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — dangling cross-ref) · Terminology consistency.
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+Two Consolidation & Trimming edits (net -2 lines; 236→234) collapsing redundant restatements of team-lead.md step-14 reconciliation mechanics (Blocker-blocks / Approve+Block / DEGRADED-annotation) into pointers — team-lead owns the canon and the file already referenced it. The "4 parallel reviewers" composition (load-bearing) preserved. Zero behavioral loss.
+
+### Changes
+- §Doubled Security-Track Composition: folded inline reconciliation mechanics + the degraded-fallback paragraph into one pointer-based sentence.
+- §Review Output: removed the duplicate step-14 reconciliation clause; kept the operator-routing rule.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 2 dedups vs team-lead step 14) · Boundary Clarity (security-verdict-binds preserved) · Spec Alignment (no Task() drift; frontmatter consistent with fleet)
+
+### Rename
+No rename.
+
 ## 2026-05-30 (Phase 2 — coherence)
 
 ### Summary

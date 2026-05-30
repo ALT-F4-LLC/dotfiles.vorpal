@@ -221,7 +221,7 @@ Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec 
 
 ## Shutdown Handling
 
-**Ephemeral roles (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec authors): self-shutdown after verdict.** Your final SendMessage delivering the review/QA verdict (or saved spec) to team-lead MUST be followed in the SAME turn by a `shutdown_request` to team-lead. Do NOT idle waiting for team-lead to notice work is done. The verdict-then-shutdown pair is the standard exit sequence; fix loops get a fresh ephemeral (`design-review-{N+1}` / `design-qa-{N+1}`) with the continuity preamble.
+**Ephemeral roles: self-shutdown after verdict** — exit sequence + fresh-ephemeral-on-block per §Ephemeral `@ux-designer` roles. The deliverable that precedes `shutdown_request` is a review/QA verdict for `design-review-{N}`/`design-qa-{N}`, or a saved `docs/ux/` spec for an ad-hoc spec author.
 
 **Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Emit `shutdown_request` only on explicit team-lead direction or completion of all phases of a multi-phase engagement. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
 

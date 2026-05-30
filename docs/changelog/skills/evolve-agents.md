@@ -1,5 +1,20 @@
 # Changelog: evolve-agents
 
+## 2026-05-30
+
+### Summary
+Two changes: closed a sibling-asymmetric "Second failure" recovery gap (Phase 0 auditor fallback), and added the Phase-0-findings-are-signals-not-facts rule to the Phase 1 template (byte-symmetric with evolve-skills). Net +1.
+
+### Changes
+- Crash & Stall Recovery "Second failure": added the Phase 0 auditor branch — substitute "UNAVAILABLE: <name> failed twice" for the findings token so Phase 1 templates stay valid when an auditor double-fails (parity with evolve-skills).
+- Phase 1 template: new blockquote above the prioritization line — Phase 0 audit findings (Docket commands, frontmatter fields, feature claims) are SIGNALS-TO-VERIFY against ground truth before any CHANGE relies on them; a change built on a fabricated finding is reject-class. Byte-symmetric with evolve-skills (cross-cutting coherence).
+
+### Dimensions Evaluated
+Completeness (recovery-path gap + fabrication-class fix), Coherence (sibling parity w/ evolve-skills; HARVEST blocks verified byte-identical), Orchestration, Over-Engineering (HIGHEST — minimal net).
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

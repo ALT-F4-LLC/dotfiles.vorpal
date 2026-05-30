@@ -123,10 +123,8 @@ malformed frontmatter.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required Sections). Every section listed MUST appear, in the order shown. Match spec fidelity to problem complexity — sections that do not apply to the surface type (e.g., accessibility for a non-interactive config schema) may contain a single `N/A.` paragraph with a one-line justification, but omitting them is a defect.
-4. **Mermaid diagrams**: the Mermaid Mandate is **mandatory** for UX specs (per
-   `agents/ux-designer.md`). Include at least one Mermaid block — a user flow,
-   state transition, or cross-surface journey. ASCII wireframes are encouraged
-   alongside Mermaid but do not replace it.
+4. **Mermaid diagrams**: satisfy the Mermaid Mandate (see below) — at least one block.
+   ASCII wireframes are encouraged alongside Mermaid but do not replace it.
 5. **Propose actual copy**: per `agents/ux-designer.md` content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
    states, and tooltips. No placeholder strings. **When the calling agent must resolve

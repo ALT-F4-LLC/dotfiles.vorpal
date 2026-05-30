@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-05-30
+
+### Summary
+One over-engineering trim: Authoring §4 was re-declaring the Mermaid rule (including the diagram-type examples) that the canonical "### Mermaid Mandate" section already owns; converted §4 to a procedural pointer, keeping only the ASCII-alongside clause unique to it. Net -2.
+
+### Changes
+- Authoring §4: dropped the duplicate "**mandatory** (per agents/ux-designer.md)" restatement and the diagram-type examples (both owned by the Mermaid Mandate section at line 216, verified); retained the ASCII-does-not-replace-Mermaid clause.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 1 trim), Coherence (authoring-family boundary vs design-review/design-qa verified; docs/ux/ path convention intact), Spec Alignment (agents/ux-designer.md cites verified), Actionability, Completeness (§9 Handoff Notes intact), Skill Design, Orchestration (leaf), Rename.
+
+### Rename
+No rename. ux-spec (authoring) cleanly distinct from design-review (peer review) and design-qa (post-impl QA).
+
 ## 2026-05-29
 
 ### Summary

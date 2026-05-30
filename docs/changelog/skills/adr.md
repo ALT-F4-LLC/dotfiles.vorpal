@@ -1,5 +1,19 @@
 # Changelog: adr
 
+## 2026-05-30
+
+### Summary
+No-change verdict (15th+ cycle). Re-read the full SKILL.md and verified family parity (frontmatter byte-identical with tdd/prd/ux-spec), tdd scope-boundary reciprocity, COUPLING sync, and canonical-block integrity against ground truth. No removable redundancy or broken refs.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — no slack; a change would be churn), Skill Design Quality, Actionability, Completeness, Orchestration (leaf), Coherence (tdd reciprocity + COUPLING sync verified), Spec Alignment, Rename.
+
+### Rename
+No rename. Family-aligned with prd/tdd/ux-spec/init-specs. Family-wide `disable-model-invocation` question raised to Phase 2 (no auto-fire incident in the clean historical audit — defer).
+
 ## 2026-05-28
 
 ### Summary

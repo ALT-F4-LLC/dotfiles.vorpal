@@ -1,4 +1,18 @@
-# Changelog: specs
+# Changelog: init-specs
+
+## 2026-05-30
+
+### Summary
+No-change verdict this cycle. Changelog file renamed specs.md → init-specs.md to match the skill rename applied in a prior cycle (skill dir is skills/init-specs/; the changelog filename was the last specs residue). SKILL.md body unchanged.
+
+### Changes
+- Rename only: docs/changelog/skills/specs.md → init-specs.md; H1 updated to `# Changelog: init-specs`. No SKILL.md edits.
+
+### Dimensions Evaluated
+Coherence (filename/skill-name parity — last residue cleared), Over-Engineering (HIGHEST — no trim candidates), Rename (executed).
+
+### Rename
+Changelog file specs.md → init-specs.md to align with the skills/init-specs/ directory. Skill itself was renamed in a prior cycle.
 
 ## 2026-05-28
 

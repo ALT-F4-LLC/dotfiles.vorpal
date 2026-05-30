@@ -78,11 +78,11 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule (under team-lead orchestration)
 
-When invoked under team-lead orchestration, the calling layer spawns **≥2 reviewers in parallel per phase** per `agents/team-lead.md` Rule 8: routine general review runs `advisor` (persistent) + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel reviewers). Each reviewer invokes this skill independently and emits its own structured report in this format — this skill remains the single-reviewer output-format authority. team-lead reconciles the verdicts (its step 14): any Blocker from any reviewer blocks; findings merge by `(file, symbol)` with dedupe; Approve+Block → Block; contradictions surface via `AskUserQuestion` or `vote`.
+When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (TDD secondary review, security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14.
 
 **Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict. Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
 
-**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Recurring degraded fallbacks on the same skill are an evolve-skills signal. Outside team-lead orchestration, doubling is at the calling agent's discretion.
+**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
 ## When NOT to Use
 
@@ -112,6 +112,8 @@ When invoked under team-lead orchestration, the calling layer spawns **≥2 revi
 ## Review Procedure
 
 **Triage first.** Scale effort to risk. Trivial changes (README typo, version bump on a stable dep, cosmetic-only diff) get a one-line acknowledgment per the Output Contract. Substantive changes get the full role-specific dimension sweep. For 500+ line diffs, focus on the 20% of code carrying 80% of risk first; recommend a split if scope mixes independent concerns or risk levels.
+
+**Finding-sourcing discipline (anti-fabrication — load-bearing).** Write each per-file finding ONLY from that file's COMPLETE diff rendered in a clean call this turn — never from memory of "what this kind of change usually does," and never from a cancelled or empty batch result. If a parallel batch member errors (e.g. a sandbox-denied `> $TMPDIR/...` redirect), the harness CANCELS every later call in that batch; an empty/cancelled result means the file is UNVERIFIED, not unchanged — re-issue the probe as a solo call before asserting anything about it. Prefer `git diff` / `Read` over `grep -n` for load-bearing verification (`grep -n` has returned wrong line content). Never carry an expected-change guess forward as a "verified" finding; an evidence-anchored line that is actually fabricated ("VERIFIED from real diff" for a hunk that does not exist) is worse than an honest "did not verify."
 
 ### Staff-Engineer Playbook
 

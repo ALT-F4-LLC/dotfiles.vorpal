@@ -1,5 +1,19 @@
 # Changelog: vote
 
+## 2026-05-30
+
+### Summary
+NO-CHANGE evolve pass. Re-verified all docket vote CLI flags (create/cast/commit/link/unlink/result/show) against `--help`, the delegation relay contract vs team-lead.md, and exclusion-table agent naming vs canonical agent defs. Zero drift; no edits.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+All 8 (Over-Engineering HIGHEST). No defects warranting an edit; already trimmed by the 2026-05-28 + 2026-05-29 cycles. Reviewer-count table dual-ownership with team-lead.md confirmed deliberate (not drift) — flagged to Phase 2.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

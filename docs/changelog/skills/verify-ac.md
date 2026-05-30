@@ -3,6 +3,22 @@
 ## 2026-05-30
 
 ### Summary
+Fixed a verified coherence defect: the description's runtime-disambiguator named a phantom `runtime-verify` skill — the bundled runtime skill is registered as `verify`, so the disambiguator pointed agents at a non-existent name. Corrected to name the real `verify` skill. Also fixed H1 rename residue (bare "Verify" → "Verify-AC" for sibling parity) and trimmed two inline audit-stat provenance clauses. Net 0 file lines.
+
+### Changes
+- Description Trigger line: phantom `runtime-verify` → `verify` (the actual bundled runtime skill; verify-ac was renamed away from `verify` to avoid this collision).
+- H1 heading: `# Verify —` → `# Verify-AC —` (rename residue; sibling parity with Code Review / Design QA / Design Review).
+- Pre-flight §4a, §7a: dropped two inline audit-stat provenance parentheticals (session IDs / invocation counts); behavioral rules + rationale retained, provenance lives in changelog.
+
+### Dimensions Evaluated
+Coherence (PRIMARY — phantom skill name verified against the skills registry), Rename (H1 residue), Over-Engineering (HIGHEST — two provenance trims), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment.
+
+### Rename
+Skill name unchanged (verify-ac). H1 heading residue from the prior verify→verify-ac rename fixed. No registry/cross-file rename.
+
+## 2026-05-30
+
+### Summary
 Killed the verify-ac claim-drift in two places, both contradicting the corrected agents/sdet.md Rule 7 (verification is READ-ONLY on Docket workflow state; the only legitimate state-change is `reopen` on BLOCK; the issue is already CLOSED by @senior-engineer). Pre-flight step 4 wrongly asserted @sdet had already `docket issue move <id> in-progress`-claimed the issue; Save & Return wrongly routed ACCEPT-WITH-CAVEATS/BLOCK to `docket issue move <id> review`. Net 0; 267 lines.
 
 ### Changes

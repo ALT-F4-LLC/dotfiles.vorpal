@@ -1,5 +1,19 @@
 # Changelog: prd
 
+## 2026-05-30
+
+### Summary
+Single over-engineering trim: collapsed the triple-listed `maturity` allowed-set to one canonical source (Field rules), preventing independent drift. Net 0.
+
+### Changes
+- Validation Before Save §3: replaced the inline `proof-of-concept | draft | experimental | stable` re-list with a reference to the Field rules section (single allowed-set source). The set was written out three times (Field rules, Validation, Failure Mode Table); per the skill's own duplicate-checklist precedent, one source prevents drift. Field-rules cross-ref verified present before applying.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — dedup), Coherence (sibling family names current; reciprocal init-specs coupling clean), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

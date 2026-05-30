@@ -1,5 +1,5 @@
 ---
-name: verify
+name: verify-ac
 description: >
   Verify a Docket issue's acceptance criteria against the implementation diff (static, evidence-based — NOT
   runtime app-behavior verification) and emit a structured verification report. Loaded into the calling
@@ -27,7 +27,7 @@ This skill is callable ONLY by `@sdet`. Match the calling agent's identifier (fr
 Abort message:
 
 ```
-Error: Skill(verify) is restricted to @sdet. Calling agent: {agent}.
+Error: Skill(verify-ac) is restricted to @sdet. Calling agent: {agent}.
 ```
 
 ## Argument Handling
@@ -37,7 +37,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(verify, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths). PR-scope review is @staff-engineer's via Skill(code-review, ...).
+Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths). PR-scope review is @staff-engineer's via Skill(code-review, ...).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -71,11 +71,11 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - `@sdet` is verifying a Docket issue's acceptance criteria against the implementation diff at any scope (issue, uncommitted, staged, branch, files).
 - A non-trivial change requires the FULL verification template with verdict ladder, evidence per criterion, and Issues Found.
 - A trivial change (typo, formatting, docs-only) may use LIGHT mode — see Verification Procedure below.
-- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior BLOCK / ACCEPT-WITH-CAVEATS findings, `@sdet` re-invokes `Skill(verify, "<scope>")` for a Round-2 pass on the new diff. The Round-2 verification focuses on the criteria/findings flagged in the prior round; criteria that previously PASSed and whose evidence files are untouched by the new diff may carry the prior PASS forward without re-running their evidence command. Always re-run the suite end-to-end; never carry forward a failed criterion.
+- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior BLOCK / ACCEPT-WITH-CAVEATS findings, `@sdet` re-invokes `Skill(verify-ac, "<scope>")` for a Round-2 pass on the new diff. The Round-2 verification focuses on the criteria/findings flagged in the prior round; criteria that previously PASSed and whose evidence files are untouched by the new diff may carry the prior PASS forward without re-running their evidence command. Always re-run the suite end-to-end; never carry forward a failed criterion.
 
 ## When NOT to Use
 
@@ -113,7 +113,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
      ```
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
-7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`. Audit-driven: 154 invocations / 45 sessions = ~3.4 issues per session typical.
+7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`. Audit-driven: 154 invocations / 45 sessions = ~3.4 issues per session typical.
 8. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
 
 ## Verification Procedure
@@ -235,7 +235,7 @@ If any check fails, ABORT:
 Error: validation failed: {section/field} — {detail}.
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(verify, "<scope>")`.
+The calling agent corrects in its own context and re-invokes `Skill(verify-ac, "<scope>")`.
 
 ## Save & Return
 

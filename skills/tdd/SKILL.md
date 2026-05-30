@@ -20,6 +20,8 @@ You are the **TDD Author**. You produce a single Technical Design Document at
 drafts the content; this skill is the format authority — section list, frontmatter
 contract, output path, and collision handling all live here.
 
+> **Note — "TDD" here means Technical Design Document, NOT Test-Driven Development.**
+
 ## Argument Handling
 
 <!-- CANONICAL:ARGUMENT_HANDLING:BEGIN -->
@@ -59,7 +61,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, adr, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
@@ -67,7 +69,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
   `Skill(prd, "<topic>")`.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `specs` skill.
+  code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
 ## Pre-flight
 

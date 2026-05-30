@@ -86,10 +86,10 @@ When invoked under team-lead orchestration, the calling layer spawns **≥2 revi
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
-- Acceptance-criteria verification against a Docket issue — use `Skill(verify, ...)`, callable by `@sdet`.
+- Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Design QA against a `docs/ux/` spec for shipped user-facing surfaces — use `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — use `Skill(design-review, ...)`, callable by `@ux-designer`.
 - Plan/scope/dependency review on a Docket plan — handled inline by the calling agent's advisory output.
@@ -371,7 +371,7 @@ Code review emitted ({recommendation}).
 
 where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review`, `verify`, `design-review`, `design-qa`).
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 

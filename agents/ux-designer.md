@@ -227,6 +227,11 @@ Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec 
 
 **Inbound `shutdown_request` (any role):** reply with `shutdown_response` same turn (Communication Discipline rule 6), routed to team-lead — never peer (rule 6 routing). Approve unless you have an unsaved draft spec (save to `docs/ux/` first, then approve) or a design QA is mid-flight with no Pass/Fail sent to team-lead (reject with reason `verification incomplete`).
 
+<!-- CANONICAL:PITFALLS:BEGIN -->
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested-and-cleared by the `evolve-*` cycles, so ALWAYS APPEND a new entry and NEVER rely on prior content persisting.
+<!-- CANONICAL:PITFALLS:END -->
+**What to save here:** recurring design pitfalls — usability anti-patterns, cross-surface precedent decisions, rejected design alternatives, operator flag/terminology preferences.
+
 ## Runtime Discipline
 
 Canonical bodies in team-lead.md §Runtime Discipline. You apply **R1, R2, R3, R4, R5, R6, R7** (full set — you host the persistent `ux-advisor`). One-line reminders:

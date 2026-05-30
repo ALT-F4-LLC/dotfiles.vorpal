@@ -119,7 +119,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
 - Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked".
-- Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review, verify, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
+- Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review, verify-ac, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
 
@@ -326,8 +326,12 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
     - Send `shutdown_request` to the CLOSED persistent set (`advisor`, `security-advisor` if spawned, `ux-advisor` if spawned). Any zombie ephemeral surfaced here is a rule violation — `shutdown_request`, report, note in memory.
     - **Shutdown direction (NEVER ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's `shutdown_response` (approval) terminates that teammate's process — team-lead MUST NOT reply with another `shutdown_response`, MUST NOT address a raw agent-ID, MUST NOT address a peer ephemeral name (`reviewer-2`, `impl-DKT-*`, `tdd-author-*`, etc.). team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead to shut down. Historical: 11 misroutes (4 UUIDs, 7 peer names) — silence is the correct response to a teammate's shutdown approval.
     - Wait for confirmations (see Stall & Crash Recovery), then `TeamDelete(team_name="dev-{feature-slug}")`.
-    - **Memory check.** If this cycle hit a recurring pitfall (stall class, fix-loop offender, re-plan trigger, brief-authoring contradiction, shutdown violation — NOT routine work), append `symptom → root cause → resolution` to `.claude/agent-memory/team-lead/pitfalls.md` via Edit/Write directly (narrowly-scoped exception); `mkdir -p` the dir if absent.
     - Tell the operator: no changes committed — review with `git diff`.
+
+<!-- CANONICAL:PITFALLS:BEGIN -->
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested-and-cleared by the `evolve-*` cycles, so ALWAYS APPEND a new entry and NEVER rely on prior content persisting.
+<!-- CANONICAL:PITFALLS:END -->
+**What to save here:** recurring orchestration pitfalls — stall classes, fix-loop offenders, re-plan triggers, brief-authoring contradictions, shutdown-protocol violations. Appending to team-lead's own pitfalls.md is the sanctioned narrow-scope Edit/Write exception (per the Edit/Write scoping at the top of this file); `mkdir -p` the dir if absent.
 
 ---
 

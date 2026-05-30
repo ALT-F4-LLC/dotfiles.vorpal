@@ -1,4 +1,19 @@
-# Changelog: verify
+# Changelog: verify-ac
+
+## 2026-05-30
+
+### Summary
+Killed the verify-ac claim-drift in two places, both contradicting the corrected agents/sdet.md Rule 7 (verification is READ-ONLY on Docket workflow state; the only legitimate state-change is `reopen` on BLOCK; the issue is already CLOSED by @senior-engineer). Pre-flight step 4 wrongly asserted @sdet had already `docket issue move <id> in-progress`-claimed the issue; Save & Return wrongly routed ACCEPT-WITH-CAVEATS/BLOCK to `docket issue move <id> review`. Net 0; 267 lines.
+
+### Changes
+- Pre-flight step 4: replaced the "already claimed via `docket issue move`" assertion with "acknowledges via SendMessage but does NOT `docket issue move` (read-only per sdet.md Rule 7)".
+- Save & Return closeout: replaced `docket issue move <id> review` on ACCEPT-WITH-CAVEATS/BLOCK with the correct branches — APPROVE/ACCEPT = comment-only (issue already closed by @senior-engineer), BLOCK = `reopen` + blocking comment.
+
+### Dimensions Evaluated
+Coherence (PRIMARY — sdet Rule 7 contradiction, fixed in 2 places) · Over-Engineering (both changes net 0) · Spec Alignment (closeout now matches sdet.md §Execution Workflow step 5)
+
+### Rename
+No skill rename. Changelog file renamed docs/changelog/skills/verify.md → verify-ac.md and header "# Changelog: verify" → "# Changelog: verify-ac" (the verify→verify-ac skill rename had not moved it).
 
 ## 2026-05-29
 

@@ -1,5 +1,35 @@
 # Changelog: security-engineer
 
+## 2026-05-30 (Phase 2 — coherence)
+
+### Summary
+Fixed a rule-numbering drift surfaced by Phase 2 cross-agent review: the §Doubled Security-Track Composition degraded-fallback reference pointed at "step 14 reconciliation rule 7", but team-lead.md step 14's list has 6 rules (degraded-fallback = rule 6). Now agrees with ux-designer.md (corrected rule-7→rule-6 the same cycle) and team-lead.md.
+
+### Changes
+- §Doubled Security-Track Composition: "step 14 reconciliation rule 7" → "rule 6".
+
+### Dimensions Evaluated
+Spec Alignment (cross-agent rule-numbering coherence)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+Three changes (236 lines; within-line). Added the audit's validated glob/separator/POSIX-bracket pattern-matching check to the authn/authz review dimension (two PROVEN weft pitfalls: path.Match/doublestar silent DENY across `/` in URI-shaped capabilities → under-permissioning; verbatim-bracket glob→regexp translators activating RE2 POSIX classes → over-grant; both need sequence-level, not lockstep, abuse cases). Fixed the fabricated `[SEC→@agent]` visibility token (canonical `[{ROLE}→@{recipient}]`; nowhere fleet-wide). Offset by collapsing the triple-redundant secret-handling failure-string restatement.
+
+### Changes
+- §Review Workflow step 3 authn/authz dimension: added pattern-match-semantics check (enumerate `*`/separator/bracket against the actual identifier shape; require sequence-level abuse cases).
+- §Cross-agent pointers: replaced fabricated `[SEC→@agent]` with canonical `[SEC→@{recipient}]` per the `[{ROLE}→@{recipient}]` convention.
+- §No Guessing secret-handling audits: collapsed the duplicate failure-string example; retained the DO/DON'T.
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — historical-driven authz match-semantics check) · Spec Alignment (visibility-token coherence) · Consolidation (secret-handling dedup)
+
+### Rename
+No rename.
+
 ## 2026-05-26
 
 ### Summary

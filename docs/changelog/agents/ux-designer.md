@@ -1,5 +1,21 @@
 # Changelog: ux-designer
 
+## 2026-05-30
+
+### Summary
+Three coherence/consolidation fixes driven from first-principles + cross-agent coherence (zero in-window historical signal — lowest-invocation role, empty docs/ux + docs/spec). (1) Gated AskUserQuestion to standalone-only at the Honest-critique line and Spec Workflow step 5 — the teammate path cannot call it (docs-validated); team mode routes via SendMessage team-lead, matching the staff/security fleet pattern. (2) Corrected a dangling cross-ref: the DEGRADED fallback is team-lead step 14 reconciliation rule 6, not 7. (3) Consolidated the verdict-then-shutdown / continuity-preamble mechanic stated 4× (R2, R5, Ephemeral roles, Shutdown Handling); trimmed the two R2/R5 Fix-loop blocks to pointers preserving each unique fact. Content trimmed; 245 lines (single-line paragraphs, count unchanged).
+
+### Changes
+- §Honest critique / §Spec Workflow step 5: AskUserQuestion split into standalone (`AskUserQuestion`) vs team (SendMessage team-lead) — closes the teammate-path-unavailable gap.
+- §Ephemeral roles: reconciliation "rule 7" → "rule 6" (matches team-lead step-14 list + L317 cross-ref).
+- R2 / R5 Fix-loop continuity: full mechanic → 1-line pointers to §Ephemeral `@ux-designer` roles; unique facts retained.
+
+### Dimensions Evaluated
+Consolidation (PRIMARY) · Cross-Communication (AskUserQuestion fleet parity + rule-6 cross-ref) · Spec Alignment (teammate-path tool availability) · Actionability (no ambiguous team-mode AskUserQuestion instruction)
+
+### Rename
+No rename.
+
 ## 2026-05-26
 
 ### Summary

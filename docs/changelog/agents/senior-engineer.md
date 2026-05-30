@@ -1,5 +1,21 @@
 # Changelog: senior-engineer
 
+## 2026-05-30
+
+### Summary
+Two self-contained edits (net -1; 359→358). Removed the dead `commit` skill from `skills:` frontmatter (no such skill exists anywhere — verified — and it contradicted the no-commit CRITICAL banner) and trimmed the frozen "(32 fix-round ephemerals)" audit count from the TDD deep-read gate. The recommended closure-authority gate was DEFERRED to Phase 2 coherence — it is paired with a team-lead brief-template change that review-team-lead declined, and an unpaired flag would never fire (fails the Behavioral gate).
+
+### Changes
+- `skills:` frontmatter: removed `commit` (dead reference; contradicted no-commit banner). `vote`/`simplify-scout` retained (both exist + invoked in-body).
+- Execution Workflow step 2: trimmed frozen "(32 fix-round ephemerals)" count from the TDD deep-read gate.
+- DEFERRED to Phase 2: closure-authority gate (cross-cutting; paired team-lead change in dispute).
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — frontmatter + frozen-count trim) · Boundary Clarity (no-commit contradiction resolved) · Capability Growth (closure-authority deferred to coherence)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 coherence)
 
 ### Summary

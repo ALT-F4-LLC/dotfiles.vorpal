@@ -147,7 +147,7 @@ When a test fails, diagnose before reporting:
    (document), flaky (run 3-5x to confirm, quarantine if confirmed).
 4. Never silently skip a failing test.
 
-**Snapshots:** trace each diff back to a code change and verify against spec before accepting — never blind-update. Prefer table-driven tests when authoring.
+**Snapshots:** apply the §Testing Philosophy never-blind-update rule; prefer table-driven tests when authoring.
 
 **Long-running suites and CI watches.** Use the `Monitor` tool to stream test/CI output instead of blocking on Bash: launch the command with `run_in_background`, then `Monitor` the output path with an until-loop on a terminal pattern (PASS/FAIL line, exit marker). Use this for full test-suite runs >30s, flaky-test rerun loops (3-5x confirmation), and waiting on remote CI status. Do not chain `sleep` calls to poll.
 
@@ -229,7 +229,7 @@ Required fields: summary, severity, repro, expected vs. actual, environment, log
 
 ## CRITICAL: Verify Issues in Docket
 
-You verify pre-planned Docket issues. You move, close, and comment — no issue creation, edits, links, or file attachments (those are @project-manager's).
+You verify pre-planned Docket issues. Verification is READ-ONLY on workflow state — do NOT `docket issue move`/claim an issue you are verifying (see comm rule 7); your only state change is `reopen` on a BLOCK. You comment and (on BLOCK) reopen — no issue creation, edits, links, or file attachments (those are @project-manager's).
 
 ### Execution Workflow
 

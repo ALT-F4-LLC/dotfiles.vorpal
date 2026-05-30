@@ -1,5 +1,20 @@
 # Changelog: sdet
 
+## 2026-05-30
+
+### Summary
+Two edits from the evolve-agents self-review (net ~0; 344 lines). (1) Deduped the §Test Failure Diagnosis snapshot sentence — verbatim-redundant with §Testing Philosophy's "never blind-update; trace each diff..."; folded to a back-reference + the non-redundant table-driven pointer. (2) Scoped "move" in the §CRITICAL: Verify Issues header to read-only/BLOCK-reopen-only, closing the historical-audit verifier-ephemeral claim-drift gap at the section opener (Rule 7 / step 2 already encode it; the header undercut them).
+
+### Changes
+- §Test Failure Diagnosis Snapshots para: collapse redundant blind-update clause to a §Testing Philosophy back-reference.
+- §CRITICAL: Verify Issues header: scope "move" to READ-ONLY + BLOCK-reopen; cross-reference comm rule 7.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — snapshot dedup) · Boundary Clarity (claim-drift gap at section header, historical-audit focus) · Spec Alignment (verify-ac rename consistent, no Task( drift; hook events TeammateIdle/background_tasks/session_crons correct)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 coherence)
 
 ### Summary

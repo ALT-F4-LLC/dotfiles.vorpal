@@ -225,7 +225,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 
 ### 9. Attach File References
 
-Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. Never `issue edit -f` — it replaces all existing attachments.
+Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites a spec line-ref (`docs/tdd/<x>.md:42`), re-confirm the line against the live file before finalizing — TDD line numbers drift. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
 
 ### 10. Validate and Finish
 

@@ -1,5 +1,20 @@
 # Changelog: staff-engineer
 
+## 2026-05-30
+
+### Summary
+Two pure-consolidation trims removing verbatim duplication of canonical clauses (248 lines; within-line). No Rename / Docs-Research / CLI changes — docs-research recommendations already satisfied in this def.
+
+### Changes
+- §TDD Workflow step 9: collapsed the duplicated step-14 reconciliation expansion ("any Blocker blocks; findings merge with dedupe; Approve+Block → Block") and the duplicated ephemeral-shutdown contract into pointers (§Shutdown Handling Ephemeral + team-lead step-14 rules); full expansion retained once at the Responsibility 2 opener.
+- §Comm Discipline rule 7: dropped the duplicated `"immediately" = same-turn final tool call` gloss (canonical at §Shutdown Handling); kept the routing-load-bearing async fact + WRONG/RIGHT example.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 2 verbatim-duplication removals) · Capability Growth (step-14 anchor coherence verified) · Spec Alignment
+
+### Rename
+No rename.
+
 ## 2026-05-26
 
 ### Summary

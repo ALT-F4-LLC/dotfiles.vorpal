@@ -11,7 +11,6 @@ permissionMode: dontAsk
 effort: max
 memory: project
 skills:
-  - commit
   - vote
   - simplify-scout
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
@@ -137,7 +136,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 **For assigned issues:**
 
 1. **Claim immediately (two-step)** — `docket issue edit <id> -a @senior-engineer` THEN `docket issue move <id> in-progress` are the FIRST two tool calls on dispatch (per sdet Rule 7). Assignee MUST be set first: team-lead's `docket issue list -a @senior-engineer -s in-progress --json` probe is the primary mechanism for detecting live senior-engineer ephemerals and identifying shutdown candidates — an unassigned in-progress issue is invisible to the probe. Claiming before reading shows liveness and prevents respawn.
-2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Contradiction-detection**: if the dispatch prompt prescribes a shape (signature, wire format) for a dimension AND lists that dimension as an open consult ("SendMessage advisor BEFORE implementing"), the consult overrides the prescription — SendMessage advisor first. **TDD deep-read gate** (when the issue cites a TDD or `docs/tdd/<file>`): read it end-to-end before step 4. For each constraint that gates your approach, confirm you understand the WHY, not just the WHAT — ambiguity on the WHY → SendMessage @staff-engineer (or `advisor`) for clarification BEFORE writing the first line of code. One pre-impl consult is cheaper than a fix-loop respawn; impl-to-TDD divergence surfaced only after code lands is the dominant rework signal in the audit window (32 fix-round ephemerals).
+2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Contradiction-detection**: if the dispatch prompt prescribes a shape (signature, wire format) for a dimension AND lists that dimension as an open consult ("SendMessage advisor BEFORE implementing"), the consult overrides the prescription — SendMessage advisor first. **TDD deep-read gate** (when the issue cites a TDD or `docs/tdd/<file>`): read it end-to-end before step 4. For each constraint that gates your approach, confirm you understand the WHY, not just the WHAT — ambiguity on the WHY → SendMessage @staff-engineer (or `advisor`) for clarification BEFORE writing the first line of code. One pre-impl consult is cheaper than a fix-loop respawn; impl-to-TDD divergence surfaced only after code lands is the dominant rework signal.
 3. **Verify files attached** — `docket issue file list <id>`. Missing files = planning gap → SendMessage @project-manager, STOP.
 4. **Implement** per the issue and the specs loaded in step 2.
 5. **Self-review** (depth scaled to risk: scan one-liners, line-by-line on cross-cutting refactors):

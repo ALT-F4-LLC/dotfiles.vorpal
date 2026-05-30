@@ -1,5 +1,20 @@
 # Changelog: verify
 
+## 2026-05-29
+
+### Summary
+Trimmed the Doubling Rule's orchestration re-narration to a pointer (it contradicted team-lead.md step 15's default-single-verifier rule and duplicated canonical logic), and documented the comma-batched Docket-ID arg form observed in the historical audit.
+
+### Changes
+- Doubling Rule: replaced 9 lines of spawn/reconcile/fix-loop narration (which wrongly asserted "no single-verifier mode under orchestration", contradicting team-lead.md step 15) with a 3-line pointer to agents/team-lead.md (Rule 7/8, step 14/15). Net -7.
+- Argument Handling: added a Comma-batched Docket IDs paragraph — split on commas, one report per issue; contrast with code-review's single-scope path-list. Net +3.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — net offset), Orchestration (removed team-lead.md contradiction), Completeness + Argument Handling (comma-batch form), Coherence (runtime-verify name collision flagged for Phase 2; docket close-no--m verified), Skill Design Quality, Actionability, Spec Alignment, Rename.
+
+### Rename
+No rename — runtime-verify collision mitigated by the front-loaded description disclaimer; a registry rename is a Phase-2 decision.
+
 ## 2026-05-28
 
 ### Summary

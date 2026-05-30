@@ -1,5 +1,34 @@
 # Changelog: design-qa
 
+## 2026-05-29
+
+### Summary
+Harmonized the silent-completion self-check framing with the report-emission skill family (Phase 2 coherence).
+
+### Changes
+- Self-check now frames the actor as the calling agent ("the calling agent MUST self-check"), removing the self-referential "confirm you SendMessaged...to the calling agent" phrasing — the skill loads into the calling agent's context, so the calling agent is the actor. Matches code-review/verify framing. [Phase 2 coherence item 3]
+
+### Dimensions Evaluated
+Cross-skill coherence; instruction accuracy.
+
+### Rename
+No rename.
+
+## 2026-05-29
+
+### Summary
+Removed the empty Failure Modes section — pure meta-narration with no scope-specific content (it only stated that abort paths live elsewhere); the abort-emission rule already lives in Save & Return.
+
+### Changes
+- Removed `## Failure Modes` section (net -3): all abort paths are specified inline at their enforcement points; the section carried no unique behavior and failed the Content-Gate Non-redundant check.
+- `disallowed-tools` not adopted: report-emission-family-wide Phase 2 decision (NOT "redundant with allowed-tools" — verified per docs, allowed-tools does not restrict the tool pool); the leaf banner remains the enforcement.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 1 removal), Skill Design Quality (disallowed-tools deferred), Coherence (verdict-ladder divergence from design-review is intentional; severity ladders consistent), Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename — design-qa (post-impl QA) cleanly distinct from design-review and ux-spec.
+
 ## 2026-05-28
 
 ### Summary

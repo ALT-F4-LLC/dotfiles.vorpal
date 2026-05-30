@@ -201,15 +201,15 @@ Before invoking `Write`, verify in the calling agent's context:
    section contains at least one digit OR a comparison operator (`<`, `>`, `≤`, `≥`,
    `=`). A Success Metrics section with zero numeric targets is a defect.
 
-If any check fails, ABORT (no fix-and-retry — `Edit` is excluded from this
-skill's tools):
+If any check fails, ABORT (no fix-and-retry — the skill validates then writes
+in a single pass; repair is the calling agent's responsibility):
 
 ```
 Error: validation failed: {field/section} — {detail}.
 ```
 
-The calling agent fixes the issue in its own context (it has its own tools)
-and re-invokes `Skill(prd, "<topic>")`.
+The calling agent fixes the issue in its own context and re-invokes
+`Skill(prd, "<topic>")`.
 
 ## Save & Return
 

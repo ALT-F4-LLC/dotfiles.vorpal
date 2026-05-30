@@ -73,7 +73,8 @@ If extra positional args follow `<scope>`, ignore them silently.
 ## When to Use
 
 - The calling agent (`@staff-engineer` or `@security-engineer`) is performing a code review at any scope (PR, branch, uncommitted, staged, files).
-- The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior Blockers/Concerns, the original reviewer re-invokes `Skill(code-review, "<scope>")` for a Round-2 pass on the new diff (typical: PR number first, then `uncommitted` after the fix lands locally). The Round-2 review focuses on whether the original findings are resolved; it does not re-do the full dimension sweep unless new code introduces new risk.
+- The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.
+- **Re-invocation after fix is expected** — the dominant call pattern is fix→re-review loops on the same scope (PR# first, then `uncommitted` once the fix lands locally). Emit the compact Round-N format (see Output Contract → Round-N Re-Review), not a fresh full sweep, unless new code introduces new risk.
 
 ## Doubling Rule (under team-lead orchestration)
 
@@ -370,7 +371,7 @@ Code review emitted ({recommendation}).
 
 where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to the calling agent (team-lead in team mode) containing the structured verdict body. The in-context emission is the calling agent's working artifact, not the handoff. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict to the calling agent in this same turn?* If no, the turn is incomplete regardless of how complete the in-context emission feels. Silent-completion of the verdict is the dominant defect class on this skill family (`code-review`, `verify`, `design-review`, `design-qa`).
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review`, `verify`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 
@@ -396,4 +397,3 @@ Most abort paths are specified inline (Argument Handling, Role Detection, Pre-fl
 | Trigger | Handling |
 |---|---|
 | `gh` CLI unavailable for a PR scope | Abort: `Error: gh CLI required to resolve PR scope. Re-invoke with the branch name or "uncommitted".` |
-| Severity ladder cross-mixed (e.g., security review uses "Blocker" instead of "Critical") | Abort: `Error: validation failed: severity ladder — {role} review must use {ladder}. Found: {wrong-label}.` |

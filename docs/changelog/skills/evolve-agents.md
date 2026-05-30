@@ -1,5 +1,19 @@
 # Changelog: evolve-agents
 
+## 2026-05-29
+
+### Summary
+Normalized the Content Gate intro line to byte-identical with the sibling evolve-skills (Phase 2 coherence).
+
+### Changes
+- Content Gate intro → "Every proposed addition MUST pass ALL 4 checks. Reject content that fails ANY check." — names the check count (gate has exactly 4) and matches evolve-skills verbatim. The 4 numbered checks remain domain-specific (unchanged). [Phase 2 coherence item 6a]
+
+### Dimensions Evaluated
+Sibling-skill coherence; wording consistency.
+
+### Rename
+No rename.
+
 ## 2026-05-28
 
 ### Summary

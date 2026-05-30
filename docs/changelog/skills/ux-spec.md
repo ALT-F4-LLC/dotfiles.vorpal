@@ -1,5 +1,20 @@
 # Changelog: ux-spec
 
+## 2026-05-29
+
+### Summary
+Merged two overlapping When-to-Use bullets into one, and corrected the same `allowed-tools`-excludes-Edit misinformation found in prd/tdd (per docs, allowed-tools does not restrict the tool pool).
+
+### Changes
+- When to Use: merged bullets 1 and 3 (duplicate "surface needs a spec" intent; surface examples + output-path contract retained). Net -3.
+- Validation Before Save: replaced "`Edit` is excluded from this skill's tools" / "it has its own tools" with a design-intent rationale (validate-then-write once; caller owns repair). Fixed in lockstep with prd/tdd.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 1 trim), Skill Design Quality (factual accuracy), Coherence (ux-spec↔design-review↔design-qa lifecycle verified; doc-authoring family), Actionability, Completeness, Orchestration (leaf), Spec Alignment, Rename.
+
+### Rename
+No rename — ux-spec (authoring) cleanly distinct from design-review and design-qa.
+
 ## 2026-05-28
 
 ### Summary

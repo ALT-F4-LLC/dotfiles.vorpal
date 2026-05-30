@@ -1,5 +1,22 @@
 # Changelog: code-review
 
+## 2026-05-29
+
+### Summary
+Fixed a markdown run-on-bullet defect in When-to-Use and repointed it at the authoritative Round-N section; tightened the Save & Return silent-completion paragraph; dropped a redundant Failure Modes row already enforced by Validation check-3.
+
+### Changes
+- When to Use: fixed run-on bullet (Re-invocation was jammed onto the prior bullet with no newline); now points at Output Contract → Round-N, de-duping the Round-N section.
+- Save & Return: trimmed the triple-stated SendMessage-is-deliverable directive to two sentences; kept the family-wide silent-completion pitfall note.
+- Failure Modes: removed the cross-mixed-ladder row (duplicate of Validation check-3, same abort shape; violated the table's "new abort text only" promise).
+- Declined `disallowed-tools` (clears-on-next-message risks suppressing the mandated post-skill SendMessage); `/code-review` bundled-skill namespace collision flagged for Phase 2.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 3 trims), Skill Design Quality (run-on defect, disallowed-tools decision), Coherence (Round-N de-dup, Failure Modes/Validation overlap, namespace collision), Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename — highest-volume skill; name accurate, stability load-bearing. The bundled `/code-review` collision is a Phase-2 item.
+
 ## 2026-05-28
 
 ### Summary

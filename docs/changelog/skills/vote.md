@@ -1,5 +1,20 @@
 # Changelog: vote
 
+## 2026-05-29
+
+### Summary
+Over-engineering trim on the largest skill: collapsed the doubled reviewer-count table to a count-only annotation (its threshold/constraint columns duplicated the base table verbatim), and reduced the recursive-doubling paragraph to a pointer (the rule is owned by team-lead.md; the coordinator never computes it).
+
+### Changes
+- Doubled table (6 lines) → one-line count annotation: low=4/medium=4/high=6/critical=8; thresholds+constraints inherited from the base table; medium reject-cap delta preserved. Net -5.
+- Recursive-doubling paragraph → one-line pointer to agents/team-lead.md Consensus Integration (also resolves a base-vs-doubled-table wording discrepancy with team-lead.md). Net -3.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 2 trims), Coherence (doubled-table + recursive-doubling ownership in team-lead.md; CLI zero-drift verified), Skill Design Quality, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename — `vote` matches the `docket vote` CLI subcommand exactly.
+
 ## 2026-05-28
 
 ### Summary

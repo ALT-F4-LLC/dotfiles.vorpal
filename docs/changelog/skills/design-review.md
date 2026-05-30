@@ -1,5 +1,34 @@
 # Changelog: design-review
 
+## 2026-05-29
+
+### Summary
+Harmonized the silent-completion self-check framing with the report-emission skill family (Phase 2 coherence).
+
+### Changes
+- Self-check reframed to "the calling agent MUST self-check," dropping the self-referential "to the calling agent" destination (now peer/team-lead per trigger). Matches code-review/verify; resolves the deferred Phase-1 "leaf skill can't SendMessage" objection without deleting the load-bearing reminder. [Phase 2 coherence item 3]
+
+### Dimensions Evaluated
+Cross-skill coherence; instruction accuracy.
+
+### Rename
+No rename.
+
+## 2026-05-29
+
+### Summary
+Consolidated the Recommendation-vs-severity validation gate (check #2) from three prose sub-bullets into one enforceable line; the Recommendation Ladder table already defines the tier semantics.
+
+### Changes
+- Validation Before Emit check #2: 3 sub-bullets → 1 line (any Blocker ⇒ Block/Redesign/Incremental; any Concern ⇒ Approve-with-follow-up/Redesign/Incremental, plain Approve forbidden; zero/zero ⇒ Approve permitted). Net -3.
+- Deferred to Phase 2: removing the Save & Return self-check (conflicts with code-review keeping the same report-emission-family silent-completion reminder — harmonize family-wide); `disallowed-tools` (family decision, not adopting).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — 1 trim), Coherence (self-check is a family pattern → deferred), Skill Design Quality, Actionability, Completeness, Orchestration (leaf), Spec Alignment, Rename.
+
+### Rename
+No rename — design-review cleanly distinct from design-qa (post-impl) and ux-spec (authoring).
+
 ## 2026-05-28
 
 ### Summary

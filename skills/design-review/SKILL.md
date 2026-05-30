@@ -197,10 +197,7 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 Before emitting the report, verify in the calling agent's context:
 
 1. **Recommendation is on the ladder** — exactly one of Approve / Approve with follow-up / Block / Redesign / Incremental Improvement.
-2. **Recommendation matches severity counts** —
-   - Any Blocker → Recommendation MUST be Block, Redesign, or Incremental Improvement.
-   - Any Concern (no Blockers) → Recommendation MUST be Approve with follow-up, Redesign, or Incremental Improvement. Approve is forbidden.
-   - No Blockers and no Concerns → Recommendation MAY be Approve; Redesign or Incremental Improvement still permitted when the body argues a fundamental rethink or bounded improvement path.
+2. **Recommendation matches severity counts** — any Blocker ⇒ Block / Redesign / Incremental Improvement; any Concern with no Blockers ⇒ Approve with follow-up / Redesign / Incremental Improvement (plain Approve forbidden); zero Blockers and zero Concerns ⇒ Approve permitted (Redesign / Incremental Improvement still allowed when the body argues a rethink or bounded improvement path).
 3. **Every Blocker cites a dimension** — the `[dimension]` tag at the start of each Blocker bullet must name one of the six dimensions.
 4. **Every Concern names a spec section or workflow** — the bullet body must reference the artifact section, workflow, or surface it affects.
 5. **Every Blocker has an alternative or required fix** — a Blocker bullet without `—` separator and an alternative/fix fragment is a defect.
@@ -234,7 +231,7 @@ The calling agent owns (in order):
 - Triggering `Skill(vote, ...)` if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold per `agents/ux-designer.md`.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: "Did I SendMessage the verdict (structured, not summarized) to the calling agent (team-lead in team mode) in this same turn?" The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead, who reconciles both reviewers before routing; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

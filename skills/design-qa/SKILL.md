@@ -197,7 +197,7 @@ Design QA report emitted ({verdict}).
 
 where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
-**Self-check before ending the turn:** the in-context emission is your working artifact, NOT the deliverable. Before idling or marking the task complete, confirm you SendMessaged the structured verdict to the calling agent (team-lead in team mode). Silent turns after a report-emission skill block downstream routing.
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review`, `verify`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 
@@ -206,7 +206,3 @@ The calling agent owns (in order):
 - Proposing a spec revision via `Skill(ux-spec, ...)` if QA reveals a spec ambiguity rather than an implementation defect.
 
 On any abort during Pre-flight, QA Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
-
-## Failure Modes
-
-All abort paths are specified inline at their point of enforcement — Argument Handling (missing/invalid `<scope>`, unresolvable scope, extra args ignored), Role Detection (caller not `@ux-designer`), Pre-flight (missing spec, empty implementation surface), and Validation Before Emit (format defects). No abort text or scope-specific behavior is unique to this section.

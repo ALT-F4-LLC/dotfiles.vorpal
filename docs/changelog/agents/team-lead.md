@@ -1,5 +1,34 @@
 # Changelog: team-lead
 
+## 2026-05-30 (Phase 2 — coherence)
+
+### Summary
+Completed the Rule 2 canonical role-prefix example registry. The visibility-contract examples listed only `[LEAD→…]`/`[PM→…]`/`[SE→…]`, but the fleet also uses `[STAFF→…]`, `[SEC→…]`, `[SDET→…]`, `[UX→…]` (all valid `[{ROLE}→@{recipient}]` instantiations). Added the four missing tokens so Rule 2 is authoritative for all 7 roles. Within-line; 481 lines.
+
+### Changes
+- Rule 2 (Visibility contract): appended `[STAFF→…]`, `[SEC→…]`, `[SDET→…]`, `[UX→…]` to the canonical-prefix example list.
+
+### Dimensions Evaluated
+Spec Alignment / Cross-Agent Coherence (Rule 2 prefix registry now complete for all 7 roles)
+
+### Rename
+No rename.
+
+## 2026-05-30
+
+### Summary
+Two changes, net -2 (483→481), trim-leaning near the 500 ceiling. (1) Promoted the recurring `.env*` phantom-deletion pitfall (RECURS across agentic-services + weft memory) into the EXISTING step-13 sandbox-masked-diff caveat — deny-listed paths surface as `Operation not permitted` / phantom-DELETED, `dangerouslyDisableSandbox` does not lift it, treat as masked state. (2) Consolidated the standalone "Trust state-divergence rejections" paragraph into the pre-shutdown gate step 3 (which it restated), keeping only the non-redundant "don't override by re-issuing the same reasoning" directive. Docs-research recs already satisfied.
+
+### Changes
+- Step 13 spot-check sandbox-masked caveat: appended phantom-deletion sub-case (`.env*` → `Operation not permitted` → masked state, never a real deletion).
+- Pre-shutdown gate step 3: folded in the "trust the rejection / don't re-issue same reasoning" directive; deleted the standalone "Trust state-divergence rejections." paragraph (-2 lines).
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — net-negative achieved) · Capability Growth (cross-repo recurring memory promoted into an existing rule)
+
+### Rename
+No rename.
+
 ## 2026-05-26 (Phase 2 coherence)
 
 ### Summary

@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-05-30
+
+### Summary
+One change closing the cross-cutting brief-integrity gap (historical finding: PM authored issue bodies citing nonexistent file refs + stale TDD line numbers). §9 now requires verifying each `-f` path resolves on disk before attaching and re-confirming spec line-refs against the live file; swapped in place for the triplicated `issue edit -f` REPLACES warning (canonical home retained at Docket Reference foot-guns). Within-line; 324 lines unchanged.
+
+### Changes
+- §9 Attach File References: added "Verify before attaching" (confirm path resolves via `ls`/Read; re-confirm cited spec line-refs against the live file — line numbers drift); dropped the redundant inline `edit -f` warning, pointing to Docket Reference foot-guns.
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — brief-integrity discipline, historical finding) · Consolidation & Trimming (de-triplicated `edit -f` warning)
+
+### Rename
+No rename.
+
 ## 2026-05-26
 
 ### Summary

@@ -55,7 +55,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/tdd, adr, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
@@ -64,7 +64,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
+  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
   and Failure Modes.
 
 ## Pre-flight
@@ -149,7 +149,7 @@ Field rules:
   `proof-of-concept | draft | experimental | stable`. New PRDs start at `draft`.
 - **PRDs do NOT use a `status` field.** `status` is reserved for in-flight workflow
   artifacts (TDDs and ADRs). PRDs are living product definitions — they take
-  `maturity` from the `specs` family ladder.
+  `maturity` from the `init-specs` family ladder.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@project-manager`, etc.).
 - `scope` is a one-line description of what the PRD covers — populated by the
@@ -238,10 +238,10 @@ On operator Cancel during the collision dialog: emit
 
 ### Reserved-Name List
 
-The 7 names below are owned by the `specs` skill (project-wide engineering specs)
+The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by skills/specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -258,7 +258,7 @@ testing
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(prd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the specs skill. Pick a different topic or use the specs skill to bootstrap project specs.` No overwrite path. |
+| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the init-specs skill. Pick a different topic or use the init-specs skill to bootstrap project specs.` No overwrite path. |
 | Output file already exists (and slug is not reserved) | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |

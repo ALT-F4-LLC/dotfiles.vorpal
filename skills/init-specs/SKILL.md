@@ -1,5 +1,5 @@
 ---
-name: specs
+name: init-specs
 description: >
   One-time bootstrap of docs/spec/ — spawns @staff-engineer agents in parallel to generate
   project specification files. Re-invocation prompts before overwriting existing specs;
@@ -18,8 +18,8 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 The argument is **optional** — this skill has a single well-defined behavior.
 
-- **No argument** (`/specs`): Bootstrap all 7 spec files.
-- **With argument** (`/specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
+- **No argument** (`/init-specs`): Bootstrap all 7 spec files.
+- **With argument** (`/init-specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
   instead of all 7. Validate each name against the Spec File Reference table.
 - **On unknown name(s)**: Abort with a message listing the rejected name(s) and the 7 valid filenames; do not partially proceed.
 
@@ -64,7 +64,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update specs and prd in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|

@@ -61,7 +61,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, ux-spec, and specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/adr/`.
 - Full system designs spanning multiple components or phases: use
@@ -70,7 +70,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
   `Skill(prd, "<topic>")`.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
-  code-quality, review-strategy, testing): owned by the `specs` skill.
+  code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
 ## Pre-flight
 

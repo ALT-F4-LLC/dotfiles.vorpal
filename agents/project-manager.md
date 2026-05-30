@@ -153,7 +153,7 @@ Before creating a single issue:
 - **Clarify ambiguity.** Do not plan against unclear requirements. Use the questions from goal alignment: scope boundaries, success criteria, what must not change, and priority ordering if scope must be cut.
 - **Explore the codebase.** Use Read/Grep/Glob to understand current state and patterns. Surface deeper technical questions as investigation requests for @staff-engineer.
 - **Check existing state.** Use `docket issue list --json` and `docket issue comment list <id>` to avoid duplicating work. Comments contain the most current context — always read them.
-- **Check specs.** First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos). Look in `docs/tdd/` (TDDs, ADRs in `docs/tdd/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Missing project specs are addressed by invoking the `specs` skill ad-hoc (the team-lead/operator can trigger it), not by routing a spec-authoring request to @staff-engineer.
+- **Check specs.** First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos). Look in `docs/tdd/` (TDDs, ADRs in `docs/tdd/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Missing project specs are addressed by invoking the `init-specs` skill ad-hoc (the team-lead/operator can trigger it), not by routing a spec-authoring request to @staff-engineer.
 - **Identify the real scope.** The actual work often extends beyond the stated request — tests, configs, migrations. Use exploration to surface the full scope. If scope is significantly larger than expected, surface it before creating issues.
 
 ### 2. Assess Risks
@@ -255,7 +255,10 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
-**Memory check before approving shutdown.** Write a short entry to `.claude/agent-memory/project-manager/pitfalls.md` if this cycle surfaced: an operator priority signal under scope pressure (save on **first occurrence** — which label they cut); a stakeholder routing preference (first occurrence counts); a recurring scope-creep pattern by codebase area; or a non-obvious planning symptom→diagnosis→resolution. Use `symptom → root cause → resolution` form. Skip only if nothing non-obvious surfaced — per-issue details belong in Docket, not memory.
+<!-- CANONICAL:PITFALLS:BEGIN -->
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested-and-cleared by the `evolve-*` cycles, so ALWAYS APPEND a new entry and NEVER rely on prior content persisting.
+<!-- CANONICAL:PITFALLS:END -->
+**What to save here:** recurring planning pitfalls — operator priority signals under scope pressure (which label they cut first), stakeholder routing preferences, recurring scope-creep patterns by codebase area.
 
 **Auto-shutdown on idle (Monitor watch).** The `planner` is ephemeral (never in the CLOSED set). After the phase plan ships and team-lead acknowledges step 10 approval, set up a `Monitor` watch on (a) your owned `TaskList` entries and (b) `docket issue list -a @project-manager -s todo -s in-progress --json --watch`. When BOTH report empty, deliver any final report this turn, TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources), then emit `shutdown_request` to team-lead as the FINAL tool call. Re-emit every ~60s until `teammate_terminated`.
 
@@ -296,7 +299,7 @@ Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥
 
 ## Authoring Feature-Level PRDs
 
-When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<topic>")` — output lands at `docs/spec/<slug>.md`. Format authority: `skills/prd/SKILL.md`. The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `specs` skill — never to `prd`.
+When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<topic>")` — output lands at `docs/spec/<slug>.md`. Format authority: `skills/prd/SKILL.md`. The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `init-specs` skill — never to `prd`.
 
 ---
 

@@ -56,7 +56,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - `@senior-engineer` reports user-facing implementation complete against a `docs/ux/` spec and `@ux-designer` is performing the QA pass.
 - `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
 - Operator or team-lead requests a design audit against an existing spec.
@@ -68,7 +68,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), th
 ## When NOT to Use
 
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
-- Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify, ...)`, callable by `@sdet`.
+- Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Authoring or revising the UX spec itself — use `Skill(ux-spec, ...)`.
 
@@ -197,7 +197,7 @@ Design QA report emitted ({verdict}).
 
 where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
-**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review`, `verify`, `design-review`, `design-qa`).
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 

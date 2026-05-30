@@ -152,7 +152,7 @@ Match formality to the ask. If a consult reveals TDD-level complexity, offer one
 
 ## Responsibility 4: Security Specification
 
-`docs/spec/security.md` is generated ad-hoc via the `specs` skill when needed; it is NOT a standing maintenance responsibility of @security-engineer. Read it for review/TDD context.
+`docs/spec/security.md` is generated ad-hoc via the `init-specs` skill when needed; it is NOT a standing maintenance responsibility of @security-engineer. Read it for review/TDD context.
 
 You do NOT author PRDs — route product framing for security initiatives to @project-manager with threat model + constraints articulated.
 
@@ -218,7 +218,10 @@ Behavior splits by name:
 - **`security-advisor` (persistent)**: long-lived by default. Approve `shutdown_request` only after verification completes OR the orchestrator confirms no further consults expected. Reject with reason + ETA if you have an in-progress TDD, open critical/high review-cycle, or pending peer-consult replies.
 - **`security-reviewer-N` (ephemeral)**: verdict→shutdown sequence per §Ephemeral peer review. Drain `background_tasks` / `session_crons` BEFORE emitting (async-shutdown is by design — in-flight work lost if raced). Do NOT wait for further peer consults; peer alignment is team-lead's to reconcile.
 
-**Memory check before approving shutdown.** If this cycle surfaced a recurring threat-model pitfall (rejected adversary assumption that keeps re-surfacing, recurring vulnerability class in this codebase, operator risk-tolerance signal, non-obvious security symptom→root-cause→remediation pattern), append to `.claude/agent-memory/security-engineer/pitfalls.md` in `symptom → root cause → resolution` form. Skip if nothing recurring surfaced. One-shot CVEs belong in Docket issues or ADRs (not memory).
+<!-- CANONICAL:PITFALLS:BEGIN -->
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested-and-cleared by the `evolve-*` cycles, so ALWAYS APPEND a new entry and NEVER rely on prior content persisting.
+<!-- CANONICAL:PITFALLS:END -->
+**What to save here:** recurring threat-model pitfalls — rejected adversary assumptions that keep re-surfacing, recurring vulnerability classes in this codebase, operator risk-tolerance signals. One-shot CVEs belong in Docket/ADRs.
 
 ## Runtime Discipline
 

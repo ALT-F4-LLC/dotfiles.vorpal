@@ -92,10 +92,10 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: simplify-scout is @senior-engineer's report-only analog of the report-emission family. The "When NOT to Use" routes below send formal/authoritative review into that family (code-review/verify/design-qa/design-review); those siblings need not point back here — their callers are role-disjoint from @senior-engineer and cannot invoke this skill. -->
+<!-- COUPLING: simplify-scout is @senior-engineer's report-only analog of the report-emission family. The "When NOT to Use" routes below send formal/authoritative review into that family (code-review/verify-ac/design-qa/design-review); those siblings need not point back here — their callers are role-disjoint from @senior-engineer and cannot invoke this skill. -->
 - **Formal / authoritative code review** that gates a merge — use `Skill(code-review, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
 - **Applying** simplifications automatically — this skill is report-only by design. The implementer edits the tree themselves after reading the report.
-- Acceptance-criteria verification against a Docket issue — use `Skill(verify, ...)` (`@sdet`).
+- Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
 - Design QA / peer design review of user-facing surfaces — use `Skill(design-qa, ...)` / `Skill(design-review, ...)` (`@ux-designer`).
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd|adr|prd|ux-spec, ...)`.
 - Bug hunting / correctness review — this scout targets *clarity*, not defects. Correctness gating lives in `code-review`'s Hard Gates.

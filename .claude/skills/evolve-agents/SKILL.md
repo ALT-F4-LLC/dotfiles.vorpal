@@ -137,7 +137,24 @@ After Phase 2 completes:
 
 1. Shut down the Phase 2 agent and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, and reminder that NO changes have been committed.
+3. **Cross-project pitfalls harvest (DELETE).** Run the harvest-and-clear sequence below.
+<!-- CANONICAL:HARVEST:BEGIN -->
+**Capture-gated cross-project pitfalls DELETE (orchestrator only — NEVER the read-only auditor).** Consume the Phase 0 **CROSS-PROJECT PITFALLS MANIFEST** to clear `pitfalls.md` files whose lessons were ingested this cycle, so the same lesson is not re-analyzed every cycle.
+
+**CAPTURE manifest.** Hold an in-memory map keyed by absolute path: `{path → captured: true|false, reason}`. Every path from the auditor's CROSS-PROJECT PITFALLS MANIFEST starts `captured: false`. A path flips to `captured: true` ONLY when, this cycle, EITHER (a) its lesson(s) are reflected in a definition change you applied (an Edit recorded in the relevant changelog entry), OR (b) you explicitly record it as consumed-without-change in the cycle changelog (e.g. "already covered by existing definition" or "not actionable as a definition change") — an explicit decision, never silence. An empty or whitespace-only `pitfalls.md` is trivially `captured: true, reason: 'empty'`. A path you never reached — e.g. its target's Phase 1 review FAILED ("No review performed — agent unavailable") — stays `captured: false`.
+
+**GATE.** Delete ONLY files with `captured == true`. The gate is per-file: clear the captured subset, leave the un-captured subset on disk for a future cycle. A file whose review failed is `captured: false` → MUST NOT be deleted (its lessons were never ingested; deleting would lose them permanently).
+
+**DELETE sequence** (report-first → confirm → delete → verify):
+1. **Report targets.** From the manifest compute the delete set = `{path : captured == true}`. Print it grouped by repo (repo root = the path prefix up to and including the `*.git/<branch>` segment). If the set is empty, print `No captured pitfalls.md to clear — no-op.` and skip to the cleanup report. **Auditor-failure fail-safe:** if the Phase 0 historical-auditor failed or emitted NO CROSS-PROJECT PITFALLS MANIFEST, the delete set is EMPTY → no-op. NEVER reconstruct the scan in Wrap-up to delete; the fail-safe direction is always SKIP.
+1a. **Confirm (D3 default — REPORT-then-CONFIRM).** After printing the per-repo delete set, obtain explicit operator OK via `AskUserQuestion` ("Proceed with deletion / Skip deletion") BEFORE any `rm`, at minimum for every cross-repo path (any path outside the current repo). On "Skip", leave all files (no-op) and record the skip in the cleanup report. Fully-automatic delete is NOT the default.
+2. **Safety re-check each path** immediately before removal (time passed since the scan): the path MUST still match the exact glob `*/.claude/agent-memory/*/pitfalls.md` AND its basename MUST be exactly `pitfalls.md`. Any path failing is SKIPPED and reported as `skipped (failed safety re-check): <path>`. NEVER broaden the pattern, NEVER delete `MEMORY.md` or any other `*.md`, NEVER delete a directory.
+3. **Delete** each surviving path with `rm -f -- <path>` — one literal path per invocation (`--` guards pathological names). No globs in `rm`, no `-r`.
+4. **Confirm** each removal: `test ! -e <path>` → report `removed: <path>`; if it still exists, report `FAILED to remove: <path>` and continue — do NOT abort the cycle for one failure.
+5. **Per-repo uncommitted-change notice.** For every repo OTHER than the current one that had a file removed, print: `Repo <repo-root> now has an uncommitted deletion of <path(s)> — review and commit there yourself. This orchestrator does not commit.` The current repo's deletion is part of the normal uncommitted working tree the operator reviews.
+6. NEVER run `git add`/`commit`/`push` in any repo (matches CANONICAL:BANNER).
+<!-- CANONICAL:HARVEST:END -->
+4. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the pitfalls harvest delete set + per-path removed/FAILED/skipped lines + per-repo notices, and reminder that NO changes have been committed.
 
 ---
 
@@ -183,6 +200,17 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
 
 1. **Agent memory (PRIMARY — read fully, it is small)**:
    - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md` (dir may be absent or empty — treat as `none`). Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
+<!-- CANONICAL:HARVEST:BEGIN -->
+**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` with this EXACT bounded command (substitute nothing — it is literal):
+
+```
+find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
+  -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print 2>/dev/null | sort
+```
+
+The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` yields an empty result → no-op (`2>/dev/null` swallows the error). The current repo is matched by this glob automatically (it lives under `~/Development`); de-dupe its path so it is not processed twice. This scan is READ-ONLY: do NOT Edit/Write/`rm` any discovered file — DELETE is the orchestrator's Wrap-up step, never the auditor's. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths grouped by repo (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment). This manifest is the orchestrator's delete-candidate set, consumed in Wrap-up.
+<!-- CANONICAL:HARVEST:END -->
+   - **Per-file mapping (agents):** map each discovered `…/.claude/agent-memory/<role>/pitfalls.md` to agent `<role>` (the path segment). For each TARGET agent in this cycle, read its `pitfalls.md` across ALL scanned repos (each is small — read fully) and surface 1-3 representative recurring lessons per agent (≤240 chars each), tagged with the source repo path. Non-target agents' files are listed path-only (not deep-read).
 2. **Transcripts** (under `~/.claude/projects/`):
    - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
    - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
@@ -211,11 +239,13 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 
 If a category is empty for an agent, write `none` — do not omit the line.
 
+After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the delete-candidate set the orchestrator consumes in Wrap-up). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB).
+- Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB). The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`.
 - Do not cluster or rank across agents. Stay per-agent.
 ```
 
@@ -315,6 +345,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    consistent terminology, handoff patterns work both ways
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
+5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command + Wrap-up delete sequence) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
 
 ## Output Format
 

@@ -9,9 +9,9 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, jj::Jj, jq::Jq,
-    k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep, sesh::Sesh,
-    tmux::Tmux, zoxide::Zoxide,
+    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum,
+    jj::Jj, jq::Jq, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep,
+    sesh::Sesh, tmux::Tmux, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -51,6 +51,7 @@ impl UserEnvironment {
         let gh = Gh::new().build(context).await?;
         let git = Git::new().build(context).await?;
         let gopls = Gopls::new().build(context).await?;
+        let gum = Gum::new().build(context).await?;
         let jj = Jj::new().build(context).await?;
         let jq = Jq::new().build(context).await?;
         let k9s = K9s::new().build(context).await?;
@@ -458,6 +459,7 @@ impl UserEnvironment {
                 gh,
                 git,
                 gopls,
+                gum,
                 jj,
                 jq,
                 k9s,

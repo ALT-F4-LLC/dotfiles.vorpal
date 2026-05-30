@@ -1,5 +1,19 @@
 # Changelog: tdd
 
+## 2026-05-30
+
+### Summary
+Added the reciprocal PRD-vs-TDD routing boundary to "When to Use" so the tdd↔prd split is symmetric — prd already states "pick PRD when scope precedes architecture"; tdd now states the inverse. Net +2.
+
+### Changes
+- "When to Use" bullet 1: appended a one-line PRD/TDD boundary ("pick TDD when *how* is the question — what/why settled") mirroring prd line 52. Verified prd's "scope precedes architecture" phrasing exists before referencing it.
+
+### Dimensions Evaluated
+Coherence (tdd↔prd boundary symmetry; tdd↔adr split verified sound), Over-Engineering (HIGHEST — +2, no trimmable slack at 288/500), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

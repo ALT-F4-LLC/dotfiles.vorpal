@@ -1,5 +1,21 @@
 # Changelog: code-review
 
+## 2026-05-30
+
+### Summary
+Added a finding-sourcing (anti-fabrication) discipline to the Review Procedure — the file had no procedural guard against the cycle's #1 failure class (findings asserted "VERIFIED from real diff" that did not exist in the diff). Corrected the Doubling Rule to the Rule 8 default and trimmed restatement to offset.
+
+### Changes
+- Review Procedure: new "Finding-sourcing discipline" paragraph — write each finding only from that file's complete solo-rendered diff this turn; a cancelled/empty batch member means UNVERIFIED, not unchanged; prefer git diff/Read over grep -n; never carry an expected-change guess forward as "verified".
+- Doubling Rule: reframed to team-lead.md Rule 8 default-single/opt-up-doubled (was "≥2 per phase" default — an inversion shared with design-qa/design-review); trimmed reconciliation merge-mechanics to a step-14 pointer.
+- Degraded fallback: dropped the non-actionable "recurring fallbacks = evolve signal" meta-note.
+
+### Dimensions Evaluated
+Completeness + Skill Design (anti-fabrication gate — highest empirical signal), Over-Engineering (HIGHEST — two trims offset the addition), Coherence (Rule 8 default alignment with design-qa/design-review), Actionability, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

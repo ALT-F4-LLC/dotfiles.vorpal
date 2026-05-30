@@ -1,5 +1,19 @@
 # Changelog: design-review
 
+## 2026-05-30
+
+### Summary
+Aligned the Doubling Rule with team-lead.md Rule 8: design review defaults to a single ux-advisor (opt up to doubled per Rule 8 triggers) rather than ≥2-by-default. Canonical ephemeral name design-review-{N}. Net 0.
+
+### Changes
+- Doubling Rule: default-doubled framing → default-single/opt-up-doubled per team-lead.md Rule 8; ephemeral `design-review-2` → `design-review-{N}`. Applied in lockstep with design-qa and code-review (shared inversion).
+
+### Dimensions Evaluated
+Coherence (HIGHEST — Rule 8 default + canonical naming), Over-Engineering (no trim; net 0), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

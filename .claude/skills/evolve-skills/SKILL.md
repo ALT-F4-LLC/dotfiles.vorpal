@@ -282,6 +282,7 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Historical Audit Findings
 {historical_audit_findings}
+> **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
 > Prioritize the Suggested focus areas from your skill's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals.
 
 ## Content Gate

@@ -192,7 +192,7 @@ Before invoking `Write`, verify in the calling agent's context:
    (`dependencies` may be the empty list `[]`).
 2. **No `status` field** — PRDs use `maturity`, not `status`. Presence of `status`
    in frontmatter is a defect.
-3. **`maturity` value** — one of `proof-of-concept | draft | experimental | stable`.
+3. **`maturity` value** — within the allowed set defined under Field rules above.
 4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,

@@ -6,7 +6,7 @@ description: >
   agent's context; the calling agent (`@sdet`) drives verification, the skill enforces the format authority
   — verdict ladder, required sections, validation rules. No file written; the report is emitted into the
   agent's context.
-  Trigger: "verify acceptance criteria", "verify Docket issue", "produce verification report" — NOT app/PR runtime checks (that is the bundled runtime-verify skill).
+  Trigger: "verify acceptance criteria", "verify Docket issue", "produce verification report" — NOT app/PR runtime checks (that is the bundled runtime `verify` skill, the name this skill was renamed away from to avoid collision).
 argument-hint: "<scope>"
 effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
@@ -16,7 +16,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging and Docket close/comment after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Verify — Acceptance-Criteria Verification
+# Verify-AC — Acceptance-Criteria Verification
 
 You are the **Verifier**. You verify the artifact named by `<scope>` against its acceptance criteria and emit a structured verification report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, required sections, severity, validation rules.
 
@@ -92,7 +92,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
 4. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. The calling agent (`@sdet`) acknowledges the dispatch via SendMessage but does NOT `docket issue move` for verification — verification is read-only on Docket workflow state per `agents/sdet.md` Rule 7 (moving regresses state / falsely signals implementation is still running), so there is no claim to re-do. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
-4a. **Prior-verdict awareness** (Round-2+ re-verifications only). Before scoring criteria, scan `docket issue comment list {id}` for prior verification reports. For each acceptance criterion previously marked PASS whose evidence file/test was NOT touched by the current diff (`git diff --stat` vs the prior round's commit), cite the prior round's verdict in the new report's evidence (`PASS — unchanged since round {N}: {prior evidence}`) rather than re-running its evidence command. Re-run the full test suite end-to-end regardless; never carry forward a FAILed criterion or an Additional Testing gap. Reduces per-round token spend on multi-round fix-loops (driven by audit session 8442dc39 — 17× re-verifications per issue with stable format authority).
+4a. **Prior-verdict awareness** (Round-2+ re-verifications only). Before scoring criteria, scan `docket issue comment list {id}` for prior verification reports. For each acceptance criterion previously marked PASS whose evidence file/test was NOT touched by the current diff (`git diff --stat` vs the prior round's commit), cite the prior round's verdict in the new report's evidence (`PASS — unchanged since round {N}: {prior evidence}`) rather than re-running its evidence command. Re-run the full test suite end-to-end regardless; never carry forward a FAILed criterion or an Additional Testing gap. Reduces per-round token spend on multi-round fix-loops.
 5. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe what the implementer intended to ship; the diff describes what reached HEAD. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
 6. **Empty-artifact guard**: if the resolved diff/scope produces no inspectable content (no files, no acceptance criteria, empty issue), ABORT:
 
@@ -113,7 +113,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
      ```
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
-7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`. Audit-driven: 154 invocations / 45 sessions = ~3.4 issues per session typical.
+7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.
 8. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
 
 ## Verification Procedure

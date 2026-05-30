@@ -1,5 +1,19 @@
 # Changelog: evolve-skills
 
+## 2026-05-30
+
+### Summary
+Added a Phase-0-findings-are-signals-not-facts rule to the Phase 1 template, governing both the Docket CLI and Historical audit blocks — closes the recurring fabricated-"verified"-finding failure class. Net +1.
+
+### Changes
+- Phase 1 template: new blockquote above the historical-prioritization line — Phase 0 audit findings (Docket commands, frontmatter fields, feature claims) are SIGNALS-TO-VERIFY against ground truth (--help, Grep/Read) before any CHANGE relies on them; a change built on a fabricated finding is reject-class. Byte-symmetric version applied to evolve-agents this cycle for sibling parity.
+
+### Dimensions Evaluated
+Actionability + Completeness (incident-class root-cause fix), Over-Engineering (HIGHEST — +1 at 359/500 justified), Coherence (symmetric placement vs evolve-agents; HARVEST blocks byte-identical).
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

@@ -93,7 +93,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
-- **Second failure**: mark task completed, record "No review performed — agent unavailable" in the changelog, skip. Never review directly.
+- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
@@ -278,6 +278,7 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Historical Audit Findings
 {historical_audit_findings}
+> **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
 > Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps.
 
 ## Content Gate

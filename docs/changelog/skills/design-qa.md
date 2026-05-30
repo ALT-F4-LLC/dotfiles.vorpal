@@ -1,5 +1,19 @@
 # Changelog: design-qa
 
+## 2026-05-30
+
+### Summary
+Aligned the Doubling Rule with team-lead.md Rule 8: design QA defaults to a single ux-advisor (opt up to doubled per Rule 8 triggers) rather than framing ≥2 parallel reviewers as the default. Canonical ephemeral name design-qa-{N}. Net 0.
+
+### Changes
+- Doubling Rule: "spawns ≥2 reviewers in parallel" (default) → "defaults to a single ux-advisor … opt up to a doubled panel when a Rule 8 trigger fires"; ephemeral `design-qa-2` → `design-qa-{N}`. Applied in lockstep with design-review (identical inversion) and code-review.
+
+### Dimensions Evaluated
+Coherence (HIGHEST — authority divergence vs team-lead.md Rule 8 default-single), Over-Engineering (no trim; net 0), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-05-29
 
 ### Summary

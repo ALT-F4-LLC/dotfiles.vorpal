@@ -64,9 +64,10 @@ Skills support the team:
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
-| **specs** | `skills/specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
+| **init-specs** | `skills/init-specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
 | **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
+| **evolve-coherence** | `.claude/skills/evolve-coherence/` | Audits agent↔skill coherence across four dimensions and routes fixes to evolve-agents/evolve-skills (report-and-route; never edits files) |
 
 ## Symlinks
 

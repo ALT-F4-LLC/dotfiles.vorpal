@@ -259,7 +259,8 @@ After Validation Before Save passes:
    Created {output_path}
    ```
 
-End. Do NOT echo the file body. The calling agent owns next steps (vote requests, decomposition, peer notification).
+End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
+The calling agent owns next steps (vote requests, decomposition, peer notification).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.

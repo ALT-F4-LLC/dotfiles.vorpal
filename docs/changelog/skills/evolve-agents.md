@@ -1,5 +1,21 @@
 # Changelog: evolve-agents
 
+## 2026-06-04
+
+### Summary
+Fixed the `days=N` argument parse defect (parallel to the evolve-skills fix): the all-agents scope HARD GATE and inventory validation no longer mis-fire on a bare `days=N` invocation.
+
+### Changes
+- Added a **Parsing:** rule to Argument Handling: strip `days=N` first; the remaining token is the agent name.
+- Reworded pre-flight step 5 to key on "agent-name token present" instead of `$ARGUMENTS` set.
+- Reworded pre-flight step 7 scope gate to "no agent-name token (all-agents mode)" so the HARD GATE runs on `/evolve-agents days=N`.
+
+### Dimensions Evaluated
+Coherence (cross-skill parse parity with evolve-skills), Completeness (scope-gate coverage), Actionability.
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

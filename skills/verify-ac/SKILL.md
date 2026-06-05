@@ -103,13 +103,13 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    - `tdd` Docket docs that the issue references — discover via `docket doc list -T tdd -s approved [--json]`, read via `docket doc show <DOC-id> [--json]`. **TDD status gate**: only verify against `tdd` docs whose Docket status is `approved` (`docket doc show <DOC-id> --json | .data.status == "approved"`). If the referenced TDD's status is `draft` (or any non-`approved` value), ABORT:
 
      ```
-     Error: Referenced TDD {DOC-id} has status '{status}' — verification requires status: approved. Escalate to team-lead for vote approval before re-invoking.
+     Error: Referenced TDD {DOC-id} has status '{status}' — verification requires status: approved. The authoritative status is Docket's top-level field (`docket doc list -T tdd -s approved`); the body-frontmatter `status:` only mirrors it and may be stale — re-confirm there before escalating to team-lead for vote approval.
      ```
 
      If the referenced TDD cannot be found via `docket doc show <DOC-id>` (no such doc / not approved), ABORT:
 
      ```
-     Error: Referenced TDD {DOC-id} not found or not approved. Escalate to team-lead before re-invoking.
+     Error: Referenced TDD {DOC-id} not found or not approved. Escalate to team-lead.
      ```
    - `ux` Docket docs for user-facing behavior — discover via `docket doc list -T ux [--json]`, read via `docket doc show <DOC-id>`.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).

@@ -1,5 +1,21 @@
 # Changelog: evolve-skills
 
+## 2026-06-04
+
+### Summary
+Fixed the live `/evolve-skills days=7` all-skills pattern, which the pre-flight guards (steps 5, 9) silently broke by treating the `days=N` window token as a skill name. Net +2.
+
+### Changes
+- Argument Handling: added a Parsing rule — strip `days=N` FIRST; a remaining non-`days=` token is the skill name. Root-cause fix.
+- Step 5 guard: "If a skill-name token is present" (was "If targeting a specific skill") — no longer mis-fires on `days=7`.
+- Step 9 scope HARD GATE: triggers on "no skill-name token (all-skills mode)" (was "$ARGUMENTS empty") — the gate now fires for `/evolve-skills days=7`, the heaviest cycle it protects.
+
+### Dimensions Evaluated
+Completeness + Coherence (live-operator-path defect, root-cause fix), Over-Engineering (HIGHEST — +2 at 347/500; guard rewordings net-0).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

@@ -8,7 +8,8 @@ description: >
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
 argument-hint: "[dimension(s) d1..d4]"
 effort: max
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+disallowed-tools: ["Edit", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -48,7 +49,7 @@ Before spawning any agents:
 
 ## No-Edit Guard (falsifiable)
 
-This skill and every teammate it spawns MUST NOT `Edit` or `Write` any path matching `agents/*.md` or `*/SKILL.md` (the latter covers both `skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`, including `evolve-coherence`'s own). The only permitted `Write`/`Edit` targets are the orchestrator's own transient task/manifest bookkeeping — never a definition file. A teammate that needs a fix applied emits it into the Remediation Manifest; it does NOT edit. `Edit`/`Write` remain in `allowed-tools` for parity and that bookkeeping only.
+This skill and every teammate it spawns MUST NOT `Edit` or `Write` any path matching `agents/*.md` or `*/SKILL.md` (the latter covers both `skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`, including `evolve-coherence`'s own). The XREF and Remediation Manifest are **in-context** artifacts (never written to disk, per Data Models §); task bookkeeping uses `TaskCreate`/`TaskUpdate`, not `Write`/`Edit`. A teammate that needs a fix applied emits it into the Remediation Manifest; it does NOT edit. `Edit`/`Write` are removed from `allowed-tools` and listed in `disallowed-tools` (hard-removed from the tool pool between operator messages) — defense-in-depth atop this prose Guard, not a replacement for it.
 
 ---
 

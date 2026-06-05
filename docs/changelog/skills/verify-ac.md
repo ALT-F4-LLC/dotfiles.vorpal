@@ -1,5 +1,20 @@
 # Changelog: verify-ac
 
+## 2026-06-04
+
+### Summary
+Routed the TDD-status-gate abort to the authoritative Docket status field. The body-frontmatter `status:` mirrors Docket's top-level doc status but can go stale (verified: DOC-4 is top-level `approved` / body `draft`); the prior abort unconditionally sent the caller to "vote approval" — the wrong path when the TDD is already Docket-approved and only the mirror is stale. The status READ (top-level `.data.status`, L103) was already correct and unchanged. Net 0.
+
+### Changes
+- Pre-flight §7 status-gate abort: added a clause directing the caller to re-confirm via `docket doc list -T tdd -s approved` (the authoritative top-level field) before escalating, since the body-frontmatter mirror may be stale.
+- Pre-flight §7 not-found abort: trimmed the redundant "before re-invoking" tail (an abort always precedes a re-invoke) as the BALANCED offset.
+
+### Dimensions Evaluated
+Completeness (PRIMARY — status-gate abort guidance), Coherence (status-authority theme shared with tdd; the read mechanism agrees across both), Over-Engineering (HIGHEST — net 0, offset; rejected an ungrounded "test-writing closes separately" addition).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

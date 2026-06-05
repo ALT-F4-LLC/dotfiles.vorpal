@@ -1,5 +1,20 @@
 # Changelog: code-review
 
+## 2026-06-04
+
+### Summary
+Added the Phase 0 partial-tree guard (code-review fired mid-cycle on a partial working tree 2x cross-project → stale review) folded into the empty-diff step; de-duplicated an anti-anchoring rationale to a team-lead.md step-14 pointer. Net +2 (403/500, ample headroom).
+
+### Changes
+- Pre-flight empty-diff guard: added a partial-tree guard for `uncommitted`/`staged` scopes — a local diff is a point-in-time snapshot, so the skill prefixes the verdict with a files-present / point-in-time line and routes the completeness judgment to the calling agent (which owns AC context) rather than guessing the expected file-set.
+- Save & Return: trimmed the duplicated anti-anchoring rationale to a team-lead.md step-14 pointer (directive retained).
+
+### Dimensions Evaluated
+Completeness (HIGHEST — partial-tree guard), Over-Engineering (HIGHEST — anti-anchoring rationale de-duplicated to a pointer; net +2 at 403/500), Coherence (anti-anchoring authority owned by team-lead.md).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

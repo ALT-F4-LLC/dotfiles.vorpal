@@ -1,5 +1,20 @@
 # Changelog: design-qa
 
+## 2026-06-04
+
+### Summary
+Added a Phase-0-validated media-rendering edge case to QA Procedure step 2 — design-qa's documented distinct value is catching dead media payloads (HTTP 200 / ref present but renders "content not available") that all @sdet liveness checks miss. Offset by removing the redundant "Stream long commands" bullet (duplicate of Pre-flight step 7). Net -1.
+
+### Changes
+- QA Procedure step 2: appended an externally-referenced-media check — confirm rendered content, not HTTP 200 / ref presence.
+- Common Discipline: removed "Stream long commands" bullet — duplicate of Pre-flight step 7 (same run_in_background + Monitor prescription).
+
+### Dimensions Evaluated
+Completeness (HIGHEST — media-rendering gap), Over-Engineering (net -1 — bullet removal offsets the in-line addition), Coherence (clause is design-qa-specific — no family lockstep needed).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-06-04
+
+### Summary
+Dropped vestigial `Glob`/`Grep` from `allowed-tools` — the skill discovers prior art via `docket doc list`/`show` (Bash) and `Read`, never the Glob/Grep tools. Family lockstep with adr/prd/tdd.
+
+### Changes
+- `allowed-tools` trimmed to `["AskUserQuestion", "Bash", "Read", "Write"]` (dropped `Glob`, `Grep`).
+
+### Dimensions Evaluated
+Skill Design Quality (frontmatter tool pool), Coherence (byte-identical lockstep with adr/prd/tdd).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

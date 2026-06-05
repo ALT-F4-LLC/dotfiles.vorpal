@@ -49,6 +49,7 @@ Before spawning any agents:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
+9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` (reachable via the GitHub host) via Bash `curl -fsSL`, falling back to WebFetch on the allowlisted GitHub page `https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR both fetches fail (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -145,10 +146,15 @@ After Phase 2 completes:
 
 ### Phase 0: @staff-engineer (Documentation Research)
 
+Substitute `{latest_features_digest}` with the version-anchored changelog digest pinned in pre-flight step 9.
+
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="staff-engineer", prompt="...")
 
-MISSION: Research Claude Code documentation for capabilities relevant to writing agent definition files (agents/*.md). Report NEW or CHANGED features only — skip well-known existing behavior.
+MISSION: Research the LATEST Claude Code documentation for capabilities relevant to writing agent definition files (agents/*.md). Ground every claim in FETCHED docs — do NOT answer from training memory, which is stale. Use WebSearch for discovery (unrestricted) and WebFetch on the allowlisted GitHub `anthropics/claude-code` `CHANGELOG.md` (`https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md`) for authoritative detail; consult `code.claude.com/docs` (the canonical Claude Code docs site) as a reference found via search. Anchor "new/changed" against BOTH the installed CLI version and the pinned digest below, reporting only features new since the last cycle. Report NEW or CHANGED features only — skip well-known existing behavior.
+
+PINNED INSTALLED-VERSION + CHANGELOG DIGEST (orchestrator-fetched; if `SKIPPED:`, fall back to your own WebSearch/WebFetch as primary):
+{latest_features_digest}
 
 FOCUS AREAS: Sub-agents, Agent Teams, Hooks, Skills, Changelog (recent releases, breaking changes), Settings, MCP, Tools, Memory, Permissions.
 

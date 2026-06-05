@@ -110,7 +110,7 @@ Spawn THREE agents in parallel per the templates below: `docs-researcher` (staff
 Spawn one @staff-engineer teammate per target skill. **Spawn all in the same turn** to maximize parallelism.
 Assign tasks via `TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")`.
 
-Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below — reads its target skill file + latest changelog entry, `docs/spec/` selectively, other skill files' first ~80 lines, then evaluates ALL 8 dimensions and reports.
+Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check

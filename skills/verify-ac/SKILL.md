@@ -71,7 +71,6 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - `@sdet` is verifying a Docket issue's acceptance criteria against the implementation diff at any scope (issue, uncommitted, staged, branch, files).
 - A non-trivial change requires the FULL verification template with verdict ladder, evidence per criterion, and Issues Found.
 - A trivial change (typo, formatting, docs-only) may use LIGHT mode — see Verification Procedure below.
@@ -79,6 +78,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Design QA against a `ux` Docket doc (`docket doc show <DOC-id>`) for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.

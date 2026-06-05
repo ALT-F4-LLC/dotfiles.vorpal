@@ -1,5 +1,34 @@
 # Changelog: tdd
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: added a fenced-code-block carve-out to the §3 Section-order and §4 Alternatives-count validations so example headings embedded in ``` fences are not mis-counted (aligns with the §6 placeholder-scan exclusion). Applied in lockstep with adr/prd/ux-spec.
+
+### Changes
+- §3 Section order: count only `##` headings at column 0 outside ``` code fences.
+- §4 Alternatives count: count only `###` headings outside ``` code fences.
+
+### Dimensions Evaluated
+Coherence (doc-authoring family validation symmetry).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Added a robustness bar for grep/regex-based per-phase acceptance criteria in §11 (Implementation Phases), tracing to a recorded incident where a brittle single-arm regex AC silently under-matched. Net +3.
+
+### Changes
+- §11 (c): grep/regex-based ACs must be executable against the named files and cover all expected matches (escape markdown, arm for word-order/formatting variants); a single-arm regex that silently under-matches is a defect.
+
+### Dimensions Evaluated
+Completeness (PRIMARY — AC robustness), Actionability, Over-Engineering (HIGHEST — single clause, no trim slack at 275/500), Coherence. The §3/§4 fenced-heading-exclusion fix is family-wide (tdd/adr/prd/ux-spec) and deferred to Phase 2 for lockstep.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

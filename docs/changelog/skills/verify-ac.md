@@ -1,5 +1,33 @@
 # Changelog: verify-ac
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: moved the report-emission COUPLING marker from under "When to Use" to directly above the "When NOT to Use" routes it governs (matching code-review's semantically-correct placement) and synced its text. All 4 family markers now byte-identical. (Supersedes the same-day Phase 1 entry below, which deferred this to Phase 2.)
+
+### Changes
+- COUPLING marker relocated under "When NOT to Use"; doubling-rule parity sentence added (directionless wording).
+
+### Dimensions Evaluated
+Coherence (report-emission family COUPLING placement + text parity).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Reviewed against all 8 dimensions; no edits applied. The Phase 0 "TDD status: accepted abort" signal is stale — the skill correctly gates on `approved` (canonical lifecycle is draft|approved); already resolved/rejected in the 2026-06-04 entry below.
+
+### Changes
+- No changes. `$`-escape (2.1.163): no `$`+digit in body — NO-OP. A proposed COUPLING-marker relocation was REJECTED: empirical grep shows verify-ac matches the 3/4 family norm (marker after "When to Use"); the real drift (code-review's marker placement, design-review's longer marker text) is routed to Phase 2.
+
+### Dimensions Evaluated
+Coherence (PRIMARY), Completeness, Over-Engineering (HIGHEST — zero net). All Phase 0 signals resolved NO-OP.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

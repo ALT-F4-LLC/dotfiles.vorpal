@@ -1,5 +1,19 @@
 # Changelog: evolve-skills
 
+## 2026-06-05
+
+### Summary
+Trimmed the redundant reviewer read-list recap from the Phase 1 workflow prose — the template-forwarding sentence restated the read-list + 8-dimension mandate already verbatim in the Phase 1 spawning template (L268/L285). Net 0 (one-line shorten). Symmetric trim applied to evolve-agents.
+
+### Changes
+- Phase 1 workflow: shortened "...follows the Phase 1 spawning template below — reads [read-list], then evaluates ALL 8 dimensions and reports" to "...follows the Phase 1 spawning template below." Content-Gate non-redundant fix. All Phase 0 signals verified NO-OP (optional-token parse, frontmatter-adoption gate, docket guard, $-escape — already encoded or correctly absent).
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — sole redundancy; dense incident-prevention blocks correctly retained), Coherence (symmetric trim vs evolve-agents; CANONICAL:BANNER/HARVEST byte-identical). All Phase 0 signals NO-OP.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

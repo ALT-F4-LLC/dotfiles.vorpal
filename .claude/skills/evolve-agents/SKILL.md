@@ -109,7 +109,7 @@ This audit is per-agent and feeds Phase 1 reviewers directly — it does not clu
 
 Spawn one teammate per target using the matching agent type per the Phase 1 template (see substitute block below). **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
 
-Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below — reads its target agent file + latest changelog entry, `docs/spec/` selectively, other agent files' first ~80 lines, then evaluates ALL 8 dimensions and reports.
+Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check

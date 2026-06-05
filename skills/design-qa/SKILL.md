@@ -56,7 +56,6 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## When to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
 - `@senior-engineer` reports user-facing implementation complete against a `ux` Docket doc and `@ux-designer` is performing the QA pass.
 - `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
 - Operator or team-lead requests a design audit against an existing spec.
@@ -67,6 +66,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 ## When NOT to Use
 
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.

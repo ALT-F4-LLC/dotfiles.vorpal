@@ -98,7 +98,13 @@ only an empty/all-punctuation topic that yields no title text:
    intentionally short — aim for tight prose, not exhaustive coverage. Mermaid
    is optional; include a block only when it clarifies component, state, or
    flow relationships.
-4. **Proceed to Validation Before Save** — single source of truth for
+4. **Verify embedded technical assertions before stating them as fact.** Any
+   concrete claim the ADR commits to — a code/config/command/SQL snippet, a
+   portability or compatibility claim across engines/platforms, or a reference
+   to test infrastructure the decision relies on — MUST be checked against its
+   actual target (run it, or confirm the target exists) before it is written as
+   settled. State unverified claims as assumptions, not facts.
+5. **Proceed to Validation Before Save** — single source of truth for
    frontmatter, section order, alternatives count, and placeholder checks.
 
 ## Output Contract
@@ -153,7 +159,10 @@ Before invoking `Write`, verify in the calling agent's context:
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed
-   (currently 4 sections). Off-by-one against the count is a defect.
+   (currently 4 sections; count only `##` headings at column 0 *outside*
+   ``` code fences — an ADR that documents another doc/skill may embed
+   `##`/`###` example headings inside fences; those are content, not
+   structure). Off-by-one against the count is a defect.
 4. **Alternatives count** — Section 4 (Alternatives Considered) names at
    least one alternative.
 5. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,

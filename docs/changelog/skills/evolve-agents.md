@@ -1,5 +1,19 @@
 # Changelog: evolve-agents
 
+## 2026-06-05
+
+### Summary
+Symmetric trim (paired with evolve-skills): removed the redundant reviewer read-list recap from the Phase 1 workflow prose (L112) — the read-list + 8-dimension mandate already live verbatim in this skill's Phase 1 template (L264/L280). Net 0 (one-line shorten). The 8-dimension review otherwise found all signals NO-OP.
+
+### Changes
+- Phase 1 workflow: shortened the template-forwarding sentence to drop the duplicated read-list / 8-dimension recap. Content-Gate non-redundant fix, parity with evolve-skills. (Optional-token parse + audit-resolution verification already encoded; CANONICAL:BANNER/HARVEST verified byte-identical with evolve-skills; no `$`+digit present.)
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — sole redundancy), Coherence (symmetric with evolve-skills). Remaining dimensions sound; all Phase 0 signals NO-OP.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

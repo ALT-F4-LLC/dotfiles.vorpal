@@ -118,8 +118,8 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 
 | `created_by` value | Excluded agent type |
 |---|---|
-| `"staff-engineer"`, `"tdd-author"`, `"advisor"` | `staff-engineer` |
-| `"security-engineer"`, `"security-advisor"`, `"security-tdd-author"` | `security-engineer` |
+| `"staff-engineer"`, `"advisor"`, or starts with `"tdd-author"` | `staff-engineer` |
+| `"security-engineer"`, `"security-advisor"` | `security-engineer` |
 | `"senior-engineer"`, or starts with `"impl-"` | `senior-engineer` |
 | `"project-manager"`, `"planner"` | `project-manager` |
 | `"sdet"`, or starts with `"verifier-"` | `sdet` |

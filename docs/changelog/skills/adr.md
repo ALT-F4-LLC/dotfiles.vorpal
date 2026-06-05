@@ -1,5 +1,33 @@
 # Changelog: adr
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: added a fenced-code-block carve-out to the §3 Section-order validation (count only `##` headings outside ``` fences), aligning with the §5 placeholder-scan exclusion and the doc-authoring family (lockstep with tdd/prd/ux-spec).
+
+### Changes
+- §3 Section order: count only `##` headings at column 0 outside ``` code fences.
+
+### Dimensions Evaluated
+Coherence (doc-authoring family lockstep).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Added Authoring Procedure step 4 prompting authors to verify embedded technical assertions (snippets, cross-engine/platform portability claims, relied-on test infra) against their actual target before writing them as settled fact — closing the failure class behind two Phase 0 LESSONs (an ADR codified unverified dual-dialect SQL; cited unrunnable test infra). Kept generic; prior step 4 renumbered to 5. Net +6.
+
+### Changes
+- Authoring Procedure: new step 4 (embedded-claim verification — state unverified claims as assumptions, not facts); prior "Proceed to Validation Before Save" renumbered 4→5.
+
+### Dimensions Evaluated
+Completeness (PRIMARY — embedded-claim gap), Actionability, Over-Engineering (HIGHEST — single generic step, no migration-specific bloat), Coherence. Family-symmetry of this guidance for tdd/prd/ux-spec routed to Phase 2.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

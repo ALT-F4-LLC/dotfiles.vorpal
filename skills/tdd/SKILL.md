@@ -1,8 +1,9 @@
 ---
 name: tdd
 description: >
-  Author a single Technical Design Document at docs/tdd/{slug}.md. Loaded into the
-  calling agent's context; the agent drafts the TDD per the format authority below.
+  Author a single Technical Design Document as a Docket doc (docket doc create -T tdd).
+  Loaded into the calling agent's context; the agent drafts the TDD per the format
+  authority below.
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
 argument-hint: "<topic>"
 effort: max
@@ -15,10 +16,11 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 
 # TDD — Author a Technical Design Document
 
-You are the **TDD Author**. You produce a single Technical Design Document at
-`docs/tdd/{slug}.md` and return. The calling agent (typically `@staff-engineer`)
-drafts the content; this skill is the format authority — section list, frontmatter
-contract, output path, and collision handling all live here.
+You are the **TDD Author**. You produce a single Technical Design Document as a Docket
+doc (type `tdd`) and return. The calling agent (typically `@staff-engineer`) drafts the
+content; this skill is the format authority — section list, frontmatter contract, and
+the `docket doc create` recipe all live here. Docket issues the document's `DOC-<n>`
+identity; there is no filename.
 
 > **Note — "TDD" here means Technical Design Document, NOT Test-Driven Development.**
 
@@ -36,28 +38,27 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Slug derivation** (deterministic):
+**Title derivation.** The document's identity is the Docket-issued `DOC-<n>`, not a
+filename — there is no slug-to-path step. The `<topic>` is the human-readable `-t`
+title (Title Case, free prose). Use `<topic>` verbatim as the default `{title}`; the
+calling agent MAY refine it into a clearer prose title. Reject only an empty/all-
+punctuation topic that yields no title text:
 
-1. `lower      = lowercase(topic)`
-2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
-3. `trimmed    = cleaned.strip('-')`
-4. `truncated  = trimmed[:60]`
-5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
-   `boundary != -1`, set `truncated = truncated[:boundary]`.
-6. `truncated  = truncated.strip('-')` (re-trim after step 5).
-7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-8. Use `truncated` as `{slug}`.
+1. `cleaned = topic.strip()`.
+2. If `cleaned` contains no alphanumeric character, ABORT: `Error: Topic must contain at least one alphanumeric character.`
+3. Use `cleaned` (or a calling-agent refinement of it) as `{title}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
 
 - A Technical Design Document is needed for non-trivial work (architecture, system
-  design, multi-step migration, cross-cutting refactor) and should land at
-  `docs/tdd/{slug}.md` as the authoritative design record. Pick TDD over PRD when
-  *how* is the question — the what/why is settled and architecture is the open work
-  (the inverse of prd's "scope precedes architecture" boundary).
+  design, multi-step migration, cross-cutting refactor) and should live as a Docket
+  `tdd` doc as the authoritative design record. Pick TDD over PRD when *how* is the
+  question — the what/why is settled and architecture is the open work (the inverse of
+  prd's "scope precedes architecture" boundary).
 - The calling agent (typically `@staff-engineer`) is producing a design that needs to
-  go through the draft → questions-resolved → in-review → accepted lifecycle.
+  go through the `draft → approved` lifecycle (Docket doc status; promotion happens
+  after the calling agent's review/vote loop).
 - The team-lead orchestrator's Medium Task pattern asks for a TDD without a separate
   PRD — this skill is the canonical path.
 
@@ -65,64 +66,37 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
-  sketches that are not meant to live at `docs/tdd/`.
+  sketches that are not meant to live as a Docket `tdd` doc.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
   `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight step 4 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
 ## Pre-flight
 
-1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory is
-   `docs/tdd/`.
-3. **Resolve context**:
+1. **Resolve `{title}`** from `<topic>` per the Argument Handling title rule above.
+2. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Check collision**: `Glob docs/tdd/{slug}.md`. If a file exists at
-   `{output_path}`, run the COLLISION_DIALOG below.
-5. **Near-duplicate probe** (advisory, non-blocking): if `len(slug) >= 12`, run `Glob "docs/tdd/{slug[:12]}*.md"` and exclude `{output_path}` itself from the results. If any hits remain, surface them to the calling agent context as a one-line note: `Near-duplicate TDD(s) detected: {paths}. Proceed only if this is intentionally distinct work.` The calling agent decides whether to continue or re-derive a more specific slug; no automatic block. This catches near-identical args (different punctuation, suffix words) that derive to different but adjacent slugs.
-
-<!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
-
-```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
-```
-
-- "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
-- "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
-- "Cancel" → emit `Cancelled — no file written.` and end.
-
-Never silently overwrite. There is no "append" option — partial appends produce
-malformed frontmatter.
-<!-- CANONICAL:COLLISION_DIALOG:END -->
-
-6. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
-   whose slug appears as a substring of `<topic>` (case-insensitive), include
-   its relative path in the `dependencies` frontmatter array. The calling
-   agent may add others from broader judgment.
+3. **Near-duplicate probe** (advisory, non-blocking): run
+   `docket doc list -T tdd --json` and scan existing TDD titles for one that covers the
+   same surface as `<topic>`. If a close match exists, surface it to the calling agent
+   context as a one-line note: `Near-duplicate TDD(s) detected: {DOC-ids + titles}. Proceed only if this is intentionally distinct work.` The calling agent decides whether to continue or refine the title; no automatic block. Docket does not collide on title, so there is no overwrite path — a new create always issues a fresh `DOC-<n>`.
+4. **Related-doc probe**: run `docket doc list -T prd --json` and
+   `docket doc list -T ux --json`. For each existing doc whose title overlaps
+   `<topic>` (case-insensitive), include its `DOC-<n>` id in the `dependencies`
+   frontmatter array. The calling agent may add others from broader judgment.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
-   parent PRD or UX spec identified in Pre-flight step 6. Read existing TDDs in
-   `docs/tdd/` that touch adjacent areas — the new TDD should reference, not
-   contradict, prior accepted work.
+1. **Gather prior art**: discover related docs with `docket doc list -T tdd --json`,
+   `docket doc list -T prd --json`, and `docket doc list -T ux --json`, then read any
+   candidate parent PRD/UX doc identified in Pre-flight step 4 via
+   `docket doc show <DOC-id>`. Read existing TDD docs that touch adjacent areas — the
+   new TDD should reference, not contradict, prior approved work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required
@@ -156,7 +130,7 @@ updated_by: "{updated_by}"
 scope: "{one-liner describing what the TDD covers}"
 owner: "{owning agent or team, e.g. @staff-engineer}"
 dependencies:
-  - {relative path to parent PRD or related doc, or empty list}
+  - {DOC-<n> of parent PRD or related doc, or empty list}
 status: "draft"
 ---
 ```
@@ -164,16 +138,16 @@ status: "draft"
 Field rules:
 
 - `project` = `basename $(git rev-parse --show-toplevel)`.
-- `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: accepted` while `maturity: experimental` (design signed off, approach still provisional).
+- `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: approved` while `maturity: experimental` (design signed off, approach still provisional). The body `status` mirrors Docket's own doc-level status (`-s`).
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the
   calling agent.
 - `owner` is the responsible agent or team handle.
-- `dependencies` is a YAML array of related-file paths (relative to the doc); use
-  `[]` if none.
-- `status` is one of: `draft | questions-resolved | in-review | accepted | superseded`.
-  New TDDs start at `draft`.
+- `dependencies` is a YAML array of related `DOC-<n>` ids; use `[]` if none.
+- `status` is one of: `draft | approved`. New TDDs start at `draft`; promotion to
+  `approved` happens after the calling agent's review/vote loop via
+  `docket doc edit <DOC-id> -s approved`.
 
 ### Required Sections
 
@@ -223,15 +197,14 @@ Before invoking `Write`, verify in the calling agent's context:
 1. **Frontmatter fields** — all of `project`, `maturity`, `last_updated`,
    `updated_by`, `scope`, `owner`, `dependencies`, `status` present and
    non-empty (`dependencies` may be the empty list `[]`).
-2. **Status value** — `status` is one of `draft | questions-resolved |
-   in-review | accepted | superseded`.
+2. **Status value** — `status` is one of `draft | approved`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed.
    Off-by-one against the listed sections is a defect.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
    least two `###`-level subsections.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
-6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
+6. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 7. **Security-track subsections** — if `updated_by` is `@security-engineer`,
    verify §4 (Architecture & System Design) contains three `###`-level
@@ -251,27 +224,41 @@ Error: validation failed: {field/section} — {detail}.
 The calling agent fixes the issue in its own context and re-invokes
 `Skill(tdd, "<topic>")`.
 
-## Save & Return
+## Create & Return
 
 <!-- CANONICAL:SAVE_AND_RETURN:BEGIN -->
-After Validation Before Save passes:
+After Validation Before Save passes, create the doc in Docket. The full document body
+(frontmatter block + all Required Sections) is drafted to a temp file, then supplied to
+`docket doc create` via `-d @`:
 
-1. `Bash mkdir -p {output_dir}` (idempotent).
-2. `Write {output_path}` with the drafted content.
-3. Emit a single confirmation line:
+1. `Write` the full drafted document body to a temp file under `$TMPDIR`:
 
    ```
-   Created {output_path}
+   BODY="${TMPDIR:-/tmp}/tdd-doc.md"
+   ```
+
+2. Create the doc (type `tdd`, create-status `draft`), capturing JSON:
+
+   ```
+   docket doc create -T tdd -t "{title}" -s draft -d @"$BODY" --json
+   ```
+
+3. Parse the new id from the JSON `.data.id` and emit a single confirmation line:
+
+   ```
+   Created DOC-<n>: {title}
    ```
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
-The calling agent owns next steps (vote requests, decomposition, peer notification).
+The calling agent owns next steps (vote requests, decomposition, peer notification,
+`docket doc link add <DOC-id> --issue <DKT-id>` when a driving issue exists).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
-`Error: {one-line cause}` and end without writing.
+`Error: {one-line cause}` and end without creating.
 
-On operator Cancel during the collision dialog: emit
-`Cancelled — no file written.` and end without writing.
+If `docket doc create` returns a non-ok JSON envelope (`{"ok":false,...}`), surface it:
+`Error: docket doc create failed — {message}.` The temp-file body remains on disk for
+inspection. Do NOT retry.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
 ## Failure Modes
@@ -279,12 +266,10 @@ On operator Cancel during the collision dialog: emit
 | Trigger | Handling |
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(tdd, "<topic>") — describe the artifact in 3-10 words.` |
-| Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
-| Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
+| Title empty after trimming (e.g., all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
 | Security TDD missing Threat Model / Trust Boundaries / Security Considerations subsections | Abort: `Error: validation failed: §4 — security TDD requires Threat Model, Trust Boundaries, and Security Considerations subsections (updated_by={agent}).` |
 | Security TDD missing Abuse Cases subsection in §9 | Abort: `Error: validation failed: §9 — security TDD requires Abuse Cases subsection in Testing Strategy (updated_by={agent}).` |
-| Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
+| `docket doc create` returns a non-ok JSON envelope | Surface raw error: `Error: docket doc create failed — {message}.` Do NOT retry. The temp-file body remains on disk; the calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

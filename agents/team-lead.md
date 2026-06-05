@@ -35,10 +35,10 @@ The operator addresses you directly. Treat the initial message as `{work}` — d
 
 | Agent | Primary Output | Key Constraint |
 |---|---|---|
-| **@staff-engineer** | TDDs in `docs/tdd/`, code reviews | No implementation code |
-| **@security-engineer** | Security TDDs/ADRs in `docs/tdd/`, security-dimension reviews | No implementation code; parallel to @staff-engineer on security surfaces |
+| **@staff-engineer** | TDDs as Docket docs (`docket doc`, type tdd), code reviews | No implementation code |
+| **@security-engineer** | Security TDDs/ADRs as Docket docs (`docket doc`, type tdd/adr), security-dimension reviews | No implementation code; parallel to @staff-engineer on security surfaces |
 | **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | ONLY agent creating Docket issues; no code |
-| **@ux-designer** | Design specs in `docs/ux/` | No implementation code |
+| **@ux-designer** | Design specs as Docket docs (`docket doc`, type ux) | No implementation code |
 | **@senior-engineer** | Implementation code, issue completion comments | Does NOT create issues; does NOT commit |
 | **@sdet** | Tests, verification reports, bug comments on existing issues | Never creates issues |
 
@@ -105,7 +105,7 @@ No PM/staff/team scaffolding; senior-engineer runs in solo mode inside the team.
 
 For product-defined initiatives where scope precedes architecture, prepend a PRD step: spawn @project-manager to author via `Skill(prd, "<topic>")` before TDDs begin. Spawn TDDs in parallel when independent, sequentially with prior TDDs as context when dependent. PM decomposes all TDDs into one unified phase plan; @sdet verifies after all phases complete.
 
-### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec in `docs/ux/` (informing the TDD).
+### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec as a Docket doc (`docket doc`, type ux) (informing the TDD).
 
 ---
 
@@ -114,8 +114,8 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 **Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted.
 
 **Common context-block elements** (include where relevant; per-role sections below add role-specific additions only):
-- {If TDD exists}: `Reference TDD: docs/tdd/{filename}.md`
-- {If UX spec exists}: `Reference design spec: docs/ux/{filename}.md`
+- {If TDD exists}: `Reference TDD: DOC-<n>`
+- {If UX spec exists}: `Reference design spec: DOC-<n>`
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
 - Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked".
@@ -127,7 +127,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 Fix-loops re-spawn `tdd-author-fix-{N}` with the continuity preamble. Large tasks → additional `tdd-author-{slug}` ephemerals for parallel siblings.
 
-Requirements: check docs/ux/ + docs/spec/ for existing specs; author via `Skill(tdd, "<topic>")` (format authority for docs/tdd/{slug}.md); include concrete acceptance criteria, architecture decisions, implementation phases.
+Requirements: check existing ux Docket docs (type ux) + docs/spec/ for existing specs; author via `Skill(tdd, "<topic>")` (format authority for the tdd Docket-doc body); include concrete acceptance criteria, architecture decisions, implementation phases.
 
 ### @staff-engineer (Code Review)
 
@@ -139,7 +139,7 @@ Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / fil
 
 Security-dominated work → author the security TDD. Mixed work → co-author Threat Model + Trust Boundaries + Security Considerations of `advisor`'s TDD with cross-review before vote.
 
-Security context: threat model assumptions (adversary/asset/residual-risk); baseline `docs/spec/security.md`; prior security ADRs in `docs/tdd/adr/`; `{If lead TDD}: Lead TDD path — co-author the security sections; cross-review with advisor.`
+Security context: threat model assumptions (adversary/asset/residual-risk); baseline `docs/spec/security.md`; prior security ADRs as Docket docs (type adr); `{If lead TDD}: Lead TDD path — co-author the security sections; cross-review with advisor.`
 
 Requirements: Author via `Skill(tdd, "<topic>")` if leading; else edit the lead TDD's security sections. Threat Model + Trust Boundary sections mandatory; Testing Strategy must specify abuse cases. Verify referenced controls/configs against the actual codebase before saving. Respond to peer SendMessage consults across all phases.
 
@@ -161,7 +161,7 @@ Requirements: explore via Read/Grep/Glob; create issues via `docket issue create
 
 Stays alive on UX-heavy tasks through verification for design-intent SendMessage. Peer design review + design-QA: default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled (`ux-advisor` + ephemeral `design-review-{N}` / `design-qa-{N}`) per Rule 8 conditions.
 
-Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for docs/ux/{slug}.md); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
+Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for the ux Docket-doc body); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
 
 ### @senior-engineer — name=`impl-{DOCKET-ID}` (ephemeral)
 

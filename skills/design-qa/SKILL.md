@@ -1,7 +1,7 @@
 ---
 name: design-qa
 description: >
-  Post-implementation QA of a shipped user-facing surface against its `docs/ux/` spec; emits
+  Post-implementation QA of a shipped user-facing surface against its `ux` Docket doc (`docket doc show <DOC-id>`); emits
   a structured QA report. Driven by `@ux-designer`; format authority for verdict/severity/sections.
   Invoke after the spec is implemented (not for spec review — that's `design-review`).
   Trigger: "design QA", "run design QA", "verify implementation against UX spec", "QA the shipped UX".
@@ -16,7 +16,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 
 # Design QA — Verify Implementation Against UX Spec
 
-You are the **Design QA Reviewer**. You walk through every workflow in a `docs/ux/` spec, verify the implementation matches (interactions, states, error handling, copy, layout), and emit a structured QA report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, severity ladder, required sections, validation.
+You are the **Design QA Reviewer**. You walk through every workflow in a `ux` Docket doc (read via `docket doc show <DOC-id>`), verify the implementation matches (interactions, states, error handling, copy, layout), and emit a structured QA report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, severity ladder, required sections, validation.
 
 ## Role Detection
 
@@ -35,21 +35,21 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(design-qa, "<scope>") — name what to QA (UX spec path, Docket issue ID, or "uncommitted").
+Error: Usage: Skill(design-qa, "<scope>") — name what to QA (UX spec DOC-id, Docket issue ID, or "uncommitted").
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
 
 | Form | Detection | Sources |
 |---|---|---|
-| UX spec path | `Bash test -e {path}` and path matches `docs/ux/.*\.md` | `Read` the spec; locate the implementation surface from the spec's frontmatter and body |
-| Docket issue ID | `docket issue show {scope} --json` exits 0 | Read issue + comments + file attachments; locate the linked UX spec via attachments or `docket issue comment list` |
+| UX spec DOC-id | `docket doc show {scope} --json` exits 0 and `.data.type == "ux"` | `docket doc show {scope}` the spec; locate the implementation surface from the spec's frontmatter and body |
+| Docket issue ID | `docket issue show {scope} --json` exits 0 | Read issue + comments + file attachments; locate the linked UX spec via `docket doc show <DOC-id>` for the doc in `.data.linked_issues` (or the DOC-id cited in the issue body / `docket issue comment list`) |
 | Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD`; calling agent identifies the relevant spec from changed paths |
 
 If `<scope>` matches none of the above, ABORT:
 
 ```
-Error: Could not resolve <scope>: '{scope}'. Expected UX spec path, Docket issue ID, or "uncommitted".
+Error: Could not resolve <scope>: '{scope}'. Expected UX spec DOC-id, Docket issue ID, or "uncommitted".
 ```
 
 If extra positional args follow `<scope>`, ignore them silently.
@@ -57,7 +57,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 ## When to Use
 
 <!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
-- `@senior-engineer` reports user-facing implementation complete against a `docs/ux/` spec and `@ux-designer` is performing the QA pass.
+- `@senior-engineer` reports user-facing implementation complete against a `ux` Docket doc and `@ux-designer` is performing the QA pass.
 - `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
 - Operator or team-lead requests a design audit against an existing spec.
 
@@ -79,17 +79,17 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
 4. **Read the UX spec**:
-   - Capture spec path, frontmatter `maturity` (and `status` if present), and the workflow list. If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
-   - If the spec cannot be located (Docket issue scope with no attached spec, `uncommitted` with no spec in the changed paths), ABORT:
+   - `docket doc show <DOC-id>` to capture the spec's frontmatter `maturity` (and Docket `status`) and the workflow list. If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
+   - If the spec cannot be located (Docket issue scope with no linked `ux` doc, `uncommitted` with no spec identifiable from the changed paths), ABORT:
 
      ```
-     Error: Could not locate UX spec for <scope>: '{scope}'. Attach the spec to the issue or pass the spec path directly.
+     Error: Could not locate UX spec for <scope>: '{scope}'. Link the ux doc to the issue (docket doc link add) or pass the DOC-id directly.
      ```
 5. **Identify the implementation surface** — derive from the spec's stated surface (CLI command, generated config, error messages, rendered UI, API endpoint). Cross-reference with `git diff --stat` (uncommitted scope) or the issue's file attachments (issue scope) to confirm the surface is in the changed paths.
 6. **Empty-implementation guard**: if no implementation surface exists yet (spec exists but no code shipped), ABORT:
 
    ```
-   Error: No implementation surface found for spec '{spec_path}'. Design QA requires shipped implementation — use Skill(design-review, ...) for spec-only review.
+   Error: No implementation surface found for spec '{DOC-id}'. Design QA requires shipped implementation — use Skill(design-review, ...) for spec-only review.
    ```
 7. **Long-running surface preparation**: for dev servers, watchers, build pipelines, or any process expected to run >30s, plan to use `Bash run_in_background` + `Monitor` instead of blocking polls.
 
@@ -134,8 +134,8 @@ Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw 
 ## Design QA: {Spec Title}
 
 ### Spec Reference
-- Path: {docs/ux/...}
-- Maturity / status: {maturity from frontmatter — and status if present}
+- Doc: {DOC-id — ux Docket doc}
+- Maturity / status: {maturity from frontmatter — and Docket status}
 - Surface(s): {CLI / TUI / Web / API / Config / Docs}
 
 ### Verdict

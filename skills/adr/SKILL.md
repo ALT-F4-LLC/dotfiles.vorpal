@@ -1,9 +1,9 @@
 ---
 name: adr
 description: >
-  Author a single Architecture Decision Record at docs/tdd/adr/{NNNN}-{slug}.md. Loaded
-  into the calling agent's context; the agent drafts the ADR per the format authority
-  below.
+  Author a single Architecture Decision Record as a Docket doc (docket doc create -T adr).
+  Loaded into the calling agent's context; the agent drafts the ADR per the format
+  authority below.
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
 argument-hint: "<topic>"
 effort: max
@@ -16,11 +16,12 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 
 # ADR — Author an Architecture Decision Record
 
-You are the **ADR Author**. You produce a single Architecture Decision Record at
-`docs/tdd/adr/{NNNN}-{slug}.md` and return. The calling agent (typically
-`@staff-engineer`) drafts the content; this skill is the format authority — section
-list, frontmatter contract, output path, ADR numbering, and collision handling all
-live here.
+You are the **ADR Author**. You produce a single Architecture Decision Record as a
+Docket doc (type `adr`) and return. The calling agent (typically `@staff-engineer`)
+drafts the content; this skill is the format authority — section list, frontmatter
+contract, the `docket doc create` recipe, and the supersession convention all live
+here. Docket issues the document's `DOC-<n>` identity — there is no numbered or
+filename-based identity.
 
 ## Argument Handling
 
@@ -36,24 +37,21 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Slug derivation** (deterministic):
+**Title derivation.** The document's identity is the Docket-issued `DOC-<n>`, not an ADR
+number or filename — there is no numbering step and no slug-to-path step. The `<topic>`
+is the human-readable `-t` title (Title Case, free prose). Use `<topic>` verbatim as the
+default `{title}`; the calling agent MAY refine it into a clearer prose title. Reject
+only an empty/all-punctuation topic that yields no title text:
 
-1. `lower      = lowercase(topic)`
-2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
-3. `trimmed    = cleaned.strip('-')`
-4. `truncated  = trimmed[:60]`
-5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
-   `boundary != -1`, set `truncated = truncated[:boundary]`.
-6. `truncated  = truncated.strip('-')` (re-trim after step 5).
-7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-8. Use `truncated` as `{slug}`.
+1. `cleaned = topic.strip()`.
+2. If `cleaned` contains no alphanumeric character, ABORT: `Error: Topic must contain at least one alphanumeric character.`
+3. Use `cleaned` (or a calling-agent refinement of it) as `{title}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
 
 - A single architectural or design decision needs to be recorded as an immutable
-  artifact at `docs/tdd/adr/{NNNN}-{slug}.md` (numbered chronologically) so future
-  readers can trace the why.
+  Docket `adr` doc (identified by its `DOC-<n>`) so future readers can trace the why.
 - The calling agent (typically `@staff-engineer`) is logging a decision that emerged
   during design, review, or implementation and that future work will need to reference.
 - The decision has long-term consequences (e.g., choice of library, protocol, schema
@@ -63,7 +61,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
-  sketches that are not meant to live at `docs/tdd/adr/`.
+  sketches that are not meant to live as a Docket `adr` doc.
 - Full system designs spanning multiple components or phases: use
   `Skill(tdd, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
@@ -74,62 +72,24 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## Pre-flight
 
-1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_dir}`** as `docs/tdd/adr/`.
-3. **Resolve context**:
+1. **Resolve `{title}`** from `<topic>` per the Argument Handling title rule above.
+2. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: if the resolved `{output_path}` exists after numbering (step 5), run the COLLISION_DIALOG below.
-
-<!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
-
-```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
-```
-
-- "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
-- "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
-- "Cancel" → emit `Cancelled — no file written.` and end.
-
-Never silently overwrite. There is no "append" option — partial appends produce
-malformed frontmatter.
-<!-- CANONICAL:COLLISION_DIALOG:END -->
-
-5. **ADR numbering** (ADR-specific):
-   1. `Glob docs/tdd/adr/*.md`.
-   2. For each filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
-      filenames that do not match in `malformed[]`.
-   3. If `malformed` is non-empty, ABORT:
-
-      ```
-      Error: Could not determine next ADR number.
-             Existing ADR filenames must start with NNNN- (4-digit zero-padded).
-             Found malformed: {malformed}.
-      ```
-
-   4. If there are no matching files, `next_num = 1`. Otherwise `next_num = max(matches) + 1`,
-      where `max` is taken over the captured numeric group as integers.
-   5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
-   6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
+3. **Supersession check**: if this decision replaces an earlier ADR, identify the old
+   ADR's `DOC-<n>` via `docket doc list -T adr --json`. Carry `{old_doc}` into the
+   supersession workflow in Create & Return. Docket does not collide on title, so there
+   is no overwrite path — a new create always issues a fresh `DOC-<n>`.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
-   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
-   Read any candidate predecessors so the new ADR cites them in `Context`.
+1. **Gather prior art**: discover related decisions and designs with
+   `docket doc list -T adr --json`, `docket doc list -T tdd --json`,
+   `docket doc list -T prd --json`, and `docket doc list -T ux --json`; read candidate
+   predecessors via `docket doc show <DOC-id>`. Find any ADR/TDD/PRD/UX doc that may be
+   superseded, reinforced, or contradicted by this decision, and cite each by its
+   `DOC-<n>` in the new ADR's `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
@@ -151,7 +111,7 @@ project: "{project_name}"
 last_updated: "{today_date}"
 updated_by: "{updated_by}"
 status: "proposed"
-# superseded_by: "0042-new-decision"  # required only when status is "superseded"
+superseded_by: "DOC-<new>"
 ---
 ```
 
@@ -162,10 +122,12 @@ Field rules:
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `status` is one of: `proposed | accepted | superseded`. New ADRs start at
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
-  `superseded` is set when a later ADR replaces this one.
-- `superseded_by` is required when `status: superseded` and points to the
-  successor ADR's basename without extension (e.g., `0042-new-decision`).
-  Omit otherwise.
+  `superseded` is set when a later ADR replaces this one. ADR intentionally
+  retains this `proposed → accepted → superseded` ladder while `tdd`, `prd`, and
+  `ux` docs use `draft → approved`; the divergence is by design — do not
+  reconcile them.
+- `superseded_by` is required only when `status: superseded` and points to the
+  successor ADR's `DOC-<n>` id (e.g., `DOC-42`). Omit the line entirely otherwise.
 
 ### Required Sections
 
@@ -187,16 +149,15 @@ Before invoking `Write`, verify in the calling agent's context:
 
 1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`,
    `status` present and non-empty. If `status: superseded`, `superseded_by`
-   must also be present and non-empty.
+   must also be present, non-empty, and a `DOC-<n>` id.
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed
    (currently 4 sections). Off-by-one against the count is a defect.
 4. **Alternatives count** — Section 4 (Alternatives Considered) names at
    least one alternative.
-5. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
-   `{project_name}`, `{NNNN}`, `TBD`, or `TODO` text outside of code-fenced
-   examples.
+5. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
+   `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 
 If any check fails, ABORT with:
 
@@ -204,55 +165,66 @@ If any check fails, ABORT with:
 Error: validation failed: {field/section} — {detail}.
 ```
 
-## Save & Return
+## Create & Return
 
 <!-- CANONICAL:SAVE_AND_RETURN:BEGIN -->
-After Validation Before Save passes:
+After Validation Before Save passes, create the doc in Docket. The full document body
+(frontmatter block + all Required Sections) is drafted to a temp file, then supplied to
+`docket doc create` via `-d @`:
 
-1. `Bash mkdir -p {output_dir}` (idempotent).
-2. `Write {output_path}` with the drafted content.
-3. Emit a single confirmation line:
+1. `Write` the full drafted document body to a temp file under `$TMPDIR`:
 
    ```
-   Created {output_path}
+   BODY="${TMPDIR:-/tmp}/adr-doc.md"
+   ```
+
+2. Create the doc (type `adr`, create-status `proposed`), capturing JSON:
+
+   ```
+   docket doc create -T adr -t "{title}" -s proposed -d @"$BODY" --json
+   ```
+
+3. Parse the new id from the JSON `.data.id` and emit a single confirmation line:
+
+   ```
+   Created DOC-<n>: {title}
    ```
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
-The calling agent owns next steps (vote requests, decomposition, peer notification).
+The calling agent owns next steps (vote requests, decomposition, peer notification,
+`docket doc link add <DOC-id> --issue <DKT-id>` when a driving issue exists).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
-`Error: {one-line cause}` and end without writing.
+`Error: {one-line cause}` and end without creating.
 
-On operator Cancel during the collision dialog: emit
-`Cancelled — no file written.` and end without writing.
+If `docket doc create` returns a non-ok JSON envelope (`{"ok":false,...}`), surface it:
+`Error: docket doc create failed — {message}.` The temp-file body remains on disk for
+inspection. Do NOT retry.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
-For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
-`docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
+### Supersession (ADR-specific)
 
-ADR-specific full sequence: `mkdir → renumber re-Glob → Write → race-detection Glob → Emit`.
+When this new ADR (`DOC-<new>`) supersedes an earlier ADR (`{old_doc}` =
+`DOC-<old>`, identified in Pre-flight step 3), the two docs carry different pointers:
 
-**Before Write**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}`). If `{NNNN}` changed, update frontmatter / body references before Write.
+- **The NEW/superseding ADR** (`DOC-<new>`) carries a `Supersedes DOC-<old>` line in its
+  `Context` section body (drafted before create). It does NOT set `superseded_by`.
+- **The OLD/superseded ADR** (`DOC-<old>`) is transitioned after the new doc exists:
+  1. `docket doc edit DOC-<old> -s superseded --json` (status bump → new revision),
+  2. `docket doc comment add DOC-<old> -m "Superseded by DOC-<new>."` (audit breadcrumb),
+  3. set its body frontmatter `superseded_by: DOC-<new>` via the same
+     `docket doc edit DOC-<old> -d @"$BODY"` if the body is being re-supplied.
 
-**After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
-
-```
-Error: ADR number collision detected — another author may have raced you. Manual resolution required.
-```
-
-This catches different-slug concurrent races at the same `{NNNN}`. Same-slug races (two authors picking identical topics simultaneously) are undetectable — both writes target the same path. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
+Identity is the `DOC-<n>` throughout — neither pointer uses a numbered or filename-based
+form.
 
 ## Failure Modes
 
 | Trigger | Handling |
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
-| Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Existing ADR filename does not match `^\d{4}-[a-z0-9-]+\.md$` | Abort: `Error: Could not determine next ADR number. Existing ADR filenames must start with NNNN- (4-digit zero-padded). Found malformed: {malformed}.` |
-| Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
-| Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
-| Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |
+| Title empty after trimming (e.g., all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
-| Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
+| `docket doc create` returns a non-ok JSON envelope | Surface raw error: `Error: docket doc create failed — {message}.` Do NOT retry. The temp-file body remains on disk; the calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |
 

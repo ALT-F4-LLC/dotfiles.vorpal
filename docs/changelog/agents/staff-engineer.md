@@ -1,5 +1,34 @@
 # Changelog: staff-engineer
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: mirrored the shared-TDD Sole-editor rule from security-engineer onto staff-engineer (the host-TDD author and the OTHER editor in that concurrent-edit hazard). Within-line; 250 lines.
+
+### Changes
+- §What You Are NOT (@security-engineer bullet): added a compact "Sole-editor rule (mirror of security-engineer.md)" — serialize to ONE editor per pass on a shared TDD; on "File modified since read", STOP and re-Read before re-editing (do not blind-retry). Co-located with the mixed-work co-authoring relationship that triggers it.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (PRIMARY — parity-bound to security-engineer.md) · Terminology consistency · Consolidation (rides existing bullet, net 0).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Promoted the dominant cross-repo TDD-rigor lesson (cross-dialect SQL is an executable claim, not inspectable) by generalizing the "Regex execution gate" header to an "Executable-claim gate" covering both regex ACs and cross-dialect SQL. Offset by trimming the redundant 7-name spec enumeration (canonical list owned by init-specs + project-manager.md:312, both verified to enumerate). Physical net 0 (250 lines; both edits within-line).
+
+### Changes
+- TDD Workflow step 6: "Regex execution gate" → "Executable-claim gate (regex ACs + cross-dialect SQL)"; added clause (b) — cross-dialect SQL must execute against every declared dialect (PG/SQLite `ON CONFLICT` example). Grounded in agent-memory excerpt #1 (4 repos).
+- Responsibility 4: dropped the inline 7 reserved spec-name enumeration; replaced with a pointer to their owners (init-specs + project-manager.md, both verified to carry the list). Load-bearing fact (ad-hoc, read-only for staff) preserved.
+
+### Dimensions Evaluated
+Capability Growth (SQL executable-claim gate) · Consolidation & Trimming (enumeration trim) · Actionability · Spec Alignment (all team-lead anchors verified) · Role Realism, Boundary Clarity, Completeness, Rename (no change).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

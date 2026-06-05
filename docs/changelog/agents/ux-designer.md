@@ -1,5 +1,21 @@
 # Changelog: ux-designer
 
+## 2026-06-05
+
+### Summary
+Encoded two render-gate pitfalls from agent memory (static-export render-to-image QA gate; rendered-effect-at-delivery-resolution spec guidance), plus a within-line trim of a redundant Shutdown bullet. Physical net +4 (245→249; two new paragraphs each add a blank+content line; the CHANGE-3 trim was within-line so it did not offset on a line basis).
+
+### Changes
+- QA Workflow: added a MANDATORY static-export/slide render-to-image-and-Read gate — "build green" ≠ render pass; broken-image placeholder / dead embed = Blocker; verify at real delivery resolution. (agent-memory pitfall; grep-verified absent across all agents)
+- Spec content rule: added rendered-EFFECT-at-delivery-resolution + color-paired-with-text-fallback (CSS-contract-met ≠ design-intent-met).
+- §Shutdown "Ephemeral roles" bullet trimmed to a pointer; Lifecycle §Ephemeral roles (L220) remains canonical owner of the exit sequence (verified).
+
+### Dimensions Evaluated
+Completeness + Spec Alignment (two render-gate pitfalls) · Consolidation & Trimming (Shutdown bullet) · Role Realism, Boundary Clarity (no change).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

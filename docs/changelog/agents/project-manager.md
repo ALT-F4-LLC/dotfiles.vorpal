@@ -1,5 +1,21 @@
 # Changelog: project-manager
 
+## 2026-06-05
+
+### Summary
+Encoded three CONFIRMED recurring historical pitfalls the file did not previously cover, all verified against the zero-drift Docket CLI audit (`-d` sets body / accepts `-` stdin; `-f` only attaches refs). Net +2 (332→334). §9 DOC-link tail (duplicate of §10) trimmed as partial offset.
+
+### Changes
+- §6 Decompose: same-file-same-layer leaves now require a DIRECT `depends_on` (co-gating behind independent parents does NOT serialize; both succeed in isolation then collide at apply); check extends to TEST files.
+- §8 Write Descriptions: stated `-d` sets the body (use `-d -` for multi-line stdin) vs `-f` only attaches refs — passing the body via `-f` yields an empty description + a dead attachment.
+- §9 Attach File Refs: `-f` must be the leaf's real EDIT/CREATE target (read What/Where); fixed the "must resolve on disk" rule to handle new-file deliverables; dropped DOC-link tail duplicating §10.
+
+### Dimensions Evaluated
+Capability Growth (PRIMARY — all 3 historical pitfalls) · Actionability (`-d -` idiom) · Consolidation & Trimming (§9 tail dedup) · Spec Alignment (CLI ground-truth verified).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

@@ -185,7 +185,7 @@ For each applicable concern, ensure a task exists during decomposition:
 
 ### 6. Decompose the Work
 
-Each task must be independently executable — a @senior-engineer picks up one `todo` issue and completes it without asking questions. Default to parallel — only declare a dependency when task B would literally fail without task A completing first; Grep to confirm no hidden coupling. When work spans systems, create a contract/interface task first so implementations depend on the contract, not each other. Use `--parent <id>` for hierarchy and `docket issue link add <id> depends_on <target_id>` for ordering.
+Each task must be independently executable — a @senior-engineer picks up one `todo` issue and completes it without asking questions. Default to parallel — only declare a dependency when task B would literally fail without task A completing first; Grep to confirm no hidden coupling. **Same-file-same-layer exception:** two leaves that EDIT the same file must carry a DIRECT `depends_on` to serialize them — co-gating behind independent upstream parents does NOT serialize them, and both will succeed in isolation then collide at apply. Run the same check over TEST files, not just source. When work spans systems, create a contract/interface task first so implementations depend on the contract, not each other. Use `--parent <id>` for hierarchy and `docket issue link add <id> depends_on <target_id>` for ordering.
 
 ### 7. Create the Issue Structure
 
@@ -205,6 +205,8 @@ docket issue link add <later_id> depends_on <earlier_id>
 
 Every issue must give a @senior-engineer enough context to execute without asking questions. Describe the **outcome**, not implementation steps. Include specific file paths from your exploration. Reference TDD/UX docs by their Docket `DOC-<n>` id (discover via `docket doc list -T tdd` / `-T ux`) and project specs from `docs/spec/` when they exist. Trivial-tier issues need only what + acceptance criteria.
 
+**`-d` sets the body; `-f` only attaches file refs.** The multi-line template below goes in the DESCRIPTION via `-d` — for a multi-line body, pipe it through `-d -` (stdin) rather than fighting shell quoting. `-f` ATTACHES file paths for collision detection; it does NOT set the body. Passing the body to `-f` yields an empty description plus a dead attachment that breaks collision detection.
+
 **Do not require code comments in acceptance criteria.** The team-wide no-code-comments policy (team-lead.md Rule 9) applies to every implementation. When a phase requires explaining behavior, route the explanation to a Docket comment on the issue or an update to the relevant `tdd` doc (`docket doc edit <DOC-id>`) — never an acceptance criterion of the form "add a comment explaining X" or "document Y inline." Reviewer flags inline prose comments as Blockers regardless; an AC requiring one will produce work that fails review.
 
 **Template for standard/complex tier issues:**
@@ -223,7 +225,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 
 ### 9. Attach File References
 
-Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites a TDD doc (`DOC-<n>`), re-confirm it resolves and is current via `docket doc show <DOC-id>` before finalizing — and link it to the issue per step 10. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
+Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Each `-f` must be the leaf's actual EDIT or CREATE target — read its What/Where to confirm.** An edit-target must resolve on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session. A new-file deliverable's path will NOT resolve yet; attach the path the leaf creates, not a similarly-named existing file. A mismatched `-f` (attach X, actually touch Y) silently false-positives the collision checker on X and leaves Y untracked. DOC-link verification belongs to step 10. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
 
 ### 10. Link Driving Docs to Issues
 

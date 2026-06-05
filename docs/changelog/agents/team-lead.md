@@ -1,5 +1,33 @@
 # Changelog: team-lead
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: added a visual-deliverable render-verification pointer to the step-13 spot-check, deferring visual surfaces to ux-advisor (coherent with ux-designer.md's new render-to-image gate) rather than duplicating render-to-image in team-lead; offset by a within-line Phantom-deletion trim. Net 0; 481 lines.
+
+### Changes
+- Step 13 spot-check: added "Visual deliverables are render-verified, not Read-verified → defer to ux-advisor design-QA" so a source-diff-green pass does not approve a slide/static-export/rendered-UI surface. Offset by compacting the Phantom-deletion sub-case wording (behavioral content retained).
+
+### Dimensions Evaluated
+ux↔team-lead Coherence (PRIMARY) · Consolidation & Trimming (net-zero offset, held 481/500) · No-duplication (routes to ux-advisor, does not re-implement render-to-image).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Generalized §Mid-cycle redirect-race rule into the canonical one-authoritative-message rule (net +0; 481 lines). The historical audit's most-repeated team-lead lesson ("one authoritative message per teammate, then WAIT; decide once; never flip-flop a low-stakes call mid-flight") was only partially encoded — only the AskUserQuestion-override instance existed; the general async-ordering principle was absent here and in all 6 peer files.
+
+### Changes
+- §Mid-cycle redirect-race rule: prepended the general "one authoritative message per teammate per wait-window, then WAIT; do not flip-flop a low-stakes call mid-flight (a superseding message crosses the prior, teammate replies to STALE)" principle; demoted the AskUserQuestion-override case to "the redirect instance". Heading substring kept (L121 back-reference).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (PRIMARY) · Consolidation & Trimming (net +0; declined near-ceiling additions) · Completeness (docs-researcher recs #1/#3/#5/#6 confirmed already-applied NO-OPs; #2/#7 flagged cross-cutting for Phase 2).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

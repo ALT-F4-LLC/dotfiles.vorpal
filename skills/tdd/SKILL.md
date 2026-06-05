@@ -100,20 +100,14 @@ punctuation topic that yields no title text:
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required
-   Sections). Sections marked "may be N/A" (Data Models §5, API Contracts §6)
-   may contain a single `N/A.` paragraph with a one-line justification.
-   Validation §3 is the gate for the full section list.
+   Sections). Every section listed MUST appear, in the order shown. Sections
+   marked "may be N/A" (Data Models §5, API Contracts §6) may contain a single
+   `N/A.` paragraph with a one-line justification. The chosen alternative in §3
+   must match the Architecture & System Design section (§4).
 4. **Mermaid diagrams**: draft at least one Mermaid block appropriate to the
    design — component map, sequence, state, or data flow. Validation §5 is
    the gate; Failure Modes routes pure-policy decisions to ADR.
-5. **Alternatives Considered**: at least two alternatives, each with shape,
-   strengths, weaknesses, and a verdict. The chosen alternative should match the
-   Architecture & System Design section.
-6. **Risks & Open Questions**: enumerate risks with likelihood/impact/mitigation;
-   flag any open questions that must be resolved before vote.
-7. **Implementation Phases**: split the work into phases with file scoping and
-   per-phase acceptance. The planner consumes this section directly.
-8. **Proceed to Validation Before Save** — that step is the single source of
+5. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).
 

@@ -3,6 +3,20 @@
 ## 2026-06-05
 
 ### Summary
+Phase 1 no-change verdict (mature skill). Phase 2: added a body-`status:` authority caveat (doc-family parity with tdd) adapted to adr's proposed→accepted→superseded ladder, naming Docket `.data.status` as source of truth; kept the by-design ladder-divergence guardrail.
+
+### Changes
+- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4 lines).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — nothing removable), Coherence (family status-authority parity restored).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
 Phase 2 coherence: added a fenced-code-block carve-out to the §3 Section-order validation (count only `##` headings outside ``` fences), aligning with the §5 placeholder-scan exclusion and the doc-authoring family (lockstep with tdd/prd/ux-spec).
 
 ### Changes

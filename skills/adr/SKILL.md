@@ -128,7 +128,11 @@ Field rules:
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `status` is one of: `proposed | accepted | superseded`. New ADRs start at
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
-  `superseded` is set when a later ADR replaces this one. ADR intentionally
+  `superseded` is set when a later ADR replaces this one. Docket's own doc-level
+  `status` (`.data.status`, via `docket doc show <DOC-id> --json`) is the source of
+  truth for downstream consumers; this body `status:` is documentation-only — NOT
+  auto-updated by `docket doc edit <DOC-id> -s`, may drift stale, so never gate on it.
+  ADR intentionally
   retains this `proposed → accepted → superseded` ladder while `tdd`, `prd`, and
   `ux` docs use `draft → approved`; the divergence is by design — do not
   reconcile them.

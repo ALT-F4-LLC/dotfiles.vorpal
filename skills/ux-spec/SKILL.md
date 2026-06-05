@@ -141,6 +141,10 @@ Field rules:
   (`proof-of-concept | draft | experimental | stable`). New UX specs start at
   `draft`.
 - `status` mirrors Docket's own doc-level status (`-s`) — one of `draft | approved`.
+  The authoritative copy is Docket's `.data.status` (via `docket doc show <DOC-id>
+  --json`) — the single source of truth for downstream gates; this body `status:` is
+  documentation-only, NOT auto-updated by `docket doc edit <DOC-id> -s`, and may drift
+  stale, so never gate on it.
   New UX specs start at `draft`; promotion to `approved` happens after the calling
   agent's review loop via `docket doc edit <DOC-id> -s approved`. (`maturity` and
   `status` are orthogonal: `maturity` is how settled the content is, `status` is where
@@ -155,8 +159,7 @@ Field rules:
 ### Required Sections
 
 The UX spec body MUST contain these top-level sections, in this order. Each is a
-`##` heading in the drafted document. The list mirrors `agents/ux-designer.md`
-Responsibility 1 design spec format.
+`##` heading in the drafted document.
 
 1. **Overview** — surface type, users (skill/context/frequency), key workflows
    (3-5 prioritized), success criteria (concrete, testable), success metrics

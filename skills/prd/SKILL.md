@@ -125,6 +125,10 @@ Field rules:
 - `maturity` is the doc-class ladder for living product definitions — one of
   `proof-of-concept | draft | experimental | stable`. New PRDs start at `draft`.
 - `status` mirrors Docket's own doc-level status (`-s`) — one of `draft | approved`.
+  The authoritative copy is Docket's `.data.status` (via `docket doc show <DOC-id>
+  --json`) — the single source of truth for downstream gates; this body `status:` is
+  documentation-only, NOT auto-updated by `docket doc edit <DOC-id> -s`, and may drift
+  stale, so never gate on it.
   New PRDs start at `draft`; promotion to `approved` happens after the calling agent's
   review loop via `docket doc edit <DOC-id> -s approved`. (`maturity` and `status` are
   orthogonal: `maturity` is how settled the content is, `status` is where the doc sits

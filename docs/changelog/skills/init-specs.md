@@ -1,5 +1,19 @@
 # Changelog: init-specs
 
+## 2026-06-05
+
+### Summary
+Corrected a factually wrong COUPLING comment: prd does NOT write to docs/spec/ (it creates a Docket doc), and the doc-authoring siblings refuse reserved names by doc-type, not output directory. Rewrote to match prd's accurate ownership/name-collision rationale. Surfaced cross-cutting from the prd review; operator-approved out-of-scope fix.
+
+### Changes
+- Line 67 COUPLING comment: replaced the false "shares docs/spec/ output directory" / "write to different directories" rationale with the correct name-collision framing (0 net).
+
+### Dimensions Evaluated
+Coherence (cross-skill coupling accuracy), Correctness. Caught during the adr/prd/ux-spec/tdd Phase 2 coherence pass.
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

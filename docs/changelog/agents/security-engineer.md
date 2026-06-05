@@ -1,5 +1,21 @@
 # Changelog: security-engineer
 
+## 2026-06-05
+
+### Summary
+Encoded two verified agent-memory concurrency/scope-discipline signals by folding into existing bullets (no new sections); trimmed verdict→shutdown triple-coverage. Physical net 0 (234 lines; all within-line).
+
+### Changes
+- Folded sole-editor serialization + re-Read-on-"File modified since read" rule into the Threat-Model Annotation bullet (cross-agent concurrency hazard with @staff-engineer on shared TDD files).
+- Folded phase-scoped residual-grep guard into Approval Judgment (prevents false-Block when a token is legit live code this phase but prompt prose for a later one).
+- Trimmed §Shutdown Handling ephemeral bullet to its unique `background_tasks`/`session_crons` drain detail; §Ephemeral peer review (L114) remains canonical owner of the verdict→shutdown sequence (verified).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication · Actionability · Consolidation & Trimming (HIGHEST) · Spec Alignment (no docket/frontmatter drift). NO-OPs confirmed: canonical name anchoring, doubled-reviewer pattern, no-code-comments gate.
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

@@ -233,7 +233,7 @@ You verify pre-planned Docket issues. Verification is READ-ONLY on workflow stat
 Run `docket init` at session start (idempotent). Run `docket version` for traceability. Use `--quiet` for cleaner scripted output. Then:
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
-2. **Acknowledge same turn (verification) OR claim-then-ack (test-infra).** Verification dispatches: SendMessage team-lead ack ("received, verifying issue {id}") as FIRST tool call — do NOT `docket issue move <id> in-progress` (regresses state). Test-infra dispatches: `docket issue edit <id> -a @sdet` THEN `docket issue move <id> in-progress` THEN ack same turn, per @senior-engineer convention. Unacked work is invisible work; team-lead will respawn. See comm rule 7.
+2. **Acknowledge / claim per spawn type — see comm rule 7** (verification: ack-only, no `docket issue move`; test-infra: edit+move+ack). Unacked work is invisible work; team-lead will respawn.
 3. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
    `docket issue file list <id>` (files tell you what changed), and `docket issue log <id>`
    when you need activity history to understand what has been tried.
@@ -290,7 +290,7 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 
 ## Shutdown Handling
 
-**Proactive (own initiative, default for sdet).** Verdict delivered + Docket closed/commented + recipients SendMessaged → emit `shutdown_request` to team-lead as your final tool call the same turn. Sdet has NO sanctioned idle role — the only persistent advisors who may stay idle are `advisor`, `security-advisor`, `ux-advisor`. Lingering after verdict emission is a stall pattern team-lead actively monitors and will respawn against.
+**Proactive (own initiative, default for sdet).** Precondition: verdict delivered + Docket closed/commented + recipients SendMessaged. Then emit `shutdown_request` to team-lead as your final tool call (routing + idle-role rationale in comm rule 6 / Lifecycle).
 
 **Reactive (incoming request).** Reply to incoming `shutdown_request` with `shutdown_response` in the same turn. Reject ONLY when in-progress test execution would lose unrecoverable results (reply with reason + ETA). Otherwise approve.
 

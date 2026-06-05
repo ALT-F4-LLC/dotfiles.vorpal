@@ -1,5 +1,22 @@
 # Changelog: senior-engineer
 
+## 2026-06-05
+
+### Summary
+Four changes, physical net +1 (358→359; the reviewer's intended consolidation offset was a within-line token reduction, not a line removal). Two historical-memory gaps folded into existing structure (shared-tree git-diff scoping; dispatch-cited reuse-helper premise-check), one consolidation of duplicated probe-rationale, one fix of a `\!=` zsh-escape artifact that had leaked literally into step 6.
+
+### Changes
+- Step 6 (close/verify/comment): `status \!= "in-progress"` → assert `status` is `done` — removed the markdown-rendered backslash-bang; aligns with the agent's own "assert the positive" memory and is more precise (close = move done).
+- Build & Commit Hygiene: added "Shared-tree diff scoping" bullet — `git diff` shows all agents' work; scope to your own paths; never `git add` siblings (highest cross-cutting senior-engineer trap; was absent).
+- Execution Workflow step 2: added "Premise-check" to Contradiction-detection — grep to confirm a dispatch-cited "reuse existing X helper" exists before planning reuse (distinct from staff TDD-claim rule).
+- Execution Workflow step 1: consolidated near-verbatim probe-rationale to a §Communication discipline → "Claim before work" back-reference (L44 verified canonical).
+
+### Dimensions Evaluated
+Completeness + Capability Growth (two memory gaps) · Consolidation & Trimming (step-1/L44 dedup) · Actionability (escape-artifact fix) · Boundary Clarity, Role Realism, Spec Alignment, Rename (no change).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

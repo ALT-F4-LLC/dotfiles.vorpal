@@ -1,5 +1,20 @@
 # Changelog: sdet
 
+## 2026-06-05
+
+### Summary
+Two Consolidation & Trimming dedups (net 0 lines; 341 lines). Execution Workflow step 2 collapsed to a comm rule 7 back-reference (claim convention was near-verbatim duplicated). §Shutdown Proactive's idle-role enumeration collapsed to a comm rule 6 / Lifecycle back-reference, keeping only the unique precondition. Both historical focus areas resolved: literal-command-AC already encoded in verify-ac skill (NO-OP); destroy-recreate-NEW-backend is a runtime concern outside sdet's static-verification charter (routed to a tracking issue, not dropped).
+
+### Changes
+- §Execution Workflow step 2: fold spawn-type claim convention into a comm rule 7 back-reference (target verified present at L50).
+- §Shutdown Handling Proactive: collapse duplicated advisor/idle-role enumeration to a comm rule 6 / Lifecycle back-reference (targets L38/L304 verified present); retain unique precondition.
+
+### Dimensions Evaluated
+Consolidation & Trimming (PRIMARY — 2 dedups) · Boundary Clarity (single canonical home for idle-role doctrine) · Spec Alignment (team-lead anchors + docket commands verified extant).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

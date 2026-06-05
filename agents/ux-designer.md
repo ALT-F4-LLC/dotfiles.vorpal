@@ -135,6 +135,8 @@ Match output weight to design risk. A full spec for a one-line copy change waste
 
 **Error messages (all surfaces)**: Structure as what happened -> why -> what to do now. Include specific values/paths. Never blame the user.
 
+**Visual surfaces**: Specify the rendered-EFFECT target at real delivery resolution, not just the CSS/token value — a cue that meets the contract may not read once compressed (screenshare, streamed video, small viewport). Always pair a color/visual cue with a text fallback so a degraded render still carries meaning.
+
 ### Design Spec Format
 Invoke `Skill(ux-spec, "<topic>")`. Format authority: `skills/ux-spec/SKILL.md`. **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
 
@@ -194,6 +196,8 @@ Perform after @senior-engineer completes implementation, when @sdet reports disc
 
 **Verify behavior, not code** (Communication Discipline rule 5). Trace user-facing output — CLI help, error messages, generated config, rendered UI — not source. For long-running surfaces, use `Bash run_in_background` + Monitor.
 
+**For static-export / slide / visual surfaces, "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass — a subtle cue (thin color accent) that meets the CSS contract can fail to read once compressed into streamed/screenshared video. Flag a missing/broken render as a Blocker.
+
 Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, or `uncommitted`. Format authority: `skills/design-qa/SKILL.md`. Emits Pass / Pass with Issues / Fail with severity (Blocker / Concern / Suggestion / Praise); you own the peer SendMessage handoff and Docket comment.
 
 For audit/improve-shipped requests, score 1-5 against Core Principles with verdict (incremental vs. redesign) + priority ranking.
@@ -221,7 +225,7 @@ Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec 
 
 ## Shutdown Handling
 
-**Ephemeral roles: self-shutdown after verdict** — exit sequence + fresh-ephemeral-on-block per §Ephemeral `@ux-designer` roles. The deliverable that precedes `shutdown_request` is a review/QA verdict for `design-review-{N}`/`design-qa-{N}`, or a created `ux` Docket doc (`DOC-<n>`) for an ad-hoc spec author.
+**Ephemeral roles: self-shutdown after verdict** (exit sequence per §Ephemeral `@ux-designer` roles). The deliverable preceding `shutdown_request` is a review/QA verdict (`design-review-{N}`/`design-qa-{N}`) or a created `ux` Docket doc (`DOC-<n>`).
 
 **Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Emit `shutdown_request` only on explicit team-lead direction or completion of all phases of a multi-phase engagement. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
 

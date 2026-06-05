@@ -8,7 +8,9 @@ description: >
   Trigger: "review and comment", "review this PR and post comments", "inline review of a PR",
   "post my review comments on <PR>".
 argument-hint: "<PR — number, full URL, or owner/repo#number>"
+effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read"]
+disallowed-tools: ["Edit", "Write"]
 ---
 
 <!-- CRITICAL BANNER -->

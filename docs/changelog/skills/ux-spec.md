@@ -3,6 +3,21 @@
 ## 2026-06-05
 
 ### Summary
+Phase 1: removed a false "mirrors agents/ux-designer.md Responsibility 1" cross-reference (the skill self-owns the section list; the cite was circular and absent there). Phase 2: restored the body-`status:` authority caveat (lockstep with prd).
+
+### Changes
+- Required Sections preamble: dropped the false ux-designer.md cross-ref (-1; verified none of the 9 section names appear there).
+- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4).
+
+### Dimensions Evaluated
+Spec Alignment (false cite), Over-Engineering (HIGHEST), Coherence (status-authority parity). Historical Write-bypass path verified closed.
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
 Phase 2 coherence: added a fenced-code-block carve-out to the §4 Section-order validation (count only `##` headings outside ``` fences), for doc-authoring family parity (lockstep with tdd/adr/prd). Phase 1 review found no other gap.
 
 ### Changes

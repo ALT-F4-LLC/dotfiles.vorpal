@@ -3,6 +3,20 @@
 ## 2026-06-05
 
 ### Summary
+Phase 1 no-change verdict. Phase 2: restored the body-`status:` authority caveat (lockstep with ux-spec) — warns the field is documentation-only, names Docket `.data.status` as the single source of truth for downstream gates, never gate on the body value.
+
+### Changes
+- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4 lines, identical to ux-spec).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — prior cycles already deduped), Coherence (family status-authority parity).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
 Phase 2 coherence: added a fenced-code-block carve-out to the §4 Section-order validation (count only `##` headings outside ``` fences), for doc-authoring family parity (lockstep with tdd/adr/ux-spec). Phase 1 review found no other gap.
 
 ### Changes

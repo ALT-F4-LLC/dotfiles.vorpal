@@ -1,5 +1,19 @@
 # Changelog: design-review
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: moved the COUPLING marker above "When NOT to Use" and replaced "doubling-rule note below" with directionless wording ("The Doubling Rule section...") — the Doubling Rule sits above the marker post-move, so "below" was inaccurate. All 4 family markers now byte-identical.
+
+### Changes
+- COUPLING marker relocated under "When NOT to Use"; "below" wording corrected; family parity restored.
+
+### Dimensions Evaluated
+Coherence (report-emission family COUPLING placement + text parity).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

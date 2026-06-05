@@ -185,7 +185,10 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
     production readiness, runbooks.
 11. **Implementation Phases** — partitioned phases that the planner consumes
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
-    (paths affected), (c) per-phase acceptance criteria, (d) effort estimate
+    (paths affected), (c) per-phase acceptance criteria — any grep/regex-based
+    AC must be executable against the named files and cover all expected matches
+    (escape markdown, arm for word-order/formatting variants); a single-arm
+    regex that silently under-matches is a defect, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags. Phases must be independently shippable or explicitly
     chained — no implicit ordering.
@@ -200,9 +203,13 @@ Before invoking `Write`, verify in the calling agent's context:
 2. **Status value** — `status` is one of `draft | approved`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed.
-   Off-by-one against the listed sections is a defect.
+   Count only `##` headings at column 0 *outside* ``` code fences — a TDD that
+   documents another doc/skill may embed `##`/`###` example headings inside
+   fences; those are content, not structure. Off-by-one against the listed
+   sections is a defect.
 4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
-   least two `###`-level subsections.
+   least two `###`-level subsections (counting only `###` headings outside
+   ``` code fences).
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.

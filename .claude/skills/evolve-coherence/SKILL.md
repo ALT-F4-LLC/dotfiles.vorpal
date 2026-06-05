@@ -126,17 +126,7 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 - Rule-numbering: extract the highest top-level rule number per agent (`grep -noE '^[0-9]+\.'` in the rules section) vs expected count — **SKIP this numeric parse for `@senior-engineer`** (unnumbered bullets); confirm its 10 rules by cross-tag prose match.
 - Doubling/panel: compare `skills/vote/SKILL.md` panel numbers and `skills/code-review/SKILL.md` single-default/opt-up language against team-lead Rule 8.
 
-### Whitelist of intentional variants (do NOT mis-flag)
-
-- **design-qa "no Question" ladder** — design-qa intentionally drops `Question` from the staff ladder; preserve, do not "fix" (D3 #4).
-- **CANONICAL:HARVEST blocks are byte-identical** — evolve-agents/evolve-skills carry identical CANONICAL:HARVEST blocks; the agent-vs-skill distinction lives in surrounding prose OUTSIDE the markers, so do NOT expect or flag a within-block difference (D4 #2).
-- **`Skill(name)` placeholder** — the literal token `name` in R2 rule bodies is not a real ref (D1 #1).
-- **Illustrative / meta-instruction `Skill()` tokens** that are NOT real first-person invocations — canonical instance `agents/staff-engineer.md:103 Skill(verify-ac)` (a rule-body example of a skill a TDD prescribes for `@sdet`, NOT a staff-engineer call); do NOT add staff-engineer to verify-ac's caller set (D2 #4).
-- **Bundled-runtime `verify`** — the Claude-Code-bundled `verify` skill is legitimate where referenced as the bundled tool; only the renamed-away PROJECT `verify`/`specs` are drift (D3 #1).
-- **Agent-banner semantic-vs-byte parity** — agent-side CRITICAL banners are checked for semantic parity of prohibitions, not byte-identity (D4 #2).
-- **The 3 BANNER families** — leaf opener (`This is a leaf skill`) + the per-skill trailing clause; orchestrator-prefix (incl. init-specs's SHORTER body as an intra-family variant); `vote`'s singleton banner. All three are intentional; the detector keys on the opener string + strip-normalized comparison (D4 #2).
-- **One-directional COUPLING bridges** — simplify-scout's report-only analog note and ux-spec's bridge into the report-emission family are intentionally non-reciprocal (D3 #6).
-- **Baseline `docs/spec/*` and `docs/changelog/*` reads** — selective baseline-spec reads (the SEVEN init-specs-reserved names — authority: `skills/init-specs/SKILL.md` — `architecture.md`, `security.md`, `operations.md`, `performance.md`, `code-quality.md`, `review-strategy.md`, `testing.md`) and changelog reads stay markdown by design; they are NOT migrated work-doc paths and must NOT be flagged as Docket-doc drift (D3 #7). Only `docs/tdd/`, `docs/tdd/adr/`, `docs/ux/`, and PRD-style per-feature `docs/spec/{slug}.md` references are work-doc-path drift.
+> **Intentional variants (do NOT mis-flag)** are enumerated inline per dimension (each carries a `(D<n> #<m>)` carve-out) and re-listed in the Phase 1 spawn template's `## Task` — reviewers honor them from those two sources.
 
 ---
 

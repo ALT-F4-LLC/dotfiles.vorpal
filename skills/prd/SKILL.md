@@ -170,7 +170,7 @@ Before invoking `Write`, verify in the calling agent's context:
    (`dependencies` may be the empty list `[]`).
 2. **`status` value** — `status` is one of `draft | approved`.
 3. **`maturity` value** — within the allowed set defined under Field rules above.
-4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed.
+4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed. Count only `##` headings at column 0 *outside* ``` code fences — a PRD that documents another doc/skill may embed `##`/`###` example headings inside fences; those are content, not structure.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.

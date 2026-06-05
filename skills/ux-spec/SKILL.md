@@ -209,7 +209,10 @@ Before invoking `Write`, verify in the calling agent's context:
    `proof-of-concept | draft | experimental | stable`.
 4. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed.
-   Off-by-one against the listed sections is a defect.
+   Count only `##` headings at column 0 *outside* ``` code fences — a UX spec
+   that documents another doc/skill may embed `##`/`###` example headings
+   inside fences; those are content, not structure. Off-by-one against the
+   listed sections is a defect.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.

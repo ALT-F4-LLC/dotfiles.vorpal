@@ -1,5 +1,33 @@
 # Changelog: code-review
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: appended the Doubling-Rule family-parity sentence to the report-emission COUPLING marker (placement already canonical — directly above the When-NOT routes). All 4 family markers now byte-identical.
+
+### Changes
+- COUPLING marker: added "The Doubling Rule section is also part of this family — keep its shape in sync across siblings per team-lead Rule 8."
+
+### Dimensions Evaluated
+Coherence (report-emission family COUPLING parity with verify-ac/design-qa/design-review).
+
+### Rename
+No rename.
+
+## 2026-06-05
+
+### Summary
+Trimmed two Doubling-Rule paragraphs (Ephemeral lifecycle + Degraded fallback) that restated team-lead-owned spawn/shutdown/degraded-annotation mechanics verbatim, replacing them with a single calling-layer-ownership pointer to agents/team-lead.md (Rule 8, step 14) — matches the verify-ac family consolidation and removes a duplicated-state drift hazard. Net -2 (401/500).
+
+### Changes
+- Doubling Rule: collapsed Ephemeral-lifecycle + Degraded-fallback paragraphs to one team-lead.md ownership pointer; load-bearing single-reviewer-authority fact + 4-parallel topology retained in the opening paragraph.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — duplicated team-lead mechanics removed), Coherence (verify-ac family-pattern alignment; drift hazard eliminated). NO-OP verified: $-escape, mid-cycle/partial-tree guard (already encoded), docs/spec tolerance, effort:max, disallowed-tools (prior decline holds).
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

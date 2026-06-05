@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: added a fenced-code-block carve-out to the §4 Section-order validation (count only `##` headings outside ``` fences), for doc-authoring family parity (lockstep with tdd/adr/prd). Phase 1 review found no other gap.
+
+### Changes
+- §4 Section order: count only `##` headings at column 0 outside ``` code fences.
+
+### Dimensions Evaluated
+Coherence (doc-authoring family lockstep).
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

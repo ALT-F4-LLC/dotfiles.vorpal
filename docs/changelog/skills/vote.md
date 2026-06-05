@@ -1,5 +1,19 @@
 # Changelog: vote
 
+## 2026-06-05
+
+### Summary
+Closed a proposer-exclusion gap: the staff row matched `created_by` by exact `"tdd-author"`, missing the real variants `tdd-author-{slug}` / `tdd-author-fix-{N}` (per staff-engineer.md) — a re-spawned author could be selected to review its own TDD. Switched to the prefix idiom already used by the impl-/verifier- rows; dropped the fictional `security-tdd-author` token (exists nowhere in agents/). Net 0.
+
+### Changes
+- Exclusion table: staff row → `starts with "tdd-author"` (covers `tdd-author-{slug}`, `tdd-author-fix-{N}`); security row dropped the nonexistent `security-tdd-author`.
+
+### Dimensions Evaluated
+Coherence + Completeness (PRIMARY — self-review exclusion gap), Over-Engineering (HIGHEST — both Phase 0 memory lessons already covered, NO-OP; no further removable redundancy). CLI zero-drift re-verified.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

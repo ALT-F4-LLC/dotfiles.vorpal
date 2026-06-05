@@ -1,5 +1,19 @@
 # Changelog: design-qa
 
+## 2026-06-05
+
+### Summary
+Phase 2 coherence: moved the report-emission COUPLING marker above "When NOT to Use" and synced its text with the family. All 4 markers now byte-identical. Phase 1 review found no other gap.
+
+### Changes
+- COUPLING marker relocated under "When NOT to Use"; doubling-rule parity sentence added.
+
+### Dimensions Evaluated
+Coherence (report-emission family COUPLING parity).
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

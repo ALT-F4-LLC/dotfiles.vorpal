@@ -80,13 +80,11 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (TDD secondary review, security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14.
 
-**Ephemeral lifecycle.** `reviewer-2` and `security-reviewer-2` are ephemeral instances — they emit `shutdown_request` immediately after delivering their verdict. Persistent advisors (`advisor`, `security-advisor`) stay idle between phases by design.
-
-**Degraded fallback.** If an ephemeral peer reviewer fails twice (probe-once + respawn both abort or return empty), team-lead falls back to the persistent advisor's verdict alone AND prefixes the consolidated verdict header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` so the operator sees the degradation explicitly. Outside team-lead orchestration, doubling is at the calling agent's discretion.
+Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispatch, verdict reconciliation, and degraded-single-reviewer fallback annotation are owned by the calling layer per `agents/team-lead.md` (Rule 8, step 14) — do not duplicate that logic here. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.

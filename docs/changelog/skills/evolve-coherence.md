@@ -1,5 +1,19 @@
 # Changelog: evolve-coherence
 
+## 2026-06-05
+
+### Summary
+Removed the standalone "Whitelist of intentional variants" rubric section — a redundant restatement of carve-outs already stated inline per dimension (each with a `(D<n> #<m>)` back-pointer) and re-enumerated in the Phase 1 spawn template's `## Task` (bullets 1-8), with bullet 9's full substance inline at D3 #7 (invariant L99 + detection seed L108). Replaced with a 1-line pointer to the two live sources. Net -10 (332→322).
+
+### Changes
+- Deleted `### Whitelist of intentional variants` (9 bullets): verified each carve-out is preserved inline in its origin dimension and (1-8) in the line-290 template before removal; left a 1-line pointer so a future editor doesn't re-add it as "lost".
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — pure restatement removed), Coherence (internal non-redundancy; own CANONICAL:BANNER re-confirmed byte-identical to evolve-agents/evolve-skills; report-and-route discipline intact, no self-invoke). All 8 reviewed; rest sound.
+
+### Rename
+No rename.
+
 ## 2026-06-04
 
 ### Summary

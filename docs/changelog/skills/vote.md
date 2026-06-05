@@ -1,5 +1,20 @@
 # Changelog: vote
 
+## 2026-06-04
+
+### Summary
+Closed two Phase 0 memory failure modes directly in the invocation bar: vote-not-recorded-in-docket and altitude-mismatch-escalated-to-vote. Verified CLI zero-drift; confirmed the prior "adoption gap" signal is stale (all flags already used). Net 0.
+
+### Changes
+- "When to invoke" bar: clause (b) now requires a factual altitude/phase read before voting on reviewer disagreement; added the explicit invariant that a vote is not "done" until recorded in docket (`docket vote list` must show it).
+- Execution Mode Detection: removed a banner-redundant frontmatter parenthetical (offsets the clause-(b) expansion).
+
+### Dimensions Evaluated
+Completeness + Coherence (the two guards), Over-Engineering (HIGHEST — banner-redundant trim offsets the in-place expansion; rejected stale CLI/frontmatter additions). Spec Alignment N/A (no docs/spec/).
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

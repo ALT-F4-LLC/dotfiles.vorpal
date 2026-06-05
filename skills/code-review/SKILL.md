@@ -105,6 +105,8 @@ When invoked under team-lead orchestration, code review defaults to a **single**
    ```
    Error: Resolved scope produced an empty diff — nothing to review.
    ```
+
+   **Partial-tree guard** (`uncommitted`/`staged` scopes only): a local working-tree diff is a point-in-time snapshot — the skill cannot tell whether all of the cycle's expected edits have landed. Do NOT mechanically guess the expected file-set. Instead, prefix the verdict with one line — `Reviewed local working tree at this point in time — N files present; confirm implementation is signalled-complete before this verdict binds` — so the calling agent reconciles against the cycle's acceptance criteria (which it owns) before routing the verdict. PR/branch scopes are not snapshot-prone and skip this note.
 6. **Read related design docs** — scope reads to what the diff touches; do not read specs outside the changed-file paths:
    - `staff-engineer`: `tdd` Docket docs (`docket doc list -T tdd`, read via `docket doc show <DOC-id>`); project specs in `docs/spec/` matching changed areas, where present (`architecture.md`, `performance.md`, `testing.md`).
    - `security-engineer`: security `tdd` Docket docs (`docket doc list -T tdd`) and security `adr` Docket docs (`docket doc list -T adr`), read via `docket doc show <DOC-id>`; `docs/spec/security.md`.
@@ -377,7 +379,7 @@ where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `B
 
 The calling agent owns (in order):
 
-- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery — eager parallel dispatch is anti-anchoring, and pre-delivery cross-talk lets one reviewer anchor the other's verdict. (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
+- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery (anti-anchoring — rationale owned by team-lead.md step 14). (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
 - Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never SendMessage `@senior-engineer` directly, per the team-lead spawn templates). Standalone: SendMessage `@senior-engineer` with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
 - Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.

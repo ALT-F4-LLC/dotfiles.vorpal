@@ -1,5 +1,20 @@
 # Changelog: tdd
 
+## 2026-06-04
+
+### Summary
+Dropped vestigial `Glob`/`Grep` from `allowed-tools`; added a status-authority rule clarifying Docket's `.data.status` is the single source of truth for the verify-ac gate (the body `status` field may drift stale).
+
+### Changes
+- `allowed-tools` trimmed to `["AskUserQuestion", "Bash", "Read", "Write"]` (dropped `Glob`, `Grep`) — family lockstep with adr/prd/ux-spec.
+- Field rules: replaced "body `status` mirrors Docket's doc-level status" with an authority rule — Docket `.data.status` gates downstream verify-ac (ABORTs on non-`approved`); the body `status:` is documentation-only, not auto-synced by `docket doc edit -s`, so may drift stale.
+
+### Dimensions Evaluated
+Skill Design Quality, Coherence (consistency with the applied verify-ac status-gate fix), Completeness.
+
+### Rename
+No rename.
+
 ## 2026-05-30
 
 ### Summary

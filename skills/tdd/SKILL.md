@@ -7,7 +7,7 @@ description: >
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
 argument-hint: "<topic>"
 effort: max
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
+allowed-tools: ["AskUserQuestion", "Bash", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -138,7 +138,7 @@ status: "draft"
 Field rules:
 
 - `project` = `basename $(git rev-parse --show-toplevel)`.
-- `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: approved` while `maturity: experimental` (design signed off, approach still provisional). The body `status` mirrors Docket's own doc-level status (`-s`).
+- `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: approved` while `maturity: experimental` (design signed off, approach still provisional). Docket's own doc-level `status` field (`.data.status`, surfaced by `docket doc list -T tdd -s approved` / `docket doc show <DOC-id> --json`) is the SINGLE SOURCE OF TRUTH for downstream gates — `verify-ac` ABORTs verification unless `.data.status == "approved"`. The body-frontmatter `status:` is documentation-only: it mirrors the doc-level status at author time and is NOT auto-updated by `docket doc edit <DOC-id> -s approved`, so it may drift stale — never gate on it.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
 - `scope` is a one-line description of what the doc covers — populated by the

@@ -28,6 +28,8 @@ Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 - **Agent name only** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
 - **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 
+**Parsing:** strip the `days=N` token from `$ARGUMENTS` FIRST; the remaining token (if any) is the agent name. An "agent-name token" means a non-`days=` token remains after stripping — `/evolve-agents days=7` has NO agent-name token (all-agents mode).
+
 ---
 
 ## Pre-flight
@@ -42,9 +44,9 @@ Before spawning any agents:
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
 4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
-5. **Validate inventory** — If no agent files found, or `$ARGUMENTS` is set and `agents/<arg>.md` does not exist, inform user and abort.
+5. **Validate inventory** — If no agent files found, abort. If an agent-name token is present (per Argument Handling parsing) and `agents/<token>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
-7. **Scope-confirmation gate (HARD GATE)** — If `$ARGUMENTS` is empty (all-agents mode) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
+7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
 8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.

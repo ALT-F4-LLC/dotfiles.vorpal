@@ -64,7 +64,17 @@ Skills support the team:
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
+| **adr** | `skills/adr/` | Authors an Architecture Decision Record as a Docket doc |
+| **code-review** | `skills/code-review/` | Conducts a scoped code review (general 6-dimension or security playbook) |
+| **design-qa** | `skills/design-qa/` | Post-implementation QA of a shipped UX surface against its spec |
+| **design-review** | `skills/design-review/` | Peer design review of a UX spec across six dimensions |
 | **init-specs** | `skills/init-specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
+| **prd** | `skills/prd/` | Authors a Product Requirements Document as a Docket doc |
+| **simplify-scout** | `skills/simplify-scout/` | Scouts code for simplification/refactor opportunities (report-only) |
+| **tdd** | `skills/tdd/` | Authors a Technical Design Document as a Docket doc |
+| **ux-spec** | `skills/ux-spec/` | Authors a UX design spec as a Docket doc |
+| **verify-ac** | `skills/verify-ac/` | Verifies a Docket issue's acceptance criteria against the diff |
+| **vote** | `skills/vote/` | Multi-agent consensus voting protocol |
 | **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
 | **evolve-coherence** | `.claude/skills/evolve-coherence/` | Audits agent↔skill coherence across four dimensions and routes fixes to evolve-agents/evolve-skills (report-and-route; never edits files) |

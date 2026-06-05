@@ -7,7 +7,7 @@ description: >
   Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a Docket prd doc", "write up requirements for", "scope this feature".
 argument-hint: "<topic>"
 effort: max
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
+allowed-tools: ["AskUserQuestion", "Bash", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

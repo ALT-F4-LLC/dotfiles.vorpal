@@ -118,6 +118,10 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
+**Frontmatter-field adoption gate.** Before applying any recommendation to adopt a newly-shipped frontmatter field, (a) fetch the official field doc and read its LIFECYCLE / clearing semantics, not just its headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the agent forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn; (c) grep for siblings sharing the enforcement pattern and check prior changelogs for an existing family-wide decision. If cross-cutting, route to Phase 2 as a single family-wide call rather than landing it on one agent.
+
+**Defer parity-bound findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks that parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply them in Phase 1, and route to Phase 2 for lockstep. Settle conflicting recommendations EMPIRICALLY (grep the actual usage to confirm) before applying.
+
 Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items.
 
 ### Phase 2: Coherence & Renames (sequential)
@@ -127,7 +131,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 **After the Phase 2 teammate completes**, the orchestrator:
 
 1. Executes any renames (`mv`, frontmatter updates, reference updates across codebase)
-2. Applies coherence fixes using the Edit tool
+2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
 
 ### Wrap-up & Team Cleanup

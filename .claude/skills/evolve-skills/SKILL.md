@@ -119,6 +119,10 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
+**Frontmatter-field adoption gate.** Before applying any recommendation to adopt a newly-shipped frontmatter field, (a) fetch the official field doc and read its LIFECYCLE / clearing semantics, not just its headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the skill forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn; (c) grep for siblings sharing the enforcement pattern and check prior changelogs for an existing family-wide decision. If cross-cutting, route to Phase 2 as a single family-wide call rather than landing it on one skill.
+
+**Defer parity-bound findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the skill family; applying one reviewer's isolated recommendation breaks that parity, and per-skill reviewers can CONFLICT. Flag these, do NOT apply them in Phase 1, and route to Phase 2 for lockstep. Settle conflicting recommendations EMPIRICALLY (grep the actual usage to confirm) before applying.
+
 **Phase 1 SendMessage triggers** (orchestrator-only relay — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items):
 - A finding affects another skill (include affected skill name)
 - The teammate needs delegation (voting, sub-agents)
@@ -138,7 +142,7 @@ The Phase 2 teammate:
 4. Marks task completed and reports structured recommendations
 
 **After completion**, the orchestrator executes renames, applies coherence fixes via Edit,
-and updates changelogs for affected skills.
+and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
 
 ### Wrap-up & Team Cleanup
 

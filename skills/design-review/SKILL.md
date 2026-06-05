@@ -37,17 +37,17 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(design-review, "<scope>") — name what to review (UX spec path, draft document path, TDD path with user-facing surfaces, or inline surface description).
+Error: Usage: Skill(design-review, "<scope>") — name what to review (UX spec DOC-id, TDD DOC-id with user-facing surfaces, draft document path, or inline surface description).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
 
 | Form | Detection | Sources |
 |---|---|---|
-| UX spec path | `Bash test -e {path}` and path matches `docs/ux/.*\.md` | `Read` the spec |
-| TDD path | `Bash test -e {path}` and path matches `docs/tdd/.*\.md` | `Read` the TDD; focus review on user-facing surface sections |
+| UX spec DOC-id | `docket doc show {scope} --json` exits 0 and `.data.type == "ux"` | `docket doc show {scope}` the spec |
+| TDD DOC-id | `docket doc show {scope} --json` exits 0 and `.data.type == "tdd"` | `docket doc show {scope}` the TDD; focus review on user-facing surface sections |
 | Draft document path | `Bash test -e {path}` and path ends in `.md` | `Read` the file directly |
-| Inline surface description | Otherwise (free-text description of the design under review) | The description IS the artifact — review the design as articulated; cross-reference `docs/ux/`, `docs/tdd/`, `docs/spec/` for precedent |
+| Inline surface description | Otherwise (free-text description of the design under review) | The description IS the artifact — review the design as articulated; cross-reference `docket doc list -T ux` / `docket doc list -T tdd` (read candidates via `docket doc show <DOC-id>`) and `docs/spec/` for precedent |
 
 If `<scope>` matches a path-like pattern (contains `/` or ends in `.md`) but the file does not exist, ABORT:
 
@@ -85,11 +85,12 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
 4. **Read the artifact**:
-   - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
+   - For a UX spec / TDD DOC-id: `docket doc show <DOC-id>`; capture frontmatter (maturity, status, owner) and the workflow list.
+   - For a draft document path: `Read` the file; capture frontmatter and the workflow list.
    - For inline surface description: treat the description as the artifact text.
 5. **Cross-reference precedent**:
-   - `Grep -r "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs, and project specs.
-   - `Glob docs/tdd/adr/*.md` to identify accepted ADRs that may constrain the design.
+   - `docket doc list -T ux` and `docket doc list -T tdd` (read related candidates via `docket doc show <DOC-id>`), plus `Grep -r "{key-term}" docs/spec/`, to locate related specs, decisions, and project specs.
+   - `docket doc list -T adr -s accepted` to identify ADRs that may constrain the design.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
 6. **Empty-artifact guard**: abort if the artifact has no inspectable design content (empty file or description under 10 words) — see Failure Modes.
 
@@ -102,7 +103,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 Apply all six dimensions, weighted by what the artifact touches. Mark unaffected dimensions `N/A` in the checklist:
 
 1. **Usability** — task efficiency, cognitive load, discoverability, mental-model fit, learnability.
-2. **Consistency** — alignment with existing `docs/ux/` patterns, cross-surface naming, terminology, flag/copy conventions, same-concept-same-name.
+2. **Consistency** — alignment with existing `ux` Docket-doc patterns, cross-surface naming, terminology, flag/copy conventions, same-concept-same-name.
 3. **Accessibility** — WCAG 2.2 AA floor, keyboard reachability, NO_COLOR support, color-not-sole-indicator, screen-reader semantics, contrast.
 4. **Information Hierarchy** — what's primary, what's secondary, progressive disclosure, scan-ability, signal-to-noise.
 5. **Error Handling** — every workflow has error branches; messages follow "what happened → why → what to do now"; specific values/paths in errors; degraded modes covered.

@@ -80,7 +80,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 ## When NOT to Use
 
 - Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
-- Design QA against a `docs/ux/` spec for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
+- Design QA against a `ux` Docket doc (`docket doc show <DOC-id>`) for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.
 - Authoring TDDs, ADRs, PRDs, or UX specs — use the doc-authoring family (`tdd`, `adr`, `prd`, `ux-spec`).
 - Multi-agent consensus voting — use `Skill(vote, ...)`.
@@ -100,18 +100,18 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    Error: Resolved scope produced no verifiable content — nothing to verify.
    ```
 7. **Read related design docs** (scope to what the diff touches):
-   - TDDs in `docs/tdd/` that the issue references. **TDD status gate**: only verify against TDDs with `status: accepted`. If the referenced TDD is `draft`, `proposed`, or `in-review`, ABORT:
+   - `tdd` Docket docs that the issue references — discover via `docket doc list -T tdd -s approved [--json]`, read via `docket doc show <DOC-id> [--json]`. **TDD status gate**: only verify against `tdd` docs whose Docket status is `approved` (`docket doc show <DOC-id> --json | .data.status == "approved"`). If the referenced TDD's status is `draft` (or any non-`approved` value), ABORT:
 
      ```
-     Error: Referenced TDD '{path}' has status '{status}' — verification requires status: accepted. Escalate to team-lead for vote approval before re-invoking.
+     Error: Referenced TDD {DOC-id} has status '{status}' — verification requires status: approved. Escalate to team-lead for vote approval before re-invoking.
      ```
 
-     If the referenced TDD is missing from `docs/tdd/`, ABORT:
+     If the referenced TDD cannot be found via `docket doc show <DOC-id>` (no such doc / not approved), ABORT:
 
      ```
-     Error: Referenced TDD '{path}' not found in docs/tdd/. Escalate to team-lead before re-invoking.
+     Error: Referenced TDD {DOC-id} not found or not approved. Escalate to team-lead before re-invoking.
      ```
-   - UX specs in `docs/ux/` for user-facing behavior.
+   - `ux` Docket docs for user-facing behavior — discover via `docket doc list -T ux [--json]`, read via `docket doc show <DOC-id>`.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 7a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.
 8. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.

@@ -122,6 +122,8 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **Defer parity-bound findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks that parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply them in Phase 1, and route to Phase 2 for lockstep. Settle conflicting recommendations EMPIRICALLY (grep the actual usage to confirm) before applying.
 
+**Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Never Edit/Write/delete any `pitfalls.md` — it is append-only ingest memory.
+
 Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items.
 
 ### Phase 2: Coherence & Renames (sequential)
@@ -140,7 +142,7 @@ After Phase 2 completes:
 
 1. Shut down the Phase 2 agent and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls ingest summary, and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), and reminder that NO changes have been committed.
 
 ---
 

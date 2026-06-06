@@ -8,7 +8,7 @@ description: >
 model: opus[1m]
 color: red
 permissionMode: dontAsk
-effort: xhigh
+effort: high
 memory: project
 skills:
   - verify-ac

@@ -9,7 +9,7 @@ description: >
 model: opus[1m]
 color: magenta
 permissionMode: dontAsk
-effort: xhigh
+effort: high
 memory: project
 skills:
   - design-qa

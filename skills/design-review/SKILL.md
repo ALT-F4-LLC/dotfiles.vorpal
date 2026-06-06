@@ -103,7 +103,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 1. **Usability** — task efficiency, cognitive load, discoverability, mental-model fit, learnability.
 2. **Consistency** — alignment with existing `ux` Docket-doc patterns, cross-surface naming, terminology, flag/copy conventions, same-concept-same-name.
-3. **Accessibility** — WCAG 2.2 AA floor, keyboard reachability, NO_COLOR support, color-not-sole-indicator, screen-reader semantics, contrast.
+3. **Accessibility** — WCAG 2.2 AA floor, keyboard reachability, NO_COLOR support, color-not-sole-indicator, screen-reader semantics, contrast. On visual surfaces, the design must specify the rendered EFFECT at real delivery resolution (screenshare, streamed video, small viewport), not just the CSS/token value — a cue that meets the contract may fail to read once compressed. Every color/visual cue must be paired with a text fallback so a degraded render still carries meaning.
 4. **Information Hierarchy** — what's primary, what's secondary, progressive disclosure, scan-ability, signal-to-noise.
 5. **Error Handling** — every workflow has error branches; messages follow "what happened → why → what to do now"; specific values/paths in errors; degraded modes covered.
 6. **Performance Perception** — feedback latency, loading states, perceived progress, silence-is-the-worst-UX violations, animation timing.

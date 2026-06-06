@@ -173,6 +173,10 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
    action confirmation.
 5. **Visual & Sensory Design** — semantic color palette, typography hierarchy,
    spacing/density, motion (where it aids comprehension), terminal constraints.
+   Specify the rendered EFFECT target at real delivery resolution (screenshare,
+   streamed video, small viewport), not just the CSS/token value — a cue that meets
+   the contract may not read once compressed. Pair every color/visual cue with a text
+   fallback so a degraded render still carries meaning.
 6. **Edge Cases & Error States** — empty states, error states, overloaded states
    (10K+ items), degraded states (network/permissions), concurrency.
 7. **Accessibility** — keyboard navigation, screen reader semantics, color

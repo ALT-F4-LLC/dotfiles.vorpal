@@ -9,7 +9,7 @@ description: >
   commits.
 model: opus[1m]
 color: cyan
-effort: xhigh
+effort: high
 memory: project
 permissionMode: dontAsk
 skills:
@@ -276,7 +276,7 @@ Single-reviewer is the default for review/QA/verification (steps 14, 15, design-
 
 After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`, then `docket vote link {vote-id} --issue {DOCKET-ID}` if the vote unblocked a specific issue.
 
-**Delegation relay contract** — teammate SendMessages `{type: "delegation_request", skill: "vote", request_id, vote_id, from, ...}`: (a) verify `skill == "vote"` and `vote_id` resolves via `docket vote show {vote-id} --json` — if either fails, reply `{type: "delegation_response", request_id, status: "failed", reason: "..."}`; (b) invoke `Skill(vote, "{vote-id}")` standalone (vote_id branch skips Phase 1); (c) on completion, read `docket vote result {vote-id} --json`; (d) SendMessage outcome to the `from` agent with matching `request_id` and `status: "completed|escalated"`, mirror to operator per Rule 2. Never relay back to a name other than `delegation_request.from`.
+**Delegation relay contract** — teammate SendMessages `{type: "delegation_request", skill: "vote", request_id, vote_id, from, protocol_version, ...}` (`protocol_version` is informational/forward-compat only; the relay validates `skill` + `vote_id` resolution, never `protocol_version`): (a) verify `skill == "vote"` and `vote_id` resolves via `docket vote show {vote-id} --json` — if either fails, reply `{type: "delegation_response", request_id, status: "failed", reason: "..."}`; (b) invoke `Skill(vote, "{vote-id}")` standalone (vote_id branch skips Phase 1); (c) on completion, read `docket vote result {vote-id} --json`; (d) SendMessage outcome to the `from` agent with matching `request_id` and `status: "completed|escalated"`, mirror to operator per Rule 2. Never relay back to a name other than `delegation_request.from`.
 
 ### Verification Phase (medium+ tasks)
 
@@ -293,6 +293,8 @@ After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`, 
 Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle subsections below).
 
 **Shutdown protocol — async by design.** `shutdown_request` is NOT synchronous. The teammate may be mid-turn processing prior messages when the request lands; exit is confirmed ONLY when the system emits `teammate_terminated`. Until then, the prior ephemeral is alive and may legitimately reject shutdown citing on-disk state. Do NOT spawn a fresh same-role ephemeral (e.g., `impl-{ID}-fix-{N}`) until `teammate_terminated` lands — same-turn shutdown+respawn is the classic race producing two live editors on the same files.
+
+**Post-final-report idle is shutdown-pending, not a stall (expected behavior).** An ephemeral briefed to "emit `shutdown_request` as the FINAL tool call" routinely delivers its final report and then emits `TeammateIdle` (`idle_notification`) BEFORE producing a `shutdown_response` — its final-report turn ends and goes idle on the same async queue that carries the team-lead's `shutdown_request`, so the request lands after the teammate is already idle and is not processed until a new message wakes it. This is normal async behavior, NOT a crash or stall: send `shutdown_request` ONCE; the now-idle ephemeral auto-resumes on that message and approves it on wake. Do NOT escalate, do NOT treat as a crash, do NOT respawn, and do NOT double-send beyond the one request (a superseding request crosses the prior in the async queue per the redirect-race rule below). The one extra team-lead-initiated round-trip is inherent to the async model — it cannot be eliminated by making self-emit "more reliable," and chasing that risks the same-turn shutdown+respawn race above.
 
 **Pre-shutdown state-verification gate (mandatory).** Before composing any `shutdown_request` whose reasoning references specific scope/option/completion state:
 1. Run `git diff --stat` (and `git diff -- <paths>` for the files the teammate edited) THIS turn.

@@ -14,7 +14,7 @@ description: >
 model: opus[1m]
 color: yellow
 memory: project
-effort: xhigh
+effort: high
 permissionMode: dontAsk
 skills:
   - vote

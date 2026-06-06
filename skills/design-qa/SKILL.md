@@ -99,6 +99,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Walk every workflow in the spec.** For each: interactions, states, transitions, error branches, success path, accessibility hooks, copy.
 2. **Test edge cases.** Empty inputs, error states, overloaded inputs, degraded mode, missing dependencies, NO_COLOR / accessibility settings for TUI/CLI, viewport breakpoints for web. For externally-referenced media (images, icons, embeds), confirm the rendered content — not just HTTP 200 or ref presence: a dead payload (broken-image placeholder, "content not available") passes liveness checks but fails the spec.
+   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass. A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport. A missing or broken render is a Blocker.
 3. **Check accessibility implementation** against the spec's accessibility section (WCAG criteria, keyboard reachability, color-not-sole-indicator, etc.).
 4. **Trace cross-surface consistency** — if the spec sets precedent, verify the same concept uses the same name and copy across surfaces.
 5. **Decide verdict** per the ladder:
@@ -113,7 +114,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 | Severity | Meaning |
 |---|---|
-| Blocker | Must fix before sign-off: broken workflow, missing critical error state, accessibility regression, cross-surface precedent violation |
+| Blocker | Must fix before sign-off: broken workflow, missing critical error state, accessibility regression, cross-surface precedent violation, missing/broken render on a static-export or visual surface (build-green is not a render pass) |
 | Concern | Should fix or explicitly justify: spec deviation that affects usability, missing edge case, inconsistent copy |
 | Suggestion | Consider for this or future iteration: polish, minor improvement |
 | Praise | Pattern worth highlighting and replicating — routes to `What's Implemented Well`, not `Issues` |

@@ -122,6 +122,12 @@ impl UserEnvironment {
                 .with_env("OTEL_METRICS_EXPORTER", "otlp")
                 .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
                 .with_feedback_survey_rate(0.0)
+                .with_hook(
+                    "TeammateIdle",
+                    None,
+                    "bash ~/.claude/teammate-idle-hook.sh",
+                    "command",
+                )
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
                 .with_permission_allow("Bash(cargo build:*)")
@@ -431,6 +437,21 @@ impl UserEnvironment {
             get_output_path("library", &claude_statusline)
         );
 
+        // Claude Code TeammateIdle hook script
+        let claude_teammate_idle_hook_name = format!("{}-claude-teammate-idle-hook", &self.name);
+        let claude_teammate_idle_hook = FileCreate::new(
+            include_str!("user/teammate-idle-hook.sh"),
+            claude_teammate_idle_hook_name.as_str(),
+            self.systems.clone(),
+        )
+        .with_executable(true)
+        .build(context)
+        .await?;
+        let claude_teammate_idle_hook_path = format!(
+            "{}/{claude_teammate_idle_hook_name}",
+            get_output_path("library", &claude_teammate_idle_hook)
+        );
+
         // Claude agents directory
         let claude_agents_name = format!("{}-claude-agents", &self.name);
         let claude_agents = FileSource::new(&claude_agents_name, "agents", self.systems.clone())
@@ -477,6 +498,7 @@ impl UserEnvironment {
                 claude_code_config,
                 claude_skills,
                 claude_statusline,
+                claude_teammate_idle_hook,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
@@ -495,6 +517,7 @@ impl UserEnvironment {
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (claude_skills_path.as_str(), "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
+                (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

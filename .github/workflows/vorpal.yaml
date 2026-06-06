@@ -7,6 +7,13 @@ on:
       - main
 
 jobs:
+  test-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: bash tests/teammate-idle-hook.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

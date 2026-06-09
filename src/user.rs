@@ -103,6 +103,7 @@ impl UserEnvironment {
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "1")
                 .with_env(
                     "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
                     "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
@@ -262,6 +263,7 @@ impl UserEnvironment {
                 .with_status_line("bash ~/.claude/statusline.sh")
                 .with_status_line_padding(0)
                 .with_sandbox_enabled(true)
+                .with_sandbox_fail_if_unavailable(true)
                 .with_sandbox_auto_allow_bash(true)
                 .with_sandbox_allow_unsandboxed_commands(true)
                 .with_sandbox_excluded_commands(vec![
@@ -269,6 +271,26 @@ impl UserEnvironment {
                     "docker".to_string(),
                     "gh".to_string(),
                     "git".to_string(),
+                    "kubectl".to_string(),
+                ])
+                .with_sandbox_filesystem_deny_read(vec![
+                    "~/.ssh".to_string(),
+                    "~/.gnupg".to_string(),
+                    "~/.aws".to_string(),
+                    "~/.netrc".to_string(),
+                    "~/.talos".to_string(),
+                    "~/.claude.json".to_string(),
+                    "~/.codex".to_string(),
+                    "~/.gemini".to_string(),
+                    "~/.opencode".to_string(),
+                    ".env".to_string(),
+                    ".env.*".to_string(),
+                ])
+                .with_sandbox_network_allowed_domains(vec![
+                    "crates.io".to_string(),
+                    "static.crates.io".to_string(),
+                    "github.com".to_string(),
+                    "api.github.com".to_string(),
                 ])
                 .with_sandbox_network_allow_local_binding(false)
                 .with_tui("fullscreen")

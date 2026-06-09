@@ -6,7 +6,7 @@ description: >
   MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design
   review, dependency evaluation, and code reviews. Never writes implementation code.
 color: blue
-effort: max
+effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:

@@ -7,7 +7,7 @@ description: >
   for context. Does not write production code, design documents, or perform production code reviews.
 color: red
 permissionMode: dontAsk
-effort: high
+effort: xhigh
 memory: project
 skills:
   - verify-ac

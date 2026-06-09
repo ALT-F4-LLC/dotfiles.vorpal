@@ -6,7 +6,6 @@ description: >
   evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs,
   SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task
   decomposition and @senior-engineer for implementation.
-model: claude-fable-5[1m]
 color: magenta
 permissionMode: dontAsk
 effort: high

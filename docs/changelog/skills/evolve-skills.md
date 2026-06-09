@@ -3,6 +3,23 @@
 ## 2026-06-09
 
 ### Summary
+Three mid-run-safe additions (360→359, net −1 via offset), two parity-bound with evolve-agents: docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping.
+
+### Changes
+- docs-researcher MISSION: grep local ADOPTION before asserting current-repo state. PARITY-BOUND with evolve-agents (clause parity verified at apply).
+- Phase-1 Content Gate line: flag unescaped `\$`+digit in documentary prose (examples escaped at apply time). PARITY-BOUND.
+- Phase-2 prose: rename reference updates scoped to live def files (skills/, .claude/skills/, agents/), never changelogs/pitfalls/prose.
+- Offset: historical-auditor rules bullets collapsed (2 lines → 1).
+
+### Dimensions Evaluated
+All 8. Over-Engineering: net −1. Coherence: lockstep with evolve-agents. HARVEST byte-parity intact. Reasoning-echo clean.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2: historical-auditor correction-regex FP guard; budget-truth wording mirrored from evolve-agents; WebFetch added to allowed-tools (lockstep).
 
 ### Changes

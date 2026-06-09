@@ -3,6 +3,22 @@
 ## 2026-06-09
 
 ### Summary
+Fable-5 mandate slice: encoded the highest-recurrence "already-present check before recommending a change" guard into No-Guessing; added the missing use-when trigger for WebFetch/WebSearch. Offset by deduping rule 6's redundant back-reference. Net +2 (258 lines).
+
+### Changes
+- No-Guessing: added "Already-present check before recommending a change" — grep target file + changelog before proposing any audit/memory-sourced change; already-encoded = NO-OP with citation.
+- TDD step 3 (Study precedent): added WebSearch/WebFetch use-when trigger (current external sources not derivable from codebase; ground citation in fetched content).
+- Comm rule 6: removed redundant "(TDD Workflow step 6; Code Review step 7)" back-reference (steps already point forward to rule 6).
+
+### Dimensions Evaluated
+Capability Growth, Prescriptive Capability Triggers, Consolidation & Trimming, Reasoning-echo audit (no hits), Spec Alignment, Boundary Clarity, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: comm rule 7 ephemeral sentence + §Shutdown Handling Ephemeral paragraph (pre-shutdown checklist step (d) removed; pitfalls ordering kept as (c)). Count unchanged (257).
 
 ### Changes

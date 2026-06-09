@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Recall fix for Fable/Opus-4.8-class literal instruction-following: replaced the lone severity FILTER (Common Discipline "Calibrate to value… skip stylistic") with a report-every-finding mandate — findings always surface with severity + confidence; filtering relocated downstream (team-lead step 14 / operator). Severity ladders untouched. Net +2 (396 lines).
+
+### Changes
+- Common Discipline: "Calibrate to value / Skip stylistic preferences and what cargo clippy/audit should catch" → "Report every finding — do NOT self-filter": all issues reported (incl. low-severity/uncertain) tagged severity + confidence; linter-catchable issues become Suggestion/Info rather than omitted; downstream owns filtering.
+
+### Dimensions Evaluated
+Skill Design Quality (recall-suppression removal), Over-Engineering, Actionability, Coherence, Reasoning-echo audit (clean), Spec Alignment.
+
+### Rename
+No rename. Rename-away-from-/code-review collision note verified still accurate (bundled skill ships --fix).
+
+## 2026-06-09
+
+### Summary
 Phase 2: renamed code-review → code-review-verdict (bundled-skill collision) and mode-split the vote-escalation bullet in Save & Return.
 
 ### Changes

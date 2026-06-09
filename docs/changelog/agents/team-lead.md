@@ -3,6 +3,23 @@
 ## 2026-06-09
 
 ### Summary
+Mythos/Fable-5 optimization: added per-spawn model-routing subsection (sonnet/inherit/fable/opus by cognitive load; never haiku) and a canonical 5-field ephemeral-brief schema; offset by trimming the over-enumerated "don't overthink" banned-list (Fable degrades on exhaustive lists). Net +8 (481→489).
+
+### Changes
+- Spawning Templates: new Per-spawn model routing block — per-invocation param overrides frontmatter, no model: pins; security reviewers pinned opus (Fable classifier reroute determinism).
+- Common context block: new canonical ephemeral-brief schema naming 5 fields; dispatch-hygiene bullet now its detail.
+- Pre-flight overthink directive: collapsed 5-item banned-list to 2 (Fable offset).
+- [NO-OP, cited] Reasoning-echo clean; Monitor triggers complete; apply-batch 1:1, post-compaction re-Read, budget-table checks already encoded.
+
+### Dimensions Evaluated
+Capability Growth (model routing), Actionability + Consolidation (brief schema), Consolidation & Trimming (overthink trim), reasoning-echo audit, capability-trigger audit.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip (operator-decided): ephemerals report then AWAIT team-lead's `shutdown_request`; sweep = team-lead SENDS on delivered report. Added R6 stale-own-reader extension and canonical Relayed-authority sentence (Rule 1). Net +1 (481→482).
 
 ### Changes

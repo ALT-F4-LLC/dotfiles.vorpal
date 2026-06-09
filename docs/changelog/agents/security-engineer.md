@@ -3,6 +3,23 @@
 ## 2026-06-09
 
 ### Summary
+Fable-5/Mythos-class mandate pass. Added WebFetch/WebSearch use-when trigger on the CVE/advisory bullet; added Model-floor note (security content auto-reroutes to Opus 4.8 + team-lead pins opus for security reviewers); trimmed the "Don't overthink" block. Net +2 (242 lines).
+
+### Changes
+- No Guessing: named WebFetch/WebSearch as the advisory-DB/NIST/RFC reach tools with explicit use-when condition (was an untriggered frontmatter tool)
+- Operating context: added Model-floor note (Opus reroute + team-lead opus pin → no Fable-tier reasoning assumption)
+- Trimmed "Don't overthink" paragraph; preserved banned-deliberation list, dropped overlapping preamble/closing
+- [Routed to Phase 2] docket doc edit lost-update lessons are dead guidance here (zero docket doc references); route to doc-writing roles or tracking issue
+
+### Dimensions Evaluated
+Prescriptive Capability Triggers (primary), Fable Classifier Awareness, Consolidation & Trimming, Reasoning-echo (clean), Boundary Clarity, Spec Alignment.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: verdict→shutdown sequence, Lifecycle reviewer bullet ("idle after verdict is a STALL" inverted to normal-awaiting), §Shutdown Handling drain clause. Count unchanged (241).
 
 ### Changes

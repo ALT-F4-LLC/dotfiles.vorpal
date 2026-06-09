@@ -3,6 +3,22 @@
 ## 2026-06-09
 
 ### Summary
+Fable-5 mandate slice: added autonomy calibration (pick minor choices, note in report) and silence-default narration (text only on finding/direction-change/blocker) to the decisiveness paragraph; trimmed a redundant compaction-re-read clause to offset. Net +2 (341 lines).
+
+### Changes
+- Extended "Don't overthink" paragraph with autonomy-calibration + narrate-by-exception directive; silence-default scoped to between-tool-call narration only, preserving comm rule 8 progress signal and verdict-cites-evidence rule
+- Trimmed duplicate "re-read after compaction" clause from operating-context line (covered by comm rule 9 + R7)
+- [NO-OP, grep-cited] Prescriptive triggers, reasoning-echo absence, historical signals 1-3 all already encoded
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Autonomy Calibration, Silence-Default Narration, Prescriptive Triggers, Reasoning-Echo
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: comm rule 6, Lifecycle, Verifier Composition, §Shutdown Handling (Proactive→Await-lead), Monitor-watch paragraph. Rule numbering 1-10 intact; reject-on-unrecoverable-test-results ground preserved. Count unchanged (340).
 
 ### Changes

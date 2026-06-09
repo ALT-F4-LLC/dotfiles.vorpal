@@ -5,7 +5,6 @@ description: >
   calling agent's context; the agent drafts the TDD per the format authority below.
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
 argument-hint: "<topic>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 

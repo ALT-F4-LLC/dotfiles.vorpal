@@ -7,7 +7,7 @@ description: >
   any agent/skill file and NEVER self-invokes the evolve-* skills.
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
 argument-hint: "[dimension(s) d1..d4]"
-effort: max
+effort: xhigh
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 disallowed-tools: ["Edit", "Write"]
 ---

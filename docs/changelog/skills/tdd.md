@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Mythos/Fable-5 cycle audit: NO changes. All 3 cross-repo historical signals verified already encoded against the LIVE file (regex-AC run-and-verify §11(c) L224-227 + §5; scope-bounded "verified" claims §5 L146-148; named-source-vs-live-artifact §5 L143-145). Reasoning-echo clean; $-escape clean; no over-prescription trims available without breaking deterministic format authority.
+
+### Changes
+- None (NO-OP verdict, grep-cited against live file per the already-present check).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Closed residual halves of the cross-project verified-claim pitfalls: Authoring §5 now bars scope-overreach on "verified" claims (scope must match what was checked, artifact named); §11(c) tightened from "executable" to run-with-hit-set-verified. Offset by removing two security Failure-Mode rows redundant with Validation §7/§8 + generic abort row. Net +0 (303/500).
 
 ### Changes

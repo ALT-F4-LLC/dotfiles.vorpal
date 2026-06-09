@@ -3,6 +3,22 @@
 ## 2026-06-09
 
 ### Summary
+Closed the refuted literal-command-AC gap: FULL-mode item 1 now mandates running an AC's named literal command VERBATIM — equivalents leave the named path unverified; PASS on a substitute is a defect. The 2026-06-05 cycle recorded this rule as already-encoded; a 2026-06-09 re-grep refuted that claim (only unrelated "report verbatim" at L172 matched). Net 0 physical lines (within-line append; 267 lines).
+
+### Changes
+- FULL-mode procedure item 1: added "When an AC names a literal command, run THAT command verbatim... cite the exact command in evidence."
+- Aligns with sdet.md Epistemic Discipline (empirical execution over text inspection).
+- [NO-OP, grep-cited] Reasoning-echo clean; recall-filter clean (PASS/FAIL/OUT-OF-SCOPE is classification; Validation checks 2+4 already forbid silent omission).
+
+### Dimensions Evaluated
+Completeness (refuted-NO-OP closure, primary), Over-Engineering (single clause, no new section), Actionability, Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2: code-review→code-review-verdict reference updates (lockstep) and vote-escalation mode-split in Save & Return.
 
 ### Changes

@@ -3,6 +3,17 @@
 ## 2026-06-09
 
 ### Summary
+evolve-skills cycle reference update: code-review skill renamed → code-review-verdict (bundled-skill collision, operator-approved); 7 references updated (banner example, project-registration list, 4 spawn-template invocations, R2 example).
+
+### Changes
+- All `Skill(code-review...)` invocations and skill-name mentions → code-review-verdict.
+
+### Verification
+- `grep -rnE 'Skill\(code-review[,)]' agents/` returns zero hits.
+
+## 2026-06-09
+
+### Summary
 TRIM cycle: brought team-lead.md from 504 (over budget) to 483 by consolidating duplicated prose. No rule semantics changed; sibling files reference the R-rule bodies via pointer, not verbatim copy, so the R-rule trims orphan nothing (verified family-wide in Phase 2). Net −21.
 
 ### Changes

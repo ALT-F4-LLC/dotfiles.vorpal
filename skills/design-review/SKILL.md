@@ -77,9 +77,9 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
-- Production code review against engineering dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+- Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Authoring a new UX spec — use `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on a design — use `Skill(vote, ...)` after this skill produces a review.
@@ -234,10 +234,10 @@ where `{recommendation}` is one of Approve / Approve with follow-up / Block / Re
 The calling agent owns (in order):
 
 - SendMessage the verdict per `agents/ux-designer.md` Inter-Agent Communication triggers (under team-lead orchestration, to team-lead — who reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; standalone, to the author directly).
-- Triggering `Skill(vote, ...)` if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold per `agents/ux-designer.md`.
+- Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `agents/ux-designer.md` Design Spec Approval.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead, who reconciles both reviewers before routing; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure regardless of how complete the in-context emission feels.
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
 

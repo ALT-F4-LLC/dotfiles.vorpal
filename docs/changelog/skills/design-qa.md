@@ -1,5 +1,34 @@
 # Changelog: design-qa
 
+## 2026-06-09
+
+### Summary
+Phase 2: MVP-cutline consumer note added to Pre-flight; code-review→code-review-verdict reference updates (lockstep).
+
+### Changes
+- Pre-flight step 4 now captures the ux-spec §9 Handoff Notes MVP cutline; deferred-polish components route to Acceptable Deviations, not Blockers (closes the ux-spec §9(b) consumer gap).
+- 3 refs updated for the sibling rename, incl. the byte-identical COUPLING marker.
+
+### Dimensions Evaluated
+Coherence (ux-spec contract, family lockstep), Completeness.
+
+### Rename
+No rename (sibling code-review renamed → code-review-verdict; refs updated).
+
+## 2026-06-09
+
+### Summary
+Phase 1 no-change verdict (2nd consecutive). Verified both historical-audit signals (render-content-not-liveness; perceptual legibility at screenshare scale) already Blocker-enforced (QA Procedure step 2 + Severity ladder, added 2026-06-04).
+
+### Changes
+- None. Unescaped-$-substitution scan clean; COUPLING marker byte-identical across the 4 siblings; team-lead.md Rule 8/step 14 references resolve. disallowed-tools family decline reaffirmed.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no untrimmable redundancy at 215 lines), Completeness (both audit signals pre-encoded), Coherence (family parity md5-verified).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

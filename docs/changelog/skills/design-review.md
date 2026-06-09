@@ -1,5 +1,36 @@
 # Changelog: design-review
 
+## 2026-06-09
+
+### Summary
+Phase 2: code-review→code-review-verdict reference updates (lockstep only).
+
+### Changes
+- 2 refs updated for the sibling rename, incl. the byte-identical COUPLING marker.
+- Monitor retained in allowed-tools despite no body usage — family parity decision (pre-approval, not capability).
+
+### Dimensions Evaluated
+Coherence (family lockstep).
+
+### Rename
+No rename (sibling code-review renamed → code-review-verdict; refs updated).
+
+## 2026-06-09
+
+### Summary
+Coherence: fixed Save & Return vote escalation to mode-split (standalone `Skill(vote)`; team mode delegation_request to team-lead) — prior wording instructed a team-mode Skill(vote) call that agents/ux-designer.md's CRITICAL banner forbids. Trimmed duplicated routing parenthetical + rhetorical tail from the self-check. Net 0.
+
+### Changes
+- Save & Return vote bullet: `Skill(vote, ...)` → mode-split escalation per agents/ux-designer.md Design Spec Approval.
+- Self-check: dropped routing clause duplicating bullet 1 and "regardless of how complete..." filler.
+- Cross-cutting: same Skill(vote) hazard in code-review:390, verify-ac:261, and family When-NOT-to-Use bullets routed to Phase 2 for lockstep harmonization.
+
+### Dimensions Evaluated
+All 8. Coherence (vote-routing contradiction), Over-Engineering (HIGHEST — self-check trim), Skill Design (no unescaped $digit; under compaction cap; description under budget). Spec Alignment N/A (docs/spec/ absent).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

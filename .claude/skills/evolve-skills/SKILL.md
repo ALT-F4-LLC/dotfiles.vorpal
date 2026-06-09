@@ -7,7 +7,7 @@ description: >
   Trigger: "evolve skills", "improve skills", "refine skills".
 argument-hint: "[skill-name] [days=N]"
 effort: max
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "WebFetch", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -121,7 +121,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit; `wc -l` to verify budget; verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit; runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
 3. Writes/normalizes `docs/changelog/skills/<name>.md` per Changelog Format
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
@@ -210,7 +210,7 @@ For EACH target skill, mine three read-only sources for signals that the skill i
 1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
    - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
-   - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts.
+   - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
    - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by tool-call UUID/timestamp, not replicated lines); ≥2 distinct invocations in one session is a failure signal.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
@@ -268,7 +268,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM** (over 500): consolidation primary — removals must exceed additions. **BALANCED** (under 500): additions allowed but offset by removals. Report NET_LINES per change.
+500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change as the physical-newline (`wc -l`) delta — NOT soft-wrapped display lines; removing whole bullet/list lines moves the count, rewording wrapped prose rarely does.
 
 ## Context
 

@@ -1,5 +1,21 @@
 # Changelog: tdd
 
+## 2026-06-09
+
+### Summary
+Closed residual halves of the cross-project verified-claim pitfalls: Authoring §5 now bars scope-overreach on "verified" claims (scope must match what was checked, artifact named); §11(c) tightened from "executable" to run-with-hit-set-verified. Offset by removing two security Failure-Mode rows redundant with Validation §7/§8 + generic abort row. Net +0 (303/500).
+
+### Changes
+- Authoring §5: "verified" label must not claim broader scope than checked; name the artifact/command behind it.
+- §11(c): grep/regex AC must be run with hit set verified, not merely "executable" (staff-engineer.md Executable-claim-gate alignment).
+- Failure Modes: dropped two security rows (restate Validation §7/§8; generic row carries the abort template).
+
+### Dimensions Evaluated
+Completeness (PRIMARY — verified-claim pitfalls), Actionability, Over-Engineering (HIGHEST — net 0), Coherence (paths/when_to_use rejected/parity-bound; docket co-authoring N/A — zero docket refs since c10195b), Skill Design, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

@@ -1,10 +1,12 @@
 ---
-name: code-review
+name: code-review-verdict
 description: >
   Conduct a code review on a scoped artifact (PR, branch, uncommitted, staged, or files).
   Loaded into the calling agent's context; the calling agent applies the role-appropriate
   playbook — @staff-engineer runs the 6-dimension general review, @security-engineer runs
   the security-dimension review. The format authority for both roles' output lives here.
+  NOT the bundled /code-review skill (which can edit the working tree via --fix); this project
+  skill was renamed away from "code-review" to avoid that collision.
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
 argument-hint: "<scope — PR#, branch, uncommitted, staged, or path [path …]>"
 effort: max
@@ -15,7 +17,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, or use `Agent()`, `TeamCreate`, `TeamDelete`, or `SendMessage`. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Code Review — Conduct a Role-Scoped Review
+# Code Review Verdict — Conduct a Role-Scoped Review
 
 You are the **Reviewer**. You conduct a code review on the artifact named by `<scope>` and emit a structured report back to the calling agent's context. No file is written. The review is role-aware: `@staff-engineer` applies the general 6-dimension playbook; `@security-engineer` applies the security-dimension playbook. The format authority — dimensions, severity ladders, output sections, validation rules — lives here.
 
@@ -28,17 +30,10 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 
 ## Role Detection
 
-This skill is callable ONLY by `@staff-engineer` or `@security-engineer`. Match the calling agent's identifier (from prompt context) to a role; if neither matches, ABORT.
-
-| Caller identifier | Role |
-|---|---|
-| `@staff-engineer` | `staff-engineer` |
-| `@security-engineer` | `security-engineer` |
-
-Abort message:
+This skill is callable ONLY by `@staff-engineer` or `@security-engineer`; `{role}` is the calling agent's identifier (from prompt context) minus the `@`. Any other caller ABORTS:
 
 ```
-Error: Skill(code-review) is restricted to @staff-engineer and @security-engineer. Calling agent: {agent}.
+Error: Skill(code-review-verdict) is restricted to @staff-engineer and @security-engineer. Calling agent: {agent}.
 ```
 
 ## Argument Handling
@@ -48,7 +43,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(code-review, "<scope>") — name what to review (PR number/URL, branch, "uncommitted", "staged", or file paths).
+Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR number/URL, branch, "uncommitted", "staged", or file paths).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -62,11 +57,11 @@ Error: Usage: Skill(code-review, "<scope>") — name what to review (PR number/U
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 
-**Path-list normalization (canonical grammar).** The canonical multi-file form is bare space-separated paths — `Skill(code-review, "src/a.rs tests/b.rs")`. Before applying the table, strip a leading `files`/`files:` keyword if present, then split the argument on commas and/or whitespace; resolve the resulting tokens via the File paths row. This collapses the three observed call forms — `path path`, `files path path`, `files: path, path` — to one token list. (Single bare tokens are unaffected: no prefix, no comma, so branch/PR detection still wins per the table order.)
+**Path-list normalization (canonical grammar).** The canonical multi-file form is bare space-separated paths — `Skill(code-review-verdict, "src/a.rs tests/b.rs")`. Before applying the table, strip a leading `files`/`files:` keyword if present, then split the argument on commas and/or whitespace; resolve the resulting tokens via the File paths row. This collapses the three observed call forms — `path path`, `files path path`, `files: path, path` — to one token list. (Single bare tokens are unaffected: no prefix, no comma, so branch/PR detection still wins per the table order.)
 
 **Ambiguity rules** (apply when multiple forms could match):
 
-- A token matching `^\d+$` always tries PR-number first via `gh pr view {n} --json number`. If `gh` exits non-zero (no such PR), fall through to branch detection. If both fail, fall through to file-path detection only when the token is a real path.
+- A token matching `^\d+$` always tries PR-number first via `gh pr view {n} --json number`. If `gh` exits non-zero (no such PR), fall through to branch detection. If both fail, fall through to file-path detection only when the token is a real path. If the `gh` CLI itself is unavailable for a PR scope, abort: `Error: gh CLI required to resolve PR scope. Re-invoke with the branch name or "uncommitted".`
 - A single token that is BOTH a valid branch name AND an existing file is treated as a branch. To force file-path scope on such a name, supply multiple tokens or prefix with `./` (e.g., `./main`).
 
 If `<scope>` matches none of the above, ABORT:
@@ -91,7 +86,7 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.
@@ -112,6 +107,8 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
    ```
 
    **Partial-tree guard** (`uncommitted`/`staged` scopes only): a local working-tree diff is a point-in-time snapshot — the skill cannot tell whether all of the cycle's expected edits have landed. Do NOT mechanically guess the expected file-set. Instead, prefix the verdict with one line — `Reviewed local working tree at this point in time — N files present; confirm implementation is signalled-complete before this verdict binds` — so the calling agent reconciles against the cycle's acceptance criteria (which it owns) before routing the verdict. PR/branch scopes are not snapshot-prone and skip this note.
+
+   **Moving-tree precondition (orchestrated runs).** The point-in-time note does not substitute for a freshness gate: under team-lead orchestration, do not proceed past Pre-flight on `uncommitted`/`staged` scope unless the calling agent holds an implementation-complete signal — a team-lead GO with no open `blockedBy` on the reviewed work; when the invocation context names Docket issue IDs, confirm each is closed via `docket issue show <id> -q`. Without that signal, ABORT: `Error: moving tree — implementation not signalled complete; re-invoke after team-lead GO.` (Reviews have fired before implementers finished despite agent-level go-signal briefs and blockedBy edges — the skill-level gate is the backstop.)
 6. **Read related design docs** — scope reads to what the diff touches; do not read specs outside the changed-file paths:
    - `staff-engineer`: TDDs in `docs/tdd/`; project specs in `docs/spec/` matching changed areas, where present (`architecture.md`, `performance.md`, `testing.md`).
    - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
@@ -361,6 +358,7 @@ Before emitting the structured review, verify in the calling agent's context:
 7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
 8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
+10. **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
 
 If any check fails, ABORT:
 
@@ -368,7 +366,7 @@ If any check fails, ABORT:
 Error: validation failed: {section/field} — {detail}.
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(code-review, "<scope>")`.
+The calling agent corrects in its own context and re-invokes `Skill(code-review-verdict, "<scope>")`.
 
 ## Save & Return
 
@@ -380,14 +378,14 @@ Code review emitted ({recommendation}).
 
 where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review`, `verify-ac`, `design-review`, `design-qa`).
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 
 - **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery (anti-anchoring — rationale owned by team-lead.md step 14). (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
 - Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never SendMessage `@senior-engineer` directly, per the team-lead spawn templates). Standalone: SendMessage `@senior-engineer` with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
-- Triggering `Skill(vote, ...)` if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
+- Escalating to vote if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance) — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per the calling agent's Consensus Voting section (`agents/staff-engineer.md` / `agents/security-engineer.md`). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
 
 ### Recommendation → Vote Verdict Map
 
@@ -398,11 +396,3 @@ The calling agent owns (in order):
 | Request changes | `approve-with-concerns` (with explicit Concerns in findings) |
 | Block / Block (security) | `reject` |
 | Split required | Do NOT escalate to vote — return Split-required to caller and let them re-scope before any vote |
-
-## Failure Modes
-
-Most abort paths are specified inline (Argument Handling, Role Detection, Pre-flight, Validation Before Emit). The table covers only abort paths with new abort text:
-
-| Trigger | Handling |
-|---|---|
-| `gh` CLI unavailable for a PR scope | Abort: `Error: gh CLI required to resolve PR scope. Re-invoke with the branch name or "uncommitted".` |

@@ -1,5 +1,36 @@
 # Changelog: evolve-coherence
 
+## 2026-06-09
+
+### Summary
+Phase 2: D3 stale-name pair code-review→code-review-verdict added; review-and-comment banner carve-out whitelisted in D4; rename reference updates.
+
+### Changes
+- D3 invariant 1 + detection seed now cover the code-review→code-review-verdict pair with token-boundary grep (mirrors verify→verify-ac encoding).
+- D4 #2 + Phase 1 template whitelist review-and-comment's intentionally non-CANONICAL banner.
+- 11 refs updated for the rename (incl. XREF schema examples).
+
+### Dimensions Evaluated
+Coherence, Completeness (D3/D4 whitelist accuracy).
+
+### Rename
+No rename (audits the renamed code-review-verdict).
+
+## 2026-06-09
+
+### Summary
+Closed the spawn-template rubric handoff gap: Phase 0/1 teammate prompts referenced "the rubric" without a path, but spawned teammates never receive the SKILL.md — added an explicit Read instruction for `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric to both templates. Escaped the documentary `\$ARGUMENTS` at L29. Net 0.
+
+### Changes
+- Phase 0 + Phase 1 templates: within-line addition of "Read .claude/skills/evolve-coherence/SKILL.md §The Coherence Rubric — NOT in this prompt".
+- L29: `$ARGUMENTS` → `\$ARGUMENTS` so the Argument Handling prose stays literal (no-arg invocations previously rendered empty backticks); the live substitution at L44 retained.
+
+### Dimensions Evaluated
+Actionability (HIGHEST impact — teammate prompts must be self-sufficient); Skill Design Quality (arg escape); Coherence (re-verified ALL rubric ground-truth claims against today's modified agents/*.md — zero drift). All 8 reviewed; Over-Engineering trims rejected (protective redundancy on the empty-hash guard).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

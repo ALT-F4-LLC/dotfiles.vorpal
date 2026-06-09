@@ -44,7 +44,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths). PR-scope review is @staff-engineer's via Skill(code-review, ...).
+Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue ID, "uncommitted", "staged", branch name, or file paths). PR-scope review is @staff-engineer's via Skill(code-review-verdict, ...).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -70,7 +70,7 @@ Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch na
 
 If extra positional args follow `<scope>`, ignore them silently.
 
-**Comma-batched Docket IDs.** A `<scope>` of comma-separated Docket issue IDs (`DKT-45,DKT-46,DKT-47`) is N distinct verifications, not one merged scope — each issue carries its own acceptance criteria and verdict. Split on commas and run the full Pre-flight → Verification → Output cycle once per ID, emitting one report per issue. (Contrast `code-review`'s comma path-list, which forms a single scope: there the tokens are files in one diff; here they are independent issues.)
+**Comma-batched Docket IDs.** A `<scope>` of comma-separated Docket issue IDs (`DKT-45,DKT-46,DKT-47`) is N distinct verifications, not one merged scope — each issue carries its own acceptance criteria and verdict. Split on commas and run the full Pre-flight → Verification → Output cycle once per ID, emitting one report per issue. (Contrast `code-review-verdict`'s comma path-list, which forms a single scope: there the tokens are files in one diff; here they are independent issues.)
 
 ## Doubling Rule
 
@@ -81,12 +81,12 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 - `@sdet` is verifying a Docket issue's acceptance criteria against the implementation diff at any scope (issue, uncommitted, staged, branch, files).
 - A non-trivial change requires the FULL verification template with verdict ladder, evidence per criterion, and Issues Found.
 - A trivial change (typo, formatting, docs-only) may use LIGHT mode — see Verification Procedure below.
-- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior BLOCK / ACCEPT-WITH-CAVEATS findings, `@sdet` re-invokes `Skill(verify-ac, "<scope>")` for a Round-2 pass on the new diff. The Round-2 verification focuses on the criteria/findings flagged in the prior round; criteria that previously PASSed and whose evidence files are untouched by the new diff may carry the prior PASS forward without re-running their evidence command. Always re-run the suite end-to-end; never carry forward a failed criterion.
+- **Re-invocation after fix is expected.** When `@senior-engineer` ships fixes for prior BLOCK / ACCEPT-WITH-CAVEATS findings, `@sdet` re-invokes `Skill(verify-ac, "<scope>")` for a Round-2 pass on the new diff — carry-forward and end-to-end re-run rules are enforced at Pre-flight §4a.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
-- Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+- Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Design QA against a `docs/ux/` spec for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.
 - Authoring TDDs, ADRs, PRDs, or UX specs — use the doc-authoring family (`tdd`, `adr`, `prd`, `ux-spec`).
@@ -132,21 +132,15 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 For trivial fixes (typo, formatting, single-line config), docs-only changes, or changes already covered by existing passing tests:
 
 1. Run the relevant tests / verification command.
-2. Emit a one-line report (no template).
+2. Emit the one-line report defined in Output Contract § LIGHT Output (no template).
 
-LIGHT output (entire emission):
-
-```
-APPROVE — tests pass: {command}; criteria met.
-```
-
-If LIGHT cannot be issued (any failed test, any unmet criterion, any edge case worth surfacing), switch to FULL.
+If LIGHT cannot be issued (any failed test, any unmet or runtime-only criterion, any edge case worth surfacing), switch to FULL.
 
 ### FULL mode
 
 Apply the full procedure. Scale evidence to risk.
 
-1. **Verify each acceptance criterion individually** — mark PASS or FAIL with specific evidence (test output, file/line reference, observed behavior).
+1. **Verify each acceptance criterion individually** — mark PASS, FAIL, or OUT-OF-SCOPE with specific evidence (test output, file/line reference, observed behavior). OUT-OF-SCOPE = verifiable only at runtime/render (live app behavior, rendered page/visual output, deployed-environment state). NEVER PASS a runtime-only criterion on a static proxy (file exists, ref present, build exit 0 — a green build can still ship broken renders); mark OUT-OF-SCOPE, name the runtime route (`design-qa` for `docs/ux` surfaces; bundled runtime `verify` otherwise), and leave dispatch to the calling agent.
 2. **Layer signals** — run the suite, trace key paths, diff output against baseline, verify generated artifacts are consumed correctly. Never rely on one signal.
 3. **Test beyond stated criteria** — empty/null/large input, invalid/malicious input, unavailable dependencies, boundary conditions. Surface findings under Additional Testing.
 4. **Analyze coverage** — what's tested, where, and which gaps are conscious decisions vs. real risk.
@@ -154,8 +148,8 @@ Apply the full procedure. Scale evidence to risk.
 
 | Verdict | Meaning |
 |---|---|
-| APPROVE | All acceptance criteria PASS; no Critical/High issues; edge cases handled or consciously deferred |
-| ACCEPT WITH CAVEATS | Core paths verified, but edge-case coverage incomplete or non-blocking issues remain — calling agent annotates the caveats |
+| APPROVE | All acceptance criteria PASS (none OUT-OF-SCOPE); no Critical/High issues; edge cases handled or consciously deferred |
+| ACCEPT WITH CAVEATS | Core paths verified, but edge-case coverage incomplete, non-blocking issues remain, or OUT-OF-SCOPE criteria await runtime verification (caveat names the route) — calling agent annotates the caveats |
 | BLOCK | Acceptance criteria unmet, security/data-integrity tests fail, or critical coverage missing for high-risk paths |
 
 **Severity ladder for Issues Found:**
@@ -190,8 +184,8 @@ APPROVE — tests pass: {command}; criteria met.
 ## Verification: {Issue ID} — {Title}
 
 ### Acceptance Criteria
-- [x] PASS / [ ] FAIL — {criterion 1} — {evidence: test output, file:line, observed behavior}
-- [x] PASS / [ ] FAIL — {criterion 2} — {evidence}
+- [x] PASS / [ ] FAIL / [~] OUT-OF-SCOPE — {criterion 1} — {evidence: test output, file:line, observed behavior; OUT-OF-SCOPE cites the runtime route}
+- [x] PASS / [ ] FAIL / [~] OUT-OF-SCOPE — {criterion 2} — {evidence}
 - ... (one bullet per criterion)
 
 ### Additional Testing
@@ -227,11 +221,11 @@ One of: **APPROVE** / **ACCEPT WITH CAVEATS** / **BLOCK** — {rationale tying v
 Before emitting the report, verify in the calling agent's context:
 
 1. **Mode selection is consistent** — LIGHT emits exactly one line in the LIGHT format; FULL emits the FULL template.
-2. **FULL: every acceptance criterion has PASS or FAIL** — silent omission or "TBD" markers are defects.
+2. **FULL: every acceptance criterion has PASS, FAIL, or OUT-OF-SCOPE** — silent omission or "TBD" markers are defects; OUT-OF-SCOPE without a named runtime route is a defect.
 3. **FULL: every PASS/FAIL has evidence** — `criterion met` without a test command, file/line, or observed-behavior fragment is a defect.
 4. **FULL: every severity bucket is explicit** — every bucket reads `None` or lists items.
-5. **FULL: BLOCK and ACCEPT WITH CAVEATS each have at least one Issue Found** — a BLOCK or ACCEPT verdict with empty Issues Found across all severities is a defect (the rationale must point at concrete findings).
-6. **FULL: verdict consistency** — BLOCK requires at least one Critical or High issue OR at least one FAIL on a criterion; ACCEPT WITH CAVEATS requires at least one Medium/Low issue or an Additional Testing gap; APPROVE has no Critical/High and no FAIL.
+5. **FULL: BLOCK and ACCEPT WITH CAVEATS each have at least one Issue Found** — a BLOCK or ACCEPT verdict with empty Issues Found across all severities is a defect (the rationale must point at concrete findings); an OUT-OF-SCOPE criterion satisfies this for ACCEPT WITH CAVEATS.
+6. **FULL: verdict consistency** — BLOCK requires at least one Critical or High issue OR at least one FAIL on a criterion; ACCEPT WITH CAVEATS requires at least one Medium/Low issue, an Additional Testing gap, or an OUT-OF-SCOPE criterion; APPROVE has no Critical/High, no FAIL, and no OUT-OF-SCOPE (any OUT-OF-SCOPE caps the verdict at ACCEPT WITH CAVEATS).
 7. **Recommendation is on the verdict ladder** — exactly one of APPROVE / ACCEPT WITH CAVEATS / BLOCK.
 8. **Placeholder scan** — body contains no literal `{Issue ID}`, `{count}`, `{evidence}`, `TBD`, or `TODO` text outside of code-fenced examples.
 9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Acceptance Criteria evidence, Additional Testing, Issues Found, or Recommendation. Use evidence-anchored language ("ran X — saw Y," "verified at {file:line}," "unverified — assumption"). A hit is a defect.
@@ -258,7 +252,7 @@ The calling agent owns (in order):
 
 - Closing or commenting the Docket issue (the issue was already CLOSED by `@senior-engineer` at end of implementation — `docket issue close` here is a no-op): on APPROVE, `docket issue comment add <id> -m "..."`; on ACCEPT WITH CAVEATS, comment summarizing the caveats and route any follow-up via SendMessage `@project-manager` (no workflow-state move); on BLOCK, `docket issue reopen <id>` followed by a blocking-criteria comment. `reopen` on BLOCK is the only legitimate verification state-change.
 - SendMessage to peers per the `agents/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
-- Triggering `Skill(vote, ...)` per the vote triggers in `agents/sdet.md`.
+- Escalating to vote per the vote triggers in `agents/sdet.md` — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `agents/sdet.md` §Using `/vote` for Consensus.
 
 **Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's inbox. Before ending the turn, answer: "Did I SendMessage the structured verdict body (not summarized) to team-lead this same turn?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the SendMessage IS the deliverable.
 

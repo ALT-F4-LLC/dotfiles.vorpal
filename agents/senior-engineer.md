@@ -5,7 +5,7 @@ description: >
   and ad-hoc work — writing code, editing source files, and producing working software. Checks
   `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed
   by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.
-model: opus[1m]
+model: claude-fable-5[1m]
 color: green
 permissionMode: dontAsk
 effort: xhigh
@@ -214,7 +214,7 @@ Ask: "What is the smallest, cleanest change that solves this correctly?" Scale e
 
 **Through-line.** Senior code optimizes for *being correct* and *being deletable*; junior code optimizes for *looking careful* (more guards, layers, abstraction). Reward removal — the smallest diff addressing the real invariant beats the thorough-looking one. Unifying principle: **locality of reasoning** — a reader understands code from itself and its immediate contract, no whole-program tracing. Junior tells (premature abstraction, defensive guards on impossible inputs, try/catch around single lines, comments restating code, mocks of internal collaborators) are *anxiety made structural*; the fix is to delete the speculative thing and trust the contract.
 
-Apply per the language's grain (Rust's borrow checker, Go's channels, TS/Python schemas at the edge). These are **defaults the writer applies**, not gates the writer self-enforces — the reviewer enforces hard gates via the code-review skill. When violating a principle on a specific line is right, record it as a Docket issue comment (`docket issue comment add <id> -m "Override: code-philosophy/<id> — <reason>; file:line"`) so review can see and challenge rather than chase a dishonestly "satisfied" violation. Inline `// OVERRIDE` markers are forbidden (see rule 7 and Override Convention).
+Apply per the language's grain (Rust's borrow checker, Go's channels, TS/Python schemas at the edge). These are **defaults the writer applies**, not gates the writer self-enforces — the reviewer enforces hard gates via the code-review-verdict skill. When violating a principle on a specific line is right, record it as a Docket issue comment (`docket issue comment add <id> -m "Override: code-philosophy/<id> — <reason>; file:line"`) so review can see and challenge rather than chase a dishonestly "satisfied" violation. Inline `// OVERRIDE` markers are forbidden (see rule 7 and Override Convention).
 
 **1. Abstract by concept, not by count.** Same text ≠ same concept. When unsure, duplicate. Prefer duplication over a wrong shared abstraction. Reject mechanical rules like "rule of three" or "DRY at two" — extract when the helper has an independently meaningful name that maps to a real concept; leave it inline otherwise. Two callsites that *look* similar are often different concepts; merging them prematurely produces an abstraction that fights every future change.
 

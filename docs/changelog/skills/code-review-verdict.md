@@ -1,4 +1,36 @@
-# Changelog: code-review
+# Changelog: code-review-verdict
+
+## 2026-06-09
+
+### Summary
+Phase 2: renamed code-review → code-review-verdict (bundled-skill collision) and mode-split the vote-escalation bullet in Save & Return.
+
+### Changes
+- Renamed skill + directory + all internal self-references; external refs updated across 4 agents and 6 skills (47 occurrences); description gains a bundled-skill disambiguation clause.
+- Save & Return vote bullet: team mode now routes via docket vote create + delegation_request (never Skill(vote)); standalone unchanged. Model: design-review's Phase 1 fix.
+- When-NOT-to-Use vote bullet left as routing pointer (family decision).
+
+### Dimensions Evaluated
+Coherence (Phase 2 lockstep), Orchestration (vote delegation), Rename.
+
+### Rename
+Renamed code-review → code-review-verdict. Observable collision with the bundled /code-review skill (supports --fix, edits the working tree — violates this skill's leaf read-only contract). Precedent: verify → verify-ac.
+
+## 2026-06-09
+
+### Summary
+Hardened the freshness gate (moving-tree ABORT precondition for orchestrated `uncommitted`/`staged` reviews — cross-project pitfall where reviews fired before implementers finished despite agent-level gates) and added Validation check 10 (citation-presence scan — fabricated-"VERIFIED" defect class). Offset by collapsing the Role Detection table to prose and folding the one-row Failure Modes table into Argument Handling. Net −13 (395/500).
+
+### Changes
+- Pre-flight: Moving-tree precondition — under orchestration, ABORT on `uncommitted`/`staged` without an implementation-complete signal (`docket issue show <id> -q` flag live-verified).
+- Validation check 10: every Finding citation must name a file in the resolved diff's captured file list.
+- Role Detection table → prose; Failure Modes section removed, gh-CLI abort folded into Argument Handling.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST — net −13), Completeness (freshness gate), Actionability (anti-fabrication), Coherence (COUPLING md5-parity verified), Skill Design ($-audit clean).
+
+### Rename
+RENAME RECOMMENDED (reversal of prior cycles): bundled `/code-review` (v2.1.147) collides observably; proposed `code-review-verdict`; execution routed to Phase 2 pending operator decision (~47 refs, 10 files).
 
 ## 2026-06-08
 

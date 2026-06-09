@@ -3,6 +3,14 @@
 ## 2026-06-09
 
 ### Summary
+evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 1 reference updated (Hard Gates enforcement mention in code-philosophy through-line).
+
+### Changes
+- "the reviewer enforces hard gates via the code-review-verdict skill".
+
+## 2026-06-09
+
+### Summary
 Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to Execution Workflow step 6 (within the existing close-noop line; line count unchanged at 360). Encodes recurring 4/5-repo docket-clobber/stale-reader theme A — no prior cwd-failure-mode coverage.
 
 ### Changes

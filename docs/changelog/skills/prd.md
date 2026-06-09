@@ -1,5 +1,20 @@
 # Changelog: prd
 
+## 2026-06-09
+
+### Summary
+One completeness fix (net −1): reordered Pre-flight so reserved-name refusal precedes the collision check. All 7 reserved files exist on disk after init-specs runs, so the old ordering routed reserved slugs into COLLISION_DIALOG's "Overwrite" option before the hard-refusal fired — contradicting the Failure Mode table's "(and slug is not reserved)" precedence.
+
+### Changes
+- Pre-flight: reserved-name refusal moved from step 5 to step 4, ahead of collision; cross-reference in When NOT to Use updated (step 5 → step 4).
+- Phase-0 doc audit clean: no unescaped $-digit, description under budget, format authority within compaction cap.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no remaining trims; rejected docket-doc adoption as reversal of c10195b), Completeness (primary), Coherence (init-specs reciprocal coupling verified intact).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

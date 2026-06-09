@@ -10,7 +10,7 @@ description: >
   surfaces. Aligns security posture with business goals and risk tolerance. Never writes
   implementation code.
 color: orange
-effort: max
+effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:

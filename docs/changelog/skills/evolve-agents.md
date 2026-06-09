@@ -1,5 +1,20 @@
 # Changelog: evolve-agents
 
+## 2026-06-08
+
+### Summary
+Two redundancy trims (368 lines, net -2). Phase 1: removed a per-agent narration line (~L113) that restated the auditor's binding "stay per-agent" rule and an already-implied "feeds Phase 1" fact, resolving an asymmetry vs evolve-skills. Phase 2 (lockstep with evolve-skills): trimmed the historical-auditor Rules bullet's trailing "never bulk-cat ~/Development" clause — verbatim-duplicated in the same template's CANONICAL:HARVEST block (clause survives there; no info lost).
+
+### Changes
+- Phase 0 §: removed redundant per-agent narration line.
+- Phase 0 historical-auditor Rules: dropped duplicated cross-project-scan clause; kept the unique transcript-scan half. PARITY-BOUND — applied identically to evolve-skills.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — both findings redundancy), Coherence (sibling parity verified; BANNER/HARVEST byte-identical post-edit). Other dimensions sound; DISTINCT-sessionId + $TMPDIR focus items NO-OP/N-A.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

@@ -1,5 +1,19 @@
 # Changelog: evolve-skills
 
+## 2026-06-08
+
+### Summary
+One redundancy trim (360 lines, net 0 — in-line shorten). Trimmed the historical-auditor Rules bullet's trailing "never bulk-cat ~/Development" clause — verbatim-duplicated in the same template's CANONICAL:HARVEST block (the auditor reads both; clause survives in HARVEST, no info lost). Kept the unique transcript-scan half. Parity-bound; applied identically to evolve-agents in one lockstep turn.
+
+### Changes
+- Phase 0 historical-auditor Rules: dropped duplicated cross-project-scan clause from the per-skill-grep bullet. PARITY-BOUND with evolve-agents.
+
+### Dimensions Evaluated
+Over-Engineering (HIGHEST — sole finding; governance/parity blocks correctly retained), Coherence (sister evolve-agents parity; CANONICAL:HARVEST byte-identical post-edit). Phase 0 signals NO-OP.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

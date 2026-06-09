@@ -183,8 +183,7 @@ Field rules:
 ### Required Sections
 
 The UX spec body MUST contain these top-level sections, in this order. Each is a
-`##` heading in the drafted document. The list mirrors `agents/ux-designer.md`
-Responsibility 1 design spec format.
+`##` heading in the drafted document.
 
 1. **Overview** — surface type, users (skill/context/frequency), key workflows
    (3-5 prioritized), success criteria (concrete, testable), success metrics

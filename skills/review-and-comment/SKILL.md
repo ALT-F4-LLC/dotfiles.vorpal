@@ -57,7 +57,7 @@ Read the changed files in full plus their relevant callers/neighbors. Produce fi
 
 **Security (least-privilege focus):** trust-boundary changes & blast radius; authn/authz; secrets handling; input validation at privilege boundaries; over-broad grants (all-ports/all-protocols, wildcards, broad CIDRs, shared/default identities); supply-chain (new deps, CI reach); fail-open defaults; abuse cases ("if X is compromised, what does this rule let it reach?"). Frame intentional broad grants as risk-acceptance decisions, not bugs — but still surface them.
 
-Distinguish real defects from intentional design. If the change is large or high-stakes and the operator has the dev fleet available, recommend the full team review flow (parallel @staff-engineer + @security-engineer via the `code-review` skill) instead of relying on this single-agent pass.
+Distinguish real defects from intentional design. If the change is large or high-stakes, recommend the full fleet flow instead of this single-agent pass (see "When to escalate instead" below).
 
 ## Step 4 — Anchor each finding
 
@@ -82,6 +82,8 @@ One inline comment per finding (never a single consolidated mega-comment). Each:
 ## Step 7 — Per-item approval gate (MANDATORY)
 
 Present ALL drafts to the operator as a numbered list, each showing `file:line · severity` and the exact body. Then STOP and ask for per-item approval (e.g. "post all", "post 1–5, drop 6", "edit #3 to …", "add …"). **Post nothing until the operator explicitly approves.** Apply any edits and re-confirm changed items.
+
+**Terminal states.** If the review surfaces zero real findings, do NOT pad with marginal nits — report "no findings to post", skip to Step 9 cleanup, and stop. If the operator declines all drafts (or approves none), post nothing, run Step 9 cleanup, and exit.
 
 ## Step 8 — Post approved comments
 

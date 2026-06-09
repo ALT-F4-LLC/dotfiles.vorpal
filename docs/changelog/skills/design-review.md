@@ -1,5 +1,19 @@
 # Changelog: design-review
 
+## 2026-06-08
+
+### Summary
+Coherence: corrected the Doubling Rule reconciliation dedupe key from `(file, symbol)` to `(spec section, surface)` — a UX peer review grounds findings on spec sections/workflows (pre-implementation, often no code), matching Validation check #4 and the design-qa sibling. design-review-local divergence; siblings (code-review/verify-ac key on file/symbol) unaffected. Net 0.
+
+### Changes
+- Doubling Rule: dedupe key `(file, symbol)` → `(spec section, surface)`.
+
+### Dimensions Evaluated
+Coherence (dedupe-key accuracy vs this skill's own grounding unit + design-qa parity), Over-Engineering (HIGHEST — nothing to trim at 250 lines after 16 cycles), all 8 reviewed; rest sound. Scope boundary vs design-qa verified crisp.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

@@ -1,5 +1,19 @@
 # Changelog: tdd
 
+## 2026-06-08
+
+### Summary
+Doc-family parity + closure of cross-project pitfall (a) (TDD asserts a "verified" fact the committed artifact contradicts): added Authoring §5 requiring embedded technical assertions (code/config/SQL snippets, cross-platform/engine claims, Implementation-Phase grep ACs, module/API/test-infra references) to be verified against their actual target before being written as settled — mirrors adr:148 ("State unverified claims as assumptions, not facts"), which tdd lacked despite carrying more such claims. Partially offset by trimming §4 Mermaid restatement and §1 tail. Net +5 (303/500).
+
+### Changes
+- Authoring Procedure: new §5 verify-embedded-claims step (adr parity); §4 Mermaid compressed (dropped Failure-Modes ADR-routing restatement, kept Validation §5 gate); §1 tail tightened; prior §5 → §6.
+
+### Dimensions Evaluated
+Completeness (PRIMARY — pitfall (a)), Coherence (adr↔tdd authoring-step parity), Over-Engineering (HIGHEST — addition partly offset). Priority item 2 (under-matching grep AC) NO-OP — already at §11(c). Priority item 3 (concurrent-authorship) NO-OP — Sole-editor rule owned by security-engineer.md + staff-engineer.md.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

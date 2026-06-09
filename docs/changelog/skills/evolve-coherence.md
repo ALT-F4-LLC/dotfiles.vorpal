@@ -1,5 +1,19 @@
 # Changelog: evolve-coherence
 
+## 2026-06-08
+
+### Summary
+Replaced the stale hardcoded line number `staff-engineer.md:103` (3 occurrences: D2 #4 invariant, D2 detection seed, Phase-1 spawn template) — content drifted to line 112 in the c10195b docs-path refactor — with content-anchored references on the unique `Skill(verify-ac)` rule-body token. Aligns D2 references with the skill's own D4 #1 anti-line-number principle. Net 0.
+
+### Changes
+- L82 / L88 / L277: swapped `:103` for a content anchor ("the sole `Skill(verify-ac)` token in `agents/staff-engineer.md`"); verified exactly 1 occurrence (now line 112), excluded-FALSE-Blocker classification unchanged.
+
+### Dimensions Evaluated
+Coherence (HIGHEST — accurate references + self-consistency with D4 #1); Over-Engineering (net 0, no additions; rubric density load-bearing). All 8 reviewed; rest sound.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

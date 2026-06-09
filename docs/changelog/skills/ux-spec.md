@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-06-08
+
+### Summary
+Removed a false circular cite ("mirrors `agents/ux-designer.md` Responsibility 1 design spec format") from the Required Sections preamble. The 2026-06-05 entry documented this same removal but the edit was not present in the file (un-applied or reverted); grep re-confirms ux-designer.md Responsibility 1 ("Design Specifications", L115) does NOT enumerate the 9 section names. The skill self-owns the section list. Net -1.
+
+### Changes
+- Required Sections preamble: dropped the circular ux-designer.md Responsibility 1 cite.
+
+### Dimensions Evaluated
+Spec Alignment (false cite — HIGHEST finding), Coherence (allowed-tools sibling parity, COUPLING bridge bidirectionality, docs-path taxonomy all verified clean), Over-Engineering (HIGHEST — none beyond settled trims). §9 Handoff Notes intact.
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

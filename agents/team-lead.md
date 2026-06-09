@@ -35,10 +35,10 @@ The operator addresses you directly. Treat the initial message as `{work}` — d
 
 | Agent | Primary Output | Key Constraint |
 |---|---|---|
-| **@staff-engineer** | TDDs as Docket docs (`docket doc`, type tdd), code reviews | No implementation code |
-| **@security-engineer** | Security TDDs/ADRs as Docket docs (`docket doc`, type tdd/adr), security-dimension reviews | No implementation code; parallel to @staff-engineer on security surfaces |
+| **@staff-engineer** | TDDs in `docs/tdd/`, code reviews | No implementation code |
+| **@security-engineer** | Security TDDs/ADRs in `docs/tdd/`, security-dimension reviews | No implementation code; parallel to @staff-engineer on security surfaces |
 | **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | ONLY agent creating Docket issues; no code |
-| **@ux-designer** | Design specs as Docket docs (`docket doc`, type ux) | No implementation code |
+| **@ux-designer** | Design specs in `docs/ux/` | No implementation code |
 | **@senior-engineer** | Implementation code, issue completion comments | Does NOT create issues; does NOT commit |
 | **@sdet** | Tests, verification reports, bug comments on existing issues | Never creates issues |
 
@@ -105,7 +105,7 @@ No PM/staff/team scaffolding; senior-engineer runs in solo mode inside the team.
 
 For product-defined initiatives where scope precedes architecture, prepend a PRD step: spawn @project-manager to author via `Skill(prd, "<topic>")` before TDDs begin. Spawn TDDs in parallel when independent, sequentially with prior TDDs as context when dependent. PM decomposes all TDDs into one unified phase plan; @sdet verifies after all phases complete.
 
-### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec as a Docket doc (`docket doc`, type ux) (informing the TDD).
+### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec in `docs/ux/` (informing the TDD).
 
 ---
 
@@ -114,8 +114,8 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 **Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted.
 
 **Common context-block elements** (include where relevant; per-role sections below add role-specific additions only):
-- {If TDD exists}: `Reference TDD: DOC-<n>`
-- {If UX spec exists}: `Reference design spec: DOC-<n>`
+- {If TDD exists}: `Reference TDD: docs/tdd/{filename}.md`
+- {If UX spec exists}: `Reference design spec: docs/ux/{filename}.md`
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
 - Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked". When a deliverable's write path matters, name the EXACT output path in the brief that authorizes the write — for two-phase audit→write agents, fold "you will later write to X" into the ORIGINAL brief rather than redirecting mid-flight (a path redirect on the async queue loses to the in-flight default; the output-path instance of the §Mid-cycle redirect-race rule).
@@ -127,7 +127,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 Fix-loops re-spawn `tdd-author-fix-{N}` with the continuity preamble. Large tasks → additional `tdd-author-{slug}` ephemerals for parallel siblings.
 
-Requirements: check existing ux Docket docs (type ux) + docs/spec/ for existing specs; author via `Skill(tdd, "<topic>")` (format authority for the tdd Docket-doc body); include concrete acceptance criteria, architecture decisions, implementation phases.
+Requirements: check docs/ux/ + docs/spec/ for existing specs; author via `Skill(tdd, "<topic>")` (format authority for docs/tdd/{slug}.md); include concrete acceptance criteria, architecture decisions, implementation phases.
 
 ### @staff-engineer (Code Review)
 
@@ -139,7 +139,7 @@ Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / fil
 
 Security-dominated work → author the security TDD. Mixed work → co-author Threat Model + Trust Boundaries + Security Considerations of `advisor`'s TDD with cross-review before vote.
 
-Security context: threat model assumptions (adversary/asset/residual-risk); baseline `docs/spec/security.md`; prior security ADRs as Docket docs (type adr); `{If lead TDD}: Lead TDD path — co-author the security sections; cross-review with advisor.`
+Security context: threat model assumptions (adversary/asset/residual-risk); baseline `docs/spec/security.md`; prior security ADRs in `docs/tdd/adr/`; `{If lead TDD}: Lead TDD path — co-author the security sections; cross-review with advisor.`
 
 Requirements: Author via `Skill(tdd, "<topic>")` if leading; else edit the lead TDD's security sections. Threat Model + Trust Boundary sections mandatory; Testing Strategy must specify abuse cases. Verify referenced controls/configs against the actual codebase before saving. Respond to peer SendMessage consults across all phases.
 
@@ -161,7 +161,7 @@ Requirements: explore via Read/Grep/Glob; create issues via `docket issue create
 
 Stays alive on UX-heavy tasks through verification for design-intent SendMessage. Peer design review + design-QA: default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled (`ux-advisor` + ephemeral `design-review-{N}` / `design-qa-{N}`) per Rule 8 conditions.
 
-Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for the ux Docket-doc body); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
+Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for docs/ux/{slug}.md); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
 
 ### @senior-engineer — name=`impl-{DOCKET-ID}` (ephemeral)
 
@@ -354,6 +354,27 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 
     team-lead decides — no AskUserQuestion required. When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch) and reconcile per the rules in step 14 (any Blocker blocks; findings merge with dedupe; Approve+Block → Block wins; contradictions surface via AskUserQuestion or vote; reviewers never address the operator directly; one consolidated verdict). Verification (step 15) follows the same default-1 rule with its own opt-up conditions documented in that step. On double-ephemeral failure (probe-once + respawn both abort) under the opted-up panel, fall back to the persistent advisor's verdict alone AND annotate the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)` — never silently drop to single-reviewer.
 9. **No code comments — team-wide.** Canonical policy across every code-writing role (`@senior-engineer`, `@sdet`, and anything spawned that emits code): no prose comments (`//`, `#`, `/* */`, JSDoc, docstring narration). Code must be readable on its own; if it requires a comment to be understood, the writer refactors (better names, smaller functions, clearer structure, expressive types) until it does not. **Allowed:** machine-required directives only — shebangs, load-bearing compiler/linter directives (`// @ts-expect-error`, `// eslint-disable-next-line <rule>`, `# type: ignore[...]`, Go build tags, Rust `#[allow(...)]` attributes), and SPDX/license headers when policy requires. Enforcement runs at the reviewer pass — `@staff-engineer` (general code review) and `@security-engineer` (security review) flag any prose comment as a Blocker / Critical finding. Overrides route to a Docket issue comment, never an inline `// OVERRIDE` marker.
+
+---
+
+## Docs-Path Taxonomy
+
+<!-- CANONICAL:DOCS-PATHS:BEGIN -->
+Maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`skills/*` and `.claude/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear.
+
+| Path | Writer | Readers | Owning skill/agent | Notes |
+|---|---|---|---|---|
+| `docs/spec/{name}.md` | `init-specs` (Seven Spec Files); `prd` (`{slug}.md`) | all 7 agents | `init-specs`, `prd` | Seven reserved Spec-File names owned by `init-specs`: `architecture.md`, `code-quality.md`, `operations.md`, `performance.md`, `review-strategy.md`, `security.md`, `testing.md`. Any other `docs/spec/{slug}.md` is a `prd`-authored PRD. Singular `spec` — NOT `specs`. |
+| `docs/tdd/{slug}.md` | `tdd` skill | staff/security/senior/sdet/pm/ux | `tdd` | Technical design records. |
+| `docs/tdd/adr/{NNNN}-{slug}.md` | `adr` skill | staff/security/senior/sdet/pm/ux | `adr` | Numbered ADRs nested under `docs/tdd/`. |
+| `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff consumes | `ux-spec` | User-facing design specs. |
+| `docs/changelog/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
+| `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
+
+**On-disk status ≠ orphan.** A path family with a declared writer in the table above is canonical whether or not it currently exists on disk. Skill-owned paths created on first write — currently `docs/spec/`, `docs/ux/`, and `docs/tdd/adr/` are not yet materialized — are NOT orphans; their absence on disk simply means no one has invoked the owning skill yet. A future drift-lint MUST treat "declared writer, absent on disk" as healthy, never as an orphan.
+
+**Known orphan (genuine):** `docs/audit/` exists on disk but is empty and has NO declared writer or reader in any agent or skill — it is the one true orphan. It is out of scope for this taxonomy (definitions-only; touching `docs/` is forbidden here). Follow-up mechanism: it needs an ADR to either wire a writer or `rmdir` it — do NOT wire new writes to it without that ADR.
+<!-- CANONICAL:DOCS-PATHS:END -->
 
 ---
 

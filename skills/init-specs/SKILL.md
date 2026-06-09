@@ -33,6 +33,13 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 
 ---
 
+<!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
+**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+- Writes: `docs/spec/` (Seven reserved Spec Files; via spawned agents).
+- Reads: codebase, `docs/tdd/`.
+- Always singular docs/spec/ — never docs/specs/.
+<!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
+
 ## Pre-flight
 
 > **Operator prompts:** All operator-facing `AskUserQuestion` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
@@ -64,7 +71,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by skills/prd so a prd doc is never authored under a baseline-spec name (those names stay markdown under docs/spec/, owned here; prd creates a Docket doc, not a file). Sibling doc-authoring skills (tdd, adr, ux-spec) create docs of a different type, so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
@@ -141,7 +148,7 @@ The operator's goal has been pre-verified. Re-verify alignment if your understan
 Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
 - {exploration_guidance}
-- Check for existing technical design documents that inform this spec via `docket doc list -T tdd` / `-T adr` → `docket doc show <DOC-id>` (an empty `docket doc list` is normal in early-stage repos)
+- Check docs/tdd/ for any existing technical design documents that inform this spec
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges

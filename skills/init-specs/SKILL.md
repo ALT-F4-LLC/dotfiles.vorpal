@@ -6,7 +6,6 @@ description: >
   ongoing maintenance is handled by @staff-engineer during TDD/review work, not by this skill.
   Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
 argument-hint: "[file...]"
-effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 

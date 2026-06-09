@@ -3,6 +3,21 @@
 ## 2026-06-09
 
 ### Summary
+Closed two prescriptive-trigger gaps for the Fable-5 mandate (Fable under-reaches without explicit "use when" conditions). Reasoning-echo audit clean; the three render-QA historical lessons confirmed already-encoded (NO-OP). Net +2 (255 lines).
+
+### Changes
+- Wired WebSearch/WebFetch into "Honest critique, no guessing" with a trigger for external-standard research (WCAG criteria, competitive precedent, platform/SDK conventions) — tools were declared but had no body-level use-when condition
+- Added "Invoke when..." dispatch leads to Responsibility 3 (Research) and Responsibility 4 (Design System Coherence) — converted flat capability menus into triggered dispatch
+
+### Dimensions Evaluated
+Prescriptive Capability Triggers (primary), Reasoning-Echo (clean), Consolidation & Trimming, Coherence
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: exit sequence inverted (old text explicitly forbade waiting for team-lead's request); §Shutdown Handling ephemeral + persistent lines aligned. Count unchanged (254).
 
 ### Changes

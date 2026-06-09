@@ -5,7 +5,6 @@ description: >
   orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
   Trigger: "create vote", "vote on this", "consensus vote", "run a vote".
 argument-hint: "<proposal>"
-effort: max
 allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 

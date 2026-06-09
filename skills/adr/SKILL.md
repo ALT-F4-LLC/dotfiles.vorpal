@@ -6,7 +6,6 @@ description: >
   below.
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
 argument-hint: "<topic>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 

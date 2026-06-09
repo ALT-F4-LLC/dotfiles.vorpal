@@ -8,7 +8,6 @@ description: >
   agent's context.
   Trigger: "verify acceptance criteria", "verify Docket issue", "produce verification report" — NOT app/PR runtime checks (that is the bundled runtime `verify` skill, the name this skill was renamed away from to avoid collision).
 argument-hint: "<scope>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 
@@ -140,7 +139,7 @@ If LIGHT cannot be issued (any failed test, any unmet or runtime-only criterion,
 
 Apply the full procedure. Scale evidence to risk.
 
-1. **Verify each acceptance criterion individually** — mark PASS, FAIL, or OUT-OF-SCOPE with specific evidence (test output, file/line reference, observed behavior). OUT-OF-SCOPE = verifiable only at runtime/render (live app behavior, rendered page/visual output, deployed-environment state). NEVER PASS a runtime-only criterion on a static proxy (file exists, ref present, build exit 0 — a green build can still ship broken renders); mark OUT-OF-SCOPE, name the runtime route (`design-qa` for `docs/ux` surfaces; bundled runtime `verify` otherwise), and leave dispatch to the calling agent.
+1. **Verify each acceptance criterion individually** — mark PASS, FAIL, or OUT-OF-SCOPE with specific evidence (test output, file/line reference, observed behavior). **When an AC names a literal command, run THAT command verbatim** — an equivalent or paraphrased command leaves the named path unverified, so a PASS on a substitute is a defect; cite the exact command in evidence. OUT-OF-SCOPE = verifiable only at runtime/render (live app behavior, rendered page/visual output, deployed-environment state). NEVER PASS a runtime-only criterion on a static proxy (file exists, ref present, build exit 0 — a green build can still ship broken renders); mark OUT-OF-SCOPE, name the runtime route (`design-qa` for `docs/ux` surfaces; bundled runtime `verify` otherwise), and leave dispatch to the calling agent.
 2. **Layer signals** — run the suite, trace key paths, diff output against baseline, verify generated artifacts are consumed correctly. Never rely on one signal.
 3. **Test beyond stated criteria** — empty/null/large input, invalid/malicious input, unavailable dependencies, boundary conditions. Surface findings under Additional Testing.
 4. **Analyze coverage** — what's tested, where, and which gaps are conscious decisions vs. real risk.

@@ -5,7 +5,6 @@ description: >
   context; the agent drafts the spec per the format authority below.
   Trigger: "create UX spec", "draft UX spec", "author design spec", "design spec for the new CLI", "produce a design spec", "create UX design".
 argument-hint: "<topic>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 

@@ -9,7 +9,6 @@ description: >
   skill was renamed away from "code-review" to avoid that collision.
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
 argument-hint: "<scope — PR#, branch, uncommitted, staged, or path [path …]>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 
@@ -167,7 +166,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 ### Common Discipline (both roles)
 
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
-- **Calibrate to value.** Comment on real risks and pattern violations. Skip stylistic preferences and what `cargo clippy` / `cargo audit` should catch automatically.
+- **Report every finding — do NOT self-filter.** Report each issue you find, including low-severity and uncertain ones, each tagged with the role's severity (classification, not suppression) and a confidence note. Filtering and ranking happen downstream (team-lead step-14 reconciliation / operator), never here — declining to report a found issue because it seems minor is a recall defect. A finding a linter (`cargo clippy` / `cargo audit`) would also catch is reported as a `Suggestion` (general) / `Info` (security), not omitted. The severity ladder ranks; it does not gate what you surface.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
 - **Epistemic discipline in the review body.** Every load-bearing finding cites evidence (file:line, command output, spec section). Banned phrases in findings/praise/recommendations: "clearly," "obviously," "should work," "definitely," "I'm sure," "100%," "guaranteed." Prefer "verified at {file:line}," "ran X — saw Y," "unverified — assumption," or qualify with what was checked vs. assumed. A confident wrong claim is worse than an honest "did not verify."

@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean; $-escape clean; recall-filter check: "drop it"/"Drop anything" are rubric-membership tests (non-findings), not severity suppression — Confidence ladder's Judgment rung already surfaces subjective calls. Calibration worked-examples are concrete decision anchors, kept.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary; recall-filter pattern checked and inapplicable.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2: code-review→code-review-verdict reference updates (12 occurrences).
 
 ### Changes

@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Mythos/Fable-5 cycle audit: NO changes. Historical overwrite-guard signal verified resolved in live file (reserved-name refusal step 4 L85 precedes collision dialog step 5 L87; Failure Mode table ordering matches). Reasoning-echo clean; $-escape clean.
+
+### Changes
+- None (NO-OP verdict, guard-ordering grep-cited against live file).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 One completeness fix (net −1): reordered Pre-flight so reserved-name refusal precedes the collision check. All 7 reserved files exist on disk after init-specs runs, so the old ordering routed reserved slugs into COLLISION_DIALOG's "Overwrite" option before the hard-refusal fired — contradicting the Failure Mode table's "(and slug is not reserved)" precedence.
 
 ### Changes

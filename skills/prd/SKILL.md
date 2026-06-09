@@ -5,7 +5,6 @@ description: >
   calling agent's context; the agent drafts the PRD per the format authority below.
   Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/", "write up requirements for", "scope this feature".
 argument-hint: "<topic>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 

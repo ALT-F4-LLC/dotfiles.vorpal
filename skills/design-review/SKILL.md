@@ -8,7 +8,6 @@ description: >
   No file written; the report is emitted into the agent's context.
   Trigger: "design review", "review UX spec", "peer design review", "review this design".
 argument-hint: "<scope>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 

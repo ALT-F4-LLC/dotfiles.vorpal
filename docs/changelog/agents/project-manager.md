@@ -3,6 +3,22 @@
 ## 2026-06-09
 
 ### Summary
+Fable-mandate pass: added prescriptive "use when" triggers for the two capability families granted in frontmatter but absent from the body (WebFetch/WebSearch, Monitor). Reasoning-echo audit clean; docket foot-guns already encoded (NO-OP). Net +1 (334 lines).
+
+### Changes
+- Added WebSearch/WebFetch usage trigger to the "No guessing" rule (external-fact verification only; never to rediscover repo facts)
+- Added a Monitor start-trigger reminder to Runtime Discipline (long external jobs gating a planning decision; TaskStop before idle)
+- [NO-OP, grep-cited] `-f` ≠ description body and never-trust-✔-Updated already encoded; `docket next` adoption declined (overlaps existing plan-derived ordering — Content Gate)
+
+### Dimensions Evaluated
+Prescriptive Capability Triggers (primary), Reasoning-Echo Audit (clean), Consolidation & Trimming (no cuts available)
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: planner lifecycle (final-tool-call emit → await on approval) and Monitor-watch paragraph replaced with await-lead semantics. Count unchanged (334).
 
 ### Changes

@@ -3,6 +3,23 @@
 ## 2026-06-09
 
 ### Summary
+Fable-5 calibration: added minor-choice autonomy directive and silence-default narration; trimmed redundant Technical Debt and Navigate-Ambiguity bullets to offset (net 0, 357 lines).
+
+### Changes
+- Added "Minor choices — pick, don't ask" to Decision-Making Framework (autonomy calibration; reserve asks for scope/irreversible/TDD-deviation)
+- Added "Silence-default narration" to Communication discipline (text only on finding/direction-change/blocker)
+- Collapsed 4-bullet Technical Debt section to one directive (redundant with code-philosophy #9, Discoveries step, System-Level Awareness)
+- Tightened "When scope is unreasonable" bullet (redundant with Core Principle 1 + scope-expansion trigger)
+
+### Dimensions Evaluated
+Role Realism, Actionability, Consolidation & Trimming (primary), Capability Growth, Spec Alignment
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 lead-initiated shutdown flip: completion contract step 5 + Monitor-watch paragraph replaced with await-lead semantics; lifecycle/scope/trigger lines aligned. Both rejection grounds and drain doctrine preserved. Count unchanged (358).
 
 ### Changes

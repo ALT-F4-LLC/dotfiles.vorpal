@@ -6,7 +6,6 @@ description: >
   Invoke after the spec is implemented (not for spec review — that's `design-review`).
   Trigger: "design QA", "run design QA", "verify implementation against UX spec", "QA the shipped UX".
 argument-hint: "<scope>"
-effort: max
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 

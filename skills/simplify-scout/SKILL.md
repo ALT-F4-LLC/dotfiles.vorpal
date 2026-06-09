@@ -8,7 +8,6 @@ description: >
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
 argument-hint: "<scope>"
-effort: max
 allowed-tools: ["Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 

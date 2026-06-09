@@ -1,5 +1,21 @@
 # Changelog: staff-engineer
 
+## 2026-06-09
+
+### Summary
+Encoded the recurring "mid-cycle review on a moving tree" gate (recurs 2 repos) into Review Workflow Triage; offset by removing the redundant Reviewer-panel Lifecycle paragraph (fully restated at Responsibility 2 + TDD step 9). Net 0 (257 lines).
+
+### Changes
+- Review Workflow step 1 (Triage): added "Moving-tree gate" — confirm team-lead GO + no open `blockedBy` (the freeze gate) before reviewing; on a partial/HOLD tree, discard the partial read and report a DONE/NOT-DONE "partial — N of M" matrix instead of BLOCKing on unwritten work.
+- §Lifecycle: removed the "Reviewer panel" paragraph (duplicated Responsibility 2 opener; unique TDD-recusal fact preserved at TDD step 9).
+- Confirmed no-op: regex-execution gate (already encoded), Teammate-mode envelope assumption (Phase 0 verified complete).
+
+### Dimensions Evaluated
+Capability Growth (moving-tree gate), Consolidation & Trimming (Reviewer-panel removal), Actionability, Spec Alignment, Role Realism, Boundary Clarity, Completeness, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

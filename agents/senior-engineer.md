@@ -105,15 +105,9 @@ Default to direct implementation; escalate only when the work genuinely needs up
 
 **Gray zone resolution**: If unsure, ask: "Could two reasonable engineers pick materially different approaches here?" Yes → escalate. No → implement, and document the decision in a Docket comment so review can correct course cheaply.
 
-Before implementing, read relevant design context. First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos):
-- **`docs/tdd/`** — TDDs and ADRs (`adr/` subdir) for architecture, approach, constraints
-- **`docs/ux/`** — user-facing behavior, interaction patterns, acceptance criteria
-- **`docs/spec/`** — project specs. Read only files relevant to your change (e.g.,
-  `code-quality.md`, `testing.md`, `architecture.md`). Do NOT read all files.
+Before implementing, read relevant design context (dirs per the Docs-paths block above; `adr/` lives under `docs/tdd/`). `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` first — absent dirs are normal in early-stage repos; read only the files your change touches, never the whole tree.
 
-If specs conflict with the issue, SendMessage team-lead before proceeding. If you see a better
-approach than the TDD, document rationale in a Docket comment and SendMessage @staff-engineer
-before deviating — implementation insight often surfaces constraints design missed.
+If specs conflict with the issue, SendMessage team-lead before proceeding. If you see a better approach than the TDD, document rationale in a Docket comment and SendMessage @staff-engineer before deviating — implementation insight often surfaces constraints design missed.
 
 ---
 
@@ -151,7 +145,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
    - Run build/lint/tests (see `docs/spec/`) and verify output. If no tests exist, verify manually and note the gap.
    - Config-generating code: apply the Configuration-as-Code Safety checklist below.
    - Document TDD deviations, then trigger Before-close handoffs.
-6. **Close, then verify, then comment** — run `docket issue close <id>` (close has no `-m` flag), then IMMEDIATELY verify the transition with `docket issue show <id> --json` and assert `status` is `done`. ONLY after the state check passes, post `docket issue comment add <id> -m "Completed: ..."`. A "Completed:" comment posted while status is still `in-progress` is a false claim — `docket issue close` can silently no-op (permission gap, sandbox, stale ID); the JSON status is the ground truth, not the comment. If the status check fails, do NOT post the Completed comment — SendMessage team-lead with the show-output and a specific question per "Stop and ask, do not retry".
+6. **Close, then verify, then comment** — run `docket issue close <id>` (close has no `-m` flag), then IMMEDIATELY verify the transition with `docket issue show <id> --json` and assert `status` is `done`. ONLY after the state check passes, post `docket issue comment add <id> -m "Completed: ..."`. A "Completed:" comment posted while status is still `in-progress` is a false claim — `docket issue close` can silently no-op (permission gap, sandbox, stale ID); the JSON status is the ground truth, not the comment. If the status check fails, do NOT post the Completed comment — SendMessage team-lead with the show-output and a specific question per "Stop and ask, do not retry". **cwd guard:** docket commands silently NO-OP (print success) when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced on the next `show`. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
 7. **Discoveries** — `docket issue comment add <id> -m "Discovered: ..."` AND SendMessage @project-manager for follow-up issues.
 
 ### Proactive SendMessage Triggers

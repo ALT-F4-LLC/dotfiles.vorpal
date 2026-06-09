@@ -1,5 +1,33 @@
 # Changelog: senior-engineer
 
+## 2026-06-09
+
+### Summary
+Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to Execution Workflow step 6 (within the existing close-noop line; line count unchanged at 360). Encodes recurring 4/5-repo docket-clobber/stale-reader theme A — no prior cwd-failure-mode coverage.
+
+### Changes
+- Step 6: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at` advanced; a stale read is not a write-failure (reconcile by timestamp, never force-write).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Consolidation & Trimming, Rename
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Collapsed the triplicated docs-exploration block into the canonical Docs-paths block + rubric (net −6; 366→360). Historical-memory focus items (git-add-under-no-commit, state-divergence authority) confirmed already-encoded — no additions. The dead-AskUserQuestion-path finding was DEFERRED to Phase 2 as a fleet-wide parity-bound question (reviewers disagree on whether "Standalone" is reachable).
+
+### Changes
+- §Implement: collapsed restated per-dir docs descriptions (duplicated the CANONICAL Docs-paths block + Implement-Directly rubric) into one line; kept ls-guard, `adr/` location, and conflict/deviation escalation.
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Spec Alignment, Completeness, Boundary Clarity, Role Realism, Actionability, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

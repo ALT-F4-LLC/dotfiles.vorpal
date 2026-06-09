@@ -1,5 +1,19 @@
 # Changelog: security-engineer
 
+## 2026-06-09
+
+### Summary
+No changes applied. Self-review proposed encoding the docket-cwd-no-op + post-write `updated_at` discipline, but it was elevated to a Phase 2 fleet-wide decision (cross-cutting theme A, affects all docket-mutating agents). Phase 2 scoped the canonical guard to the heavy issue-mutators (senior-engineer, project-manager, sdet) and deliberately excluded security-engineer — its docket surface is vote-only (low cwd-no-op exposure), not worth the line.
+
+### Changes
+- None. The proposed docket-write-discipline guard was applied to senior-engineer/project-manager/sdet instead; security-engineer's vote-only exposure scoped it out.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Actionability, Capability Growth & Cross-Communication, Spec Alignment, Role Realism, Boundary Clarity, Completeness, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

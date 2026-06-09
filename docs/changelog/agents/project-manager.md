@@ -3,6 +3,37 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: planner lifecycle (final-tool-call emit → await on approval) and Monitor-watch paragraph replaced with await-lead semantics. Count unchanged (334).
+
+### Changes
+- §Operating Context planner lifecycle flipped (FIX 30); Auto-shutdown → "Idle after plan delivery" (FIX 31). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Encoded $TMPDIR scratch-file discipline into the §8 body-write guard; corrected CLI-default drift verified against `issue create --help` (priority default `none`, create status `backlog` — §7 now mandates explicit `-s todo`); offset by three redundancy trims. Net 0 (334→334).
+
+### Changes
+- §8: stage scratch body files under `$TMPDIR` only — sandbox-denied `/tmp`/`$CLAUDE_JOB_DIR/tmp` writes are the root cause of the stale-body "✔ Updated" failure (fem-kubernetes pitfall).
+- Docket Reference: defaults corrected — status `backlog`, priority `none`, type `task` (file wrongly marked `medium` as priority default).
+- §7: explicit `-s todo` on create + bash example updated — backlog-default issues are invisible to executor `-s todo` queries.
+- Three within-line trims: duplicate CLOSED-set enumeration (§Operating Context), third planner-ephemerality restatement (§Shutdown), Docket-only restatement (§Rules).
+
+### Dimensions Evaluated
+Consolidation & Trimming (3 offsets), Capability Growth ($TMPDIR), Spec Alignment (CLI defaults), Actionability (-s todo); Role Realism, Boundary Clarity, Completeness, Rename — sound.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 fleet decision: extended the §8 `-d`-write success-line-distrust guard with the docket cwd-outside-repo silent-no-op + reconcile-by-`updated_at` discipline (within the existing line; count unchanged at 334). PM is the heaviest issue-mutator — recurring theme A.
 
 ### Changes

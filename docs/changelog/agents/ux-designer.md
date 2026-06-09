@@ -3,6 +3,36 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: exit sequence inverted (old text explicitly forbade waiting for team-lead's request); §Shutdown Handling ephemeral + persistent lines aligned. Count unchanged (254).
+
+### Changes
+- §Ephemeral roles exit sequence: report → await → respond (FIX 27).
+- §Shutdown Handling: "self-shutdown after verdict" → report-then-await; ux-advisor never self-initiates (FIX 28-29). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Consolidation-only pass (net -2; 256 → 254). Both Phase 0 audit focus areas (render-to-image QA gate; rendered-effect spec rule) confirmed already encoded 2026-06-05 — NO-OPs. Removed R5's Fix-loop continuity paragraph (zero unique facts vs §Ephemeral roles canonical block; R2's counterpart kept for its unique spec-author fact) and deduped the DEGRADED fallback to a §Reviewer Panel pointer, retaining the step-14 rule-6 cite.
+
+### Changes
+- §Responsibility 5 Fix-loop continuity paragraph removed — full duplicate of §Ephemeral `@ux-designer` roles.
+- §Ephemeral roles DEGRADED clause → pointer to §Reviewer Panel; team-lead.md step-14 reconciliation rule-6 cite preserved.
+
+### Dimensions Evaluated
+Consolidation & Trimming (both changes), Completeness + Spec Alignment (focus areas already encoded; cross-refs resolve post-d1eb15e), Role Realism, Actionability, Boundary Clarity, Capability Growth (frontmatter recs already adopted), Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 One within-line consolidation (net 0; 256 lines). §"What to save here" (L244) restated the memory save-category list already enumerated at §Persistent memory; trimmed to a pointer, retaining only the symptom → root cause → resolution form directive. All Phase 0 historical lessons (render-to-image QA gate, color+text fallback, embedded-media render check, AskUserQuestion standalone-gating) confirmed already encoded.
 
 ### Changes

@@ -3,6 +3,38 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip (operator-decided): ephemerals report then AWAIT team-lead's `shutdown_request`; sweep = team-lead SENDS on delivered report. Added R6 stale-own-reader extension and canonical Relayed-authority sentence (Rule 1). Net +1 (481→482).
+
+### Changes
+- Dispatch hygiene, impl template, step 13 sweep ×2, step 16, §Stall shutdown-protocol paragraph, Rule 7, stall-detection guard: self-emit → await-lead (FIX 1-8).
+- CANONICAL:PITFALLS lead sentence reworded family-wide, byte-parity preserved (FIX 32).
+- R6: lagging-reader STOP-re-reading extension (FIX 33). Rule 1: relayed-authority canonical sentence (FIX 34).
+
+### Dimensions Evaluated
+Spec Alignment (agent-teams docs), Coherence (lockstep across 7), Completeness, Boundary Clarity.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Updated the frontmatter skills/mcpServers caveat to cite the officially documented teammate-envelope rule (tools+model honored, body appended). Deduplicated the triple-stated DEGRADED single-reviewer fallback, folding the surviving-sister-verifier clause into step 14 rule 6. Encoded 1:1 edit-to-finding traceability for self-applied batches and aligned the Mechanical-fix shortcut with the default single-reviewer panel. Net -2 (483 → 481).
+
+### Changes
+- Replaced "v2.1.117 docs" inference with the documented envelope rule: teammates honor only `tools`+`model`, body is appended, `skills`/`mcpServers` not applied (verified against code.claude.com agent-teams docs).
+- Removed the §Stall & Crash Recovery "Double-ephemeral failure" paragraph (duplicate of step 14 rule 6 + Rule 8); preserved "(or surviving sister verifier)" in rule 6.
+- Mechanical-fix shortcut: "BOTH reviewers" → "ALL dispatched reviewers" (default panel is 1); added 1:1 self-applied-edit-to-finding traceability (audit: fabricated edit in an 8-edit batch).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Spec Alignment, Actionability, Completeness, Role Realism, Boundary Clarity, Capability Growth, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 evolve-skills cycle reference update: code-review skill renamed → code-review-verdict (bundled-skill collision, operator-approved); 7 references updated (banner example, project-registration list, 4 spawn-template invocations, R2 example).
 
 ### Changes

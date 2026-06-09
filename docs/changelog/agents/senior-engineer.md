@@ -3,6 +3,39 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: completion contract step 5 + Monitor-watch paragraph replaced with await-lead semantics; lifecycle/scope/trigger lines aligned. Both rejection grounds and drain doctrine preserved. Count unchanged (358).
+
+### Changes
+- Completion contract intro + step 5: deliver report → idle awaiting `shutdown_request` (FIX 12-13).
+- Auto-shutdown Monitor watch → "Idle after final report" (no self-emit, no ~60s re-emit) (FIX 15).
+- Lifecycle, closed-loop scope, @sdet-APPROVE trigger, rejection-ground-1 tail aligned (FIX 9-11, 14). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence, Role Realism.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Audit-driven hardening: mv/rename added to Read-before-Edit gate (13 gate-trips this window), git-add-to-self-verify prohibition made explicit with failure-mode rationale (recurred in two repos), edit-site location by grep not issue line anchors; removed duplicated shutdown-routing line. Net -2 (360→358).
+
+### Changes
+- Read-before-Edit: after `mv`/rename the NEW path is un-Read — Read before first Edit.
+- Shared-tree diff scoping: self-verify via plain working-tree diff ONLY; never stage-then-inspect (staged changes vanish from plain `git diff`, corrupting spot-check).
+- Execution Workflow step 4: locate edit sites by grep/content match, never issue line anchors (anchors drift after sibling phases).
+- Removed duplicate shutdown-routing line in §Shutdown Handling (stated at Communication-discipline bullet).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Actionability, Completeness, Role Realism, Boundary Clarity, Spec Alignment, Capability Growth & Cross-Communication, Rename. State-divergence rejection ground retained — second positive exemplar (impl-prompts).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 1 reference updated (Hard Gates enforcement mention in code-philosophy through-line).
 
 ### Changes

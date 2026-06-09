@@ -1,5 +1,22 @@
 # Changelog: team-lead
 
+## 2026-06-09
+
+### Summary
+TRIM cycle: brought team-lead.md from 504 (over budget) to 483 by consolidating duplicated prose. No rule semantics changed; sibling files reference the R-rule bodies via pointer, not verbatim copy, so the R-rule trims orphan nothing (verified family-wide in Phase 2). Net −21.
+
+### Changes
+- Phase 1: collapsed the two async-shutdown paragraphs (shutdown-protocol + post-final-report-idle) into one.
+- Phase 1: deduped "return verdict / never route directly" out of both review templates into the common context block (Rule 1 already mandates it).
+- Phase 2: compacted R1 batched-calls+escape-hatch, R5 self-summary body (7-bullet block → 3 bullets), and R6 banned-phrase bullet — semantics preserved, padding removed.
+- Confirmed already-mitigated (no design change): the artifacts.vorpal shutdown-loop lesson; AskUserQuestion usage is correct (team-lead runs as MAIN thread).
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary — under 500), Role Realism, Boundary Clarity, Spec Alignment, Completeness, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

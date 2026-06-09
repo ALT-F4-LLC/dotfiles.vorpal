@@ -118,7 +118,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 - {If UX spec exists}: `Reference design spec: docs/ux/{filename}.md`
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
-- Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked". When a deliverable's write path matters, name the EXACT output path in the brief that authorizes the write — for two-phase audit→write agents, fold "you will later write to X" into the ORIGINAL brief rather than redirecting mid-flight (a path redirect on the async queue loses to the in-flight default; the output-path instance of the §Mid-cycle redirect-race rule).
+- Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked". When a deliverable's write path matters, name the EXACT output path in the brief that authorizes the write — for two-phase audit→write agents, fold "you will later write to X" into the ORIGINAL brief rather than redirecting mid-flight (a path redirect on the async queue loses to the in-flight default; the output-path instance of the §Mid-cycle redirect-race rule). All reviewers/verifiers return verdict + findings to team-lead and NEVER route blockers/Critical/High directly to a peer (Rule 1).
 - Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review, verify-ac, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
@@ -133,7 +133,7 @@ Requirements: check docs/ux/ + docs/spec/ for existing specs; author via `Skill(
 
 Doubled reviewers (Rule 8): persistent `advisor` (SendMessage; NOT fresh spawn) + ephemeral `reviewer-2` (`Agent()`). SAME turn. Context: common block.
 
-Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / file paths) — format authority for the 6-dimension general review. If skill aborts `empty diff`, STOP. Return verdict + findings to team-lead; never route blockers directly to `@senior-engineer`.
+Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / file paths) — format authority for the 6-dimension general review. If skill aborts `empty diff`, STOP.
 
 ### @security-engineer (Security TDD or Co-Author) — name=`security-advisor` (persistent)
 
@@ -147,7 +147,7 @@ Requirements: Author via `Skill(tdd, "<topic>")` if leading; else edit the lead 
 
 Doubled security reviewers (Rule 8): persistent `security-advisor` (SendMessage) + ephemeral `security-reviewer-2` (`Agent()`). SAME turn as general track's pair (4 parallel on security-sensitive work). Context: common block + security TDD ref (or lead TDD security sections); security verdict binds for security findings.
 
-Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / security-touched paths) — format authority for the 9-dimension security playbook. If skill emits `LGTM (security) - no security-relevant changes`, STOP. Return verdict + findings to team-lead; never route Critical/High findings directly.
+Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / security-touched paths) — format authority for the 9-dimension security playbook. If skill emits `LGTM (security) - no security-relevant changes`, STOP.
 
 ### @project-manager — name=`planner` (ephemeral)
 
@@ -292,9 +292,7 @@ After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`, 
 
 Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle subsections below).
 
-**Shutdown protocol — async by design.** `shutdown_request` is NOT synchronous. The teammate may be mid-turn processing prior messages when the request lands; exit is confirmed ONLY when the system emits `teammate_terminated`. Until then, the prior ephemeral is alive and may legitimately reject shutdown citing on-disk state. Do NOT spawn a fresh same-role ephemeral (e.g., `impl-{ID}-fix-{N}`) until `teammate_terminated` lands — same-turn shutdown+respawn is the classic race producing two live editors on the same files.
-
-**Post-final-report idle is shutdown-pending, not a stall (expected behavior).** An ephemeral briefed to "emit `shutdown_request` as the FINAL tool call" routinely delivers its final report and then emits `TeammateIdle` (`idle_notification`) BEFORE producing a `shutdown_response` — its final-report turn ends and goes idle on the same async queue that carries the team-lead's `shutdown_request`, so the request lands after the teammate is already idle and is not processed until a new message wakes it. This is normal async behavior, NOT a crash or stall: send `shutdown_request` ONCE; the now-idle ephemeral auto-resumes on that message and approves it on wake. Do NOT escalate, do NOT treat as a crash, do NOT respawn, and do NOT double-send beyond the one request (a superseding request crosses the prior in the async queue per the redirect-race rule below). The one extra team-lead-initiated round-trip is inherent to the async model — it cannot be eliminated by making self-emit "more reliable," and chasing that risks the same-turn shutdown+respawn race above.
+**Shutdown protocol — async by design.** `shutdown_request` is NOT synchronous; exit is confirmed ONLY by `teammate_terminated`. Until then the ephemeral is alive and may legitimately reject shutdown citing on-disk state. An ephemeral that "emits `shutdown_request` as its FINAL tool call" routinely goes `TeammateIdle` BEFORE the request lands — its final-report turn ends on the same async queue, so the request is processed only when a new message wakes it. This is shutdown-pending, NOT a stall or crash. Send `shutdown_request` ONCE and wait; the idle ephemeral auto-resumes and approves on wake. Do NOT escalate, respawn, or double-send (a superseding request crosses the prior per the redirect-race rule), and do NOT spawn a fresh same-role ephemeral (e.g. `impl-{ID}-fix-{N}`) until `teammate_terminated` lands — same-turn shutdown+respawn is the classic two-live-editors race.
 
 **Pre-shutdown state-verification gate (mandatory).** Before composing any `shutdown_request` whose reasoning references specific scope/option/completion state:
 1. Run `git diff --stat` (and `git diff -- <paths>` for the files the teammate edited) THIS turn.
@@ -405,11 +403,8 @@ Read costs ~2,000 lines of context. Apply these defaults:
   a section. Read the whole file ONLY when you must reason about whole-file structure.
 - Bash dumps: use `wc -l`, `head`, `tail`, or `awk` summary patterns. Do NOT pipe raw `cat`
   into your context. Pipe through `jq` / `grep` to filter BEFORE the result lands.
-- Batched calls: when 3+ independent reads/greps are needed, dispatch them in ONE assistant
-  turn. The harness runs parallel tool calls concurrently.
-- Escape hatch: when the bulk read IS the load-bearing evidence (full file body for code review,
-  full diff for verification), the full read is correct — the rule bans speculative bulk reads,
-  not load-bearing ones.
+- Batched calls: dispatch 3+ independent reads/greps in ONE turn (harness runs them concurrently).
+- Escape hatch: when the bulk read IS the load-bearing evidence (full file for review, full diff for verification), the full read is correct — the rule bans speculative bulk reads, not load-bearing ones.
 
 ### R2 — Skill Invocation Restraint
 
@@ -455,22 +450,9 @@ artifact for that AC unless evidence of regression surfaces.
 R5. **Persistent-Advisor Self-Summary** (applies to `advisor`, `security-advisor`,
 `ux-advisor` ONLY).
 
-- Between phases your accumulated context grows monotonically (cross-phase decisions, peer
-  consults, prior verdicts). When you detect saturation symptoms (replies shortening, losing
-  track of decisions, repeated re-reads of the same doc), emit a self-summary turn: structure
-  the prior phase's load-bearing decisions into a brief outline you can re-anchor against.
-- **BEFORE dropping any transient state from your working set**, SendMessage team-lead with
-  the structured summary outline and await ack. If team-lead does not ack within one turn,
-  HOLD context and resume from the outline OR escalate the stall per Crash Recovery.
-- Memory writes (`.claude/agent-memory/{role}/pitfalls.md`) MUST land BEFORE the drop, not
-  after. The drop is irreversible within your session.
-- The self-summary is NOT a substitute for the saturation self-monitor (Communication
-  Discipline rule 3) — when you can no longer self-summarize crisply, SendMessage team-lead
-  to respawn with a continuity preamble.
-- Trigger: when accumulated context feels heavy AND a new phase is about to start. Tunable
-  per cycle complexity. Do NOT self-summarize between every turn; that is churn.
-- Escape hatch: never drop content that is the canonical decision-record for a cross-cycle
-  call. When in doubt about whether content is load-bearing, KEEP it and surface to team-lead.
+- On saturation symptoms (replies shortening, losing track of decisions, repeated re-reads), emit a self-summary turn: outline the prior phase's load-bearing decisions to re-anchor against.
+- **BEFORE dropping any transient state**, SendMessage team-lead the outline and await ack; no ack within one turn → HOLD context and resume from the outline OR escalate the stall. Memory writes (`.claude/agent-memory/{role}/pitfalls.md`) land BEFORE the drop — it is irreversible within-session. When you can no longer self-summarize crisply, SendMessage team-lead to respawn with a continuity preamble.
+- Trigger when context feels heavy AND a new phase starts (not between every turn — that is churn). Escape hatch: never drop a cross-cycle canonical decision-record; when unsure if content is load-bearing, KEEP it and surface to team-lead.
 
 **Per-advisor trigger variants** (appended in each advisor file): `advisor` = 3+ TDD revisions OR >50 turns; `security-advisor` = each security-review verdict OR after critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict OR 3+ design-review rounds on the same spec.
 
@@ -482,10 +464,7 @@ anxiety is context bloat with no evidence value.
 
 - Re-read ONLY on actual cause: file edited since last Read, operator-flagged divergence, or
   explicit reviewer concern pointing at the specific file.
-- Banned-phrase extension (complements Epistemic Discipline / team-lead Rule 6): "let me also
-  check", "to be safe I'll Read", "let me confirm by Read" — these signal anxiety-driven
-  bloat. Reading to verify a specific load-bearing claim is fine; Reading because you "want
-  to be sure" is not.
+- Banned-phrase extension (complements Rule 6): "let me also check", "to be safe I'll Read", "let me confirm by Read" — anxiety-driven bloat. Verifying a specific load-bearing claim is fine; Reading "to be sure" is not.
 - Escape hatch: after a long stretch of work or compaction, re-anchoring on the original brief
   is correct. The rule bans defensive re-checks of facts already in your turn context, not
   legitimate re-anchoring of context that has been lost.

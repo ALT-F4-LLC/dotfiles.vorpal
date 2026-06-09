@@ -1,5 +1,33 @@
 # Changelog: sdet
 
+## 2026-06-09
+
+### Summary
+Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to comm rule 7 (within the existing claim-convention line; count unchanged at 348). Covers sdet's `reopen`/`comment add`/test-infra `move` writes — recurring theme A.
+
+### Changes
+- Comm rule 7: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at`; a stale read is not a write-failure (reconcile by timestamp, never force-write).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+One Consolidation & Trimming dedup (line count unchanged at 348; fewer words). §Verification Output's trailing closeout recap re-stated the close/comment → SendMessage → shutdown chain already owned by comm rule 6, Lifecycle, and Execution Workflow step 5 — collapsed to a single back-reference chain. AskUserQuestion-on-spawn flag investigated and dismissed (correctly gated behind "Standalone:"); flagged to Phase 2 as a parity-bound fleet pattern.
+
+### Changes
+- §Verification Output: collapse duplicated closeout-sequence enumeration to a back-reference chain (targets verified: comm rule 6, §Execution Workflow step 5, §Inter-Agent Communication matrix).
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Spec Alignment, Boundary Clarity, Role Realism, Actionability, Completeness, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

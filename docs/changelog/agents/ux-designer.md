@@ -1,5 +1,19 @@
 # Changelog: ux-designer
 
+## 2026-06-09
+
+### Summary
+One within-line consolidation (net 0; 256 lines). §"What to save here" (L244) restated the memory save-category list already enumerated at §Persistent memory; trimmed to a pointer, retaining only the symptom → root cause → resolution form directive. All Phase 0 historical lessons (render-to-image QA gate, color+text fallback, embedded-media render check, AskUserQuestion standalone-gating) confirmed already encoded.
+
+### Changes
+- §What to save here (L244): duplicated save-category list → pointer to §Persistent memory list; retains symptom → root cause → resolution form. Verified outside the CANONICAL:PITFALLS markers (editable, not parity-bound).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Completeness, Spec Alignment, Role Realism, Boundary Clarity, Actionability, Capability Growth, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

@@ -1,5 +1,35 @@
 # Changelog: project-manager
 
+## 2026-06-09
+
+### Summary
+Phase 2 fleet decision: extended the §8 `-d`-write success-line-distrust guard with the docket cwd-outside-repo silent-no-op + reconcile-by-`updated_at` discipline (within the existing line; count unchanged at 334). PM is the heaviest issue-mutator — recurring theme A.
+
+### Changes
+- §8: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at`; a stale read is not a write-failure (reconcile by timestamp, never force-write).
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Encoded two cross-project memory lessons as behavioral guards (trust-no-success-line after `-d` writes; enumerated-list completeness count+map), offset by compressing the triple-stated ephemeral re-spawn prose. Net +4 (330→334).
+
+### Changes
+- §8 Write Descriptions: added "never trust the success line after `issue create/edit -d`" — a sandbox-denied scratch write prints `✔ Updated` with stale/empty body; re-`show --json` + grep a marker before treating ready.
+- §10 Validate and Finish: added enumerated-list completeness guard (created-child-count == N + source→ID map) against the silent-drop "done with N−1" failure class.
+- §Operating Context: compressed the third restatement of the spawn→preamble re-plan lifecycle.
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Completeness, Boundary Clarity, Role Realism, Capability Growth, Spec Alignment, Rename
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

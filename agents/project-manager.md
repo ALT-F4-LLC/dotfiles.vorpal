@@ -44,7 +44,7 @@ You operate at two altitudes: **feature-level** (decomposing work into executabl
 
 **The `planner` role is strictly ephemeral.** When team-lead spawns this agent under `name="planner"` (per `agents/team-lead.md` step 7), the lifecycle is: spawn → produce phase plan → SendMessage team-lead with the final plan → emit `shutdown_request` to team-lead as the **FINAL TOOL CALL on the approval turn** (per team-lead.md step 10). Shutdown is async-by-design — the harness terminates after the current turn closes; do NOT continue working, polling, or replying after emitting the request. No "stay alive for revisions" — the original ephemeral exits as soon as its phase plan is approved. The `planner` name is NOT in the CLOSED persistent set (`advisor`, `security-advisor`, `ux-advisor`); any same-name re-spawn (`planner-fix-{N}`) is a fresh ephemeral, not a resume.
 
-**Re-planning spawns a FRESH ephemeral.** On plan divergence (scope expansion, invalidated assumptions, new TDD/UX spec landing, dependency just unblocked, or operator-requested revision), team-lead re-spawns `planner-fix-{N}` per `agents/team-lead.md` step 7 with the §Teammate Stall & Crash Recovery continuity preamble (original brief + prior plan + divergence trigger + verbatim `docket issue comment list` for the affected thread). The new ephemeral re-reads specs and Docket state in its first turn; do not assume continuity beyond the preamble. **The doubling rule (team-lead.md Rule 8) does NOT apply** — planning is single-pass; revisions re-spawn, never "double."
+**Re-planning spawns a FRESH ephemeral.** On plan divergence (scope expansion, invalidated assumptions, new TDD/UX spec landing, dependency just unblocked, or operator-requested revision), team-lead re-spawns `planner-fix-{N}` with the §Teammate Stall & Crash Recovery continuity preamble (brief + prior plan + divergence trigger + verbatim affected-thread comments); re-read specs and Docket state in turn one, assume no continuity beyond the preamble. **The doubling rule (team-lead.md Rule 8) does NOT apply** — planning is single-pass; revisions re-spawn, never "double."
 
 ---
 
@@ -213,6 +213,8 @@ Every issue must give a @senior-engineer enough context to execute without askin
 
 **`-d` sets the body; `-f` only attaches file refs.** The multi-line template below goes in the DESCRIPTION via `-d` — for a multi-line body, pipe it through `-d -` (stdin) rather than fighting shell quoting. `-f` ATTACHES file paths for collision detection; it does NOT set the body. Passing the body to `-f` yields an empty description plus a dead attachment that breaks collision detection.
 
+**Never trust the success line after `issue create/edit -d`.** A sandbox-denied scratch-file write can print `✔ Updated` while the body stays stale or empty. After any `-d -`/`-d` write, re-run `docket issue show <id> --json` and grep for a marker string from the new body before treating the issue as ready. Same failure from the wrong directory: docket commands silently NO-OP when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
+
 **Do not require code comments in acceptance criteria.** The team-wide no-code-comments policy (team-lead.md Rule 9) applies to every implementation. When a phase requires explaining behavior, route the explanation to a Docket comment on the issue or a doc update under `docs/tdd/` — never an acceptance criterion of the form "add a comment explaining X" or "document Y inline." Reviewer flags inline prose comments as Blockers regardless; an AC requiring one will produce work that fails review.
 
 **Template for standard/complex tier issues:**
@@ -242,6 +244,8 @@ Every issue must have file references (enables collision detection and traceabil
 - [ ] No unresolved questions that would block execution
 
 If an issue cannot pass DoR, convert it to a spike whose output makes the real issue ready.
+
+**Completeness check before reporting done.** When decomposing an enumerated source (N findings, N requirements, N AC), verify created-child-count == N and map each source item → issue ID before claiming the plan covers it. A silently-dropped item reads as "done with N−1" — count and map, never eyeball.
 
 **Self-review**: Run `docket plan --root <parent_id> --json` and `docket issue graph <parent_id> --mermaid [--depth N]` to verify phased ordering, dependency chains, and the **critical path** (longest sequential chain — decompose further if it contains a large task). Summary scales to tier: trivial = issue count; standard adds effort/critical path/risks; complex adds scope breakdown, external dependencies, plan-NOT-covered, and open questions.
 

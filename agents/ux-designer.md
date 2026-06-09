@@ -241,7 +241,7 @@ Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec 
 <!-- CANONICAL:PITFALLS:BEGIN -->
 **Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles but is never cleared, so prior entries persist across cycles — ALWAYS APPEND a new entry rather than overwriting, and avoid duplicating lessons already recorded.
 <!-- CANONICAL:PITFALLS:END -->
-**What to save here:** recurring design pitfalls — usability anti-patterns, cross-surface precedent decisions, rejected design alternatives, operator flag/terminology preferences.
+**What to save here:** the recurring design pitfalls from the §Persistent memory category list above, in symptom → root cause → resolution form.
 
 ## Runtime Discipline
 

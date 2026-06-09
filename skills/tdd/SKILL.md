@@ -128,8 +128,7 @@ malformed frontmatter.
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
    parent PRD or UX spec identified in Pre-flight step 6. Read existing TDDs in
-   `docs/tdd/` that touch adjacent areas — the new TDD should reference, not
-   contradict, prior accepted work.
+   `docs/tdd/` touching adjacent areas — reference, not contradict, prior accepted work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required
@@ -137,10 +136,16 @@ malformed frontmatter.
    marked "may be N/A" (Data Models §5, API Contracts §6) may contain a single
    `N/A.` paragraph with a one-line justification. The chosen alternative in §3
    must match the Architecture & System Design section (§4).
-4. **Mermaid diagrams**: draft at least one Mermaid block appropriate to the
-   design — component map, sequence, state, or data flow. Validation §5 is
-   the gate; Failure Modes routes pure-policy decisions to ADR.
-5. **Proceed to Validation Before Save** — that step is the single source of
+4. **Mermaid diagrams**: draft at least one Mermaid block (component map, sequence,
+   state, or data flow). Validation §5 is the gate.
+5. **Verify embedded technical assertions before stating them as fact.** Any
+   concrete claim the TDD commits to — a code/config/command/SQL snippet, a
+   cross-platform or cross-engine compatibility claim, an Implementation-Phase
+   grep AC, or a reference to existing modules/APIs/test infrastructure the design
+   relies on — MUST be checked against its actual target (run it, Grep/Read the
+   target, or confirm it exists) before it is written as settled. State unverified
+   claims as assumptions, not facts.
+6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).
 

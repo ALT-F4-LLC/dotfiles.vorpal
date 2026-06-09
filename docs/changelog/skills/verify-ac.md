@@ -1,5 +1,19 @@
 # Changelog: verify-ac
 
+## 2026-06-08
+
+### Summary
+Phase 1 no-change verdict (274 lines). COUPLING marker byte-identical across the 4-skill family; all docket CLI usage (reopen / comment add -m / comment list) verified live and matches sdet.md closeout contracts; static-vs-runtime boundary confirmed sharp (bundled `verify` collision disambiguator accurate). Audit-grounded Pre-flight additions (§4a/§7a/§8) all pass the Content Gate — nothing to trim.
+
+### Changes
+- None. Noted (no edit): the 2026-06-04/06-05 entries' "draft|approved" narrative is stale — live body correctly gates §7 on `status: accepted`, matching skills/tdd/SKILL.md canonical lifecycle. Editing to `approved` would break tdd parity; changelog is historical, left as-is.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — zero net, no trimmable additions), Coherence (COUPLING/BANNER/docket/sdet.md parity verified).
+
+### Rename
+No rename.
+
 ## 2026-06-05
 
 ### Summary

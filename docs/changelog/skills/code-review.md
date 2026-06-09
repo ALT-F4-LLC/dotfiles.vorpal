@@ -1,5 +1,19 @@
 # Changelog: code-review
 
+## 2026-06-08
+
+### Summary
+Phase 1 no-change verdict (highest-traffic skill, 408/500 lines, at local optimum). Verified the partial-tree/scope-timing guard already exists (Pre-flight step 5) — the exact cross-project pitfall flagged this cycle, confirmed NO-OP. COUPLING marker byte-identical across the 4 leaf siblings; G1-G5→senior-engineer principle map resolves.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no net-negative edit without removing load-bearing content), Completeness (partial-tree guard present), Coherence (family parity verified).
+
+### Rename
+No rename. Bundled `/code-review` name-collision surfaced to Phase 2 (not self-acted; stability has compounding value).
+
 ## 2026-06-05
 
 ### Summary

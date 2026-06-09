@@ -250,7 +250,7 @@ After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-skill grep is mandatory — never load wholesale (~/.claude/projects/ is ~1GB). The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`.
+- Per-skill grep is mandatory — never load wholesale (~/.claude/projects/ is ~1GB).
 - Do not cluster or rank across skills. Stay per-skill.
 ```
 

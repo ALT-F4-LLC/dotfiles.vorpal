@@ -110,8 +110,6 @@ Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence pa
 
 Spawn THREE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
 
-This audit is per-agent and feeds Phase 1 reviewers directly — it does not cluster or rank friction across agents.
-
 ### Phase 1: Review & Improve (parallel)
 
 Spawn one teammate per target using the matching agent type per the Phase 1 template (see substitute block below). **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
@@ -245,7 +243,7 @@ After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB). The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`.
+- Per-agent grep is mandatory — never load wholesale (`~/.claude/projects/` is ~1GB).
 - Do not cluster or rank across agents. Stay per-agent.
 ```
 

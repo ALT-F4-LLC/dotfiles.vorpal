@@ -293,6 +293,7 @@ impl UserEnvironment {
                     "api.github.com".to_string(),
                 ])
                 .with_sandbox_network_allow_local_binding(false)
+                .with_teammate_mode("in-process")
                 .with_tui("fullscreen")
                 .build(context)
                 .await?;

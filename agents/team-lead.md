@@ -7,7 +7,6 @@ description: >
   multi-step software task that benefits from upfront design, planning, implementation,
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits.
-model: claude-fable-5[1m]
 color: cyan
 effort: high
 memory: project

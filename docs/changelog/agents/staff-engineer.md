@@ -3,6 +3,38 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: comm rule 7 ephemeral sentence + §Shutdown Handling Ephemeral paragraph (pre-shutdown checklist step (d) removed; pitfalls ordering kept as (c)). Count unchanged (257).
+
+### Changes
+- Rule 7: ephemerals await team-lead's request, reply shutdown_response (FIX 22).
+- §Shutdown Handling Ephemeral: Pre-idle checklist (a)-(c); idle-awaiting-shutdown normal (FIX 23). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Deduped rule 7's shutdown contract against §Shutdown Handling (roster + await-shutdown_approved now pointers), upgraded the TDD step 6 teammate-envelope clause from inference to the officially documented rule (only `tools`/`model` apply to teammates; body appended — code.claude.com agent-teams doc), encoded the stale-line-citation edit pitfall into Comm rule 5. Net 0 (257 lines).
+
+### Changes
+- Comm rule 7: spawn-form roster → §Lifecycle pointer; duplicated await-shutdown_approved sentence → compact parenthetical pointing at §Shutdown Handling.
+- TDD step 6: "Teammate-mode envelope assumption" → "(documented)" with citation; added "only `tools` and `model` apply; body APPENDED" facts.
+- Comm rule 5: never aim an Edit at a reviewer-cited line number — line numbers drift across revisions; re-Read and target content strings (manifest-flux pitfall).
+- Confirmed NO-OPs: no-op-before-redraft triage, freeze-gate (Moving-tree gate), memory:project/effort frontmatter (present on all 7 agents).
+
+### Dimensions Evaluated
+Consolidation & Trimming (rule 7 dedupe), Spec Alignment (envelope doc citation), Capability Growth (stale-line-citation), Role Realism, Actionability, Boundary Clarity, Completeness, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 4 references updated (skills frontmatter list, Hard Gates authority mention, review-output invocation + format-authority path).
 
 ### Changes

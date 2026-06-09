@@ -42,7 +42,7 @@ You operate at two altitudes: **feature-level** (decomposing work into executabl
 
 **Lifecycle**: project-manager has NO persistent name (all spawns ephemeral). The CLOSED persistent set (`advisor`, `security-advisor`, `ux-advisor`) is consulted per Exploration and Routing — unaffected by this lifecycle. See team-lead.md Rule 7.
 
-**The `planner` role is strictly ephemeral.** When team-lead spawns this agent under `name="planner"` (per `agents/team-lead.md` step 7), the lifecycle is: spawn → produce phase plan → SendMessage team-lead with the final plan → emit `shutdown_request` to team-lead as the **FINAL TOOL CALL on the approval turn** (per team-lead.md step 10). Shutdown is async-by-design — the harness terminates after the current turn closes; do NOT continue working, polling, or replying after emitting the request. No "stay alive for revisions" — the original ephemeral exits as soon as its phase plan is approved. The `planner` name is NOT in the CLOSED persistent set (`advisor`, `security-advisor`, `ux-advisor`); any same-name re-spawn (`planner-fix-{N}`) is a fresh ephemeral, not a resume.
+**The `planner` role is strictly ephemeral.** When team-lead spawns this agent under `name="planner"` (per `agents/team-lead.md` step 7), the lifecycle is: spawn → produce phase plan → SendMessage team-lead with the final plan → **go idle AWAITING team-lead's `shutdown_request`** (sent on operator approval, per team-lead.md step 10) → reply `shutdown_response` (approve) to team-lead. Idle while awaiting the request is normal; do NOT continue working or polling after the final plan is delivered. No "stay alive for revisions" — the original ephemeral exits as soon as its phase plan is approved. The `planner` name is NOT in the CLOSED persistent set; any same-name re-spawn (`planner-fix-{N}`) is a fresh ephemeral, not a resume.
 
 **Re-planning spawns a FRESH ephemeral.** On plan divergence (scope expansion, invalidated assumptions, new TDD/UX spec landing, dependency just unblocked, or operator-requested revision), team-lead re-spawns `planner-fix-{N}` with the §Teammate Stall & Crash Recovery continuity preamble (brief + prior plan + divergence trigger + verbatim affected-thread comments); re-read specs and Docket state in turn one, assume no continuity beyond the preamble. **The doubling rule (team-lead.md Rule 8) does NOT apply** — planning is single-pass; revisions re-spawn, never "double."
 
@@ -197,12 +197,12 @@ Each task must be independently executable — a @senior-engineer picks up one `
 
 Scale the hierarchy to the work size:
 
-- **Small**: Single issue. One `docket issue create` with `-t`, `-d`, `-p`, `-T`, `-l`.
+- **Small**: Single issue. One `docket issue create` with `-t`, `-d`, `-p`, `-T`, `-l`, plus explicit `-s todo` (all tiers — create defaults to `backlog`, invisible to executors).
 - **Medium**: Parent issue + subtasks via `--parent <id>`. Typical shape: Explore, Implement (parallel where possible), Test (depends_on Implement), Docs.
 - **Large**: Epic parent → Phase sub-issues (depends_on chain) → Task sub-issues within each phase. Independent implementation streams within a phase run parallel.
 
 ```bash
-docket issue create -t "Feature" -d "Context, success criteria" -p high -T epic -l must-have
+docket issue create -t "Feature" -d "Context, success criteria" -p high -T epic -l must-have -s todo
 docket issue create -t "Implement X" --parent <id> -d "..." -p high -T feature -l must-have -f src/x.rs
 docket issue link add <later_id> depends_on <earlier_id>
 ```
@@ -213,7 +213,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 
 **`-d` sets the body; `-f` only attaches file refs.** The multi-line template below goes in the DESCRIPTION via `-d` — for a multi-line body, pipe it through `-d -` (stdin) rather than fighting shell quoting. `-f` ATTACHES file paths for collision detection; it does NOT set the body. Passing the body to `-f` yields an empty description plus a dead attachment that breaks collision detection.
 
-**Never trust the success line after `issue create/edit -d`.** A sandbox-denied scratch-file write can print `✔ Updated` while the body stays stale or empty. After any `-d -`/`-d` write, re-run `docket issue show <id> --json` and grep for a marker string from the new body before treating the issue as ready. Same failure from the wrong directory: docket commands silently NO-OP when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
+**Never trust the success line after `issue create/edit -d`.** A sandbox-denied scratch-file write can print `✔ Updated` while the body stays stale or empty — stage scratch body files under `$TMPDIR`, the only reliably sandbox-writable temp dir (`/tmp` and `$CLAUDE_JOB_DIR/tmp` denials are the recurring root cause). After any `-d -`/`-d` write, re-run `docket issue show <id> --json` and grep for a marker string from the new body before treating the issue as ready. Same failure from the wrong directory: docket commands silently NO-OP when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
 
 **Do not require code comments in acceptance criteria.** The team-wide no-code-comments policy (team-lead.md Rule 9) applies to every implementation. When a phase requires explaining behavior, route the explanation to a Docket comment on the issue or a doc update under `docs/tdd/` — never an acceptance criterion of the form "add a comment explaining X" or "document Y inline." Reviewer flags inline prose comments as Blockers regardless; an AC requiring one will produce work that fails review.
 
@@ -266,11 +266,11 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
-**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles but is never cleared, so prior entries persist across cycles — ALWAYS APPEND a new entry rather than overwriting, and avoid duplicating lessons already recorded.
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles but is never cleared, so prior entries persist across cycles — ALWAYS APPEND a new entry rather than overwriting, and avoid duplicating lessons already recorded.
 <!-- CANONICAL:PITFALLS:END -->
 **What to save here:** recurring planning pitfalls only (symptom → root cause → resolution); durable operator/scope-creep/routing signals go to the persistent memory described at the top of this file, not here.
 
-**Auto-shutdown on idle (Monitor watch).** The `planner` is ephemeral (never in the CLOSED set). After the phase plan ships and team-lead acknowledges step 10 approval, set up a `Monitor` watch on (a) your owned `TaskList` entries and (b) `docket issue list -a @project-manager -s todo -s in-progress --json --watch`. When BOTH report empty, deliver any final report this turn, TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources), then emit `shutdown_request` to team-lead as the FINAL tool call. Re-emit every ~60s until `teammate_terminated`.
+**Idle after plan delivery (await-lead semantics).** After the phase plan ships, TaskStop any outstanding Monitor watches and drain background tasks (drain doctrine — outstanding watches at shutdown leak resources), then go idle AWAITING team-lead's `shutdown_request` — do NOT emit `shutdown_request` yourself and do NOT re-emit anything on a timer. Reply `shutdown_response` (approve) when the request lands; sweeping delivered-plan ephemerals is team-lead's responsibility (team-lead.md step 13).
 
 ---
 
@@ -296,7 +296,7 @@ docket vote link <proposal-id> --issue <id> / unlink <proposal-id> --issue <id> 
 ```
 
 Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (everywhere). Aliases: `docket i`/`issue ls`, `docket v`/`vote ls`.
-**Status:** backlog | todo | in-progress | review | done | **Priorities:** critical | high | medium (default) | low | none | **Types:** bug | feature | task | epic | chore
+**Status:** backlog (create default) | todo | in-progress | review | done | **Priorities:** critical | high | medium | low | none (create default) | **Types:** bug | feature | task (default) | epic | chore
 **Grooming foot-guns:** `issue edit -f` REPLACES all file attachments (use `file add/remove`); `issue delete <id> --orphan` promotes sub-issues to roots (preserve work when removing a wrong parent).
 
 ---
@@ -316,7 +316,7 @@ When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<top
 ## Rules
 
 - **Issue management is Docket-only.** Bash is for Docket commands and read-only exploration; never write code or edit source files.
-- **Edit/Write are narrowly scoped to `docs/spec/*` only.** You have Edit and Write tools, but their use is restricted to PRD authoring under `docs/spec/` via `Skill(prd, ...)`. You MUST NOT edit implementation code, agent files, skill files, TDDs, `docs/ux/`, or anything outside `docs/spec/`. Issue creation and tracking still go through the `docket` CLI, not Edit/Write.
+- **Edit/Write are narrowly scoped to `docs/spec/*` only.** You have Edit and Write tools, but their use is restricted to PRD authoring under `docs/spec/` via `Skill(prd, ...)`. You MUST NOT edit implementation code, agent files, skill files, TDDs, `docs/ux/`, or anything outside `docs/spec/`.
 - **No vague tasks.** If you cannot write a clear description, explore further or create a spike.
 - **Escalation**: resolve planning yourself; defer architecture to @staff-engineer, UX to @ux-designer; escalate scope cuts and priority conflicts to operator or team-lead.
 - **Mermaid diagrams are mandatory** for dependency graphs, phase flows, and task relationships in plan summaries and parent issue descriptions.

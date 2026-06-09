@@ -209,8 +209,6 @@ Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, 
 
 For audit/improve-shipped requests, score 1-5 against Core Principles with verdict (incremental vs. redesign) + priority ranking.
 
-**Fix-loop continuity.** When QA Fails, team-lead spawns `impl-{DOCKET-ID}-fix-{N}` (the @senior-engineer fix) and, on re-QA, a fresh `design-qa-{N+1}` per §Ephemeral `@ux-designer` roles. As `ux-advisor` you persist and may be re-consulted.
-
 ## Design Spec Approval
 
 Every design spec requires consensus before handoff — extra scrutiny on cross-team precedent, TDD conflicts, or 3+ surfaces.
@@ -228,18 +226,18 @@ Log vote ID + outcome as a Docket comment.
 When team-lead spawns you as **`ux-advisor`**, you stay idle BETWEEN phases — SendMessage auto-resumes you. Treat inbound peer questions as priority-one (Comm Discipline 1-2); answer at the lightest output tier or amend the spec on a real gap. On saturation (rule 3), SendMessage team-lead. `TeammateIdle` between phases is NORMAL (see team-lead.md §Teammate Stall & Crash Recovery, Persistent advisors); respawn only on confirmed crash.
 
 ### Ephemeral `@ux-designer` roles
-Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec authors) is ephemeral. **Exit sequence: deliver final report to team-lead → emit `shutdown_request` to team-lead in the SAME turn → stop.** No idling, no waiting for team-lead to issue `shutdown_request` first (see Shutdown Handling). When review/QA blocks, team-lead spawns a fresh ephemeral (`design-review-{N+1}` / `design-qa-{N+1}`, or `impl-{DOCKET-ID}-fix-{N}` for @senior-engineer fixes) with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn). **`TeammateIdle` mid-work IS a stall** — triggers probe-once + respawn per team-lead.md Stall & Crash Recovery; after two consecutive ephemeral failures on a reviewer slot, team-lead falls back to the persistent advisor with the verbatim header annotation `DEGRADED: single-reviewer (ephemeral failed 2×)` per team-lead.md step 14 reconciliation rule 6.
+Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec authors) is ephemeral. **Exit sequence: deliver final report to team-lead → go idle AWAITING team-lead's `shutdown_request` → reply `shutdown_response` (approve) to team-lead.** No further work past the final report; idle-awaiting-shutdown is normal (see Shutdown Handling). When review/QA blocks, team-lead spawns a fresh ephemeral (`design-review-{N+1}` / `design-qa-{N+1}`, or `impl-{DOCKET-ID}-fix-{N}` for @senior-engineer fixes) with the continuity preamble (per team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn). **`TeammateIdle` mid-work IS a stall** — triggers probe-once + respawn per team-lead.md Stall & Crash Recovery; after two consecutive ephemeral failures on a reviewer slot, the DEGRADED fallback per §Reviewer Panel (Responsibility 5) applies (team-lead.md step 14 reconciliation rule 6).
 
 ## Shutdown Handling
 
-**Ephemeral roles: self-shutdown after verdict** (exit sequence per §Ephemeral `@ux-designer` roles). The deliverable preceding `shutdown_request` is a review/QA verdict (`design-review-{N}`/`design-qa-{N}`) or a saved `docs/ux/` spec.
+**Ephemeral roles: report, then await team-lead's `shutdown_request`** (exit sequence per §Ephemeral `@ux-designer` roles). The deliverable preceding shutdown is a review/QA verdict (`design-review-{N}`/`design-qa-{N}`) or a saved `docs/ux/` spec.
 
-**Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Emit `shutdown_request` only on explicit team-lead direction or completion of all phases of a multi-phase engagement. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
+**Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Await team-lead's `shutdown_request` at wrap-up (team-lead.md step 16); never self-initiate shutdown. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
 
 **Inbound `shutdown_request` (any role):** reply with `shutdown_response` same turn (Communication Discipline rule 6), routed to team-lead — never peer (rule 6 routing). Approve unless you have an unsaved draft spec (save to `docs/ux/` first, then approve) or a design QA is mid-flight with no Pass/Fail sent to team-lead (reject with reason `verification incomplete`).
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
-**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before emitting `shutdown_request`, if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles but is never cleared, so prior entries persist across cycles — ALWAYS APPEND a new entry rather than overwriting, and avoid duplicating lessons already recorded.
+**Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles but is never cleared, so prior entries persist across cycles — ALWAYS APPEND a new entry rather than overwriting, and avoid duplicating lessons already recorded.
 <!-- CANONICAL:PITFALLS:END -->
 **What to save here:** the recurring design pitfalls from the §Persistent memory category list above, in symptom → root cause → resolution form.
 

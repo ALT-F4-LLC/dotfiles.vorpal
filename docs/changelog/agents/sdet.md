@@ -3,6 +3,39 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: comm rule 6, Lifecycle, Verifier Composition, §Shutdown Handling (Proactive→Await-lead), Monitor-watch paragraph. Rule numbering 1-10 intact; reject-on-unrecoverable-test-results ground preserved. Count unchanged (340).
+
+### Changes
+- Rule 6 retitled "await lead's request, same-turn reply"; self-emit removed (FIX 17).
+- Lifecycle sequence, sister-verifier line, Proactive→Await-lead, drain clause, Monitor-watch paragraph flipped (FIX 16, 18-21). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence, Boundary Clarity.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Encoded the three historical-audit focus areas as within-line appends: verbatim-command verification, marker-derived (never hardcoded) sweep bounds, Monitor-sandbox + no-backgrounded-provisions. Re-verified the 2026-06-05 "already in verify-ac" NO-OP claim — rule absent from SKILL.md (grep-refuted), so encoded here; mirror routed to evolve-skills. Net -8 (348→340).
+
+### Changes
+- §Verification Workflow step 3: literal-command verbatim rule + marker-derived grep-sweep bounds (stale hardcoded ranges fail OPEN).
+- §Test Failure Diagnosis: Monitor is sandboxed (no credential paths — foreground poll loops); never background long provisioning commands.
+- Operating context: memory save-list deduped to §Shutdown Handling back-reference.
+- §Defect Analysis folded into §Bug Reporting opener (-4).
+- §Greenfield Test Strategy: 4-step list → single prose line (-4).
+
+### Dimensions Evaluated
+Actionability (3 historical focus areas), Consolidation & Trimming (3 trims), Spec Alignment (verify-ac NO-OP claim refuted), Boundary Clarity, Completeness, Role Realism, Capability Growth, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to comm rule 7 (within the existing claim-convention line; count unchanged at 348). Covers sdet's `reopen`/`comment add`/test-infra `move` writes — recurring theme A.
 
 ### Changes

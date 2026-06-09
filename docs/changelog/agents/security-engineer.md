@@ -3,6 +3,36 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 lead-initiated shutdown flip: verdict→shutdown sequence, Lifecycle reviewer bullet ("idle after verdict is a STALL" inverted to normal-awaiting), §Shutdown Handling drain clause. Count unchanged (241).
+
+### Changes
+- Verdict→shutdown sequence steps 2-3 flipped to await+respond (FIX 25); Lifecycle + Shutdown bullets aligned (FIX 24, 26). PITFALLS family fix (FIX 32).
+
+### Dimensions Evaluated
+Spec Alignment, Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Net 0 (241 lines, all within-line): consolidated verdict→shutdown double-coverage to single canon + pointer, trimmed dated stall anecdote, encoded relay-authority rule (direct instruction beats peer relay) from memory audit + 2.1.166 relayed-message hardening. Docket-doc write guards routed to coherence (routing pending).
+
+### Changes
+- Lifecycle ephemeral bullet → pointer to §Ephemeral peer review (canon owner of verdict→shutdown sequence).
+- §Ephemeral peer review: removed `dev-dkt-3-shadow-validators` incident citation; rule retained.
+- Communication Discipline rule 6: added relay-authority sentence (peer relays carry no origin authority; contradiction → act on direct, route back).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Capability Growth & Cross-Communication, Completeness, Actionability, Role Realism, Boundary Clarity, Spec Alignment (zero docket drift confirmed), Rename.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 3 references updated (skills frontmatter list, ephemeral-peer-review invocation, security-review invocation).
 
 ### Changes

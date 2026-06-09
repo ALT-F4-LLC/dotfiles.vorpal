@@ -5,7 +5,7 @@ description: >
   opportunities, each grounded in one of the 12 code-philosophy principles in
   agents/senior-engineer.md (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
-  applies no edits. NOT a formal review verdict (that is Skill(code-review)).
+  applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
 argument-hint: "<scope>"
 effort: max
@@ -24,29 +24,23 @@ The governing principle: **lines of code = context cost.** Less code is cheaper 
 
 ## Positioning — Scout, Not Reviewer
 
-This is a **self-service implementation-hygiene aid** that `@senior-engineer` runs on their own diff or a slice of the codebase. It is deliberately DISTINCT from the authoritative `code-review` skill:
+This is a **self-service implementation-hygiene aid** that `@senior-engineer` runs on their own diff or a slice of the codebase. It is deliberately DISTINCT from the authoritative `code-review-verdict` skill:
 
-| | `simplify-scout` (this skill) | `code-review` |
+| | `simplify-scout` (this skill) | `code-review-verdict` |
 |---|---|---|
 | Caller | `@senior-engineer` only | `@staff-engineer` / `@security-engineer` only |
 | Purpose | Surface idiomatic-clarity opportunities to the author | Authoritative merge-gating verdict |
 | Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
 | Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
 
-This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, and does **not** replace formal review. A clean scout report is not a substitute for `Skill(code-review, ...)` — it is the author cleaning up before handing the diff to the reviewer.
+This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, and does **not** replace formal review. A clean scout report is not a substitute for `Skill(code-review-verdict, ...)` — it is the author cleaning up before handing the diff to the reviewer.
 
 ## Role Detection
 
-This skill is callable ONLY by `@senior-engineer`. Match the calling agent's identifier (from prompt context); if it does not match, ABORT.
-
-| Caller identifier | Role |
-|---|---|
-| `@senior-engineer` | `senior-engineer` |
-
-Abort message:
+This skill is callable ONLY by `@senior-engineer`. Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
 
 ```
-Error: Skill(simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review) (@staff-engineer / @security-engineer).
+Error: Skill(simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
 ```
 
 ## Argument Handling
@@ -92,13 +86,13 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: simplify-scout is @senior-engineer's report-only analog of the report-emission family. The "When NOT to Use" routes below send formal/authoritative review into that family (code-review/verify-ac/design-qa/design-review); those siblings need not point back here — their callers are role-disjoint from @senior-engineer and cannot invoke this skill. -->
-- **Formal / authoritative code review** that gates a merge — use `Skill(code-review, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
-- **Applying** simplifications automatically — this skill is report-only by design. The implementer edits the tree themselves after reading the report.
+<!-- COUPLING: simplify-scout is @senior-engineer's report-only analog of the report-emission family. The "When NOT to Use" routes below send formal/authoritative review into that family (code-review-verdict/verify-ac/design-qa/design-review); those siblings need not point back here — their callers are role-disjoint from @senior-engineer and cannot invoke this skill. -->
+- **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
+- **Applying** simplifications automatically — this skill is report-only by design; the implementer edits the tree themselves after reading the report. The bundled `/simplify` skill applies fixes directly under its own rubric — distinct from this scout, which grounds in the 12 principles and never edits.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
 - Design QA / peer design review of user-facing surfaces — use `Skill(design-qa, ...)` / `Skill(design-review, ...)` (`@ux-designer`).
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd|adr|prd|ux-spec, ...)`.
-- Bug hunting / correctness review — this scout targets *clarity*, not defects. Correctness gating lives in `code-review`'s Hard Gates.
+- Bug hunting / correctness review — this scout targets *clarity*, not defects. Correctness gating lives in `code-review-verdict`'s Hard Gates.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
@@ -118,7 +112,7 @@ Quick reference (the authority is `agents/senior-engineer.md`; this table is a l
 | 8 | Tests pin behavior through the seam | Replace interaction assertions / internal-collaborator mocks with outcome assertions. |
 | 9 | Minimal diff is the default | Flag dead code, commented-out blocks, and unrequested scope that can be removed. |
 | 10 | Deps for commodity plumbing; write your domain | Replace a hand-rolled commodity (date math, parsing) with the boring stdlib/dep; OR drop a trivial dep (left-pad rule). |
-| 11 | Solve the actual invariant, not the surface | Replace symptom-masking guards with the real contract. (Clarity lens only — correctness gating is `code-review`.) |
+| 11 | Solve the actual invariant, not the surface | Replace symptom-masking guards with the real contract. (Clarity lens only — correctness gating is `code-review-verdict`.) |
 | 12 | Deletability is the outcome | Narrow a public surface; remove registration-by-side-effect / reflection reach so `grep` can be trusted. |
 
 The simplification lens leans hardest on **#1 (abstract by concept)**, **#3 (cohesion over length)**, **#9 (minimal diff)**, and **#12 (deletability)**, plus the **"junior tells"** named in the section: premature abstraction, defensive guards on impossible inputs, try/catch around single lines, comments restating code, mocks of internal collaborators. These are *anxiety made structural* — the fix is to delete the speculative thing and trust the contract.
@@ -235,7 +229,7 @@ LoC delta: {e.g. -3 (6 → 3)} · Why clearer: {one line — what the idiomatic 
 - Clear win: {count} · Likely win: {count} · Judgment call: {count}
 
 ### Reminder
-Report-only — no files written, no edits applied. The implementer chooses which findings to act on; this is not a merge verdict (formal review is Skill(code-review)).
+Report-only — no files written, no edits applied. The implementer chooses which findings to act on; this is not a merge verdict (formal review is Skill(code-review-verdict)).
 ````
 
 Every finding MUST include: `file:line`, the mapped principle number (`1–12`) with its short name, the confidence rung, the current snippet, the idiomatic rewrite (comment-free), the LoC delta, and the one-line "Why clearer." Rewrites that point in the line-count direction at the cost of clarity MUST NOT appear — they fail Calibration and are dropped during the scan.
@@ -246,7 +240,7 @@ Before emitting the report, verify in the calling agent's context:
 
 1. **Sections present and in order** — for a non-empty report: `Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`. For an empty/trivial scope, the single-line short-circuit is the entire output.
 2. **Every finding cites a principle number in `1–12`** — a finding with no principle, a principle outside `1–12`, or an invented rubric label is a defect.
-3. **Confidence rung on every finding** is one of `Clear win | Likely win | Judgment call` — no other label; cross-mixing with code-review's severity ladder (Blocker/Concern/Critical/etc.) is a defect (this scout emits no verdict).
+3. **Confidence rung on every finding** is one of `Clear win | Likely win | Judgment call` — no other label; cross-mixing with code-review-verdict's severity ladder (Blocker/Concern/Critical/etc.) is a defect (this scout emits no verdict).
 4. **Calibration honored** — no finding proposes a rewrite that reduces line count at the cost of scannability/readability. The "Why clearer" line must justify a *clarity* gain, not merely a shorter form.
 5. **Rewrite snippets are comment-free** — no `//`, `#`, `/* */`, docstring, or JSDoc narration in any rewrite (per principle #7 / no-code-comments policy). A commented rewrite is a defect.
 6. **No-edit guarantee present** — the report (or short-circuit line) states "no files written, no edits applied."
@@ -278,7 +272,7 @@ where `{count}` is the number of findings (`0` for an empty/trivial scope).
 | Trigger | Handling |
 |---|---|
 | `<scope>` missing or empty | Abort: `Error: Usage: Skill(simplify-scout, "<scope>") — name what to scan ("uncommitted", a directory/module path, or one or more file paths).` |
-| Caller is not `@senior-engineer` | Abort with the Role Detection message; point formal review to `Skill(code-review)`. |
+| Caller is not `@senior-engineer` | Abort with the Role Detection message; point formal review to `Skill(code-review-verdict)`. |
 | `<scope>` resolves to nothing (bad path, mixed existing/non-existing tokens) | Abort: `Error: Could not resolve <scope>: '{scope}'. Expected "uncommitted", an existing directory/module path, or existing file paths.` |
 | Resolved scope has no source lines (empty diff / empty file / source-free dir) | Emit the empty-scope short-circuit line; do NOT fabricate findings. |
 | Directory scope exceeds 50 source files | Surface the large-scope one-liner first; let the caller narrow before deep scanning. |

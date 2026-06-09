@@ -1,5 +1,22 @@
 # Changelog: vote
 
+## 2026-06-09
+
+### Summary
+Closed the verdict-delivery channel defect (agentic-services pitfall: 4 reviewers idle, zero verdicts): reviewers are teammates, so plain final-turn text never reaches the coordinator — the template now mandates SendMessage delivery, Phase 2 parses SendMessage payloads (not Agent()-returns), and failure handling treats idle-without-delivery as a failed reviewer. Corrects the 2026-06-08 NO-OP, which cited the dead Agent()-return channel as enforcement. Net −1 (335→334).
+
+### Changes
+- Reviewer Prompt Template: added MANDATORY Delivery section (SendMessage full review to team-lead; un-sent review = failed review; then shutdown_request).
+- Phase 2: retrieval channel corrected to SendMessage-only; "empty returns" → "idling without a SendMessage'd review".
+- Coherence: reviewers deliver, coordinator casts (matches coordinator-casts architecture).
+- Offsets: uniqueness restatement (−1), Pre-flight step 1 + proposer-exclusion compression (−3), Findings-JSON note trimmed; template outer fence → 4 backticks (nesting fix).
+
+### Dimensions Evaluated
+All 8; Orchestration (PRIMARY — teammate envelope vs Agent()-return), Over-Engineering (HIGHEST), Coherence (CLI zero-drift re-verified live; team-lead.md sizing-table parity intact). Spec Alignment N/A.
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

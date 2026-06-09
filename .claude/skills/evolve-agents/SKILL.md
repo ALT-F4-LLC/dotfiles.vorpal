@@ -7,7 +7,7 @@ description: >
   Trigger: "evolve agents", "improve agents", "grow the team", "refine agents".
 argument-hint: "[agent-name] [days=N]"
 effort: max
-allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "WebFetch", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -118,7 +118,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit; `wc -l` to verify budget; verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit; runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
 3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
@@ -213,7 +213,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
    - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
    - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
-   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
+   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
    - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
 3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
@@ -262,7 +262,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change.
+500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change as the physical-newline (`wc -l`) delta — NOT soft-wrapped display lines; removing whole bullet/list lines moves the count, rewording wrapped prose rarely does.
 
 ## Context
 

@@ -1,5 +1,35 @@
 # Changelog: review-and-comment
 
+## 2026-06-09
+
+### Summary
+Phase 2: escalation pointer updated for the code-review→code-review-verdict rename; banner carve-out documented in evolve-coherence.
+
+### Changes
+- "When to escalate instead" now names the code-review-verdict skill.
+- The skill-specific CRITICAL banner (no CANONICAL markers) is now whitelisted in evolve-coherence D4 as intentional.
+
+### Dimensions Evaluated
+Coherence.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Escaped the `$1`/`$2`/`$3` tokens in the Step 8 posting recipe — Claude Code argument substitution (0-based `$N`, doc-confirmed) would silently replace them with stray invocation words, corrupting the validated `gh api` payload. Net 0 lines (111 total). Only skill of 15 affected.
+
+### Changes
+- Step 8: `"$1"`/`"$2"`/`"$3"` → `"\$1"`/`"\$2"`/`"\$3"` in the `post()` recipe; the `\$` escape (CLI v2.1.163+) restores the literal token before the agent reads the body.
+- Declined `when_to_use` migration (description well under the 1,536-char cap), `arguments:` named substitution, and `paths` (all non-behavioral or N/A for a PR-triggered leaf).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — zero additions, healthy skill preserved), Completeness (substitution hazard). Highest operator-typed usage in window, zero failure signals.
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

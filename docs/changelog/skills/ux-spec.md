@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-06-09
+
+### Summary
+No changes. Full 8-dimension review with 6 verification probes, all clean: no unescaped `$`+digit; `allowed-tools` in byte-identical family lockstep (current file correct post-c10195b, body uses Glob and Grep); Mermaid authority cite grounded in agents/ux-designer.md; design-review/design-qa routes reciprocal; placeholder-scan and failure-table rows parity-locked. Net 0.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST): trim candidates resolved to deliberate prior decisions or parity-bound content. Skill Design Quality: description ~340 chars, under listing budget. Coherence: family lockstep verified; `paths: docs/ux/**` recommended AGAINST (teammate-invoked; glob auto-activation would wrong-skill-load on mere docs/ux reads). Spec Alignment: docs/spec/ absent (template skill — not a defect).
+
+### Rename
+No rename. ux-spec (authoring) remains distinct from design-review (peer review) and design-qa (post-impl QA).
+
 ## 2026-06-08
 
 ### Summary

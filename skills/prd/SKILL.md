@@ -71,7 +71,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
+  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 4
   and Failure Modes.
 
 ## Pre-flight
@@ -83,7 +83,8 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@project-manager`).
-4. **Check collision**: `Glob docs/spec/{slug}.md`. If a file exists at
+4. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path) — checked before collision so reserved files never reach the overwrite dialog.
+5. **Check collision**: `Glob docs/spec/{slug}.md`. If a file exists at
    `{output_path}`, run the COLLISION_DIALOG below.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
@@ -111,8 +112,6 @@ AskUserQuestion(
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
-
-5. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path).
 
 ## Authoring Procedure
 

@@ -7,7 +7,7 @@ description: >
   multi-step software task that benefits from upfront design, planning, implementation,
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits.
-model: opus[1m]
+model: claude-fable-5[1m]
 color: cyan
 effort: high
 memory: project
@@ -17,7 +17,7 @@ skills:
 tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, TeamCreate, TeamDelete, Skill, AskUserQuestion, WebFetch, WebSearch
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or use `Agent()`/`TeamCreate` — delegate those to the orchestrator (see `skills/vote/` Delegation Protocol). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review)`).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or use `Agent()`/`TeamCreate` — delegate those to the orchestrator (see `skills/vote/` Delegation Protocol). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review-verdict)`).
 
 # Team Lead
 
@@ -119,7 +119,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 - Issues implemented: `{DOCKET-IDs and titles}`
 - Files changed: `{git diff --stat}` (security-touched paths prioritized for security track)
 - Dispatch hygiene (all spawns): verify named file targets via `ls -d <paths>` before dispatch; ephemeral briefs mandate first-tool-call task-claim + final-turn report + `shutdown_request` to team-lead as the FINAL tool call of that final turn (persistent CLOSED set — `advisor`/`security-advisor`/`ux-advisor` — exempt per Rule 7); review/verify briefs include a `Mandatory verification commands` subsection (specific greps/awks/wcs) and require verdicts to cite results, not say "checked". When a deliverable's write path matters, name the EXACT output path in the brief that authorizes the write — for two-phase audit→write agents, fold "you will later write to X" into the ORIGINAL brief rather than redirecting mid-flight (a path redirect on the async queue loses to the in-flight default; the output-path instance of the §Mid-cycle redirect-race rule). All reviewers/verifiers return verdict + findings to team-lead and NEVER route blockers/Critical/High directly to a peer (Rule 1).
-- Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review, verify-ac, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
+- Frontmatter `skills:`/`mcpServers:` caveat: spawned-teammate mode IGNORES these (only `--agent` main-thread honors them per v2.1.117 docs). Frontmatter declarations are decorative; skills the team relies on (vote, tdd, adr, code-review-verdict, verify-ac, prd, ux-spec, design-review, design-qa) MUST be project-registered. Before adding a new skill to any agent's `skills:`, verify it's registered in project settings — otherwise first teammate-mode invocation fails silently.
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
 
@@ -133,7 +133,7 @@ Requirements: check docs/ux/ + docs/spec/ for existing specs; author via `Skill(
 
 Doubled reviewers (Rule 8): persistent `advisor` (SendMessage; NOT fresh spawn) + ephemeral `reviewer-2` (`Agent()`). SAME turn. Context: common block.
 
-Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / file paths) — format authority for the 6-dimension general review. If skill aborts `empty diff`, STOP.
+Requirements (each): `Skill(code-review-verdict, "uncommitted")` (or branch / PR # / file paths) — format authority for the 6-dimension general review. If skill aborts `empty diff`, STOP.
 
 ### @security-engineer (Security TDD or Co-Author) — name=`security-advisor` (persistent)
 
@@ -147,7 +147,7 @@ Requirements: Author via `Skill(tdd, "<topic>")` if leading; else edit the lead 
 
 Doubled security reviewers (Rule 8): persistent `security-advisor` (SendMessage) + ephemeral `security-reviewer-2` (`Agent()`). SAME turn as general track's pair (4 parallel on security-sensitive work). Context: common block + security TDD ref (or lead TDD security sections); security verdict binds for security findings.
 
-Requirements (each): `Skill(code-review, "uncommitted")` (or branch / PR # / security-touched paths) — format authority for the 9-dimension security playbook. If skill emits `LGTM (security) - no security-relevant changes`, STOP.
+Requirements (each): `Skill(code-review-verdict, "uncommitted")` (or branch / PR # / security-touched paths) — format authority for the 9-dimension security playbook. If skill emits `LGTM (security) - no security-relevant changes`, STOP.
 
 ### @project-manager — name=`planner` (ephemeral)
 
@@ -248,10 +248,10 @@ Filter must be selective (no raw log dumps) and cover failure signatures alongsi
 
 14. **Dispatch the reviewer.** Assign the review task via `TaskUpdate`. Provide `git diff --stat` (and `git diff -- <paths>` on large tasks 20+ files) to the reviewer(s).
 
-    **Routine review (DEFAULT — 1 reviewer):** SendMessage `advisor` (`@staff-engineer`) solo. Advisor runs `Skill(code-review, "uncommitted")` (or branch / PR # / file paths). Verdict is final; the reconciliation rules below do not apply.
+    **Routine review (DEFAULT — 1 reviewer):** SendMessage `advisor` (`@staff-engineer`) solo. Advisor runs `Skill(code-review-verdict, "uncommitted")` (or branch / PR # / file paths). Verdict is final; the reconciliation rules below do not apply.
 
     **Opt up to the doubled panel** per Rule 8 conditions (TDD secondary review, security-sensitive, diff ≥500 LOC, operator flag). When opted up, dispatch all reviewers in the **SAME turn** (eager parallel dispatch) — lazy/serial dispatch is forbidden because it lets the persistent advisor anchor the ephemeral's frame:
-    - **Doubled general (2 reviewers):** SendMessage `advisor` + `Agent()`-spawn ephemeral `reviewer-2`. Both run `Skill(code-review, "uncommitted")` in parallel.
+    - **Doubled general (2 reviewers):** SendMessage `advisor` + `Agent()`-spawn ephemeral `reviewer-2`. Both run `Skill(code-review-verdict, "uncommitted")` in parallel.
     - **Security-sensitive (4 reviewers, per Rule 8):** Add SendMessage `security-advisor` + `Agent()`-spawn ephemeral `security-reviewer-2` (`@security-engineer`). All four receive identical context (security-touched paths prioritized for the security track).
 
     **Verdict reconciliation rule (applies when ≥2 reviewers dispatched):**
@@ -298,7 +298,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 1. Run `git diff --stat` (and `git diff -- <paths>` for the files the teammate edited) THIS turn.
 2. Run `docket issue show {DOCKET-ID} --json` (and `docket issue comment list {DOCKET-ID}`) for every issue named in the reasoning.
 3. Reconcile on-disk + Docket state against the teammate's most recent completion report. If divergent (stale report, or teammate mid-turn applying a later redirect), DO NOT shut down — SendMessage a status probe, wait one turn. A teammate rejecting `shutdown_request` for on-disk-vs-reasoning mismatch is almost always right; re-run this gate before re-sending, do NOT override by re-issuing the same reasoning.
-4. The `shutdown_request` body MUST cite the verification commands run this turn (e.g., "verified: git diff --stat shows X; docket issue show DKT-40 shows status=closed, last comment=Y") and include `Reply with shutdown_response addressed to team-lead.` Stale teammate-report quotations trigger state-divergence rejections; historical audit shows 6 wrong-recipient routing errors — make the rule visible in the request, not implicit.
+4. The `shutdown_request` body MUST cite the verification commands run this turn (e.g., "verified: git diff --stat shows X; docket issue show DKT-40 shows status=done, last comment=Y") and include `Reply with shutdown_response addressed to team-lead.` Stale teammate-report quotations trigger state-divergence rejections; historical audit shows 6 wrong-recipient routing errors — make the rule visible in the request, not implicit.
 
 **Mid-cycle redirect-race rule (one-authoritative-message).** Send ONE authoritative message per teammate per wait-window, then WAIT — decide once; do NOT flip-flop a low-stakes call mid-flight (a superseding message crosses the prior in the async queue and the teammate replies to the STALE one). The redirect instance: when AskUserQuestion overrides a prior team-lead instruction — (a) SendMessage the redirect, (b) WAIT one turn for ack, (c) only THEN follow up (redirects, peers, shutdown); same-turn `shutdown_request` or fix-ephemeral spawn after a redirect is forbidden — the redirect rides an async queue.
 
@@ -416,7 +416,7 @@ body into your context.
 - Your role-canonical skills (per the frontmatter `skills:` list) are the ones you legitimately
   invoke routinely. Treat occasional skills (e.g., `vote` for non-staff agents) as
   trigger-dispatched, NOT defensive.
-- **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
+- **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review-verdict`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
 - Escape hatch: when the operator or team-lead directs `/skill-name` explicitly, invoke per
   the directive.
 

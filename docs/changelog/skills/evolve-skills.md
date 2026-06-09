@@ -1,5 +1,35 @@
 # Changelog: evolve-skills
 
+## 2026-06-09
+
+### Summary
+Phase 2: historical-auditor correction-regex FP guard; budget-truth wording mirrored from evolve-agents; WebFetch added to allowed-tools (lockstep).
+
+### Changes
+- Auditor template: correction-phrase scan now matches only operator-typed turns (skip teammate-message/command/tool_result echoes) — 3 consecutive audits were FP-dominated.
+- Phase 1 Size Budget + orchestrator step 2 adopt evolve-agents' physical-newline / post-apply wc -l wording (restores symmetry).
+- allowed-tools gains WebFetch (pre-flight step 10 prefers it; byte-identical with evolve-agents).
+
+### Dimensions Evaluated
+Coherence (cross-pipeline symmetry), Actionability (audit precision).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+No direct changes (360 lines, net 0). All four findings touch text shared near-verbatim with sister evolve-agents (correction-regex FP fix, Phase 1 Size Budget drift, shared allowed-tools line, step-4 semantics duplication) — routed parity-bound to Phase 2 for lockstep application.
+
+### Changes
+- None applied in Phase 1; 4 parity-bound items routed to Phase 2 (headline: historical-auditor operator-correction regex excludes teammate-message/command-output turns — 3 consecutive FP-dominated audits).
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST): only residual duplication is sister-shared — Phase 2. Spec Alignment vacuous: docs/spec/ does not exist in this repo. $-escape audit clean; when_to_use/paths/disallowed-tools adoption rejected with reasons.
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

@@ -46,8 +46,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 ## Pre-flight
 
-1. **Verify docket is available** — Run `docket version --quiet` via Bash to confirm the docket
-   CLI is operational (canonical liveness check; the vote subcommand ships in the same binary).
+1. **Verify docket is available** — `docket version --quiet` (canonical liveness check; vote ships in the same binary).
 2. **Classify criticality** — Apply the Criticality Classification table below to the proposal. In team mode, prefer caller-specified criticality (e.g., "criticality: high") and skip re-classification.
 3. **Confirm goal-alignment (HARD GATE)** — Do not proceed past this gate until the goal is confirmed.
    - **Standalone mode**: `AskUserQuestion` with three questions: (1) header `Decision`, options `Confirm` (framing is accurate) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options `Confirm {classified-level}` (with one-line rationale in description) / `Override` (follow-up free-text or 4-option pick: `low`/`medium`/`high`/`critical`).
@@ -82,7 +81,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 
 **Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `agents/team-lead.md` Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `agents/team-lead.md` Rule 7: each spawns, casts its verdict, and exits via `shutdown_request` after delivering its vote. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `agents/team-lead.md` Rule 7: each spawns, delivers its review via SendMessage, and exits via `shutdown_request`; the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 
@@ -108,11 +107,9 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 
 ### Proposer Exclusion
 
-1. Read the proposal's `created_by` value (from `docket vote create --created-by` or
-   `docket vote show {vote-id} --json`).
-2. Map `created_by` to an agent type using the table below. All comparisons MUST be
-   **case-insensitive**.
-3. Remove the matched agent type from the available reviewer pool before selecting reviewers.
+1. Read the proposal's `created_by` value (`docket vote show {vote-id} --json`).
+2. Map `created_by` to an agent type using the table below (comparisons are **case-insensitive**).
+3. Remove the matched agent type from the reviewer pool before selecting reviewers.
 
 **Mapping table:**
 
@@ -130,8 +127,7 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 
 ### Uniqueness Constraint
 
-Each reviewer in a single vote round MUST have a unique `subagent_type`. No agent type may
-appear more than once in the `Agent()` calls for a single round.
+Each reviewer in a single vote round MUST have a unique `subagent_type`.
 
 ### Edge Cases
 
@@ -170,11 +166,11 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after the reviewer returns. Each reviewer's structured output is the final message returned by their `Agent()` call — parse verdict, confidence, domain_relevance, and findings from that return value before proceeding to Phase 3.
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates (spawned with `team_name`): their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
 
 ### Handling Reviewer Failures
 
-Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() errors, empty returns, and output missing required sections (Verdict/Confidence/Domain Relevance/Findings).
+Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() spawn errors, reviewers idling without a SendMessage'd review, and reviews missing required sections (Verdict/Confidence/Domain Relevance/Findings).
 
 - **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "NON-VOTE (reviewer failed): {reason}" --confidence 0.0 --domain-relevance 0.0` — `confidence × domain-relevance = 0` zeroes the weighted contribution; the `NON-VOTE` summary prefix preserves audit clarity. Then proceed to Phase 3 only if remaining reviewers can still meet the quorum threshold.
 - **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
@@ -205,7 +201,7 @@ EOF
 
 ### Reviewer Prompt Template (Standalone Mode Only)
 
-```
+````
 Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
 You are participating in a consensus vote as an independent reviewer.
@@ -251,14 +247,17 @@ One of: approve, approve-with-concerns, reject
 ```json
 {"blockers": ["..."], "concerns": ["..."], "suggestions": ["..."]}
 ```
-Emit `[]` for any category with no items. The coordinator passes this block verbatim to `docket vote cast --findings-json -`; if absent or malformed, the coordinator falls back to the markdown text.
+Emit `[]` for any category with no items.
 
 ### Summary
 One paragraph summarizing your overall assessment.
 
+## Delivery (MANDATORY)
+SendMessage the COMPLETE structured review above to team-lead (your coordinator) — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then emit `shutdown_request`.
+
 ## Domain-Specific Checklist
 {Insert the relevant checklist below based on the reviewer's agent type}
-```
+````
 
 | Agent | Checklist Focus |
 |---|---|
@@ -331,5 +330,5 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 ### Cleanup (MANDATORY — standalone mode only)
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Approve pending reviewer shutdowns** — reviewers self-initiate `shutdown_request` after casting (per the Ephemeral-lifecycle note above); approve each pending request. Do NOT originate `shutdown_request` toward a reviewer — that inverts the handshake direction.
+1. **Approve pending reviewer shutdowns** — reviewers self-initiate `shutdown_request` after delivering (per the Ephemeral-lifecycle note above); approve each pending request. Do NOT originate `shutdown_request` toward a reviewer — that inverts the handshake direction.
 2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")` reaps any reviewer that has not yet exited. Failure to clean up wastes resources and causes agent lifecycle issues.

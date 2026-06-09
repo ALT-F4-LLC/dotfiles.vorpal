@@ -3,6 +3,14 @@
 ## 2026-06-09
 
 ### Summary
+evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 3 references updated (skills frontmatter list, ephemeral-peer-review invocation, security-review invocation).
+
+### Changes
+- `skills:` frontmatter entry and both `Skill(code-review-verdict...)` invocations updated.
+
+## 2026-06-09
+
+### Summary
 No changes applied. Self-review proposed encoding the docket-cwd-no-op + post-write `updated_at` discipline, but it was elevated to a Phase 2 fleet-wide decision (cross-cutting theme A, affects all docket-mutating agents). Phase 2 scoped the canonical guard to the heavy issue-mutators (senior-engineer, project-manager, sdet) and deliberately excluded security-engineer — its docket surface is vote-only (low cwd-no-op exposure), not worth the line.
 
 ### Changes

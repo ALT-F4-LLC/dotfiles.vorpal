@@ -3,6 +3,14 @@
 ## 2026-06-09
 
 ### Summary
+evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 4 references updated (skills frontmatter list, Hard Gates authority mention, review-output invocation + format-authority path).
+
+### Changes
+- `skills:` frontmatter entry, `Skill(code-review-verdict, "<scope>")` invocation, and skills/code-review-verdict/SKILL.md path updated.
+
+## 2026-06-09
+
+### Summary
 Encoded the recurring "mid-cycle review on a moving tree" gate (recurs 2 repos) into Review Workflow Triage; offset by removing the redundant Reviewer-panel Lifecycle paragraph (fully restated at Responsibility 2 + TDD step 9). Net 0 (257 lines).
 
 ### Changes

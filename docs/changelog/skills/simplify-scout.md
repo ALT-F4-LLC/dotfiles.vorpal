@@ -1,5 +1,34 @@
 # Changelog: simplify-scout
 
+## 2026-06-09
+
+### Summary
+Phase 2: code-review→code-review-verdict reference updates (12 occurrences).
+
+### Changes
+- All boundary/abort/rubric references to the authoritative review skill renamed; bundled /simplify boundary text untouched.
+
+### Dimensions Evaluated
+Coherence (rename propagation).
+
+### Rename
+No rename (sibling code-review renamed → code-review-verdict; refs updated).
+
+## 2026-06-09
+
+### Summary
+Two changes (net −6 lines, 286 → 280). Re-verified the 12-principle lookup table against the modified agents/senior-engineer.md (post evolve-agents cycle) — still accurate. No unescaped $-digit substitution hazards. Zero usage in audit window; changes target the one live question (boundary discoverability) plus one over-engineering trim.
+
+### Changes
+- Collapsed the one-row Role Detection table to prose — single-caller skill, nothing branches on the role value (NET −6).
+- Named the bundled /simplify (applies-fixes, own rubric) in the "When NOT to Use" apply bullet — boundary was previously implicit; bundled /simplify confirmed live in v2.1.170 (NET 0).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — table trim), Coherence (12-principle re-verify; bundled-/simplify boundary; when_to_use + disallowed-tools routed to Phase 2), Spec Alignment (docs/spec/ absent — N/A).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

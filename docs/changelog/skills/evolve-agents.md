@@ -1,5 +1,35 @@
 # Changelog: evolve-agents
 
+## 2026-06-09
+
+### Summary
+Phase 2: historical-auditor correction-regex FP guard (lockstep with evolve-skills); WebFetch added to allowed-tools (lockstep).
+
+### Changes
+- Auditor template: correction-phrase scan now matches only operator-typed turns; mirror clause preserved.
+- allowed-tools gains WebFetch (byte-identical with evolve-skills).
+
+### Dimensions Evaluated
+Coherence (cross-pipeline symmetry), Actionability.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Codified the TRIM-mode budget lesson from team-lead pitfalls (claimed −10 vs actual −2 on a prior cycle): NET_LINES is the physical-newline `wc -l` delta, and the orchestrator's post-apply `wc -l` is the only budget truth. Net 0.
+
+### Changes
+- Phase 1 template Size Budget: NET_LINES defined as physical-newline (`wc -l`) delta, not soft-wrapped display lines; whole bullet/list-line removals move the count.
+- Orchestrator post-review step 2: post-apply `wc -l` is the only budget truth — reviewer estimates untrusted; a still-over-budget file is not-done. PARITY: mirror both to evolve-skills in Phase 2.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST): both changes net 0 in-place. Coherence: correction-regex FP fix + allowed-tools WebFetch routed to Phase 2 as parity-bound. No unescaped `$`+digit; frontmatter sound.
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

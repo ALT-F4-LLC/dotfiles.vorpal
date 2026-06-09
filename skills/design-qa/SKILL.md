@@ -73,10 +73,10 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
-- Production code-quality review against design dimensions — that's `Skill(code-review, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+- Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Authoring or revising the UX spec itself — use `Skill(ux-spec, ...)`.
 
 ## Pre-flight
@@ -86,7 +86,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
 4. **Read the UX spec**:
-   - Capture spec path, frontmatter `maturity` (and `status` if present), and the workflow list. If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
+   - Capture spec path, frontmatter `maturity` (and `status` if present), the workflow list, and the spec's §9 Handoff Notes MVP cutline — components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
    - If the spec cannot be located (Docket issue scope with no attached spec, `uncommitted` with no spec in the changed paths), ABORT:
 
      ```
@@ -204,7 +204,7 @@ Design QA report emitted ({verdict}).
 
 where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
-**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review`, `verify-ac`, `design-review`, `design-qa`).
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 

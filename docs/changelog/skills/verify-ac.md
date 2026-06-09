@@ -1,5 +1,37 @@
 # Changelog: verify-ac
 
+## 2026-06-09
+
+### Summary
+Phase 2: code-review→code-review-verdict reference updates (lockstep) and vote-escalation mode-split in Save & Return.
+
+### Changes
+- 4 refs updated for the sibling rename, incl. the byte-identical COUPLING marker (byte parity re-verified across the family of 4).
+- Save & Return vote bullet now mode-split: standalone Skill(vote); team mode docket vote create + delegation_request per agents/sdet.md §Using /vote for Consensus.
+
+### Dimensions Evaluated
+Coherence (family lockstep), Orchestration (vote delegation).
+
+### Rename
+No rename (sibling code-review renamed → code-review-verdict; refs updated).
+
+## 2026-06-09
+
+### Summary
+Added an OUT-OF-SCOPE deferral path for runtime/render-only acceptance criteria (fem-kubernetes pitfall: static gates — files exist, refs present, build exit 0 — passed while rendered output shipped broken images; design-qa gates its side, verify-ac had no marker). Threaded through FULL step 1, verdict ladder (caps at ACCEPT WITH CAVEATS), report template ([~] marker + route), and validation checks 2/5/6. Offset: deduplicated the LIGHT one-liner and pointed the Round-2 bullet at Pre-flight §4a. Net −6 (268/500).
+
+### Changes
+- FULL §1: PASS/FAIL/OUT-OF-SCOPE; runtime-only criteria never pass on static proxies; route named (design-qa / bundled runtime verify), dispatch stays with the calling agent.
+- Verdict ladder + validation 2/5/6: OUT-OF-SCOPE requires a named route, satisfies the ACCEPT-WITH-CAVEATS finding requirement, and bars APPROVE.
+- LIGHT: switch-to-FULL includes runtime-only criteria; duplicate one-liner removed; Round-2 carry-forward deferred to §4a.
+- Phase-0 NO-OPs verified: no `$`+digit; description 695/1536 chars; `disallowed-tools` rejected (caller-strip risks SendMessage deliverable).
+
+### Dimensions Evaluated
+All 8. Completeness (PRIMARY), Over-Engineering (HIGHEST — net −6), Coherence (design-qa boundary + COUPLING parity byte-identical).
+
+### Rename
+No rename.
+
 ## 2026-06-08
 
 ### Summary

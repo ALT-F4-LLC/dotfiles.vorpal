@@ -1,5 +1,19 @@
 # Changelog: adr
 
+## 2026-06-09
+
+### Summary
+No-change verdict (second consecutive). Re-verified against the 2026-06-09 capability audit: zero unescaped `$`-substitution hazards; whole file (~3.3k tokens) fits the 5k compaction re-attachment cap so format authority needs no front-loading; `paths`/`disallowed-tools`/`when_to_use` adoption evaluated and inapplicable or parity-bound.
+
+### Changes
+- None. Frontmatter byte-parity and Skill(adr) reciprocity with tdd/prd/ux-spec re-confirmed; absent docs/tdd/adr/ handled by design (mkdir -p, next_num=1).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no removable slack; remaining candidates are parity-bound or churn), Skill Design Quality (new-frontmatter adoption audit), Coherence (family parity verified), Completeness (absent-dir edge benign).
+
+### Rename
+No rename. Family-aligned with prd/tdd/ux-spec/init-specs.
+
 ## 2026-06-08
 
 ### Summary

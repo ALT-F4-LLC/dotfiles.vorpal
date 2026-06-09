@@ -144,7 +144,9 @@ malformed frontmatter.
    grep AC, or a reference to existing modules/APIs/test infrastructure the design
    relies on — MUST be checked against its actual target (run it, Grep/Read the
    target, or confirm it exists) before it is written as settled. State unverified
-   claims as assumptions, not facts.
+   claims as assumptions, not facts. A "verified" label MUST NOT claim broader
+   scope than was actually checked — name the artifact or command behind it
+   ("zero X exist (verified)" after checking one directory is overreach).
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).
@@ -218,8 +220,8 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 11. **Implementation Phases** — partitioned phases that the planner consumes
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
     (paths affected), (c) per-phase acceptance criteria — any grep/regex-based
-    AC must be executable against the named files and cover all expected matches
-    (escape markdown, arm for word-order/formatting variants); a single-arm
+    AC must be run against the named files, hit set verified to cover all expected
+    matches (escape markdown, arm for word-order/formatting variants); a single-arm
     regex that silently under-matches is a defect, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags. Phases must be independently shippable or explicitly
@@ -297,7 +299,5 @@ On operator Cancel during the collision dialog: emit
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
-| Security TDD missing Threat Model / Trust Boundaries / Security Considerations subsections | Abort: `Error: validation failed: §4 — security TDD requires Threat Model, Trust Boundaries, and Security Considerations subsections (updated_by={agent}).` |
-| Security TDD missing Abuse Cases subsection in §9 | Abort: `Error: validation failed: §9 — security TDD requires Abuse Cases subsection in Testing Strategy (updated_by={agent}).` |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

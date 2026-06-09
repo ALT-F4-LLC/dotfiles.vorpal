@@ -93,7 +93,7 @@ Post each approved comment as a standalone inline review comment (not a formal a
 GH=$(command -v gh); JQ=$(command -v jq)
 COMMIT=<head_sha>; REPO=<owner/repo>; PR=<num>
 post() {  # body path line
-  "$JQ" -n --arg b "$1" --arg c "$COMMIT" --arg p "$2" --argjson l "$3" \
+  "$JQ" -n --arg b "\$1" --arg c "$COMMIT" --arg p "\$2" --argjson l "\$3" \
     '{body:$b,commit_id:$c,path:$p,line:$l,side:"RIGHT"}' \
   | "$GH" api -X POST "repos/$REPO/pulls/$PR/comments" --input - \
       --jq '"OK \(.path):\(.line) -> \(.html_url)"'
@@ -108,4 +108,4 @@ Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so back
 
 ## When to escalate instead
 
-For very large or high-blast-radius PRs, prefer the full fleet flow: parallel independent @staff-engineer (general) and @security-engineer (security) reviews via the `code-review` skill, reconciled by team-lead, optionally a consensus `vote` on risk acceptance. This skill is the fast single-agent path; it is not a substitute for independent dual review on critical changes.
+For very large or high-blast-radius PRs, prefer the full fleet flow: parallel independent @staff-engineer (general) and @security-engineer (security) reviews via the `code-review-verdict` skill, reconciled by team-lead, optionally a consensus `vote` on risk acceptance. This skill is the fast single-agent path; it is not a substitute for independent dual review on critical changes.

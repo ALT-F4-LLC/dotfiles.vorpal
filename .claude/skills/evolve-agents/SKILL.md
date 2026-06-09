@@ -18,6 +18,13 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Sen
 
 You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) and spawn each agent to review its own definition file (e.g. @senior-engineer reviews `agents/senior-engineer.md`). All additions pass through the Content Gate.
 
+<!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
+**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+- Writes: `docs/changelog/agents/<name>.md`.
+- Reads: `docs/spec/`, `agents/`.
+- Always singular docs/spec/ — never docs/specs/.
+<!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
+
 ---
 
 ## Argument Handling

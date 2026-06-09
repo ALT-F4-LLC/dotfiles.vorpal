@@ -1,13 +1,12 @@
 ---
 name: prd
 description: >
-  Author a single Product Requirements Document as a Docket doc (docket doc create -T prd).
-  Loaded into the calling agent's context; the agent drafts the PRD per the format
-  authority below.
-  Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a Docket prd doc", "write up requirements for", "scope this feature".
+  Author a single Product Requirements Document at docs/spec/{slug}.md. Loaded into the
+  calling agent's context; the agent drafts the PRD per the format authority below.
+  Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/", "write up requirements for", "scope this feature".
 argument-hint: "<topic>"
 effort: max
-allowed-tools: ["AskUserQuestion", "Bash", "Read", "Write"]
+allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -16,11 +15,17 @@ allowed-tools: ["AskUserQuestion", "Bash", "Read", "Write"]
 
 # PRD — Author a Product Requirements Document
 
-You are the **PRD Author**. You produce a single Product Requirements Document as a
-Docket doc (type `prd`) and return. The calling agent (typically `@project-manager`)
+You are the **PRD Author**. You produce a single Product Requirements Document at
+`docs/spec/{slug}.md` and return. The calling agent (typically `@project-manager`)
 drafts the content; this skill is the format authority — section list, frontmatter
-contract, the `docket doc create` recipe, and reserved-name refusal all live here.
-Docket issues the document's `DOC-<n>` identity; there is no filename.
+contract, output path, reserved-name refusal, and collision handling all live here.
+
+<!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
+**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+- Writes: `docs/spec/{slug}.md` (PRDs only — NOT the 7 reserved names).
+- Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`.
+- Always singular docs/spec/ — never docs/specs/.
+<!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
 ## Argument Handling
 
@@ -36,22 +41,22 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Title derivation.** The document's identity is the Docket-issued `DOC-<n>`, not a
-filename — there is no slug-to-path step. The `<topic>` is the human-readable `-t`
-title (Title Case, free prose). Use `<topic>` verbatim as the default `{title}`; the
-calling agent MAY refine it into a clearer prose title. Reject only an empty/all-
-punctuation topic that yields no title text:
+**Slug derivation** (deterministic):
 
-1. `cleaned = topic.strip()`.
-2. If `cleaned` contains no alphanumeric character, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-3. `normalized = lowercase(cleaned)` with non-alphanumerics collapsed to `-` — used
-   ONLY for the reserved-name check below, never as a filename.
-4. Use `cleaned` (or a calling-agent refinement of it) as `{title}`.
+1. `lower      = lowercase(topic)`
+2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
+3. `trimmed    = cleaned.strip('-')`
+4. `truncated  = trimmed[:60]`
+5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
+   `boundary != -1`, set `truncated = truncated[:boundary]`.
+6. `truncated  = truncated.strip('-')` (re-trim after step 5).
+7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
+8. Use `truncated` as `{slug}`.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
 
-- A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should live as a Docket `prd` doc as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
+- A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
 - The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
 - The team-lead Large Task pattern (`agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
@@ -59,39 +64,65 @@ punctuation topic that yields no title text:
 
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
-  that are not meant to live as a Docket `prd` doc.
+  that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
   use `Skill(tdd, "<topic>")`.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 3
+  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 5
   and Failure Modes.
 
 ## Pre-flight
 
-1. **Resolve `{title}`** and `{normalized}` from `<topic>` per the Argument Handling
-   title rule above.
-2. **Resolve context**:
+1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
+2. **Resolve `{output_path}`** as `docs/spec/{slug}.md`. The output directory is
+   `docs/spec/`.
+3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@project-manager`).
-3. **Reserved-name refusal**: if `{normalized}` matches a name in the Failure Modes
-   Reserved-Name List, ABORT per the Failure Mode table. The seven baseline-spec names
-   stay markdown under `docs/spec/` (owned by the `init-specs` skill) and are never
-   authored as `prd` docs.
+4. **Check collision**: `Glob docs/spec/{slug}.md`. If a file exists at
+   `{output_path}`, run the COLLISION_DIALOG below.
+
+<!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
+If a file already exists at the target output path, invoke `AskUserQuestion`:
+
+```
+AskUserQuestion(
+  header: "File exists",
+  question: "{output_path} already exists. How should I proceed?",
+  options: [
+    {label: "Pick new slug",
+     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
+    {label: "Overwrite",
+     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
+    {label: "Cancel",
+     description: "Stop without writing"}
+  ]
+)
+```
+
+- "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
+- "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
+- "Cancel" → emit `Cancelled — no file written.` and end.
+
+Never silently overwrite. There is no "append" option — partial appends produce
+malformed frontmatter.
+<!-- CANONICAL:COLLISION_DIALOG:END -->
+
+5. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path).
 
 ## Authoring Procedure
 
-1. **Gather prior art**: discover related PRD docs with `docket doc list -T prd --json`
-   and read them via `docket doc show <DOC-id>` (the 7 reserved engineering specs stay
-   markdown under `docs/spec/` and are project-level conventions, not PRDs; read them by
-   name only if the PRD genuinely depends on one). Discover related TDD/UX docs with
-   `docket doc list -T tdd --json` / `docket doc list -T ux --json` — the new PRD should
-   reference, not contradict, prior approved product definitions, and record each
-   `DOC-<n>` the PRD builds on in the `dependencies` frontmatter field so reviewers and
-   decomposition can trace the lineage.
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read related PRDs
+   already in `docs/spec/` (the 7 reserved engineering specs — see the Reserved-Name
+   List — are project-level conventions, not PRDs; skip them unless the PRD genuinely
+   depends on one). Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that
+   touch the same surface — the new PRD should reference, not contradict, prior accepted
+   product definitions, and record each one the PRD builds on in the `dependencies`
+   frontmatter field so reviewers and decomposition can trace the lineage.
 2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues under a "Pre-existing Docket issues" sub-bullet in Risks & Open Questions.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
@@ -114,8 +145,7 @@ updated_by: "{updated_by}"
 scope: "{one-liner describing what the PRD covers}"
 owner: "{owning agent or team, e.g. @project-manager}"
 dependencies:
-  - {DOC-<n> of related doc, or empty list}
-status: "draft"
+  - {relative path to related doc, or empty list}
 ---
 ```
 
@@ -124,21 +154,16 @@ Field rules:
 - `project` = `basename $(git rev-parse --show-toplevel)`.
 - `maturity` is the doc-class ladder for living product definitions — one of
   `proof-of-concept | draft | experimental | stable`. New PRDs start at `draft`.
-- `status` mirrors Docket's own doc-level status (`-s`) — one of `draft | approved`.
-  The authoritative copy is Docket's `.data.status` (via `docket doc show <DOC-id>
-  --json`) — the single source of truth for downstream gates; this body `status:` is
-  documentation-only, NOT auto-updated by `docket doc edit <DOC-id> -s`, and may drift
-  stale, so never gate on it.
-  New PRDs start at `draft`; promotion to `approved` happens after the calling agent's
-  review loop via `docket doc edit <DOC-id> -s approved`. (`maturity` and `status` are
-  orthogonal: `maturity` is how settled the content is, `status` is where the doc sits
-  in the review lifecycle.)
+- **PRDs do NOT use a `status` field.** `status` is reserved for in-flight workflow
+  artifacts (TDDs and ADRs). PRDs are living product definitions — they take
+  `maturity` from the `init-specs` family ladder.
 - `last_updated` is ISO date `YYYY-MM-DD`.
 - `updated_by` is the calling agent identifier (`@project-manager`, etc.).
 - `scope` is a one-line description of what the PRD covers — populated by the
   calling agent.
 - `owner` is the responsible agent or team handle.
-- `dependencies` is a YAML array of related `DOC-<n>` ids; use `[]` if none.
+- `dependencies` is a YAML array of related-file paths (relative to the doc); use
+  `[]` if none.
 
 ### Required Sections
 
@@ -170,13 +195,14 @@ PRDs require at least one ` ```mermaid ` (lowercase, no space) fenced block — 
 Before invoking `Write`, verify in the calling agent's context:
 
 1. **Frontmatter fields** — all of `project`, `maturity`, `last_updated`,
-   `updated_by`, `scope`, `owner`, `dependencies`, `status` present and non-empty
+   `updated_by`, `scope`, `owner`, `dependencies` present and non-empty
    (`dependencies` may be the empty list `[]`).
-2. **`status` value** — `status` is one of `draft | approved`.
+2. **No `status` field** — PRDs use `maturity`, not `status`. Presence of `status`
+   in frontmatter is a defect.
 3. **`maturity` value** — within the allowed set defined under Field rules above.
 4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed. Count only `##` headings at column 0 *outside* ``` code fences — a PRD that documents another doc/skill may embed `##`/`###` example headings inside fences; those are content, not structure.
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
-6. **Placeholder scan** — body contains no literal `{title}`, `{topic}`,
+6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 7. **Success Metrics concreteness** — every bullet/item under the Success Metrics
    section contains at least one digit OR a comparison operator (`<`, `>`, `≤`, `≥`,
@@ -192,53 +218,37 @@ Error: validation failed: {field/section} — {detail}.
 The calling agent fixes the issue in its own context and re-invokes
 `Skill(prd, "<topic>")`.
 
-## Create & Return
+## Save & Return
 
 <!-- CANONICAL:SAVE_AND_RETURN:BEGIN -->
-After Validation Before Save passes, create the doc in Docket. The full document body
-(frontmatter block + all Required Sections) is drafted to a temp file, then supplied to
-`docket doc create` via `-d @`:
+After Validation Before Save passes:
 
-1. `Write` the full drafted document body to a temp file under `$TMPDIR`:
-
-   ```
-   BODY="${TMPDIR:-/tmp}/prd-doc.md"
-   ```
-
-2. Create the doc (type `prd`, create-status `draft`), capturing JSON:
+1. `Bash mkdir -p {output_dir}` (idempotent).
+2. `Write {output_path}` with the drafted content.
+3. Emit a single confirmation line:
 
    ```
-   docket doc create -T prd -t "{title}" -s draft -d @"$BODY" --json
-   ```
-
-3. Parse the new id from the JSON `.data.id` and emit a single confirmation line:
-
-   ```
-   Created DOC-<n>: {title}
+   Created {output_path}
    ```
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
-The calling agent owns next steps (vote requests, decomposition, peer notification,
-`docket doc link add <DOC-id> --issue <DKT-id>` when a driving issue exists).
+The calling agent owns next steps (vote requests, decomposition, peer notification).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
-`Error: {one-line cause}` and end without creating.
+`Error: {one-line cause}` and end without writing.
 
-If `docket doc create` returns a non-ok JSON envelope (`{"ok":false,...}`), surface it:
-`Error: docket doc create failed — {message}.` The temp-file body remains on disk for
-inspection. Do NOT retry.
+On operator Cancel during the collision dialog: emit
+`Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
 ## Failure Modes
 
 ### Reserved-Name List
 
-The 7 names below are owned by the `init-specs` skill (project-wide engineering specs
-that stay markdown under `docs/spec/`) and HARD-REFUSED by this skill. There is no
-overwrite path — a topic that normalizes to one of these names is never authored as a
-`prd` doc.
+The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
+and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by skills/init-specs (Spec File Reference) and HARD-REFUSED here so a prd doc is never authored under a baseline-spec name (those stay markdown under docs/spec/). Sibling doc-authoring skills (tdd, adr, ux-spec) create docs of a different type, so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -254,12 +264,14 @@ testing
 | Trigger | Handling |
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(prd, "<topic>") — describe the artifact in 3-10 words.` |
-| Title empty after trimming (e.g., all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Topic normalizes to a reserved name (see list above) | Abort: `Error: '{normalized}' is a reserved baseline-spec name owned by the init-specs skill. Pick a different topic or use the init-specs skill to bootstrap project specs.` No overwrite path. |
+| Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
+| Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the init-specs skill. Pick a different topic or use the init-specs skill to bootstrap project specs.` No overwrite path. |
+| Output file already exists (and slug is not reserved) | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
+| Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — PRD requires at least one mermaid fenced block (user journey, state, or component map).` |
-| Frontmatter `status` value outside the allowed set | Abort: `Error: validation failed: frontmatter — 'status' must be one of draft \| approved. Got '{value}'.` |
+| Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — PRDs use 'maturity', not 'status'. Remove the status field.` |
 | `maturity` value outside the allowed set | Abort: `Error: validation failed: frontmatter — 'maturity' must be one of proof-of-concept \| draft \| experimental \| stable. Got '{value}'.` |
 | Success Metrics section has no numeric targets | Abort: `Error: validation failed: Success Metrics — every metric must include a numeric target or threshold (e.g., 'p95 < 800ms'). Vague metrics are rejected.` |
-| `docket doc create` returns a non-ok JSON envelope | Surface raw error: `Error: docket doc create failed — {message}.` Do NOT retry. The temp-file body remains on disk; the calling agent reports to the operator. |
+| Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

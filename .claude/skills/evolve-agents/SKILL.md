@@ -74,7 +74,7 @@ Before spawning any agents:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
-9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` in the gitignored per-user settings.local.json — add it if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
+9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -233,6 +233,10 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
    - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c` for each session where the agent spawned subagents. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
+5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
+   - `sum(increase(claude_code_session_count[{history_days}d]))`
+   - `sum(increase(claude_code_cost_usage[{history_days}d]))`
+   Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
 
 ## Output Format (per agent)
 Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
@@ -245,6 +249,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
 - Model distribution: <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
 - Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
+- Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
 If a category is empty for an agent, write `none` — do not omit the line.
@@ -317,6 +322,11 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 3. **`~/.claude/history.jsonl`** — count operator-typed `@<agent>` mentions in the window per target agent (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 
 4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
+5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
+   - `sum by (model, agent_name) (increase(claude_code_token_usage[{history_days}d]))`
+   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
+   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
+   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
 
 ## Improvement-Only Mandate
 Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
@@ -330,6 +340,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Fix-loop respawns by model: <model → -r2 count, or "none">
 - Error/abort by model: <model → count, or "none">
 - Operator-correction by model: <model → count, or "none">
+- Mimir metrics: <summary of labeled token/cost totals by model and agent_name, or "metrics unavailable: <reason>">
 - Routing recommendations: <1-3 bullets with evidence citations, or "none — no improvement opportunity grounded in data">
 
 If a category is empty for an agent, write `none` — do not omit the line.
@@ -436,6 +447,8 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
+8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent_name` label in PromQL → `skill_name`; "target agents" → "target skills"); flag any drift.
+9. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
 
 ## Output Format
 

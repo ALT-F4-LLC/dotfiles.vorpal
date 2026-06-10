@@ -213,6 +213,7 @@ For EACH target skill, mine three read-only sources for signals that the skill i
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
    - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by tool-call UUID/timestamp, not replicated lines); ≥2 distinct invocations in one session is a failure signal.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c` for sessions where the skill spawned or was invoked in a multi-agent context. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
    - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface 1-2 representative `display` prompts per skill.
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
@@ -238,10 +239,10 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
 - Error/abort signals: <count> with example
 - Re-invocation signals: <count of sessions with ≥2 invocations>
+- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
 - Memory references: <list of .claude/agent-memory paths, or "none">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-
 If a category is empty for a skill, write `none` — do not omit the line.
 
 After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
@@ -249,8 +250,7 @@ After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-skill grep mandatory — never load wholesale (~/.claude/projects/ ~1GB). Do not cluster/rank across skills; stay per-skill.
+- No peer-to-peer SendMessage — orchestrator only. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)

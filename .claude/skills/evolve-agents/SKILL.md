@@ -219,8 +219,9 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
    - `-r2` respawn convention (canonical from `agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
    - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c` for each session where the agent spawned subagents. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
-   - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Expect low signal — operators rarely `@<agent>` directly; capture `none` if empty.
+   - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
 
 ## Output Format (per agent)
 Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
@@ -231,10 +232,10 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
 - Error/abort signals: <count> with example
 - Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
+- Model distribution: <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
 - Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-
 If a category is empty for an agent, write `none` — do not omit the line.
 
 After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
@@ -242,8 +243,7 @@ After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-agent grep mandatory — never load wholesale (`~/.claude/projects/` ~1GB). Do not cluster/rank across agents; stay per-agent.
+- No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents.
 ```
 
 ### Phase 1: Self-Review & Improve

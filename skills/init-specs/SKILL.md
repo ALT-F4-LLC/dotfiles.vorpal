@@ -18,7 +18,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 The argument is **optional** — this skill has a single well-defined behavior.
 
 - **No argument** (`/init-specs`): Bootstrap all 7 spec files.
-- **With argument** (`/init-specs security.md operations.md`): Treat `$ARGUMENTS` as the target set
+- **With argument** (`/init-specs security.md operations.md`): Treat `\$ARGUMENTS` as the target set
   instead of all 7. Validate each name against the Spec File Reference table.
 - **On unknown name(s)**: Abort with a message listing the rejected name(s) and the 7 valid filenames; do not partially proceed.
 
@@ -49,7 +49,7 @@ Before spawning any agents:
    - **If invoked directly by the operator** (no verified goal in the prompt): Use a single `AskUserQuestion` call with two questions:
      1. `header: "Scope"` — "Which spec files should be generated?" Options: `All 7 specs` (default), `Custom subset` (multiSelect — present the 7 filenames so the operator can pick), `Cancel`.
      2. `header: "Emphasis"` — "Any dimension to emphasize during exploration?" Options: `Balanced (no emphasis)` (default), `Security posture`, `Operational readiness`, `Testing maturity`, `Architecture & maintainability`. Single-select.
-     If `$ARGUMENTS` was passed, skip question 1 (the subset is already declared) and only ask question 2.
+     If `\$ARGUMENTS` was passed, skip question 1 (the subset is already declared) and only ask question 2.
    - **If invoked by an orchestrator with a verified goal** (the prompt contains a verified goal statement): Use it as the starting point. Re-verify alignment if your understanding diverges. Extract the goal and carry it forward.
    - Capture the verified goal (including any selected emphasis) as `{verified_goal}` for use in the spawning template.
 2. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
@@ -57,7 +57,7 @@ Before spawning any agents:
    - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
    - `mkdir -p docs/spec` — ensure output directory exists
 3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-4. **If any file in the target set already exists**, use AskUserQuestion to present options. The "target set" is all 7 by default, or the `$ARGUMENTS` subset:
+4. **If any file in the target set already exists**, use AskUserQuestion to present options. The "target set" is all 7 by default, or the `\$ARGUMENTS` subset:
    - **Overwrite** — delete the conflicting file(s) in the target set and regenerate
    - **Skip existing** — only generate missing files in the target set
    - **Cancel** — abort the operation

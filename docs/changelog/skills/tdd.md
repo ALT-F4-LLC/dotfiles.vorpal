@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Full-cycle audit: NO-OP verdict. allowed-tools (Glob+Grep) verified consistent with doc-authoring siblings and used in body; cross-references correct; no unescaped $-digit; description 269 chars. Stale 2026-06-04 entry (claimed Glob/Grep removal not reflected in live file or siblings) noted as historical artifact — entries immutable, live state correct.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no trim slack at 302/500); Coherence (COUPLING → 5 skills verified).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Mythos/Fable-5 cycle audit: NO changes. All 3 cross-repo historical signals verified already encoded against the LIVE file (regex-AC run-and-verify §11(c) L224-227 + §5; scope-bounded "verified" claims §5 L146-148; named-source-vs-live-artifact §5 L143-145). Reasoning-echo clean; $-escape clean; no over-prescription trims available without breaking deterministic format authority.
 
 ### Changes

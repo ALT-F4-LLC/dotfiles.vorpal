@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+One-line coherence fix: principle #5 lookup-table name re-synced from "at every edge" to "at every external touchpoint" to match current agents/senior-engineer.md:227 (drifted via post-verification Mythos/Fable-5 evolve-agents edit). Net 0 (279 lines, orchestrator-verified post-apply).
+
+### Changes
+- Principle #5 table name corrected to authoritative source wording (L108).
+
+### Dimensions Evaluated
+All 8; Coherence primary (12-principle table re-sync — stale prior verification superseded by live read); Over-Engineering (no trim candidates).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean; $-escape clean; recall-filter check: "drop it"/"Drop anything" are rubric-membership tests (non-findings), not severity suppression — Confidence ladder's Judgment rung already surfaces subjective calls. Calibration worked-examples are concrete decision anchors, kept.
 
 ### Changes

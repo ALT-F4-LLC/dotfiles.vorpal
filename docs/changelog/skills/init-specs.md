@@ -3,6 +3,34 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 fix: escaped 3 documentary `\$ARGUMENTS` occurrences (L21/52/60). The prior "backtick-inline documented-variable, deliberately not escaped" rationale is refuted by this cycle's empirical evidence that substitution occurs inside backticks — bare occurrences corrupted Argument Handling/Pre-flight prose at invocation. Net 0 (183 lines).
+
+### Changes
+- L21/52/60: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose.
+
+### Dimensions Evaluated
+Skill Design Quality (arg-escape correctness); Coherence (family-wide documentary-escape ruling; vote L27 live command confirmed stays bare).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Fourth consecutive no-change verdict. Phase-0 step-ordering signal NO-OP: unknown-arg abort (L23) fires before Pre-flight; overwrite dialog (L60) unreachable by reserved-name concern (init-specs owns those names; prd's refusal-first ordering confirmed downstream). Seven Spec Files exact-match team-lead taxonomy.
+
+### Changes
+- None (NO-OP verdict). `$ARGUMENTS` substitution-intent ruling (L21/52/60) deferred to Phase 2 alongside the family-wide escape decision.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (183 lines, no trim headroom); Coherence (COUPLING reciprocity with prd consistent).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean. $ARGUMENTS hits (L21/52/60) are backtick-inline documented-variable idiom — NOT positional-expansion hazards; deliberately NOT escaped (escaping would corrupt the documented meaning). Third consecutive no-change verdict.
 
 ### Changes

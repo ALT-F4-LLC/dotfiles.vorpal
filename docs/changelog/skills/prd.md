@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Full-cycle audit: NO changes. Reserved-name ordering signal verified resolved (refusal step 4 L85 precedes collision dialog step 5 L86). Stale 2026-06-04 entry (claimed Glob/Grep removal never reflected in live file) noted as historical artifact — entries immutable, live state correct.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (275 lines, no trims remaining); Coherence (allowed-tools vs body consistent; sibling parity with adr/tdd/ux-spec intact).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Mythos/Fable-5 cycle audit: NO changes. Historical overwrite-guard signal verified resolved in live file (reserved-name refusal step 4 L85 precedes collision dialog step 5 L87; Failure Mode table ordering matches). Reasoning-echo clean; $-escape clean.
 
 ### Changes

@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Added brief to the D4 leaf-family BANNER enumeration — the 2026-06-09 audit found brief is a genuine leaf carrier omitted from the rubric list (FINDING 1, facet b).
+
+### Changes
+- D4 #2 leaf-family enumeration now reads "…verify-ac, simplify-scout, brief" so future audits hash brief within the leaf family instead of discovering it ad hoc. Paired with normalizing brief's banner tail (see brief changelog). Net lines: 0.
+
+### Dimensions Evaluated
+Coherence (manifest-scoped remediation cycle — other dimensions out of scope per operator-approved slice).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Phase 2: D3 stale-name pair code-review→code-review-verdict added; review-and-comment banner carve-out whitelisted in D4; rename reference updates.
 
 ### Changes

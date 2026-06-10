@@ -33,3 +33,8 @@ Symptom: every spec generator received a re-dispatch of its already-completed ta
 
 ## 2026-06-09 — Bash cwd persistence broke relative-path greps
 Symptom: grep on docs/spec/code-quality.md returned "No such file or directory" minutes after the file verified present. Root cause: earlier verification command did `cd docs/spec`, and cwd persists across Bash calls — relative path resolved to docs/spec/docs/spec/. Resolution: prefix orchestration commands with `cd <repo-root>` or use absolute paths; a spec generator hit the same class ("bash cwd had reset" report).
+
+## 2026-06-09 — Redundant TaskUpdate(completed) emits phantom task_assignment to the prior owner
+symptom → after a teammate self-marks its task completed, team-lead's redundant TaskUpdate(taskId, status=completed) triggers a task_assignment notification that wakes the (already-done) teammate, which replies "already complete, no rework" — recurred 5× in one evolve-coherence cycle (4 reviewers + reconciler), pure message noise crossing the pending shutdown_request.
+root cause → TaskUpdate on a task with an owner re-emits an assignment event even when the status transition is a no-op (completed→completed) or team-lead is merely confirming; combined with async shutdown_request, the two messages cross in the queue.
+resolution → when a teammate's brief instructs it to self-mark its task completed, do NOT re-issue TaskUpdate(completed) for that task; verify via TaskList instead, and send only the shutdown_request. The crossing is harmless (one-authoritative-message rule: never re-send the shutdown), but avoidable.

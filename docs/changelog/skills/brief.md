@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Normalized the CANONICAL:BANNER trailing clause to the leaf-family standard, restoring byte-parity under the canonical strip (evolve-coherence 2026-06-09 audit, FINDING 1, operator decision: NORMALIZE).
+
+### Changes
+- BANNER tail "The calling agent handles any follow-up after this skill returns." → "The calling agent handles peer messaging after this skill returns." — the canonical strip `sed 's/ The calling agent handles peer messaging.*$//'` anchored on "peer messaging" did not match brief's variant tail, so coherence audits flagged brief as divergent; post-edit all 10 leaf banners strip-normalize to one hash (8cffe6b8). Net lines: 0.
+
+### Dimensions Evaluated
+Coherence (manifest-scoped remediation cycle — other dimensions out of scope per operator-approved slice).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Live-test defect fix: brief recommended a taxonomy-violating route with "(Recommended)" confidence (standalone creation of docs/spec/security.md, a reserved init-specs-owned name). Added a docs-path ownership check to the question-construction guidance.
 
 ### Changes

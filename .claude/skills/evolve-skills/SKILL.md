@@ -40,8 +40,9 @@ Before adopting a non-obvious new approach, cycles MUST follow this four-step pr
 
 1. **Hypothesis** — state what improvement is expected and why (e.g., "pinning `effort: high` on skill X will reduce operator-correction signals because current opus spawns are over-resourced for leaf tasks").
 2. **Trial** — define which skill, which scope, and what change to apply.
-3. **Measurement** — specify success criteria drawn from Phase 0 historical-audit signals already gathered: operator-correction signal count, re-invocation count per session, model distribution, error-abort count. Do NOT add new measurement infrastructure — reuse the existing audit arm.
-4. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against criteria; rollback by invoking the existing Phase 1 Self-correct/revert step. Record the outcome as a `Trial: <hypothesis> → <outcome>` line prepended to the `### Summary` section of the relevant skill's changelog entry.
+3. **Operator approval (HARD GATE)** — present the hypothesis, trial scope, and blast radius to the operator via AskUserQuestion BEFORE implementing any trial change; an unapproved trial is recorded as a proposal in the changelog (`Trial: <hypothesis> → proposed`) and NOT implemented. No trial may introduce changes without this approval.
+4. **Measurement** — specify success criteria drawn from Phase 0 historical-audit signals already gathered: operator-correction signal count, re-invocation count per session, model distribution, error-abort count. Do NOT add new measurement infrastructure — reuse the existing audit arm.
+5. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against criteria; rollback by invoking the existing Phase 1 Self-correct/revert step. Record the outcome as a `Trial: <hypothesis> → <outcome>` line prepended to the `### Summary` section of the relevant skill's changelog entry.
 
 ---
 

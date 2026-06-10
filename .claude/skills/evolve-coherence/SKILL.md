@@ -24,7 +24,7 @@ You are the **Coherence Audit Orchestrator**. Create an agent team (TeamCreate),
 
 ## Innovation Mandate
 
-Each evolve-coherence cycle applies an AI-first lens: audit whether the sibling evolve-* skills' innovation mandate sections are present, internally coherent, and mutually consistent. Flag any evolve-agents or evolve-skills skill missing an innovation mandate, an incomplete scientific trial protocol (hypothesis / trial / measurement / adopt or rollback steps), or terminology drift from siblings (e.g., one skill uses different vocabulary for "model frontier" or "scientific trial protocol"). Route all findings into the Remediation Manifest for evolve-agents/evolve-skills to action. This skill AUDITS and SURFACES — it does not run trials, apply changes, or execute any step of the trial protocol.
+Each evolve-coherence cycle applies an AI-first lens: audit whether the sibling evolve-* skills' innovation mandate sections are present, internally coherent, and mutually consistent. Flag any evolve-agents or evolve-skills skill missing an innovation mandate, an incomplete scientific trial protocol (hypothesis / trial / operator approval / measurement / adopt or rollback steps), a missing operator-approval gate between Trial and Measurement, or terminology drift from siblings (e.g., one skill uses different vocabulary for "model frontier" or "scientific trial protocol"). Route all findings into the Remediation Manifest for evolve-agents/evolve-skills to action. This skill AUDITS and SURFACES — it does not run trials, apply changes, or execute any step of the trial protocol.
 
 ---
 
@@ -222,7 +222,7 @@ Severity ladder reuses the staff-engineer ladder (the report is a staff-engineer
 
 ## Remediation Manifest (Phase 2 output, in-context — routable)
 
-A structured block the operator feeds to the evolve skills. One bucket per fix-owner so the operator can paste the relevant slice. Empty buckets read `None`. Manifest entries may include innovation-mandate and trial-protocol gaps detected during audit — for example, a mandate section absent from a sibling skill, trial protocol steps missing or incomplete, or vocabulary drift between siblings (e.g., one skill uses different terminology for "model frontier" or "adopt or rollback"). These route under the appropriate fix-owner bucket (evolve-agents or evolve-skills) as Concerns.
+A structured block the operator feeds to the evolve skills. One bucket per fix-owner so the operator can paste the relevant slice. Empty buckets read `None`. Manifest entries may include innovation-mandate and trial-protocol gaps detected during audit — for example, a mandate section absent from a sibling skill, trial protocol steps missing or incomplete (hypothesis / trial / operator approval / measurement / adopt or rollback), a missing operator-approval gate, or vocabulary drift between siblings (e.g., one skill uses different terminology for "model frontier" or "adopt or rollback"). These route under the appropriate fix-owner bucket (evolve-agents or evolve-skills) as Concerns.
 
 ```
 Remediation Manifest

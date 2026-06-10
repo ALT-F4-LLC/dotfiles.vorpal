@@ -1,5 +1,34 @@
 # Changelog: vote
 
+## 2026-06-10
+
+### Summary
+Compacted 8 entries (2026-05-13..2026-05-28) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Deleted phantom `--double` flag / `doubled=true` parenthetical at L75 — confirmed non-existent against `docket vote create --help` (docket b161f57) and absent from team-lead.md's opt-up wording. Net 0 lines.
+
+### Changes
+- L75: removed ghost-flag text; the correct opt-up mechanism (`docket vote create -n N` override) was already stated in the same sentence — pure deletion, no information lost.
+- Cross-project pitfall checks: verdict-delivery-via-SendMessage and ground-truth-over-chat (`docket vote result`) verified ALREADY encoded; `docket doc edit -d` full-body-replace hazard not applicable (zero docket doc refs).
+
+### Dimensions Evaluated
+All 8; Coherence (CLI ground-truth drift — primary fix); Over-Engineering; Orchestration (verdict-delivery mechanics verified).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -131,135 +160,6 @@ Over-Engineering (HIGHEST — 2 trims), Coherence (doubled-table + recursive-dou
 ### Rename
 No rename — `vote` matches the `docket vote` CLI subcommand exactly.
 
-## 2026-05-28
-
-### Summary
-Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to canonical `agents/team-lead.md`.
-
-### Changes
-- Cap-of-8 amendment pointer → `agents/team-lead.md` Rule 8 (reviewer panel sizing).
-- Ephemeral vote-reviewer lifecycle "per TDD §4.4" → `agents/team-lead.md` Rule 7 (ephemeral contract).
-
-### Dimensions Evaluated
-Coherence (accurate references).
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Two coordination fixes at net 0 lines: (1) team-mode delegation finalizes the orphaned `open` proposal on `failed`/timeout; (2) reconciled a crossed shutdown handshake — standalone Cleanup no longer originates `shutdown_request` toward reviewers (which inverted the self-initiated lifecycle), now approves pending requests + `TeamDelete` reaps. CHANGE 2 confirms the specs reviewer's cross-skill flag.
-
-### Changes
-- Delegation Protocol step 5: finalize the orphaned proposal on `failed`/timeout before aborting (best-effort `docket vote commit`), mirroring Phase 3 view-change hygiene; no `vote delete` exists.
-- Cleanup step 1: approve reviewer self-shutdowns instead of originating `shutdown_request` (fixes the line-90 ↔ line-339 contradiction + aligns with fleet shutdown canon).
-
-### Dimensions Evaluated
-Orchestration/handoff (HIGHEST — delegation failure path + crossed handshake), Completeness, Over-Engineering (net 0), Coherence (team-lead.md relay contract + shutdown canon).
-
-### Rename
-No rename. Referenced by name across team-lead.md + 6 agent files.
-
-## 2026-05-25
-
-### Summary
-Closed team-mode direct-invocation loophole by hoisting delegation gate into the canonical banner (root cause of session 04db218a operator-rejection where agent invoked Skill(vote) directly in team context because Execution Mode Detection gate was buried below the load-time banner). Two minor clarifications: Output Format marks base-vs-doubled table for audit clarity; vote_id detection rule made visually distinct. Net +3 lines.
-
-### Changes
-- Canonical banner: added clause 3 forbidding team-mode direct invocation of Skill(vote) — delegation via SendMessage to team-lead is the only team-mode path; standalone /vote remains operator entry. Closes load-time gap.
-- Output Format Reviewers line: appended `— {base|doubled} table` so audit record self-documents which sizing was used (base table is new default per 2026-05-25).
-- Argument Handling vote_id branch: extracted "Detection:" sub-clause clarifying dispatch keys on `docket vote show` exit code, not string-shape heuristics.
-
-### Dimensions Evaluated
-Orchestration (HIGHEST — delegation gate), Output Quality, Actionability, Coherence (team-lead.md reviewer-defaults base-table).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Light trim cycle: removed self-duplicated cap-at-8 sentence, collapsed recursive-doubling paragraph to a one-line pointer (full semantics live in `team-lead.md` + reviewer-doubling-lifecycle TDD), and sharpened Argument Handling dispatch comments so team-mode callers don't pass free-text args (signal: captured session 962bb9d0 where vote was invoked with free-text proposal in team-mode).
-
-### Changes
-- Criticality Classification: removed duplicated second sentence of cap-at-8 note.
-- Recursive-doubling paragraph: collapsed 5-line cross-document duplicate to 2-line pointer referencing `docs/tdd/reviewer-doubling-lifecycle.md` §8.2 decision 5.
-- Argument Handling: clarified vote_id branch is the canonical team-lead relay path; flagged proposal-description branch as standalone-only.
-
-### Dimensions Evaluated
-Over-Engineering (primary), Coherence (team-lead.md, reviewer-doubling-lifecycle.md), Actionability.
-
-### Rename
-No rename.
-
-## 2026-05-18
-
-### Summary
-Minor over-engineering trim in Phase 2 — folded "coordinator-owned tasks" editorial into the existing actionable sentence. No behavioral or contract changes; CLI flags verified intact against `docket vote --help`; cross-caller Delegation Protocol payloads (6 agent files) confirmed coherent.
-
-### Changes
-- Phase 2: removed standalone "Tasks are coordinator-owned for observability" paragraph; merged the TaskUpdate sentence into the spawn paragraph.
-
-### Dimensions Evaluated
-Over-Engineering (primary), Coherence, Spec Alignment.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Tightened team-mode delegation payload contract to close coherence gap with calling agents (staff/security/sdet/senior/ux currently document divergent payloads). Added "When to invoke (high bar)" rule (historical audit shows 3 invocations vs code-review's 125 — healthy but unstated). Clarified `from` field's role in operator-visibility relay. Restated frontmatter rationale.
-
-### Changes
-- Delegation Protocol step 2: made "Create proposal first" explicit + added `failed` contract on payloads missing vote_id.
-- Delegation Protocol step 3: added optional summary/artifact operator-observability hints; clarified docket is authoritative.
-- Header: added "When to invoke (high bar)" decision rule + do-not-vote-on list.
-- Output Format step 4: callee resolves invoking agent via from field; cc team-lead for operator-visibility.
-- Execution Mode Detection: parenthetical noting frontmatter Agent/TeamCreate/TeamDelete are for standalone path only.
-
-### Dimensions Evaluated
-Orchestration & Agent Teams (primary), Coherence (with team-lead.md, staff/security/sdet/senior/ux agent files), Skill Design Quality, Actionability.
-
-### Rename
-No rename. `vote` matches `docket vote` CLI exactly.
-
-## 2026-05-16
-
-### Summary
-Restructured Pre-flight goal-alignment Q3 to conform to AskUserQuestion contract (was 5 inline options with default-with-rationale jammed into the option list; now Confirm/Override pair after deterministic classification). Trimmed Delegation Protocol step 4 by extracting team-lead's responsibility narrative to a one-line pointer at team-lead.md Consensus Integration. Reordered Pre-flight steps. Small formatting + reviewer-shutdown reason consistency fixes.
-
-### Changes
-- Pre-flight: swapped step ordering so step 2 is "Classify criticality" (deterministic) and step 3 is "Confirm goal-alignment (HARD GATE)" — Q3 now uses `Confirm {classified-level}`/`Override`, satisfying AskUserQuestion 2-4 options contract.
-- Delegation Protocol step 4: trimmed team-lead-responsibility prose; replaced with pointer to team-lead.md Consensus Integration. Eliminates duplicated contract drift risk.
-- Output Format Cleanup step 1: added `reason: "vote complete"` to `shutdown_request` payload for consistency with evolve-* shutdown protocol.
-- Delegation Protocol step 5: added missing blank line before the `---` separator.
-
-### Dimensions Evaluated
-Operator Prompt Quality (primary), Coordination & Handoff (Delegation Protocol clarity), Over-Engineering, Coherence (team-lead.md, evolve-* shutdown protocol).
-
-### Rename
-No rename. `vote` matches `docket vote` CLI exactly.
-
-## 2026-05-13
-
-### Summary
-Reconciled `--findings-json` "primary path" claim with the Reviewer Template's markdown output by adding a `### Findings JSON` block reviewers emit alongside markdown; the coordinator passes the JSON block verbatim to `docket vote cast --findings-json -` with the plaintext heredoc as documented fallback. Closed @security-engineer coherence gap with team-lead Security Track: added security row to Agent Selection table, proposer-exclusion mapping, and Domain-Specific Checklist so security-sensitive votes route correctly and proposer-independence holds.
-
-### Changes
-- Recording Votes: reframed `--findings-json` as primary path consuming the reviewer's emitted JSON block; plaintext heredoc demoted to "fallback when JSON missing or malformed".
-- Reviewer Prompt Template: added `### Findings JSON` section between Findings and Summary so reviewers emit a structured JSON object for direct passthrough to `--findings-json -`.
-- Agent Selection: added "Security-sensitive" row (primary @security-engineer); replaced incorrect "@senior-engineer for security-tagged" with "@security-engineer for security-tagged".
-- Reviewer Independence Mapping: added `@security-engineer` row covering `security-engineer`/`security-advisor`/`security-tdd-author` `created_by` values.
-- Domain-Specific Checklist: added @security-engineer row (authn/authz, input validation, secrets/crypto, trust boundaries, sandbox, supply chain, logging-leak, DoS).
-
-### Dimensions Evaluated
-Skill Design Quality (JSON contract correctness), Actionability, Completeness (security role end-to-end), Coherence (team-lead Security Track, code-review role detection), Orchestration & Agent Teams.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +192,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-07: Over-engineering pass on largest skill (338→316): tightened Pre-flight, deduplicated Phase 2, merged Audit Trail into Output Format.
 - 2026-05-09: Fixed silent quorum-poisoning (NON-VOTE failure-cast prefix); Delegation Protocol re-anchored as thin re-invoke; docket vote unlink adopted.
 - 2026-05-09: CLI alignment: docket version --quiet liveness probe; --findings-json primary recording path; Record block echoes docket vote commit.
+- 2026-05-13: Reconciled `--findings-json` "primary path" claim with the Reviewer Template's markdown output by adding a `### Findings JSON` block reviewers emit alongside...
+- 2026-05-16: Restructured Pre-flight goal-alignment Q3 to conform to AskUserQuestion contract (was 5 inline options with default-with-rationale jammed into the option lis...
+- 2026-05-17: Tightened team-mode delegation payload contract to close coherence gap with calling agents (staff/security/sdet/senior/ux currently document divergent payloa...
+- 2026-05-18: Minor over-engineering trim in Phase 2 — folded "coordinator-owned tasks" editorial into the existing actionable sentence. No behavioral or contract changes;...
+- 2026-05-20: Light trim cycle: removed self-duplicated cap-at-8 sentence, collapsed recursive-doubling paragraph to a one-line pointer (full semantics live in `team-lead....
+- 2026-05-25: Closed team-mode direct-invocation loophole by hoisting delegation gate into the canonical banner (root cause of session 04db218a operator-rejection where ag...
+- 2026-05-28: Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to canonical `agents/team-lead.md`.
+- 2026-05-28: Two coordination fixes at net 0 lines: (1) team-mode delegation finalizes the orphaned `open` proposal on `failed`/timeout; (2) reconciled a crossed shutdown...

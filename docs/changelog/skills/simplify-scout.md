@@ -1,5 +1,20 @@
 # Changelog: simplify-scout
 
+## 2026-06-10
+
+### Summary
+Two over-engineering trims (net -13, 279→266): Failure Modes table and COUPLING comment removed. No additions — zero invocations in the audit window make additions speculative.
+
+### Changes
+- Removed Failure Modes section (-12): every row restated abort logic already specified verbatim in Argument Handling, Role Detection, Scan Procedure, and Validation Before Emit (e.g. "Could not resolve" duplicated L73/L275) — drift surface with no usage evidence.
+- Removed COUPLING HTML comment at "When NOT to Use" (-1): routing rationale self-evident from the bullets; author-to-reviewer narration, not actionable by any caller.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — two trims); Coherence (12-principle rubric tri-carrier drift risk flagged to Phase 2).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary

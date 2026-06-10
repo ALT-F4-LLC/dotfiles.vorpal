@@ -169,7 +169,7 @@ Requirements:
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
 - After saving the file, mark your task as completed via TaskUpdate, send a completion
-  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then emit a `shutdown_request` to that same orchestrator as your FINAL tool call and await `shutdown_approved`. Do not idle awaiting further work.
+  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then emit a `shutdown_request` to that same orchestrator as your FINAL tool call and await `shutdown_response`. Do not idle awaiting further work.
 ```
 
 ---

@@ -1,5 +1,47 @@
 # Changelog: tdd
 
+## 2026-06-10
+
+### Summary
+Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 11 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L43) already states the identical ignore-silently rule. Applied identically to all 4 doc-authoring siblings (prd/tdd/adr/ux-spec, -1 each). Net -1 (301 lines).
+
+### Changes
+- Failure Modes: deleted last table row (intra-file duplication of the CANONICAL block; byte-identical removal across the family, grep-verified 0 survivors).
+
+### Dimensions Evaluated
+Coherence (family lockstep), Over-Engineering.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Full-cycle audit: NO-OP. All cross-project pitfall signals (verified/canonical-claim discipline, coherence-grep AC under-match) confirmed already encoded against the live file — Authoring §5 (L142-148) bars contradicted-facts + scope-overreach; §11(c) (L222-227) requires run-with-hit-set-verified grep ACs. verify-ac-snippet innovation declined (sibling-boundary + no BALANCED offset).
+
+### Changes
+- None (NO-OP verdict, grep-cited against live file).
+
+### Dimensions Evaluated
+All 8; Over-Engineering HIGHEST (no trim slack without breaking format-authority determinism); Completeness (pitfall halves a/b/c all present); Coherence (CANONICAL trio + COUPLING verified across family).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -115,174 +157,6 @@ Completeness (PRIMARY — AC robustness), Actionability, Over-Engineering (HIGHE
 ### Rename
 No rename.
 
-## 2026-06-04
-
-### Summary
-Dropped vestigial `Glob`/`Grep` from `allowed-tools`; added a status-authority rule clarifying Docket's `.data.status` is the single source of truth for the verify-ac gate (the body `status` field may drift stale).
-
-### Changes
-- `allowed-tools` trimmed to `["AskUserQuestion", "Bash", "Read", "Write"]` (dropped `Glob`, `Grep`) — family lockstep with adr/prd/ux-spec.
-- Field rules: replaced "body `status` mirrors Docket's doc-level status" with an authority rule — Docket `.data.status` gates downstream verify-ac (ABORTs on non-`approved`); the body `status:` is documentation-only, not auto-synced by `docket doc edit -s`, so may drift stale.
-
-### Dimensions Evaluated
-Skill Design Quality, Coherence (consistency with the applied verify-ac status-gate fix), Completeness.
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Added the reciprocal PRD-vs-TDD routing boundary to "When to Use" so the tdd↔prd split is symmetric — prd already states "pick PRD when scope precedes architecture"; tdd now states the inverse. Net +2.
-
-### Changes
-- "When to Use" bullet 1: appended a one-line PRD/TDD boundary ("pick TDD when *how* is the question — what/why settled") mirroring prd line 52. Verified prd's "scope precedes architecture" phrasing exists before referencing it.
-
-### Dimensions Evaluated
-Coherence (tdd↔prd boundary symmetry; tdd↔adr split verified sound), Over-Engineering (HIGHEST — +2, no trimmable slack at 288/500), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Corrected the same factually-incorrect `allowed-tools`-excludes-Edit rationale found in prd/ux-spec (per Claude Code docs, allowed-tools does not restrict the tool pool). Reframed the no-fix-and-retry abort as the intended single-pass validate-then-write design. Slug-batching contract reviewed — sound, no change.
-
-### Changes
-- Validation Before Save: replaced "`Edit` is excluded from this skill's tools" / "it has its own tools" with a design-intent rationale (validate-then-write once; caller owns repair). Fixed in lockstep with prd/ux-spec.
-
-### Dimensions Evaluated
-Skill Design Quality (factual accuracy), Completeness (slug disambiguation when batching multiple TDDs/session — verified robust), Over-Engineering (no trim), Orchestration (leaf), Coherence (doc-authoring family), Actionability, Spec Alignment, Rename.
-
-### Rename
-No rename — tdd is the established, family-consistent name.
-
-## 2026-05-28
-
-### Summary
-No-change verdict. Flagged top item (slug determinism for mixed clean-slug/freeform args) is already resolved by the deterministic 8-step ARGUMENT_HANDLING derivation (canonical, family-shared) plus collision dialog and near-duplicate probe — freeform topics slugify deterministically by construction; no bug. argument-hint `<topic>` kept for 4-sibling parity. Zero docket/vote CLI to drift. 286 lines, ~43% under cap; Over-Engineering found no slack.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-Skill Design Quality (argument handling — top item), Over-Engineering (HIGHEST), Orchestration/handoff, Coherence (adr/prd/ux-spec parity), Vote handoff, Actionability, Completeness, Spec Alignment, Rename.
-
-### Rename
-No rename. `tdd` is the established, family-consistent name.
-
-## 2026-05-25
-
-### Summary
-Phase 2 coherence: removed TYPE substitution note (lockstep with prd/adr/ux-spec) and removed stale "(currently 11 sections)" hardcoded count from Validation §3.
-
-### Changes
-- Removed `For this skill, substitute {TYPE} with tdd in the usage error.` — Item 1 lockstep.
-- Removed stale section-count token from Validation §3 (mirrors prd's Phase 1 fix; Required Sections list is source of truth).
-
-### Dimensions Evaluated
-Coherence, Consolidation.
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-No-change verdict. Skill is mature — 186 sessions in 7d with zero operator corrections, 288 LOC under 500 cap, four trim-class entries in last 30 days already addressed coherence/over-engineering. Three historical-audit focus areas (stale-token verification, per-row arithmetic, missing-directory preamble) surfaced @staff-engineer/team-lead pitfalls but are NOT TDD-skill-content gaps — wrong layer (review/verification skills or team-lead spot-check own those defects).
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — no remaining slack), Skill Design Quality, Actionability, Completeness, Orchestration, Coherence (sibling parity), Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with prd/adr/ux-spec/specs.
-
-## 2026-05-20
-
-### Summary
-Added non-blocking near-duplicate-slug probe to Pre-flight (closes gap surfaced by sessions dd8cea9d/962bb9d0 where near-identical args derived to different slugs and silently produced adjacent docs/tdd/ files — exact-match collision dialog can't catch this). Collapsed Authoring §4 Mermaid restatement now that Validation §5 + Failure Modes carry the gate. Renumbered Related-doc probe (was §5, now §6). Net +1 line.
-
-### Changes
-- Pre-flight: added §5 near-duplicate probe (advisory `Glob docs/tdd/{slug[:12]}*.md`, non-blocking note to calling agent).
-- Pre-flight: renumbered existing §5 "Related-doc probe" → §6; Authoring §1 cross-reference "Pre-flight step 5" → "step 6".
-- Authoring §4 Mermaid clause: trimmed restatement of Validation §5 + ADR routing (load-bearing gates live elsewhere).
-
-### Dimensions Evaluated
-Completeness (HIGHEST — near-duplicate slug gap from historical audit), Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-05-18
-
-### Summary
-Three trim-class fixes: collapsed §4 security-track prose bloat that duplicated agents/security-engineer.md Threat-Model Annotation mechanics (skill keeps the validation contract; agent owns routing), condensed the maturity/status orthogonality rationale to its load-bearing fact, and removed the defect-restatement in Authoring §3 now that Validation §3 is the gate. Net -19.
-
-### Changes
-- Required Sections §4: trimmed 14-line security-track paragraph to the validation rule the skill enforces; routing of mixed-scope Threat-Model Annotation deferred to `agents/security-engineer.md`.
-- Field rules §`maturity`: condensed 5-line ladder-rationale paragraph to the orthogonality fact.
-- Authoring §3: removed defect-restatement now redundant with Validation §3; forward-pointer retained.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST), Coherence (security-engineer.md routing ownership), Skill Design Quality.
-
-### Rename
-No rename.
-
-## 2026-05-16
-
-### Summary
-Three coherence/over-engineering fixes: clarified §4 security-track prose to name the Threat-Model Annotation mechanism (append via Edit to the saved TDD, not re-invoke this skill); added defer-down clause to "When NOT to Use" so TDDs touching user-facing surfaces reference the UX spec rather than inline interaction design; removed the vestigial one-line "Mermaid Mandate" subsection.
-
-### Changes
-- Required Sections §4: replaced ambiguous "co-author" prose with explicit Threat-Model Annotation mechanism — @security-engineer appends sections via Edit, not by re-invoking this skill (which would hit the collision dialog).
-- When NOT to Use (ux-spec route): added clause directing TDDs that touch user-facing surfaces to reference, not restate, the UX spec.
-- Removed standalone "### Mermaid Mandate" subsection — vestigial restatement; rule lives in Authoring §4, Validation §5, and Failure Modes.
-
-### Dimensions Evaluated
-Coherence (security-engineer.md Threat-Model Annotation; ux-spec defer-down), Over-Engineering (Mermaid restatement collapse), Skill Design Quality.
-
-### Rename
-No rename. Family-aligned with prd/adr/ux-spec.
-
-## 2026-05-13
-
-### Summary
-Coherence/Completeness fix: tightened §4 security-gating prose to match what Validation §7 actually enforces, and surfaced the co-author handoff path for mixed @staff-engineer/@security-engineer TDDs per security-engineer.md Responsibility 1. The prior prose mandated three subsections for any auth/secrets/sandbox-touching design, but Validation only checked `updated_by == @security-engineer`, creating an unenforced "should".
-
-### Changes
-- Required Sections §4: narrowed the prose mandate to `updated_by: @security-engineer` (matches Validation §7) and added explicit pointer to the team-lead co-author handoff in `agents/security-engineer.md` for mixed-scope TDDs.
-
-### Dimensions Evaluated
-Coherence (security-engineer.md co-author model; own Validation §7/§8), Completeness, Skill Design Quality, Orchestration.
-
-### Rename
-No rename.
-
-## 2026-05-09
-
-### Summary
-Four handoff + actionability fixes (operator pain points 1, 3): added UX-spec input probe to mirror PRD probing, sharpened Implementation Phases §11 with the 6 PM-decomposable fields, encoded the security-track Abuse Cases contract in Testing Strategy §9 (mirrors security-engineer.md:142), and trimmed Authoring §3 redundancy with Validation §3.
-
-### Changes
-- Pre-flight §5: renamed "Parent-PRD probe" to "Related-doc probe" and extended Glob to `docs/spec/*.md docs/ux/*.md` so TDDs touching user-facing surfaces consume existing UX specs as input dependencies (closes asymmetry with prd's Authoring §1).
-- Authoring §1: now reads candidate parent PRD OR UX spec from Pre-flight step 5.
-- Required Sections §11 (Implementation Phases): expanded to specify the 6 fields the planner consumes directly (goal, file scope, acceptance, effort estimate, blocking dependencies, out-of-scope flags). Phases must be independently shippable or explicitly chained.
-- Required Sections §9 (Testing Strategy): added security-track Abuse Cases subsection contract gated on `updated_by: @security-engineer` (mirrors security-engineer.md:142 mandate).
-- Validation Before Save §8: enforces Abuse Cases subsection for security TDDs.
-- Failure Modes table: new row for the Abuse Cases validation failure.
-- Authoring §3: trimmed redundancy with Validation §3 ("Every section listed MUST appear, in the order shown" was duplicated); kept the "may be N/A" guidance and added a forward-pointer to Validation §3 as the enforcement gate.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration (leaf — verified no sub-agent surface), Coherence (sibling prd / adr / ux-spec; security-engineer.md, ux-designer.md), Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with prd/adr/ux-spec.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +170,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-07: Dropped pure-policy Mermaid escape hatch (policy decisions route to Skill(adr)); Authoring §8 self-check collapsed to a Validation pointer (273→269).
 - 2026-05-07: Removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec.
 - 2026-05-09: Encoded security-track subsection contract (Threat Model, Trust Boundaries, Security Considerations) with Validation §7; Parent-PRD probe deterministic.
+- 2026-05-09: Four handoff + actionability fixes (operator pain points 1, 3): added UX-spec input probe to mirror PRD probing, sharpened Implementation Phases §11 with the...
+- 2026-05-13: Coherence/Completeness fix: tightened §4 security-gating prose to match what Validation §7 actually enforces, and surfaced the co-author handoff path for mix...
+- 2026-05-16: Three coherence/over-engineering fixes: clarified §4 security-track prose to name the Threat-Model Annotation mechanism (append via Edit to the saved TDD, no...
+- 2026-05-18: Three trim-class fixes: collapsed §4 security-track prose bloat that duplicated agents/security-engineer.md Threat-Model Annotation mechanics (skill keeps th...
+- 2026-05-20: Added non-blocking near-duplicate-slug probe to Pre-flight (closes gap surfaced by sessions dd8cea9d/962bb9d0 where near-identical args derived to different...
+- 2026-05-25: Phase 2 coherence: removed TYPE substitution note (lockstep with prd/adr/ux-spec) and removed stale "(currently 11 sections)" hardcoded count from Validation...
+- 2026-05-25: No-change verdict. Skill is mature — 186 sessions in 7d with zero operator corrections, 288 LOC under 500 cap, four trim-class entries in last 30 days alread...
+- 2026-05-28: No-change verdict. Flagged top item (slug determinism for mixed clean-slug/freeform args) is already resolved by the deterministic 8-step ARGUMENT_HANDLING d...
+- 2026-05-29: Corrected the same factually-incorrect `allowed-tools`-excludes-Edit rationale found in prd/ux-spec (per Claude Code docs, allowed-tools does not restrict th...
+- 2026-05-30: Added the reciprocal PRD-vs-TDD routing boundary to "When to Use" so the tdd↔prd split is symmetric — prd already states "pick PRD when scope precedes archit...
+- 2026-06-04: Dropped vestigial `Glob`/`Grep` from `allowed-tools`; added a status-authority rule clarifying Docket's `.data.status` is the single source of truth for the...

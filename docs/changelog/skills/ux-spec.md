@@ -1,5 +1,47 @@
 # Changelog: ux-spec
 
+## 2026-06-10
+
+### Summary
+Compacted 11 entries (2026-05-09..2026-05-30) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 11 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L41) already states the identical ignore-silently rule. Applied identically to all 4 doc-authoring siblings (prd/tdd/adr/ux-spec, -1 each). Net -1 (296 lines).
+
+### Changes
+- Failure Modes: deleted last table row (intra-file duplication of the CANONICAL block; byte-identical removal across the family, grep-verified 0 survivors).
+
+### Dimensions Evaluated
+Coherence (family lockstep), Over-Engineering.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Full 8-dimension review: NO changes. Zero invocations in audit window. All candidate findings confirmed resolved or correct-as-is: allowed-tools Glob/Grep present and legitimately used; {TYPE} substitution parity-locked with adr/prd/tdd; CANONICAL blocks intact; Failure Modes table self-referential. Net 0.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST): no removable waste found. Coherence: allowed-tools sibling lockstep verified (all four siblings identical). Two PARITY-BOUND items (preview-field fragment; delivery-resolution accessibility triplicate) routed to Phase 2.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -113,171 +155,6 @@ Skill Design Quality (frontmatter tool pool), Coherence (byte-identical lockstep
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-One over-engineering trim: Authoring §4 was re-declaring the Mermaid rule (including the diagram-type examples) that the canonical "### Mermaid Mandate" section already owns; converted §4 to a procedural pointer, keeping only the ASCII-alongside clause unique to it. Net -2.
-
-### Changes
-- Authoring §4: dropped the duplicate "**mandatory** (per agents/ux-designer.md)" restatement and the diagram-type examples (both owned by the Mermaid Mandate section at line 216, verified); retained the ASCII-does-not-replace-Mermaid clause.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — 1 trim), Coherence (authoring-family boundary vs design-review/design-qa verified; docs/ux/ path convention intact), Spec Alignment (agents/ux-designer.md cites verified), Actionability, Completeness (§9 Handoff Notes intact), Skill Design, Orchestration (leaf), Rename.
-
-### Rename
-No rename. ux-spec (authoring) cleanly distinct from design-review (peer review) and design-qa (post-impl QA).
-
-## 2026-05-29
-
-### Summary
-Merged two overlapping When-to-Use bullets into one, and corrected the same `allowed-tools`-excludes-Edit misinformation found in prd/tdd (per docs, allowed-tools does not restrict the tool pool).
-
-### Changes
-- When to Use: merged bullets 1 and 3 (duplicate "surface needs a spec" intent; surface examples + output-path contract retained). Net -3.
-- Validation Before Save: replaced "`Edit` is excluded from this skill's tools" / "it has its own tools" with a design-intent rationale (validate-then-write once; caller owns repair). Fixed in lockstep with prd/tdd.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — 1 trim), Skill Design Quality (factual accuracy), Coherence (ux-spec↔design-review↔design-qa lifecycle verified; doc-authoring family), Actionability, Completeness, Orchestration (leaf), Spec Alignment, Rename.
-
-### Rename
-No rename — ux-spec (authoring) cleanly distinct from design-review and design-qa.
-
-## 2026-05-28
-
-### Summary
-Closed a §9 Handoff Notes coordination gap (operator priority): orthogonalized the two priority axes — (a) is now the sequence axis (P0/P1/P2 for @project-manager ordering), (b) is the MVP cutline as the shared scope boundary @senior-engineer builds to and design-qa QAs against. Removed the duplicate "same concept = same name" rule from Authoring §5 (already stated in §1). Net 0 lines.
-
-### Changes
-- §9(a)/(b): split overlapping "P0/P1/P2 or MVP/polish" into sequence axis (a) vs scope cutline (b); named design-qa + @senior-engineer as cutline consumers.
-- Authoring §5: dropped duplicate cross-surface naming rule (retained in §1).
-
-### Dimensions Evaluated
-Orchestration & Coordination (operator priority), Over-Engineering (HIGHEST — offset the addition), Coherence, Spec Alignment.
-
-### Rename
-No rename. Family-aligned with adr/prd/tdd/specs.
-
-## 2026-05-25
-
-### Summary
-Phase 2 coherence: removed TYPE substitution note (lockstep) and removed stale "(currently 9 sections)" count from Validation §4 (mirrors tdd fix).
-
-### Changes
-- Removed `For this skill, substitute {TYPE} with ux-spec in the usage error.` — Item 1 lockstep.
-- Removed stale section-count token from Validation §4 (stale-token risk identical to tdd/prd).
-
-### Dimensions Evaluated
-Coherence, Consolidation.
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-Five over-engineering trims and one sibling-parity hardening: dropped dead "broader than pre-flight scan" parenthetical (2026-05-06 removed that step), collapsed Mermaid Mandate 4× "mandatory" restatement, hardened tdd reciprocal route to mirror tdd's prescriptiveness, trimmed Authoring §3 N/A allowance to one example, removed third repetition of orchestration prohibitions in SAVE_AND_RETURN. Net -6 lines.
-
-### Changes
-- Authoring §1: dropped dead "broader than the pre-flight scan" parenthetical (2026-05-06 removed Pre-flight step 5); folded dir list into Grep command.
-- Mermaid Mandate: collapsed 4× "mandatory" restatements to 1×; removed override-comparison clause.
-- When NOT to Use → tdd route: hardened to mirror tdd's reciprocal "interaction-design portions belong in UX spec" prescriptiveness.
-- Authoring §3 N/A allowance: collapsed three example surface×section pairs to one.
-- SAVE_AND_RETURN: dropped third repetition of orchestration prohibitions (CRITICAL banner + allowed-tools exclusion already cover it).
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — 4 trims), Coherence (sibling tdd parity), Spec Alignment, Skill Design Quality.
-
-### Rename
-No rename. Family-aligned with adr/prd/tdd.
-
-## 2026-05-18
-
-### Summary
-Surfaced the calling agent's Design Output Tiers gating directly in `When NOT to Use` — adds an explicit "skip to lighter tier" route for internal-only surfaces, single-tier design fits, and Tier 1–3 work. Addresses the 30-day adoption-gap finding (0 invocations) by making the skip path explicit at the point of decision.
-
-### Changes
-- When NOT to Use: added skip-to-lighter-tier delegation row before the design-review row. References `agents/ux-designer.md` Responsibility 1 Tiers 1–3 as the authority for lighter alternatives.
-
-### Dimensions Evaluated
-Completeness (skip-path documentation), Coherence (sibling family parity preserved), Skill Design Quality.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Replaced brittle curly-placeholder trigger `"design spec for {surface}"` with a concrete operator-typeable example (`"design spec for the new CLI"`). The placeholder form was effectively dead — operators don't type curly braces. Orphan hypothesis from historical audit disconfirmed: `agents/ux-designer.md` line 17 lists ux-spec in `skills:`.
-
-### Changes
-- Frontmatter description trigger list: replaced `"design spec for {surface}"` with `"design spec for the new CLI"`.
-
-### Dimensions Evaluated
-Skill Design Quality (trigger phrase actionability), Over-Engineering (no removable waste), Coherence (sibling parity preserved).
-
-### Rename
-No rename. Family-aligned with prd/tdd/adr.
-
-## 2026-05-16
-
-### Summary
-Coherence: added cross-family delegation routes to design-review (peer review of UX spec drafts) and design-qa (implementation verification against UX spec) in "When NOT to Use" — closes asymmetric drift where the two new report-emission siblings cross-reference ux-spec but ux-spec did not reciprocate. Hardened the missing-section Failure Mode row to self-reference Required Sections instead of hardcoding "9".
-
-### Changes
-- When NOT to Use: added two delegation rows for `Skill(design-review, ...)` (peer review of drafts) and `Skill(design-qa, ...)` (verify implementation). Updated COUPLING comment to flag the cross-family bridge.
-- Failure Modes: replaced hardcoded "all 9 sections in the order listed" with self-referential "all sections enumerated in Required Sections, in the listed order" — matches Validation §4's hardened pattern.
-
-### Dimensions Evaluated
-Coherence (cross-skill family bridge, internal consistency), Over-Engineering, Spec Alignment, Skill Design Quality.
-
-### Rename
-No rename. Family-aligned with prd/tdd/adr.
-
-## 2026-05-09
-
-### Summary
-Phase 2 coherence: removed the orphaned `### Failure Mode Table` subheading. PRD retains the subheading because it has a load-bearing sibling H3 (`### Reserved-Name List`); ux-spec did not, so the subheading was decorative and diverged from tdd, adr, and code-review.
-
-### Changes
-- Failure Modes section: removed the `### Failure Mode Table` subheading immediately under `## Failure Modes`. The section now goes directly from H2 to the table, matching tdd / adr / code-review's structure. Net -2 lines.
-
-### Dimensions Evaluated
-Coherence (subheading parity across the leaf doc-authoring family).
-
-### Rename
-No rename.
-
-## 2026-05-09
-
-### Summary
-Four handoff + actionability fixes (operator pain points 1, 2, 3): added `AskUserQuestion preview` guidance for visual variant comparison, strengthened cross-surface coherence wording in Authoring §1, added per-component implementation priority requirement to §9 Handoff Notes (a) for decomposition handoff, and added explicit missing-section row to Failure Modes for parity with sibling skills.
-
-### Changes
-- Authoring Procedure §5: added guidance that calling agents prefer `AskUserQuestion` with the `preview` field (CLI mockups, ASCII wireframes, copy variants) when resolving §9 design decisions with the operator — visual comparison beats prose for UX variants. Leverages new Claude Code tool capability.
-- Authoring Procedure §1: re-anchored cross-surface naming rule to `agents/ux-designer.md` and matched tdd's "reference, not contradict, prior accepted work" prescriptiveness.
-- Required Sections §9 (a): added per-component implementation priority requirement (P0/P1/P2 or MVP/polish) so @project-manager can sequence Docket issues without re-deriving order — directly addresses decomposition-handoff pain point.
-- Failure Mode Table: added explicit "Required section missing or out of order" row for parity with the prescriptiveness of the Mermaid row and PRD/TDD's pattern.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration (leaf — verified no sub-agent surface), Coherence (sibling prd/tdd/adr alignment), Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with adr/prd/tdd.
-
-## 2026-05-09
-
-### Summary
-Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 9".
-
-### Changes
-- Replaced hardcoded "all 9 Required Sections" with self-referential enumeration ("(currently 9 sections). Off-by-one against the count is a defect.") — matches tdd's hardened pattern.
-
-### Dimensions Evaluated
-Coherence, Completeness.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +168,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-07: Phase 2 coherence: H1 fixed from # Create UX Spec to # UX Spec to match frontmatter name.
 - 2026-05-07: Restored status-field and Mermaid-missing Failure Modes rows for PRD parity; Mermaid Mandate clarified for non-GUI surfaces; Open Questions scoped.
 - 2026-05-09: Sharpened §9 Handoff Notes with required sub-bullets and a vague-entries-are-a-defect rule; removed duplicate ASCII-wireframes sentence.
+- 2026-05-09: Phase 2 coherence: removed the orphaned `### Failure Mode Table` subheading. PRD retains the subheading because it has a load-bearing sibling H3 (`### Reserv...
+- 2026-05-09: Four handoff + actionability fixes (operator pain points 1, 2, 3): added `AskUserQuestion preview` guidance for visual variant comparison, strengthened cross...
+- 2026-05-09: Phase 2 coherence pass: hardened Validation §4 to self-reference Required Sections instead of hardcoding "all 9".
+- 2026-05-16: Coherence: added cross-family delegation routes to design-review (peer review of UX spec drafts) and design-qa (implementation verification against UX spec)...
+- 2026-05-17: Replaced brittle curly-placeholder trigger `"design spec for {surface}"` with a concrete operator-typeable example (`"design spec for the new CLI"`). The pla...
+- 2026-05-18: Surfaced the calling agent's Design Output Tiers gating directly in `When NOT to Use` — adds an explicit "skip to lighter tier" route for internal-only surfa...
+- 2026-05-25: Phase 2 coherence: removed TYPE substitution note (lockstep) and removed stale "(currently 9 sections)" count from Validation §4 (mirrors tdd fix).
+- 2026-05-25: Five over-engineering trims and one sibling-parity hardening: dropped dead "broader than pre-flight scan" parenthetical (2026-05-06 removed that step), colla...
+- 2026-05-28: Closed a §9 Handoff Notes coordination gap (operator priority): orthogonalized the two priority axes — (a) is now the sequence axis (P0/P1/P2 for @project-ma...
+- 2026-05-29: Merged two overlapping When-to-Use bullets into one, and corrected the same `allowed-tools`-excludes-Edit misinformation found in prd/tdd (per docs, allowed-...
+- 2026-05-30: One over-engineering trim: Authoring §4 was re-declaring the Mermaid rule (including the diagram-type examples) that the canonical "### Mermaid Mandate" sect...

@@ -85,7 +85,6 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: simplify-scout is @senior-engineer's report-only analog of the report-emission family. The "When NOT to Use" routes below send formal/authoritative review into that family (code-review-verdict/verify-ac/design-qa/design-review); those siblings need not point back here — their callers are role-disjoint from @senior-engineer and cannot invoke this skill. -->
 - **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
 - **Applying** simplifications automatically — this skill is report-only by design; the implementer edits the tree themselves after reading the report. The bundled `/simplify` skill applies fixes directly under its own rubric — distinct from this scout, which grounds in the 12 principles and never edits.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
@@ -265,15 +264,3 @@ Simplify scout emitted ({count} opportunities, 0 edits applied).
 where `{count}` is the number of findings (`0` for an empty/trivial scope).
 
 **The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.
-
-## Failure Modes
-
-| Trigger | Handling |
-|---|---|
-| `<scope>` missing or empty | Abort: `Error: Usage: Skill(simplify-scout, "<scope>") — name what to scan ("uncommitted", a directory/module path, or one or more file paths).` |
-| Caller is not `@senior-engineer` | Abort with the Role Detection message; point formal review to `Skill(code-review-verdict)`. |
-| `<scope>` resolves to nothing (bad path, mixed existing/non-existing tokens) | Abort: `Error: Could not resolve <scope>: '{scope}'. Expected "uncommitted", an existing directory/module path, or existing file paths.` |
-| Resolved scope has no source lines (empty diff / empty file / source-free dir) | Emit the empty-scope short-circuit line; do NOT fabricate findings. |
-| Directory scope exceeds 50 source files | Surface the large-scope one-liner first; let the caller narrow before deep scanning. |
-| Validation Before Emit fails | Abort with `Error: validation failed: {section/field} — {detail}.` No retry — calling agent re-invokes. |
-| Caller passes extra positional args beyond `<scope>` | Ignore extras silently. |

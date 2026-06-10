@@ -1,5 +1,33 @@
 # Changelog: design-review
 
+## 2026-06-10
+
+### Summary
+Phase 2 self-correct: restored the post-ABORT re-invocation line removed earlier this cycle. The Phase 1 removal claimed design-qa parity but design-qa:194 carries the identical line — the edit BROKE parity rather than restoring it. Net +2 (back to 249).
+
+### Changes
+- Re-inserted "The calling agent corrects in its own context and re-invokes `Skill(design-review, ...)`" after the validation ABORT fence, matching design-qa's structure exactly (grep-verified both at L221/L194 post-fix).
+
+### Dimensions Evaluated
+Coherence (sibling parity — empirical grep settled the conflicting Phase 1 claims).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Removed re-invocation instruction after Validation Before Emit ABORT — it contradicted the ABORT contract (leaf aborts cannot be resumed in-place). Net -1.
+
+### Changes
+- Validation Before Emit: removed "calling agent corrects and re-invokes" line following the ABORT code-fence — on abort the skill ends; recovery is a fresh invocation. Restores parity with design-qa, which carries no such line at its abort gate.
+
+### Dimensions Evaluated
+All 8. Skill Design Quality / Actionability (HIGHEST — defect removal). Over-Engineering (net -1). Coherence (design-qa sibling parity restored).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary

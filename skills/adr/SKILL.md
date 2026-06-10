@@ -269,4 +269,3 @@ This catches different-slug concurrent races at the same `{NNNN}`. Same-slug rac
 | Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
-| Caller passes additional positional args beyond `<topic>` | Ignore extras silently. |

@@ -1,5 +1,33 @@
 # Changelog: evolve-agents
 
+## 2026-06-10
+
+### Summary
+Compacted 8 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Full-cycle audit (1-day window): NO changes. File clean at 487 lines; all `\$ARGUMENTS` escaped, no docket drift, self-referential Phase 0 focus areas (de-dup L241, FP-filter L242) verified already-encoded.
+
+### Changes
+- None (NO-OP verdict). audit-profile gate, transcript-index builder, model-grep collapse, and `-r2` centralization all routed to Phase 2 as cross-skill/parity-bound, not Phase 1 edits.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no bloat at 487/500); Coherence (CANONICAL:BANNER + frontmatter byte-parity confirmed with evolve-skills).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -134,128 +162,6 @@ Coherence (cross-skill parse parity with evolve-skills), Completeness (scope-gat
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-Two changes: closed a sibling-asymmetric "Second failure" recovery gap (Phase 0 auditor fallback), and added the Phase-0-findings-are-signals-not-facts rule to the Phase 1 template (byte-symmetric with evolve-skills). Net +1.
-
-### Changes
-- Crash & Stall Recovery "Second failure": added the Phase 0 auditor branch — substitute "UNAVAILABLE: <name> failed twice" for the findings token so Phase 1 templates stay valid when an auditor double-fails (parity with evolve-skills).
-- Phase 1 template: new blockquote above the prioritization line — Phase 0 audit findings (Docket commands, frontmatter fields, feature claims) are SIGNALS-TO-VERIFY against ground truth before any CHANGE relies on them; a change built on a fabricated finding is reject-class. Byte-symmetric with evolve-skills (cross-cutting coherence).
-
-### Dimensions Evaluated
-Completeness (recovery-path gap + fabrication-class fix), Coherence (sibling parity w/ evolve-skills; HARVEST blocks verified byte-identical), Orchestration, Over-Engineering (HIGHEST — minimal net).
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Normalized the Content Gate intro line to byte-identical with the sibling evolve-skills (Phase 2 coherence).
-
-### Changes
-- Content Gate intro → "Every proposed addition MUST pass ALL 4 checks. Reject content that fails ANY check." — names the check count (gate has exactly 4) and matches evolve-skills verbatim. The 4 numbered checks remain domain-specific (unchanged). [Phase 2 coherence item 6a]
-
-### Dimensions Evaluated
-Sibling-skill coherence; wording consistency.
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Phase 2 coherence: mirrored evolve-skills' transcript-replication guards into the historical-auditor, added orchestrator-only-relay rationale to the Phase 1 narrative, consolidated the SKIPPED-skip guidance (4×→2×), and added a shutdown-idiom clarifying note. Net +1.
-
-### Changes
-- De-dupe-before-counting bullet (DISTINCT sessionId, ~10x inflation guard); `-r2` respawn count → DISTINCT events by name+sessionId.
-- Phase 1 narrative gains race-condition rationale for orchestrator-only relay.
-- "skip historical-auditor if SKIPPED" consolidated 4×→2× (removed table parenthetical + template-header sentence).
-- One-line note: orchestrator-originated shutdown is intentional vs leaf-review self-initiate (`agents/team-lead.md` Rule 7).
-
-### Dimensions Evaluated
-Coherence, Over-Engineering (consolidation), Orchestration & cross-communication.
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Added an absent/empty-dir guard to the Phase 0 historical-auditor's agent-memory read step (parity with evolve-skills), preventing undefined read behavior on the confirmed-empty `.claude/agent-memory/<agent>/` dirs. Net 0 lines.
-
-### Changes
-- Phase 0 historical-auditor template (line 185): agent-memory read step now guards "(dir may be absent or empty — treat as `none`)" matching evolve-skills — closes the only undefined-behavior path in the read step. Rejected an unsound convergence/stop-criterion gate (a net-0 prior cycle does not imply net-0 now; fresh upstream findings change weekly).
-
-### Dimensions Evaluated
-Orchestration & Agent Teams (HIGHEST — operator coordination priority), Coherence (sister parity), Over-Engineering (offset discipline).
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-Seven changes addressing 46% pre-flight abort signal and shutdown-routing ambiguity from team-lead memory: added scope-confirmation HARD GATE, clarified shutdown-response routing to orchestrator, followed-through step renumbering (7→8), plus mirrored trims from evolve-skills. Net +4 lines (338→342).
-
-### Changes
-- New pre-flight step 7: scope-confirmation HARD GATE in all-agents mode (>3 agents) surfacing planned cycle weight before Phase 0 spawn. Closes 46% abort-after-spawn signal.
-- Shutdown protocol: added "addressed to the orchestrator (never to a peer)" clause per canonical staff-engineer routing rule.
-- Step renumbering (7→8) followed through three internal references for coherence.
-- Phase 1 post-review-loop step 6: removed — mirrors evolve-skills; lifecycle table is source of truth.
-- Phase 0 friction-distinction: removed "scoped to the agents under review here" wrap — mirrors evolve-skills.
-
-### Dimensions Evaluated
-Completeness (HIGHEST — historical signal), Orchestration (routing + scope gate), Coherence (renumbering + sister parity), Consolidation.
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Phase 2 coherence pass: aligned Changelog Rules format with sister evolve-skills — promoted normalization actions from trailing prose to `**Normalization:**` labelled sub-statement for scannability parity.
-
-### Changes
-- Promoted normalization actions to a labelled sub-statement (`**Normalization:**` prefix) instead of trailing prose, matching evolve-skills line 73 scannability.
-
-### Dimensions Evaluated
-Coherence (cross-skill format parity).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Fixed `${history_days}` shell-var leak in Phase 0 historical-auditor template (orchestrator substitutes `{...}` braces, not shell-var `${...}` — auditor subshell had no env var, find expanded to literal `-mtime -` and silently returned zero results), declared `{history_cutoff_epoch_ms}` on the auditor Window line for sister evolve-skills parity, and split Pre-flight step 7 mega-paragraph into sub-bullets matching evolve-skills step 8 layout. Net +3 lines.
-
-### Changes
-- Phase 0 historical-auditor template: `-mtime -${history_days}` → `-mtime -{history_days}` — closes silent zero-result failure path.
-- Window line: added `epoch-ms {history_cutoff_epoch_ms}` declaration so substitution used downstream is declared upstream.
-- Pre-flight step 7: split mega-paragraph into sub-bullets for the two epoch computations and probe; matches evolve-skills step 8 layout.
-
-### Dimensions Evaluated
-Skill Design Quality (HIGHEST — defect fix), Coherence (sister evolve-skills parity), Consolidation & Trimming.
-
-### Rename
-No rename.
-
-## 2026-05-19
-
-### Summary
-Phase 2 coherence pass — aligned operator-prompt banner to evolve-skills' stronger phrasing (explicit ≤4-options API constraint + routing-question fallback). Net 0 lines (rewrap only). Behavior unchanged for ≤4-option callers; corrects misleading "doesn't raise the cap" phrasing for the >4-option path.
-
-### Changes
-- Pre-flight operator-prompts banner: aligned verbatim with `evolve-skills/SKILL.md:35` — adds the explicit "API rejects >4" callout and the route-first-then-narrow recipe for >4-option scenarios.
-
-### Dimensions Evaluated
-Coherence, Operator Prompts, Family Parity.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +200,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-16: Friction-payload recognition mirrored from evolve-skills; AskUserQuestion preamble multiSelect carve-out extended.
 - 2026-05-17: Corrected AskUserQuestion option cap (≤4 regardless of multiSelect, verified live); collapsed step 2 to 4 options; 8 mirror trims (net -23).
 - 2026-05-18: Fixed date-to-epoch-ms gap in historical-auditor history.jsonl filter ({history_cutoff_epoch_ms} + jq one-liner); sister parity.
+- 2026-05-19: Phase 2 coherence pass — aligned operator-prompt banner to evolve-skills' stronger phrasing (explicit ≤4-options API constraint + routing-question fallback)....
+- 2026-05-20: Phase 2 coherence pass: aligned Changelog Rules format with sister evolve-skills — promoted normalization actions from trailing prose to `**Normalization:**`...
+- 2026-05-20: Fixed `${history_days}` shell-var leak in Phase 0 historical-auditor template (orchestrator substitutes `{...}` braces, not shell-var `${...}` — auditor subs...
+- 2026-05-25: Seven changes addressing 46% pre-flight abort signal and shutdown-routing ambiguity from team-lead memory: added scope-confirmation HARD GATE, clarified shut...
+- 2026-05-28: Phase 2 coherence: mirrored evolve-skills' transcript-replication guards into the historical-auditor, added orchestrator-only-relay rationale to the Phase 1...
+- 2026-05-28: Added an absent/empty-dir guard to the Phase 0 historical-auditor's agent-memory read step (parity with evolve-skills), preventing undefined read behavior on...
+- 2026-05-29: Normalized the Content Gate intro line to byte-identical with the sibling evolve-skills (Phase 2 coherence).
+- 2026-05-30: Two changes: closed a sibling-asymmetric "Second failure" recovery gap (Phase 0 auditor fallback), and added the Phase-0-findings-are-signals-not-facts rule...

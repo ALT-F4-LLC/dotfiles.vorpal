@@ -1,5 +1,33 @@
 # Changelog: verify-ac
 
+## 2026-06-10
+
+### Summary
+Compacted 10 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 10 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Full-cycle audit: NO changes. Healthiest skill in window (3 sessions, 8 invocations, zero errors across sonnet/fable/opus tiers). `round=N --prior` argument suggestion rejected — §4a comment-list carry-forward has zero observed failures; new flag surface unjustified.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — innovation declined); Completeness (literal-command-AC rule, OUT-OF-SCOPE deferral, §7a contamination guard all verified present); Coherence (COUPLING family parity, docket CLI usage matches sdet closeout contracts).
+
+### Rename
+No rename. verify→verify-ac rename rationale stands.
+
 ## 2026-06-09
 
 ### Summary
@@ -133,156 +161,6 @@ Completeness (PRIMARY — status-gate abort guidance), Coherence (status-authori
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-Fixed a verified coherence defect: the description's runtime-disambiguator named a phantom `runtime-verify` skill — the bundled runtime skill is registered as `verify`, so the disambiguator pointed agents at a non-existent name. Corrected to name the real `verify` skill. Also fixed H1 rename residue (bare "Verify" → "Verify-AC" for sibling parity) and trimmed two inline audit-stat provenance clauses. Net 0 file lines.
-
-### Changes
-- Description Trigger line: phantom `runtime-verify` → `verify` (the actual bundled runtime skill; verify-ac was renamed away from `verify` to avoid this collision).
-- H1 heading: `# Verify —` → `# Verify-AC —` (rename residue; sibling parity with Code Review / Design QA / Design Review).
-- Pre-flight §4a, §7a: dropped two inline audit-stat provenance parentheticals (session IDs / invocation counts); behavioral rules + rationale retained, provenance lives in changelog.
-
-### Dimensions Evaluated
-Coherence (PRIMARY — phantom skill name verified against the skills registry), Rename (H1 residue), Over-Engineering (HIGHEST — two provenance trims), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment.
-
-### Rename
-Skill name unchanged (verify-ac). H1 heading residue from the prior verify→verify-ac rename fixed. No registry/cross-file rename.
-
-## 2026-05-30
-
-### Summary
-Killed the verify-ac claim-drift in two places, both contradicting the corrected agents/sdet.md Rule 7 (verification is READ-ONLY on Docket workflow state; the only legitimate state-change is `reopen` on BLOCK; the issue is already CLOSED by @senior-engineer). Pre-flight step 4 wrongly asserted @sdet had already `docket issue move <id> in-progress`-claimed the issue; Save & Return wrongly routed ACCEPT-WITH-CAVEATS/BLOCK to `docket issue move <id> review`. Net 0; 267 lines.
-
-### Changes
-- Pre-flight step 4: replaced the "already claimed via `docket issue move`" assertion with "acknowledges via SendMessage but does NOT `docket issue move` (read-only per sdet.md Rule 7)".
-- Save & Return closeout: replaced `docket issue move <id> review` on ACCEPT-WITH-CAVEATS/BLOCK with the correct branches — APPROVE/ACCEPT = comment-only (issue already closed by @senior-engineer), BLOCK = `reopen` + blocking comment.
-
-### Dimensions Evaluated
-Coherence (PRIMARY — sdet Rule 7 contradiction, fixed in 2 places) · Over-Engineering (both changes net 0) · Spec Alignment (closeout now matches sdet.md §Execution Workflow step 5)
-
-### Rename
-No skill rename. Changelog file renamed docs/changelog/skills/verify.md → verify-ac.md and header "# Changelog: verify" → "# Changelog: verify-ac" (the verify→verify-ac skill rename had not moved it).
-
-## 2026-05-29
-
-### Summary
-Trimmed the Doubling Rule's orchestration re-narration to a pointer (it contradicted team-lead.md step 15's default-single-verifier rule and duplicated canonical logic), and documented the comma-batched Docket-ID arg form observed in the historical audit.
-
-### Changes
-- Doubling Rule: replaced 9 lines of spawn/reconcile/fix-loop narration (which wrongly asserted "no single-verifier mode under orchestration", contradicting team-lead.md step 15) with a 3-line pointer to agents/team-lead.md (Rule 7/8, step 14/15). Net -7.
-- Argument Handling: added a Comma-batched Docket IDs paragraph — split on commas, one report per issue; contrast with code-review's single-scope path-list. Net +3.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — net offset), Orchestration (removed team-lead.md contradiction), Completeness + Argument Handling (comma-batch form), Coherence (runtime-verify name collision flagged for Phase 2; docket close-no--m verified), Skill Design Quality, Actionability, Spec Alignment, Rename.
-
-### Rename
-No rename — runtime-verify collision mitigated by the front-loaded description disclaimer; a registry rename is a Phase-2 decision.
-
-## 2026-05-28
-
-### Summary
-Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to `agents/team-lead.md`.
-
-### Changes
-- Eager same-turn dispatch ref → `agents/team-lead.md` Rule 8.
-- Verdict reconciliation ref → `agents/team-lead.md` step 14.
-
-### Dimensions Evaluated
-Coherence (accurate references).
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Disambiguated from the external bundled runtime-verify skill (indistinguishable `"skill":"verify"` name collision, wrong-skill-load risk): front-loaded "static, evidence-based — NOT runtime app-behavior verification" in the description and dropped the generic "run verification"/"verify issue" triggers. Offset by trimming the redundant Pre-flight §8 doubling-rule back-reference (renumber §9→§8). Net 0 lines.
-
-### Changes
-- Description/Trigger: added runtime-verify disambiguator; trigger now "verify acceptance criteria"/"verify Docket issue"/"produce verification report" + NOT-clause; family-parity phrasing preserved.
-- Pre-flight: removed §8 (pure back-reference to the in-file Doubling Rule section); renumbered §9→§8.
-
-### Dimensions Evaluated
-Skill Design Quality + Coherence (name collision — operator priority), Over-Engineering (HIGHEST — §8 trim), Orchestration, Spec Alignment, Actionability, Completeness.
-
-### Rename
-No rename (operator decision, 2026-05-28). A cross-file rename to `verify-ac` was considered to eliminate the bundled-runtime-verify collision; the operator chose to keep `verify` and rely on the description disambiguation above (no observed wrong-skill-loads; stability + 7-ref blast radius across agents/sdet.md, agents/staff-engineer.md, code-review, design-qa, design-review). Revisit only if collisions occur.
-
-## 2026-05-25
-
-### Summary
-Phase 2 coherence: trimmed AskUserQuestion structural-contract restatement (lockstep with code-review/design-qa).
-
-### Changes
-- Replaced AskUserQuestion structural-contract restatement with pointer to calling agent's contract (Item 4 lockstep).
-
-### Dimensions Evaluated
-Coherence, Consolidation.
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-Three audit-driven additions: silent-completion self-check in Save & Return (cross-cutting with code-review/design-review/design-qa per staff-engineer pitfalls); Mandatory verification commands caller-contract check (Pre-flight §9, team-lead pitfall on review-phase dispatch); cross-issue contamination guard for multi-issue sessions (Pre-flight §7a — 154 invocations / 45 sessions = ~3.4 issues per session typical). Net +18 lines (267 → 285).
-
-### Changes
-- Save & Return: added Silent-completion self-check paragraph — verdict in skill context is working artifact; SendMessage IS the deliverable; trailing confirmation line is not a delivery signal.
-- Pre-flight §9 (new): Mandatory verification commands caller-contract check — surfaces brief gap as Pre-flight finding, derives commands from ACs as fallback.
-- Pre-flight §7a (new): Cross-issue contamination guard — multi-issue sessions reset persistent test artifacts before running current issue's tests, OR surface contamination risk as Test Coverage finding.
-
-### Dimensions Evaluated
-Orchestration (HIGHEST — silent-completion fix), Actionability (Mandatory verification commands), Skill Design Quality (cross-issue contamination), Coherence (cross-family Save & Return parity).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Phase 2 coherence pass: Title-Cased Doubling Rule heading to match three siblings (code-review, design-qa, design-review); added one-line acknowledgment in Pre-flight §4 that calling `@sdet` has already claimed the Docket issue per Rule 7.
-
-### Changes
-- Heading `## Doubling rule` → `## Doubling Rule` to match siblings. Cross-family heading-case parity.
-- Pre-flight §4: added note acknowledging `@sdet` Rule 7 issue claim already happened, preventing redundant `docket issue move` calls. Phase 1 open item #5 (skill ↔ agent contract sync).
-
-### Dimensions Evaluated
-Coherence (sibling-family heading parity); Cross-communication contract (skill/agent claim handshake).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Operationalized prior-verdict awareness as enforced Pre-flight step (driven by historical audit session 8442dc39: 121 invocations across ~17 ephemeral fix-loop rounds × 7 DKT issues, where Round-N verifiers re-ran full criteria sweeps with no awareness of prior round's evidence). Reduces per-round token spend on multi-round fix-loops while preserving "always re-run suite end-to-end" guarantee. Tightened Pre-flight §5 completion-comment-vs-diff phrasing. Net +1 line.
-
-### Changes
-- Pre-flight §4a (new): Round-2+ verifications scan `docket issue comment list {id}` for prior verify reports; PASS criteria whose evidence files are untouched by current diff cite the prior round's evidence instead of re-running. Suite still re-runs end-to-end; never carries forward FAIL or Additional Testing gap.
-- Pre-flight §5: replaced "completion claims describe intent; diff describes reality" with "completion claims describe what the implementer intended to ship; the diff describes what reached HEAD" — names concrete failure mode.
-
-### Dimensions Evaluated
-Orchestration & Agent Teams (HIGHEST — audit-driven), Actionability, Coherence.
-
-### Rename
-No rename.
-
-## 2026-05-19
-
-### Summary
-Phase 2 coherence — added explicit Epistemic Discipline Validation check (new check #9) so the banned-framings rule in Common Discipline (referencing agents/sdet.md) is gate-enforced. Net +1 line.
-
-### Changes
-- Validation Before Emit: added check #9 — scan criterion evidence / Additional Testing / Issues Found / Recommendation for banned confidence phrases; a hit is a defect.
-
-### Dimensions Evaluated
-Coherence, Epistemic Discipline, Report-Emission Family Parity.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +169,13 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-16: Common Discipline gained the AskUserQuestion structural contract (1-4 questions, 2-4 options, header ≤12 chars) for sibling parity.
 - 2026-05-17: Removed PR scope (dead surface for @sdet); added do-not-substitute-completion-comment-for-diff warning; deduplicated peer/vote guidance.
 - 2026-05-18: Round-2 re-verification scoped to changed criteria; evidence-over-assertion bullet per Epistemic Discipline; comments-supersede phrasing tightened.
+- 2026-05-19: Phase 2 coherence — added explicit Epistemic Discipline Validation check (new check #9) so the banned-framings rule in Common Discipline (referencing agents/...
+- 2026-05-20: Phase 2 coherence pass: Title-Cased Doubling Rule heading to match three siblings (code-review, design-qa, design-review); added one-line acknowledgment in P...
+- 2026-05-20: Operationalized prior-verdict awareness as enforced Pre-flight step (driven by historical audit session 8442dc39: 121 invocations across ~17 ephemeral fix-lo...
+- 2026-05-25: Phase 2 coherence: trimmed AskUserQuestion structural-contract restatement (lockstep with code-review/design-qa).
+- 2026-05-25: Three audit-driven additions: silent-completion self-check in Save & Return (cross-cutting with code-review/design-review/design-qa per staff-engineer pitfal...
+- 2026-05-28: Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to `agents/team-lead.md`.
+- 2026-05-28: Disambiguated from the external bundled runtime-verify skill (indistinguishable `"skill":"verify"` name collision, wrong-skill-load risk): front-loaded "stat...
+- 2026-05-29: Trimmed the Doubling Rule's orchestration re-narration to a pointer (it contradicted team-lead.md step 15's default-single-verifier rule and duplicated canon...
+- 2026-05-30: Fixed a verified coherence defect: the description's runtime-disambiguator named a phantom `runtime-verify` skill — the bundled runtime skill is registered a...
+- 2026-05-30: Killed the verify-ac claim-drift in two places, both contradicting the corrected agents/sdet.md Rule 7 (verification is READ-ONLY on Docket workflow state; t...

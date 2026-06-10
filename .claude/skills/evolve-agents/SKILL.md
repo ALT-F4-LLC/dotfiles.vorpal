@@ -27,6 +27,21 @@ You are the **Agent Evolution Orchestrator**. Create an agent team (TeamCreate) 
 
 ---
 
+## Innovation Mandate
+
+Each evolve-agents cycle MUST, in addition to reviewing existing patterns, actively scan for new model frontiers relevant to agent definitions (new Claude model capabilities, new tool patterns, new team coordination approaches), identify approaches that may improve agent effectiveness beyond current patterns, and exercise refactor authority — proposing creation of new agents, retirement of redundant agents, redistribution of roles across model tiers, or workflow improvements. The goal: solve real-world AI orchestration problems optimally from an AI perspective, not merely preserve the status quo.
+
+## Scientific Trial Protocol
+
+Before adopting a non-obvious new approach, a cycle MUST:
+
+1. **Hypothesis** — state what improvement is expected and why.
+2. **Trial** — define which agent, which scope, and what change.
+3. **Measurement** — reuse the Phase 0 historical audit as the measurement arm; stall signals, -r2 respawns, model distribution, and correction counts are already gathered there.
+4. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against the success criteria; rollback maps to the existing Phase 1 Self-correct/revert step.
+
+---
+
 ## Argument Handling
 
 Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
@@ -79,7 +94,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries. **Trial convention:** if a cycle includes a scientific trial (per Innovation Mandate), prepend a `Trial: <hypothesis> → <outcome>` line inside the `### Summary` section of the relevant agent's changelog entry (no new H3 section or file).
 
 ---
 
@@ -87,8 +102,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ### Team Setup & Agent Lifecycle
 
-1. `TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`.
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
+`TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
@@ -112,9 +126,7 @@ Spawn THREE teammates in parallel per the templates below: `docs-researcher` (st
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one teammate per target using the matching agent type per the Phase 1 template (see substitute block below). **Spawn all in the same turn** to maximize parallelism. Assign each task via `TaskUpdate`.
-
-Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below.
+Spawn one teammate per target using the Phase 1 template. **Spawn all in the same turn.** Assign each task via `TaskUpdate`. Teammates are read-only; the orchestrator applies all edits.
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
@@ -129,14 +141,13 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Never Edit/Write/delete any `pitfalls.md` — it is append-only ingest memory.
 
-Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces; Phase 2 consolidates cross-cutting items.
+Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces.
 
 ### Phase 2: Coherence & Renames (sequential)
 
 Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single `coherence-reviewer` per the Phase 2 template and assign the Phase 2 task.
 
 **After the Phase 2 teammate completes**, the orchestrator:
-
 1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `agents/`, `skills/`, `.claude/skills/`; never changelogs/pitfalls/prose)
 2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
@@ -144,7 +155,6 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 ### Wrap-up & Team Cleanup
 
 After Phase 2 completes:
-
 1. Shut down the Phase 2 agent and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), and reminder that NO changes have been committed.
@@ -155,7 +165,7 @@ After Phase 2 completes:
 
 ### Phase 0: @staff-engineer (Documentation Research)
 
-Substitute `{latest_features_digest}` with the version-anchored changelog digest pinned in pre-flight step 9.
+Substitute `{latest_features_digest}` from pre-flight step 9.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="docs-researcher", subagent_type="staff-engineer", prompt="...")
@@ -184,7 +194,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-agent)
 
-Substitute `{target_agents}` with the list Phase 1 will review (single agent from `$ARGUMENTS`, or all `agents/*.md`).
+Substitute `{target_agents}` from `$ARGUMENTS` or all `agents/*.md`.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")
@@ -248,7 +258,7 @@ After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 
 ### Phase 1: Self-Review & Improve
 
-Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each (`subagent_type: "<name>"`).
+Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}` for each (`subagent_type: "<name>"`).
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="review-<name>", subagent_type="<name>", prompt="...")
@@ -294,40 +304,31 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 8. **Rename**: Only if compelling.
 
 ## Rules
-
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`.
 - **No peer-to-peer SendMessage** — the orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
 
 ## Output Format
-
 ### Summary
 <1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
-
 ### Recommended Changes
 For each change, emit a fenced block with these fields verbatim:
 `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:`
 Use `<REMOVE>` for deletions and `<INSERT_AFTER>` (with the line you're inserting after) for pure additions.
-
 ### Changelog Entry
 4 sections in order, max 20 lines: `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`.
-
 ### Rename Recommendation
 Single line with reasoning, or "No rename."
-
 ### Coherence Issues
 For each: `ISSUE: <title>` / `AFFECTED_AGENTS: <names>` / `DETAIL: <one-line description + suggested action>`. Or: "None."
 ```
 
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
-Read-only cross-cutting coherence review. Orchestrator applies all edits. Substitute `{today_date}`.
-
 ```
 Agent(team_name="evolve-agents-{today_date}", name="coherence-reviewer", subagent_type="staff-engineer", prompt="...")
 
-Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.**
-**No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
+Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.** **No sub-agents** — do NOT invoke `/vote`, `Skill()`, `Agent()`, or `TeamCreate`. SendMessage the orchestrator for delegation.
 
 ## Renames to Execute
 <list recommended renames, or "No renames were recommended.">
@@ -336,7 +337,6 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 <list issues from Phase 1, or "None reported.">
 
 ## Task
-
 1. Read ALL agent files in agents/*.md
 2. If renames listed, verify and prepare rename instructions (file, frontmatter, references, changelog)
 3. Check coherence: "What You Are NOT" accuracy, bidirectional cross-references, no gaps/overlaps,

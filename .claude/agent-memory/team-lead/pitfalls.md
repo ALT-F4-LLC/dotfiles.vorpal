@@ -88,3 +88,8 @@ Resolution: before applying any edit whose rationale cites sibling-state ("resto
 Symptom: history-compactor's first verify pass false-failed the ADR 0001 parity check (after = before − N + 1) on files carrying same-day uncommitted entries.
 Root cause: it computed `before` from raw `git show HEAD` entry count; this cycle's prepended (uncommitted) entries are absent from HEAD, so the formula under-counted.
 Resolution: parity baseline = HEAD_entries + this-cycle's-uncommitted-entries. Compaction itself was correct; only the verification baseline needed the adjustment. Bake into future compactor briefs.
+
+## 2026-06-10 — Ephemeral-reported shasum mismatch is usually an extraction-method artifact
+Symptom: implementer reports a CANONICAL-block hash differing from the established baseline (occurred 2x in one cycle: impl-DKT-271 reported 20bed774, impl-DKT-273-fix-1 reported da317390 vs canonical e9ef8d09) and may misattribute it to "pre-existing state."
+Root cause: each agent improvises its own extract pipeline (marker inclusion, sed/awk variant, trailing-whitespace handling); different pipelines hash the same bytes differently.
+Resolution: team-lead re-runs ONE canonical extraction (awk BEGIN/END-exclusive + sed trailing-strip + shasum) before treating any hash delta as real divergence; better, embed the exact canonical pipeline verbatim in every brief that cites an expected hash.

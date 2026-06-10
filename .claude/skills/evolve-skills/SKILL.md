@@ -5,7 +5,7 @@ description: >
   dimensions, enforces Content Gate and 500-line budget. Phase 0 includes a per-skill
   historical audit of recent Claude Code transcripts, history, and agent memory.
   Trigger: "evolve skills", "improve skills", "refine skills".
-argument-hint: "[skill-name] [days=N]"
+argument-hint: "[skill-name] [days=N] [drift=N]"
 effort: xhigh
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "WebFetch", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
 ---
@@ -27,22 +27,27 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 
 ---
 
+<!-- CANONICAL:EVOLUTION-MODEL:BEGIN -->
+**Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, `TeammateIdle`/`-r2`/shutdown-rejection stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
+<!-- CANONICAL:EVOLUTION-MODEL:END -->
+
 ## Innovation Mandate
 
-Each evolve-skills cycle MUST solve real-world AI skill-design problems optimally from an AI perspective — not just patch known issues. Concretely, every cycle scans for:
-
-- **Model frontier**: new Claude model capabilities, new frontmatter fields, new orchestration patterns, new tool permissions that may improve skill effectiveness beyond current patterns.
-- **Refactor authority**: proposing creation of new skills, retirement of redundant skills, redistribution of effort/model tiers, or workflow improvements — not only incremental edits to existing skills.
+Each cycle sources variation three ways (see CANONICAL:EVOLUTION-MODEL): the **innovation-scanner** (directed adaptive exploration of new model/tool/coordination frontiers), the **historical-auditor** (reactive, fitness-driven), and the **genetic-drift operator** (stochastic, fitness-independent). Refactor authority — speciation (new skills) and extinction (retiring redundant skills) — is exercised per the Phase 2 Speciation / extinction gate.
 
 ## Scientific Trial Protocol
 
-Before adopting a non-obvious new approach, cycles MUST follow this four-step protocol:
+Every non-neutral adaptive change AND every drift proposal passes this gate: **Hypothesis** (expected improvement + why) → **Operator approval (HARD GATE)** — present hypothesis, scope, and blast radius via AskUserQuestion BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> → proposed` (or `Drift: … → proposed`) and NOT implemented → **Measurement** (reuse the Phase 0 audit; add no new infrastructure) → **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in the changelog `### Summary`.
 
-1. **Hypothesis** — state what improvement is expected and why (e.g., "pinning `effort: high` on skill X will reduce operator-correction signals because current opus spawns are over-resourced for leaf tasks").
-2. **Trial** — define which skill, which scope, and what change to apply.
-3. **Operator approval (HARD GATE)** — present the hypothesis, trial scope, and blast radius to the operator via AskUserQuestion BEFORE implementing any trial change; an unapproved trial is recorded as a proposal in the changelog (`Trial: <hypothesis> → proposed`) and NOT implemented. No trial may introduce changes without this approval.
-4. **Measurement** — specify success criteria drawn from Phase 0 historical-audit signals already gathered: operator-correction signal count, re-invocation count per session, model distribution, error-abort count. Do NOT add new measurement infrastructure — reuse the existing audit arm.
-5. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against criteria; rollback by invoking the existing Phase 1 Self-correct/revert step. Record the outcome as a `Trial: <hypothesis> → <outcome>` line prepended to the `### Summary` section of the relevant skill's changelog entry.
+## Genetic-Drift Operator
+
+Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele-substitutions per cycle (default 1; `drift=0` skips this operator entirely). It is the standing-variation arm that counters the documented `fable-monoculture` local-optimum collapse (`1ea590c`) — pure fitness-driven selection in a small population converges to monoculture, so drift maintains alternative formulations that may become advantageous when the platform shifts.
+
+**Target selection is structural, NOT auditor-derived (MC2).** The no-signal trait set is materialized by the orchestrator from file STRUCTURE, never from the Phase 0 auditor's narrative output: (1) enumerate the target file's candidate traits as its headings and top-level list items — `grep -nE '^#{2,4} |^- |^[0-9]+\. ' <skill-path>/SKILL.md`; (2) subtract any candidate whose heading/bullet text the historical-auditor cited in a finding for that file — the remainder is the **no-signal set**; (3) index the sorted no-signal set with `{drift_seed} mod len(set)` to pick `{drift_rate}` traits. Fitness-independent by construction: the candidate list is structural and only auditor-flagged traits are excluded, so the pick can never land on a trait selection is acting on. **Empty no-signal set (every candidate was cited) → drift is a no-op for that organism this cycle.**
+
+**The variation is a neutral allele substitution** — replace the selected trait's current formulation with a semantically-equivalent alternative (re-word, reorder a checklist, merge/split adjacent bullets, swap an illustrative example). It is a substitution of an existing functional trait, so it is net-line-neutral and passes the Content Gate's Behavioral check (the trait still changes output; only its expression drifts).
+
+**Gate + caveat.** Every drift proposal routes through the **same operator-approval HARD GATE** as adaptive trials (Scientific Trial Protocol) and is recorded as a `Drift:` line. **(S2 — reproducibility caveat:)** because `{drift_seed}` is the cycle identity, two runs *on the same date* reproduce the *same* drift target — they are not independent draws; across-generation stochastic variation comes from the date advancing. This is intentional (reproducibility/auditability over per-run randomness), so an operator re-running a cycle on the same date is not surprised.
 
 ---
 
@@ -53,8 +58,9 @@ Target skill(s) and historical-audit window are determined by `\$ARGUMENTS`:
 - **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 7 days.
 - **Skill name only** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
 - **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
+- **`drift=N`** (optional, e.g. `/evolve-skills drift=2` or `/evolve-skills tdd drift=0`): Override the genetic-drift rate — number of neutral drift proposals per cycle (see the genetic-drift operator). Integer ≥ 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
-**Parsing:** strip the `days=N` token from `\$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=` token remains after stripping — `/evolve-skills days=7` has NO skill-name token (all-skills mode).
+**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=`/non-`drift=` token remains after stripping — `/evolve-skills days=7 drift=0` has NO skill-name token (all-skills mode).
 
 ---
 
@@ -78,6 +84,7 @@ Before spawning any agents:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
+   Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-skills-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
 9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total line count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
 10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
@@ -99,8 +106,9 @@ Before spawning any agents:
 All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory if needed).
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
+**Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -125,7 +133,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
-- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`, `{model_routing_findings}`) so Phase 1 templates stay valid.
+- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
@@ -146,9 +154,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
-**Frontmatter-field adoption gate.** Before applying any recommendation to adopt a newly-shipped frontmatter field, (a) fetch the official field doc and read its LIFECYCLE / clearing semantics, not just its headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the skill forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn; (c) grep for siblings sharing the enforcement pattern and check prior changelogs for an existing family-wide decision. If cross-cutting, route to Phase 2 as a single family-wide call rather than landing it on one skill.
-
-**Defer parity-bound findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the skill family; applying one reviewer's isolated recommendation breaks that parity, and per-skill reviewers can CONFLICT. Flag these, do NOT apply them in Phase 1, and route to Phase 2 for lockstep. Settle conflicting recommendations EMPIRICALLY (grep the actual usage to confirm) before applying.
+**Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the skill family; applying one reviewer's isolated recommendation breaks parity, and per-skill reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the skill forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add.
 
 **Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target skill, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the skill files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Never Edit/Write/delete any `pitfalls.md` — it is append-only ingest memory.
 
@@ -172,6 +178,8 @@ The Phase 2 teammate:
 
 **After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `skills/`, `.claude/skills/`, `agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
 and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
+
+**Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining token (capability keyword, CANONICAL tag, or rule name) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: History Compaction (terminal, gated)
 
@@ -295,9 +303,7 @@ MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tas
 
 Target skills: {target_skills}
 
-## Task
-For EACH target skill, identify opportunities in these four areas:
-
+## Task — for EACH target skill, identify opportunities in these four areas:
 1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the skill definition that could improve effectiveness (e.g. new Claude model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
 2. **Efficiency Gains**: Steps, workflows, or verification loops that could be shortened, parallelized, or eliminated without sacrificing correctness.
 3. **Patterns to Retire**: Skill behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
@@ -417,6 +423,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Your Task
 Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
+**Selection disposition (natural selection — see CANONICAL:EVOLUTION-MODEL).** The Phase 0 audit blocks above ARE the fitness assay; assign every trait you act on exactly one disposition — AMPLIFY (strengthen a trait that demonstrably reduces a failure class) or CULL (remove a trait correlated with recurring failure or superseded), both REQUIRING a cited fitness signal from those blocks (session ref, pitfalls re-fire, stall, routing datum); RETAIN is the unstated default for untouched traits. A non-RETAIN disposition without a cited fitness signal is reject-class.
 
 1. **Skill Design Quality**: Frontmatter (`effort`, `argument-hint`, `allowed-tools`), argument handling, structure-brevity balance.
 2. **Actionability**: Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.

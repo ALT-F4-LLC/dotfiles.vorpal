@@ -3,6 +3,23 @@
 ## 2026-06-10
 
 ### Summary
+Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block carrying the full shared vocabulary, with evolve-coherence explicitly reframed as the **reproductive-isolation monitor** — it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits. D4 CANONICAL:EVOLUTION-MODEL parity check formalized as single-family byte-identical across all three evolve-* carriers (hash e9ef8d09). Innovation Mandate updated to scope evolve-coherence's audit role over sibling innovation-mandate sections.
+
+### Changes
+- CANONICAL:EVOLUTION-MODEL block added (Phase A); byte-identical across all three evolve-* carriers.
+- Skill identity reframed: evolve-coherence is the reproductive-isolation monitor, not a reproducing organism; never edits or applies selection.
+- D4 #2 rubric updated to declare EVOLUTION-MODEL as single-family byte-identical across evolve-agents + evolve-skills + evolve-coherence.
+- Innovation Mandate scoped to auditing sibling innovation-mandate sections for completeness and terminology consistency.
+
+### Dimensions Evaluated
+Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers; No-Edit Guard consistency with reproductive-isolation framing); Completeness (D4 rubric coverage of new CANONICAL tag).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Full-cycle audit: NO changes (323 lines). "Operator typed /evolve-coherence, no Skill invocation captured" signal resolved as benign — fast report-and-route exit or scope-gate abort fully explains it; execution path verified sound. BANNER byte-parity with evolve-agents/evolve-skills confirmed.
 
 ### Changes

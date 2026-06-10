@@ -3,6 +3,24 @@
 ## 2026-06-10
 
 ### Summary
+Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block (genome/trait/fitness-signal vocabulary), natural-selection dispositions (AMPLIFY/CULL/RETAIN), Genetic-Drift Operator (fitness-independent neutral substitution, `drift=N` parameter, structural no-signal-set construction), Scientific Trial Protocol (hypothesis → operator-approval HARD GATE → measure → adopt-or-rollback), biodiversity invariant, and speciation gate. CANONICAL:EVOLUTION-MODEL byte-identical across evolve-agents/evolve-skills/evolve-coherence (hash e9ef8d09).
+
+### Changes
+- CANONICAL:EVOLUTION-MODEL block added (Phase A); byte-identical across all three evolve-* carriers.
+- Innovation Mandate updated to cite three variation sources: innovation-scanner, historical-auditor, genetic-drift operator.
+- Genetic-Drift Operator section added: structural no-signal-set construction (grep-then-subtract), `{drift_seed} mod len(set)` target selection, S2 reproducibility caveat.
+- Scientific Trial Protocol added: Hypothesis → operator approval → measurement → adopt-or-rollback; `Trial:`/`Drift:` changelog recording.
+- Selection disposition rule added to Phase 1 template (AMPLIFY/CULL require cited fitness signal; RETAIN is default).
+
+### Dimensions Evaluated
+Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers); Completeness (selection dispositions, drift operator, trial protocol coverage); Skill Design Quality (structural target selection, determinism caveat).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 8 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
 
 ### Changes

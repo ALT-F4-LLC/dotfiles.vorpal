@@ -93,3 +93,6 @@ Resolution: parity baseline = HEAD_entries + this-cycle's-uncommitted-entries. C
 Symptom: implementer reports a CANONICAL-block hash differing from the established baseline (occurred 2x in one cycle: impl-DKT-271 reported 20bed774, impl-DKT-273-fix-1 reported da317390 vs canonical e9ef8d09) and may misattribute it to "pre-existing state."
 Root cause: each agent improvises its own extract pipeline (marker inclusion, sed/awk variant, trailing-whitespace handling); different pipelines hash the same bytes differently.
 Resolution: team-lead re-runs ONE canonical extraction (awk BEGIN/END-exclusive + sed trailing-strip + shasum) before treating any hash delta as real divergence; better, embed the exact canonical pipeline verbatim in every brief that cites an expected hash.
+
+## 2026-06-10 — task-claim echo re-delivered as phantom re-assignment
+Symptom: every ephemeral (review-d1/d2/d4, reconciler) sent a "duplicate assignment is a no-op" ack after delivering its report → root cause: the teammate's own first-tool-call TaskUpdate owner-claim echoes back to it as an assignment notification after task completion → resolution: harmless; teammates correctly self-noop per R4/R6 — do NOT probe, re-dispatch, or treat the ack as a stall; proceed straight to shutdown_request.

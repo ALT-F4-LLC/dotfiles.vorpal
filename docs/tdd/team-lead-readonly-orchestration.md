@@ -249,3 +249,19 @@ Implementation note (all phases): line numbers cited in this TDD (`agents/team-l
   - `grep -c '^model:' agents/*.md` → 0 for every file (baseline 0; no frontmatter pins introduced)
   - `grep -c 'with_agent("team-lead")' src/user.rs` → 1 (baseline 1)
 - **Effort:** S. **Depends on:** Phases 1-2. **Out of scope:** evolve-* measured-distribution notes (intentionally unchanged), `docs/spec/review-strategy.md` Rule 8 description (unaffected).
+
+## Post-acceptance amendment (2026-06-10)
+
+**Date:** 2026-06-10  
+**Recorded by:** impl-DKT-268 per operator directive  
+**Tracking issues:** DKT-266 (routing fix), DKT-268 (this coherence note)
+
+**What §Change 1 prescribed:** Default-fable quality-first routing — every spawn runs `fable` unless the brief is fully Closed and faster turnaround materially helps (then `sonnet` with a one-line downshift justification); cost is explicitly not a criterion.
+
+**What now stands in `agents/team-lead.md`:** A 4-row cost-tiered routing table (heading: "Per-spawn model routing (cost-tiered, quality-upgradable)"): `sonnet` for Direct/Small impl and planner; `opus` for Medium impl, reviewer-2, verifier*; `fable` for tdd-author*, Large/architecture, long-horizon impl; `opus` (security depth) for security-reviewer-2 and security-dominated tdd-author*. Team-lead may exceed any tier with a one-line justification in the spawn brief.
+
+**Why the divergence:** Post-ea127f9 Mirmir telemetry (measured 2026-06-09) showed 12 of 13 spawns using `fable` (94% concentration), including trivial planner/impl spawns. The quality-first "default fable for every spawn, including trivial ones" clause was the root cause. The operator directed restoration of the pre-ea127f9 cost-tier table (c3f0aa6 baseline) with quality-first retained only as an upgrade path.
+
+**What was preserved from ea127f9:** `model=` mandatory on every spawn; never-haiku ban; alias-only naming; read-only orchestration; persistent-advisor spawn-model inheritance; former "inherit (omit param)" tier promoted to explicit `opus`.
+
+**TDD history note:** This amendment records a post-acceptance divergence. The original §Change 1 text and all other sections of this TDD remain authoritative as the design record; this section documents only the operator decision that caused the live implementation to deviate.

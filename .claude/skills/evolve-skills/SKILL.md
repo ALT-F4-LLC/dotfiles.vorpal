@@ -109,11 +109,11 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 ### Team Setup & Agent Lifecycle
 
 1. `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`.
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan"), one "Review <name>" per target skill, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
@@ -129,7 +129,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn THREE agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), and `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, and `{historical_audit_findings}` for Phase 1 template substitution.
+Spawn FOUR agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), and `innovation-scanner` (staff-engineer). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, and `{innovation_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -272,6 +272,39 @@ After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFES
 - No peer-to-peer SendMessage — orchestrator only. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills.
 ```
 
+### Phase 0: Innovation Scan
+
+```
+Agent(team_name="evolve-skills-{today_date}", name="innovation-scanner", subagent_type="staff-engineer", prompt="...")
+
+MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read .claude/skills/*/SKILL.md and skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
+
+Target skills: {target_skills}
+
+## Task
+For EACH target skill, identify opportunities in these four areas:
+
+1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the skill definition that could improve effectiveness (e.g. new Claude model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
+2. **Efficiency Gains**: Steps, workflows, or verification loops that could be shortened, parallelized, or eliminated without sacrificing correctness.
+3. **Patterns to Retire**: Skill behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
+4. **Cross-Skill Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the skill family more effective as a whole (not just individually).
+
+## Rules
+- Read-only. Do NOT use Edit/Write. Do NOT commit.
+- No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
+- No peer-to-peer SendMessage — orchestrator only.
+- Focus on WHAT could be better and WHY — not on cataloguing what already works. Each finding must be actionable and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete).
+
+## Output Format (per skill)
+Emit one block per target skill, then SendMessage the orchestrator with all blocks verbatim:
+
+### Skill: <skill-name>
+- New Approaches: <1-3 bullets, or "none">
+- Efficiency Gains: <1-3 bullets, or "none">
+- Patterns to Retire: <1-3 bullets, or "none">
+- Cross-Skill Opportunities: <1-3 bullets, or "none">
+```
+
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
@@ -300,6 +333,9 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Historical Audit Findings
 {historical_audit_findings}
+
+## Innovation Suggestions
+{innovation_findings}
 > **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
 > Prioritize the Suggested focus areas from your skill's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals.
 
@@ -356,6 +392,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
    correct agent types in templates, consistent conventions and argument handling
 4. Check cross-communication: identify SendMessage trigger gaps between dependent skills, flag hub-and-spoke patterns (>50% routing through one agent)
 5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
+6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 
 ## Output Format
 ### Renames

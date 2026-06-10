@@ -1,5 +1,33 @@
 # Changelog: init-specs
 
+## 2026-06-10
+
+### Summary
+Compacted 9 entries (2026-05-09..2026-05-25) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 9 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+One correctness fix: replaced `shutdown_approved` with `shutdown_response` in the Spawning Template, aligning with the documented protocol response type used ecosystem-wide. Net 0 (183 lines).
+
+### Changes
+- Spawning Template L172: `shutdown_approved` → `shutdown_response` — the documented shutdown protocol type; grep confirmed `shutdown_approved` appeared only here across all skill/agent definition files. Overwrite-prompt guard verified present (Pre-flight step 4); Monitor-alternative for the stall classifier remains rejected per 2026-05-05 entry.
+
+### Dimensions Evaluated
+All 8; Orchestration & Agent Teams (shutdown terminology correctness), Coherence (protocol-term parity with family).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -127,144 +155,6 @@ Orchestration & Agent Teams (operator priority — crossed handshake), Completen
 ### Rename
 No rename. Family-aligned with prd/tdd/adr/ux-spec.
 
-## 2026-05-25
-
-### Summary
-No-change verdict. Smallest skill in the doc-authoring family (177 lines) and thoroughly trimmed across prior cycles. Phase 0 focus areas resolve as structurally moot (agents write to unique paths) or already implemented (re-invocation gate in Pre-flight step 4). Single observed invocation insufficient to codify new prescribed flow.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — BALANCED headroom intentionally not filled), Skill Design Quality, Actionability, Completeness, Orchestration, Coherence (family parity), Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with prd/tdd/adr/ux-spec.
-
-## 2026-05-18
-
-### Summary
-Closed verification-scope bug (false-flagging pre-existing specs on "Skip existing" path) and trimmed two layers of redundant leaf-agent prohibition + an inflated scope-boundary cross-reference.
-
-### Changes
-- Step 3 Verify: scoped all four grep checks and `head -1` to `{generated_files}` (the Step 2 `completed` set) instead of `docs/spec/*.md`. Closes a false-flag bug where verification on the "Skip existing" path scanned pre-existing files whose Gaps section uses organic headings and incorrectly reported them missing the required section.
-- Role paragraph: removed parenthetical "(prohibition detailed in the Spawning Template)" — the CRITICAL banner and Spawning Template already state the leaf-agent rule.
-- Scope boundary: trimmed two-line cross-reference paragraph to a single line.
-
-### Dimensions Evaluated
-Actionability (HIGHEST — verification-scope bug), Over-Engineering, Skill Design Quality, Coherence.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Phase 2 coherence sync: corrected false AskUserQuestion "multiSelect lifts the 4-option cap" carve-out (matches sister orchestrator-skill corrections this cycle — the API hard-rejects >4 options regardless of multiSelect).
-
-### Changes
-- Operator-prompts blockquote: replaced "up to 8 options when multiSelect AND fixed dimension catalog" with "max 4 regardless of multiSelect" + routing-question pattern. Sister-parity with evolve-skills / evolve-agents / friction-driven-evolution this cycle.
-
-### Dimensions Evaluated
-Coherence (cross-skill parity on AskUserQuestion contract), Skill Design Quality (correctness).
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Respawn arm now explicitly reassigns task ownership and re-records spawn time so polling credits the replacement agent; description tightened to signal one-time-bootstrap character and surface re-invocation safety (historical-audit signal that operators may re-type /specs mid-project).
-
-### Changes
-- Step 2 respawn arm: added explicit `TaskUpdate(... owner=..., status="in_progress")` and spawn-time re-record instruction. Closes gap where TaskList polling and 600s stall classifier would still credit the dead agent after respawn.
-- Frontmatter description: added "One-time bootstrap" framing and one-line note that re-invocation prompts before overwrite; ongoing maintenance is @staff-engineer's. Trigger phrases unchanged.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Orchestration & Agent Teams.
-
-### Rename
-No rename. Family-aligned with prd/tdd/adr/ux-spec.
-
-## 2026-05-16
-
-### Summary
-Phase 2 coherence pass: shutdown_request payload now specifies full `{type, reason}` shape (uniform with vote/evolve-*); AskUserQuestion preamble extended with multiSelect+fixed-catalog carve-out for Scope question's 7-file subset.
-
-### Changes
-- Wrap-up step 2: shutdown_request now uses `SendMessage(to="<name>", message={type: "shutdown_request", reason: "specs bootstrap complete"})` — uniform schema across orchestrator-family skills.
-- Operator-prompts banner: extended option-count contract to permit "up to 8 options when multiSelect AND fixed dimension catalog" — covers Scope question's Custom-subset multiSelect over 7 spec files.
-
-### Dimensions Evaluated
-Coordination (shutdown payload uniformity), Operator prompt quality (AskUserQuestion contract honesty), Coherence.
-
-### Rename
-No rename.
-
-## 2026-05-16
-
-### Summary
-Four operator-pain fixes: added canonical "Operator prompts" banner (coherence with evolve-skills/evolve-agents); hardened Verification globs against empty-glob expansion errors; resolved leaf-agent SendMessage recipient ambiguity between team/standalone modes; added minimum structural contract (3 H2s + required `## Gaps & Risks` section).
-
-### Changes
-- Pre-flight: added canonical "Operator prompts" banner — locks AskUserQuestion contract across the 4 call sites in this skill.
-- Step 3 Verify: added `2>/dev/null` to both grep -L commands — prevents noisy "No such file or directory" false positives.
-- Spawning Template: replaced hardcoded `SendMessage(to="team-lead", ...)` with role-resolved recipient — fixes standalone-mode handoff where team-lead may not exist.
-- Spawning Template + Step 3 Verify: added minimum structural requirement (≥3 H2s + required `## Gaps & Risks` section) and matching grep verification check.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Over-Engineering (no bloat), Orchestration & Agent Teams (recipient ambiguity), Coherence (canonical banner with evolve-* siblings).
-
-### Rename
-No rename. Family-aligned with `prd`, `tdd`, `adr`, `ux-spec`.
-
-## 2026-05-09
-
-### Summary
-Three small actionability + coherence fixes (operator pain points 1, 3): added `last_updated` regression check to Step 3 verification, clarified that template substitutions apply to the Spawning Template body (not the `Agent()` call), and added a reciprocal architecture↔code-quality cross-link to mirror the existing code-quality↔siblings deferral. Also notes that the prior entry's `paths:` addition has since been reverted (commit f8b18a2 removed `paths:` skill-wide); current frontmatter contains no `paths:` field, which is correct.
-
-### Changes
-- Step 3 Verify: added `grep -L "last_updated: \"{today_date}\"" docs/spec/*.md` — closes a regression path the existing `head -1` frontmatter check missed (an agent could write valid YAML with a stale or hardcoded date and slip past).
-- Step 1 #3: added a one-line clarifier that the substitutions apply to the Spawning Template body, not to the `Agent()` call itself — prevents new operators from misreading the substitution scope.
-- Spec File Reference: added reciprocal cross-link in `architecture.md` row deferring style/idiom and test-architecture details to their owning specs (mirrors the pre-existing code-quality.md cross-link); prevents content overlap when agents work in parallel.
-- Note: the prior `## 2026-05-09` entry below documented adding `paths:` frontmatter, which was subsequently removed in commit f8b18a2 as part of a skill-wide cleanup. The prior entry remains as historical record (per the never-modify-existing-entries rule); current frontmatter correctly contains no `paths:` field.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence (sibling vote, evolve-skills, evolve-agents), Spec Alignment (verified against `docs/spec/` actual files), Rename.
-
-### Rename
-No rename. Family-aligned with `prd`, `tdd`, `adr`, `ux-spec`.
-
-## 2026-05-09
-
-### Summary
-Phase 2 coherence pass: declared `paths:` write surface for orchestrator parity with evolve-agents and evolve-skills.
-
-### Changes
-- Frontmatter: added `paths: ["docs/spec/*.md"]` — orchestrator skill writes to docs/spec/ via spawned teammates; aligns with evolve-agents/evolve-skills convention.
-
-### Dimensions Evaluated
-Coherence, Skill Design Quality.
-
-### Rename
-No rename.
-
-## 2026-05-09
-
-### Summary
-Three small operator-experience and coordination-clarity fixes: added Architecture/maintainability emphasis option, distinguished spawned-agent failure handling from harness-level orchestrator crash recovery, and tightened code-quality.md exploration guidance to reduce overlap with sibling specs. Net 174→183.
-
-### Changes
-- Pre-flight Emphasis options: added `Architecture & maintainability` so operators with architecture-focused goals don't fall back to free-text re-prompting.
-- Step 2 failure handling: scoped "On any failure" → "On any spawned-agent failure" and added a one-line note that orchestrator crashes are harness-handled (single auto re-spawn + Resume) so future readers don't add redundant manual restart logic.
-- Spec File Reference: tightened `code-quality.md` exploration guidance to defer architecture and test-pattern questions to their owning specs.
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration & Agent Teams, Coherence, Spec Alignment, Rename. Operator pain points: Operator prompt quality, Output actionability, Coordination & handoff gaps.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +186,12 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-06: Closed two safety-rail gaps: Mermaid-diagram grep check in Step 3; spawn-time recording for the 10-min stall classifier (164→172).
 - 2026-05-07: Replaced stale dev-skill reference with team-lead orchestrator; H1 fixed from # Create Specs to # Specs.
 - 2026-05-07: Added CANONICAL:BANNER markers around the CRITICAL banner; corrected reciprocal reserved-names COUPLING comment (172→174).
+- 2026-05-09: Three small actionability + coherence fixes (operator pain points 1, 3): added `last_updated` regression check to Step 3 verification, clarified that templat...
+- 2026-05-09: Phase 2 coherence pass: declared `paths:` write surface for orchestrator parity with evolve-agents and evolve-skills.
+- 2026-05-09: Three small operator-experience and coordination-clarity fixes: added Architecture/maintainability emphasis option, distinguished spawned-agent failure handl...
+- 2026-05-16: Phase 2 coherence pass: shutdown_request payload now specifies full `{type, reason}` shape (uniform with vote/evolve-*); AskUserQuestion preamble extended wi...
+- 2026-05-16: Four operator-pain fixes: added canonical "Operator prompts" banner (coherence with evolve-skills/evolve-agents); hardened Verification globs against empty-g...
+- 2026-05-17: Phase 2 coherence sync: corrected false AskUserQuestion "multiSelect lifts the 4-option cap" carve-out (matches sister orchestrator-skill corrections this cy...
+- 2026-05-17: Respawn arm now explicitly reassigns task ownership and re-records spawn time so polling credits the replacement agent; description tightened to signal one-t...
+- 2026-05-18: Closed verification-scope bug (false-flagging pre-existing specs on "Skip existing" path) and trimmed two layers of redundant leaf-agent prohibition + an inf...
+- 2026-05-25: No-change verdict. Smallest skill in the doc-authoring family (177 lines) and thoroughly trimmed across prior cycles. Phase 0 focus areas resolve as structur...

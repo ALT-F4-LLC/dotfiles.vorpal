@@ -1,5 +1,33 @@
 # Changelog: evolve-skills
 
+## 2026-06-10
+
+### Summary
+Compacted 8 entries (2026-05-17..2026-05-30) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+No edits (491 lines, net 0). All Phase 0 signals verified to no-change: `days=` plumbing complete (L8/55-57/77-79, incl. all-skills `days=`-only path); three innovation suggestions rejected (audit-profile gate = over-engineering near cap; shared enumeration = breaks parallelism; Phase-3 scoped wc = correctness regression vs ADR 0001 standing budget).
+
+### Changes
+- None applied. Innovation-scanner template confirmed byte-symmetric with evolve-agents (modulo established noun substitutions).
+
+### Dimensions Evaluated
+All 8. Over-Engineering primary (rejected all 3 additions on a 491-line near-cap file). Coherence: innovation-scanner sister parity verified PASS; $-escape clean.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -133,131 +161,6 @@ Completeness + Coherence (live-operator-path defect, root-cause fix), Over-Engin
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-Added a Phase-0-findings-are-signals-not-facts rule to the Phase 1 template, governing both the Docket CLI and Historical audit blocks — closes the recurring fabricated-"verified"-finding failure class. Net +1.
-
-### Changes
-- Phase 1 template: new blockquote above the historical-prioritization line — Phase 0 audit findings (Docket commands, frontmatter fields, feature claims) are SIGNALS-TO-VERIFY against ground truth (--help, Grep/Read) before any CHANGE relies on them; a change built on a fabricated finding is reject-class. Byte-symmetric version applied to evolve-agents this cycle for sibling parity.
-
-### Dimensions Evaluated
-Actionability + Completeness (incident-class root-cause fix), Over-Engineering (HIGHEST — +1 at 359/500 justified), Coherence (symmetric placement vs evolve-agents; HARVEST blocks byte-identical).
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Added a scope-confirmation HARD GATE to Pre-flight (new step 9), achieving parity with evolve-agents step 7 (Phase 2 coherence).
-
-### Changes
-- New Pre-flight step 9: in standalone all-skills mode with >3 skills, surface planned scope + total line count via AskUserQuestion before committing (skips in single-skill and team mode). Closes a real gap — step 1 is a routing question that runs before inventory and cannot show cycle weight; all-skills mode (~13 skills) is the heaviest cycle yet had no cost checkpoint. Placed as step 9 to avoid renumbering the step-8 reference. Net +1 (327→328; BALANCED, well under 500). [Phase 2 coherence item 6b]
-
-### Dimensions Evaluated
-Sibling-skill parity; operator-prompt safety; over-engineering skepticism (no-op in team mode; value concentrated in standalone all-skills).
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Phase 2 coherence: added "Always run Phase 2" parity rule (matching evolve-agents Rule 1), consolidated SKIPPED-skip guidance in tandem with evolve-agents (4×→2×), and added the shutdown-idiom clarifying note. Net +1.
-
-### Changes
-- New Rule 1 "Always run Phase 2 — even for single-skill improvements" (parity with evolve-agents).
-- "skip historical-auditor if SKIPPED" consolidated 4×→2× (removed table parenthetical + template-header sentence).
-- One-line note: orchestrator-originated shutdown is intentional vs leaf-review self-initiate (`agents/team-lead.md` Rule 7).
-
-### Dimensions Evaluated
-Coherence, Over-Engineering (consolidation), Completeness (Phase 2 guarantee).
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Closed coordination/handoff gaps: de-dup transcript counts in the historical-auditor (raw grep hits ~10x inflated by replication), made the re-invocation signal replication-safe, and added a Phase 0-auditor crash→placeholder rule so Phase 1 templates never get dangling substitutions. Offset by trimming the triple-stated friction distinction. Net -1.
-
-### Changes
-- Historical-auditor template: added "De-dupe before counting" bullet — report DISTINCT `sessionId` counts, not raw line hits.
-- Re-invocation signal: count DISTINCT invocation events (UUID/timestamp), not replicated lines — prevents false ≥2 signals.
-- Crash & Stall "Second failure": Phase 0 auditors now substitute an `UNAVAILABLE` placeholder for their findings token so Phase 1 templates stay valid.
-- Removed redundant workflow-narrative friction distinction — template preamble (line 182) + rule (line 224) already carry it.
-
-### Dimensions Evaluated
-Orchestration (handoff/crash-substitution), Actionability (de-dup), Over-Engineering (HIGHEST — offset trim), Coherence.
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-Five changes: trimmed Phase 1 post-review-loop shutdown bullet (duplicates lifecycle table), trimmed orchestrator-identity workflow restatement, bolded Phase 1 "spawn all in same turn" pattern, trimmed Phase 0 "scoped here" wrap-clause, clarified shutdown-response routing to orchestrator (mirrored from evolve-agents). Net -3 lines.
-
-### Changes
-- Phase 1 post-review loop step 6: removed — duplicates lifecycle table row 1.
-- Orchestrator identity: dropped TeamCreate/spawn workflow restatement — duplicates Team Setup + Phase 1 template.
-- Phase 1 spawn instruction: bolded "**Spawn all in the same turn**" for evolve-agents parity.
-- Phase 0 friction-distinction: removed "scoped to the skills under review here" wrap.
-- Shutdown protocol: added "addressed to the orchestrator (never to a peer)" clause — mirrored from evolve-agents per team-lead pitfall on routing ambiguity.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — trim x3), Coherence (sister evolve-agents parity x2), Orchestration (routing clarity).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Two sister-parity trims (Phase 1 Context clause restating section headers below; Phase 0 Distinction-from-friction negative-form tail duplicating affirmative clause) plus cross-cutting `${history_days}` shell-var leak fix in Phase 0 historical-auditor template (same defect identified in sister evolve-agents). Net 0 lines (text-internal rewording).
-
-### Changes
-- Phase 1 template Context: dropped `and apply the docs research / docket audit findings below` — section headers within 3-9 lines below prompt application; fails Behavioral check.
-- Phase 0 Distinction-from-friction: dropped `— no clustering, no routing` tail — implied by `feeds Phase 1 reviewers directly`; fails Non-redundant check.
-- Phase 0 historical-auditor template: `-mtime -${history_days}` → `-mtime -{history_days}` — sister-cross-cutting defect; orchestrator substitutes `{...}` not `${...}`.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — trim x2), Coherence (sister evolve-agents parity x3), Skill Design Quality (defect fix).
-
-### Rename
-No rename.
-
-## 2026-05-18
-
-### Summary
-Closed the historical-auditor ISO→epoch-ms conversion gap that produced the wrong cutoff (1808066891000 = 2027-04-18 instead of 2026-04-18) in this cycle's audit. Pre-flight now computes both `{history_cutoff_iso}` and `{history_cutoff_epoch_ms}`; historical-auditor template substitutes the epoch-ms value directly instead of asking the auditor to convert inline. Net +2 lines.
-
-### Changes
-- Pre-flight step 8: compute `{history_cutoff_epoch_ms}` alongside `{history_cutoff_iso}` (macOS/Linux Bash commands) so the auditor never has to convert.
-- Phase 0 historical-auditor template header: include `epoch-ms {history_cutoff_epoch_ms}` alongside the ISO cutoff.
-- Phase 0 historical-auditor template step 2: replace `epoch-ms of {history_cutoff_iso}` with direct `{history_cutoff_epoch_ms}` substitution.
-
-### Dimensions Evaluated
-Completeness (HIGHEST), Actionability, Skill Design Quality, Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Phase 2 sister-parity trim: condensed Phase 1 template Size Budget block from 2 lines to 1 line, matching evolve-agents' equivalent trim applied earlier this cycle. Net -1 line; no behavioral change.
-
-### Changes
-- Phase 1 template Size Budget: collapsed 2-line restatement to 1 line. Restores byte-parity with sister evolve-agents Phase 1 template.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST), Coherence (sister evolve-agents parity).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -297,3 +200,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-16: Wired friction-driven-evolution payload contract end-to-end; cross-root collision handling; removed duplicate Rule 1.
 - 2026-05-16: Operator-prompts banner extended with multiSelect+fixed-catalog carve-out to match 6-option step 2 usage.
 - 2026-05-17: Corrected false multiSelect-lifts-4-option-cap carve-out (API hard-rejects >4, verified live); step 2 collapsed to 4 options.
+- 2026-05-17: Phase 2 sister-parity trim: condensed Phase 1 template Size Budget block from 2 lines to 1 line, matching evolve-agents' equivalent trim applied earlier this...
+- 2026-05-18: Closed the historical-auditor ISO→epoch-ms conversion gap that produced the wrong cutoff (1808066891000 = 2027-04-18 instead of 2026-04-18) in this cycle's a...
+- 2026-05-20: Two sister-parity trims (Phase 1 Context clause restating section headers below; Phase 0 Distinction-from-friction negative-form tail duplicating affirmative...
+- 2026-05-25: Five changes: trimmed Phase 1 post-review-loop shutdown bullet (duplicates lifecycle table), trimmed orchestrator-identity workflow restatement, bolded Phase...
+- 2026-05-28: Phase 2 coherence: added "Always run Phase 2" parity rule (matching evolve-agents Rule 1), consolidated SKIPPED-skip guidance in tandem with evolve-agents (4...
+- 2026-05-28: Closed coordination/handoff gaps: de-dup transcript counts in the historical-auditor (raw grep hits ~10x inflated by replication), made the re-invocation sig...
+- 2026-05-29: Added a scope-confirmation HARD GATE to Pre-flight (new step 9), achieving parity with evolve-agents step 7 (Phase 2 coherence).
+- 2026-05-30: Added a Phase-0-findings-are-signals-not-facts rule to the Phase 1 template, governing both the Docket CLI and Historical audit blocks — closes the recurring...

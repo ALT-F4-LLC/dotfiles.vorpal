@@ -78,3 +78,13 @@ resolution → before flagging a teammate-report discrepancy, validate the measu
 symptom → operator Mirmir metrics flagged team-lead spawns "overwhelmingly Fable 5" one cycle after ea127f9; transcript audit confirmed 12/13 spawns fable (94% of subagent transcripts) vs 41% under the prior cost-tier table.
 root cause → routing prose written as "default fable for every spawn, including trivial ones, unless BOTH <condition-A> AND <condition-B>" — a conjunctive escape clause plus "cost is NOT a criterion" makes the non-default branch practically unreachable; the default silently becomes the only outcome.
 resolution → policy text that wants a distribution must lead with the tier table as the default and frame the premium model as the justified EXCEPTION (upgrade path with recorded one-line justification), never the reverse. When evolving routing/policy prose, grep the new text for "default X ... unless BOTH" patterns and check the next cycle's spawn distribution against intent (subagents/*.jsonl model grep) before declaring done.
+
+## 2026-06-10 — Phase 1 reviewer parity claims must be grep-verified against the NAMED sibling before applying
+Symptom: evolve-skills Phase 1 reviewer recommended removing design-review's post-ABORT re-invocation line, claiming "design-qa does not carry this line — removal restores family parity." Orchestrator verified the OLD_STRING target but NOT the sibling claim; applied it. Phase 2 coherence-reviewer grep showed design-qa:194 carries the IDENTICAL line — the edit BROKE parity and had to be reverted same-cycle.
+Root cause: spot-verification covered the edit target but trusted the reviewer's cross-file parity rationale untested; a parity claim is a claim about a DIFFERENT file than the one being edited.
+Resolution: before applying any edit whose rationale cites sibling-state ("restores parity with X", "X does not have this"), grep the named sibling for the exact content THIS turn. One grep would have rejected the change at Phase 1.
+
+## 2026-06-10 — ADR 0001 parity-formula verification on uncommitted-entry cycles needs an adjusted baseline
+Symptom: history-compactor's first verify pass false-failed the ADR 0001 parity check (after = before − N + 1) on files carrying same-day uncommitted entries.
+Root cause: it computed `before` from raw `git show HEAD` entry count; this cycle's prepended (uncommitted) entries are absent from HEAD, so the formula under-counted.
+Resolution: parity baseline = HEAD_entries + this-cycle's-uncommitted-entries. Compaction itself was correct; only the verification baseline needed the adjustment. Bake into future compactor briefs.

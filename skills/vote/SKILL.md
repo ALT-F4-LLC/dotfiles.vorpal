@@ -72,7 +72,7 @@ If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or 
 | high | 3 | 75% weighted approval | Zero rejects |
 | critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `agents/team-lead.md` Consensus Integration, or passes a `--double` flag / `doubled=true` hint alongside the criticality. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
+**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `agents/team-lead.md` Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
 
 **Doubled reviewer counts** (thresholds + constraints identical to the base table above; sole delta: medium allows "No more than 2 rejects"): low=4, medium=4, high=6, critical=8.
 

@@ -103,11 +103,11 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ### Team Setup & Agent Lifecycle
 
-`TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan"), one "Review <name>" per target agent, and "Coherence & Renames".
+`TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner` | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
 
@@ -118,12 +118,12 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
-- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
+- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`, `{model_routing_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn FOUR teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), and `innovation-scanner` (staff-engineer). Skip `historical-auditor` only if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, and `{innovation_findings}` for Phase 1 template substitution.
+Spawn FIVE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (staff-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -290,6 +290,56 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Cross-Agent Opportunities: <1-3 bullets, or "none">
 ```
 
+### Phase 0: Model Routing Audit
+
+Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{target_agents}`, `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
+
+```
+Agent(team_name="evolve-agents-{today_date}", name="model-routing-auditor", subagent_type="senior-engineer", prompt="...")
+
+You are the model-routing auditor. Read-only. No file edits. No commits. No sub-agents.
+Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
+Target agents: {target_agents}
+
+## Task
+Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
+
+1. **Per-spawn model distribution** — for each session where a target agent spawned subagents, run:
+   `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c`
+   Report DISTINCT counts per model per agent role. This is ground truth — do NOT assume inherit semantics.
+
+2. **Outcome signals per model** — for each agent/model pair observed, correlate with:
+   - Stall signals: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name; count distinct events by `name`+`sessionId`.
+   - Fix-loop respawns (`-r2`): `grep -hE '"name":"[^"]*-r2"'` across in-window transcripts; count DISTINCT respawn events by `name`+`sessionId` (not replicated lines).
+   - Error/abort: `"is_error":true` tool results in turns invoking the agent; count per model.
+   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — skip turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Count distinct corrections by model.
+
+3. **`~/.claude/history.jsonl`** — count operator-typed `@<agent>` mentions in the window per target agent (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
+
+4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
+
+## Improvement-Only Mandate
+Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
+
+## Output Format
+Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
+
+### Agent: <agent-name>
+- Model distribution (window): <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
+- Stall signals by model: <model → TeammateIdle count, or "none">
+- Fix-loop respawns by model: <model → -r2 count, or "none">
+- Error/abort by model: <model → count, or "none">
+- Operator-correction by model: <model → count, or "none">
+- Routing recommendations: <1-3 bullets with evidence citations, or "none — no improvement opportunity grounded in data">
+
+If a category is empty for an agent, write `none` — do not omit the line.
+
+## Rules
+- Read-only. Do NOT use Edit/Write. Do NOT commit.
+- No sub-agents: do NOT invoke /vote, Skill(), Agent(), or TeamCreate. SendMessage the orchestrator for delegation.
+- No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale.
+```
+
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}` for each (`subagent_type: "<name>"`).
@@ -322,8 +372,11 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 
 ## Innovation Suggestions
 {innovation_findings}
+
+## Model Routing Audit Findings
+{model_routing_findings}
 > **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
-> Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps.
+> Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps. Model routing changes MUST be grounded in measured distribution data from Model Routing Audit Findings — do NOT propose routing changes without evidence citations.
 
 ## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check. Flag any unescaped `\$`+digit (e.g. `\$1`, `\$ARGUMENTS`) in documentary prose — it renders empty; escape as `\$`.
@@ -382,6 +435,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
 5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
+7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
 
 ## Output Format
 

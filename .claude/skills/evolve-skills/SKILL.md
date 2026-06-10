@@ -79,7 +79,7 @@ Before spawning any agents:
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
 9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total line count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
-10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` in the gitignored per-user settings.local.json — add it if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
+10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -248,6 +248,10 @@ find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -
 The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` yields an empty result → no-op (`2>/dev/null` swallows the error). The current repo is matched by this glob automatically (it lives under `~/Development`); de-dupe its path so it is not processed twice. This scan is read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths grouped by repo (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment). This manifest is the orchestrator's ingest set for lesson analysis.
 <!-- CANONICAL:HARVEST:END -->
    - **Per-file mapping (skills):** for each TARGET skill, `grep -l '<skill-name>' <each discovered pitfalls.md>` (per-file, mirroring the `grep -lri '<skill-name>'` step above) and surface matching excerpts (≤240 chars each) tagged with the source repo path. `pitfalls.md` files mentioning no target skill are listed path-only.
+4. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
+   - `sum(increase(claude_code_session_count[{history_days}d]))`
+   - `sum(increase(claude_code_cost_usage[{history_days}d]))`
+   Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
 
 ## Output Format (per skill)
 Emit one block per target skill, then SendMessage the orchestrator with all blocks verbatim:
@@ -260,6 +264,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Re-invocation signals: <count of sessions with ≥2 invocations>
 - Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
 - Memory references: <list of .claude/agent-memory paths, or "none">
+- Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
 If a category is empty for a skill, write `none` — do not omit the line.
@@ -332,6 +337,11 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 3. **`~/.claude/history.jsonl`** — count operator-typed `/<skill>` invocations in the window per target skill (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 
 4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
+5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
+   - `sum by (model, skill_name) (increase(claude_code_token_usage[{history_days}d]))`
+   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
+   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
+   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
 
 ## Improvement-Only Mandate
 Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
@@ -345,6 +355,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Fix-loop respawns by model: <model → -r2 count, or "none">
 - Error/abort by model: <model → count, or "none">
 - Operator-correction by model: <model → count, or "none">
+- Mimir metrics: <summary of labeled token/cost totals by model and skill_name, or "metrics unavailable: <reason>">
 - Routing recommendations: <1-3 bullets with evidence citations, or "none — no improvement opportunity grounded in data">
 
 If a category is empty for a skill, write `none` — do not omit the line.
@@ -447,6 +458,8 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
+8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent_name` label in PromQL → `skill_name`; "target agents" → "target skills"); flag any drift.
+9. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
 
 ## Output Format
 ### Renames

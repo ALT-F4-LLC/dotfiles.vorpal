@@ -100,7 +100,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`.
 
 ---
 
@@ -109,13 +109,14 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 ### Team Setup & Agent Lifecycle
 
 1. `TeamCreate(team_name="evolve-skills-{today_date}", description="Skill evolution cycle for {today_date}")`.
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target skill, and "Coherence & Renames".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target skill, "Coherence & Renames", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
-| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
+| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
+| 3 | `history-compactor` (gated) | Spawn after Phase 2 only if the History Compaction `wc -l` gate trips → compact → shut down before `TeamDelete` |
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers self-initiate `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -172,13 +173,21 @@ The Phase 2 teammate:
 **After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `skills/`, `.claude/skills/`, `agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
 and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
 
+### Phase 3: History Compaction (terminal, gated)
+
+Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 2 fixes are applied and the coherence-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/skills/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
+
+Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect, counted in the ADR 0001 parity formula. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
+
+The compactor's report MUST evidence invariant checks 0-5 per ADR 0001 (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, post-compaction budget) — formulas and hunk shapes live in the ADR; do not restate them. On any failed check the orchestrator rejects the compaction and the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or leaves the file untouched, with the failure flagged in the final report — never ship a partial compaction. Shut down the compactor before `TeamDelete`.
+
 ### Wrap-up & Team Cleanup
 
-After Phase 2 completes:
+After Phase 3 (or its no-op gate check) completes:
 
-1. Shut down the coherence-reviewer and `TeamDelete(team_name="evolve-skills-{today_date}")` per lifecycle rules.
+1. `TeamDelete(team_name="evolve-skills-{today_date}")` per lifecycle rules (coherence-reviewer and any history-compactor are already shut down).
 2. Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
 
 ---
 

@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Compacted 10 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 10 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Full-cycle audit: NO changes. Fourth consecutive no-change verdict. Glob/Grep confirmed genuinely used (numbering, race detection, prior-art) despite stale 2026-06-04 entry claiming removal — live state correct, historical entry left immutable per changelog policy.
 
 ### Changes
@@ -261,166 +275,17 @@ Coherence, Completeness.
 ### Rename
 No rename.
 
-## 2026-05-09
+## Compacted history
 
-### Summary
-Phase 1 over-engineering pass: dropped the Mermaid Mandate (operator-hostile magic-string validation for single-decision records — ADRs are short, judgment is sufficient); trimmed two pieces of meta-commentary in Pre-flight §4 and §5.7. Net 277→255.
+Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
 
-### Changes
-- Authoring §4 reframed: Mermaid is now optional with a one-line guideline (judgment-based), no validation pressure
-- Mermaid Mandate subsection removed entirely (was redundant with Authoring §4)
-- Validation §5 (Mermaid presence) removed; placeholder scan renumbered
-- Failure Modes row for "Mermaid mandate not satisfied" removed
-- Pre-flight §4 preamble compressed (4 lines → 1 line) — collision-handling rationale was meta-commentary
-- Pre-flight §5.7 forward-reference compressed (4 lines → 1 line) — duplicated the override block below
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with tdd/prd/ux-spec.
-
-## 2026-05-07
-
-### Summary
-Phase 2 coherence: removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec; already enforced by CANONICAL:BANNER + `allowed-tools`. Net -1.
-
-### Changes
-- Removed Failure Mode row "Calling agent attempts to spawn sub-agents..." — fully redundant with CANONICAL:BANNER + `allowed-tools` exclusion list (Content Gate: Non-redundant fail). Sibling parity with ux-spec's 2026-05-06 removal.
-
-### Dimensions Evaluated
-Coherence — sibling-skill symmetry.
-
-### Rename
-No rename.
-
-## 2026-05-07
-
-### Summary
-Two fixes (net 276→281): (1) repaired canonical-block contamination in SAVE_AND_RETURN — adr's block diverged from tdd/prd/ux-spec by embedding an ADR-specific renumber step inside the CANONICAL markers; reframed as an explicit pre-Write override outside the canonical region (mirrors the existing post-Write race-detection override). (2) Added optional `superseded_by` frontmatter field so superseded ADRs link forward to their successor.
-
-### Changes
-- SAVE_AND_RETURN canonical block restored to 3-step form (mkdir → Write → Emit) matching tdd/prd/ux-spec; ADR-specific renumber step moved outside the canonical markers
-- Both ADR-specific overrides now sit together below the canonical block with explicit "insert before/between canonical step N" anchors
-- Pre-flight numbering note (sub-step 7) updated to reference the ADR-specific override below the canonical block instead of "Save & Return step 1"
-- Frontmatter contract: optional `superseded_by` added; required only when `status: superseded`
-- Validation Before Save step 1 extended to require `superseded_by` when status is superseded
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-05-07
-
-### Summary
-Phase 2 coherence: fixed stale H1 prefix to align with `name: adr` after `create-` prefix was dropped. Symmetric to the H1 fix applied to vote earlier this cycle.
-
-### Changes
-- H1 changed from `# Create ADR — ...` to `# ADR — ...` to match frontmatter `name:` field
-
-### Dimensions Evaluated
-Coherence (cross-skill H1/name consistency).
-
-### Rename
-No rename.
-
-## 2026-05-06
-
-### Summary
-Fixed post-write race detection ordering bug: the check was described after the canonical "End." instruction, making it unreachable. Reframed as an explicit ADR-specific override that runs between canonical steps 3 (Write) and 4 (Emit). Net +2.
-
-### Changes
-- Save & Return: post-write race-detection paragraph reframed as "ADR-specific override — insert between canonical steps 3 and 4 (before End.)" so the check actually runs before termination
-- Added explicit "On clean Glob, proceed to canonical step 4" branch so the agent knows to continue after a passing check
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-05-06
-
-### Summary
-**Rename: `create-adr` → `adr`** per operator request to drop the `create-` prefix from the spec/doc-authoring family. Directory moved, frontmatter `name:` updated, slash command `/create-adr` → `/adr`, all cross-references updated.
-
-### Changes
-- Directory renamed `skills/create-adr/` → `skills/adr/`
-- Frontmatter `name: create-adr` → `name: adr`
-- Cross-references updated in: sibling skills (`prd`, `tdd`, `ux-spec`, `specs`), `agents/staff-engineer.md`, `README.md`
-- COUPLING comment phrasing changed from "create-* family" → "doc-authoring family"
-- Changelog file moved: `docs/changelog/skills/create-adr.md` → `adr.md`; H1 updated; historical entries left intact
-
-### Dimensions Evaluated
-Rename, Coherence
-
-### Rename
-Renamed `create-adr` → `adr` per operator request.
-
-## 2026-05-06
-
-### Summary
-Phase 2 coherence: added create-* family COUPLING comment for sibling-asymmetry prevention.
-
-### Changes
-- Added COUPLING comment to "When NOT to Use" section listing the 4 sibling create-* skills (mirroring create-prd's RESERVED-NAMES marker) — prevents asymmetric drift when adding/removing siblings.
-
-### Dimensions Evaluated
-Coherence (cross-skill family symmetry).
-
-### Rename
-No rename.
-
-## 2026-05-06
-
-### Summary
-Phase 1 over-engineering pass: removed three duplicate restatements (self-check, post-Validation prose, race-detection honesty), trimmed two pieces of meta-commentary, and collapsed Mermaid Mandate to a cross-reference. Net 305→~272.
-
-### Changes
-- Authoring §7 Self-check removed — duplicated Validation Before Save verbatim
-- Pre-flight §4 collision-handling preamble compressed — 5 lines of meta-explanation → 1 line
-- Removed frontmatter-omission rationale paragraph (`maturity`/`scope`/`owner`/`dependencies`) — non-behavioral; cited unverifiable "TDD §4.3"
-- Pre-flight §5.5 zero-padding rationale trimmed — general LLM knowledge
-- Post-Validation abort prose collapsed — Failure Modes table covers the abort behavior + retry semantics
-- Race-detection honesty paragraph removed — already covered by post-write block + Failure Modes table
-- Mermaid Mandate condensed to cross-reference — rule was stated 3x (Authoring §4 + dedicated subsection + Validation §5)
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename. Family-aligned with create-tdd/create-prd/create-ux-spec.
-
-## 2026-05-06
-
-### Summary
-Phase 2 coherence: removed dead "missing-parent prompt" phrase from SAVE_AND_RETURN. create-adr has no parent-doc probe.
-
-### Changes
-- Save & Return Cancel handler: trimmed "or missing-parent prompt" — false-positive contract claim; only create-tdd runs a missing-parent (PRD) probe.
-
-### Dimensions Evaluated
-Coherence, Actionability.
-
-### Rename
-No rename.
-
-## 2026-05-06
-
-### Summary
-First changelog entry. Five fixes addressing forward-references, collision-dialog reachability under auto-numbering, deterministic numbering placement, and a stale cross-reference. Net 304→305.
-
-### Changes
-- Pre-flight step 4: removed forward-reference to step 5; clarified that exact-path collisions are essentially impossible under auto-numbering; COLLISION_DIALOG kept as safety net for concurrent races
-- Pre-flight step 5.7 + Save & Return: numbering Glob now re-runs inside Save & Return immediately before Write to honor the determinism contract that was previously unenforceable
-- Pre-flight step 5.4: removed dead "and no malformed entries" clause (5.3 already aborts on malformed)
-- Replaced unverifiable "TDD §8 Q3" reference with inline rationale (4-digit zero-padding ensures lexicographic sort matches numeric sort up to ADR 9999)
-- Save & Return: added explicit re-run step
-
-### Dimensions Evaluated
-Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename
-
-### Rename
-No rename. Family-aligned with create-tdd/create-prd/create-ux-spec.
+- 2026-05-06: First entry: five fixes — forward-references, collision-dialog reachability under auto-numbering, deterministic numbering re-run, stale cross-reference.
+- 2026-05-06: Removed dead missing-parent-prompt phrase from Save & Return Cancel handler — only create-tdd runs a parent probe.
+- 2026-05-06: Phase 1 over-engineering pass: removed three duplicate restatements and meta-commentary; Mermaid Mandate collapsed to cross-reference (305→~272).
+- 2026-05-06: Added create-* family COUPLING comment to When NOT to Use for sibling-asymmetry prevention.
+- 2026-05-06: Renamed create-adr → adr per operator request; directory, frontmatter name, /adr slash command, and cross-references updated.
+- 2026-05-06: Fixed post-write race-detection ordering — reframed as ADR-specific override between canonical Save & Return steps 3 and 4.
+- 2026-05-07: Phase 2 coherence: H1 fixed from # Create ADR to # ADR to match frontmatter name after the create- prefix drop.
+- 2026-05-07: Repaired SAVE_AND_RETURN canonical-block contamination (restored 3-step form); added optional superseded_by frontmatter field.
+- 2026-05-07: Removed redundant sub-agent prohibition row from Failure Modes for symmetry with ux-spec.
+- 2026-05-09: Phase 1 over-engineering: dropped the Mermaid Mandate entirely (now optional, judgment-based); trimmed Pre-flight meta-commentary (277→255).

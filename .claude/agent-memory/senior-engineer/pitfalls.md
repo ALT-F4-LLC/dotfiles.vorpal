@@ -1,0 +1,6 @@
+# Pitfalls: senior-engineer
+
+- Inline Python via Bash heredoc corrupts `\!=` → zsh/harness escapes it to `\\!=` causing SyntaxError even inside quoted-EOF heredocs → root cause: history-expansion escaping applied to the command string; resolution: Write the script to $TMPDIR with the Write tool (or avoid `\!` by inverting conditions), then run `python3 $TMPDIR/script.py`.
+
+## 2026-06-09 — ADR 0001 check-2 diff-shape proof not mechanizable from raw diff lines
+Symptom: post-compaction verifier comparing `git diff HEAD` -/+ lines against the deleted entry band reported shape FAIL on all files despite a correct compaction. Root cause: git's diff algorithm matches blank lines and same-date `## 20..` headings between deleted entries and added ledger/compaction content as unchanged context, splitting hunks so extracted deletions never equal the band verbatim. Resolution: prove check 2 by byte-exact reconstruction instead — assert current file == `git show HEAD:<file>` with the selected band deleted, one compaction entry prepended below H1, and the terminal ledger section appended; this also proves surviving entries are byte-untouched. Also: `docket issue show <id> --json` nests fields under `.data` — read `.data.status`, not top-level `.status`, when verifying a close.

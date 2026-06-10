@@ -53,3 +53,8 @@ resolution → settle platform-behavior conflicts EMPIRICALLY, not by majority o
 - **Symptom**: Dispatched advisor's code review of DKT-250, then the implementer applied my earlier (queued, unacked) header correction — the diff changed mid-review and the review request's "adjudication item" went moot; needed a corrective mid-review SendMessage to advisor.
 - **Root cause**: Treated the implementer's completion report as terminal state while my correction message (sent pre-report, with "ack before finalizing") was still in its async queue. Spot-check grep matched disk at that instant, but a pending unacked redirect means state is NOT settled.
 - **Resolution**: Before dispatching review (or shutdown), enumerate your own outstanding unacked messages to the implementer. If any redirect is pending, either wait for ack/explicit supersede or tell the reviewer up front that state may shift. Outbound-queue check belongs in the pre-shutdown/pre-review gate alongside git/docket verification.
+
+## 2026-06-09 — Monitor watch-loop blind to issue closure (default docket list filter)
+symptom → Monitor polling `docket issue list --json` for `DKT-x:done` never fired its exit condition; closed issues silently vanished from output (event line went empty) and the watch would have run to timeout.
+root cause → `docket issue list` default filter excludes done/closed issues, so a status-transition watch keyed on seeing `done` can never match; closure manifests as disappearance, not a status string.
+resolution → key closure watches on the issue DISAPPEARING from the open-list output (or query with an explicit `-s done` include); treat empty-set transition as the completion event. Implementer's completion report remains the authoritative gate either way.

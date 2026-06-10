@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Compacted 9 entries (2026-05-09..2026-05-19) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 9 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Fable-5/Mythos-class mandate pass. Added WebFetch/WebSearch use-when trigger on the CVE/advisory bullet; added Model-floor note (security content auto-reroutes to Opus 4.8 + team-lead pins opus for security reviewers); trimmed the "Don't overthink" block. Net +2 (242 lines).
 
 ### Changes
@@ -258,148 +272,16 @@ Capability Growth & Cross-Communication (PRIMARY — dormant channel activated, 
 ### Rename
 No rename.
 
-## 2026-05-19 (Phase 2 coherence)
+## Compacted history
 
-### Summary
-Universal-mirror visibility contract alignment (Phase 2 canonical decision). Conditional-mirror language replaced with explicit universal-mirror clause + cross-cutting fallback.
+Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
 
-### Changes
-- §Visibility contract (renamed from "Operator visibility"): every SendMessage mirrored as Docket comment with `[SEC→@agent]` prefix; cross-cutting-fallback clause for security ADRs / fleet-wide threat-model calls; (cc operator) real-time signal preserved layered on top.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — universal-mirror alignment).
-
-### Rename
-No rename.
-
-## 2026-05-19
-
-### Summary
-Targeted self-review responding to historical-audit signals: codified the respawn-recovery handoff (4× operator pattern), added a vote-commit race guard (6 cancelled parallel commits observed), tightened operator-visibility framing for fleet consistency, and compressed Communication Discipline by merging Read-before-Edit/Write into rule 6 to keep BALANCED budget. Net 0 lines.
-
-### Changes
-- §Operating context: added "operator may address by either name" clarifier and explicit `Interrupt recovery` clause — first-turn state summary after respawn/compaction.
-- §Consensus Voting: added **Vote-commit race guard** bullet — team-lead owns `docket vote commit`; standalone must `docket vote show` to verify state before committing.
-- §Operator visibility: split cc-vs-prefix framing into two explicit channels ("cc is real-time signal; prefix is persistent record") to match @staff-engineer's wording.
-- §Communication Discipline: merged Read-before-Edit/Write into rule 6 alongside shutdown protocol; removed standalone subsection. Rule count remains 7.
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY — respawn handoff, race guard) · Boundary Clarity (operator-visibility two-channel) · Consolidation (Read-before-Edit/Write merge) · Actionability (vote-commit race) · Cross-Agent Coherence (rule numbering preserved).
-
-### Rename
-No rename.
-
-## 2026-05-17 (Phase 2 coherence)
-
-### Summary
-Cross-agent coherence: added canonical `TeammateIdle` stall-signal line and Read-before-Edit/Write reflex.
-
-### Changes
-- Communication Discipline: appended TeammateIdle canonical-signal line below rule 6.
-- Communication Discipline: added Read-before-Edit/Write reflex (TDD/ADR/security.md authoring).
-
-### Dimensions Evaluated
-Cross-agent terminology coherence; tool-gate reflexes.
-
-### Rename
-No rename.
-
-## 2026-05-17 (pass 2)
-
-### Summary
-Trimmed three blocks for parity with peers and to remove intra-doc duplication: Design Review's dimension list redirected to Responsibility 2 (was duplicated); Communication Discipline rules 1-4/6 compressed; two @senior-engineer mid-impl incoming triggers merged. Net -12 lines. No behavioral change.
-
-### Changes
-- Design Review: replaced duplicated security-dimension list with cross-reference to Responsibility 2 step 3; kept operational-readiness emphasis and output ladder.
-- Communication Discipline: tightened rules 1-4 and 6; rule 5 (verify load-bearing claims) left intact as it carries the security-specific load.
-- Incoming triggers: merged @senior-engineer proactive-consult + reactive-discovery into one trigger.
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY), Boundary Clarity, Coordination & Handoffs, Spec Alignment.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle). `threat_summary` retained as an optional observability hint.
-
-### Changes
-- Consensus Voting §Team mode: replaced ad-hoc payload with canonical shape (`{type, protocol_version, skill, request_id, vote_id, from, summary?, artifact?, threat_summary?}`). Added `docket vote create ... --json` step; documented `failed` response on missing `vote_id`. Authoritative proposal (including threat model) lives in docket.
-
-### Dimensions Evaluated
-Cross-skill coherence (vote-skill payload contract), Coordination & Handoff.
-
-### Rename
-No rename.
-
-## 2026-05-16
-
-### Summary
-Added Communication Discipline (rules 1-6) with rule 5 (verify load-bearing claims) emphasized for security sign-off; fixed misleading `docket vote commit --outcome` enum syntax to free-text; trimmed "What You Are NOT" and Proactive Communication outgoing-trigger duplication.
-
-### Changes
-- Added Communication Discipline section (+15) — closed-loop, ack, saturation, blocker, verify-evidence-this-session, one-turn shutdown.
-- Fixed Docket cheatsheet: `vote commit --outcome` is free-text ("Approved: <summary>" / "Rejected: <reason>"), not an enum; clarified `--findings` vs `--findings-json`.
-- Trimmed "What You Are NOT" entries to one-line per role (-6).
-- Consolidated 7 Proactive Communication triggers into 5 by merging scope-delta + annotation-split, and TDD-accepted + cross-cutting ADR (-11).
-
-### Dimensions Evaluated
-Role Realism · Actionability · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth & Cross-Communication · Spec Alignment · Rename.
-
-### Rename
-No rename.
-
-## 2026-05-13
-
-### Summary
-Rebalanced documentation-vs-direct-action axis per operator pain. Added Threat-Model Annotation tier between full security TDD and inline review note. Tightened ADR threshold, trimmed Consensus Voting over-prescription, compressed Pre-Flight Gate and Shutdown sections. Added Docket CLI cheatsheet for review/voting surface. Net: -8 lines (327 → 319).
-
-### Changes
-- Added "scope test" gate + Threat-Model Annotation tier in §When to Create a Security TDD; reframed Proactively to require BOTH new surface AND non-trivial threat model
-- Tightened ADR threshold (skip when rationale fits in PR comment with no future "why?" cost)
-- Added Docket CLI cheatsheet (`docket vote create/cast/commit/link`, `docket issue file list`, `docket plan --root`) under Responsibility 2
-- Compressed Pre-Flight Gate, Consensus Voting, Shutdown Handling, System-Level Thinking
-- Strengthened @staff-engineer boundary to prefer annotation over parallel TDD on mixed changes
-- Added proactive trigger for annotation-grown-too-large → split escalation
-
-### Dimensions Evaluated
-Completeness (operator pain on over-documentation; docket audit gap), Consolidation, Actionability, Boundary Clarity, Cross-Communication, Role Realism, Spec Alignment
-
-### Rename
-No rename.
-
-## 2026-05-09
-
-### Summary
-Phase 2 coherence: anchored canonical teammate name "security-advisor" to team-lead.md §Spawning Templates so naming stays consistent if team-lead.md ever renames.
-
-### Changes
-- §Operating context: replaced generic "spawned as a persistent advisor" with "named 'security-advisor'" plus reference to team-lead.md §Spawning Templates as the canonical name authority
-
-### Dimensions Evaluated
-Coherence (PRIMARY — canonical name anchoring), Spec Alignment, Role Realism
-
-### Rename
-No rename.
-
-## 2026-05-09
-
-### Summary
-Phase 1 self-review (initial entry). Trimmed redundant preambles and verbose Review Output paragraph; merged duplicate incoming triggers per peer; added concrete handoff trigger for verdict-reconciliation with @staff-engineer; adopted AskUserQuestion `multiSelect` for multi-adversary threat scoping. Net: −13 lines (340 → 327).
-
-### Changes
-- Trimmed Honest Risk Critique two-paragraph framing; merged "Surface-level mitigations" rule into a single tight block (Consolidation)
-- Compressed "When to Create a Security TDD" — merged "Skip" + "Ask when uncertain" into one decisive bullet (Consolidation, decisiveness)
-- Compressed "Match formality" preamble into the Responsibility 3 header line; removed redundant "Lightweight Security Advisory" subsection wrapper (Consolidation)
-- Compressed Review Output paragraph (line 208) — skill is format authority; kept only the routing/reconcile/escalate ownership clause (Consolidation, decisiveness)
-- Merged duplicate @staff-engineer incoming triggers (review-handoff + TDD-handoff → one) and @sdet incoming triggers (abuse-case design + test failure → one) (Coordination & handoffs)
-- Added outgoing trigger: parallel-review verdict conflict with @staff-engineer → reconcile before merge to avoid contradictory operator-facing recommendations (Coordination & handoffs)
-- Pre-Flight Gate: clarified that adversary scope is `multiSelect: true` (threat models often span multiple adversaries) — concrete capability adoption (Capability Growth)
-
-### Dimensions Evaluated
-All 8: Consolidation (PRIMARY — preamble redundancy, duplicate triggers, verbose review-output), Coordination & Handoffs (parallel-review reconciliation trigger, decisive responses), Role Realism, Actionability, Boundary Clarity, Completeness, Capability Growth (multiSelect adoption), Spec Alignment
-
-### Rename
-No rename.
+- 2026-05-09: Phase 1 self-review (initial entry). Trimmed redundant preambles and verbose Review Output paragraph; merged duplicate incoming triggers per…
+- 2026-05-09: Phase 2 coherence: anchored canonical teammate name "security-advisor" to team-lead.md §Spawning Templates so naming stays consistent if…
+- 2026-05-13: Rebalanced documentation-vs-direct-action axis per operator pain. Added Threat-Model Annotation tier between full security TDD and inline review…
+- 2026-05-16: Added Communication Discipline (rules 1-6) with rule 5 (verify load-bearing claims) emphasized for security sign-off; fixed misleading `docket…
+- 2026-05-17: Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle).…
+- 2026-05-17: pass 2: Trimmed three blocks for parity with peers and to remove intra-doc duplication: Design Review's dimension list redirected to…
+- 2026-05-17: Phase 2 coherence: Cross-agent coherence: added canonical `TeammateIdle` stall-signal line and Read-before-Edit/Write reflex.
+- 2026-05-19: Targeted self-review responding to historical-audit signals: codified the respawn-recovery handoff (4× operator pattern), added a vote-commit…
+- 2026-05-19: Phase 2 coherence: Universal-mirror visibility contract alignment (Phase 2 canonical decision). Conditional-mirror language replaced with…

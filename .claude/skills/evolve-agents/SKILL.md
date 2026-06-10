@@ -95,7 +95,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries. **Trial convention:** if a cycle includes a scientific trial (per Innovation Mandate), prepend a `Trial: <hypothesis> → <outcome>` line inside the `### Summary` section of the relevant agent's changelog entry (no new H3 section or file).
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries. **Trial convention:** if a cycle includes a scientific trial (per Innovation Mandate), prepend a `Trial: <hypothesis> → <outcome>` line inside the `### Summary` section of the relevant agent's changelog entry (no new H3 section or file).
 
 ---
 
@@ -103,13 +103,14 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ### Team Setup & Agent Lifecycle
 
-`TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, and "Coherence & Renames".
+`TeamCreate(team_name="evolve-agents-{today_date}", description="Agent evolution cycle for {today_date}")`. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
-| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down → `TeamDelete` |
+| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
+| 3 | `history-compactor` | Spawn after Phase 2 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before `TeamDelete` |
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers self-initiate `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -140,7 +141,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 
 **Defer parity-bound findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks that parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply them in Phase 1, and route to Phase 2 for lockstep. Settle conflicting recommendations EMPIRICALLY (grep the actual usage to confirm) before applying.
 
-**Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Never Edit/Write/delete any `pitfalls.md` — it is append-only ingest memory.
+**Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Phase 1 never Edits/Writes/deletes any `pitfalls.md` — the agent-facing contract stays append-only; boundedness of THIS repo's pitfalls files is owned by the Phase 3 History Compaction phase per ADR 0001, and cross-project pitfalls files remain read-only ingest.
 
 Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces.
 
@@ -153,12 +154,26 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
 
+### Phase 3: History Compaction (terminal, gated)
+
+ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 2 fixes are applied, the orchestrator runs two independent gate checks (read-only):
+
+1. **Changelog arm** — one `wc -l docs/changelog/agents/*.md` pass; any file over the 300-line budget is compactable.
+2. **Pitfalls arm** — any entry in THIS repo's `.claude/agent-memory/*/pitfalls.md` that is un-ledgered yet dispositioned (applied / already-encoded / Docket-tracked) per this cycle's or a prior cycle's Phase 1 harvest-outcome report, committed at HEAD, and predating this cycle (full compactability criteria in ADR 0001).
+
+If neither arm fires, no compactor is spawned and the Wrap-up report carries a single no-op line. Otherwise spawn ephemeral `history-compactor` (`subagent_type="senior-engineer"`, tools Bash + Edit) with the over-budget file list and the dispositioned-entry list. Compaction is summarize-then-remove, never silent deletion — only content reachable in `git show HEAD:<file>` may be compacted; uncommitted entries are never touched. Per file:
+
+- **Changelogs**: keep the 10 most recent `^## 20` entries verbatim (keep-window); compact older entries oldest-first until under the 300-line budget; each compacted entry becomes one ledger line in a terminal `## Compacted history` section per ADR 0001's format; preserve every `Trial:` line verbatim inside its ledger line; prepend one compaction entry recording the act — a normal Changelog Format entry in every respect (the rule's sole scoped exception).
+- **Pitfalls**: each compactable entry becomes one ledger line under `## Harvested ledger (compacted)` immediately below the H1 per ADR 0001's format; undispositioned entries are never touched; cross-project pitfalls files (other repos) remain read-only ingest.
+
+The compactor's report MUST evidence, per file and in order, invariant checks 0-5 exactly as defined in ADR 0001 (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, budget). On any failed check the orchestrator rejects that file's compaction: the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or the file is left untouched, and the Wrap-up report flags it — never ship a partial compaction silently. Shut down the compactor before `TeamDelete`.
+
 ### Wrap-up & Team Cleanup
 
-After Phase 2 completes:
-1. Shut down the Phase 2 agent and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
+After Phase 3 completes or no-ops:
+1. Shut down any remaining teammates and `TeamDelete(team_name="evolve-agents-{today_date}")` per lifecycle rules.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
 
 ---
 

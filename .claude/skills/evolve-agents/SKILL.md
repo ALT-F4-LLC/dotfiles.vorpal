@@ -37,8 +37,9 @@ Before adopting a non-obvious new approach, a cycle MUST:
 
 1. **Hypothesis** — state what improvement is expected and why.
 2. **Trial** — define which agent, which scope, and what change.
-3. **Measurement** — reuse the Phase 0 historical audit as the measurement arm; stall signals, -r2 respawns, model distribution, and correction counts are already gathered there.
-4. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against the success criteria; rollback maps to the existing Phase 1 Self-correct/revert step.
+3. **Operator approval (HARD GATE)** — present the hypothesis, trial scope, and blast radius to the operator via AskUserQuestion BEFORE implementing any trial change; an unapproved trial is recorded as a proposal in the changelog (`Trial: <hypothesis> → proposed`) and NOT implemented. No trial may introduce changes without this approval.
+4. **Measurement** — reuse the Phase 0 historical audit as the measurement arm; stall signals, -r2 respawns, model distribution, and correction counts are already gathered there.
+5. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against the success criteria; rollback maps to the existing Phase 1 Self-correct/revert step.
 
 ---
 

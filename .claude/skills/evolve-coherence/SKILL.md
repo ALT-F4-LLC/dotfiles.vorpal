@@ -45,7 +45,7 @@ Audited dimensions are determined by `\$ARGUMENTS` (a single optional positional
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All 4 dimensions", "Specific dimension(s)" (follow-up multiSelect over D1/D2/D3/D4, max 4), "Address operator-reported drift (free-text follow-up)", "Abort". Capture as `{verified_goal}`. Do not proceed until verified.
-2. **Resolve dimensions** — Parse `$ARGUMENTS` per Argument Handling. Default = all four. Store as `{dimensions}` (an ordered subset of D1–D4). Reject out-of-range tokens and abort.
+2. **Resolve dimensions** — Parse `\$ARGUMENTS` per Argument Handling. Default = all four. Store as `{dimensions}` (an ordered subset of D1–D4). Reject out-of-range tokens and abort.
 3. **Inventory agents + skills** — Run `wc -l agents/*.md skills/*/SKILL.md .claude/skills/*/SKILL.md 2>/dev/null` and `ls -d skills/*/ .claude/skills/*/ 2>/dev/null`. Capture the file set + counts as `{inventory}` (substituted into the Phase 0 builder prompt). If no agent files OR no skill files are found, inform the operator and abort.
 4. **Scope-confirmation gate (HARD GATE)** — The all-targets inventory always exceeds 3 (7 agents + 13+ skills). Surface the planned scope via `AskUserQuestion` with options: "Proceed (all <N> files, <dims> dimensions)", "Restrict dimensions (multiSelect D1–D4 follow-up)", "Abort". List the agent + skill counts and the resolved dimensions in the question body so the operator sees est. cycle weight before commit. Team mode: skip — orchestrator already verified scope.
 

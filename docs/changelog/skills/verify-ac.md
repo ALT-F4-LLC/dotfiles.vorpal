@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Removed one Failure Modes row duplicating the "ignore extras silently" rule already at Argument Handling L70 and violating the table's own abort-path scope. Net -1 (267 → 266, orchestrator-verified post-apply). Both priority audit signals verified resolved: literal-command-AC rule present (L142); vote mode-split correct (L254).
+
+### Changes
+- Failure Modes: removed "Caller passes additional positional args" row — not an abort path; behavior already stated at L70.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (one trim); sdet pitfall #3 and staff pitfall #7 closed with grep citations; no unescaped $+digit.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Closed the refuted literal-command-AC gap: FULL-mode item 1 now mandates running an AC's named literal command VERBATIM — equivalents leave the named path unverified; PASS on a substitute is a defect. The 2026-06-05 cycle recorded this rule as already-encoded; a 2026-06-09 re-grep refuted that claim (only unrelated "report verbatim" at L172 matched). Net 0 physical lines (within-line append; 267 lines).
 
 ### Changes

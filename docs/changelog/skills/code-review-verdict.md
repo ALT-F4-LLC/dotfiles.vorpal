@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Coherence fix: corrected stale `G{1..4}` → `G{1..5}` in the Overrides Recognized output template (L241) — the lone G-range token left un-updated when G5 was added; all other refs already read G1..G5. Net 0 (396 lines, orchestrator-verified post-apply).
+
+### Changes
+- Overrides Recognized template gate range `G{1..4}` → `G{1..5}` so a recognized G5 override has a template slot (verified: L241 was the only stale token).
+
+### Dimensions Evaluated
+All 8; Coherence (inverted-scope G-range sweep); vote mode-split verified present at L387 (NO-OP); rename-collision sweep clean — bundled /code-review rationale intact.
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Recall fix for Fable/Opus-4.8-class literal instruction-following: replaced the lone severity FILTER (Common Discipline "Calibrate to value… skip stylistic") with a report-every-finding mandate — findings always surface with severity + confidence; filtering relocated downstream (team-lead step 14 / operator). Severity ladders untouched. Net +2 (396 lines).
 
 ### Changes

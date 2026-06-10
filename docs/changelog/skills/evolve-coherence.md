@@ -3,6 +3,34 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 fix: escaped documentary `\$ARGUMENTS` at L48 ("Parse … per Argument Handling" — orchestrator-instruction prose, not a shell command). The prior entry's "intentional live substitution" rationale is refuted by this cycle's empirical evidence that substitution occurs inside backticks and renders empty in no-arg mode. L33 already escaped. Net 0 (323 lines).
+
+### Changes
+- L48: backticked `$ARGUMENTS` → `\$ARGUMENTS`.
+
+### Dimensions Evaluated
+Skill Design Quality (arg-escape); Coherence (family-wide documentary-escape ruling).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Full-cycle audit: NO changes. Both Phase-0 signals verified NO-OP via fresh grep: primacy banner correctly ordered (H1 L19 → REPORT+ROUTE banner L23 → Innovation Mandate L25); leaf-family rubric enumeration complete (10 carriers incl. brief, exact match to banner-scoped ground truth).
+
+### Changes
+- None (NO-OP verdict). Note for future cycles: `effort: xhigh` is lockstep-shared across all three evolve-* skills.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (dense but load-bearing); $-escape audit clean (L33 escaped documentary, L48 intentional live substitution).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Added brief to the D4 leaf-family BANNER enumeration — the 2026-06-09 audit found brief is a genuine leaf carrier omitted from the rubric list (FINDING 1, facet b).
 
 ### Changes

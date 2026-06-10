@@ -264,4 +264,3 @@ The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolv
 | Trigger | Handling |
 |---|---|
 | Docket CLI unavailable for an issue-ID scope | Abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` |
-| Caller passes additional positional args beyond `<scope>` | Ignore extras silently. |

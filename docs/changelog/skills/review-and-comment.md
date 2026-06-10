@@ -3,6 +3,20 @@
 ## 2026-06-09
 
 ### Summary
+Full-cycle audit: NO changes. Pitfall-#5 regression check PASS: all positional tokens at L95 remain `\$`-escaped; zero unescaped $+digit in file. gh command surface (pr view/diff, api pulls/comments) verified current.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (110 lines, every step load-bearing); Orchestration (leaf boundary banner intact); Coherence (code-review-verdict boundary accurate).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Mythos/Fable-5 cycle audit: NO changes. Banned-Skill(vote) audit clean (grep: no direct vote-invocation prose; escalation section routes to fleet flow correctly). Reasoning-echo clean; shell `\$1`/`\$2` usages correctly escaped already; "do NOT pad with marginal nits" is anti-fabrication for public operator-voice comments gated by per-item approval — not findings suppression.
 
 ### Changes

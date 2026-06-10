@@ -105,7 +105,7 @@ Quick reference (the authority is `agents/senior-engineer.md`; this table is a l
 | 2 | A name predicts behavior — correctly | Rename a lying/vague name so the reader need not open the definition. |
 | 3 | Length isn't the rule; cohesion is | Drop scaffolding around a single nameable concept; split a function that does more than one thing. |
 | 4 | Local mutation fine; shared mutation needs a seam | Replace ad-hoc shared mutation with a return value / explicit seam. |
-| 5 | Parse, don't validate — at every edge | Replace scattered re-validation with one parse-at-the-edge; stop re-checking already-typed data midstream. |
+| 5 | Parse, don't validate — at every external touchpoint | Replace scattered re-validation with one parse-at-the-edge; stop re-checking already-typed data midstream. |
 | 6 | Errors propagate; boundaries handle | Delete a try/catch that only rethrows; let errors propagate to the boundary. |
 | 7 | No code comments — refactor instead | Where a comment props up unclear code, the *refactor* (better name / smaller function / named constant) is the finding — never "add a comment." |
 | 8 | Tests pin behavior through the seam | Replace interaction assertions / internal-collaborator mocks with outcome assertions. |

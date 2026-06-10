@@ -45,13 +45,13 @@ Before adopting a non-obvious new approach, a cycle MUST:
 
 ## Argument Handling
 
-Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
+Target agent(s) and historical-audit window are determined by `\$ARGUMENTS`:
 
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`. Historical audit window defaults to 7 days.
 - **Agent name only** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
 - **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 
-**Parsing:** strip the `days=N` token from `$ARGUMENTS` FIRST; the remaining token (if any) is the agent name. An "agent-name token" means a non-`days=` token remains after stripping — `/evolve-agents days=7` has NO agent-name token (all-agents mode).
+**Parsing:** strip the `days=N` token from `\$ARGUMENTS` FIRST; the remaining token (if any) is the agent name. An "agent-name token" means a non-`days=` token remains after stripping — `/evolve-agents days=7` has NO agent-name token (all-agents mode).
 
 ---
 
@@ -61,7 +61,7 @@ Target agent(s) and historical-audit window are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `$ARGUMENTS` or free-text follow-up for the agent name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt, re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All agents", "Specific agent" (pair with `\$ARGUMENTS` or free-text follow-up for the agent name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Role & coordination gaps`, `Operator prompts & output quality`, `File-size bloat`, `Other (free-text follow-up)`. If `Other`, ask a follow-up free-text question. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
@@ -70,7 +70,7 @@ Before spawning any agents:
 5. **Validate inventory** — If no agent files found, abort. If an agent-name token is present (per Argument Handling parsing) and `agents/<token>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
-8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
+8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
@@ -195,7 +195,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-agent)
 
-Substitute `{target_agents}` from `$ARGUMENTS` or all `agents/*.md`.
+Substitute `{target_agents}` from `\$ARGUMENTS` or all `agents/*.md`.
 
 ```
 Agent(team_name="evolve-agents-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")

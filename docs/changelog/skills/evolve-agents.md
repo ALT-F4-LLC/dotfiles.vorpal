@@ -3,6 +3,34 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 parity fix: escaped 5 documentary `\$ARGUMENTS` occurrences (L48/54/64/73/198), lockstep with evolve-skills sister. Backtick spans do not prevent substitution (empirically confirmed this cycle). Net 0 (368 lines).
+
+### Changes
+- L48/54/64/73/198: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose; L293 meta-rule already escaped, untouched.
+
+### Dimensions Evaluated
+Skill Design Quality (arg-escape); Coherence (byte-parity with evolve-skills on shared prose + HARVEST block verified PASS).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+Full-cycle audit (1-day window): NO changes. Both historical focus areas verified already-encoded via fresh grep: docs-researcher ADOPTION grep gate (L174) and post-apply re-wc/NET_LINES-untrusted rule (L134), both byte-parity with evolve-skills.
+
+### Changes
+- None (NO-OP verdict). Documentary `$ARGUMENTS` escaping question (L48/54/64/73/198) routed to Phase 2, parity-bound with evolve-skills.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no bloat at 368 lines); Coherence (CANONICAL:BANNER + HARVEST byte-parity confirmed with evolve-skills).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Three mid-run-safe gate additions (368→367, net −1 via offset): docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping.
 
 ### Changes

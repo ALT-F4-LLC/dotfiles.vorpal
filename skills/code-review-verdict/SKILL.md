@@ -238,7 +238,7 @@ For substantive changes:
 - ... or "None"
 
 **Overrides Recognized** ({count}):
-- {file:line} — gate G{1..4} — `OVERRIDE: code-philosophy/{id} — {reason}` (operator decides whether the reason holds)
+- {file:line} — gate G{1..5} — `OVERRIDE: code-philosophy/{id} — {reason}` (operator decides whether the reason holds)
 - ... or "None"
 
 ### Hard Gates Triggered

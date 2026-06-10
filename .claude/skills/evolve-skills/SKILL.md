@@ -48,13 +48,13 @@ Before adopting a non-obvious new approach, cycles MUST follow this four-step pr
 
 ## Argument Handling
 
-Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
+Target skill(s) and historical-audit window are determined by `\$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 7 days.
 - **Skill name only** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
 - **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 
-**Parsing:** strip the `days=N` token from `$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=` token remains after stripping — `/evolve-skills days=7` has NO skill-name token (all-skills mode).
+**Parsing:** strip the `days=N` token from `\$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=` token remains after stripping — `/evolve-skills days=7` has NO skill-name token (all-skills mode).
 
 ---
 
@@ -64,7 +64,7 @@ Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
 
 Before spawning any agents:
 
-1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
+1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `\$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and 4 options: `Coordination, handoff & orchestration gaps`, `Operator-prompt or output quality`, `Scope, budget or file-size mismatch`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
@@ -74,7 +74,7 @@ Before spawning any agents:
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
    which changelogs already exist. Spawned agents will need this information.
-8. **Resolve historical-audit window** — Parse `days=N` from `$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
+8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
@@ -214,7 +214,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 ### Phase 0: Historical Audit (per-skill)
 
-Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). This audit is per-skill, does no clustering, and feeds Phase 1 directly.
+Substitute `{target_skills}` with the list of skills Phase 1 will review (single skill from `\$ARGUMENTS`, or all `.claude/skills/*/SKILL.md` + `skills/*/SKILL.md`). This audit is per-skill, does no clustering, and feeds Phase 1 directly.
 
 ```
 Agent(team_name="evolve-skills-{today_date}", name="historical-auditor", subagent_type="senior-engineer", prompt="...")

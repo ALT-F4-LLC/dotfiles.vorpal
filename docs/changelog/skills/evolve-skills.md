@@ -3,6 +3,34 @@
 ## 2026-06-09
 
 ### Summary
+Phase 2 parity fix: escaped 5 documentary `\$ARGUMENTS` occurrences (L51/57/67/77/217) in Argument Handling + Pre-flight prose. Backtick code spans do NOT exempt substitution (empirically confirmed: `days=1` substituted inside backticks this cycle) — bare occurrences rendered empty/wrong at invocation. Net 0 (378 lines).
+
+### Changes
+- L51/57/67/77/217: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose; L307 meta-rule already escaped, untouched. Lockstep with evolve-agents.
+
+### Dimensions Evaluated
+Skill Design Quality (arg-escape correctness); Coherence (sister parity; CANONICAL:HARVEST byte-symmetry verified PASS).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
+No Phase-1 edits (378 lines, net 0). Two parity-bound items routed to Phase 2: escape documentary `\$ARGUMENTS` (L51/57/67/77/217 — substitution empirically confirmed to occur inside backticks) and optional NO-OP-grep-citation hardening (orchestrator declined: grep already mandated, citation-only gain is marginal).
+
+### Changes
+- None applied in Phase 1; `\$ARGUMENTS` escape routed to Phase 2 lockstep with evolve-agents (parallel lines).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (rejected harness-redundant Read-before-Edit prose); $+digit self-audit clean (L307 gate correctly escaped).
+
+### Rename
+No rename.
+
+## 2026-06-09
+
+### Summary
 Three mid-run-safe additions (360→359, net −1 via offset), two parity-bound with evolve-agents: docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping.
 
 ### Changes

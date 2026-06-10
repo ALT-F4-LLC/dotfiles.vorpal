@@ -27,6 +27,24 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 
 ---
 
+## Innovation Mandate
+
+Each evolve-skills cycle MUST solve real-world AI skill-design problems optimally from an AI perspective — not just patch known issues. Concretely, every cycle scans for:
+
+- **Model frontier**: new Claude model capabilities, new frontmatter fields, new orchestration patterns, new tool permissions that may improve skill effectiveness beyond current patterns.
+- **Refactor authority**: proposing creation of new skills, retirement of redundant skills, redistribution of effort/model tiers, or workflow improvements — not only incremental edits to existing skills.
+
+## Scientific Trial Protocol
+
+Before adopting a non-obvious new approach, cycles MUST follow this four-step protocol:
+
+1. **Hypothesis** — state what improvement is expected and why (e.g., "pinning `effort: high` on skill X will reduce operator-correction signals because current opus spawns are over-resourced for leaf tasks").
+2. **Trial** — define which skill, which scope, and what change to apply.
+3. **Measurement** — specify success criteria drawn from Phase 0 historical-audit signals already gathered: operator-correction signal count, re-invocation count per session, model distribution, error-abort count. Do NOT add new measurement infrastructure — reuse the existing audit arm.
+4. **Adopt or rollback** — adopt if next-cycle historical-audit shows improvement against criteria; rollback by invoking the existing Phase 1 Self-correct/revert step. Record the outcome as a `Trial: <hypothesis> → <outcome>` line prepended to the `### Summary` section of the relevant skill's changelog entry.
+
+---
+
 ## Argument Handling
 
 Target skill(s) and historical-audit window are determined by `$ARGUMENTS`:
@@ -81,7 +99,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`.
 
 ---
 

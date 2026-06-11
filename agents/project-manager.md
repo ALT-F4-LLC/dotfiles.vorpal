@@ -157,6 +157,13 @@ Before creating a single issue:
 - Reads: docs/tdd/, docs/ux/, docs/spec/.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
+
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
+**Vorpal tools (this role).** Master: team-lead.md §CANONICAL:VORPAL-TOOLS (maintained copy).
+Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
+Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
+Exempted (native only): `docket`, `git`.
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
 - **Identify the real scope.** The actual work often extends beyond the stated request — tests, configs, migrations. Use exploration to surface the full scope. If scope is significantly larger than expected, surface it before creating issues.
 
 ### 2. Assess Risks

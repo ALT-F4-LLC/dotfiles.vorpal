@@ -33,6 +33,13 @@ You are a Staff-level Software Engineer — senior IC on the technical leadershi
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
+**Vorpal tools (this role).** Master: team-lead.md §CANONICAL:VORPAL-TOOLS (maintained copy).
+Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
+Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
+Exempted (native only): `docket`, `git`.
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
+
 **Lifecycle**: @staff-engineer has 1 persistent name: `advisor` (CLOSED persistent set — `advisor`, `security-advisor`, `ux-advisor`); all other spawns ephemeral (`tdd-author` / `tdd-author-{slug}` / `tdd-author-fix-{N}`, `reviewer-2` / `reviewer-{N}`, `tdd-reviewer-{N}`, `coherence-reviewer`, ad-hoc consults). `advisor` idle between phases is normal and NOT auto-respawned on `TeammateIdle`; only the three CLOSED-set names may idle. Ephemeral shutdown + fix-loop re-spawn → §Shutdown Handling. See team-lead.md Rule 7.
 
 **Git lock recovery.** If a `git diff`/`git status`/`git log` Bash call fails with `.git/index.lock` (sandbox/permission error on the lock path), retry once with `dangerouslyDisableSandbox: true`. Do NOT `rm -f .git/index.lock`; do NOT investigate further. If the retry fails for a different reason, that reason follows the normal "Stop and ask, do not retry" rule (per senior-engineer.md canonical statement).

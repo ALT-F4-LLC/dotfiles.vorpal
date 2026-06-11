@@ -1,5 +1,34 @@
 # Changelog: project-manager
 
+## 2026-06-10
+
+### Summary
+Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Consolidated session-init and re-engagement Docket state reconstruction: `board --json --expand` + `plan --json` replaced by `plan --json` + `docket stats`. Net 0 physical lines (334).
+
+### Changes
+- CULL: redundant `board --json --expand` at session init and re-engagement — Phase 0 efficiency finding; `plan --json` + `stats` schemas verified to cover reconstruction.
+- NO-OP cited: vote_id/`failed` warning appears once (grep-verified, not 3×); "skip post-create re-verify" REJECTED — success-line-lies pitfall (3 cross-repo sources) wins.
+
+### Dimensions Evaluated
+All 8; Consolidation primary. No fabricated docket commands; no unescaped \$-digits.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -220,34 +249,6 @@ Role Realism · Actionability (docs-dir fix) · Boundary Clarity · Completeness
 ### Rename
 No rename.
 
-## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
-
-### Summary
-Closed the 6 historical shutdown-routing errors by adding the routing rule to the Shutdown Handling section. `planner` ephemerals shut down after operator plan approval and routinely have active SendMessage threads with multiple peers (@staff-engineer for arch consults, team-lead for plan delivery) — routing rule belongs adjacent to the timing rule. No file-size change.
-
-### Changes
-- Shutdown Handling: inserted Routing clause inline — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or the original dispatcher.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility for `planner` / `planner-fix-{N}` ephemerals)
-
-### Rename
-No rename.
-
-## 2026-05-19 (Phase 2 coherence — memory channel activation)
-
-### Summary
-Activated the dormant `.claude/agent-memory/project-manager/` channel via a shutdown-time memory check. Reinforces the existing memory-description examples (scope-pressure priorities, scope-creep patterns) with a behavioral trigger.
-
-### Changes
-- Shutdown Handling: added memory check before approving shutdown — append recurring planning pitfalls (operator priority signal under scope pressure, recurring scope-creep pattern by codebase area, stakeholder routing preference, non-obvious planning symptom→diagnosis→resolution) to `.claude/agent-memory/project-manager/pitfalls.md`. Skip if nothing recurring surfaced.
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY — dormant channel activated) · Coherence (parallel to team-lead + staff-engineer + security-engineer wrap-up nudges).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +293,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-17: Phase 2 coherence: Added ADR `*` broadcast incoming trigger to match staff-engineer's outgoing broadcast pattern.
 - 2026-05-19: Sibling-coherence: add `ux-advisor` canonical persistent name for @ux-designer consults. Trim duplication between the "no guessing" framing and…
 - 2026-05-19: Phase 2 coherence: Canonical "Visibility contract" heading alignment + cross-cutting-fallback clause + `[PM→team-lead]` escalation prefix for…
+- 2026-05-19: Activated the dormant `.claude/agent-memory/project-manager/` channel via a shutdown-time memory check. Reinforces the existing memory-description examples
+- 2026-05-24: Closed the 6 historical shutdown-routing errors by adding the routing rule to the Shutdown Handling section. `planner` ephemerals shut down after operator plan

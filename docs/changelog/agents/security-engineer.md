@@ -1,5 +1,48 @@
 # Changelog: security-engineer
 
+## 2026-06-10
+
+### Summary
+Post-cycle operator-directed fix: encoded the phantom-deletion guard into the secret-handling audit bullet — a Phase 0 suggested focus area the Phase 1 reviewer had not acted on.
+
+### Changes
+- AMPLIFY: secret-handling bullet gains "Phantom-deletion guard" — sandboxed `git diff` renders deny-listed `.env*` as DELETED; verify via `git log -- <path>` before raising a deletion/exposure finding (cross-repo pitfall, agentic-services).
+
+### Dimensions Evaluated
+Completeness (single audit-cited gap).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Rust-only consolidation: purged dead npm/Node/Python idioms (`npm audit` ×4; `process.env`/`os.environ` in the secret grep) and tightened the Model-floor paragraph to lead with team-lead's explicit opus pin. Net 0 physical lines (242).
+
+### Changes
+- CULL: `npm audit` pairings ×4 + Node/Python secret-grep idioms — repo is Rust-only (Cargo.toml present, no package.json; docs/spec/security.md:15); swapped in `env!`/`option_env!` Rust idioms.
+- CULL: Model-floor over-explanation — `model=` is mandatory per spawn (team-lead.md), classifier reroute demoted to defense-in-depth one-liner.
+
+### Dimensions Evaluated
+All 8; Consolidation + Spec Alignment primary. `security-reviewer-fix-{N}` naming verified coherent (Phase 0 flag closed as false positive).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -243,35 +286,6 @@ Actionability (PRIMARY — `.env*` workaround unblocks recurring audit detour) �
 ### Rename
 No rename.
 
-## 2026-05-24 (Phase 2 coherence — shutdown routing + advisor-idle parity)
-
-### Summary
-Two coherence fixes. (1) Closed the 6 historical shutdown-routing errors by making the routing rule explicit at rule 6. Security review doubling (4 parallel reviewers) makes peer-vs-team-lead recipient confusion especially likely. (2) Strengthened persistent-advisor idle-is-normal rule to name `TeammateIdle` explicitly and cite TDD §4.4 rule 5 — achieves parity with staff-engineer.md and ux-designer.md. No file-size change.
-
-### Changes
-- Communication Discipline rule 6: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to `security-advisor` and every ephemeral spawn (`security-reviewer-2`, sibling security-TDD authors, ad-hoc consults).
-- Lifecycle contract paragraph: strengthened persistent-advisor idle phrasing — names `TeammateIdle` signal explicitly, cites TDD §4.4 rule 5, states "does NOT trigger auto-respawn" (parity with staff-engineer.md line 40 and ux-designer.md line 277).
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — both fixes) · Actionability (routing visibility on doubled security track) · Boundary Clarity (advisor-idle rule self-contained)
-
-### Rename
-No rename.
-
-## 2026-05-19 (Phase 2 coherence — memory channel activation)
-
-### Summary
-Activated the dormant `.claude/agent-memory/security-engineer/` channel via a shutdown-time memory check, tailored to security context: explicitly excludes per-cycle threat models and one-shot CVEs (which have other homes) so the criterion stays sharp.
-
-### Changes
-- Shutdown Handling: added memory check before approving shutdown — append recurring threat-model pitfalls (recurring vulnerability class in this codebase, rejected adversary assumptions, operator risk-tolerance signals, non-obvious security symptom→root-cause→remediation patterns) to `.claude/agent-memory/security-engineer/pitfalls.md`. Skip if nothing recurring surfaced.
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY — dormant channel activated, tailored gate) · Coherence (parallel to team-lead + staff-engineer wrap-up nudges).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +299,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-17: Phase 2 coherence: Cross-agent coherence: added canonical `TeammateIdle` stall-signal line and Read-before-Edit/Write reflex.
 - 2026-05-19: Targeted self-review responding to historical-audit signals: codified the respawn-recovery handoff (4× operator pattern), added a vote-commit…
 - 2026-05-19: Phase 2 coherence: Universal-mirror visibility contract alignment (Phase 2 canonical decision). Conditional-mirror language replaced with…
+- 2026-05-19: Activated the dormant `.claude/agent-memory/security-engineer/` channel via a shutdown-time memory check, tailored to security context: explicitly excludes
+- 2026-05-24: Two coherence fixes. (1) Closed the 6 historical shutdown-routing errors by making the routing rule explicit at rule 6. Security review doubling (4 parallel

@@ -1,5 +1,34 @@
 # Changelog: sdet
 
+## 2026-06-10
+
+### Summary
+Compacted 2 entries (2026-05-25..2026-05-25) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Culled the redundant "Idle after verdict (await-lead semantics)" paragraph — a 4-way restatement of comm rule 6, Lifecycle, §Await-lead, and §Drain — folding its one unique verb (`TaskStop`) into Drain-before-shutdown. Net -2 (341→339).
+
+### Changes
+- CULL: §Shutdown Handling "Idle after verdict" paragraph — every clause already owned elsewhere (grep-verified, no inbound references; Phase 0 retire signal).
+- AMPLIFY: §Drain-before-shutdown gains explicit `TaskStop outstanding watches` verb.
+
+### Dimensions Evaluated
+All 8; Consolidation primary; 7 dimensions RETAIN (0 operator-corrections, 0 stalls, 0 shutdown-rejections in window).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -218,40 +247,6 @@ Actionability (PRIMARY — verdict-then-shutdown as final tool call) · Boundary
 ### Rename
 No rename.
 
-## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, docs-dir guard, P7a drop)
-
-### Summary
-Three coherence fixes from Phase 2 audit: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 for fleet parity with security/staff/senior-engineer; (2) added docs-dir existence guard (`ls -d docs/tdd docs/ux docs/spec`) to "Check Specs Before Testing" matching project-manager/staff-engineer convention; (3) dropped dead "(P7a)" cross-reference from R7 (no agent canonically labels its Read rule as P7a).
-
-### Changes
-- Comm Discipline rule 6: appended concrete WRONG/RIGHT example (`to="verifier-criteria"`/`"verifier-integration"` WRONG; `to="team-lead"` RIGHT)
-- §Check Specs Before Testing: added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard as lead-in
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — fleet parity on shutdown example + docs-dir guard) · Actionability (P7a dead-reference removal)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 1 self-review — sandbox awareness + jq robustness + auth consent + CLI alignment)
-
-### Summary
-Three behavioral gaps from 10+ sandbox-blocked errors and 2 operator over-reach interruptions in historical audit: sandbox off-limits documentation, jq robustness discipline, and auth-boundary operator-consent qualifier. Two spec-alignment fixes (docket vote list wording, export --format alias). Four line-wrap compressions for balance. Verified `docket issue move <id> review` IS a valid docket status (tested live) — no doc change needed. NET +1 line (368 → 369).
-
-### Changes
-- §Test Failure Diagnosis: added `Sandbox off-limits` paragraph — `.env*` and Docker socket are sandbox-blocked (policy, not missing files); surface as environment blocker, never work around
-- §Runtime Discipline R1: added `jq robustness` bullet — test expressions in isolation before pipeline embedding
-- §Verification Workflow step 4: added operator-consent qualifier for auth-boundary side-effects (credential refresh, token write) — only in-scope when AC explicitly requires credential-state verification
-- §Docket CLI Reference: `vote list --all` wording aligned to CLI ("resolved proposals"); `export` documents `--format` as long form of `-o`
-- Consolidation: Test Pyramid, Risk-Based high/low risk bullets, Defect Analysis — 4 line-wrap compressions (−4 lines)
-
-### Dimensions Evaluated
-Actionability (PRIMARY — sandbox + jq) · Boundary Clarity (PRIMARY — auth over-reach) · Spec Alignment (vote/export) · Consolidation
-
-### Rename
-No rename — "sdet" is canonical.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +289,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-19: Closes audit gaps: verification-evidence specificity (real-vs-mocked at trust boundaries), `index.lock` recovery (fleet-wide #1 error, sdet=8)…
 - 2026-05-19: Phase 2 coherence: Universal-mirror visibility contract alignment (replaces narrower "BLOCK / coverage-gap / vote / approach-changing" trigger).…
 - 2026-05-24: Phase 2 coherence — shutdown_response routing rule: Closed the 6 historical `is_error:true` "shutdown_response must be sent to team-lead"…
+- 2026-05-25: Three behavioral gaps from 10+ sandbox-blocked errors and 2 operator over-reach interruptions in historical audit: sandbox off-limits documentation, jq
+- 2026-05-25: Three coherence fixes from Phase 2 audit: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 for fleet parity with

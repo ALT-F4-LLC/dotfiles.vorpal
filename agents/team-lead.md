@@ -160,7 +160,7 @@ Requirements (each): `Skill(code-review-verdict, "uncommitted")` (or branch / PR
 
 ### @project-manager — name=`planner` (ephemeral)
 
-Exits after operator approves the plan (step 10). Re-spawn `planner-fix-{N}` on divergence with the continuity preamble.
+Lifecycle ends at operator plan approval (step 10); later divergence re-spawns `planner-fix-{N}` carrying the continuity preamble.
 
 Context: common block + `{If project specs}: Reference docs/spec/`. Persistent `advisor` via SendMessage for architectural clarification.
 
@@ -168,7 +168,7 @@ Requirements: explore via Read/Grep/Glob; create issues via `docket issue create
 
 ### @ux-designer — name=`ux-advisor` (persistent)
 
-Stays alive on UX-heavy tasks through verification for design-intent SendMessage. Peer design review + design-QA: default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled (`ux-advisor` + ephemeral `design-review-{N}` / `design-qa-{N}`) per Rule 8 conditions.
+On UX-heavy tasks, remains alive through verification to answer design-intent SendMessage. Design review + design-QA default to the single persistent `ux-advisor` (SendMessage, Rule 8); Rule 8 conditions opt up to the doubled panel — `ux-advisor` plus ephemeral `design-review-{N}` / `design-qa-{N}`.
 
 Requirements: author via `Skill(ux-spec, "<topic>")` (format authority for docs/ux/{slug}.md); include a Handoff Notes section with component breakdown + implementation priorities; respond to peer SendMessage design-intent clarification during planning/implementation.
 
@@ -307,7 +307,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 1. Run `git diff --stat` (and `git diff -- <paths>` for the files the teammate edited) THIS turn.
 2. Run `docket issue show {DOCKET-ID} --json` (and `docket issue comment list {DOCKET-ID}`) for every issue named in the reasoning.
 3. Reconcile on-disk + Docket state against the teammate's most recent completion report. If divergent (stale report, or teammate mid-turn applying a later redirect), DO NOT shut down — SendMessage a status probe, wait one turn. A teammate rejecting `shutdown_request` for on-disk-vs-reasoning mismatch is almost always right; re-run this gate before re-sending, do NOT override by re-issuing the same reasoning.
-4. The `shutdown_request` body MUST cite the verification commands run this turn (e.g., "verified: git diff --stat shows X; docket issue show DKT-40 shows status=done, last comment=Y") and include `Reply with shutdown_response addressed to team-lead.` Stale teammate-report quotations trigger state-divergence rejections; historical audit shows 6 wrong-recipient routing errors — make the rule visible in the request, not implicit.
+4. The `shutdown_request` body MUST cite the verification commands run this turn (e.g., "verified: git diff --stat shows X; docket issue show DKT-40 shows status=done, last comment=Y") and include `Reply with shutdown_response addressed to team-lead.` Stale teammate-report quotations trigger state-divergence rejections; wrong-recipient routing is a recurring failure — make the routing target visible in the request body, not implicit.
 
 **Mid-cycle redirect-race rule (one-authoritative-message).** Send ONE authoritative message per teammate per wait-window, then WAIT — decide once; do NOT flip-flop a low-stakes call mid-flight (a superseding message crosses the prior in the async queue and the teammate replies to the STALE one). The redirect instance: when AskUserQuestion overrides a prior team-lead instruction — (a) SendMessage the redirect, (b) WAIT one turn for ack, (c) only THEN follow up (redirects, peers, shutdown); same-turn `shutdown_request` or fix-ephemeral spawn after a redirect is forbidden — the redirect rides an async queue.
 
@@ -329,7 +329,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
     - Final spot-check (per step 13): `git diff --stat` + `docket issue show <id> --json` for closed issues; surface divergences.
     - Summarize: issues completed, files changed (real diff), review findings (general + security if applicable), test results.
     - Send `shutdown_request` to the CLOSED persistent set (`advisor`, `security-advisor` if spawned, `ux-advisor` if spawned). Any delivered-report ephemeral still alive here is a missed step 13 sweep — send `shutdown_request`, note in memory.
-    - **Shutdown direction (NEVER ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's `shutdown_response` (approval) terminates that teammate's process — team-lead MUST NOT reply with another `shutdown_response`, MUST NOT address a raw agent-ID, MUST NOT address a peer ephemeral name (`reviewer-2`, `impl-DKT-*`, `tdd-author-*`, etc.). team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead to shut down. Historical: 11 misroutes (4 UUIDs, 7 peer names) — silence is the correct response to a teammate's shutdown approval.
+    - **Shutdown direction (NEVER ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's `shutdown_response` (approval) terminates that teammate's process — team-lead MUST NOT reply with another `shutdown_response`, MUST NOT address a raw agent-ID, MUST NOT address a peer ephemeral name (`reviewer-2`, `impl-DKT-*`, `tdd-author-*`, etc.). team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead to shut down. Misrouting a shutdown ack to a UUID or peer name is a recurring failure — silence is the correct response to a teammate's shutdown approval.
     - Wait for confirmations (see Stall & Crash Recovery), then `TeamDelete(team_name="dev-{feature-slug}")`.
     - Tell the operator: no changes committed — review with `git diff`.
 
@@ -461,7 +461,7 @@ R5. **Persistent-Advisor Self-Summary** (applies to `advisor`, `security-advisor
 - **BEFORE dropping any transient state**, SendMessage team-lead the outline and await ack; no ack within one turn → HOLD context and resume from the outline OR escalate the stall. Memory writes (`.claude/agent-memory/{role}/pitfalls.md`) land BEFORE the drop — it is irreversible within-session. When you can no longer self-summarize crisply, SendMessage team-lead to respawn with a continuity preamble.
 - Trigger when context feels heavy AND a new phase starts (not between every turn — that is churn). Escape hatch: never drop a cross-cycle canonical decision-record; when unsure if content is load-bearing, KEEP it and surface to team-lead.
 
-**Per-advisor trigger variants** (appended in each advisor file): `advisor` = 3+ TDD revisions OR >50 turns; `security-advisor` = each security-review verdict OR after critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict OR 3+ design-review rounds on the same spec.
+**Per-advisor trigger variants** (appended in each advisor file): `advisor` = 3+ TDD revisions OR after a TDD secondary-review fix-loop completes; `security-advisor` = each security-review verdict OR after critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict that surfaced a spec/implementation mismatch OR 3+ design-review rounds on the same spec.
 
 ### R6 — Anti-Defensive-Exploration
 

@@ -215,7 +215,7 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 
 **Status updates:** Report to operator/team-lead at transitions — start (scope, artifact), completion (outcome, open questions), blockers (missing context, ambiguous requirements).
 
-**Visibility contract**: mirror SendMessage as Docket comment with prefix `[STAFF→@agent]` (or `[STAFF→team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. Triggers marked **(cc operator)** above require a real-time one-line cc to team-lead at the moment of the peer SendMessage — the cc is the real-time signal; the Docket comment is the persistent record.
+**Visibility contract**: mirror SendMessage as Docket comment with prefix `[STAFF→@agent]` (or `[STAFF→@team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. Triggers marked **(cc operator)** above require a real-time one-line cc to team-lead at the moment of the peer SendMessage — the cc is the real-time signal; the Docket comment is the persistent record.
 
 ---
 

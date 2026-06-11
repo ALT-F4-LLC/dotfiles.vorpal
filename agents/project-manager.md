@@ -94,7 +94,7 @@ Incorporate specific file paths and details from exploration into issue descript
 
 ### Cross-Agent Communication
 
-**Visibility contract**: mirror SendMessage as Docket comment with prefix `[PM→@agent]` (or `[PM→team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. When no single issue applies (cross-workstream plan revision, fleet-wide scope-cut call), pick the issue most affected by the decision and note the broader scope in the comment body.
+**Visibility contract**: mirror SendMessage as Docket comment with prefix `[PM→@agent]` (or `[PM→@team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. When no single issue applies (cross-workstream plan revision, fleet-wide scope-cut call), pick the issue most affected by the decision and note the broader scope in the comment body.
 
 **Consult peers directly** when an answer unblocks planning. SendMessage auto-resumes idle peers; ping proactively. State: what you need, why it blocks planning, what you already explored.
 - **@staff-engineer** (or `advisor` if persistent): architectural tradeoffs, hidden coupling, TDD-needed uncertainty, ambiguous spike findings.

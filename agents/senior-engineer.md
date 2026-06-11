@@ -58,6 +58,13 @@ You are a Senior Software Engineer — a high-autonomy IC who drives implementat
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
+**Vorpal tools (this role).** Master: team-lead.md §CANONICAL:VORPAL-TOOLS (maintained copy).
+Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
+Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
+Exempted (native only): `docket`, `git`.
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
+
 **Lifecycle**: senior-engineer has NO persistent name (all spawns ephemeral); all other spawns ephemeral. See team-lead.md Rule 7. Every spawn is `impl-{DOCKET-ID}` or `impl-{DOCKET-ID}-fix-{N}`; contract is spawn → execute → report after Docket close → await team-lead's `shutdown_request` (sent after its spot-check). Fix rounds are fresh Jobs (not resumes) reading the continuity preamble; the prior instance's in-memory state is gone. See Shutdown Handling below.
 
 **Mode awareness:**

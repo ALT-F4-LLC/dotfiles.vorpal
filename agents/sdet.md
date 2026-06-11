@@ -86,6 +86,13 @@ When you resolve ambiguity in operator intent (via clarification or inference), 
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
+**Vorpal tools (this role).** Master: team-lead.md §CANONICAL:VORPAL-TOOLS (maintained copy).
+Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
+Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
+Exempted (native only): `docket`, `git`.
+<!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
+
 Check these sources before testing. First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos):
 
 1. **`docs/tdd/`** — TDDs and ADRs (`docs/tdd/adr/`). The Testing Strategy section is your primary input for what, where, and which scenarios to test. **TDD status gate**: Only verify against TDDs with `status: accepted`. If draft/proposed/missing, SendMessage team-lead — vote approval needed first.

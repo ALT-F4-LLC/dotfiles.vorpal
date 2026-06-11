@@ -92,3 +92,8 @@ Symptom: every ephemeral (review-d1/d2/d4, reconciler) sent a "duplicate assignm
 Symptom: at wrap-up, team-lead's TaskList returned "No tasks found" though six tasks (#1-#6, five completed) existed minutes earlier; reconciler simultaneously reported TaskUpdate(#6) failing with "Task not found" and could not self-mark completion.
 Root cause: unconfirmed — task list state for the team was cleared/reset mid-session (not by any team-lead tool call this turn); completion bookkeeping silently lost while teammate reports remained intact.
 Resolution: gate wrap-up on RECEIVED report content, never bare task-status (task-status-leads-the-report rule generalizes to task-status-may-vanish); when TaskList comes back empty at wrap-up, verify via the delivered artifacts + git status and proceed — do not respawn or re-create tasks to "fix" the ledger. Brief teammates that a failed TaskUpdate on an already-delivered task is non-blocking: report + idle anyway.
+
+## 2026-06-11 — Review-brief scope mismatch with pre-existing staged changes
+symptom → reviewer's `Skill(code-review-verdict, "uncommitted")` resolved staged+unstaged vs HEAD and surfaced 3 changes the team-lead brief didn't mention; reviewer had to issue a scope correction.
+root cause → team-lead scoped the brief to "the only unstaged change" while the worktree carried pre-existing STAGED modifications; `uncommitted` means full diff vs HEAD, not unstaged-only.
+resolution → before dispatching any review brief, run `git diff --stat HEAD` (not bare `git diff --stat`) and enumerate the full uncommitted scope in the brief, flagging pre-existing staged changes as in- or out-of-scope explicitly.

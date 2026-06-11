@@ -3,6 +3,20 @@
 ## 2026-06-10
 
 ### Summary
+Closed the cited 2026-06-10 staff pitfall (TDD line-budget feasibility asserted from estimate — a net-additive phase nearly breached the 500-line gate): Authoring §5's verify-before-settled enumeration now names quantitative/line-budget feasibility claims (measure with wc -l/sed -n, never estimate). Measured net +1 (301 → 302 per post-apply wc -l; reviewer estimate was 0).
+
+### Changes
+- AMPLIFY: Authoring §5 — added quantitative/line-budget claims to the MUST-verify enumeration; dropped the illustrative "zero X exist (verified)" tail parenthetical (normative rule stands without it) — cited signal: staff pitfalls 2026-06-10 line-budget re-fire.
+
+### Dimensions Evaluated
+All 8; Completeness primary; AC-vocabulary focus area confirmed already encoded (§5 L142-144 + §11(c)); staff-engineer.md L111 quantitative-arm gap routed out of scope (tracking issue); CANONICAL shared-include duplication remains a Phase 2 standing item.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
 
 ### Changes

@@ -3,6 +3,36 @@
 ## 2026-06-10
 
 ### Summary
+Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (defined, never referenced in output template — grep-confirmed 1 definition, 0 uses); renumbered Pre-flight steps 4-8 → 3-7 (incl. 4a→3a, 7a→6a) and updated the §4a→§3a cross-reference at L83. Measured net -2 (266 → 264).
+
+### Changes
+- CULL: Pre-flight step 3 "Resolve context" deleted (dead variable, lockstep with design-qa/design-review) — cited signal: review-verify-ac dead-variable finding, coherence-reviewer grep verification across all three siblings.
+- Renumbered Pre-flight + updated sole §4a cross-ref.
+
+### Dimensions Evaluated
+Coherence (family lockstep dead-variable removal), Consistency (step renumber verified: 1,2,3,3a,4,5,6,6a,7).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+One prose-clarity fix applied (net 0, 266 lines). Both Phase 0 focus areas confirmed resolved in the live body (literal-command-AC rule at L142; vote mode-split at L254). Reviewer's other two changes deferred to Phase 2 as parity-bound.
+
+### Changes
+- AMPLIFY: Pre-flight step 4 — "no claim to re-do" → "no state move to undo" (garbled-prose fix; cited signal: reviewer ground-truth read of L100).
+- Deferred to Phase 2: dead {today_date} removal (family-wide pattern across verify-ac/design-qa/design-review — lockstep call) and silent-completion self-check rewording (overlaps the report-emission family phrasing-variance item).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST); Completeness (both pitfalls focus areas grep-confirmed resolved); Coherence (sibling parity items routed to Phase 2).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 10 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
 
 ### Changes

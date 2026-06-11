@@ -3,6 +3,20 @@
 ## 2026-06-10
 
 ### Summary
+Full-cycle audit: NO changes. All 8 dimensions clean at 274 lines.
+
+### Changes
+- None (NO-OP verdict). Reserved-name refusal (step 4) verified to precede collision dialog (step 5) — the historical refusal-gate pitfall is resolved in the live body. Glob/Grep allowed-tools body-exercised (L86/L117); 2026-06-04 changelog removal claim is an applied-then-reverted artifact.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no trims remaining); Coherence (CANONICAL block parity intact); Spec Alignment (docs/spec/ singular, init-specs coupling intact).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 11 entries (2026-05-09..2026-05-30) into Compacted history per ADR 0001.
 
 ### Changes

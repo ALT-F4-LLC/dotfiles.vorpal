@@ -3,6 +3,48 @@
 ## 2026-06-10
 
 ### Summary
+Compacted 10 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
+
+### Changes
+- 10 entries (2026-05-16, 2026-05-16, 2026-05-17, 2026-05-18, 2026-05-19, 2026-05-20, 2026-05-25, 2026-05-28, 2026-05-28, 2026-05-29) replaced with ledger lines in ## Compacted history section.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-6 → 3-5. Measured net -2 (245 → 243).
+
+### Changes
+- CULL: Pre-flight step 3 "Resolve context" deleted (dead variable, lockstep with verify-ac/design-qa) — cited signal: coherence-reviewer grep verification.
+
+### Dimensions Evaluated
+Coherence (lockstep removal + renumber; no §-refs existed; no stale "Failure Modes" references after the Phase 1 inline — grep 0 hits), Consistency.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Inlined the empty-artifact abort guard at Pre-flight step 6 (matching design-qa's inline Empty-implementation guard structure) and removed the now-redundant single-row `## Failure Modes` section. Measured net -4 (249 → 245 per post-apply wc -l; reviewer estimate was -6).
+
+### Changes
+- CULL: Pre-flight step 6 "see Failure Modes" pointer → inline ABORT code-fence; `## Failure Modes` section removed — cited signal: single-row table duplicating an inline-guard pattern the design-qa sibling already inlines (structural parity + Over-Engineering trim; orchestrator grep-verified design-qa L95 inline guard and absence of a Failure Modes section).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST); Coherence (design-qa structural parity restored); vote-escalation mode-split and re-invocation parity verified sound; disable-model-invocation evaluated and rejected (ux-designer `skills:` preloads this skill).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Phase 2 self-correct: restored the post-ABORT re-invocation line removed earlier this cycle. The Phase 1 removal claimed design-qa parity but design-qa:194 carries the identical line — the edit BROKE parity rather than restoring it. Net +2 (back to 249).
 
 ### Changes
@@ -143,158 +185,17 @@ Cross-skill coherence; instruction accuracy.
 ### Rename
 No rename.
 
-## 2026-05-29
+## Compacted history
 
-### Summary
-Consolidated the Recommendation-vs-severity validation gate (check #2) from three prose sub-bullets into one enforceable line; the Recommendation Ladder table already defines the tier semantics.
+Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
 
-### Changes
-- Validation Before Emit check #2: 3 sub-bullets → 1 line (any Blocker ⇒ Block/Redesign/Incremental; any Concern ⇒ Approve-with-follow-up/Redesign/Incremental, plain Approve forbidden; zero/zero ⇒ Approve permitted). Net -3.
-- Deferred to Phase 2: removing the Save & Return self-check (conflicts with code-review keeping the same report-emission-family silent-completion reminder — harmonize family-wide); `disallowed-tools` (family decision, not adopting).
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — 1 trim), Coherence (self-check is a family pattern → deferred), Skill Design Quality, Actionability, Completeness, Orchestration (leaf), Spec Alignment, Rename.
-
-### Rename
-No rename — design-review cleanly distinct from design-qa (post-impl) and ux-spec (authoring).
-
-## 2026-05-28
-
-### Summary
-Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (COUPLING comment + body; file does not exist) to `agents/team-lead.md` Rule 8 + step 14.
-
-### Changes
-- COUPLING "keep shape in sync" pointer → `agents/team-lead.md` Rule 8.
-- Body topology/dispatch → Rule 8; reconciliation → step 14.
-
-### Dimensions Evaluated
-Coherence (accurate references).
-
-### Rename
-No rename.
-
-## 2026-05-28
-
-### Summary
-Coordination/handoff: unified the verdict-routing target, which was inconsistent across three locations (self-check said "team-lead"; Save & Return + Next Steps said "artifact author") and diverged from the family-canonical phrasing in code-review/design-qa. Net 0 lines.
-
-### Changes
-- Self-check: "to team-lead" → "the calling agent (team-lead in team mode)", matching code-review/design-qa (reachable in standalone mode too).
-- Save & Return bullet 1: direct-to-author SendMessage → route per `agents/ux-designer.md` triggers (through team-lead under orchestration, who reconciles both reviewers before routing to author) — fixes hub-and-spoke violation under the Doubling Rule.
-- Next Steps example: removed non-existent agent name `@ux-designer-author`; aligned routing to calling-agent/team-lead deliverable.
-
-### Dimensions Evaluated
-Orchestration & Agent Teams (HIGHEST), Coherence (code-review/design-qa family parity), Over-Engineering (no bloat found; all changes net 0), Actionability.
-
-### Rename
-No rename.
-
-## 2026-05-25
-
-### Summary
-Orchestration + Over-Engineering: added silent-completion self-check to Save & Return per the cross-family pitfall resolution (cross-cutting with code-review, verify, design-qa); trimmed AskUserQuestion structural rehearsal in Common Discipline that pure-restates `@ux-designer` canonical contract. Net +3 lines.
-
-### Changes
-- Save & Return: added "Self-check before ending the turn" callout addressing silent-completion pitfall (skill emits verdict to context; calling agent silently idles without SendMessage to team-lead).
-- Common Discipline: trimmed AskUserQuestion structural contract restatement (1-4 questions / 2-4 options / ≤12-char header / default in first option); replaced with pointer to calling agent's structural contract.
-
-### Dimensions Evaluated
-Orchestration (HIGHEST — silent-completion family parity), Over-Engineering (AskUserQuestion duplication trim), Coherence (vs design-qa/code-review/verify).
-
-### Rename
-No rename.
-
-## 2026-05-20
-
-### Summary
-Coherence + Over-Engineering: promoted Doubling Rule from a 4-paragraph nested H3 inside `When to Use` to a single-paragraph top-level `## Doubling Rule` section matching sibling design-qa structure and density. Trimmed Failure Modes row that pure-restated Argument Handling. Net -9 lines.
-
-### Changes
-- `When to Use` → `## Doubling Rule`: promoted to top-level H2 (was H3 inside `When to Use`); collapsed Reviewer count / Reconciliation / Ephemeral lifecycle / Degraded fallback / Standalone-mode paragraphs into one dense paragraph mirroring design-qa.
-- Failure Modes: removed "Caller passes additional positional args" row — restates Argument Handling per 2026-05-17 trim criterion.
-
-### Dimensions Evaluated
-Coherence (HIGHEST — vs design-qa family parity), Over-Engineering (HIGHEST), Skill Design Quality.
-
-### Rename
-No rename.
-
-## 2026-05-19
-
-### Summary
-Phase 2 coherence — added explicit Epistemic Discipline Validation check (new check #10) so the banned-phrases rule from Common Discipline is gate-enforced, matching code-review's check #9. Net +1 line.
-
-### Changes
-- Validation Before Emit: added check #10 — scan What's Strong / What Needs Work / Open Questions / Next Steps for banned confidence phrases; a hit is a defect.
-
-### Dimensions Evaluated
-Coherence, Epistemic Discipline, Report-Emission Family Parity.
-
-### Rename
-No rename.
-
-## 2026-05-18
-
-### Summary
-Phase 1 trim + Epistemic Discipline pass: removed incorrect "Stream long inspections" bullet (design-review is PRE-impl — nothing runs), collapsed Pre-flight empty-artifact guard to Failure Modes reference, folded banned-hedge list into Honest Critique bullet. Net -5 lines, behavior unchanged.
-
-### Changes
-- Common Discipline: removed "Stream long inspections" bullet — design-review has no binary/dev-server scope.
-- Common Discipline "Honest critique" → "Honest critique with evidence": added requirement to cite the grounding artifact and listed banned hedges per Epistemic Discipline.
-- Pre-flight step 6: collapsed inline abort code-fence to a one-line reference pointing at Failure Modes table.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST), Skill Design Quality, Coherence (vs design-qa, family parity), Spec Alignment.
-
-### Rename
-No rename.
-
-## 2026-05-17
-
-### Summary
-Phase 1 trim pass: removed redundant Role Detection note, dropped Failure Modes row that pure-restates a Validation inline abort, tightened Validation rule #2 and Failure Modes preamble. Net -22 lines, no behavioral change.
-
-### Changes
-- Role Detection: removed "Note" block restating @staff-engineer/@security-engineer routing — already covered by When NOT to Use + abort message.
-- Failure Modes: removed "Recommendation/severity mismatch" row — pure-restates Validation rule #2's abort, matching the 2026-05-16 trim criterion.
-- Validation Before Emit rule #2: tightened wording, dropped parenthetical that duplicated Recommendation Ladder content.
-- Failure Modes preamble: compressed enumeration of inline-abort locations to one sentence.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST), Skill Design Quality, Actionability, Coherence (vs design-qa).
-
-### Rename
-No rename.
-
-## 2026-05-16
-
-### Summary
-Phase 2 coherence pass: banner footer now mentions Docket comments (matches Save & Return obligations and aligns with design-qa); Save & Return collapsed to "Output Contract owns the emission rules" per family-wide pattern.
-
-### Changes
-- Banner footer: added `and Docket comments` to the leaf-skill banner — Save & Return §line 236 requires Docket comment mirroring, so banner was inaccurate.
-- Save & Return: replaced "This skill does NOT write a file. After Validation Before Emit passes, emit verbatim..." preamble with "No file is written (Output Contract owns the emission rules)" — matches code-review/design-qa/verify post-Phase-2.
-
-### Dimensions Evaluated
-Coherence (banner/footer parity, family Save & Return phrasing), Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-05-16
-
-### Summary
-First changelog entry. Five fixes: aligned Output Contract frontmatter field with ux-spec contract (`maturity` not `status`), made the `Praise` severity's routing to `What's Strong` explicit, added AskUserQuestion structural contract (1-4 questions, 2-4 options, ≤12-char header), loosened Validation rule #2 to allow Redesign/Incremental Improvement when no Blocker is citable but the foundation is wrong, and trimmed Failure Modes table to rows with new abort text.
-
-### Changes
-- Output Contract Artifact section: `Maturity / status` line now reflects UX spec frontmatter contract.
-- Severity Ladder Praise row: explicit "routes to What's Strong, not What Needs Work" annotation.
-- Common Discipline: AskUserQuestion now specifies 1-4 questions, 2-4 options, ≤12-char header, default recommendation in first option's description.
-- Validation Before Emit rule #2: Redesign / Incremental Improvement permitted with Concerns-only OR no severity findings when body argues fundamental rethink or bounded improvement.
-- Failure Modes table compressed from 7 rows to 3 — dropped rows that pure-restate inline aborts; kept rows with new abort text.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — Failure Modes trim), Skill Design Quality, Actionability, Operator Prompt Quality, Spec Alignment, Coherence (vs design-qa).
-
-### Rename
-No rename.
+- 2026-05-16: First changelog entry — Output Contract maturity field, Praise→What's Strong routing, AskUserQuestion contract, Validation rule #2 loosened, Failure Modes 7→3 rows.
+- 2026-05-16: Coherence — banner footer + Docket comments; Save & Return preamble → "Output Contract owns the emission rules" (family parity).
+- 2026-05-17: Trim — Role Detection Note removed, redundant Failure Modes row dropped, Validation rule #2 tightened, Failure Modes preamble compressed. Net -22.
+- 2026-05-18: Trim + Epistemic — "Stream long inspections" removed; Honest Critique → evidence; Pre-flight step 6 collapsed to Failure Modes ref. Net -5.
+- 2026-05-19: Coherence — Validation check #10 added (banned-phrases gate matching code-review check #9). Net +1.
+- 2026-05-20: Coherence + OE — Doubling Rule promoted H3→H2 matching design-qa density; Failure Modes row dropped. Net -9.
+- 2026-05-25: Orchestration + OE — silent-completion self-check added to Save & Return; AskUserQuestion contract duplication trimmed. Net +3.
+- 2026-05-28: Handoff — verdict-routing unified across self-check/Save & Return/Next Steps; hub-and-spoke violation fixed; non-existent @ux-designer-author removed. Net 0.
+- 2026-05-28: Coherence — dead `docs/tdd/reviewer-doubling-lifecycle.md` refs → `agents/team-lead.md` Rule 8 + step 14. Net 0.
+- 2026-05-29: OE — Validation check #2: 3 sub-bullets → 1 enforceable line. Net -3.

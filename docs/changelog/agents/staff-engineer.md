@@ -1,5 +1,48 @@
 # Changelog: staff-engineer
 
+## 2026-06-10
+
+### Summary
+Compacted 3 entries (2026-05-24..2026-05-25) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Trial: R5 advisor trigger ">50 assistant turns" → "after a TDD secondary-review fix-loop completes" → shipped (lockstep with team-lead.md). Phase 2 coherence: sole-editor rule reduced to a pointer at the security-engineer.md AUTHORITY copy.
+
+### Changes
+- Sole-editor rule: duplicated serialization wording replaced with pointer to security-engineer.md §Responsibility 1 (AUTHORITY); staff-specific auth/crypto caveat retained.
+- R5 advisor trigger: observable fix-loop-completion event replaces the turn-count proxy.
+
+### Dimensions Evaluated
+Coherence pass (cross-file mirrors).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Review cycle 2026-06-10: all Phase 0 signals verified NO-OP (already encoded) or routed as coherence flags. No edits; 258 lines unchanged.
+
+### Changes
+- None. NO-OPs cited: already-present check (L76); AC-grep-from-live-file + budget gates (TDD step 6 / rule 6); docs/ux existence guard (L70). \$N-escaping routed to evolve-skills scope. Three coherence flags routed to Phase 2 (sole-editor duplication, R5 turn-count proxy, Light-TDD vs Rule 8(a)).
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -198,53 +241,6 @@ Actionability (PRIMARY — FINAL-tool-call discipline) · Boundary Clarity (cano
 ### Rename
 No rename.
 
-## 2026-05-25 (Phase 2 coherence — compaction clause on rule 5, P7a drop)
-
-### Summary
-Two coherence fixes: (1) added explicit compaction-awareness clause to Comm Discipline rule 5 (Read before Write/Edit) matching senior-engineer L33 and ux-designer L34 — `advisor` ephemerals run long sessions across compactions while Editing docs/tdd/ + docs/spec/ heavily; (2) dropped dead "(P7a)" cross-reference from R7.
-
-### Changes
-- Comm Discipline rule 5: appended "After a compaction event, treat all 'previously Read' files as un-Read — Read again before the next Edit"
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — Read-before-Edit/Write phrasing alignment with senior/ux) · Actionability (P7a dead-reference removal)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 1 self-review — memory→definition pitfall promotion)
-
-### Summary
-Promoted 4 pitfalls from actively-maintained memory (`pitfalls.md`) into the agent definition: advisor topology rule (NEW Comm Discipline rule 9), directory existence check (No Guessing append), reversal state-probe (new Proactive Communication bullet), and TDD step 6 regex-execution + inverted-scope grep gates. Also reinforced rule 7 shutdown routing with a WRONG/RIGHT negative example. Net +10 (341 → 351 lines, 149 headroom remaining).
-
-### Changes
-- §Communication Discipline rule 7: appended WRONG/RIGHT negative-example clause for shutdown routing
-- §Communication Discipline rule 9 (NEW): advisor topology — persistent `advisor` MUST NOT SendMessage in-flight impl ephemerals with directive content; recommendations route through team-lead (hub-and-spoke)
-- §No Guessing: added Directory existence check — `ls -d <path>/` before referencing `docs/ux/`, `docs/tdd/`, `docs/tdd/adr/`, `docs/spec/`
-- §Proactive Communication: new "Before recommending a mid-cycle directive REVERSAL" trigger — state-probe team-lead first
-- §TDD Workflow step 6: appended Regex execution gate (grep -lE before marking AC complete; broaden escape-arms for markdown) and Inverted-scope grep rule on namespace expansion
-
-### Dimensions Evaluated
-Role Realism (PRIMARY — 4 memory→definition promotions) · Capability Growth & Cross-Communication (advisor topology + reversal state-probe) · Boundary Clarity (directory existence) · Cross-Agent Coherence (shutdown routing negative example mirrored from security-engineer)
-
-### Rename
-No rename.
-
-## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
-
-### Summary
-Closed the 6 historical `is_error:true` shutdown-routing errors by making the routing rule explicit at rule 7 (shutdown protocol). Covers persistent `advisor` AND every ephemeral spawn form (`tdd-author`, `reviewer-2`, `tdd-author-fix-{N}`, TDD secondary reviewers, ad-hoc consults). No file-size change.
-
-### Changes
-- Communication Discipline rule 7: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to every spawn form.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility across persistent + ephemeral spawn forms)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +284,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-19: Cycle 2026-05-19 self-review across 8 dimensions. File is in good shape (282 lines); vote delegation payload already canonical per 2026-05-17…
 - 2026-05-19: Phase 2 coherence: Universal-mirror visibility contract alignment (Phase 2 canonical decision: every SendMessage mirrors to Docket; conditional…
 - 2026-05-19: Phase 2 coherence — memory channel activation: Activated the dormant `.claude/agent-memory/staff-engineer/` channel via a shutdown-time memory…
+- 2026-05-24: Closed the 6 historical `is_error:true` shutdown-routing errors by making the routing rule explicit at rule 7 (shutdown protocol). Covers persistent `advisor`
+- 2026-05-25: Promoted 4 pitfalls from actively-maintained memory (`pitfalls.md`) into the agent definition: advisor topology rule (NEW Comm Discipline rule 9), directory
+- 2026-05-25: Two coherence fixes: (1) added explicit compaction-awareness clause to Comm Discipline rule 5 (Read before Write/Edit) matching senior-engineer L33 and

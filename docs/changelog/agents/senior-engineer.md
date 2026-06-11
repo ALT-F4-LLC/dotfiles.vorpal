@@ -1,5 +1,49 @@
 # Changelog: senior-engineer
 
+## 2026-06-10
+
+### Summary
+Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Phase 2 coherence: gray-zone resolution gains an SE→staff cross-reference to the TDD-vs-direct rubric (staff-engineer.md §Responsibility 1).
+
+### Changes
+- One-clause cross-ref linking the escalate-or-implement test to staff's TDD-decision rubric — the two halves of one decision now reference each other.
+
+### Dimensions Evaluated
+Coherence pass (cross-file mirrors).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Fixed the `.data.status` JSON-path bug in close-verify guidance, compressed the Tool-envelope paragraph while replacing its falsified heredoc fallback, and scoped the git-stash rule to shared-tree. Net 0 physical lines (357).
+
+### Changes
+- AMPLIFY: close-verify asserts `.data.status` not top-level `.status` (pitfalls.md 2026-06-09: docket `show --json` nests under `.data` — the prior guard read a non-existent key).
+- CULL: `python3 -c` heredoc fallback in Tool-envelope check (pitfalls.md zsh `!=` corruption + Phase 0 retire-flag); replaced with the verified \$TMPDIR-script approach, paragraph compressed.
+- AMPLIFY: "Never git stash" scoped to shared-tree (Phase 0 efficiency flag; solo isolated worktree has no concurrent reader).
+
+### Dimensions Evaluated
+All 8; Consolidation primary. Completeness RETAIN — the 10 fix-N respawns signal is already covered by self-review step 5 + TDD deep-read gate.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -191,55 +235,6 @@ Capability Growth & Cross-Communication (PRIMARY — pre-impl consult gate targe
 ### Rename
 No rename.
 
-## 2026-05-26 (Phase 2 — strip 3 dangling docs/tdd/* citations)
-
-### Summary
-Stripped 3 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
-
-### Changes
-- L50 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
-- L324 Ephemeral completion contract: replaced "(TDD §4.4 rule 7)" with "(per team-lead.md Rule 7)".
-- L338 Runtime Discipline opener: replaced "§4.5 applicability matrix" with team-lead.md §Runtime Discipline anchor.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — No Guessing violation closed)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 1 — two-step claim + same-turn completion + state-divergence rejection authority)
-
-### Summary
-Encoded two-step claim ritual (`docket issue edit -a @senior-engineer` BEFORE `docket issue move in-progress`) across bash codeblock + Communication Discipline bullet + Execution Workflow step 1 — three surfaces kept self-consistent. Strict same-turn close-to-shutdown sequence enforced (closes 25-file TeammateIdle gap from audit). State-divergence rejection authority added as second authorized ground (with impl-DKT-40 positive exemplar). Net +8 lines (387 → ~395).
-
-### Changes
-- Bash codeblock: inserted `docket issue edit <id> -a @senior-engineer` BEFORE `docket issue move <id> in-progress` (enables team-lead's `-a @senior-engineer -s in-progress` shutdown-sweep probe).
-- Comm Discipline claim-before-work bullet: two-step ritual + probe rationale.
-- Execution Workflow step 1: two-step ritual + probe rationale (third surface — self-consistency).
-- Ephemeral completion contract: 5 steps MUST execute SAME turn; `shutdown_request` is FINAL tool call; drain background Bash before step 5. Targets 25-file TeammateIdle gap from Phase 0.
-- Receiving shutdown_request: state-divergence rejection authority added with impl-DKT-40 (2026-05-23) as positive exemplar; tightened against "stay alive for review/verification" rejections.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — two-step ritual + same-turn close-to-shutdown) · Capability Growth (state-divergence rejection authority, monitoring probe enabler) · Completeness (drain background Bash, two rejection grounds) · Role Realism (positive exemplar documents impl-DKT-40 behavior)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 2 coherence — docs-dir guard, P7a drop)
-
-### Summary
-Two coherence fixes: (1) added docs-dir existence guard to "Check Specs Before Implementing" matching project-manager/staff-engineer convention (prevents spec-not-found in early-stage repos); (2) dropped dead "(P7a)" cross-reference from R7.
-
-### Changes
-- §Check Specs Before Implementing: added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard as lead-in
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — docs-dir guard parity) · Actionability (P7a dead-reference removal)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -287,3 +282,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-19: Phase 2 coherence — brief contradiction-detection + envelope fallback: Closed the second line of defense on the Phase 1 P1 lesson: added brief…
 - 2026-05-24: Phase 2 coherence — shutdown_response routing rule: Closed the 6 historical `is_error:true` "shutdown_response must be sent to team-lead"…
 - 2026-05-25: Phase 1 self-review — shutdown routing example + peer dispatch hard gate: Two targeted rewrites, net 0 lines. (1) Replaced abstract "never to…
+- 2026-05-25: Two coherence fixes: (1) added docs-dir existence guard to "Check Specs Before Implementing" matching project-manager/staff-engineer convention (prevents
+- 2026-05-26: Encoded two-step claim ritual (`docket issue edit -a @senior-engineer` BEFORE `docket issue move in-progress`) across bash codeblock + Communication Discipline
+- 2026-05-26: Stripped 3 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.

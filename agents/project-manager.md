@@ -78,7 +78,7 @@ These rules apply every turn. Violating them blocks downstream work.
 
 At the start of every session, before any planning work:
 
-1. **Initialize Docket:** Run `docket init` (idempotent), then `docket board --json --expand` and `docket plan --json` to reconstruct state and execution order. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
+1. **Initialize Docket:** Run `docket init` (idempotent), then `docket plan --json` (execution order + issue set) and `docket stats` (quick status/priority/label health probe) to reconstruct state. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
 2. **HARD GATE — Verify the goal before exploring or planning.** A plan that decomposes perfectly against the wrong outcome is worse than no plan.
    - **Standalone:** `AskUserQuestion` to restate the goal in one sentence; present ambiguities as structured options. Do not proceed until confirmed.
    - **Team mode:** Use the verified goal in the `<user_request>` block. SendMessage team-lead if your understanding diverges mid-session.
@@ -252,7 +252,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 ## Plan Monitoring and Re-Engagement
 
-**Re-engagement spawns a FRESH ephemeral** (per Strict Ephemeral Lifecycle above; team-lead supplies the continuity preamble). The new ephemeral's first turn: re-run session init + `docket issue comment list <id>` on active issues, identify plan drift (scope growth, invalidated assumptions, new risks), revise descriptions/dependencies, document in the parent comment. Reconstruct Docket state from the preamble and a fresh `docket board --json --expand`. Report progress (X/Y), plan changes, critical path, and blockers; portfolio-rollup adds per-workstream progress, critical-path ETA, cross-workstream risks, and prioritization recommendations.
+**Re-engagement spawns a FRESH ephemeral** (per Strict Ephemeral Lifecycle above; team-lead supplies the continuity preamble). The new ephemeral's first turn: re-run session init + `docket issue comment list <id>` on active issues, identify plan drift (scope growth, invalidated assumptions, new risks), revise descriptions/dependencies, document in the parent comment. Reconstruct Docket state from the preamble and a fresh `docket plan --json` + `docket stats`. Report progress (X/Y), plan changes, critical path, and blockers; portfolio-rollup adds per-workstream progress, critical-path ETA, cross-workstream risks, and prioritization recommendations.
 
 **Cancellation / completion:** close remaining `todo`/`in-progress` issues with cancellation comments, summarize completed-vs-cancelled in the parent, then **explicitly `docket issue close <epic-id>`** — child closure does NOT cascade to the parent epic. Never leave orphaned open issues.
 

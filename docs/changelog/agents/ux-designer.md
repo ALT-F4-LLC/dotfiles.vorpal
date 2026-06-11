@@ -1,5 +1,49 @@
 # Changelog: ux-designer
 
+## 2026-06-10
+
+### Summary
+Compacted 3 entries (2026-05-17..2026-05-24) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Phase 2 coherence: R5 ux-advisor self-summary trigger now fires only on a design-QA verdict that surfaced a spec/implementation mismatch — lockstep with team-lead.md R5 per-advisor variant.
+
+### Changes
+- R5 trigger conditioned on mismatch, aligning with the existing memory-save trigger; clean Pass verdicts no longer fire a self-summary turn (deferred Phase 1 CHANGE 3, applied lockstep).
+
+### Dimensions Evaluated
+Coherence pass (cross-file mirrors).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Fixed undocumented frontmatter `color: magenta` → `purple` and retired the "Text-only medium" framing that contradicted the mandatory render-to-image design-QA gate. R5-trigger alignment deferred to Phase 2 (parity-bound with team-lead.md R5 variant). Net 0 physical lines (255).
+
+### Changes
+- AMPLIFY: frontmatter `color: purple` — magenta absent from the documented accepted list (silent-no-op risk; sole family outlier).
+- CULL: "Text-only medium" framing — superseded by the render-to-image QA gate (fem-kubernetes Marp/embed pitfalls); now "Text-primary medium, render-verified"; prototyping clarified out-of-scope.
+- Deferred: R5 trigger mismatch-only condition → Phase 2 lockstep with team-lead.md.
+
+### Dimensions Evaluated
+All 8; Spec Alignment + Consolidation primary.
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -202,51 +246,6 @@ Actionability (PRIMARY — own-session Read-before-Edit fix) · Consolidation & 
 ### Rename
 No rename.
 
-## 2026-05-24 (Phase 2 coherence — shutdown_response routing rule)
-
-### Summary
-Closed the 6 historical shutdown-routing errors by making the routing rule explicit at Communication Discipline rule 6. `design-review-2` and `design-qa-2` ephemerals exit immediately after verdicts and are common shutdown participants. No file-size change.
-
-### Changes
-- Communication Discipline rule 6: appended Routing clause — `shutdown_response` ALWAYS addressed to team-lead, never to peer agents or original dispatcher; applies to `ux-advisor` and every ephemeral spawn (`design-review-2`, `design-qa-2`, ad-hoc spec authors).
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY) · Actionability (rule visibility for design-review-2 / design-qa-2 ephemerals)
-
-### Rename
-No rename.
-
-## 2026-05-19
-
-### Summary
-Addressed the "highest-leverage coherence fix" flagged by historical audit: promoted Visibility contract from conditional mirroring ("When an exchange ties to a Docket issue") to universal mirroring matching senior-engineer.md and project-manager.md fleet pattern. Added explicit guidance for cross-spec/precedent exchanges with no single bound issue. Trimmed Communication Discipline preface that restated rule 1 and duplicated Persistent Advisor Lifecycle's ux-advisor cross-reference. Net: -2 lines (249 → 247).
-
-### Changes
-- Renamed "Operator-visibility contract" → "Visibility contract" matching senior-engineer/project-manager.
-- Changed mirroring from conditional ("When an exchange ties to a Docket issue") to universal ("Every SendMessage is mirrored").
-- Added pick-most-relevant-issue guidance for cross-spec exchanges; added "cc is real-time signal; prefix is persistent record" framing.
-- Removed Communication Discipline preface line (duplicated rule 1 and Persistent Advisor Lifecycle ux-advisor reference).
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY — universal-mirror promotion) · Spec Alignment (fleet visibility-contract pattern) · Consolidation & Trimming (preface dedup offset).
-
-### Rename
-No rename. Canonical persistent name `ux-advisor` already codified at line 244.
-
-## 2026-05-17 (Phase 2 coherence)
-
-### Summary
-Added canonical `TeammateIdle` stall-signal line for cross-agent terminology coherence.
-
-### Changes
-- Communication Discipline: appended TeammateIdle canonical-signal line below rule 6.
-
-### Dimensions Evaluated
-Cross-agent terminology coherence.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +287,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-16: Phase 2 coherence: normalize security-advisor canonical form; drop redundant parenthetical.
 - 2026-05-17: Vote delegation payload synced to canonical `skills/vote/` Delegation Protocol shape (Phase 2 handoff from 2026-05-17 evolve-skills cycle).…
 - 2026-05-17: pass 2: Addressed two historical-audit findings: highest per-session "File has not been read yet" rate (11/11 sessions) via explicit…
+- 2026-05-17: Added canonical `TeammateIdle` stall-signal line for cross-agent terminology coherence.
+- 2026-05-19: Addressed the "highest-leverage coherence fix" flagged by historical audit: promoted Visibility contract from conditional mirroring ("When an exchange ties to
+- 2026-05-24: Closed the 6 historical shutdown-routing errors by making the routing rule explicit at Communication Discipline rule 6. `design-review-2` and `design-qa-2`

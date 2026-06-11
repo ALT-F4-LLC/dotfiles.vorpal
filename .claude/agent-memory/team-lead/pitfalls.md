@@ -1,9 +1,10 @@
 # team-lead recurring pitfalls
 
-- **Evolve TRIM-mode budget math: reviewers report NET_LINES in display lines, not physical newlines.**
-  symptom → In the 2026-06-09 evolve-agents cycle, review-team-lead claimed CHANGES 1-2 would cut −10 lines (504→494); `wc -l` after applying showed only −2 (504→502), leaving the file still over the 500 budget.
-  root cause → `wc -l` counts physical newlines. Long single-line bullets/paragraphs soft-wrap in the editor (look like ~8 lines) but are ONE physical line; collapsing two wrapped paragraphs saves 2 newlines, not the ~10 visible "lines." The real physical-line wins come from collapsing multi-BULLET blocks (each bullet is its own newline) — e.g. the R5 7-bullet→3-bullet trim yielded −13.
-  resolution → In TRIM mode, NEVER trust a reviewer's NET_LINES estimate for budget compliance; always `wc -l` after applying and treat the over-budget file as not-yet-done. Prioritize trims that remove whole bullet/list lines over rewording wrapped prose. A still-over-budget file at Phase-1 end is acceptable ONLY if Phase 2 is queued to apply enough multi-line-block trims to close it — verify with a final `wc -l` before TeamDelete.
+## Harvested ledger (compacted)
+
+- [2026-06-09] evolve TRIM-mode reviewer NET_LINES estimates are display-line, not physical-newline counts → encoded in evolve-agents Phase 1 step 2 (wc -l after apply; treat over-budget as not-done)
+- [2026-06-09] TaskCreate before TeamCreate orphans the task on the wrong list → encoded in Team Setup steps 1-2 (TeamCreate first, then TaskCreate)
+- [2026-06-09] Monitor closure-watch keyed on a `done` string never fires (default list filter hides closed issues) → encoded in §Monitor (watch the issue disappearing / query -s done)
 
 - **Orchestrator self-injected an unapproved edit inside a large apply batch.**
   symptom → 2026-06-09 evolve-skills cycle: an 8-edit batch applying reviewer CHANGEs to skills/code-review SKILL.md included one Edit inserting a stray `[MARKER-KEEP]` token that matched NO approved CHANGE; caught on the next turn and reverted.
@@ -18,11 +19,6 @@
 ## 2026-06-09 (evolve-agents cycle)
 - Symptom: every spawned teammate reported "duplicate task_assignment received — already completed" after delivering its report → root cause: harness replays task-assignment notifications on wake; teammates correctly no-op → resolution: expect "already completed" acks as normal noise, never re-dispatch or treat as a stall.
 - Symptom: cross-repo pitfalls contradicted the live spec on shutdown-handshake direction (artifacts.vorpal "briefing ephemerals to emit shutdown_request inverts the handshake" vs spec mandating exactly that) → root cause: agents and evolve-* skills had diverged; official agent-teams docs document lead-initiated only → resolution: operator-decided 2026-06-09 flip to lead-initiated (ephemerals report → await team-lead's shutdown_request); pitfalls entries predating this flip that reference self-emitted shutdown_request are protocol-stale — skill-side mirrors routed to evolve-skills (vote, design-qa, design-review, init-specs, evolve-* contrast parentheticals).
-
-## 2026-06-09 — TaskCreate before TeamCreate lands on wrong task list
-symptom → `TaskUpdate(taskId=1)` returns "Task not found" after teammate completes; TaskList empty.
-root cause → Task was created via TaskCreate BEFORE TeamCreate; team creation switches to a fresh per-team task list, orphaning the earlier task.
-resolution → Always run TeamCreate FIRST, then TaskCreate (workflow steps 1→2 order is load-bearing even for Direct Tasks). Docket issue remains the durable fallback record when this happens.
 
 ## 2026-06-09 (evolve-skills Mythos cycle)
 - Symptom: ephemeral author (author-brief) reported "deliverables are in my final assistant message as fenced blocks" — invisible to orchestrator; recurrence of the agentic-services silent-verdict class (reviewer output as plain final-turn text). → Root cause: author-spawn briefs said "deliver as a single fenced block to team-lead" without naming the CHANNEL; the agent rendered the artifact in assistant text and only SendMessage'd a summary. → Resolution: every artifact-producing ephemeral brief must say "deliver INSIDE a SendMessage to team-lead — your plain final-turn text is NOT visible"; if a report references content you cannot see, the agent is still alive — send one corrective directive to resend via SendMessage before shutdown.
@@ -53,11 +49,6 @@ resolution → settle platform-behavior conflicts EMPIRICALLY, not by majority o
 - **Symptom**: Dispatched advisor's code review of DKT-250, then the implementer applied my earlier (queued, unacked) header correction — the diff changed mid-review and the review request's "adjudication item" went moot; needed a corrective mid-review SendMessage to advisor.
 - **Root cause**: Treated the implementer's completion report as terminal state while my correction message (sent pre-report, with "ack before finalizing") was still in its async queue. Spot-check grep matched disk at that instant, but a pending unacked redirect means state is NOT settled.
 - **Resolution**: Before dispatching review (or shutdown), enumerate your own outstanding unacked messages to the implementer. If any redirect is pending, either wait for ack/explicit supersede or tell the reviewer up front that state may shift. Outbound-queue check belongs in the pre-shutdown/pre-review gate alongside git/docket verification.
-
-## 2026-06-09 — Monitor watch-loop blind to issue closure (default docket list filter)
-symptom → Monitor polling `docket issue list --json` for `DKT-x:done` never fired its exit condition; closed issues silently vanished from output (event line went empty) and the watch would have run to timeout.
-root cause → `docket issue list` default filter excludes done/closed issues, so a status-transition watch keyed on seeing `done` can never match; closure manifests as disappearance, not a status string.
-resolution → key closure watches on the issue DISAPPEARING from the open-list output (or query with an explicit `-s done` include); treat empty-set transition as the completion event. Implementer's completion report remains the authoritative gate either way.
 
 ## 2026-06-10 — Mid-cycle AC edit raced the implementer's close (DKT-254/255 Mimir cycle)
 symptom → planner processed a STALE revision message out-of-order (after plan approval + shutdown_request queued) and edited issue ACs at 04:06-04:07; implementer had already claimed and later closed both issues against the pre-edit text; my AC-update heads-up landed in impl's queue AFTER its close, so impl reopened both issues (reopen surfaces as status=backlog, NOT in-progress), applied the delta, and re-closed — producing a confusing done→backlog→done flip at one timestamp.

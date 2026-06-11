@@ -1,5 +1,48 @@
 # Changelog: team-lead
 
+## 2026-06-10
+
+### Summary
+Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Trial: replace unobservable ">50 turns" advisor R5 trigger with fix-loop-completion event → shipped (operator-approved; next-cycle audit measures). Phase 2 coherence: ux-advisor R5 variant conditioned on spec/implementation mismatch.
+
+### Changes
+- R5 per-advisor variants: `advisor` ">50 turns" → "after a TDD secondary-review fix-loop completes" (lockstep staff-engineer.md); `ux-advisor` verdict half conditioned on mismatch (lockstep ux-designer.md).
+
+### Dimensions Evaluated
+Coherence pass (cross-file mirrors, byte-parity grep-verified).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Drift: planner lifecycle line re-worded (neutral allele substitution, seed 12471b8f, no-signal index 112/157) → applied. Drift: ux-advisor lifecycle/review-sizing paragraph re-worded (neutral substitution, index 113/157) → applied. Retired two drift-prone historical tallies, replacing frozen counts with behavioral causes. Net 0 physical lines (491).
+
+### Changes
+- CULL: "6 wrong-recipient" and "11 misroutes (4 UUIDs, 7 peer names)" stale tallies (Phase 0 retire signal — frozen counts drift each cycle; behavioral rules stand alone).
+- NO-OP cited: fable alias present (L132); TeamCreate-before-TaskCreate already correct; Monitor sweep + label-discipline example already encoded; EXPERIMENTAL_AGENT_TEAMS env deliberately omitted (family coherence).
+
+### Dimensions Evaluated
+All 8; Consolidation primary; routing-table invariant validated against measured distribution (compliant post-reversion).
+
+### Rename
+No rename.
+
 ## 2026-06-09
 
 ### Summary
@@ -227,56 +270,6 @@ Spec Alignment (PRIMARY — No Guessing violation closed) · Boundary Clarity (i
 ### Rename
 No rename.
 
-## 2026-05-26 (Phase 1 — proactive shutdown sweep + claim ritual + anti-inversion)
-
-### Summary
-Encoded proactive shutdown-coordination per operator directive. New end-of-turn shutdown sweep step (probes `docket issue list -a @<role> -s in-progress --json`); two-step claim ritual in @senior-engineer Requirements; async-shutdown-as-FINAL-tool-call in common Dispatch hygiene; stronger anti-inversion rule in step 16 grounded in audit's 11 misroutes. R5 per-advisor variants collapsed -5 lines to offset +3 substantive additions. Net -3 lines (470 → 467).
-
-### Changes
-- Step 13 area: NEW "Shutdown sweep" sub-bullet — proactive monitoring via `docket issue list -a @<role> -s in-progress --json` (every turn during steps 11-16, NOT gated by spot-check predicate). Only CLOSED-set advisors may idle.
-- @senior-engineer Requirements (line 175): two-step claim ritual `docket issue edit -a @senior-engineer` + `docket issue move in-progress` (enables the sweep probe); explicit `shutdown_request` as FINAL tool call this turn after close.
-- Dispatch hygiene bullet (common scaffolding): added explicit FINAL-tool-call shutdown requirement for ephemerals; CLOSED-set exempt per Rule 7.
-- Step 16 Shutdown direction: strengthened — team-lead MUST NOT reply with `shutdown_response`, MUST NOT address raw agent-IDs, MUST NOT address peer ephemeral names. Historical context (11 misroutes: 4 UUIDs, 7 peer names) cited; silence is correct response to shutdown approval.
-- R5 per-advisor variants (lines 437-441): 5-line bulleted block collapsed to 1 inline line preserving all three triggers.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — proactive sweep, FINAL-tool-call, anti-inversion) · Boundary Clarity (shutdown direction) · Completeness (proactive monitoring step) · Capability Growth (two-step claim ritual + liveness probe) · Consolidation & Trimming (R5 collapse offsets net additions)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 2 coherence — P7a drop)
-
-### Summary
-Single coherence fix: dropped dead "(P7a)" cross-reference from R7 canonical body (fleet-wide cleanup; no agent canonically labels its Read rule as P7a).
-
-### Changes
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Actionability (dead-reference removal)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 1 self-review — 5 memory pitfalls + CRITICAL shutdown inversion bug)
-
-### Summary
-Encoded 5 active memory pitfalls (solution-dimension HARD GATE, ls-before-dispatch, budget-table per-row arithmetic, mechanical-fix shortcut + cycle-bloat surfacing) and closed the CRITICAL shutdown_response inversion bug from session 4785313c. Consolidated stale coordination-note bullet (already encoded in Rule 8) to offset new dispatch-hygiene bullet. Net +4 lines (464 → 468).
-
-### Changes
-- Pre-flight step 1 HARD GATE: AskUserQuestion now spans goal axes, out-of-scope surfaces, AND solution dimensions (how-to-cut). Closes memory pitfall #1 (dev-agents-token-opt).
-- Spawning Templates Common context-block: replaced stale coordination-note bullet with consolidated Dispatch hygiene bullet — `ls -d` file-target verification + ephemeral first-tool-call/final-report mandate + review/verify `Mandatory verification commands` subsection requirement. Closes memory pitfalls #2, #4 + audit-suggested ephemeral delivery discipline.
-- Step 13 spot-check: added budget-table per-row arithmetic sub-bullet. Closes memory pitfall #2.
-- Step 14 Review-fix loop: added Mechanical-fix shortcut (BOTH reviewers mechanical + <5 LOC → team-lead self-applies, skip re-doubled-review) + Cycle bloat surfacing (>40 implementation turns → AskUserQuestion offering accelerated-wrap). Closes memory pitfall #4.
-- Step 16 wrap-up: added Shutdown direction bullet — team-lead is sender of shutdown_request / receiver of shutdown_response; emits shutdown_response ONLY to operator. Closes CRITICAL audit finding from session 4785313c (dev-weft-auth).
-
-### Dimensions Evaluated
-Actionability (PRIMARY — 5 memory pitfalls + critical shutdown bug encoded) · Boundary Clarity (shutdown direction) · Completeness (solution-dimension axis) · Capability Growth (mechanical-fix + cycle-bloat shortcuts) · Consolidation & Trimming (coordination-note removal offsets dispatch-hygiene addition) · Epistemic Discipline (cite-results requirement in dispatch briefs)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +289,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-19: Tightened orchestrator contracts around the vote-skill handoff, tool envelope, and operator-visibility convention based on historical audit…
 - 2026-05-19: P1 brief-authoring + lifecycle hygiene + memory activation: Encoded the operator's P1 lesson (DKT-6 brief-authoring contradiction) as a…
 - 2026-05-24: Encoded DKT-37 / DKT-40 operator-prescribed resolution (independently corroborated by historical audit: 9 state-divergence shutdown-rejections…
+- 2026-05-25: Encoded 5 active memory pitfalls (solution-dimension HARD GATE, ls-before-dispatch, budget-table per-row arithmetic, mechanical-fix shortcut + cycle-bloat
+- 2026-05-25: Single coherence fix: dropped dead "(P7a)" cross-reference from R7 canonical body (fleet-wide cleanup; no agent canonically labels its Read rule as P7a).
+- 2026-05-26: Encoded proactive shutdown-coordination per operator directive. New end-of-turn shutdown sweep step (probes `docket issue list -a @<role> -s in-progress

@@ -140,12 +140,13 @@ malformed frontmatter.
 5. **Verify embedded technical assertions before stating them as fact.** Any
    concrete claim the TDD commits to — a code/config/command/SQL snippet, a
    cross-platform or cross-engine compatibility claim, an Implementation-Phase
-   grep AC, or a reference to existing modules/APIs/test infrastructure the design
-   relies on — MUST be checked against its actual target (run it, Grep/Read the
-   target, or confirm it exists) before it is written as settled. State unverified
-   claims as assumptions, not facts. A "verified" label MUST NOT claim broader
-   scope than was actually checked — name the artifact or command behind it
-   ("zero X exist (verified)" after checking one directory is overreach).
+   grep AC, a quantitative or line-budget feasibility claim (sizes, counts,
+   fits-under-gate — measure with wc -l/sed -n, never estimate), or a reference
+   to existing modules/APIs/test infrastructure the design relies on — MUST be
+   checked against its actual target (run it, Grep/Read the target, or confirm
+   it exists) before it is written as settled. State unverified claims as
+   assumptions, not facts. A "verified" label MUST NOT claim broader scope than
+   was actually checked — name the artifact or command behind it.
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).

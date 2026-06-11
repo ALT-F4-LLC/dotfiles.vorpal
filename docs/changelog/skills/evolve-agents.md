@@ -3,6 +3,34 @@
 ## 2026-06-10
 
 ### Summary
+Phase 2 coherence (lockstep with evolve-skills): Phase 1 apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, and 1:1 Edit↔CHANGE apply-discipline. Line-neutral (496 lines); post-apply byte-identity with evolve-skills verified (sort -u = 1 line).
+
+### Changes
+- AMPLIFY: apply step 2 — in-session Read-before-Edit, re-Read after grep/mv targeting content strings, one Edit per approved CHANGE — cited signal: two re-fired team-lead pitfalls (Read-before-Edit failures ×2; stray-token batch defect).
+
+### Dimensions Evaluated
+Coherence (lockstep pair byte-identical), Completeness (apply-discipline gaps closed), budget (496/500 unchanged).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Full-cycle audit (1-day window): NO changes. File clean at 496 lines; NET_LINES physical-vs-display (L392/L146) and researcher repo-state ADOPTION caveat (L199/L412) verified already-encoded; spawn templates correctly carry subagent_type-only (cost-tier model routing lives in team-lead.md / agent defs, not skill templates).
+
+### Changes
+- None (NO-OP verdict). Phase-0 spawning-templates extraction (~180 lines, lockstep with evolve-skills) routed to Phase 2 as parity-bound; apply-discipline gaps (Read-before-Edit, 1:1 Edit↔CHANGE) shared with evolve-skills also routed to Phase 2.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (drift-operator rationale load-bearing, no failure signal — RETAIN); Coherence (CANONICAL byte-parity with evolve-skills confirmed).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block (genome/trait/fitness-signal vocabulary), natural-selection dispositions (AMPLIFY/CULL/RETAIN), Genetic-Drift Operator (fitness-independent neutral substitution, `drift=N` parameter, structural no-signal-set construction), Scientific Trial Protocol (hypothesis → operator-approval HARD GATE → measure → adopt-or-rollback), biodiversity invariant, and speciation gate. CANONICAL:EVOLUTION-MODEL byte-identical across evolve-agents/evolve-skills/evolve-coherence (hash e9ef8d09).
 
 ### Changes

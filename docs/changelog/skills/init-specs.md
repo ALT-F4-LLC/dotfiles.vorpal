@@ -3,6 +3,20 @@
 ## 2026-06-10
 
 ### Summary
+No-change verdict. All 8 dimensions clean; Phase 0 signals re-verified against ground truth: refusal-gate ordering correct (unknown-arg abort precedes overwrite dialog), \$ARGUMENTS escapes present since 2026-06-09 fix, Step 3 grep passes retain clarity over an awk batch.
+
+### Changes
+- None (NO-OP verdict). isolation: worktree inapplicable — unique file path per spawned agent, no collision risk.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no trim without dropping a safety rail); Orchestration (worktree eval); Coherence (reserved-names shared-include candidate routed to Phase 2 as parity-bound with prd).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 9 entries (2026-05-09..2026-05-25) into Compacted history per ADR 0001.
 
 ### Changes

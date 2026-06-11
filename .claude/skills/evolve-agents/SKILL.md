@@ -143,7 +143,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit; runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
 3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry

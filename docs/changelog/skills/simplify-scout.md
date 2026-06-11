@@ -3,6 +3,20 @@
 ## 2026-06-10
 
 ### Summary
+One-word coherence fix (net 0): principle #4 short name re-synced with the authority heading in agents/senior-engineer.md.
+
+### Changes
+- AMPLIFY: table #4 "needs a seam" → "requires an explicit seam" — cited signal: staff pitfalls stale-cross-file-reference focus area; orchestrator grep-verified against live agents/senior-engineer.md L225.
+
+### Dimensions Evaluated
+All 8; Coherence primary (12-principle table re-verified against CURRENT authority, not prior-cycle verification); Over-Engineering (no trim candidates); bundled /simplify claim at L89 verified accurate against live skill listing.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Two over-engineering trims (net -13, 279→266): Failure Modes table and COUPLING comment removed. No additions — zero invocations in the audit window make additions speculative.
 
 ### Changes

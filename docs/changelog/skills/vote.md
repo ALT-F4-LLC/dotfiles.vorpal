@@ -3,6 +3,20 @@
 ## 2026-06-10
 
 ### Summary
+NO-OP. All 8 dimensions clean. docket vote cast/create CLI re-verified zero-drift against --help; silent-idle verdict capture verified hardened on the correct mechanism (SendMessage-only delivery L168/L255, idle-without-delivery handling L172/L174); $ARGUMENTS at L27 correctly bare (live shell command).
+
+### Changes
+- None (NO-OP verdict). Reviewer-template extraction rejected — no fitness signal, 333/500 budget, extraction adds Read indirection for zero behavioral gain.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — stable trimmed floor); Completeness (verdict-capture re-verified); Coherence (panel-sizing parity with team-lead.md Rule 8 and code-review-verdict verified in-sync).
+
+### Rename
+No rename — `vote` maps to the `docket vote` CLI subcommand.
+
+## 2026-06-10
+
+### Summary
 Compacted 8 entries (2026-05-13..2026-05-28) into Compacted history per ADR 0001.
 
 ### Changes

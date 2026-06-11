@@ -3,6 +3,36 @@
 ## 2026-06-10
 
 ### Summary
+Phase 2 coherence (lockstep with evolve-agents): Phase 1 apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, and 1:1 Edit↔CHANGE apply-discipline. Line-neutral (498 lines, appended to the existing step-2 line); post-apply byte-identity verified (sort -u = 1 line across both files).
+
+### Changes
+- AMPLIFY: apply step 2 — in-session Read-before-Edit, re-Read after grep/mv targeting content strings, one Edit per approved CHANGE — cited signal: two re-fired team-lead pitfalls ("File has not been read yet" ×2 in 2026-06-09 cycle; stray [MARKER-KEEP] token).
+
+### Dimensions Evaluated
+Coherence (lockstep pair byte-identical), Completeness (apply-discipline gaps closed), budget (498/500 unchanged). Checks 5-9 all PASS (HARVEST/innovation/model-routing/Mimir parity; drift heading exempt as approved).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+Drift: heading "Phase 0: Historical Audit (per-skill)" → "(one block per target skill)" (seed 124bf552, i=229) → applied, net 0.
+Drift: DOCS-PATHS-LOCAL Reads-list reorder (seed 124bf552, i=230) → proposed (operator declined — CANONICAL-maintained block).
+No reviewer edits (498 lines, net 0). Clean audit (0 corrections/errors/stalls). Dimension-5 cost-tier routing NO-OP: no skill pins model= in templates (grep-confirmed); routing is team-lead.md's authority; fable-monoculture already fixed at routing layer (90a3694).
+
+### Changes
+- None applied beyond drift. Parity-bound apply-discipline gaps (Read-before-Edit after grep/mv, 1:1 Edit↔CHANGE guard, $N live-command exemption) routed to Phase 2 lockstep with evolve-agents, gated on family-wide offset (498/500).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no CULL earns a cited signal; drift/trial traits unmeasured → RETAIN); Orchestration (Dimension 5 verified NO-OP); Coherence (3 parity-bound gaps → Phase 2).
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block (genome/trait/fitness-signal vocabulary), natural-selection dispositions (AMPLIFY/CULL/RETAIN), Genetic-Drift Operator (fitness-independent neutral substitution, skill-path grep for no-signal-set, `drift=N` parameter), Scientific Trial Protocol (hypothesis → operator-approval HARD GATE → measure → adopt-or-rollback), biodiversity invariant, and speciation gate. CANONICAL:EVOLUTION-MODEL byte-identical across evolve-agents/evolve-skills/evolve-coherence (hash e9ef8d09).
 
 ### Changes

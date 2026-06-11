@@ -82,22 +82,20 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Resolve context**:
-   - `{today_date}` = `Bash date +%Y-%m-%d`.
-4. **Read the UX spec**:
+3. **Read the UX spec**:
    - Capture spec path, frontmatter `maturity` (and `status` if present), the workflow list, and the spec's §9 Handoff Notes MVP cutline — components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
    - If the spec cannot be located (Docket issue scope with no attached spec, `uncommitted` with no spec in the changed paths), ABORT:
 
      ```
      Error: Could not locate UX spec for <scope>: '{scope}'. Attach the spec to the issue or pass the spec path directly.
      ```
-5. **Identify the implementation surface** — derive from the spec's stated surface (CLI command, generated config, error messages, rendered UI, API endpoint). Cross-reference with `git diff --stat` (uncommitted scope) or the issue's file attachments (issue scope) to confirm the surface is in the changed paths.
-6. **Empty-implementation guard**: if no implementation surface exists yet (spec exists but no code shipped), ABORT:
+4. **Identify the implementation surface** — derive from the spec's stated surface (CLI command, generated config, error messages, rendered UI, API endpoint). Cross-reference with `git diff --stat` (uncommitted scope) or the issue's file attachments (issue scope) to confirm the surface is in the changed paths.
+5. **Empty-implementation guard**: if no implementation surface exists yet (spec exists but no code shipped), ABORT:
 
    ```
    Error: No implementation surface found for spec '{spec_path}'. Design QA requires shipped implementation — use Skill(design-review, ...) for spec-only review.
    ```
-7. **Long-running surface preparation**: for dev servers, watchers, build pipelines, or any process expected to run >30s, plan to use `Bash run_in_background` + `Monitor` instead of blocking polls.
+6. **Long-running surface preparation**: for dev servers, watchers, build pipelines, or any process expected to run >30s, plan to use `Bash run_in_background` + `Monitor` instead of blocking polls.
 
 ## QA Procedure
 

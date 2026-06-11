@@ -3,6 +3,35 @@
 ## 2026-06-10
 
 ### Summary
+Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-7 → 3-6. Measured net -2 (214 → 212). Family ruling recorded: disable-model-invocation NOT adopted (agents/ux-designer.md `skills:` preload path is real).
+
+### Changes
+- CULL: Pre-flight step 3 "Resolve context" deleted (dead variable, lockstep with verify-ac/design-review) — cited signal: coherence-reviewer grep verification.
+- Phase 2 rulings: silent-completion phrasing variance ruled acceptable (all four family carriers present, content equivalent); disable-model-invocation declined family-wide.
+
+### Dimensions Evaluated
+Coherence (lockstep removal + renumber; no §-refs existed), Consistency.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
+No changes applied. Reviewer proposed `disable-model-invocation: true` + When-to-Use trim, but the sibling design-review reviewer rejected the same flag and orchestrator grep confirmed agents/ux-designer.md lists design-qa under `skills:` (preload reliance) — conflicting parity-bound recommendation deferred to Phase 2.
+
+### Changes
+- None (deferred). disable-model-invocation family question (design-qa/design-review, possibly code-review-verdict/verify-ac) routed to Phase 2 with the empirical datum above.
+
+### Dimensions Evaluated
+All 8; shutdown-handshake verified lead-initiated; post-ABORT re-invocation parity with design-review verified clean (L194/L221); COUPLING marker byte-identical.
+
+### Rename
+No rename.
+
+## 2026-06-10
+
+### Summary
 Compacted 11 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
 
 ### Changes

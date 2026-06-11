@@ -87,16 +87,18 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Resolve context**:
-   - `{today_date}` = `Bash date +%Y-%m-%d`.
-4. **Read the artifact**:
+3. **Read the artifact**:
    - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
    - For inline surface description: treat the description as the artifact text.
-5. **Cross-reference precedent**:
+4. **Cross-reference precedent**:
    - `Grep -r "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs, and project specs.
    - `Glob docs/tdd/adr/*.md` to identify accepted ADRs that may constrain the design.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
-6. **Empty-artifact guard**: abort if the artifact has no inspectable design content (empty file or description under 10 words) — see Failure Modes.
+5. **Empty-artifact guard**: if the artifact has no inspectable design content (empty file or description under 10 words), ABORT:
+
+   ```
+   Error: Resolved scope contains no reviewable design content — expand the description or pass a non-empty file.
+   ```
 
 ## Review Procedure
 
@@ -239,11 +241,3 @@ The calling agent owns (in order):
 **Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.
-
-## Failure Modes
-
-Most abort paths are specified inline (Argument Handling, Role Detection, Pre-flight, Validation Before Emit). The table below covers only scope-specific abort behavior:
-
-| Trigger | Handling |
-|---|---|
-| Artifact is empty or too thin to review (no design content) | Abort: `Error: Resolved scope contains no reviewable design content — expand the description or pass a non-empty file.` |

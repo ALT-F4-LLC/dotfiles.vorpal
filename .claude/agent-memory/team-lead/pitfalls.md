@@ -87,3 +87,8 @@ Resolution: team-lead re-runs ONE canonical extraction (awk BEGIN/END-exclusive 
 
 ## 2026-06-10 — task-claim echo re-delivered as phantom re-assignment
 Symptom: every ephemeral (review-d1/d2/d4, reconciler) sent a "duplicate assignment is a no-op" ack after delivering its report → root cause: the teammate's own first-tool-call TaskUpdate owner-claim echoes back to it as an assignment notification after task completion → resolution: harmless; teammates correctly self-noop per R4/R6 — do NOT probe, re-dispatch, or treat the ack as a stall; proceed straight to shutdown_request.
+
+## 2026-06-10 — Team task list reset mid-session before wrap-up (evolve-coherence cycle)
+Symptom: at wrap-up, team-lead's TaskList returned "No tasks found" though six tasks (#1-#6, five completed) existed minutes earlier; reconciler simultaneously reported TaskUpdate(#6) failing with "Task not found" and could not self-mark completion.
+Root cause: unconfirmed — task list state for the team was cleared/reset mid-session (not by any team-lead tool call this turn); completion bookkeeping silently lost while teammate reports remained intact.
+Resolution: gate wrap-up on RECEIVED report content, never bare task-status (task-status-leads-the-report rule generalizes to task-status-may-vanish); when TaskList comes back empty at wrap-up, verify via the delivered artifacts + git status and proceed — do not respawn or re-create tasks to "fix" the ledger. Brief teammates that a failed TaskUpdate on an already-delivered task is non-blocking: report + idle anyway.

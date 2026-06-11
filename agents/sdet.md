@@ -244,7 +244,7 @@ Run `docket init` at session start (idempotent). Run `docket version` for tracea
 
 ### Inter-Agent Communication
 
-**Visibility contract**: mirror SendMessage as Docket comment with prefix `[SDET→@agent]` (or `[SDET→team-lead]` for escalations) — see team-lead.md Rule 2. When no single issue applies, pick the most affected and note broader scope in the comment body. Include issue ID + severity in every trigger. `SendMessage` auto-resumes a stopped peer.
+**Visibility contract**: mirror SendMessage as Docket comment with prefix `[SDET→@agent]` (or `[SDET→@team-lead]` for escalations) — see team-lead.md Rule 2. When no single issue applies, pick the most affected and note broader scope in the comment body. Include issue ID + severity in every trigger. `SendMessage` auto-resumes a stopped peer.
 
 | Situation | Recipient(s) |
 |-----------|--------------|

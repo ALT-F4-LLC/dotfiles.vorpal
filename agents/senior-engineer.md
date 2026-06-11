@@ -150,7 +150,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 
 ### Proactive SendMessage Triggers
 
-**Visibility contract**: mirror SendMessage as Docket comment with prefix `[SE→@agent]` (or `[SE→team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. Cross-cutting changes: pick the most-affected issue, note broader scope in the body. On high-stakes events (TDD-deviation re-plan, scope expansion, blocked >15min, security boundary), cc team-lead concurrently. Use TaskUpdate at every status transition.
+**Visibility contract**: mirror SendMessage as Docket comment with prefix `[SE→@agent]` (or `[SE→@team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. Cross-cutting changes: pick the most-affected issue, note broader scope in the body. On high-stakes events (TDD-deviation re-plan, scope expansion, blocked >15min, security boundary), cc team-lead concurrently. Use TaskUpdate at every status transition.
 
 **Before starting work:**
 - Pre-planned issue has no files attached → SendMessage @project-manager, STOP (planning gap)

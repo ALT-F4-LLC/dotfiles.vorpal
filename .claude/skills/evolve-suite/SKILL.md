@@ -1,14 +1,15 @@
 ---
 name: evolve-suite
 description: >
-  Run the full evolution suite: evolve-agents, evolve-skills, and evolve-config in parallel
-  isolated headless sessions (one detached git worktree each), then evolve-coherence in-session
-  as a post-merge verification/routing gate. Tracks dispatch, outcome, and reconciliation in
-  Docket. Commits nothing.
+  Run the full evolution suite SERIALLY in the operator's session: evolve-agents, then
+  evolve-skills, then evolve-config — each invoked in-session via nested Skill() with its own
+  native agent-team lifecycle visible — then evolve-coherence in-session as the
+  verification/routing gate. Operator-attested rate-limit pre-flight, checkpoints between runs,
+  Docket-tracked durable state. Commits nothing.
   Trigger: "evolve suite", "run the evolution suite", "evolve everything", "full evolution cycle".
 argument-hint: "[days=N] [drift=N] [skip=<name[,name]>]"
 effort: xhigh
-allowed-tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Monitor", "AskUserQuestion", "Skill"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "AskUserQuestion", "Skill", "SendMessage", "TeamDelete"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -17,11 +18,13 @@ allowed-tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Monitor", "Ask
 
 # Evolve Suite
 
-You are the **Evolution Suite Orchestrator**. One cycle dispatches `evolve-agents`, `evolve-skills`, and `evolve-config` as three concurrent headless top-level Claude Code sessions — each in its own detached git worktree under `$TMPDIR` — monitors their logs, reconciles each worktree's uncommitted diff back into the main tree under a write-surface contract, then invokes `Skill(evolve-coherence)` in-session over the merged tree as the verification/routing gate. Every step is tracked in Docket; nothing is ever committed.
+You are the **Evolution Suite Orchestrator**. One invocation runs the three editing evolution cycles serially in THIS session — `Skill(evolve-agents)`, then `Skill(evolve-skills)`, then `Skill(evolve-config)` — each with its own full native team lifecycle (TeamCreate → teammates → interactive gates → wrap-up → TeamDelete) visible to the operator, then invokes `Skill(evolve-coherence)` in-session as the verification/routing gate over the evolved tree. Every run edits the main tree directly under its own skill contract; serial execution means no write collisions by construction. Every step is tracked in Docket; nothing is ever committed.
 
-**Spawn-topology legality.** The three sub-runs are NOT teammates or subagents of this session — they are independent top-level sessions started by Bash (the docs-blessed manual-parallel-sessions pattern), so each may freely `TeamCreate` its own fleet inside itself. This session creates no team during dispatch/monitor/reconcile; the gate's in-session `TeamCreate` (inside evolve-coherence) therefore does not collide with the one-team-per-session limit. The banner's teammate prohibitions bind each sub-run's fleet transitively via directive clause 1.
+**Serial legality.** A session leads at most one team, and teammates cannot spawn teams. Serial nesting is what makes native teams legal here: each evolve skill creates its team at cycle start and deletes it at wrap-up, so the session is team-free between runs precisely when each run completes its wrap-up. The suite itself NEVER creates a team — `SendMessage` and `TeamDelete` are in its tool set solely for the leftover-team recovery guard below.
 
-**Self-reference policy.** `evolve-suite` is itself a normal future evolve-skills target. The evolve-skills sub-run may edit `.claude/skills/evolve-suite/SKILL.md` in its worktree; the running instance is unaffected (this body is already in context) and the edit arrives via normal reconciliation. The suite never dispatches itself — no recursion. evolve-coherence's D4 family rule may flag this skill's banner as an unenumerated carrier on its first post-ship cycle; that is expected first-cycle behavior and routes to evolve-skills via the Remediation Manifest.
+**What the operator gets.** Full visibility (every team lifecycle happens on screen), and every interactive HARD GATE fires live — Scientific-Trial and drift items receive real operator approval instead of degrading to `proposed`. The cost is wall-clock: the suite is the sum of its cycles, with checkpoints making it cheap to stop partway.
+
+**Self-reference policy.** `evolve-suite` is itself a normal evolve-skills target. The evolve-skills run may edit `.claude/skills/evolve-suite/SKILL.md` directly in the main tree mid-suite. This is safe: the running instance's body is already in context, and the edit takes effect on the next invocation. The edit is live in the tree when the gate audits it — which is correct; the gate should audit the new text. The suite never dispatches itself — no recursion.
 
 ---
 
@@ -29,198 +32,152 @@ You are the **Evolution Suite Orchestrator**. One cycle dispatches `evolve-agent
 
 `/evolve-suite [days=N] [drift=N] [skip=<name[,name]>]`
 
-- **`days=N`** — historical-audit window, passed through verbatim to all three sub-runs. Default `7`; reject values outside `1..90` and abort with a usage note.
-- **`drift=N`** — genetic-drift rate passthrough. Suite-level default **`0`**: drift proposals require the interactive operator-approval HARD GATE, which headless runs cannot fire. A nonzero override flows through and lands as `Drift: … → proposed` changelog lines (the sub-skills' documented unapproved path).
-- **`skip=<name[,name]>`** — exclude named sub-runs; valid names are `agents`, `skills`, `config`. The gate still runs over whatever merged. Skipping all three is a usage error → abort with a note to run `/evolve-coherence` directly instead.
+- **`days=N`** — historical-audit window. Passed through verbatim only when the operator provided it; when absent, pass nothing and each skill applies its own default of `7`. Range-check `1..90` at the suite (matching the skills) to fail fast; out-of-range → usage note + abort.
+- **`drift=N`** — genetic-drift rate. Passed through verbatim only when provided; when absent, pass nothing and each skill applies its own default of `1`. Range-check: must be a non-negative integer (`0..`); `drift=0` is valid (disables drift); negative or non-integer → usage note + abort. There is NO suite-level drift override: in-session runs fire the operator-approval HARD GATE live, so the skills' own defaults stand.
+- **`skip=<name[,name]>`** — excludes named runs AND is the resume mechanism for partial cycles (see Checkpoint). Valid names: `agents`, `skills`, `config`. Skipping all three is a usage error → abort with a note to run `/evolve-coherence` directly instead.
 - **Unknown tokens** → usage note + abort (matching the evolve-* idiom).
 
 ---
 
-## Pre-flight (interactive — the operator is present in this session)
+## Pre-flight (interactive — the operator is present throughout)
 
-1. **Goal gate (HARD GATE)** — `AskUserQuestion` confirming: scope (which sub-runs after `skip=`, plus the gate), `days`/`drift` passthrough values, and the sub-run permission mode — default `acceptEdits` (measured sufficient for both the read-only Bash path and the Write edit path headless on claude 2.1.174); `bypassPermissions` offered explicitly as the unattended fallback. State the cycle weight (three full multi-agent cycles + gate) before commit. Gather `{experience_feedback}` once; it is forwarded verbatim to all three sub-runs (satisfying each cycle's pre-flight feedback-skip condition).
-2. **Clean-surface precondition** — worktrees branch from HEAD, so pre-existing uncommitted edits on the union write surface make reconciliation patches mis-apply:
+1. **Goal gate (HARD GATE)** — `AskUserQuestion` confirming: scope (which runs after `skip=`, plus the gate), `days`/`drift` passthrough values, and the cycle weight: three full multi-agent cycles plus the gate, serially, all in this one session. Gather `{experience_feedback}` once; it is restated in every run's handoff block.
+2. **Rate-limit attestation (HARD GATE).** No programmatic usage probe exists, so the operator attests their current seven-day rate-limit utilization from `/usage`:
+   - **<70%** — proceed.
+   - **70–85%** — warn; recommend a `skip=`-narrowed single-run pass; proceed with the full run only on explicit confirmation.
+   - **>85%** — REFUSE the default full run; offer a single-run pass or abort.
+
+   Re-attest at every between-run checkpoint — the budget the runs share is consumed as the suite proceeds.
+3. **Clean-surface check** — pre-existing dirt blurs per-run delta attribution and the final `git diff` review:
 
 ```bash
 git status --porcelain -- agents/ skills/ .claude/skills/ .claude/agent-memory/ src/user.rs src/user/ scripts docs/changelog/
 ```
 
-   Non-empty → `AskUserQuestion` (proceed anyway / abort).
-3. **Probes** — any failure → abort loudly:
+   Non-empty → `AskUserQuestion` (proceed anyway / abort). State explicitly: proceeding means the pre-existing edits will appear inside run 1's delta attribution.
+4. **Probes** — any failure → abort loudly:
 
 ```bash
-claude --version
 ls .claude/skills/evolve-agents/SKILL.md .claude/skills/evolve-skills/SKILL.md .claude/skills/evolve-config/SKILL.md .claude/skills/evolve-coherence/SKILL.md
 docket stats
 ```
 
-4. **Resolve cycle identity** — `date +%Y-%m-%d` → `{today_date}`; set `WT_ROOT="${TMPDIR:-/tmp}/evolve-suite-{today_date}"`.
+5. **Cycle identity** — `date +%Y-%m-%d` → `{today_date}`; then:
+
+```bash
+STATE_DIR="${TMPDIR:-/tmp}/evolve-suite-{today_date}"
+mkdir -p "$STATE_DIR"
+```
+
+   `$STATE_DIR` holds the porcelain snapshots — the crash/compaction anchor, recorded on the parent issue.
 
 ---
 
 ## Docket Protocol
 
-Create the tracking issues before dispatch. The suite creates these directly via the Docket CLI: the "PM is the only issue creator" convention binds role agents inside dev teams; this session **spawns no team** and has no PM to delegate to — this carve-out is intentional and documented here so evolve-coherence D2 reads it as such.
+Create the tracking issues before the first run, while the session is team-free. The suite creates these directly via the Docket CLI: the "PM is the only issue creator" convention binds role agents inside dev teams; this session has no team and no PM at issue-creation time (each nested cycle's team exists only during its own run, and issues are created before/between runs) — this carve-out is intentional and documented here so evolve-coherence D2 reads it as such.
 
 ```bash
-docket issue create -t "evolve-suite cycle {today_date}" -d "Parallel evolution suite cycle" -T task -p medium -l evolve-suite --quiet
-docket issue create -t "evolve-suite: <name> run {today_date}" -d "Dispatch, outcome, reconciliation for the <name> sub-run" -T task -p medium -l evolve-suite -l "run:<name>" --parent <parent-id> --quiet
-docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-merge coherence gate" -T task -p medium -l evolve-suite -l "run:gate" --parent <parent-id> --quiet
+docket issue create -t "evolve-suite cycle {today_date}" -d "Serial evolution suite cycle" -T task -p medium -l evolve-suite --quiet
+docket issue create -t "evolve-suite: <name> run {today_date}" -d "Dispatch, outcome, delta for the <name> run" -T task -p medium -l evolve-suite -l "run:<name>" --parent <parent-id> --quiet
+docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run coherence gate" -T task -p medium -l evolve-suite -l "run:gate" --parent <parent-id> --quiet
 ```
 
 **Comment protocol** (plain comments — no `[ROLE→]` tag; the role-tag set is closed at seven):
 
-- Parent, BEFORE the first launch: `dispatched: WT_ROOT=<path>` — the single crash-recovery anchor.
-- Per run child, at launch: move `in-progress`, then `dispatched: wt=<path> log=<path> args=<args> mode=<mode>`.
-- Per run child, at termination: `outcome: <pass|partial|failed|no-op> — <one-line evidence>`.
-- Per run child, at reconciliation: `reconciled: applied=<paths> quarantined=<paths> pitfalls=<apply|append-fallback|none>` — written **incrementally as paths apply** (the partial-apply rollback reads this list) — then close the child; or `FAILED: <reason> log=<path>` and leave it open.
-- One comment per harvested `TRACKING-NEEDED: <one-line lesson>` line from sub-run reports.
+- Parent, before the first run: `dispatched: STATE_DIR=<path>` — the single crash-recovery anchor.
+- Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap=<pre-snapshot path>`.
+- Per run child, at end: `outcome: <ok|partial|failed|no-op> — <one-line evidence>` and `delta: <N> paths — changelog=docs/changelog/<area>/{today_date}.md`; close the child on success.
+- Failed run: `FAILED: <reason>` — leave the child open.
 - Gate child: `manifest: <Remediation Manifest headline + route counts>`.
 
-Run-state (name, worktree, log, status) lives in-context only — a crashed suite session is re-entrant from the Docket comments alone (see Failure Runbook).
+**AUTHORITY rule.** Run-state held in context is a convenience copy only; Docket is authoritative. After any compaction or crash, re-derive which runs completed from the parent issue's child comments — never from summarized context.
 
 ---
 
-## Dispatch
+## Run Loop (fixed order: `agents` → `skills` → `config`; for each non-skipped run `<name>`)
 
-For each non-skipped run `<name>` in `agents`, `skills`, `config`:
-
-```bash
-WT="$WT_ROOT/evolve-<name>"
-git worktree add --detach "$WT" HEAD
-mkdir -p "$WT/.claude" && cp .claude/settings.local.json "$WT/.claude/"
-```
-
-Detached → no branch refs created (the commit-nothing guarantee); `$TMPDIR` placement keeps worktree pitfalls copies out of the `CANONICAL:HARVEST` scan's `~/Development` root. The `mkdir -p` is a guard in case the tracked set under `.claude/` ever changes; `settings.local.json` is untracked and carries the per-project WebFetch grants the sub-runs' Phase 0 docs-researchers rely on.
-
-Launch each run via Bash `run_in_background` (all three in the same turn):
+1. **Pre-snapshot:**
 
 ```bash
-cd "$WT" && claude -p "/evolve-<name> days=<N> drift=<N>" \
-  --permission-mode <mode> --output-format stream-json --verbose \
-  --append-system-prompt "$SUITE_DIRECTIVE" > "$WT_ROOT/<name>.log" 2>&1 & echo $! > "$WT_ROOT/<name>.pid"
+git status --porcelain | sort > "$STATE_DIR/snap-pre-<name>.txt"
 ```
 
-- **`--verbose` is REQUIRED (binding, measured).** Under `-p`, `--output-format stream-json` exits 1 with `requires --verbose` BEFORE the skill runs (claude 2.1.174). Never drop it.
-- The prompt is exactly the slash invocation — no prose, keeping slash parsing unambiguous; all instructions ride `--append-system-prompt`.
-- Each run's PID is written to `$WT_ROOT/<name>.pid` immediately at launch; all kill operations read from that file.
+2. **Docket** — move the run's child to `in-progress`; post its `dispatched:` comment.
+3. **Handoff block** — state in your own turn, immediately before invocation: *"Verified goal for this run: <goal>. Experience feedback: <feedback>. Scope pre-verified at suite pre-flight."* This satisfies the nested skill's team-mode skip-conditions (goal gate, feedback gathering, scope gate) from shared session context. If the skill fires its goal gate anyway, the cost is one redundant operator question, not a failure.
+4. **Invoke** — `Skill(evolve-<name>, "<only the operator-provided passthrough tokens>")`. The cycle runs visibly: its TeamCreate, teammates, interactive gates, wrap-up, and TeamDelete all happen in this session under operator observation. The suite does nothing while the nested cycle runs. Outcome is judged from the skill's own in-context wrap-up report plus the snapshot delta — no markers, no exit codes, no log parsing.
+5. **Post-snapshot + delta:**
 
-### Suite directive (`$SUITE_DIRECTIVE` — identical skeleton per run; substitute `<name>`, the run's surface, goal, feedback)
-
-```
-1. Team mode: Verified goal: <forwarded goal>. Experience feedback: <forwarded feedback>.
-   Adopt per your pre-flight team-mode branches; scope gates are pre-verified.
-2. Headless degradation: AskUserQuestion is unavailable in this run. Every Scientific-Trial
-   and drift item follows your documented unapproved path: record as `proposed`, do NOT
-   implement. Ordinary Content-Gate-passing Phase 1/2 changes apply normally.
-3. Write-surface contract: Apply edits ONLY within your primary surface: <surface list for
-   this run>. Any Phase 2 fix or rename-reference update that would touch a file outside
-   it: do NOT apply; emit a `DEFERRED-PARITY: <file> — <OLD→NEW one-liner>` line in your
-   final report instead.
-4. No Docket: This worktree has no Docket DB. Do not `docket init`. Where your skill
-   delegates Docket issue creation, emit `TRACKING-NEEDED: <one-line lesson>` in your
-   final report instead.
-5. Completion marker: End your final message with `EVOLVE-RUN-COMPLETE: <name>
-   status=<ok|partial|failed>` plus a ≤10-line summary.
+```bash
+git status --porcelain | sort > "$STATE_DIR/snap-post-<name>.txt"
+comm -13 "$STATE_DIR/snap-pre-<name>.txt" "$STATE_DIR/snap-post-<name>.txt"
 ```
 
-Every clause lands on a branch the sub-skills already define (team-mode adoption, unapproved-trial path, Phase 2 deferral idiom, PM-delegation point, wrap-up report) — the suite wraps the existing skills without editing them.
+   The delta is the `comm` output plus content changes to paths already dirty pre-run (attributed per the clean-surface answer). Post the `outcome:` and `delta:` comments; close the child on success. Empty delta + clean wrap-up report = legitimate no-op — the skills explicitly permit "no improvements found"; record `outcome: no-op`, not a failure.
+6. **Team-free guard** — the nested cycle's wrap-up TeamDelete is the between-run invariant. An abnormal end (operator interrupt, mid-cycle abort) can leave team `evolve-<name>-{today_date}` alive with teammates. Recovery: SendMessage shutdown requests to the remaining teammates, then `TeamDelete(team_name="evolve-<name>-{today_date}")` — team names are deterministic, so recovery needs no discovery step. If the NEXT nested skill's TeamCreate fails with `Already leading team`, run this guard against the PREVIOUS run's team name, then re-invoke that skill once. A second collision → `FAILED: team-collision`, stop the suite.
+7. **Checkpoint (HARD GATE)** — `AskUserQuestion`, including rate-limit re-attestation at the pre-flight thresholds:
+   - **Continue** — proceed to the next run.
+   - **Pause for /compact** — recommended after run 2, and after any observed auto-compaction. The operator runs `/compact`, then prompts "continue evolve-suite"; on resume, re-derive completed-run state from the parent issue's child comments, not from possibly-summarized context.
+   - **Stop — resume later** — resume contract: fresh session, `/evolve-suite skip=<completed names> days=… drift=…`, citing the parent issue. Clean by construction: completed runs' edits are already in the tree and Docket records which runs ran.
+   - **(after a failed run only) Revert this run's delta vs keep partial edits** — revert uses the snapshot path list: `git checkout -- <modified paths>` plus `rm <new untracked paths>`. Default is KEEP: each evolve cycle applies per-target edits incrementally, and the gate exists precisely to flag any resulting incoherence.
 
-### Write-surface table (drives directive clause 3 and reconciliation step 2)
+   Guidance: a rate-limit-class failure recommends **Stop** (subsequent runs share the exhausted budget); a skill-internal abort permits **Continue** (the three surfaces are independent and execution is serial).
 
-| Run | Primary surface (apply) | Shared (pitfalls merge) |
+### Run-surface attribution table
+
+This table is an attribution/rollback reference, not an enforcement input — the skills' own contracts govern their edits. It tells the operator which run a delta path belongs to and what a failed-run revert touches:
+
+| Run | Expected surface | Shared (serial-safe) |
 |---|---|---|
 | evolve-agents | `agents/*.md`, `docs/changelog/agents/` | `.claude/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
-| evolve-skills | `skills/`, `.claude/skills/`, `docs/changelog/skills/` | `.claude/agent-memory/*/pitfalls.md` (appends only) |
-| evolve-config | `src/user.rs`, `src/user/`, `scripts`, `.claude/skills/evolve-config/SKILL.md` (own CANONICAL blocks — overlaps evolve-skills' surface, so these specific edits are DEFERRED-PARITY by clause 3), `docs/changelog/config/` | `.claude/agent-memory/*/pitfalls.md` (appends only) |
+| evolve-skills | `skills/`, `.claude/skills/`, `docs/changelog/skills/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
+| evolve-config | `src/user.rs`, `src/user/`, `scripts`, own `SKILL.md` CANONICAL blocks, `docs/changelog/config/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
+
+Pitfalls appends are serial and therefore race-free; no merge step exists or is needed.
 
 ---
 
-## Monitoring & Termination
+## Context-Saturation Management (the central risk)
 
-Each background launch yields an exit notification. Additionally start ONE Monitor tailing all three logs, filtered to actionable signatures only:
+Three full multi-agent orchestrations plus the gate share ONE context window — there is no precedent for this in a single session. Treat auto-compaction as expected, not exceptional. The design stance is to make compaction survivable rather than pretend to prevent it:
 
-`EVOLVE-RUN-COMPLETE|Already leading team|is_error.:true.*(team|spawn)|rate limit|credit|EPERM|Operation not permitted`
+- **Durable state at run boundaries.** Everything needed to resume is on disk before each checkpoint: Docket comments (which runs ran, outcomes, deltas), porcelain snapshots in `$STATE_DIR`, changelog files, and the tree itself.
+- **Between-run compaction is the cheap case.** The checkpoint's Pause-for-/compact option aligns compaction with run boundaries, where transient state is at its minimum.
+- **Mid-run compaction is the expensive case** and is owned by the nested cycle: every evolve skill and agent definition carries its own post-compaction discipline (re-read before edit; orchestrator re-derivation). The suite cannot protect a nested cycle's internal state and does not claim to.
 
-- **Per-run wall-clock cap**: default 60 min, used ONLY as the backstop boundary for marker-less (hung or failed) runs.
-- **Termination contract (binding, measured — supersedes any exit-code reading).** Team-spawning headless sub-runs do NOT self-terminate: after emitting their final result they loop awaiting a shutdown confirmation no headless party can deliver. The **kill (marker-triggered, cap-backstopped) is the expected terminal state** for team runs; exit 0 is NOT a pass signal and a kill is NOT a failure signal.
+**Broken vs slow — the operator's heuristic.** A slow-but-healthy cycle still makes forward progress: new tool calls keep landing, the files being read and edited change from turn to turn, teammates post fresh Docket comments and task updates, and the orchestrator's narration tracks its current phase. A broken cycle (mid-run compaction casualty) shows distinct signatures: TeammateIdle notifications flood in without intervening work; the orchestrator re-reads the same files repeatedly without acting on them; unknown-team or unknown-teammate errors appear on messaging calls; or the orchestrator restarts a phase it already completed. Slow → wait. Broken → stop the run, run the team-free guard, mark the child `FAILED: saturation`, and take the checkpoint's Stop option with a fresh-session `skip=` resume.
 
-  **Kill trigger:** when the Monitor fires on `EVOLVE-RUN-COMPLETE: <name>` for a run, kill that run immediately using its pid-file — do NOT wait for cap expiry:
-
-  ```bash
-  kill "$(cat "$WT_ROOT/<name>.pid")" 2>/dev/null
-  ```
-
-  If the cap expires with no `EVOLVE-RUN-COMPLETE` marker for a run (hung or failed), kill by pid-file as the backstop:
-
-  ```bash
-  kill "$(cat "$WT_ROOT/<name>.pid")" 2>/dev/null
-  ```
-
-  Then classify from evidence:
-  - **pass** — log tail shows team activity (TeamCreate) + a final report ending `EVOLVE-RUN-COMPLETE: <name> status=ok`, AND `git -C "$WT" status --porcelain` shows only in-surface paths (or is empty for a no-op).
-  - **partial** — edits present in the worktree but no completion marker, or marker `status=partial`.
-  - **failed** — no marker, no final report, or marker `status=failed` → Failure Runbook.
-- **Rate-limit policy: full-parallel-or-fail.** On a rate-limit/credit signature, do NOT stagger or re-dispatch mid-flight — mid-flight topology changes are a flip-flop hazard and the affected run's state is unknowable from outside. The run fails per the standard path (worktree retained); the wrap-up names the standalone re-run (`/evolve-<name>` in a normal session) as the fallback. Persistent rate-limiting across cycles argues for `skip=`-narrowed passes, not suite-internal staggering.
-- **Context discipline**: never stream raw logs into context; on termination read only each log's tail (final report + marker).
-
-Post the `outcome:` comment on each child as its run terminates.
-
----
-
-## Reconciliation (sequential, after all three terminate)
-
-Fixed order `agents → skills → config` — evolve-agents first because its Phase 3 may compact pitfalls files; appends from the other runs then layer on top. Per run:
-
-1. **Change inventory** — `git -C "$WT" status --porcelain` → modified + untracked path sets.
-2. **Surface check** — every path must fall in that run's declared primary surface (table above). A path under a declared surface whose directory does not yet exist in the main tree is **valid-to-create**, not out-of-surface (`docs/changelog/config/` is the live example — evolve-config's first cycle creates it). Out-of-surface paths are quarantined: not applied, posted to the child issue, surfaced to the operator.
-3. **Cross-run intersection check** — pairwise-intersect the three changed-path sets. The only permitted shared class is `.claude/agent-memory/*/pitfalls.md`. Any other overlap → halt reconciliation for the affected paths, `AskUserQuestion` with both diffs. This is the structural backstop for the `.claude/skills/` tree: even if a sub-run ignores directive clause 3, the overlap is caught here independent of prompt compliance.
-4. **Atomicity pre-pass, then apply** — reconciling one run is three non-atomic operations (tracked apply, pitfalls merge, untracked copy), so before applying ANYTHING from a run, pipe its full tracked diff through `git apply --check` executed from the main repo root; a failed check fails the whole run (nothing applied, worktree retained). Then apply and copy:
-
-```bash
-git -C "$WT" diff HEAD -- <non-pitfalls tracked paths> | git apply --check
-git -C "$WT" diff HEAD -- <non-pitfalls tracked paths> | git apply
-mkdir -p <main-tree dirs for untracked paths>
-cp <untracked files from "$WT"> <their main-tree paths>
-```
-
-   Both `git apply` invocations run **from the main repo root**, with git-native `a/`/`b/` prefixes at the default `-p1` strip level — no `--directory` remapping. **`diff HEAD` is mandatory (binding, measured): `git mv` STAGES the rename, and plain `git diff` is unstaged-only, so the rename hunk is SILENTLY DROPPED without `HEAD`.** Any sub-run that staged its changes would lose them under a plain diff.
-5. **Pitfalls merge** — for each touched `pitfalls.md`, attempt `git -C "$WT" diff HEAD -- <pitfalls path> | git apply` from the main repo root; on context failure (a sibling run already appended), fall back to appending the diff's added lines to the main-tree file. The append-only assumption is grounded in `CANONICAL:PITFALLS` (agents never edit prior entries) and in evolve-skills/evolve-config having no orchestrator pitfalls arm. A pitfalls diff containing non-append hunks from any run other than evolve-agents (sole compaction authority, ADR 0001) is a contract violation → quarantine + operator.
-6. **Record** — post the incremental `reconciled:` comment (applied paths, quarantined paths, pitfalls merge mode) on the child; close the child on success. **Legitimate no-op:** empty porcelain + an `EVOLVE-RUN-COMPLETE … status=ok` marker is a clean no-op cycle (the sub-skills explicitly permit "report honestly if no improvements found") — close the child with outcome `no-op`; nothing to apply, not a failure.
-7. **Failed/timed-out run** — child stays open with its `FAILED: <reason> log=<path>` comment; its worktree is **retained** for forensics; its diff is not applied.
+**Fallback.** Residual risk is honestly Medium-High on a full pass. If supervised runs show routine mid-run breakage, drop to one-run-per-session operation — `/evolve-suite skip=…` once per session — same skill, same Docket spine, zero redesign.
 
 ---
 
 ## Gate
 
-If ≥1 run reconciled successfully (no-op counts), invoke `Skill(evolve-coherence)` **in-session** over the merged main tree — read-only by its No-Edit Guard, and the session is team-free at this point so its `TeamCreate` is legal. Pass the collected `DEFERRED-PARITY` lines as operator-reported-drift context. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero successful runs → skip the gate, mark the cycle failed. The gate is in-session rather than a fourth headless run because the operator is present (interactive gates work) and the manifest must land in-context for routing.
+If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-session over the evolved tree — read-only by its No-Edit Guard, and the session is team-free at this point so its TeamCreate is legal. Input context: the per-run changelog paths and any kept-partial warning from a failed run. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero completed runs → skip the gate; the cycle failed.
 
 ---
 
 ## Wrap-up
 
-1. `git worktree remove` each successfully-reconciled tree (`--force` is safe only after its diff is applied); failed trees are retained.
-2. When no retained trees remain, `rm -rf "$WT_ROOT"`; otherwise leave it and enumerate each retained path with its cleanup commands (`git worktree remove <path>`, then `git worktree prune`).
-3. Close the parent issue with the cycle summary: per-run outcome, merged paths, proposals deferred (`Trial:`/`Drift:` → proposed), `DEFERRED-PARITY` items routed, `TRACKING-NEEDED` items captured, manifest headline, and the closing line "nothing committed — review with `git diff`".
+1. `rm -rf "$STATE_DIR"` — snapshots only; nothing else to clean.
+2. Close the parent with the cycle summary: per-run outcome + delta counts, trials/drift approved vs `proposed`, manifest headline, and the closing line "nothing committed — review with `git diff`".
 
 ---
 
 ## Failure Runbook
 
-- **Timeout (cap expired, no marker, no final report)** — kill already performed by the cap; comment `FAILED: timeout log=<path>` on the child; retain the worktree; replay standalone: `/evolve-<name> days=<N>` in a normal interactive session.
-- **Permission stall** — Monitor surfaces `EPERM`/`Operation not permitted`, or the log goes silent on a pending permission request: kill the run, `FAILED: permission-stall log=<path>`, retain; re-run standalone, or next cycle choose `bypassPermissions` at the pre-flight gate.
-- **Exit non-zero with empty log** — the CLI crashed before the session started (bad flag, auth, environment). NOT a clean no-op: comment `FAILED: cli-crash cmd=<exact command line>` on the child for manual replay.
-- **`Already leading team` / spawn `is_error`** — the sub-run's internal team setup failed; treat as failed: kill if still alive, `FAILED: team-spawn log=<path>`, retain, replay standalone.
-- **Quarantine** — out-of-surface paths, cross-run overlap outside the pitfalls class, or a non-append pitfalls hunk from a non-evolve-agents run: withhold from apply, post the paths on the child, `AskUserQuestion` with the diff(s); the operator decides apply/discard per path.
-- **Partial-apply rollback** — if a run's apply fails midway despite the `--check` pre-pass: `git checkout -- <applied-paths>` using the applied-paths list from that run's incrementally-written `reconciled:` comment; mark the run `FAILED: partial-apply-rolled-back`; retain its worktree.
-- **Crash re-entry (suite session died)** — a new session recovers the whole cycle from Docket alone: the parent's `dispatched: WT_ROOT=<path>` comment → root; `git worktree list` → surviving trees; child comments → which runs terminated/reconciled. For any run still alive, kill it via its pid-file (`kill "$(cat "$WT_ROOT/<name>.pid")" 2>/dev/null`) — pid-files persist on disk and make orphan cleanup disk-recoverable. Resume reconciliation for unapplied trees, or clean up (`git worktree remove <path>`, `git worktree prune`, `rm -rf "$WT_ROOT"`). Nothing is committed at any point, so operator recovery is always `git diff` review + selective `git checkout --` at worst.
+- **Skill abort mid-run** (operator interrupt or internal abort) — run the team-free guard, comment `FAILED: <reason>` on the child, then the checkpoint fires with the revert-delta vs keep-partial choice.
+- **Saturation** (broken-vs-slow signatures above) — stop the run, run the team-free guard, `FAILED: saturation`; checkpoint recommends Stop + fresh-session resume via `skip=`.
+- **Rate-limit mid-run** — the active cycle dies or visibly degrades on rate-limit errors: `FAILED: rate-limit`; Stop recommended (the remaining runs share the exhausted budget); resume next window via `skip=`.
+- **Leftover-team collision** — a nested TeamCreate fails with `Already leading team`: run the guard against the previous run's deterministic team name, re-invoke once; on a second collision, `FAILED: team-collision` and stop.
+- **Crash re-entry** (suite session died) — a new session recovers the cycle from Docket alone: the parent's `dispatched: STATE_DIR=<path>` comment → snapshot root; child comments → which runs completed; snapshots → unattributed deltas. Attempt the team-free guard for the run that was active at death; if it fails because this session leads no team, proceed — the `Already leading team` collision path covers any residue. Then resume via `/evolve-suite skip=<completed names>`. Nothing is committed at any point, so operator recovery is always `git diff` review + selective `git checkout --` at worst.
 
 ---
 
 ## Rules
 
-1. **Commit nothing, anywhere** — no `git add`/`commit`/`push` in this session or any sub-run; detached worktrees create no refs; post-run `git worktree list` shows only the main checkout plus named failure-retained trees.
-2. **This session spawns no team before the gate** — the gate's evolve-coherence team is its single team. Never `Agent()`/`TeamCreate`/`SendMessage` directly.
-3. **Sub-run edits land in main ONLY via reconciliation** — never edit the main tree during dispatch/monitor; the per-run worktree is the rollback unit.
-4. **Fail loud** — failed runs keep their worktrees and logs; every failure class posts a `FAILED:` comment with the recovery path.
-5. **Context discipline** — Monitor filtered signatures only; tail-only log reads; never stream raw stream-json into context.
+1. **Commit nothing, anywhere** — no `git add`/`commit`/`push` in this session or any nested cycle; no branches created; post-run `git status` shows only the cycles' legitimate uncommitted edits.
+2. **The suite never creates a team** — every team belongs to a nested cycle; the suite's `SendMessage`/`TeamDelete` exist for the recovery guard only.
+3. **Fixed serial order** — `agents` → `skills` → `config` → gate; never reorder, never run two cycles at once.
+4. **Fail loud** — every failure class posts a `FAILED:` comment naming its recovery path; partial cycles are resumable via `skip=` by construction.
+5. **Docket is authoritative** — durable state lands at run boundaries; after compaction or crash, re-derive from the parent issue's comments, never from summarized context.

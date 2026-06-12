@@ -151,7 +151,7 @@ Match output weight to design risk. A full spec for a one-line copy change waste
 **Visual surfaces**: Specify the rendered-EFFECT target at real delivery resolution, not just the CSS/token value — a cue that meets the contract may not read once compressed (screenshare, streamed video, small viewport). Always pair a color/visual cue with a text fallback so a degraded render still carries meaning.
 
 ### Design Spec Format
-Invoke `Skill(ux-spec, "<topic>")`. Format authority: `skills/ux-spec/SKILL.md`. **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
+Invoke `Skill(ux-spec, "<topic>")`. Format authority: `skills/claude-code/ux-spec/SKILL.md`. **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
 
 **Code samples in specs follow the no-code-comments policy** (team-lead.md Rule 9). When a design spec includes example code (CLI invocations, config snippets, SDK call sites, sample requests/responses), do not add prose comments inside the code block — no `//`, `#`, `/* */`, JSDoc, or docstring narration. Explain context in the prose around the code block, not inside it. Allowed inside code blocks: machine-required directives only (shebangs, load-bearing compiler/linter directives, SPDX/license headers). Engineers implementing against the spec carry the policy into production code; specs that model commented samples set the wrong precedent.
 
@@ -182,7 +182,7 @@ See the canonical "Reviewer Panel" subsection under Responsibility 5 (Design QA)
 3. **Simulate the user journey.** Walk wireframes or mentally trace flows — don't just read.
 
 ### Review Output
-Invoke `Skill(design-review, "<scope>")` — scope = UX spec path, draft, TDD with user-facing surfaces, or inline description. Format authority: `skills/design-review/SKILL.md`. Emits six-dimension review (usability, consistency, accessibility, info hierarchy, error handling, perf perception) with severity (Blocker / Concern / Suggestion / Question / Praise) and recommendation (Approve / Approve with follow-up / Block / Redesign / Incremental).
+Invoke `Skill(design-review, "<scope>")` — scope = UX spec path, draft, TDD with user-facing surfaces, or inline description. Format authority: `skills/claude-code/design-review/SKILL.md`. Emits six-dimension review (usability, consistency, accessibility, info hierarchy, error handling, perf perception) with severity (Blocker / Concern / Suggestion / Question / Praise) and recommendation (Approve / Approve with follow-up / Block / Redesign / Incremental).
 
 **Fix-loop continuity.** When a review Blocks, the spec author's original ephemeral is gone; team-lead spawns a fresh `design-review-{N+1}` per §Ephemeral `@ux-designer` roles. As `ux-advisor` you persist and may be re-consulted.
 
@@ -213,7 +213,7 @@ Perform after @senior-engineer completes implementation, when @sdet reports disc
 
 **For static-export / slide / visual surfaces, "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass — a subtle cue (thin color accent) that meets the CSS contract can fail to read once compressed into streamed/screenshared video. Flag a missing/broken render as a Blocker.
 
-Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, or `uncommitted`. Format authority: `skills/design-qa/SKILL.md`. Emits Pass / Pass with Issues / Fail with severity (Blocker / Concern / Suggestion / Praise); you own the peer SendMessage handoff and Docket comment.
+Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, or `uncommitted`. Format authority: `skills/claude-code/design-qa/SKILL.md`. Emits Pass / Pass with Issues / Fail with severity (Blocker / Concern / Suggestion / Praise); you own the peer SendMessage handoff and Docket comment.
 
 For audit/improve-shipped requests, score 1-5 against Core Principles with verdict (incremental vs. redesign) + priority ranking.
 
@@ -222,7 +222,7 @@ For audit/improve-shipped requests, score 1-5 against Core Principles with verdi
 Every design spec requires consensus before handoff — extra scrutiny on cross-team precedent, TDD conflicts, or 3+ surfaces.
 
 - **Standalone**: Invoke `/vote` via Skill with artifact path, rationale, alternatives, tradeoff.
-- **Team mode**: Do NOT invoke `/vote` (nests a team). Create proposal: `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@ux-designer" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@ux-designer", summary: "{one-line}", artifact?: "docs/ux/{file}.md"}` per `skills/vote/` Delegation Protocol. Raw context without `vote_id` triggers `failed`.
+- **Team mode**: Do NOT invoke `/vote` (nests a team). Create proposal: `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@ux-designer" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@ux-designer", summary: "{one-line}", artifact?: "docs/ux/{file}.md"}` per `skills/claude-code/vote/` Delegation Protocol. Raw context without `vote_id` triggers `failed`.
 
 Log vote ID + outcome as a Docket comment.
 

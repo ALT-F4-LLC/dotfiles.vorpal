@@ -295,10 +295,7 @@ pub struct ClaudeCode {
     // ---- Authentication ----
     #[serde(skip_serializing_if = "Option::is_none")]
     force_login_method: Option<String>,
-    #[serde(
-        rename = "forceLoginOrgUUID",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "forceLoginOrgUUID", skip_serializing_if = "Option::is_none")]
     force_login_org_uuid: Option<OrgUuids>,
     #[serde(skip_serializing_if = "Option::is_none")]
     aws_auth_refresh: Option<String>,

@@ -1,18 +1,18 @@
 ---
 project: "dotfiles.vorpal"
 maturity: "experimental"
-last_updated: "2026-06-09"
+last_updated: "2026-06-12"
 updated_by: "@staff-engineer"
-scope: "Build, release, deployment, observability, and operational posture for the Vorpal-built dotfiles environment and its bundled Claude Code agent team."
+scope: "Build, release, deployment, observability, and operational posture for the Vorpal-built dotfiles environment and its bundled Claude Code/Codex agent payloads."
 owner: "@staff-engineer"
 dependencies: ["security.md", "architecture.md"]
 ---
 
 # Operations
 
-This spec documents how `dotfiles.vorpal` is built, deployed to a host, observed, and recovered — and where those operational capabilities are absent. The project is a Rust program that emits content-addressed [Vorpal](https://github.com/ALT-F4-LLC/vorpal) artifacts: a `dev` toolchain and a `user` environment of 20 CLI tools plus generated config files (Claude Code, OpenCode, Ghostty, K9s, bat, Neovim). Deployment is `vorpal build 'user'` writing into `/var/lib/vorpal/store/` and symlinking into the home directory.
+This spec documents how `dotfiles.vorpal` is built, deployed to a host, observed, and recovered — and where those operational capabilities are absent. The project is a Rust program that emits content-addressed [Vorpal](https://github.com/ALT-F4-LLC/vorpal) artifacts: a `dev` toolchain and a `user` environment of 20 CLI tools plus generated config files (Claude Code, Codex, OpenCode, Ghostty, K9s, bat, Neovim). Deployment is `vorpal build 'user'` writing into `/var/lib/vorpal/store/` and symlinking into the home directory.
 
-A defining operational characteristic: **the riskiest operational surface is not the build but the generated artifact.** The build itself is a deterministic, sandboxed, single-target macOS compile. The generated `~/.claude/settings.json` configures sandboxing, permission gating, telemetry export, and host-executed hook/statusline scripts that run with full user privileges every session. Operational posture is therefore evaluated in two layers: the build/release pipeline, and the runtime behavior of what it deploys.
+A defining operational characteristic: **the riskiest operational surface is not the build but the generated artifact.** The build itself is a deterministic, sandboxed, single-target macOS compile. The generated `~/.claude/settings.json` and `~/.codex/config.toml` configure sandboxing, approval/permission behavior, telemetry export, agent discovery, and host-executed hook/statusline scripts that run with full user privileges every session. Operational posture is therefore evaluated in two layers: the build/release pipeline, and the runtime behavior of what it deploys.
 
 ## Build & Release Pipeline
 
@@ -68,13 +68,16 @@ Operationally significant: `vorpal-sdk` is pinned (`0.2.1`) but `vorpal-artifact
 
 ## Deployment Model
 
-Deployment is not a service rollout; it is a host-mutation step. `vorpal build 'user'` produces artifacts in `/var/lib/vorpal/store/artifact/output/<namespace>/<digest>` (`src/lib.rs`, `get_output_path`) and creates symlinks from the home directory into the store (`src/user.rs`, `.with_symlinks(...)`). The managed symlink set (12 links) includes:
+Deployment is not a service rollout; it is a host-mutation step. `vorpal build 'user'` produces artifacts in `/var/lib/vorpal/store/artifact/output/<namespace>/<digest>` (`src/lib.rs`, `get_output_path`) and creates symlinks from the home directory into the store (`src/user.rs`, `.with_symlinks(...)`). The managed symlink set includes:
 
 | Symlink target | Operational sensitivity |
 |---|---|
 | `~/.claude/settings.json` | Governs agent sandbox, permissions, telemetry — highest blast radius |
 | `~/.claude/agents`, `~/.claude/skills` | Agent + skill definitions (sourced from repo `agents/claude-code/`, `skills/claude-code/`) |
 | `~/.claude/statusline.sh`, `~/.claude/teammate-idle-hook.sh` | **Host-executed shell scripts**, deployed `755`, run every session |
+| `~/.codex/config.toml` | Governs Codex model defaults, approval policy, features, sandbox mode, OTEL, agent registry, and skill paths |
+| `~/.codex/agents` | Codex custom-agent TOML definitions sourced from `agents/codex/` |
+| `$HOME/.agents/skills` | Codex skill discovery path sourced from `skills/codex/` |
 | `~/.vorpal/bin/vorpal` | Points at `~/Development/.../vorpal.git/main/target/debug/vorpal` — a **debug build in a hardcoded developer path**, not a store artifact |
 | `~/.config/*`, `~/Library/Application Support/*` | Tool configs (bat, ghostty, k9s, opencode, nvim) |
 
@@ -85,23 +88,34 @@ Two deployment facts carry operational risk and are surfaced here rather than so
 
 ### Generated runtime configuration (deployed posture)
 
-The `user` build bakes an opinionated security/operational posture into `~/.claude/settings.json` (`src/user.rs`, lines ~91–299). This is the operationally load-bearing output:
+The `user` build bakes opinionated security/operational posture into `~/.claude/settings.json` and `~/.codex/config.toml` (`src/user.rs`). These are operationally load-bearing outputs.
+
+Claude Code:
 
 - **Sandbox enabled** with `fail_if_unavailable: true` (build/agent refuses to run unsandboxed), `auto_allow_bash_if_sandboxed`, and a network allowlist of four domains (`crates.io`, `static.crates.io`, `github.com`, `api.github.com`). Filesystem read-deny covers credential stores (`~/.ssh`, `~/.gnupg`, `~/.aws`, `~/.netrc`, `~/.talos`, `.env*`, etc.).
 - **Permission gating** with `default_mode: acceptEdits` and `disable_bypass_permissions_mode: disable`. An extensive `allow`/`ask`/`deny` matrix gates Bash, Edit, Read, Write, and WebFetch. Notably `git commit`/`git push`/`rm`/`chown` are `ask`; `git checkout`/`git reset` are `deny`; credential and system paths are `deny` for Read/Write/Edit.
 - **Sandbox-excluded commands** (`aws`, `docker`, `gh`, `git`, `kubectl`) run outside the sandbox — an intentional escape hatch for tools that need real network/socket access.
 
-These settings are the deployment's actual operational contract with the host. Their correctness is a security concern (see `security.md`); their *delivery mechanism* (a generated JSON file symlinked into place) is the operations concern: there is no validation step confirming the deployed `settings.json` parses or that Claude Code accepts it before the symlink is swapped.
+Codex:
+
+- **Approval and sandbox posture** with `approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`, `sandbox_mode = "workspace-write"`, and `default_permissions = ":workspace"`.
+- **Agent registry** with seven custom roles, each configured with `config_file = "./agents/<role>.toml"` and backed by the deployed `~/.codex/agents` symlink.
+- **Skill discovery** through `$HOME/.agents/skills`, sourced from `skills/codex/`.
+- **Subagent limits** (`max_threads = 6`, `max_depth = 1`, `job_max_runtime_seconds = 1800`) to bound native Codex agent fanout.
+- **Shell environment filtering** excludes `AWS_*`, `AZURE_*`, and `GCP_*` while otherwise inheriting the environment.
+
+These settings are the deployment's actual operational contract with the host. Their correctness is a security concern (see `security.md`); their *delivery mechanism* (generated config files and source snapshots symlinked into place) is the operations concern. Codex agent/skill shape is now covered by `tests/codex_payload.rs`, but there is still no end-to-end validation confirming the deployed configs are accepted by Claude Code or Codex before symlinks are swapped.
 
 ## Observability
 
 ### Agent runtime telemetry
 
-The generated Claude Code config enables OpenTelemetry export (`src/user.rs`):
+The generated Claude Code and Codex configs enable OpenTelemetry export (`src/user.rs`):
 
 - `CLAUDE_CODE_ENABLE_TELEMETRY=1`
 - Logs → `https://loki.bulbasaur.altf4.domains/otlp/v1/logs` (OTLP `http/protobuf`, 15 s interval)
 - Metrics → `https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics` (OTLP `http/protobuf`, cumulative, 15 s interval)
+- Codex logs and metrics use the same Loki/Mimir endpoints through TOML `otel.exporter` and `otel.metrics_exporter` entries.
 
 This means the **deployed agent environment is observable** — agent sessions emit logs to Loki and metrics to Mimir on the `altf4.domains` infrastructure. The status line script (`~/.claude/statusline.sh`) additionally surfaces per-session model, git state, context-window usage, cost, duration, and lines changed directly in the terminal. These two endpoints are hardcoded into the build; they are an external operational dependency of the *deployed* environment, not of the build itself.
 
@@ -116,7 +130,7 @@ This is the project's weakest operational dimension and is reported without soft
 - **No rollback procedure exists.** Content-addressed artifacts make rollback *theoretically* trivial (re-symlink to a prior digest), but no documented or scripted mechanism does this. Recovery from a bad `settings.json` is a manual `vorpal build` of a prior commit or manual symlink repair.
 - **No release process.** Version is `0.1.0` (`Cargo.toml`) and has not been incremented; there are no tags, no changelog for the artifact (the `docs/changelog/` tree documents *agent/skill definitions*, not releases), and no notion of a "released" vs "dev" user environment beyond the `dev`/`user` artifact split.
 - **No environment management beyond the single host model.** There is no staging/production distinction; the build deploys directly to the invoking user's home directory.
-- **The only automated test** (`tests/teammate-idle-hook.test.sh`, 160 lines) validates the `TeammateIdle` hook's JSON contract. The Rust config-generation code has no test coverage (cross-reference `testing.md`), so a malformed generated config would not be caught before deployment.
+- Automated tests now include `tests/teammate-idle-hook.test.sh` for the Claude `TeammateIdle` hook and `tests/codex_payload.rs` for Codex agent/skill schema and registration checks. The broader Rust config-generation code still has limited test coverage (cross-reference `testing.md`), so malformed generated configs outside those assertions may not be caught before deployment.
 
 ### Active operational work
 
@@ -127,7 +141,7 @@ This is the project's weakest operational dimension and is reported without soft
 | # | Gap / Risk | Severity | Evidence |
 |---|---|---|---|
 | 1 | **No rollback automation.** Bad `settings.json` or config requires manual rebuild/symlink repair. Content-addressing makes this *possible* but nothing implements it. | High | No rollback script or doc; `src/user.rs` symlink swap is unguarded |
-| 2 | **No validation gate before deploy.** Generated `settings.json` is symlinked into `~/.claude/` with no parse/accept check. A serialization regression deploys a broken agent config. | High | `src/user.rs` build flow; no validation step; config code has no tests |
+| 2 | **Partial validation gate before deploy.** Codex agent/skill schema and registration checks exist, but generated `settings.json` / `config.toml` are symlinked into place with no consumer acceptance check. A serialization regression outside the covered Codex assertions can still deploy a broken agent config. | High | `src/user.rs` build flow; `tests/codex_payload.rs`; no runtime accept check |
 | 3 | **Hardcoded developer-specific `vorpal` binary path.** Symlink targets `$HOME/Development/.../vorpal.git/main/target/debug/vorpal` — a debug build at one author's path. Dangles on any other host. | High | `src/user.rs:536` |
 | 4 | **Declared but unbuilt platform targets.** `SYSTEMS` declares 4 targets; CI builds only `macos-latest`. Linux/x86 darwin paths are untested and may silently break. | Medium | `src/lib.rs` `SYSTEMS`; `.github/workflows/vorpal.yaml` runners |
 | 5 | **CI test does not gate the build.** `test-hooks` runs in parallel with `build`; no `needs:` edge. A failing hook contract test does not stop artifact production within the run. | Medium | `.github/workflows/vorpal.yaml` job graph |

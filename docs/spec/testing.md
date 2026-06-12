@@ -1,28 +1,30 @@
 ---
 project: "dotfiles.vorpal"
 maturity: "proof-of-concept"
-last_updated: "2026-06-09"
+last_updated: "2026-06-12"
 updated_by: "@staff-engineer"
-scope: "Test strategy, coverage, and CI verification for the Vorpal-based dotfiles config program"
+scope: "Test strategy, coverage, and CI verification for the Vorpal-based dotfiles config program and its Claude Code/Codex payloads"
 owner: "@staff-engineer"
 dependencies: []
 ---
 
 # Testing
 
-This document describes the testing posture of `dotfiles.vorpal` **as it exists today**, not an aspirational target. The honest summary: the repository has one automated test, it covers one shell script, and the ~5,300 lines of Rust that define the dotfiles environment have **no automated tests at all**. Build success is the only signal that the Rust code is correct.
+This document describes the testing posture of `dotfiles.vorpal` **as it exists today**, not an aspirational target. The repository now has a small but real automated test surface: one shell integration test for the Claude Code idle hook, a Codex config serialization smoke test in `src/user/codex.rs`, and a Rust integration test that validates the Codex agent/skill payload. Build success is still the only broad signal that most generated configs are correct.
 
 ## Test Inventory
 
-The entire automated test surface is one file.
+The automated test surface is small and focused.
 
 | Test | Type | Target | Runner | Cases |
 |---|---|---|---|---|
 | `tests/teammate-idle-hook.test.sh` | Shell integration | `src/user/teammate-idle-hook.sh` | `bash` + `jq` | 5 |
+| `src/user/codex.rs::tests::serializes_current_config_shape` | Rust unit | Codex TOML serialization smoke test | `cargo test` | 1 |
+| `tests/codex_payload.rs` | Rust integration | `agents/codex/*.toml`, `skills/codex/*/SKILL.md`, Codex role registration in `src/user.rs` | `cargo test` | 3 |
 
-There is no `cargo test` surface. A search of `src/` for `#[test]`, `#[tokio::test]`, `#[cfg(test)]`, and `mod tests` returns nothing. There is no `tests/*.rs` integration-test crate, no `.cargo/` config, no coverage tooling (`tarpaulin`, `llvm-cov`, `grcov`), no test fixtures directory, and no mocking framework.
+There is still no coverage tooling (`tarpaulin`, `llvm-cov`, `grcov`), no test fixtures directory, and no mocking framework.
 
-### What the one test covers
+### What the shell test covers
 
 `tests/teammate-idle-hook.test.sh` is a self-contained, dependency-light bash harness (it requires only `bash` and `jq`). It exercises the `TeammateIdle` hook script through five cases:
 
@@ -34,26 +36,37 @@ There is no `cargo test` surface. A search of `src/` for `#[test]`, `#[tokio::te
 
 This is a genuinely good test for what it targets: it covers the happy path, two empty/degenerate inputs, malformed input, and a security-relevant injection case. The harness reports a `N passed, M failed` tally and exits non-zero on any failure, which is correct for CI gating.
 
+### What the Codex payload tests cover
+
+`tests/codex_payload.rs` validates the new Codex-native surface:
+
+- Every expected `agents/codex/*.toml` file exists and parses as TOML.
+- Each Codex agent has `name`, `description`, and non-empty `developer_instructions`.
+- Codex agent TOML omits Claude-only fields such as `color`, `permissionMode`, `tools`, `memory`, `skills`, and explicit `model`.
+- `src/user.rs` registers every Codex role with `config_file = "./agents/<role>.toml"` and snapshots/symlinks `agents/codex`.
+- Every expected `skills/codex/*/SKILL.md` exists with required `name` and `description` frontmatter.
+- Codex agent and skill files reject active Claude runtime syntax such as `SendMessage`, `TeamCreate`, `TeamDelete`, `Agent(`, `TaskCreate`, and `Skill(`.
+
 ### What is untested
 
-Everything that is not the idle hook. Specifically:
+Major surfaces still untested:
 
-- **All Rust artifact-definition code** (`src/lib.rs`, `src/vorpal.rs`, `src/file.rs`, `src/user.rs`, and `src/user/*.rs` — bat, claude_code, ghostty, k9s, opencode). This includes `FileCreate`/`FileDownload`/`FileSource` builders, the `UserEnvironment` assembly, and pure functions like `get_output_path`. None have unit tests.
+- **Most Rust artifact-definition code** (`src/lib.rs`, `src/vorpal.rs`, `src/file.rs`, `src/user.rs`, and most `src/user/*.rs` modules — bat, claude_code, ghostty, k9s, opencode). This includes `FileCreate`/`FileDownload`/`FileSource` builders, most of the `UserEnvironment` assembly, and pure functions like `get_output_path`.
 - **The two other shipped shell scripts**: `src/user/statusline.sh` and the build-embedded copy of the hook (the hook is also `include_str!`-embedded into the Rust build and copied to `~/.claude/teammate-idle-hook.sh` at install time — only the source-tree copy is tested).
-- **The generated config payloads** (Ghostty, k9s skin, opencode permissions, Claude Code settings) — there is no assertion that the strings these builders emit are valid for their consuming tools.
+- **Most generated config payloads** (Ghostty, k9s skin, opencode permissions, Claude Code settings) — there is no assertion that the strings these builders emit are valid for their consuming tools. Codex has a serialization smoke test and payload shape checks, not a runtime acceptance test.
 - **The end-to-end Vorpal build/install** — there is no test that the produced artifacts install correctly or that symlinks resolve.
 
 ## Test Pyramid
 
-Calling this a "pyramid" overstates it. The breakdown by automated test count:
+Calling this a "pyramid" still overstates it. The breakdown by automated test count:
 
 | Layer | Count | Proportion | Notes |
 |---|---|---|---|
-| Unit | 0 | 0% | No Rust unit tests; pure functions like `get_output_path` are untested |
-| Integration | 1 | 100% | The shell hook test invokes the real script via a subprocess |
+| Unit | 1 | 20% | One Codex TOML serialization smoke test |
+| Integration | 4 | 80% | One shell hook harness plus three Codex payload integration tests |
 | End-to-end | 0 | 0% | The `vorpal build` jobs validate compilation, not installed behavior |
 
-The single test is best classified as **integration** (it runs the real script as a subprocess and asserts on its observable output and side effects), not unit. So the practical shape is not a pyramid but a single point: one integration test, zero everything else.
+The practical shape is still narrow: targeted payload/schema checks and one shell-script integration test, with no end-to-end install validation.
 
 ## CI Verification
 
@@ -76,11 +89,11 @@ flowchart TD
     BR -->|yes| OK
 ```
 
-- **`test-hooks`** (ubuntu-latest) — the only job that runs an actual test. Executes `bash tests/teammate-idle-hook.test.sh`. This is the entire automated-test gate.
+- **`test-hooks`** (ubuntu-latest) — runs `bash tests/teammate-idle-hook.test.sh`.
 - **`build-dev`** (macos-latest) — runs `vorpal build 'dev'` and uploads the resulting `Vorpal.lock`. This validates that the dev-environment artifact graph compiles and resolves, which transitively compiles the Rust program. It does not run any test.
 - **`build`** (macos-latest, depends on `build-dev`, matrix over the `user` artifact) — runs `vorpal build 'user'`, validating the user-environment artifact builds. Also no tests.
 
-The build jobs are a meaningful safety net for the Rust code in one narrow sense: a non-compiling change or an unresolvable artifact reference fails CI. But "it compiles" is a weak correctness signal for code whose output is shell scripts and config strings interpolated via `formatdoc!` — a builder can compile and emit a syntactically broken config.
+Local `cargo test` now exercises the Codex serialization and payload tests, but the current CI description above does not show a separate `cargo test` job. The build jobs are a meaningful safety net for the Rust code in one narrow sense: a non-compiling change or an unresolvable artifact reference fails CI. But "it compiles" is a weak correctness signal for code whose output is shell scripts and config strings interpolated via `formatdoc!` — a builder can compile and emit a syntactically broken config.
 
 ## Test Conventions & Tooling
 
@@ -91,13 +104,13 @@ The conventions that exist are entirely within the one shell test, and they are 
 - Preconditions checked up front (`jq` present, hook file exists) with a distinct fatal exit code (`2`) separate from test-failure exit (`1`).
 - `mktemp -d` scratch directories for side-effect assertions (the injection sentinel), cleaned up afterward.
 
-For Rust there are **no** conventions yet because there is no Rust test code. Should Rust tests be introduced, the natural fit is `#[cfg(test)] mod tests` inline modules for the pure functions (`get_output_path`, the `chmod_mode` logic in `FileCreate::build`) and snapshot-style assertions (e.g., `insta`) for the `formatdoc!`-generated config payloads, since those are the highest-value, lowest-cost targets.
+For Rust, the new convention is plain `#[cfg(test)] mod tests` for local serialization smoke tests and `tests/*.rs` integration tests for repo-level payload validation. Future generator tests should continue this pattern, with snapshot-style assertions (e.g., `insta`) as a good fit for `formatdoc!`-generated config payloads.
 
 ## Gaps & Risks
 
-- **No Rust test coverage (highest risk).** ~5,300 lines of Rust define the entire dotfiles environment with zero automated tests. The `formatdoc!` string interpolation in `src/file.rs` and the config builders in `src/user/*.rs` are exactly the kind of code where a typo produces a silently-broken config that still compiles and still builds. CI cannot catch this.
+- **Sparse Rust test coverage (highest risk).** Most Rust code that defines the dotfiles environment remains untested. The `formatdoc!` string interpolation in `src/file.rs` and the config builders in `src/user/*.rs` are exactly the kind of code where a typo produces a silently-broken config that still compiles and still builds. The new Codex tests improve one payload surface but do not solve the broader generator risk.
 - **Security-relevant code is largely untested.** Only the idle hook's injection safety is tested. The `FileCreate::build` path writes attacker-influenceable-in-principle content into shell heredocs (`cat << 'EOF'`), and `statusline.sh` is shipped untested. The single injection test is good but isolated; there is no systematic input-safety coverage of the config-generation paths. (Coordinate with `security.md`, the goal-bearing sibling spec, on whether these paths warrant a threat-model entry.)
-- **The tested hook and the shipped hook can diverge.** The test targets the source-tree `src/user/teammate-idle-hook.sh`, but the build embeds it via `include_str!` and installs it to `~/.claude/`. The test validates the source, not the installed artifact, and nothing asserts the install/symlink step succeeds.
+- **Source tests and shipped artifacts can diverge.** The hook test targets the source-tree `src/user/teammate-idle-hook.sh`, but the build embeds it via `include_str!` and installs it to `~/.claude/`. The Codex payload test checks source files and registration strings, not the materialized Vorpal store output. Nothing asserts the install/symlink step succeeds.
 - **"Build passes" masquerades as "tested."** Two of three CI jobs only confirm compilation. A reader skimming the green checkmarks could reasonably but wrongly conclude the Rust code is verified. The distinction (compiles vs. behaves correctly) should be explicit to anyone relying on CI.
 - **No coverage measurement.** With no coverage tooling, there is no objective signal of how much of either the shell or (nonexistent) Rust test surface is exercised — coverage is effectively unknowable beyond manual inspection.
 - **Single-tool dependency in the test.** The shell test hard-requires `jq` and fatally exits if it is absent. CI provides `jq` on ubuntu-latest, so this is low-risk today, but it is an undeclared environmental dependency.

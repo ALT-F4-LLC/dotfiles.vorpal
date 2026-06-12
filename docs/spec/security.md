@@ -1,18 +1,18 @@
 ---
 project: "dotfiles.vorpal"
 maturity: "draft"
-last_updated: "2026-06-09"
+last_updated: "2026-06-12"
 updated_by: "@staff-engineer"
-scope: "Security posture of the dotfiles.vorpal build system and the Claude Code agent-team configuration it deploys: trust boundaries, secret management, the layered sandbox/permission deny-lists, and the .env phantom-deletion masking behavior reviewers must not misread."
+scope: "Security posture of the dotfiles.vorpal build system and the Claude Code/Codex agent configurations it deploys: trust boundaries, secret management, sandbox and permission controls, and the .env phantom-deletion masking behavior reviewers must not misread."
 owner: "@staff-engineer"
 dependencies: []
 ---
 
 # Security
 
-This spec documents the *current, observed* security posture of `dotfiles.vorpal`. It is descriptive, not aspirational: every control below is grounded in source under `src/`, the CI workflow, or the agent definitions under `agents/claude-code/`. Gaps and weaknesses are called out explicitly in [Gaps & Risks](#gaps--risks).
+This spec documents the *current, observed* security posture of `dotfiles.vorpal`. It is descriptive, not aspirational: every control below is grounded in source under `src/`, the CI workflow, or the agent definitions under `agents/claude-code/` and `agents/codex/`. Gaps and weaknesses are called out explicitly in [Gaps & Risks](#gaps--risks).
 
-`dotfiles.vorpal` is a Rust program (`src/vorpal.rs` → `src/user.rs`) that compiles a declarative description of a developer environment into content-addressed [Vorpal](https://github.com/ALT-F4-LLC/vorpal) artifacts, then symlinks those artifacts into the user's home directory. Critically, one of the artifacts it produces is the **Claude Code `settings.json`** (`src/user/claude_code.rs`, configured in `src/user.rs`) that governs an autonomous multi-agent development team. The security surface is therefore two-layered:
+`dotfiles.vorpal` is a Rust program (`src/vorpal.rs` → `src/user.rs`) that compiles a declarative description of a developer environment into content-addressed [Vorpal](https://github.com/ALT-F4-LLC/vorpal) artifacts, then symlinks those artifacts into the user's home directory. Critically, it produces AI runtime configuration for both **Claude Code** (`~/.claude/settings.json`) and **Codex** (`~/.codex/config.toml`, `~/.codex/agents`, `$HOME/.agents/skills`). The security surface is therefore two-layered:
 
 1. **Build-time** — what the Rust build trusts, downloads, and serializes.
 2. **Runtime** — what the generated Claude Code configuration permits the agent team to read, write, and execute on the host.
@@ -25,7 +25,7 @@ The system crosses several trust boundaries between authoring source and a runni
 flowchart TD
     subgraph authoring["Authoring (trusted)"]
         SRC["src/*.rs config program"]
-        AGENTS["agents/claude-code/*.md + skills/claude-code/*"]
+        AGENTS["agents/claude-code/*.md + skills/claude-code/*<br/>agents/codex/*.toml + skills/codex/*"]
     end
 
     subgraph build["Vorpal build (build-time boundary)"]
@@ -39,13 +39,13 @@ flowchart TD
     end
 
     subgraph host["Host filesystem (runtime boundary)"]
-        SYMLINK["~/.claude/settings.json<br/>~/.claude/agents, skills"]
+        SYMLINK["~/.claude/settings.json<br/>~/.claude/agents, skills<br/>~/.codex/config.toml<br/>~/.codex/agents + ~/.agents/skills"]
         SECRETS["~/.ssh ~/.aws ~/.doppler<br/>~/.gnupg ~/.kube .env"]
     end
 
-    subgraph agent["Claude Code agent team (runtime, semi-trusted)"]
-        TEAM["team-lead + 5 sub-agents"]
-        SANDBOX["sandbox + permission deny-lists"]
+    subgraph agent["AI agent runtimes (runtime, semi-trusted)"]
+        TEAM["Claude Code team<br/>Codex custom agents/subagents"]
+        SANDBOX["sandbox + permission controls"]
     end
 
     subgraph ci["GitHub Actions (CI boundary)"]
@@ -72,7 +72,7 @@ flowchart TD
 | External → Build | `vorpal-sdk` (crates.io, pinned `0.2.1`), `vorpal-artifacts` (git `branch = "main"`, **unpinned ref**) | Renovate auto-merges minor/patch (`renovate.json`) | Mixed — git `branch = main` is a floating ref |
 | External → Build | bat theme via `FileDownload` from `raw.githubusercontent.com` (`src/user.rs`) | URL pins a git **tag** (`v4.14.1`) but no content hash is verified in source | Weak — see Gaps |
 | Build → Host | Content-addressed artifacts symlinked into `~` | Vorpal store is content-addressed; symlinks are deterministic | Strong |
-| Host → Agent | Generated `settings.json` governs agent capabilities | Layered deny-lists + sandbox (below) | Primary runtime control |
+| Host → Agent | Generated `settings.json` and `config.toml` govern agent capabilities | Claude layered deny-lists + sandbox; Codex approval policy + workspace sandbox + subagent inheritance | Primary runtime control |
 | CI → S3 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` GitHub secrets | Long-lived static AWS keys in repo secrets | Weak — see Gaps |
 
 ## Secret Management
@@ -121,6 +121,31 @@ flowchart LR
 | Git instruction guardrail | agent specs forbid commit/push unless explicitly instructed | Defense-in-depth against unintended VCS mutation |
 
 Note the deliberate tension: `sandbox.allowUnsandboxedCommands(true)` and `sandbox.autoAllowBashIfSandboxed(true)` are set, and `aws`/`docker`/`gh`/`git`/`kubectl` are listed in `excludedCommands` (run outside the sandbox). This is an intentional usability trade-off — those tools need real network/credential access — but it widens the runtime surface and is flagged in Gaps & Risks.
+
+## Codex Runtime Controls
+
+The generated Codex config (`src/user.rs` via `src/user/codex.rs`) deploys a parallel AI-agent surface:
+
+| Deployed path | Source | Security relevance |
+|---|---|---|
+| `~/.codex/config.toml` | generated `Codex` config | Model defaults, approval policy, feature flags, agent registry, sandbox mode, shell environment policy, OTEL exporters |
+| `~/.codex/agents` | `agents/codex/*.toml` | Custom-agent developer instructions and role descriptions |
+| `$HOME/.agents/skills` | `skills/codex/*` | Codex skill workflows shared through the global skills discovery path |
+
+Observed Codex controls in `src/user.rs`:
+
+| Control | Value | Effect |
+|---|---|---|
+| `approval_policy` | `on-request` | Escalating commands require approval rather than being silently allowed |
+| `approvals_reviewer` | `auto_review` | Approval requests are checked by the configured reviewer |
+| `sandbox_mode` | `workspace-write` | File writes are limited to the workspace and configured writable roots |
+| `default_permissions` | `:workspace` | Default permission profile is workspace-scoped |
+| `shell_environment_policy.inherit` | `all` | Environment inheritance is broad, then filtered by exclusions |
+| `shell_environment_policy.exclude` | `AWS_*`, `AZURE_*`, `GCP_*` | Cloud credential variables are excluded from inherited shell environment |
+| `agents.max_threads` / `max_depth` | `6` / `1` | Codex subagent fanout is bounded; nested depth is limited |
+| `agents.*.config_file` | `./agents/<role>.toml` | Custom agents resolve under the deployed `~/.codex/agents` symlink |
+
+Codex subagents inherit the parent session's sandbox and approval policy. That inheritance is security-significant: the new custom agents in `agents/codex/` do not grant extra filesystem, network, or shell powers by themselves; they specialize instructions for bounded workers. The `skills/codex/dev-team` workflow also states that subagents are spawned only when the user requests subagents, delegation, or parallel agent work, keeping ordinary tasks in the root session.
 
 ## Sandbox Deny-List: `.env` Phantom-Deletion (MASKED STATE)
 

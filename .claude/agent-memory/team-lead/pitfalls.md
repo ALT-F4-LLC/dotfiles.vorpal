@@ -97,3 +97,13 @@ Resolution: gate wrap-up on RECEIVED report content, never bare task-status (tas
 symptom → reviewer's `Skill(code-review-verdict, "uncommitted")` resolved staged+unstaged vs HEAD and surfaced 3 changes the team-lead brief didn't mention; reviewer had to issue a scope correction.
 root cause → team-lead scoped the brief to "the only unstaged change" while the worktree carried pre-existing STAGED modifications; `uncommitted` means full diff vs HEAD, not unstaged-only.
 resolution → before dispatching any review brief, run `git diff --stat HEAD` (not bare `git diff --stat`) and enumerate the full uncommitted scope in the brief, flagging pre-existing staged changes as in- or out-of-scope explicitly.
+
+## 2026-06-12 — Planner constraint conflated authoring-task scope with artifact runtime behavior
+symptom → DKT-285 (author evolve-config skill) carried constraint "the skill itself never edits src/user.rs — recommendations as output", contradicting the shipped SKILL.md where the orchestrator applies approved edits to config sources (the exact evolve-* family pattern); cost a review adjudication round to resolve as a non-finding.
+root cause → planner copied the AUTHORING task's out-of-scope list ("don't modify src/user.rs while writing the skill") into the artifact's RUNTIME constraints; two different actors/timeframes.
+resolution → at plan review (step 8), when the deliverable is itself an agent/skill definition, check each constraint for which actor it binds (the implementer now vs the artifact's future runs) and split or reword conflated ones before approval.
+
+## 2026-06-12 — Sibling-clone authoring leaves half-deleted instruction clauses
+symptom → new evolve-config SKILL.md (noun-substituted from ~500-line siblings) shipped with a dangling broken clause ("run `vorpal run go:1.26.0 …`-style native build is N/A here") mid-sentence in the verify-output step; caught only by reviewer.
+root cause → cloning a large sibling then pruning N/A content leaves partial-deletion artifacts; implementer self-AC-check verified presence-greps (blocks, paths, wc -l) but not sentence-level readability of adapted sections.
+resolution → for clone-and-adapt deliverables, have the review brief mandate a read-through of every ADAPTED (non-CANONICAL) section for dangling clauses, not just block-identity diffs and presence greps.

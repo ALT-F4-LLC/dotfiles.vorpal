@@ -589,6 +589,14 @@ impl UserEnvironment {
         .await?;
         let claude_skills_path = get_output_path("library", &claude_skills);
 
+        // Codex skills directory
+        let codex_skills_name = format!("{}-codex-skills", &self.name);
+        let codex_skills =
+            FileSource::new(&codex_skills_name, "skills/codex", self.systems.clone())
+                .build(context)
+                .await?;
+        let codex_skills_path = get_output_path("library", &codex_skills);
+
         // User environment
 
         artifact::UserEnvironment::new(&self.name, self.systems)
@@ -623,6 +631,7 @@ impl UserEnvironment {
                 claude_statusline,
                 claude_teammate_idle_hook,
                 codex_config,
+                codex_skills,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
@@ -643,6 +652,7 @@ impl UserEnvironment {
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
+                (codex_skills_path.as_str(), "$HOME/.agents/skills"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

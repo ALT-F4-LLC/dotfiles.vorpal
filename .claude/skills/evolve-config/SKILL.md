@@ -60,9 +60,9 @@ Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele-subs
 
 ## Argument Handling
 
-Historical-audit window and drift rate are determined by `\$ARGUMENTS` (there is ONE config target, so no name token):
+`\$ARGUMENTS` supplies only the historical-audit window and the drift rate — with a single config target, no name token exists:
 
-- **No argument** (`/evolve-config`): Review the Claude Code config genome. Historical audit window defaults to 7 days.
+- **No argument** (`/evolve-config`): Full review of the Claude Code config genome; the historical-audit window falls back to its 7-day default.
 - **`days=N`** (optional, e.g. `/evolve-config days=14`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-config drift=2` or `/evolve-config drift=0`): Override the genetic-drift rate — number of neutral drift proposals per cycle (see the genetic-drift operator). Integer ≥ 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 

@@ -10,7 +10,7 @@ dependencies: []
 
 # Security
 
-This spec documents the *current, observed* security posture of `dotfiles.vorpal`. It is descriptive, not aspirational: every control below is grounded in source under `src/`, the CI workflow, or the agent definitions under `agents/`. Gaps and weaknesses are called out explicitly in [Gaps & Risks](#gaps--risks).
+This spec documents the *current, observed* security posture of `dotfiles.vorpal`. It is descriptive, not aspirational: every control below is grounded in source under `src/`, the CI workflow, or the agent definitions under `agents/claude-code/`. Gaps and weaknesses are called out explicitly in [Gaps & Risks](#gaps--risks).
 
 `dotfiles.vorpal` is a Rust program (`src/vorpal.rs` → `src/user.rs`) that compiles a declarative description of a developer environment into content-addressed [Vorpal](https://github.com/ALT-F4-LLC/vorpal) artifacts, then symlinks those artifacts into the user's home directory. Critically, one of the artifacts it produces is the **Claude Code `settings.json`** (`src/user/claude_code.rs`, configured in `src/user.rs`) that governs an autonomous multi-agent development team. The security surface is therefore two-layered:
 
@@ -25,7 +25,7 @@ The system crosses several trust boundaries between authoring source and a runni
 flowchart TD
     subgraph authoring["Authoring (trusted)"]
         SRC["src/*.rs config program"]
-        AGENTS["agents/*.md + skills/claude-code/*"]
+        AGENTS["agents/claude-code/*.md + skills/claude-code/*"]
     end
 
     subgraph build["Vorpal build (build-time boundary)"]
@@ -124,7 +124,7 @@ Note the deliberate tension: `sandbox.allowUnsandboxedCommands(true)` and `sandb
 
 ## Sandbox Deny-List: `.env` Phantom-Deletion (MASKED STATE)
 
-This section documents an **operator-verified runtime behavior** that reviewers and agents must understand to avoid misreading masked state as real changes. It is consistent with `agents/team-lead.md` step 13 (phantom-deletion sub-case), which this spec cross-references and must stay aligned with.
+This section documents an **operator-verified runtime behavior** that reviewers and agents must understand to avoid misreading masked state as real changes. It is consistent with `agents/claude-code/team-lead.md` step 13 (phantom-deletion sub-case), which this spec cross-references and must stay aligned with.
 
 **The behavior.** The paths `.env` and `.env.*` are hard-denied at the sandbox policy layer (`sandbox.filesystem.deny_read`, `src/user.rs`). When git inspects the working tree, the sandbox refuses the read, and the tooling surfaces those paths as **phantom-DELETED** in `git diff` / `git status` output — the status line reads **`Operation not permitted`** — *even though the files are untouched on disk*. The deletion is an artifact of the read denial, not a real filesystem change.
 
@@ -147,7 +147,7 @@ flowchart TD
     SCOPE --> EXCLUDE["Exclude silently — NEVER report<br/>as a real deletion"]
 ```
 
-> Authority note: This behavior is also encoded in `agents/team-lead.md` step 13 (phantom-deletion sub-case). If that text and this section ever diverge, reconcile them — they describe one and the same control.
+> Authority note: This behavior is also encoded in `agents/claude-code/team-lead.md` step 13 (phantom-deletion sub-case). If that text and this section ever diverge, reconcile them — they describe one and the same control.
 
 ## Gaps & Risks
 

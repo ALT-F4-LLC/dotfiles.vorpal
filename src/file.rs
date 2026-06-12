@@ -113,10 +113,9 @@ impl FileSource {
             #!/bin/bash
             set -euo pipefail
             mkdir -pv $VORPAL_OUTPUT
-            cp -rv ./source/{name}/{path}/* $VORPAL_OUTPUT/
+            cp -rv ./source/{name}/* $VORPAL_OUTPUT/
         "#,
             name = self.name,
-            path = self.path
         };
 
         let step = step::shell(context, vec![], vec![], step_script, vec![]).await?;

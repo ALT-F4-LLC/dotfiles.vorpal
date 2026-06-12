@@ -13,5 +13,6 @@ indoc = { version = "2" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.148" }
 tokio = { features = ["rt-multi-thread"], version = "1" }
+toml = { version = "1.1.2" }
 vorpal-artifacts = { git = "https://github.com/ALT-F4-LLC/artifacts.vorpal.git", branch = "main" }
 vorpal-sdk = { version = "0.2.1" }

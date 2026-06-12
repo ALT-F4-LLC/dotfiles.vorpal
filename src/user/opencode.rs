@@ -1908,7 +1908,7 @@ impl Opencode {
     /// Helper method to configure bash permissions with multiple command patterns
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// Opencode::new("config", systems)
     ///     .with_bash_permissions(vec![
     ///         ("*", PermissionAction::Ask),

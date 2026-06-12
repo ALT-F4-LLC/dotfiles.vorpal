@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use bat::BatConfig;
 use claude_code::ClaudeCode;
-use codex::{Codex, Otel, TuiNotifications};
+use codex::{AgentRole, Codex, Otel, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
@@ -316,6 +316,62 @@ impl UserEnvironment {
         let codex_config_name = format!("{}-codex", &self.name);
         let codex_config = Codex::new(codex_config_name.as_str(), self.systems.clone())
             .with_agent_limits(Some(6), Some(1), Some(1800))
+            .with_agent_role(
+                "team-lead",
+                codex_agent_role(
+                    "Orchestrates parent-led Codex subagent workflows for multi-step software work.",
+                    "./agents/team-lead.toml",
+                    &["lead", "orchestrator", "tl"],
+                ),
+            )
+            .with_agent_role(
+                "project-manager",
+                codex_agent_role(
+                    "Plans Docket issue decomposition, phase order, dependencies, and acceptance criteria.",
+                    "./agents/project-manager.toml",
+                    &["pm", "planner", "tpm"],
+                ),
+            )
+            .with_agent_role(
+                "staff-engineer",
+                codex_agent_role(
+                    "Authors technical designs and ADRs, evaluates architecture, and performs general code review.",
+                    "./agents/staff-engineer.toml",
+                    &["architect", "staff", "advisor"],
+                ),
+            )
+            .with_agent_role(
+                "security-engineer",
+                codex_agent_role(
+                    "Owns threat modeling, security design, and security-focused review.",
+                    "./agents/security-engineer.toml",
+                    &["security", "sec", "security-advisor"],
+                ),
+            )
+            .with_agent_role(
+                "senior-engineer",
+                codex_agent_role(
+                    "Implements scoped code changes, follows local patterns, and reports verification evidence.",
+                    "./agents/senior-engineer.toml",
+                    &["implementer", "senior", "impl"],
+                ),
+            )
+            .with_agent_role(
+                "sdet",
+                codex_agent_role(
+                    "Verifies acceptance criteria, writes tests, and reports quality evidence.",
+                    "./agents/sdet.toml",
+                    &["tester", "qa", "verifier"],
+                ),
+            )
+            .with_agent_role(
+                "ux-designer",
+                codex_agent_role(
+                    "Designs and reviews user-facing workflows, UX specs, and design QA.",
+                    "./agents/ux-designer.toml",
+                    &["ux", "designer", "ux-advisor"],
+                ),
+            )
             .with_allow_login_shell(true)
             .with_analytics_enabled(false)
             .with_approval_policy("on-request")
@@ -582,6 +638,14 @@ impl UserEnvironment {
         .await?;
         let claude_agents_path = get_output_path("library", &claude_agents);
 
+        // Codex agents directory
+        let codex_agents_name = format!("{}-codex-agents", &self.name);
+        let codex_agents =
+            FileSource::new(&codex_agents_name, "agents/codex", self.systems.clone())
+                .build(context)
+                .await?;
+        let codex_agents_path = get_output_path("library", &codex_agents);
+
         // Claude skills directory
         let claude_skills_name = format!("{}-claude-skills", &self.name);
         let claude_skills = FileSource::new(
@@ -605,6 +669,7 @@ impl UserEnvironment {
 
         let claude_agents_path = format!("{claude_agents_path}/agents");
         let claude_skills_path = format!("{claude_skills_path}/skills/claude-code");
+        let codex_agents_path = format!("{codex_agents_path}/agents/codex");
         let codex_skills_path = format!("{codex_skills_path}/skills/codex");
 
         artifact::UserEnvironment::new(&self.name, self.systems)
@@ -638,6 +703,7 @@ impl UserEnvironment {
                 claude_skills,
                 claude_statusline,
                 claude_teammate_idle_hook,
+                codex_agents,
                 codex_config,
                 codex_skills,
                 ghostty_config,
@@ -659,6 +725,7 @@ impl UserEnvironment {
                 (&claude_skills_path, "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
+                (&codex_agents_path, "$HOME/.codex/agents"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
                 (&codex_skills_path, "$HOME/.agents/skills"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
@@ -668,5 +735,20 @@ impl UserEnvironment {
             ])
             .build(context)
             .await
+    }
+}
+
+fn codex_agent_role(
+    description: &str,
+    config_file: &str,
+    nickname_candidates: &[&str],
+) -> AgentRole {
+    AgentRole {
+        description: Some(description.to_string()),
+        config_file: Some(config_file.to_string()),
+        nickname_candidates: nickname_candidates
+            .iter()
+            .map(|candidate| candidate.to_string())
+            .collect(),
     }
 }

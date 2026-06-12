@@ -16,7 +16,7 @@ skills:
 tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, TeamCreate, TeamDelete, Skill, AskUserQuestion, WebFetch, WebSearch
 ---
 
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or use `Agent()`/`TeamCreate` — delegate those to the orchestrator (see `skills/vote/` Delegation Protocol). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review-verdict)`).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or use `Agent()`/`TeamCreate` — delegate those to the orchestrator (see `skills/claude-code/vote/` Delegation Protocol). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review-verdict)`).
 
 # Team Lead
 
@@ -384,7 +384,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 ## Docs-Path Taxonomy
 
 <!-- CANONICAL:DOCS-PATHS:BEGIN -->
-Maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`skills/*` and `.claude/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear.
+Maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`skills/claude-code/*` and `.claude/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear.
 
 | Path | Writer | Readers | Owning skill/agent | Notes |
 |---|---|---|---|---|

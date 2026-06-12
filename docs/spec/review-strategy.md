@@ -18,7 +18,7 @@ The repo contains two materially different bodies of work, and they demand diffe
 
 | Surface | What it is | Size / churn (verified 2026-06-09) | Primary risk |
 |---|---|---|---|
-| Agentic prose layer | `agents/*.md` (7 files, 2276 lines) and `skills/**/SKILL.md` (13 project skills, 3239 lines) — the role definitions and skill contracts that drive this team | Highest churn in the repo by a wide margin: `agents/team-lead.md` 50 commits, `sdet.md` 49, `staff-engineer.md` 48, `senior-engineer.md` 48 in the last 100 commits | Cross-file incoherence — a rule changed in one agent file that contradicts a canonical block mirrored in another, or a skill contract that drifts from the agent that invokes it |
+| Agentic prose layer | `agents/*.md` (7 files, 2276 lines) and `skills/claude-code/**/SKILL.md` (13 project skills, 3239 lines) — the role definitions and skill contracts that drive this team | Highest churn in the repo by a wide margin: `agents/team-lead.md` 50 commits, `sdet.md` 49, `staff-engineer.md` 48, `senior-engineer.md` 48 in the last 100 commits | Cross-file incoherence — a rule changed in one agent file that contradicts a canonical block mirrored in another, or a skill contract that drifts from the agent that invokes it |
 | Rust / Vorpal SDK code | `src/**/*.rs` (~3265 lines across 9 files) plus two shell scripts — config-builders that serialize dotfiles settings via the Vorpal SDK | Lower churn: `feat(user)` / `feat(claude)` prefixes appear 4 times in the last 50 commits | Serialization correctness, security of the one shell hook that parses untrusted JSON, supply-chain exposure from git-sourced dependencies |
 
 The Rust code is almost entirely a **builder + serde-serialization** layer: `src/user/claude_code.rs` (1630 lines) is a long sequence of `with_*` builder methods over `Option<T>` fields, terminating in `serde_json::to_string_pretty` + `FileCreate`. There is no concurrency, no network request handling, and no runtime daemon in the reviewed source. This shapes review: the Rust dimensions that matter are **serialization fidelity** (does the emitted JSON match the upstream tool's schema?), **API surface discipline** (every `with_*` is public API), and **the one genuine trust boundary** — `src/user/teammate-idle-hook.sh`, which parses attacker-influenceable JSON.
@@ -26,7 +26,7 @@ The Rust code is almost entirely a **builder + serde-serialization** layer: `src
 ```mermaid
 flowchart TD
     Change[Incoming change] --> Triage{Which surface?}
-    Triage -->|Agentic prose| Prose[agents/*.md, skills/**/SKILL.md]
+    Triage -->|Agentic prose| Prose[agents/*.md, skills/claude-code/**/SKILL.md]
     Triage -->|Rust / shell| Code[src/**/*.rs, *.sh]
 
     Prose --> Coherence[Cross-file coherence:\ncanonical-block mirrors, agent/skill drift]
@@ -47,7 +47,7 @@ flowchart TD
 
 The repo carries its own review apparatus as first-class artifacts; this is unusual and is the strongest review asset the project has.
 
-- **`skills/code-review-verdict/SKILL.md`** is the format authority for every code review. It defines a 6-dimension general playbook (`@staff-engineer`) and a 9-dimension security playbook (`@security-engineer`), a severity ladder per role, a structured output contract, and a `Validation Before Emit` checklist. Reviews route through this skill rather than ad-hoc prose.
+- **`skills/claude-code/code-review-verdict/SKILL.md`** is the format authority for every code review. It defines a 6-dimension general playbook (`@staff-engineer`) and a 9-dimension security playbook (`@security-engineer`), a severity ladder per role, a structured output contract, and a `Validation Before Emit` checklist. Reviews route through this skill rather than ad-hoc prose.
 - **Five mechanical Hard Gates (G1–G5)** are Blocker-class regardless of feature correctness: G1 swallowed error, G2 unguarded shared mutation, G3 unparsed boundary input, G4 surface-not-invariant patch, G5 unexecuted AC regex. Each has a documented `OVERRIDE: code-philosophy/<id>` escape that must be *surfaced* (listed in the verdict) rather than silently honored.
 - **The no-code-comments gate** (team-lead.md Rule 9, enforced in `@staff-engineer` reviews) is Blocker-class: prose comments in production code, tests, or scripts are rejected; only machine-required directives (shebangs, `#[allow(...)]`, `// eslint-disable-next-line`, SPDX headers, etc.) are permitted. The current Rust source already complies — the comments present are section banners and a small number of doc-comments on deprecated/legacy fields, which a review would need to evaluate against this gate.
 - **Reviewer roles**: `@staff-engineer` is the designated general reviewer; `@security-engineer` owns the security dimension. Under `@team-lead` orchestration a single reviewer (persistent `advisor`) is the default, opting up to a doubled or 4-way parallel panel for security-sensitive surfaces, diffs ≥500 LOC, or TDD secondary review (team-lead.md Rule 8).

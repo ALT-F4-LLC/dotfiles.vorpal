@@ -73,7 +73,7 @@ Deployment is not a service rollout; it is a host-mutation step. `vorpal build '
 | Symlink target | Operational sensitivity |
 |---|---|
 | `~/.claude/settings.json` | Governs agent sandbox, permissions, telemetry — highest blast radius |
-| `~/.claude/agents`, `~/.claude/skills` | Agent + skill definitions (sourced from repo `agents/`, `skills/`) |
+| `~/.claude/agents`, `~/.claude/skills` | Agent + skill definitions (sourced from repo `agents/`, `skills/claude-code/`) |
 | `~/.claude/statusline.sh`, `~/.claude/teammate-idle-hook.sh` | **Host-executed shell scripts**, deployed `755`, run every session |
 | `~/.vorpal/bin/vorpal` | Points at `~/Development/.../vorpal.git/main/target/debug/vorpal` — a **debug build in a hardcoded developer path**, not a store artifact |
 | `~/.config/*`, `~/Library/Application Support/*` | Tool configs (bat, ghostty, k9s, opencode, nvim) |

@@ -25,7 +25,7 @@ The system crosses several trust boundaries between authoring source and a runni
 flowchart TD
     subgraph authoring["Authoring (trusted)"]
         SRC["src/*.rs config program"]
-        AGENTS["agents/*.md + skills/*"]
+        AGENTS["agents/*.md + skills/claude-code/*"]
     end
 
     subgraph build["Vorpal build (build-time boundary)"]

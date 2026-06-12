@@ -580,9 +580,13 @@ impl UserEnvironment {
 
         // Claude skills directory
         let claude_skills_name = format!("{}-claude-skills", &self.name);
-        let claude_skills = FileSource::new(&claude_skills_name, "skills", self.systems.clone())
-            .build(context)
-            .await?;
+        let claude_skills = FileSource::new(
+            &claude_skills_name,
+            "skills/claude-code",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
         let claude_skills_path = get_output_path("library", &claude_skills);
 
         // User environment

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brief"
+  short_description: "Standardize work requests into briefs"
+  default_prompt: "Use $brief to turn this work request into a standardized intake brief."

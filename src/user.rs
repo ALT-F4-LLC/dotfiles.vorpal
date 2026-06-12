@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use bat::BatConfig;
 use claude_code::ClaudeCode;
-use codex::{Codex, TuiNotifications};
+use codex::{Codex, Otel, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
@@ -319,7 +319,7 @@ impl UserEnvironment {
             .with_allow_login_shell(true)
             .with_analytics_enabled(false)
             .with_approval_policy("on-request")
-            .with_approvals_reviewer("user")
+            .with_approvals_reviewer("auto_review")
             .with_check_for_update_on_startup(true)
             .with_cli_auth_credentials_store("keyring")
             .with_default_permissions(":workspace")
@@ -341,10 +341,34 @@ impl UserEnvironment {
             .with_history_persistence("save-all")
             .with_mcp_oauth_credentials_store("auto")
             .with_model("gpt-5.5")
+            .with_model_context_window(1_000_000)
             .with_model_provider("openai")
             .with_model_reasoning_effort("high")
             .with_model_reasoning_summary("auto")
             .with_model_verbosity("medium")
+            .with_otel(Otel {
+                log_user_prompt: Some(false),
+                environment: Some("dev".to_string()),
+                exporter: Some(
+                    toml::Value::try_from(serde_json::json!({
+                        "otlp-http": {
+                            "endpoint": "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
+                            "protocol": "binary",
+                        },
+                    }))
+                    .expect("Codex OTel logs exporter config must be TOML-serializable"),
+                ),
+                metrics_exporter: Some(
+                    toml::Value::try_from(serde_json::json!({
+                        "otlp-http": {
+                            "endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
+                            "protocol": "binary",
+                        },
+                    }))
+                    .expect("Codex OTel metrics exporter config must be TOML-serializable"),
+                ),
+                ..Default::default()
+            })
             .with_personality("pragmatic")
             .with_plan_mode_reasoning_effort("high")
             .with_project_doc_max_bytes(32768)

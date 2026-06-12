@@ -20,7 +20,7 @@ status: "questions-resolved"
 
 **Who is affected.** The operator (runs the cycles), and indirectly every agent/skill whose definition the cycles edit. No runtime user-facing surface.
 
-**Constraints.** (1) No new external dependencies; no commits during implementation. (2) The 500-line per-file budget is a hard gate — `evolve-agents` is at 487 lines, `evolve-skills` at 491, leaving 13 and 9 lines of headroom respectively (verified via `wc -l` 2026-06-10). Any net-additive design is dead on arrival; additions must be offset by reframing existing prose. (3) Existing hard gates are preserved unless a change is flagged as a deliberate open decision: the Content Gate (4 checks), the 500-line budget, evolve-coherence's report-and-route-only constraint, and ADR 0001 history compaction. (4) Editing `agents/*.md` or `skills/*` bodies is out of scope — this work edits only the three `evolve-*` SKILL.md files. (Implementation does add one shared `CANONICAL:EVOLUTION-MODEL` block to the three skills; if the family-parity machinery requires registering that tag in the evolve-coherence D4 audited-tag set, that edit lands inside evolve-coherence's own SKILL.md, still within the three in-scope files.)
+**Constraints.** (1) No new external dependencies; no commits during implementation. (2) The 500-line per-file budget is a hard gate — `evolve-agents` is at 487 lines, `evolve-skills` at 491, leaving 13 and 9 lines of headroom respectively (verified via `wc -l` 2026-06-10). Any net-additive design is dead on arrival; additions must be offset by reframing existing prose. (3) Existing hard gates are preserved unless a change is flagged as a deliberate open decision: the Content Gate (4 checks), the 500-line budget, evolve-coherence's report-and-route-only constraint, and ADR 0001 history compaction. (4) Editing `agents/claude-code/*.md` or `skills/*` bodies is out of scope — this work edits only the three `evolve-*` SKILL.md files. (Implementation does add one shared `CANONICAL:EVOLUTION-MODEL` block to the three skills; if the family-parity machinery requires registering that tag in the evolve-coherence D4 audited-tag set, that edit lands inside evolve-coherence's own SKILL.md, still within the three in-scope files.)
 
 **Acceptance criteria** (from the approved brief; each maps to an Implementation Phase):
 1. **Natural selection modeled explicitly** — fitness signals defined, and a rule for how they retain / amplify / cull heritable traits per generation.
@@ -85,7 +85,7 @@ One canonical block, byte-identical across the three skills, defines the vocabul
 
 | Biological concept | This system |
 |---|---|
-| Population | the set of agents (`agents/*.md`) / skills (`*/SKILL.md`) under evolution this cycle |
+| Population | the set of agents (`agents/claude-code/*.md`) / skills (`*/SKILL.md`) under evolution this cycle |
 | Organism / individual | one agent or skill definition file |
 | Genome | the full set of behavioral traits in that file |
 | Gene / trait | one discrete Content-Gate-passing behavioral unit (a rule, gate, workflow step, or CANONICAL block) |
@@ -180,7 +180,7 @@ Drift is the genuinely missing force. It must be **stochastic**, **reproducible/
   - *Niche colonization (new):* a recurring fitness gap no existing genome can absorb within the 500-line budget → a new agent/skill.
 - **Extinction (retirement).** Two organisms with highly overlapping genomes and low combined fitness (redundancy) → retire one.
 - **Gate.** Speciation and extinction are the highest-blast-radius changes, so they require **both** the Scientific Trial Protocol operator HARD GATE **and** vote consensus (an architectural decision), and they execute in **Phase 2** so the new/removed organism's cross-references and CANONICAL-block parity land atomically.
-- **Biodiversity invariant (S3 — made enforceable).** Selection must not be permitted to collapse the population to monoculture. Concretely: a CULL or extinction that would remove the **last carrier** of a behavioral niche is **blocked** unless the environmental scan (docs-researcher) confirms the platform has removed the need for that niche. *Carrier detection (so the gate is checkable, not aspirational):* before applying a CULL/extinction, identify the niche's defining token(s) — the capability keyword, CANONICAL tag, or rule name the trait provides — and grep the post-edit population for other organisms whose genome still provides it (`grep -lE '<niche-token>' agents/*.md` or `skills/*/SKILL.md` as appropriate, excluding the organism being culled). **Carrier-count = number of remaining provider files; if it would reach 0, the CULL is blocked** pending the docs-researcher obsolescence confirmation. Drift (AC #2) is the standing-variation arm; this carrier-count floor is the hard stop.
+- **Biodiversity invariant (S3 — made enforceable).** Selection must not be permitted to collapse the population to monoculture. Concretely: a CULL or extinction that would remove the **last carrier** of a behavioral niche is **blocked** unless the environmental scan (docs-researcher) confirms the platform has removed the need for that niche. *Carrier detection (so the gate is checkable, not aspirational):* before applying a CULL/extinction, identify the niche's defining token(s) — the capability keyword, CANONICAL tag, or rule name the trait provides — and grep the post-edit population for other organisms whose genome still provides it (`grep -lE '<niche-token>' agents/claude-code/*.md` or `skills/*/SKILL.md` as appropriate, excluding the organism being culled). **Carrier-count = number of remaining provider files; if it would reach 0, the CULL is blocked** pending the docs-researcher obsolescence confirmation. Drift (AC #2) is the standing-variation arm; this carrier-count floor is the hard stop.
 
 ### AC #5 — One coherent shared vocabulary
 
@@ -335,7 +335,7 @@ This work edits prose-and-policy skill files, so "tests" are grep/parse assertio
   - Behavioral preservation: the compressed STP still contains the AskUserQuestion HARD GATE and the `proposed`-vs-implemented distinction (`grep -E 'HARD GATE|proposed' <each editing file>` matches in the reframed section).
 - **Effort.** M.
 - **Blocking deps.** None (foundation).
-- **Out of scope.** Any behavioral phase change beyond the section reframe; editing `agents/*.md` or `skills/*` bodies.
+- **Out of scope.** Any behavioral phase change beyond the section reframe; editing `agents/claude-code/*.md` or `skills/*` bodies.
 
 ### Phase B — Natural selection made explicit (AC #1)
 

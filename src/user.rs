@@ -572,10 +572,14 @@ impl UserEnvironment {
         );
 
         // Claude agents directory
-        let claude_agents_name = format!("{}-claude-agents", &self.name);
-        let claude_agents = FileSource::new(&claude_agents_name, "agents", self.systems.clone())
-            .build(context)
-            .await?;
+        let claude_agents_name = format!("{}-claude-code-agents", &self.name);
+        let claude_agents = FileSource::new(
+            &claude_agents_name,
+            "agents/claude-code",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
         let claude_agents_path = get_output_path("library", &claude_agents);
 
         // Claude skills directory
@@ -598,6 +602,10 @@ impl UserEnvironment {
         let codex_skills_path = get_output_path("library", &codex_skills);
 
         // User environment
+
+        let claude_agents_path = format!("{claude_agents_path}/agents");
+        let claude_skills_path = format!("{claude_skills_path}/skills/claude-code");
+        let codex_skills_path = format!("{codex_skills_path}/skills/codex");
 
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
@@ -646,13 +654,13 @@ impl UserEnvironment {
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
                 (bat_config_path.as_str(), "$HOME/.config/bat/config"),
                 (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
-                (claude_agents_path.as_str(), "$HOME/.claude/agents"),
+                (&claude_agents_path, "$HOME/.claude/agents"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
-                (claude_skills_path.as_str(), "$HOME/.claude/skills"),
+                (&claude_skills_path, "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
-                (codex_skills_path.as_str(), "$HOME/.agents/skills"),
+                (&codex_skills_path, "$HOME/.agents/skills"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

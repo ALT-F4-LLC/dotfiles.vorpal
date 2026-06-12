@@ -33,9 +33,9 @@ The repo carries four evolution skills under `.claude/skills/`: `evolve-agents`,
 
 **Constraints (verified this session):**
 
-- One team per session; teammates cannot spawn teams (platform limitations re-verified Rev 1; `agents/team-lead.md:209` "Already leading team" error class). Serial is what makes native teams legal: each evolve skill TeamCreates at cycle start and TeamDeletes at wrap-up (`evolve-agents/SKILL.md:117`/`:184`, `evolve-skills/SKILL.md:119`/`:196`, `evolve-config/SKILL.md:134`/`:206`, `evolve-coherence/SKILL.md:143`/`:179`), so the session is team-free between runs **iff** each run completes its wrap-up.
+- One team per session; teammates cannot spawn teams (platform limitations re-verified Rev 1; `agents/claude-code/team-lead.md:209` "Already leading team" error class). Serial is what makes native teams legal: each evolve skill TeamCreates at cycle start and TeamDeletes at wrap-up (`evolve-agents/SKILL.md:117`/`:184`, `evolve-skills/SKILL.md:119`/`:196`, `evolve-config/SKILL.md:134`/`:206`, `evolve-coherence/SKILL.md:143`/`:179`), so the session is team-free between runs **iff** each run completes its wrap-up.
 - No programmatic rate-limit probe exists: `claude --help` (2.1.174) lists no `usage` subcommand; `claude usage --help` falls through to general help. Rate-limit pre-flight must be operator-attested.
-- The four evolve skills are wrapped, not edited (scope-out unchanged from Rev 1): no changes to their files, to `agents/*.md`, or to non-evolve `skills/*`.
+- The four evolve skills are wrapped, not edited (scope-out unchanged from Rev 1): no changes to their files, to `agents/claude-code/*.md`, or to non-evolve `skills/*`.
 
 **Acceptance criteria (suite-level):**
 
@@ -161,7 +161,7 @@ No persistent data plane beyond Docket and `$STATE_DIR` snapshots. The Rev 1 wri
 
 | Run | Expected surface | Shared (serial-safe) |
 |---|---|---|
-| evolve-agents | `agents/*.md`, `docs/changelog/agents/` | `.claude/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
+| evolve-agents | `agents/claude-code/*.md`, `docs/changelog/agents/` | `.claude/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
 | evolve-skills | `skills/`, `.claude/skills/`, `docs/changelog/skills/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
 | evolve-config | `src/user.rs`, `src/user/`, `scripts`, own SKILL.md CANONICAL blocks, `docs/changelog/config/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
 
@@ -228,6 +228,6 @@ The suite's primary observability IS the design: every team lifecycle, gate, and
 - (h) `wc -l` ≤ 500 — budget arithmetic: frontmatter+banner ~20, overview+serial legality ~25, args ~30, pre-flight (goal, attestation, clean-surface, probes) ~55, Docket protocol ~40, run loop (snapshot/handoff/invoke/delta/guard/checkpoint) ~80, gate ~20, wrap-up ~15, context-discipline section ~30, failure runbook ~55, rules ~15 → ~385 estimated; post-authoring `wc -l` is the only budget truth.
 - (i) frontmatter `allowed-tools` matches the Architecture list exactly (notably: no `Agent`/`TeamCreate`/`Monitor`/`Write`/`Edit`; `TeamDelete` + `SendMessage` present for the guard).
 
-Effort: M. Dependencies: this TDD's acceptance. Out of scope: any edit to the four evolve skills, `agents/*.md`, `skills/*`.
+Effort: M. Dependencies: this TDD's acceptance. Out of scope: any edit to the four evolve skills, `agents/claude-code/*.md`, `skills/*`.
 
 **Phase 2 — Supervised serial first run.** Goal: first full-cycle evidence for AC2–AC6 and the R1/R5 observations enumerated in Testing Strategy. Files: whatever the cycles legitimately evolve (bounded by the surface table). ACs: (a) child issues show dispatched → outcome/delta chains in serial order; (b) each run's team lifecycle visibly created and deleted in-session (operator-attested on the phase issue); (c) gate ran over the evolved tree, manifest on the gate child; (d) `git log` head unchanged, no branches/worktrees created (AC5); (e) checkpoint behavior + saturation/compaction observations recorded on the phase issue. Effort: M (mostly wall-clock + tokens; schedule at low rate-limit utilization — the attestation gate enforces this). Dependencies: Phase 1. **Escalation rule:** if mid-run compaction breaks active cycles routinely (R1 worst case), do not patch the skill — drop to documented one-run-per-session operation and route the finding back to this TDD for the fallback to become the default.

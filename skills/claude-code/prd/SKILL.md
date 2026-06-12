@@ -57,7 +57,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 - A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
 - The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
-- The team-lead Large Task pattern (`agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
+- The team-lead Large Task pattern (`agents/claude-code/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 

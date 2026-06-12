@@ -15,12 +15,12 @@ status: "accepted"
 
 ## Problem Statement
 
-The operator wants `agents/team-lead.md` to define a pure communication/orchestration layer: team-lead receives messages, makes routing decisions from read-only observations, and delegates ALL artifact work to right-sized sub-agents. Model selection for every spawn must be quality-first — pick the model expected to produce the best result for the specific prompt, with cost explicitly not a criterion — and team-lead itself must run on the most capable available Anthropic model (currently Fable 5), enforced mechanically in the repo's settings source.
+The operator wants `agents/claude-code/team-lead.md` to define a pure communication/orchestration layer: team-lead receives messages, makes routing decisions from read-only observations, and delegates ALL artifact work to right-sized sub-agents. Model selection for every spawn must be quality-first — pick the model expected to produce the best result for the specific prompt, with cost explicitly not a criterion — and team-lead itself must run on the most capable available Anthropic model (currently Fable 5), enforced mechanically in the repo's settings source.
 
 Two concrete defects in the current definition motivate this now:
 
-1. **Internal contradiction on writes.** `agents/team-lead.md:23` scopes Edit/Write to `.claude/agent-memory/team-lead/*` only, yet step 14's Mechanical-fix shortcut (`agents/team-lead.md:276`) has team-lead applying source edits itself, and the cycle-bloat option (`agents/team-lead.md:278`) offers "compress remaining increments into team-lead self-edits". Both verified by Read this session. These self-edit paths also bypass review by design ("skip re-doubled-review"), creating the one class of tree changes with no independent reviewer.
-2. **Illusory routing tier.** The cost-tiered routing table (`agents/team-lead.md:127-131`) includes an "inherit (omit param)" tier, but measured reality (recorded in both evolve-* skills, verified 2026-06-09: `.claude/skills/evolve-agents/SKILL.md:233`, `.claude/skills/evolve-skills/SKILL.md:235`) is that non-pinned spawns run `claude-opus-4-8` via classifier fallback — the table's middle tier does not do what it says, and the table optimizes for cost, which the operator has ruled out as a criterion.
+1. **Internal contradiction on writes.** `agents/claude-code/team-lead.md:23` scopes Edit/Write to `.claude/agent-memory/team-lead/*` only, yet step 14's Mechanical-fix shortcut (`agents/claude-code/team-lead.md:276`) has team-lead applying source edits itself, and the cycle-bloat option (`agents/claude-code/team-lead.md:278`) offers "compress remaining increments into team-lead self-edits". Both verified by Read this session. These self-edit paths also bypass review by design ("skip re-doubled-review"), creating the one class of tree changes with no independent reviewer.
+2. **Illusory routing tier.** The cost-tiered routing table (`agents/claude-code/team-lead.md:127-131`) includes an "inherit (omit param)" tier, but measured reality (recorded in both evolve-* skills, verified 2026-06-09: `.claude/skills/evolve-agents/SKILL.md:233`, `.claude/skills/evolve-skills/SKILL.md:235`) is that non-pinned spawns run `claude-opus-4-8` via classifier fallback — the table's middle tier does not do what it says, and the table optimizes for cost, which the operator has ruled out as a criterion.
 
 **Constraints (CLOSED operator decisions — designed within, not reopened):**
 
@@ -32,10 +32,10 @@ Two concrete defects in the current definition motivate this now:
 
 ## Context & Prior Art
 
-- **`agents/team-lead.md` (489 lines, Read in full this session)** — the primary surface. Relevant anchors: Edit/Write scoping preamble (line 23), Per-spawn model routing (lines 127-131), Mechanical-fix shortcut (line 276), Cycle bloat surfacing (line 278), pitfalls-memory sanctioned exception (line 337), Rule 7 (CLOSED persistent set), Rule 8 (panel sizing).
-- **`src/user.rs` (556 lines, Read in full this session)** — the settings builder deployed to `~/.claude` via vorpal symlinks (`src/user.rs:539-552`). Load-bearing facts: `with_agent("team-lead")` (line 94) makes team-lead the primary agent; `with_model("claude-fable-5[1m]")` (line 135) pins the session model; `ANTHROPIC_DEFAULT_FABLE_MODEL=claude-fable-5[1m]` (line 107) resolves the `fable` alias; `agents/team-lead.md` frontmatter carries no `model:` field (verified: `grep -c '^model:' agents/*.md` → 0 across all seven files). Consequence: **the mechanical pin the proposal asks for already exists** — team-lead, lacking a frontmatter override, runs on the pinned session model, Fable 5. `src/user/claude_code.rs` also exposes `with_model_override` / `with_available_models` (lines 633-641), available but not needed here.
-- **Cross-references outside team-lead.md** (enumerated via repo-wide grep this session): exactly ONE agent-file touchpoint — `agents/security-engineer.md:32` ("team-lead pins opus for security reviewers"). No project skill (`skills/*/SKILL.md`) references the routing table or the mechanical-fix shortcut. The evolve-* skills reference measured model distributions generically and need no edit.
-- **`docs/spec/review-strategy.md:21,53`** — names `agents/*.md` as the highest-churn surface with cross-file incoherence as the primary review risk, and documents Rule 8 panel sizing (unaffected by this design).
+- **`agents/claude-code/team-lead.md` (489 lines, Read in full this session)** — the primary surface. Relevant anchors: Edit/Write scoping preamble (line 23), Per-spawn model routing (lines 127-131), Mechanical-fix shortcut (line 276), Cycle bloat surfacing (line 278), pitfalls-memory sanctioned exception (line 337), Rule 7 (CLOSED persistent set), Rule 8 (panel sizing).
+- **`src/user.rs` (556 lines, Read in full this session)** — the settings builder deployed to `~/.claude` via vorpal symlinks (`src/user.rs:539-552`). Load-bearing facts: `with_agent("team-lead")` (line 94) makes team-lead the primary agent; `with_model("claude-fable-5[1m]")` (line 135) pins the session model; `ANTHROPIC_DEFAULT_FABLE_MODEL=claude-fable-5[1m]` (line 107) resolves the `fable` alias; `agents/claude-code/team-lead.md` frontmatter carries no `model:` field (verified: `grep -c '^model:' agents/claude-code/*.md` → 0 across all seven files). Consequence: **the mechanical pin the proposal asks for already exists** — team-lead, lacking a frontmatter override, runs on the pinned session model, Fable 5. `src/user/claude_code.rs` also exposes `with_model_override` / `with_available_models` (lines 633-641), available but not needed here.
+- **Cross-references outside team-lead.md** (enumerated via repo-wide grep this session): exactly ONE agent-file touchpoint — `agents/claude-code/security-engineer.md:32` ("team-lead pins opus for security reviewers"). No project skill (`skills/*/SKILL.md`) references the routing table or the mechanical-fix shortcut. The evolve-* skills reference measured model distributions generically and need no edit.
+- **`docs/spec/review-strategy.md:21,53`** — names `agents/claude-code/*.md` as the highest-churn surface with cross-file incoherence as the primary review risk, and documents Rule 8 panel sizing (unaffected by this design).
 - **`docs/ux/` does not exist** (verified `ls -d`); no UX surface is touched.
 
 ### Proposal Evaluation
@@ -99,7 +99,7 @@ sequenceDiagram
     TL->>FX: shutdown_request (after spot-check)
 ```
 
-### Change 1 — Per-spawn model routing replacement (`agents/team-lead.md:127-131`)
+### Change 1 — Per-spawn model routing replacement (`agents/claude-code/team-lead.md:127-131`)
 
 The cost-tiered table and its four tier rows are deleted. Replacement text (normative; final wording may be polished at implementation without changing semantics):
 
@@ -119,9 +119,9 @@ frontmatter errors on Haiku). SendMessage-resumed persistent advisors keep their
 spawn model — set it once at spawn.
 ```
 
-Notes: the `opus` tier disappears as a standing target — under quality-first, `fable` supersedes it for every prompt class the table assigned it (security depth included). `agents/security-engineer.md:32` is updated accordingly (Change 4).
+Notes: the `opus` tier disappears as a standing target — under quality-first, `fable` supersedes it for every prompt class the table assigned it (security depth included). `agents/claude-code/security-engineer.md:32` is updated accordingly (Change 4).
 
-### Change 2 — Mechanical-fix shortcut removal (`agents/team-lead.md:276`)
+### Change 2 — Mechanical-fix shortcut removal (`agents/claude-code/team-lead.md:276`)
 
 The shortcut paragraph is replaced by mechanical-fix ROUTING (team-lead never edits the tree):
 
@@ -140,13 +140,13 @@ non-mechanical finding follows the standard fix-loop instead.
 
 This preserves both review-economy properties of the old shortcut (no re-doubled-review; 1:1 finding traceability) while moving the write to a reviewable, Docket-tracked agent.
 
-### Change 3 — Cycle-bloat reword (`agents/team-lead.md:278`) and read-only preamble
+### Change 3 — Cycle-bloat reword (`agents/claude-code/team-lead.md:278`) and read-only preamble
 
 - Line 278: "compress remaining increments into team-lead self-edits" → "compress remaining increments into a single consolidated batch-fix ephemeral (one Closed brief enumerating all remaining edits)".
 - Line 23 preamble gains the layer statement: team-lead is a pure communication/orchestration layer; file operations are READ-ONLY except the single sanctioned write path `.claude/agent-memory/team-lead/**`; every other file change is delegated. Frontmatter `description` (lines 8-9) appends "read-only on the working tree" to the existing "never writes code, never creates issues, never commits".
 - Explicit non-change: Docket mutations (`docket issue/vote/...`), Task tools, TeamCreate/TeamDelete, and SendMessage are orchestration-state operations, not file writes — they remain team-lead's job. The pitfalls block at line 337 already labels itself the sanctioned exception and is untouched.
 
-### Change 4 — Touchpoint: `agents/security-engineer.md:32`
+### Change 4 — Touchpoint: `agents/claude-code/security-engineer.md:32`
 
 "team-lead pins opus for security reviewers" is stale under quality-first routing. Reword the Model floor note to: security content may still auto-reroute to Opus via the classifier when unpinned, but with `model=` mandatory on every spawn the classifier path is defense-in-depth only — team-lead's quality-first routing pins security spawns to `fable` explicitly; the floor remains "Opus-tier or better" and the grounding discipline is unchanged.
 
@@ -171,13 +171,13 @@ Agent(team_name="dev-{slug}", name="{role-name}", subagent_type="{type}",
 ```
 
 - `model` is mandatory; `fable` is the default choice; `sonnet` requires a downshift justification line inside the brief; `haiku` is banned.
-- The canonical ephemeral-brief schema (`agents/team-lead.md:115`) is unchanged; batch-fix briefs are ordinary Closed briefs under it.
+- The canonical ephemeral-brief schema (`agents/claude-code/team-lead.md:115`) is unchanged; batch-fix briefs are ordinary Closed briefs under it.
 
 ## Migration & Rollout
 
 - **Current state:** team-lead self-applies mechanical fixes and routes models by a cost-tiered table with an illusory inherit tier; the model pin already exists in `src/user.rs`.
 - **Target state:** the five changes in §4; no behavioral change to any other agent's lifecycle, panel sizing (Rule 8), shutdown protocol (Rule 7), or rule numbering (Rule 5's asymmetry table is untouched).
-- **Rollout:** single PR editing `agents/team-lead.md` + `agents/security-engineer.md` (+ this TDD). Deployment to `~/.claude/agents` happens through the existing vorpal symlink of the `agents/` directory (`src/user.rs:484-487,543`) — no builder change needed. In-flight cycles are unaffected; the new text applies from the next team-lead session.
+- **Rollout:** single PR editing `agents/claude-code/team-lead.md` + `agents/claude-code/security-engineer.md` (+ this TDD). Deployment to `~/.claude/agents` happens through the Vorpal `FileSource("agents/claude-code")` artifact and existing symlink in `src/user.rs`. In-flight cycles are unaffected; the new text applies from the next team-lead session.
 - **Backward compatibility:** none required — prose contracts, no persisted state.
 - **Rollback:** `git revert` of the PR; the symlinked directory picks up the revert on next vorpal build.
 
@@ -210,13 +210,13 @@ Prose-only change — the test suite is the executable grep set in §11, each wi
 
 ## Implementation Phases
 
-Implementation note (all phases): line numbers cited in this TDD (`agents/team-lead.md:23,127-131,276,278`; `agents/security-engineer.md:32`) reflect the 2026-06-09 Read and WILL drift — implementers re-Read the live file and target content strings, never cited line numbers.
+Implementation note (all phases): line numbers cited in this TDD (`agents/claude-code/team-lead.md:23,127-131,276,278`; `agents/claude-code/security-engineer.md:32`) reflect the 2026-06-09 Read and WILL drift — implementers re-Read the live file and target content strings, never cited line numbers.
 
-### Phase 1 — `agents/team-lead.md` redesign (S)
+### Phase 1 — `agents/claude-code/team-lead.md` redesign (S)
 
 - **Goal:** apply Changes 1-3 (routing replacement, mechanical-fix routing, cycle-bloat reword, read-only preamble + description).
-- **File scope:** `agents/team-lead.md` only.
-- **Acceptance criteria** (run against `agents/team-lead.md`; baselines from 2026-06-09 session in parens):
+- **File scope:** `agents/claude-code/team-lead.md` only.
+- **Acceptance criteria** (run against `agents/claude-code/team-lead.md`; baselines from 2026-06-09 session in parens):
   - `grep -c 'Mechanical-fix shortcut'` → 0 (baseline 1)
   - `grep -cE 'self-applied|applies the fix and self-verifies'` → 0 (baseline 1, line 276)
   - `grep -c 'team-lead self-edits'` → 0 (baseline 1, line 278)
@@ -227,16 +227,16 @@ Implementation note (all phases): line numbers cited in this TDD (`agents/team-l
   - `grep -c 'quality-first'` → ≥1 (baseline 0)
   - `grep -c 'batch-fix'` → ≥2 (baseline 0; mechanical-fix routing + cycle-bloat reword)
   - `grep -c 'model='` → ≥2 (baseline 1; mandatory-model rule present — Change 1's normative text carries two literal `model=` tokens)
-  - `sed -n '1,30p' agents/team-lead.md | grep -c 'read-only'` → ≥1 (whole-file baseline 0 — verified this session; the layer statement lands in the preamble/description region)
+  - `sed -n '1,30p' agents/claude-code/team-lead.md | grep -c 'read-only'` → ≥1 (whole-file baseline 0 — verified this session; the layer statement lands in the preamble/description region)
 - **Effort:** S. **Depends on:** nothing. **Out of scope:** Rules 5/7/8 bodies, CANONICAL blocks, Docket/Task/Team tool usage, pitfalls block (line 337).
 
-### Phase 2 — `agents/security-engineer.md` touchpoint (S)
+### Phase 2 — `agents/claude-code/security-engineer.md` touchpoint (S)
 
 - **Goal:** apply Change 4 (Model floor reword to quality-first pinning).
-- **File scope:** `agents/security-engineer.md` only (line 32 region).
+- **File scope:** `agents/claude-code/security-engineer.md` only (line 32 region).
 - **Acceptance criteria:**
-  - `grep -c 'pins opus for security reviewers' agents/security-engineer.md` → 0 (baseline 1)
-  - `grep -c 'quality-first' agents/security-engineer.md` → ≥1 (baseline 0)
+  - `grep -c 'pins opus for security reviewers' agents/claude-code/security-engineer.md` → 0 (baseline 1)
+  - `grep -c 'quality-first' agents/claude-code/security-engineer.md` → ≥1 (baseline 0)
 - **Effort:** S. **Depends on:** Phase 1 (references its routing language). **Out of scope:** every other line of the file.
 
 ### Phase 3 — Repo-wide coherence verification + pin regression guard (S)
@@ -244,9 +244,9 @@ Implementation note (all phases): line numbers cited in this TDD (`agents/team-l
 - **Goal:** prove no stale references survive anywhere (inverted-scope) and codify the existing `src/user.rs` pin as a regression check; no edits expected in this phase — it is verification-only, escalating to team-lead if any grep fails.
 - **File scope:** read-only over `agents/`, `skills/`, `.claude/skills/`, `src/user.rs`, `docs/spec/`.
 - **Acceptance criteria:**
-  - `grep -rn 'Mechanical-fix shortcut\|team-lead self-edits\|inherit-all stays settled' agents/ skills/ .claude/skills/ docs/spec/` → 0 hits (baseline 3 hits, all in `agents/team-lead.md` — measured this session; removed in Phase 1). Scope deliberately excludes `docs/changelog/` (frozen historical records per Change 4 note).
+  - `grep -rn 'Mechanical-fix shortcut\|team-lead self-edits\|inherit-all stays settled' agents/ skills/ .claude/skills/ docs/spec/` → 0 hits (baseline 3 hits, all in `agents/claude-code/team-lead.md` — measured this session; removed in Phase 1). Scope deliberately excludes `docs/changelog/` (frozen historical records per Change 4 note).
   - `grep -c 'with_model("claude-fable-5\[1m\]")' src/user.rs` → 1 (baseline 1; pin unchanged)
-  - `grep -c '^model:' agents/*.md` → 0 for every file (baseline 0; no frontmatter pins introduced)
+  - `grep -c '^model:' agents/claude-code/*.md` → 0 for every file (baseline 0; no frontmatter pins introduced)
   - `grep -c 'with_agent("team-lead")' src/user.rs` → 1 (baseline 1)
 - **Effort:** S. **Depends on:** Phases 1-2. **Out of scope:** evolve-* measured-distribution notes (intentionally unchanged), `docs/spec/review-strategy.md` Rule 8 description (unaffected).
 
@@ -258,7 +258,7 @@ Implementation note (all phases): line numbers cited in this TDD (`agents/team-l
 
 **What §Change 1 prescribed:** Default-fable quality-first routing — every spawn runs `fable` unless the brief is fully Closed and faster turnaround materially helps (then `sonnet` with a one-line downshift justification); cost is explicitly not a criterion.
 
-**What now stands in `agents/team-lead.md`:** A 4-row cost-tiered routing table (heading: "Per-spawn model routing (cost-tiered, quality-upgradable)"): `sonnet` for Direct/Small impl and planner; `opus` for Medium impl, reviewer-2, verifier*; `fable` for tdd-author*, Large/architecture, long-horizon impl; `opus` (security depth) for security-reviewer-2 and security-dominated tdd-author*. Team-lead may exceed any tier with a one-line justification in the spawn brief.
+**What now stands in `agents/claude-code/team-lead.md`:** A 4-row cost-tiered routing table (heading: "Per-spawn model routing (cost-tiered, quality-upgradable)"): `sonnet` for Direct/Small impl and planner; `opus` for Medium impl, reviewer-2, verifier*; `fable` for tdd-author*, Large/architecture, long-horizon impl; `opus` (security depth) for security-reviewer-2 and security-dominated tdd-author*. Team-lead may exceed any tier with a one-line justification in the spawn brief.
 
 **Why the divergence:** Post-ea127f9 Mirmir telemetry (measured 2026-06-09) showed 12 of 13 spawns using `fable` (94% concentration), including trivial planner/impl spawns. The quality-first "default fable for every spawn, including trivial ones" clause was the root cause. The operator directed restoration of the pre-ea127f9 cost-tier table (c3f0aa6 baseline) with quality-first retained only as an upgrade path.
 

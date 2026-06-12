@@ -68,11 +68,11 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `agents/claude-code/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` exits via `shutdown_request` after delivering its verdict. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `agents/claude-code/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/claude-code/team-lead.md` Rule 8. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
@@ -205,7 +205,7 @@ where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
 The calling agent owns (in order):
 
-- SendMessage to peers per `agents/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
+- SendMessage to peers per `agents/claude-code/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
 - Mirroring the QA outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 - Proposing a spec revision via `Skill(ux-spec, ...)` if QA reveals a spec ambiguity rather than an implementation defect.
 

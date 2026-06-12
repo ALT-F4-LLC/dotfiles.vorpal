@@ -49,14 +49,15 @@ Each tool configuration is defined as a builder struct in Rust:
 
 ## Agent Team
 
-The project deploys a six-agent Claude Code development team to `~/.claude/agents/`:
+The project deploys a seven-agent Claude Code development team to `~/.claude/agents/`:
 
 | Agent | Role |
 |-------|------|
-| **Team Lead** | Orchestrates the other five agents through plan/implement/review/verify cycles |
+| **Team Lead** | Orchestrates the other agents through plan/implement/review/verify cycles |
 | **Staff Engineer** | Architecture, technical design documents, code review |
 | **Senior Engineer** | Implementation, code quality, debugging |
 | **Project Manager** | Issue planning, task breakdown, dependency management |
+| **Security Engineer** | Security review, threat modeling, trust-boundary analysis |
 | **SDET** | Test infrastructure, automation, quality engineering, verification |
 | **UX Designer** | User experience design specs |
 
@@ -75,7 +76,7 @@ Skills support the team:
 | **ux-spec** | `skills/claude-code/ux-spec/` | Authors a UX design spec as a Docket doc |
 | **verify-ac** | `skills/claude-code/verify-ac/` | Verifies a Docket issue's acceptance criteria against the diff |
 | **vote** | `skills/claude-code/vote/` | Multi-agent consensus voting protocol |
-| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/*.md` |
+| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `agents/claude-code/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
 | **evolve-coherence** | `.claude/skills/evolve-coherence/` | Audits agent↔skill coherence across four dimensions and routes fixes to evolve-agents/evolve-skills (report-and-route; never edits files) |
 

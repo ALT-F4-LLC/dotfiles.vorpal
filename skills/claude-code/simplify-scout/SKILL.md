@@ -3,7 +3,7 @@ name: simplify-scout
 description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
-  agents/senior-engineer.md (no new rubric). Idiomatic clarity first — fewer lines is the
+  agents/claude-code/senior-engineer.md (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
@@ -94,9 +94,9 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `agents/senior-engineer.md` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
+This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `agents/claude-code/senior-engineer.md` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
 
-Quick reference (the authority is `agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
+Quick reference (the authority is `agents/claude-code/senior-engineer.md`; this table is a lookup aid, not a substitute):
 
 | # | Principle | Simplification lens |
 |---|---|---|

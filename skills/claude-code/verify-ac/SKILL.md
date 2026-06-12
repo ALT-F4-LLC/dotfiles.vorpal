@@ -73,7 +73,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-Each verifier (whether paired `verifier-criteria` + `verifier-integration` under orchestration, or a standalone single invocation) runs this skill independently and emits its own report in this format — this skill is the single-verifier output-format authority, not the orchestrator. Spawning, eager dispatch, verdict reconciliation, degraded-fallback annotation, and fix-loop re-spawn are owned by the calling layer per `agents/team-lead.md` (Rule 7, Rule 8, step 14, step 15). Do not duplicate that logic here.
+Each verifier (whether paired `verifier-criteria` + `verifier-integration` under orchestration, or a standalone single invocation) runs this skill independently and emits its own report in this format — this skill is the single-verifier output-format authority, not the orchestrator. Spawning, eager dispatch, verdict reconciliation, degraded-fallback annotation, and fix-loop re-spawn are owned by the calling layer per `agents/claude-code/team-lead.md` (Rule 7, Rule 8, step 14, step 15). Do not duplicate that logic here.
 
 ## When to Use
 
@@ -84,7 +84,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `agents/claude-code/team-lead.md` Rule 8. -->
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Design QA against a `docs/ux/` spec for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.
@@ -95,7 +95,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 1. **Detect role** per Role Detection. ABORT if caller is not `@sdet`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. The calling agent (`@sdet`) acknowledges the dispatch via SendMessage but does NOT `docket issue move` for verification — verification is read-only on Docket workflow state per `agents/sdet.md` Rule 7 (moving regresses state / falsely signals implementation is still running), so there is no state move to undo. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
+3. **Gather issue context** (Docket-issue scope only): description + acceptance criteria (`docket issue show {id} --json`), comments (which supersede the description on conflict), file attachments, and activity log when context is unclear. The calling agent (`@sdet`) acknowledges the dispatch via SendMessage but does NOT `docket issue move` for verification — verification is read-only on Docket workflow state per `agents/claude-code/sdet.md` Rule 7 (moving regresses state / falsely signals implementation is still running), so there is no state move to undo. If file attachments are missing, surface as a finding (planning gap) rather than abort; the calling agent decides whether to BLOCK.
 3a. **Prior-verdict awareness** (Round-2+ re-verifications only). Before scoring criteria, scan `docket issue comment list {id}` for prior verification reports. For each acceptance criterion previously marked PASS whose evidence file/test was NOT touched by the current diff (`git diff --stat` vs the prior round's commit), cite the prior round's verdict in the new report's evidence (`PASS — unchanged since round {N}: {prior evidence}`) rather than re-running its evidence command. Re-run the full test suite end-to-end regardless; never carry forward a FAILed criterion or an Additional Testing gap. Reduces per-round token spend on multi-round fix-loops.
 4. **Gather diff** per the resolved scope's source. **Do not substitute the implementer's completion comment for the diff** — completion claims describe what the implementer intended to ship; the diff describes what reached HEAD. Always Read the actual changed files and inspect `git diff` / `git diff --stat` before scoring criteria.
 5. **Empty-artifact guard**: if the resolved diff/scope produces no inspectable content (no files, no acceptance criteria, empty issue), ABORT:
@@ -118,11 +118,11 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 6a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.
-7. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/sdet.md` Epistemic Discipline.
+7. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `agents/claude-code/sdet.md` Epistemic Discipline.
 
 ## Verification Procedure
 
-**Triage first.** The calling agent (`@sdet`) selects depth — LIGHT or FULL — per the judgment described in `agents/sdet.md`. This skill enforces the format once depth is chosen.
+**Triage first.** The calling agent (`@sdet`) selects depth — LIGHT or FULL — per the judgment described in `agents/claude-code/sdet.md`. This skill enforces the format once depth is chosen.
 
 ### LIGHT mode
 
@@ -162,7 +162,7 @@ Apply the full procedure. Scale evidence to risk.
 
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
-- **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `agents/sdet.md` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
+- **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `agents/claude-code/sdet.md` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
 
 ## Output Contract
@@ -248,8 +248,8 @@ where `{verdict}` is `APPROVE`, `ACCEPT WITH CAVEATS`, or `BLOCK`. LIGHT mode's 
 The calling agent owns (in order):
 
 - Closing or commenting the Docket issue (the issue was already CLOSED by `@senior-engineer` at end of implementation — `docket issue close` here is a no-op): on APPROVE, `docket issue comment add <id> -m "..."`; on ACCEPT WITH CAVEATS, comment summarizing the caveats and route any follow-up via SendMessage `@project-manager` (no workflow-state move); on BLOCK, `docket issue reopen <id>` followed by a blocking-criteria comment. `reopen` on BLOCK is the only legitimate verification state-change.
-- SendMessage to peers per the `agents/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
-- Escalating to vote per the vote triggers in `agents/sdet.md` — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `agents/sdet.md` §Using `/vote` for Consensus.
+- SendMessage to peers per the `agents/claude-code/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
+- Escalating to vote per the vote triggers in `agents/claude-code/sdet.md` — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `agents/claude-code/sdet.md` §Using `/vote` for Consensus.
 
 **Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's inbox. Before ending the turn, answer: "Did I SendMessage the structured verdict body (not summarized) to team-lead this same turn?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the SendMessage IS the deliverable.
 

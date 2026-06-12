@@ -5,6 +5,7 @@ use crate::{
 use anyhow::Result;
 use bat::BatConfig;
 use claude_code::ClaudeCode;
+use codex::{Codex, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
@@ -22,6 +23,7 @@ use vorpal_sdk::{
 
 mod bat;
 mod claude_code;
+mod codex;
 mod ghostty;
 mod k9s;
 mod opencode;
@@ -311,6 +313,67 @@ impl UserEnvironment {
             get_output_path("library", &claude_code_config)
         );
 
+        let codex_config_name = format!("{}-codex", &self.name);
+        let codex_config = Codex::new(codex_config_name.as_str(), self.systems.clone())
+            .with_agent_limits(Some(6), Some(1), Some(1800))
+            .with_allow_login_shell(true)
+            .with_analytics_enabled(false)
+            .with_approval_policy("on-request")
+            .with_approvals_reviewer("user")
+            .with_check_for_update_on_startup(true)
+            .with_cli_auth_credentials_store("keyring")
+            .with_default_permissions(":workspace")
+            .with_disable_paste_burst(false)
+            .with_feature_enabled("apps", false)
+            .with_feature_enabled("codex_git_commit", false)
+            .with_feature_enabled("fast_mode", true)
+            .with_feature_enabled("hooks", true)
+            .with_feature_enabled("memories", true)
+            .with_feature_enabled("multi_agent", true)
+            .with_feature_enabled("personality", true)
+            .with_feature_enabled("shell_snapshot", true)
+            .with_feature_enabled("shell_tool", true)
+            .with_feature_enabled("undo", false)
+            .with_feature_enabled("unified_exec", true)
+            .with_feedback_enabled(false)
+            .with_file_opener("none")
+            .with_hide_agent_reasoning(false)
+            .with_history_persistence("save-all")
+            .with_mcp_oauth_credentials_store("auto")
+            .with_model("gpt-5.5")
+            .with_model_provider("openai")
+            .with_model_reasoning_effort("high")
+            .with_model_reasoning_summary("auto")
+            .with_model_verbosity("medium")
+            .with_personality("pragmatic")
+            .with_plan_mode_reasoning_effort("high")
+            .with_project_doc_max_bytes(32768)
+            .with_sandbox_mode("workspace-write")
+            .with_shell_environment_exclude(vec![
+                "AWS_*".to_string(),
+                "AZURE_*".to_string(),
+                "GCP_*".to_string(),
+            ])
+            .with_shell_environment_inherit("all")
+            .with_show_raw_agent_reasoning(false)
+            .with_tool_enabled("view_image", true)
+            .with_tui_notifications(TuiNotifications::Enabled(false))
+            .with_tui_status_line(vec![
+                "model-with-reasoning".to_string(),
+                "context-remaining".to_string(),
+                "current-dir".to_string(),
+                "git-branch".to_string(),
+            ])
+            .with_tui_terminal_title(vec!["spinner".to_string(), "project".to_string()])
+            .with_tui_theme("tokyonight")
+            .with_web_search("cached")
+            .build(context)
+            .await?;
+        let codex_config_path = format!(
+            "{}/{codex_config_name}",
+            get_output_path("library", &codex_config)
+        );
+
         let opencode_config_name = format!("{}-opencode", &self.name);
         let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
             .with_schema("https://opencode.ai/config.json")
@@ -531,6 +594,7 @@ impl UserEnvironment {
                 claude_skills,
                 claude_statusline,
                 claude_teammate_idle_hook,
+                codex_config,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
@@ -550,6 +614,7 @@ impl UserEnvironment {
                 (claude_skills_path.as_str(), "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
+                (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

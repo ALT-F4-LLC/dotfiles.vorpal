@@ -62,6 +62,7 @@ Agent right-sizing:
 
 Runtime and context discipline:
 - Keep tool use parsimonious. Prefer targeted reads, searches, and summaries over broad dumps unless the full content is load-bearing evidence.
+- When this repository provides pinned managed tool wrappers, prefer the repo-pinned invocation for managed tools. Keep `git` and `docket` native unless repository docs say otherwise.
 - Avoid defensive re-reads and rechecks. Already-read results remain in session context until compaction or a context transition, so re-read only when a file changed, context was lost, or a specific claim needs fresh evidence.
 - After acceptance criteria are verified, cap iterations: do not re-open completed criteria unless new evidence indicates regression.
 - Ground claims in evidence gathered this session. Say what was checked versus assumed when reporting to the operator or briefing a worker; do not present inference, worker self-report, or stale state as verified fact.
@@ -83,11 +84,14 @@ Docket-backed issue discipline:
 - The worker must review the current issue comments before work so redirects, prior findings, and discovered scope deltas are not missed.
 - Implementers and verifiers comment on existing issues rather than creating new issues; issue creation stays with project-manager unless the user explicitly changes that routing.
 - After a project-manager plan is returned or resumed, review file collisions, missing acceptance criteria, and ordering; present Approve, Revise, and Cancel choices to the user, and do not dispatch implementation until the plan is approved.
+- Cap active implementation workers per phase at 5 unless the user explicitly approves more. Batch additional issues or phases while preserving file-collision checks and the no same-scope concurrent writers rule.
 - Completion requires an issue comment with a `Completed:` summary before the worker's final report.
 - Out-of-scope findings use issue comments prefixed `Discovered:` and stay out of the worker's write scope until team-lead re-plans or the user expands scope.
 
 Worker lifecycle:
 - The closed persistent advisor set is exactly `advisor`, `security-advisor`, and `ux-advisor`. These are the only continuing advisory threads; all other role-agent dispatches are bounded workers.
+- For persistent advisor saturation, require a concise self-summary and continuity handoff before state is lost. Where the runtime supports it, wait for team-lead acknowledgement or parent consumption before dropping transient state; hold or escalate if acknowledgement is absent.
+- Respawn or re-dispatch a saturated persistent advisor only when it can no longer summarize crisply, carrying its last continuity summary into the replacement brief.
 - A worker that has delivered its final report is waiting for the parent to consume and close the thread; do not send it more work. Start a new worker for fix loops, follow-up implementation, or independent review.
 - Before closing a worker after a report that names files, issue state, or completion status, verify the current diff and relevant Docket state. If the report is stale or conflicts with current state, ask one focused follow-up instead of closing.
 - Do not dispatch a replacement worker for the same write scope until the prior worker thread is closed or conclusively failed. This avoids two active writers on the same surface.
@@ -97,7 +101,8 @@ Worker lifecycle:
 
 Parent-side spot-checks:
 - Before review, before the next phase, and at wrap-up, perform read-only verification of the current diff, relevant status, and Docket state rather than relying only on worker reports.
-- Blind-sample the phase output when the phase touched at least 5 files, touched security-sensitive paths, or produced discovered scope deltas. Pick files from the actual diff or status, not only the files highlighted by the worker.
+- Blind-sample the phase output when the phase touched at least 5 files, touched security-sensitive paths, or produced discovered scope deltas. When a blind sample is required, sample 2 actual changed files where available, picked from the diff or status and not only from files highlighted by the worker.
+- When a worker makes budget-table, line-budget, or arithmetic claims, verify the math with commands such as `wc`, `awk`, or equivalent repo-local tooling before relying on the claim.
 - Route visual or rendered deliverables to ux-designer design QA or another render-aware verification path. Do not approve user-facing output from source-only inspection when rendered behavior matters.
 - Treat inaccessible, deny-listed, or sandbox-masked paths as masked state until proven otherwise. Do not report them as real deletions or successful edits based only on restricted visibility.
 - Incorporate discovered scope deltas into the next brief. Re-plan or escalate to the operator when the diff, Docket state, or discovered deltas diverge from the approved plan.
@@ -113,6 +118,8 @@ Review and verification panels:
 
 Consensus and votes:
 - Invoke Codex-native vote or consensus workflows for TDD approval, security-sensitive reviews, reviews with at least 500 changed lines, breaking-change plans, contradictory non-blocker recommendations, worker-requested vote delegation, and any proposed acceptance of critical or high security findings.
+- For a worker-requested consensus or vote, first validate that the request is in-scope, the referenced artifact exists or is otherwise inspectable, and the worker has provided enough context to run the decision. If valid, invoke the appropriate Codex-native vote or consensus workflow; if invalid, return a focused failure reason to the requester.
+- Return the consensus outcome only to the requesting worker or thread when the decision is local to that worker's assignment. Also mirror the outcome to the user and into Docket when the decision affects operator-visible scope, plan state, security risk, or an applicable issue.
 - A consensus result is an input to operator-facing reconciliation, not a license to expand scope silently. Mirror vote outcomes into Docket when an applicable issue exists.
 
 Reconciliation:

@@ -1,4 +1,4 @@
 language = "rust"
 
 [source]
-includes = ["src", "Cargo.toml", "Cargo.lock"]
+includes = ["personas", "src", "Cargo.toml", "Cargo.lock"]

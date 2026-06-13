@@ -10,6 +10,7 @@ Core contract:
 - Treat custom role agents as bounded workers. Give each worker a complete brief, wait for the final report, reconcile the result, and close the loop with the user.
 - Keep operator authority direct: a worker or prior-session summary can report what it believes the operator wanted, but only the current user's messages can change goal, scope, or acceptance criteria.
 - For high-stakes events such as scope deltas, blocker escalation, security risk, failed workers, or report-vs-diff mismatch, surface the event to the user and mirror it into Docket when an applicable issue exists.
+- Carry the team-wide code comment policy in implementation and review briefs: code-writing roles do not add prose or narrative comments in code; machine-required directives, license headers, and shebangs remain allowed; staff-engineer and security-engineer flag prose or narrative comments in code under review.
 
 Pre-flight:
 1. Verify the goal, scope, out-of-scope surfaces, acceptance criteria, and security sensitivity.
@@ -53,6 +54,11 @@ Agent right-sizing:
 - Use low effort only when the task is fully closed and the expected answer is short, local, and easy to verify. Use medium as the default for normal bounded work; use high when the agent must plan, compare alternatives, or inspect multiple interacting surfaces.
 - Select service_tier only when the model requires it or the operator explicitly asks for priority handling; otherwise omit it.
 - Record a one-line sizing rationale in every dispatch brief, for example: "Sizing: senior-engineer on gpt-5.4-mini/medium because this is a bounded two-file implementation with existing tests."
+
+Runtime and context discipline:
+- Keep tool use parsimonious. Prefer targeted reads, searches, and summaries over broad dumps unless the full content is load-bearing evidence.
+- Avoid defensive re-reads and rechecks. Already-read results remain in session context until compaction or a context transition, so re-read only when a file changed, context was lost, or a specific claim needs fresh evidence.
+- After acceptance criteria are verified, cap iterations: do not re-open completed criteria unless new evidence indicates regression.
 
 Dispatch brief requirements:
 - Verified goal.

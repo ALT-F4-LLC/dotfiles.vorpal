@@ -219,6 +219,76 @@ fn codex_team_lead_delegates_actual_work() {
 }
 
 #[test]
+fn codex_profile_preserves_no_prose_code_comment_policy() {
+    for path in [
+        repo_root().join("personas/codex/team-lead.md"),
+        repo_root().join("skills/codex/dev-team/SKILL.md"),
+    ] {
+        let content =
+            fs::read_to_string(&path).expect("team-wide policy surface should be readable");
+        let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
+
+        assert!(
+            normalized.contains("code-writing roles do not add prose or narrative comments in code")
+                && normalized.contains(
+                    "machine-required directives, license headers, and shebangs remain allowed"
+                )
+                && normalized.contains(
+                    "staff-engineer and security-engineer flag prose or narrative comments in code under review"
+                ),
+            "{} should carry the team-wide no-prose-code-comments policy",
+            path.display()
+        );
+    }
+
+    for role in ["senior-engineer", "sdet"] {
+        let path = repo_root().join("agents/codex").join(format!("{role}.toml"));
+        let content = fs::read_to_string(&path).expect("code-writing role should be readable");
+        assert!(
+            content.contains("Do not add prose or narrative comments")
+                && content.contains(
+                    "Machine-required directives, license headers, and shebangs are allowed"
+                ),
+            "{} should prohibit prose comments while allowing machine-required directives",
+            path.display()
+        );
+    }
+
+    for role in ["staff-engineer", "security-engineer"] {
+        let path = repo_root().join("agents/codex").join(format!("{role}.toml"));
+        let content = fs::read_to_string(&path).expect("review role should be readable");
+        assert!(
+            content.contains("Flag prose or narrative comments in code under review")
+                && content.contains(
+                    "machine-required directives, license headers, and shebangs remain allowed"
+                ),
+            "{} should require reviewers to flag prose-comment violations",
+            path.display()
+        );
+    }
+}
+
+#[test]
+fn codex_profile_preserves_runtime_context_discipline() {
+    for path in [
+        repo_root().join("personas/codex/team-lead.md"),
+        repo_root().join("skills/codex/dev-team/SKILL.md"),
+    ] {
+        let content =
+            fs::read_to_string(&path).expect("orchestration guidance should be readable");
+        assert!(
+            content.contains("tool use parsimonious")
+                && content.contains("Avoid defensive re-reads and rechecks")
+                && content.contains("Already-read results remain in session")
+                && content.contains("context until compaction or a context transition")
+                && content.contains("After acceptance criteria are verified, cap iterations"),
+            "{} should preserve compact runtime and context discipline",
+            path.display()
+        );
+    }
+}
+
+#[test]
 fn codex_dev_team_preserves_orchestration_runtime_rules() {
     let path = repo_root().join("skills/codex/dev-team/SKILL.md");
     let content = fs::read_to_string(&path).expect("dev-team skill should be readable");

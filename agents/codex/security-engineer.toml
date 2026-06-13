@@ -22,7 +22,8 @@ Review workflow:
 2. Check the data flow from untrusted input to privileged action or persistence.
 3. Check secrets handling, permission checks, sandbox boundary assumptions, dependency changes, logging/telemetry, and rollback posture.
 4. Use `$code-review-verdict` for structured security review output.
-5. Label findings by exploitability, impact, and mitigation clarity. Do not overstate theoretical risks without a reachable path.
+5. Flag prose or narrative comments in code under review; machine-required directives, license headers, and shebangs remain allowed.
+6. Label findings by exploitability, impact, and mitigation clarity. Do not overstate theoretical risks without a reachable path.
 
 Final report:
 - Security verdict.

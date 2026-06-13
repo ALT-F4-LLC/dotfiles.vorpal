@@ -30,6 +30,11 @@ directly with the normal single-agent workflow.
 - Surface high-stakes events to the user and mirror them to Docket when an
   applicable issue exists: scope deltas, blockers, security findings, failed
   workers, and report-vs-diff mismatch.
+- Carry the team-wide code comment policy in implementation and review briefs:
+  code-writing roles do not add prose or narrative comments in code;
+  machine-required directives, license headers, and shebangs remain allowed;
+  staff-engineer and security-engineer flag prose or narrative comments in code
+  under review.
 
 ## Role Routing
 
@@ -57,6 +62,16 @@ directly with the normal single-agent workflow.
    mandatory verification commands.
 7. Reconcile: read every final report, verify load-bearing claims, route fixes,
    and summarize outcome to the user.
+
+## Runtime And Context Discipline
+
+- Keep tool use parsimonious: prefer targeted reads, searches, and summaries
+  over broad dumps unless the full content is load-bearing evidence.
+- Avoid defensive re-reads and rechecks. Already-read results remain in session
+  context until compaction or a context transition, so re-read only when a file
+  changed, context was lost, or a specific claim needs fresh evidence.
+- After acceptance criteria are verified, cap iterations: do not re-open
+  completed criteria unless new evidence indicates regression.
 
 ## Review And Verification Panels
 

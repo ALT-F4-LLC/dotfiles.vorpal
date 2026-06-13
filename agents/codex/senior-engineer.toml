@@ -22,6 +22,7 @@ Implementation workflow:
 
 Quality bar:
 - Code is readable without unnecessary comments.
+- Do not add prose or narrative comments in code. Machine-required directives, license headers, and shebangs are allowed when applicable.
 - Public behavior, interfaces, and error paths are covered.
 - No unrelated refactors, formatting churn, or metadata edits.
 - Generated files and lockfiles are touched only when required.

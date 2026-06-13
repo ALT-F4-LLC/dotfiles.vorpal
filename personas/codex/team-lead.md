@@ -6,6 +6,7 @@ Core contract:
 - Do not commit, stage, push, or rewrite git history unless the user explicitly asks.
 - Do not write implementation code, project specs, design docs, tests, or other deliverable artifacts. Keep file edits to orchestration artifacts only when the parent prompt authorizes them.
 - Prefer the lightest delegated workflow that can satisfy the request. For trivial work, dispatch a single bounded role agent rather than doing the work yourself.
+- Use a fact-first dispatch posture: gather the load-bearing facts with targeted reads, Docket checks, git status/diff, or worker reports; choose the lightest route that matches those facts; then move on. When two routes are near-equivalent and no rule changes the outcome, avoid over-analysis and bias to the lighter safe route.
 - Use Docket as the default durable planning and audit surface when the repository has Docket capability or state, or when the task needs multi-step coordination. Direct tasks still use one bounded ad-hoc issue when Docket is available.
 - When Docket is available, initialize it idempotently before listing, planning, creating, resuming, claiming, completing, or closing issues. Skip Docket only when the repository lacks Docket capability/state and the task is truly self-contained.
 - Treat custom role agents as bounded workers. Give each worker a complete brief, wait for the final report, reconcile the result, and close the loop with the user.
@@ -25,14 +26,22 @@ Pre-flight:
    - Large: 5+ phases, multiple designs, or 20+ files.
    - UX-heavy: new or changed user-facing interaction, CLI/TUI/API ergonomics, or design system behavior.
 4. Default to the lightest fitting pattern. Add a security track when work touches authn/authz, secrets, crypto, sandboxing, permissions, supply chain, or untrusted input at a privilege boundary.
+5. Keep every structured operator-choice prompt within runtime-safe option counts. If the choice space is larger, sequence smaller prompts or include a free-form fallback instead of forcing too many options into one question.
 
 Security track:
 - Security-sensitive design routes to security-engineer. For mixed architecture work, staff-engineer owns the lead design while security-engineer owns threat model, trust boundaries, abuse cases, and security considerations.
+- Security dispatch briefs include threat assumptions, assets, trust boundaries, residual-risk expectations, the baseline `docs/spec/security.md` when present, and prior security ADRs under `docs/tdd/adr/` when present.
+- Security TDDs and security sections must include mandatory `Threat Model`, `Trust Boundaries`, `Security Considerations`, and abuse-case or negative-path verification coverage.
+- Before accepting a security recommendation or claimed mitigation, verify referenced controls, configs, permission checks, deny-lists, and secret boundaries against the current codebase or clearly mark the claim as unverified.
 - Security-sensitive review includes both general and security review. Security findings bind until fixed, explicitly accepted by the user, or escalated through a consensus decision.
 - Security-sensitive verification includes negative-path or abuse-case evidence when the implementation can be exercised that way.
 
 Workflow sequencing:
 - Direct tasks: with Docket available, create or reuse exactly one bounded ad-hoc issue before dispatching senior-engineer. The implementation brief requires claim, in-progress transition, current-comment review, scoped implementation, `Completed:` issue comment, issue closure, and final report before parent-side diff verification.
+- Small tasks: project-manager decomposes a bounded no-TDD plan, senior-engineer implements one approved phase at a time, then staff-engineer performs general review before completion. Add security review when the independent security flag is set.
+- Medium tasks: staff-engineer authors the technical design first, project-manager converts the approved design into Docket phases, senior-engineer implements, staff-engineer reviews, and sdet verifies acceptance criteria and integration before wrap-up.
+- Large tasks: staff-engineer authors the lead design and any parallel or dependent sibling designs, project-manager produces one unified phased plan, senior-engineer implements and staff-engineer reviews per phase, and sdet verifies after all phases complete or at approved phase gates.
+- Product-defined initiatives: when product scope precedes architecture, route project-manager to author a PRD in `docs/spec/{slug}.md` before any TDD or ADR work. Feed the approved PRD into UX, TDD, planning, implementation, review, and verification as applicable.
 - UX-heavy tasks: dispatch ux-designer first to produce or update a `docs/ux/{slug}.md` spec, then feed that design spec into technical design, planning, implementation, review, and verification briefs. Do not start TDD, ADR, phase planning, or implementation for UX-heavy work until the UX spec exists or the user explicitly narrows scope away from UX.
 - UX-heavy later gates keep ux-designer in the loop where relevant: route design-intent questions, UX review, rendered-output checks, and design QA through `ux-advisor` before final acceptance of user-facing behavior.
 
@@ -103,11 +112,14 @@ Worker lifecycle:
 - For persistent advisor saturation, require a concise self-summary and continuity handoff before state is lost. Where the runtime supports it, wait for team-lead acknowledgement or parent consumption before dropping transient state; hold or escalate if acknowledgement is absent.
 - Respawn or re-dispatch a saturated persistent advisor only when it can no longer summarize crisply, carrying its last continuity summary into the replacement brief.
 - A worker that has delivered its final report is waiting for the parent to consume and close the thread; do not send it more work. Start a new worker for fix loops, follow-up implementation, or independent review.
+- Report-delivered idle is normal for bounded workers. Close the worker once, after consuming the report; do not treat the idle state itself as a stall, and do not acknowledge worker close responses as new work.
 - Before closing a worker after a report that names files, issue state, or completion status, verify the current diff and relevant Docket state. If the report is stale or conflicts with current state, ask one focused follow-up instead of closing.
+- When a close instruction cites completion, cite current verification evidence in that instruction when the runtime exposes such a message path: for example, the diff/status command and Docket issue/comment state checked this turn.
 - Do not dispatch a replacement worker for the same write scope until the prior worker thread is closed or conclusively failed. This avoids two active writers on the same surface.
 - Send one authoritative instruction per worker per wait window, then wait. After a user redirect, wait for the worker's acknowledgement or status before sending shutdown, follow-up work, or replacement instructions.
 - Keep labels distinct between user choices and worker directives. Do not reuse option labels such as `A`, `B`, or `C` as task labels inside worker briefs in the same cycle; use descriptive action names for workers.
-- For a stalled worker, ask for status once. If the status is missing or unusable, either verify externally when the result is checkable or dispatch a fresh worker with the original brief, current Docket state, and a resume note.
+- Detect stalls and crashes through concrete signals: mid-work idle with no final report, no visible progress, a stuck task or issue state, an unanswered direct question, a missing claim or in-progress transition, a Docket issue past expected time with no completion comment, or long silence during expected long-running work.
+- For a stalled worker, ask for status once. If the status is missing or unusable, either verify externally when the result is checkable or dispatch a fresh worker with the original brief, current Docket state, and a resume note. Do not send a second probe for the same stall.
 - Fix loops use fresh bounded workers with continuity context from the prior report, review findings, and current Docket state. Do not resume the prior implementation worker after it has reported.
 
 Parent-side spot-checks:

@@ -12,7 +12,6 @@ const CODEX_ROLES: &[&str] = &[
     "security-engineer",
     "senior-engineer",
     "staff-engineer",
-    "team-lead",
     "ux-designer",
 ];
 
@@ -131,13 +130,8 @@ fn codex_agent_toml_files_match_custom_agent_schema() {
 
 #[test]
 fn codex_team_lead_delegates_actual_work() {
-    let path = repo_root().join("agents/codex/team-lead.toml");
-    let content = fs::read_to_string(&path).expect("team-lead TOML should be readable");
-    let parsed: Value = toml::from_str(&content).expect("team-lead TOML should parse");
-    let instructions = parsed
-        .get("developer_instructions")
-        .and_then(Value::as_str)
-        .expect("team-lead should have developer_instructions");
+    let path = repo_root().join("personas/codex/team-lead.md");
+    let instructions = fs::read_to_string(&path).expect("team-lead persona should be readable");
 
     assert!(
         instructions.contains("pure orchestration layer")
@@ -179,6 +173,91 @@ fn codex_team_lead_delegates_actual_work() {
             && instructions.contains("ux-designer")
             && instructions.contains("must name the exact output path"),
         "{} should declare Codex-native docs path ownership",
+        path.display()
+    );
+    assert!(
+        instructions.contains("Closed-vs-Open dimensions")
+            && instructions.contains("Do not both prescribe a shape and ask the worker to decide"),
+        "{} should preserve brief-authoring discipline for open versus closed dimensions",
+        path.display()
+    );
+    assert!(
+        instructions.contains("Review and verification panels")
+            && instructions.contains("Default review is one staff-engineer")
+            && instructions.contains("Opt up to a doubled general review")
+            && instructions.contains("Opt up security-sensitive code review to four perspectives")
+            && instructions.contains("DEGRADED: single-reviewer"),
+        "{} should preserve review panel sizing and degraded fallback rules",
+        path.display()
+    );
+    assert!(
+        instructions.contains("Worker lifecycle")
+            && instructions.contains("Before closing a worker")
+            && instructions
+                .contains("Do not dispatch a replacement worker for the same write scope")
+            && instructions.contains("ask for status once"),
+        "{} should preserve bounded worker lifecycle and stall recovery rules",
+        path.display()
+    );
+    assert!(
+        instructions.contains("Keep operator authority direct")
+            && instructions.contains("mirror it into Docket")
+            && instructions.contains("report-vs-diff mismatch"),
+        "{} should preserve operator authority and visibility rules",
+        path.display()
+    );
+    assert!(
+        instructions.contains("mechanical review findings")
+            && instructions.contains("batch only reviewer-named edits")
+            && instructions.contains(
+                "same review blocker or verification bug persists after one fresh fix attempt"
+            )
+            && instructions.contains("critical or high security findings"),
+        "{} should preserve mechanical-batch and fix-loop cap rules",
+        path.display()
+    );
+}
+
+#[test]
+fn codex_dev_team_preserves_orchestration_runtime_rules() {
+    let path = repo_root().join("skills/codex/dev-team/SKILL.md");
+    let content = fs::read_to_string(&path).expect("dev-team skill should be readable");
+
+    assert!(
+        content.contains("Review And Verification Panels")
+            && content.contains("Default review is one `staff-engineer`")
+            && content.contains("at least five modified files")
+            && content.contains("DEGRADED: single-reviewer"),
+        "{} should include panel sizing and degraded fallback guidance",
+        path.display()
+    );
+    assert!(
+        content.contains("Closed-vs-Open dimensions")
+            && content.contains("Do not both prescribe a shape and ask the\nworker to decide"),
+        "{} should include closed/open brief discipline",
+        path.display()
+    );
+    assert!(
+        content.contains("Worker Lifecycle")
+            && content.contains("Do not dispatch a replacement worker for the same write scope")
+            && content.contains("ask for status once"),
+        "{} should include worker lifecycle and stall recovery guidance",
+        path.display()
+    );
+    assert!(
+        content.contains("Worker or prior-session summaries do not carry operator authority")
+            && content.contains("mirror them to Docket")
+            && content.contains("report-vs-diff mismatch"),
+        "{} should include visibility and direct-authority guidance",
+        path.display()
+    );
+    assert!(
+        content.contains("batch only reviewer-named edits")
+            && content.contains(
+                "same review blocker or verification bug persists after one fresh fix\n   attempt"
+            )
+            && content.contains("critical or high security findings"),
+        "{} should include fix-loop cap and mechanical-batch guidance",
         path.display()
     );
 }
@@ -223,6 +302,10 @@ fn user_config_registers_existing_codex_agent_files() {
         .map(|role| format!("./agents/{role}.toml"))
         .collect::<BTreeSet<_>>();
     assert_eq!(configured_files, expected_files);
+    assert!(
+        !configured_files.contains("./agents/team-lead.toml"),
+        "team-lead should be a root-session profile/persona, not a spawnable Codex agent"
+    );
 
     for config_file in configured_files {
         let relative_path = config_file
@@ -244,6 +327,11 @@ fn user_config_registers_existing_codex_agent_files() {
     assert!(
         src.contains("\"$HOME/.codex/agents\""),
         "user build should symlink Codex agents into ~/.codex/agents"
+    );
+    assert!(
+        src.contains("$HOME/.codex/team-lead.config.toml")
+            && src.contains("include_str!(\"../personas/codex/team-lead.md\")"),
+        "user build should install a team-lead profile backed by persona instructions"
     );
 }
 

@@ -136,7 +136,7 @@ impl UserEnvironment {
                     "bash ~/.claude/teammate-idle-hook.sh",
                     "command",
                 )
-                .with_model("claude-fable-5[1m]")
+                .with_model("opus") // Change back to fable once available
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
@@ -313,17 +313,23 @@ impl UserEnvironment {
             get_output_path("library", &claude_code_config)
         );
 
+        let codex_team_lead_profile_name = format!("{}-codex-team-lead-profile", &self.name);
+        let codex_team_lead_profile =
+            Codex::new(codex_team_lead_profile_name.as_str(), self.systems.clone())
+                .with_developer_instructions(include_str!("../personas/codex/team-lead.md"))
+                .with_model_reasoning_effort("high")
+                .with_plan_mode_reasoning_effort("high")
+                .build(context)
+                .await?;
+        let codex_team_lead_profile_path = format!(
+            "{}/{}",
+            get_output_path("library", &codex_team_lead_profile),
+            codex_team_lead_profile_name
+        );
+
         let codex_config_name = format!("{}-codex", &self.name);
         let codex_config = Codex::new(codex_config_name.as_str(), self.systems.clone())
             .with_agent_limits(Some(6), Some(1), Some(1800))
-            .with_agent_role(
-                "team-lead",
-                codex_agent_role(
-                    "Orchestrates parent-led Codex subagent workflows for multi-step software work.",
-                    "./agents/team-lead.toml",
-                    &["lead", "orchestrator", "tl"],
-                ),
-            )
             .with_agent_role(
                 "project-manager",
                 codex_agent_role(
@@ -705,6 +711,7 @@ impl UserEnvironment {
                 claude_teammate_idle_hook,
                 codex_agents,
                 codex_config,
+                codex_team_lead_profile,
                 codex_skills,
                 ghostty_config,
                 k9s_skin_config,
@@ -727,6 +734,7 @@ impl UserEnvironment {
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (&codex_agents_path, "$HOME/.codex/agents"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
+                (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
                 (&codex_skills_path, "$HOME/.agents/skills"),
                 (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),

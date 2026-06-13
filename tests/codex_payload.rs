@@ -21,7 +21,6 @@ const CODEX_SKILLS: &[&str] = &[
     "code-review-verdict",
     "design-qa",
     "design-review",
-    "dev-team",
     "init-specs",
     "prd",
     "review-and-comment",
@@ -184,8 +183,10 @@ fn codex_team_lead_delegates_actual_work() {
     assert!(
         instructions.contains("Review and verification panels")
             && instructions.contains("Default review is one staff-engineer")
+            && instructions.contains("Default verification is one sdet")
             && instructions.contains("Opt up to a doubled general review")
             && instructions.contains("Opt up security-sensitive code review to four perspectives")
+            && instructions.contains("at least five modified files")
             && instructions.contains("DEGRADED: single-reviewer"),
         "{} should preserve review panel sizing and degraded fallback rules",
         path.display()
@@ -220,26 +221,21 @@ fn codex_team_lead_delegates_actual_work() {
 
 #[test]
 fn codex_profile_preserves_no_prose_code_comment_policy() {
-    for path in [
-        repo_root().join("personas/codex/team-lead.md"),
-        repo_root().join("skills/codex/dev-team/SKILL.md"),
-    ] {
-        let content =
-            fs::read_to_string(&path).expect("team-wide policy surface should be readable");
-        let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
+    let path = repo_root().join("personas/codex/team-lead.md");
+    let content = fs::read_to_string(&path).expect("team-wide policy surface should be readable");
+    let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
 
-        assert!(
-            normalized.contains("code-writing roles do not add prose or narrative comments in code")
-                && normalized.contains(
-                    "machine-required directives, license headers, and shebangs remain allowed"
-                )
-                && normalized.contains(
-                    "staff-engineer and security-engineer flag prose or narrative comments in code under review"
-                ),
-            "{} should carry the team-wide no-prose-code-comments policy",
-            path.display()
-        );
-    }
+    assert!(
+        normalized.contains("code-writing roles do not add prose or narrative comments in code")
+            && normalized.contains(
+                "machine-required directives, license headers, and shebangs remain allowed"
+            )
+            && normalized.contains(
+                "staff-engineer and security-engineer flag prose or narrative comments in code under review"
+            ),
+        "{} should carry the team-wide no-prose-code-comments policy",
+        path.display()
+    );
 
     for role in ["senior-engineer", "sdet"] {
         let path = repo_root().join("agents/codex").join(format!("{role}.toml"));
@@ -270,64 +266,16 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
 
 #[test]
 fn codex_profile_preserves_runtime_context_discipline() {
-    for path in [
-        repo_root().join("personas/codex/team-lead.md"),
-        repo_root().join("skills/codex/dev-team/SKILL.md"),
-    ] {
-        let content =
-            fs::read_to_string(&path).expect("orchestration guidance should be readable");
-        assert!(
-            content.contains("tool use parsimonious")
-                && content.contains("Avoid defensive re-reads and rechecks")
-                && content.contains("Already-read results remain in session")
-                && content.contains("context until compaction or a context transition")
-                && content.contains("After acceptance criteria are verified, cap iterations"),
-            "{} should preserve compact runtime and context discipline",
-            path.display()
-        );
-    }
-}
-
-#[test]
-fn codex_dev_team_preserves_orchestration_runtime_rules() {
-    let path = repo_root().join("skills/codex/dev-team/SKILL.md");
-    let content = fs::read_to_string(&path).expect("dev-team skill should be readable");
+    let path = repo_root().join("personas/codex/team-lead.md");
+    let content = fs::read_to_string(&path).expect("orchestration guidance should be readable");
 
     assert!(
-        content.contains("Review And Verification Panels")
-            && content.contains("Default review is one `staff-engineer`")
-            && content.contains("at least five modified files")
-            && content.contains("DEGRADED: single-reviewer"),
-        "{} should include panel sizing and degraded fallback guidance",
-        path.display()
-    );
-    assert!(
-        content.contains("Closed-vs-Open dimensions")
-            && content.contains("Do not both prescribe a shape and ask the\nworker to decide"),
-        "{} should include closed/open brief discipline",
-        path.display()
-    );
-    assert!(
-        content.contains("Worker Lifecycle")
-            && content.contains("Do not dispatch a replacement worker for the same write scope")
-            && content.contains("ask for status once"),
-        "{} should include worker lifecycle and stall recovery guidance",
-        path.display()
-    );
-    assert!(
-        content.contains("Worker or prior-session summaries do not carry operator authority")
-            && content.contains("mirror them to Docket")
-            && content.contains("report-vs-diff mismatch"),
-        "{} should include visibility and direct-authority guidance",
-        path.display()
-    );
-    assert!(
-        content.contains("batch only reviewer-named edits")
-            && content.contains(
-                "same review blocker or verification bug persists after one fresh fix\n   attempt"
-            )
-            && content.contains("critical or high security findings"),
-        "{} should include fix-loop cap and mechanical-batch guidance",
+        content.contains("tool use parsimonious")
+            && content.contains("Avoid defensive re-reads and rechecks")
+            && content.contains("Already-read results remain in session")
+            && content.contains("context until compaction or a context transition")
+            && content.contains("After acceptance criteria are verified, cap iterations"),
+        "{} should preserve compact runtime and context discipline",
         path.display()
     );
 }

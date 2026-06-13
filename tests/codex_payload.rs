@@ -130,6 +130,81 @@ fn codex_agent_toml_files_match_custom_agent_schema() {
 }
 
 #[test]
+fn codex_team_lead_delegates_actual_work() {
+    let path = repo_root().join("agents/codex/team-lead.toml");
+    let content = fs::read_to_string(&path).expect("team-lead TOML should be readable");
+    let parsed: Value = toml::from_str(&content).expect("team-lead TOML should parse");
+    let instructions = parsed
+        .get("developer_instructions")
+        .and_then(Value::as_str)
+        .expect("team-lead should have developer_instructions");
+
+    assert!(
+        instructions.contains("pure orchestration layer")
+            && instructions.contains("all actual prompt work and artifact changes are delegated"),
+        "{} should require team-lead to delegate actual work",
+        path.display()
+    );
+    assert!(
+        instructions.contains("single bounded role agent"),
+        "{} should route trivial team-lead work through one worker, not self-work",
+        path.display()
+    );
+    assert!(
+        instructions
+            .contains("Before every dispatch, choose the subagent role, model, reasoning_effort")
+            && instructions.contains("Sizing: senior-engineer")
+            && instructions.contains("gpt-5.3-codex-spark")
+            && instructions.contains("gpt-5.4-mini")
+            && instructions.contains("gpt-5.4")
+            && instructions.contains("gpt-5.5")
+            && instructions.contains("low effort")
+            && instructions.contains("medium as the default")
+            && instructions.contains("high")
+            && instructions.contains("xhigh"),
+        "{} should require explicit right-sized role, model, and effort selection",
+        path.display()
+    );
+    assert!(
+        !instructions.contains("Direct single-agent implementation is acceptable")
+            && !instructions.contains("only when the user or parent session explicitly requests"),
+        "{} should not preserve the old direct-first delegation contract",
+        path.display()
+    );
+    assert!(
+        instructions.contains("Docs-path taxonomy")
+            && instructions.contains("reserved project-spec set owned by `init-specs`")
+            && instructions.contains("project-manager")
+            && instructions.contains("staff-engineer")
+            && instructions.contains("ux-designer")
+            && instructions.contains("must name the exact output path"),
+        "{} should declare Codex-native docs path ownership",
+        path.display()
+    );
+}
+
+#[test]
+fn codex_brief_preserves_intake_routing_guards() {
+    let path = repo_root().join("skills/codex/brief/SKILL.md");
+    let content = fs::read_to_string(&path).expect("brief skill should be readable");
+
+    assert!(
+        content.contains("no more than four options")
+            && content.contains("mark your best-guess")
+            && content.contains("free-form correction"),
+        "{} should bound clarification options while allowing correction",
+        path.display()
+    );
+    assert!(
+        content.contains("check the local\nlead-agent docs path taxonomy")
+            && content.contains("Never recommend a\nroute that bypasses the declared owner")
+            && content.contains("reserved `docs/spec/` names are owned by `init-specs`"),
+        "{} should preserve docs-route ownership safeguards",
+        path.display()
+    );
+}
+
+#[test]
 fn user_config_registers_existing_codex_agent_files() {
     let src = fs::read_to_string(repo_root().join("src/user.rs"))
         .expect("src/user.rs should be readable");
@@ -229,4 +304,38 @@ fn codex_skills_have_required_frontmatter_and_no_claude_runtime_terms() {
             path.display()
         );
     }
+}
+
+#[test]
+fn codex_init_specs_always_delegates_to_staff_engineers() {
+    let path = repo_root().join("skills/codex/init-specs/SKILL.md");
+    let content = fs::read_to_string(&path).expect("init-specs skill should be readable");
+
+    assert!(
+        content.contains(
+            "Always delegates spec\n  authoring to parent-led Codex staff-engineer subagents"
+        ) || content.contains(
+            "Always delegates spec authoring to parent-led Codex staff-engineer subagents"
+        ),
+        "{} should require delegated spec authoring",
+        path.display()
+    );
+    assert!(
+        content.contains("Dispatch one Codex `staff-engineer` subagent per target file"),
+        "{} should dispatch one staff-engineer worker per spec file",
+        path.display()
+    );
+    assert!(
+        content.contains("updated_by: \"@staff-engineer\"")
+            && content.contains("owner: \"@staff-engineer\""),
+        "{} should attribute delegated specs to staff-engineer workers",
+        path.display()
+    );
+    assert!(
+        !content.contains("Direct mode")
+            && !content.contains("@codex")
+            && !content.contains("write the specs from the current Codex session"),
+        "{} should not preserve direct-mode spec authoring",
+        path.display()
+    );
 }

@@ -50,10 +50,11 @@ Derive every supported field yourself. Ask one clarification round only for
 fields that remain genuinely underdetermined and would change how the work is
 routed.
 
-Prefer a single concise message with at most four numbered questions. Include
-your best-guess option for each question and allow free-form correction. If the
-runtime exposes a structured user-input tool, use it for that one clarification
-round; otherwise ask plainly in the conversation.
+Prefer a single concise message with at most four numbered questions. When a
+question presents choices, use no more than four options, mark your best-guess
+option, and allow free-form correction. If the runtime exposes a structured
+user-input tool, use it for that one clarification round; otherwise ask plainly
+in the conversation.
 
 Prioritize gaps that change routing:
 
@@ -66,9 +67,11 @@ Do not ask cosmetic questions. If the request is clear enough to produce a
 truthful brief, emit the block without questions.
 
 When an option would create or route writes to a `docs/` path, check the local
-lead-agent docs path taxonomy if it is available in context before recommending
-that route. If the taxonomy is unavailable and the request only needs an intake
-brief, leave the route as "not specified" rather than guessing ownership.
+lead-agent docs path taxonomy before recommending that route. Never recommend a
+route that bypasses the declared owner. In this repo's Codex taxonomy, the seven
+reserved `docs/spec/` names are owned by `init-specs`; leave the route as "not
+specified" rather than guessing ownership when the taxonomy does not cover the
+path.
 
 ## Output
 

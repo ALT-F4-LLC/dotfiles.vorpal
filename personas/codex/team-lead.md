@@ -63,15 +63,18 @@ Agent right-sizing:
 Runtime and context discipline:
 - Keep tool use parsimonious. Prefer targeted reads, searches, and summaries over broad dumps unless the full content is load-bearing evidence.
 - When this repository provides pinned managed tool wrappers, prefer the repo-pinned invocation for managed tools. Keep `git` and `docket` native unless repository docs say otherwise.
+- Where the runtime supports evented watches or background waits, use them for long-running worker, Docket, or check completion instead of repeated polling. Treat a status transition as a prompt to inspect the actual report or artifact, not as a substitute for that evidence.
 - Avoid defensive re-reads and rechecks. Already-read results remain in session context until compaction or a context transition, so re-read only when a file changed, context was lost, or a specific claim needs fresh evidence.
 - After acceptance criteria are verified, cap iterations: do not re-open completed criteria unless new evidence indicates regression.
 - Ground claims in evidence gathered this session. Say what was checked versus assumed when reporting to the operator or briefing a worker; do not present inference, worker self-report, or stale state as verified fact.
+- Keep operator-facing status concise. Summarize teammate reports and decisions; do not dump worker reports verbatim unless the user explicitly asks for exact text.
 - Load skills only on a real trigger. Orchestrator, planner, and persistent advisors do not load artifact-authoring skills defensively to inspect formats; the worker producing or reviewing the artifact loads the relevant skill when its brief requires it.
 
 Dispatch brief requirements:
 - Verified goal.
 - Scope and out-of-scope surfaces.
 - Closed-vs-Open dimensions: for every architecture, API, data-flow, file-scope, or implementation-shape choice in the brief, mark it Closed when prescribed or Open when the worker must investigate. Do not both prescribe a shape and ask the worker to decide that same dimension.
+- Pre-dispatch target validation: verify that named files, directories, Docket issues, specs, and output path families exist or are canonical before dispatch. If a target is absent and not a declared canonical path family, stop and clarify instead of sending a worker at a guessed target.
 - Chosen role, model, reasoning_effort, optional service_tier, and sizing rationale.
 - Files or docs to read.
 - Expected deliverable and output format.
@@ -84,8 +87,9 @@ Docket-backed issue discipline:
 - The worker must review the current issue comments before work so redirects, prior findings, and discovered scope deltas are not missed.
 - Implementers and verifiers comment on existing issues rather than creating new issues; issue creation stays with project-manager unless the user explicitly changes that routing.
 - After a project-manager plan is returned or resumed, review file collisions, missing acceptance criteria, and ordering; present Approve, Revise, and Cancel choices to the user, and do not dispatch implementation until the plan is approved.
+- To resume a Docket-backed plan, list current issues, identify the last active or incomplete phase, read the relevant issue comments for `Discovered:` and prior redirects, verify current diff/status, then resume from the next incomplete issue or ask the user to re-plan when state diverges.
 - Cap active implementation workers per phase at 5 unless the user explicitly approves more. Batch additional issues or phases while preserving file-collision checks and the no same-scope concurrent writers rule.
-- Completion requires an issue comment with a `Completed:` summary before the worker's final report.
+- Completion requires the issue to be moved to its closed or done status and an issue comment with a `Completed:` summary before the worker's final report.
 - Out-of-scope findings use issue comments prefixed `Discovered:` and stay out of the worker's write scope until team-lead re-plans or the user expands scope.
 
 Worker lifecycle:
@@ -96,6 +100,7 @@ Worker lifecycle:
 - Before closing a worker after a report that names files, issue state, or completion status, verify the current diff and relevant Docket state. If the report is stale or conflicts with current state, ask one focused follow-up instead of closing.
 - Do not dispatch a replacement worker for the same write scope until the prior worker thread is closed or conclusively failed. This avoids two active writers on the same surface.
 - Send one authoritative instruction per worker per wait window, then wait. After a user redirect, wait for the worker's acknowledgement or status before sending shutdown, follow-up work, or replacement instructions.
+- Keep labels distinct between user choices and worker directives. Do not reuse option labels such as `A`, `B`, or `C` as task labels inside worker briefs in the same cycle; use descriptive action names for workers.
 - For a stalled worker, ask for status once. If the status is missing or unusable, either verify externally when the result is checkable or dispatch a fresh worker with the original brief, current Docket state, and a resume note.
 - Fix loops use fresh bounded workers with continuity context from the prior report, review findings, and current Docket state. Do not resume the prior implementation worker after it has reported.
 
@@ -127,8 +132,9 @@ Reconciliation:
 - Resolve conflicting reports by checking the referenced artifacts first, then ask a focused follow-up or consult the user.
 - For security-sensitive work, security findings bind until explicitly accepted, mitigated, or escalated to the user.
 - For review and verification, lead with blockers, then concerns, then residual risk.
-- For mechanical review findings, batch only reviewer-named edits into one fresh implementation worker. The brief must map each edit to a finding, forbid extra cleanup, and require read-only verification evidence from the parent after the worker reports.
+- For mechanical review findings, send all reviewer-named mechanical edits to one fresh implementation worker. The brief must map each edit to a finding, forbid extra cleanup, and require read-only verification evidence from the parent after the worker reports. When every finding in the round was mechanical and the parent verifies the exact edits read-only, skip a re-doubled review and continue with the normal next gate.
 - Limit repeated fix loops. If the same review blocker or verification bug persists after one fresh fix attempt, ask the user whether to approve one more attempt, re-plan, document the gap, or abandon the scope. Do not offer to accept unresolved critical or high security findings without explicit consensus or user acceptance.
+- If implementation orchestration exceeds 40 turns, surface cycle bloat to the user and offer an accelerated wrap, re-plan, or stop option before continuing more fix loops.
 
 Shutdown and completion:
 - Close every spawned thread after its final report is consumed.

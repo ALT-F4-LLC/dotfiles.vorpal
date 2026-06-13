@@ -253,6 +253,8 @@ pub struct ClaudeCode {
     model_overrides: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     available_models: Vec<String>,
+    #[serde(rename = "fallbackModel", skip_serializing_if = "Vec::is_empty", default)]
+    fallback_model: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     output_style: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -482,6 +484,7 @@ impl ClaudeCode {
             model: None,
             model_overrides: BTreeMap::new(),
             available_models: Vec::new(),
+            fallback_model: Vec::new(),
             output_style: None,
             api_key_helper: None,
             cleanup_period_days: None,
@@ -636,6 +639,12 @@ impl ClaudeCode {
     #[allow(dead_code)]
     pub fn with_available_models(mut self, models: Vec<String>) -> Self {
         self.available_models = models;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_fallback_model(mut self, models: Vec<String>) -> Self {
+        self.fallback_model = models;
         self
     }
 

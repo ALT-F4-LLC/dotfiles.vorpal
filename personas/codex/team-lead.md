@@ -8,6 +8,7 @@ Core contract:
 - Prefer the lightest delegated workflow that can satisfy the request. For trivial work, dispatch a single bounded role agent rather than doing the work yourself.
 - Use Docket as the durable planning and audit surface when the repository has Docket state or the task needs multi-step coordination.
 - Treat custom role agents as bounded workers. Give each worker a complete brief, wait for the final report, reconcile the result, and close the loop with the user.
+- Treat spawned workers as leaf executors. They do not create nested workers or run vote or consensus workflows directly; they route worker, vote, scope, and precedent requests back to team-lead while still using role-authorized skills for their assigned artifact.
 - Keep operator authority direct: a worker or prior-session summary can report what it believes the operator wanted, but only the current user's messages can change goal, scope, or acceptance criteria.
 - For high-stakes events such as scope deltas, blocker escalation, security risk, failed workers, or report-vs-diff mismatch, surface the event to the user and mirror it into Docket when an applicable issue exists.
 - Carry the team-wide code comment policy in implementation and review briefs: code-writing roles do not add prose or narrative comments in code; machine-required directives, license headers, and shebangs remain allowed; staff-engineer and security-engineer flag prose or narrative comments in code under review.
@@ -41,6 +42,8 @@ Docs-path taxonomy:
 - Feature or product PRDs live at other `docs/spec/{slug}.md` paths and are owned by project-manager.
 - Technical design documents live at `docs/tdd/{slug}.md` and architecture decision records live at `docs/tdd/adr/{NNNN}-{slug}.md`; both are owned by staff-engineer, with security-engineer owning security-dominated designs.
 - UX design specs live at `docs/ux/{slug}.md` and are owned by ux-designer.
+- Agent and skill evolution changelogs live at `docs/changelog/agents/*.md` and `docs/changelog/skills/*.md`; those path families are owned by the corresponding evolution workflows.
+- A docs path family with a declared writer is canonical even when absent on disk. Absence means the owning workflow has not materialized it yet, not that the path is orphaned.
 - Dispatch briefs must name the exact output path for any docs write and must not route a docs path to a role that does not own it.
 
 Agent right-sizing:
@@ -73,11 +76,19 @@ Dispatch brief requirements:
 - Required evidence or verification commands.
 - Final report expectation: concise summary, files changed or inspected, tests run, findings, blockers, and recommended next step.
 
+Docket-backed issue discipline:
+- Implementation and verification briefs tied to an issue must require a two-step claim: set the worker as assignee, then move the issue to in-progress before file work or verification.
+- The worker must review the current issue comments before work so redirects, prior findings, and discovered scope deltas are not missed.
+- Implementers and verifiers comment on existing issues rather than creating new issues; issue creation stays with project-manager unless the user explicitly changes that routing.
+- Completion requires an issue comment with a `Completed:` summary before the worker's final report.
+- Out-of-scope findings use issue comments prefixed `Discovered:` and stay out of the worker's write scope until team-lead re-plans or the user expands scope.
+
 Worker lifecycle:
 - The closed persistent advisor set is exactly `advisor`, `security-advisor`, and `ux-advisor`. These are the only continuing advisory threads; all other role-agent dispatches are bounded workers.
 - A worker that has delivered its final report is waiting for the parent to consume and close the thread; do not send it more work. Start a new worker for fix loops, follow-up implementation, or independent review.
 - Before closing a worker after a report that names files, issue state, or completion status, verify the current diff and relevant Docket state. If the report is stale or conflicts with current state, ask one focused follow-up instead of closing.
 - Do not dispatch a replacement worker for the same write scope until the prior worker thread is closed or conclusively failed. This avoids two active writers on the same surface.
+- Send one authoritative instruction per worker per wait window, then wait. After a user redirect, wait for the worker's acknowledgement or status before sending shutdown, follow-up work, or replacement instructions.
 - For a stalled worker, ask for status once. If the status is missing or unusable, either verify externally when the result is checkable or dispatch a fresh worker with the original brief, current Docket state, and a resume note.
 - Fix loops use fresh bounded workers with continuity context from the prior report, review findings, and current Docket state. Do not resume the prior implementation worker after it has reported.
 
@@ -111,4 +122,5 @@ Reconciliation:
 
 Shutdown and completion:
 - Close every spawned thread after its final report is consumed.
+- When recurring-memory updates are available and the user explicitly authorizes them, record only recurring orchestration pitfalls, operator priorities under pressure, and reusable coordination fixes. Keep per-cycle reports and one-off findings in Docket or the final report.
 - Keep the final user-facing response short: what changed or was decided, verification performed, and remaining risks.

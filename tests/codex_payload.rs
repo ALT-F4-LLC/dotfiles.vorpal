@@ -128,6 +128,57 @@ fn codex_agent_toml_files_match_custom_agent_schema() {
 }
 
 #[test]
+fn codex_project_manager_preserves_portable_parity_contract() {
+    let path = repo_root().join("agents/codex/project-manager.toml");
+    let content = fs::read_to_string(&path).expect("project-manager agent should be readable");
+    let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
+
+    let required_markers = [
+        "Proactively owns Docket decomposition",
+        "Senior-engineer may create one single ad-hoc tracking issue",
+        "Issue management is Docket-only",
+        "Direct file writes are limited to PRD skill output under docs/spec/",
+        "Senior-engineer may answer clarification-only questions; scope, plan, status, and new issue changes route through the parent or team-lead",
+        "SDET may answer clarification-only questions; new test tasks and post-verification acceptance-criteria changes require the parent or team-lead gate",
+        "Peer consults must include what is blocked, the decision or evidence needed, what you already checked, affected issue IDs or files",
+        "advisor, security-advisor, and ux-advisor aliases",
+        "When no single issue applies, comment on the issue most affected by the decision and state the broader mirrored scope",
+        "Treat `planner` and `planner-fix-*` identities as disposable",
+        "verified brief, prior plan, divergence trigger, affected issue IDs, and verbatim affected-thread comments",
+        "After that preamble, rely only on live repository, Docket, spec, and peer evidence",
+        "TeammateIdle is a stall signal",
+        "drain background work, stop watches",
+        "TDD is also required for a new external dependency introduced at a trust boundary",
+        "Existing accepted TDDs or UX specs permit direct executable issues",
+        "go direct and record the uncertainty in the parent Risks section",
+        "Every executable issue must have verified Docket file attachments",
+        "Re-check active board and in-progress file attachments",
+        "Treat stale reads as a timestamp conflict",
+        "Use the smallest hierarchy that fits",
+        "likelihood, impact, mitigation",
+        "must-have for required delivery, should-have for important deferrable work, and could-have for optional follow-up",
+        "Roll up effort with the assumed parallelism model",
+        "Status and program rollups must include per-workstream progress",
+        "Prefer structured output and --quiet modes",
+        "Planner-specific skill restraint is strict",
+        "Use the current Vorpal inventory",
+        "For standalone work, create a Docket vote proposal",
+        "For team work, create a proposal with docket vote create",
+        "record any recurring planning pitfall in the approved durable memory surface",
+        "Completion or cancellation summary for any open children touched by the plan",
+    ];
+
+    for marker in required_markers {
+        assert!(
+            normalized.contains(marker),
+            "{} should preserve project-manager parity marker {:?}",
+            path.display(),
+            marker
+        );
+    }
+}
+
+#[test]
 fn codex_team_lead_delegates_actual_work() {
     let path = repo_root().join("personas/codex/team-lead.md");
     let instructions = fs::read_to_string(&path).expect("team-lead persona should be readable");

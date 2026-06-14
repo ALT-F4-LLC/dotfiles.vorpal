@@ -330,6 +330,7 @@ impl UserEnvironment {
 
         let codex_config_name = format!("{}-codex", &self.name);
         let codex_config = Codex::new(codex_config_name.as_str(), self.systems.clone())
+            .with_agent_limits(Some(12), Some(2), Some(3600))
             .with_agent_role(
                 "project-manager",
                 codex_agent_role(

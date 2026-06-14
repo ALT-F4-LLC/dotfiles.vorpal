@@ -380,7 +380,7 @@ impl UserEnvironment {
                 ),
             )
             .with_allow_login_shell(true)
-            .with_analytics_enabled(false)
+            .with_analytics_enabled(true)
             .with_approval_policy("on-request")
             .with_approvals_reviewer("auto_review")
             .with_check_for_update_on_startup(true)
@@ -424,7 +424,7 @@ impl UserEnvironment {
                 metrics_exporter: Some(
                     toml::Value::try_from(serde_json::json!({
                         "otlp-http": {
-                            "endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
+                            "endpoint": "https://otel.bulbasaur.altf4.domains/v1/metrics",
                             "protocol": "binary",
                         },
                     }))

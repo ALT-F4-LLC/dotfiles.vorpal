@@ -147,12 +147,26 @@ fn codex_project_manager_preserves_portable_parity_contract() {
         "verified brief, prior plan, divergence trigger, affected issue IDs, and verbatim affected-thread comments",
         "After that preamble, rely only on live repository, Docket, spec, and peer evidence",
         "TeammateIdle is a stall signal",
+        "asked to shut down under team-lead orchestration",
+        "outside team-lead orchestration, answer the requesting parent coordinator",
         "drain background work, stop watches",
+        "Start a long-running watch only when planning waits on an external job",
+        "routine decomposition leaves no watches active",
+        "terse and one-purpose",
+        "Do not quote the prompt or peer message back",
+        "Reject unsupported overconfident phrasing",
+        "evidence and residual uncertainty",
+        "scope boundaries, success criteria, non-goals or invariants, and priority order if scope must be cut",
+        "in-session planning checklist for exploration, risk review, issue creation, dependency/collision validation, and final sign-off",
+        "this checklist is separate from durable Docket issues",
         "TDD is also required for a new external dependency introduced at a trust boundary",
         "Existing accepted TDDs or UX specs permit direct executable issues",
         "go direct and record the uncertainty in the parent Risks section",
         "Every executable issue must have verified Docket file attachments",
         "Re-check active board and in-progress file attachments",
+        "Describe desired outcomes, constraints, evidence, and acceptance criteria rather than step-by-step implementation directions",
+        "proactively inspect file attachments on in-progress Docket issues",
+        "same-file or same-contract collisions",
         "Treat stale reads as a timestamp conflict",
         "Use the smallest hierarchy that fits",
         "likelihood, impact, mitigation",
@@ -165,6 +179,9 @@ fn codex_project_manager_preserves_portable_parity_contract() {
         "For standalone work, create a Docket vote proposal",
         "For team work, create a proposal with docket vote create",
         "record any recurring planning pitfall in the approved durable memory surface",
+        "Recurring planning pitfall records are append-only",
+        "do not overwrite prior entries",
+        "same lesson is not duplicated",
         "Completion or cancellation summary for any open children touched by the plan",
     ];
 
@@ -401,6 +418,22 @@ fn user_config_registers_existing_codex_agent_files() {
         src.contains("$HOME/.codex/team-lead.config.toml")
             && src.contains("include_str!(\"../personas/codex/team-lead.md\")"),
         "user build should install a team-lead profile backed by persona instructions"
+    );
+}
+
+#[test]
+fn user_config_routes_codex_metrics_through_alloy_otel() {
+    let src = fs::read_to_string(repo_root().join("src/user.rs"))
+        .expect("src/user.rs should be readable");
+    let metrics_endpoint = r#""endpoint": "https://otel.bulbasaur.altf4.domains/v1/metrics""#;
+
+    assert!(
+        src.contains(".with_analytics_enabled(true)"),
+        "Codex analytics should be enabled before exporting metrics"
+    );
+    assert!(
+        src.contains(metrics_endpoint),
+        "Codex metrics should flow through Alloy OTLP HTTP before Mimir remote write"
     );
 }
 

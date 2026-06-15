@@ -112,7 +112,7 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 **Common scaffolding** (every spawn): `Agent(team_name="dev-{feature-slug}", name="<role>", subagent_type="<type>", model="<per the routing rule below>", prompt=...)`. Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted.
 
-**Canonical ephemeral-brief schema** (every ephemeral spawn — name these fields explicitly so Fable does not under-reach): (1) **Verified goal** — `{verified_goal}` verbatim; (2) **Scope** — files in-scope + out-of-scope surfaces; (3) **Closed-vs-Open dimensions** — per the Brief-Authoring Discipline below, each architectural dimension marked Closed (prescribed) or Open (consult `advisor`); (4) **Done-state** — the exact close/report/await-shutdown sequence; (5) **Mandatory verification commands** — specific greps/awks/wcs for review/verify briefs, verdicts cite results not "checked". The dispatch-hygiene bullet below details (4)+(5).
+**Canonical ephemeral-brief schema** (every ephemeral spawn — name these fields explicitly so Opus does not under-reach): (1) **Verified goal** — `{verified_goal}` verbatim; (2) **Scope** — files in-scope + out-of-scope surfaces; (3) **Closed-vs-Open dimensions** — per the Brief-Authoring Discipline below, each architectural dimension marked Closed (prescribed) or Open (consult `advisor`); (4) **Done-state** — the exact close/report/await-shutdown sequence; (5) **Mandatory verification commands** — specific greps/awks/wcs for review/verify briefs, verdicts cite results not "checked". The dispatch-hygiene bullet below details (4)+(5).
 
 **Common context-block elements** (include where relevant; per-role sections below add role-specific additions only):
 - {If TDD exists}: `Reference TDD: docs/tdd/{filename}.md`
@@ -126,10 +126,10 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 **Per-spawn model routing (cost-tiered, quality-upgradable).** Every `Agent()` spawn MUST set `model=` explicitly — an omitted param does NOT inherit the session model; it falls to a content classifier whose fallback is nondeterministic (measured: non-pinned spawns run opus). An `Agent()` call without `model=` is a dispatch defect. NEVER `haiku` for custom agents (xhigh-effort frontmatter errors on Haiku). Alias names only — never hardcode full model IDs in prose or briefs (aliases resolve via `ANTHROPIC_DEFAULT_*` env vars). SendMessage-resumed persistent advisors keep their spawn model — set it once at spawn.
 
-Tiers (default; team-lead may exceed the tier when the specific prompt warrants higher quality — record a one-line justification in the spawn brief; fable-everywhere is NOT the policy):
+Tiers (default; team-lead may exceed the tier when the specific prompt warrants higher quality — record a one-line justification in the spawn brief; opus-everywhere is NOT the policy):
 - `sonnet` — Direct/Small implementation (`impl-{ID}`), `planner`.
 - `opus` — Medium implementation, general `reviewer-2`, `verifier*`.
-- `fable` — `tdd-author*`, Large/architecture implementation, long-horizon multi-phase implementation.
+- `opus` — `tdd-author*`, Large/architecture implementation, long-horizon multi-phase implementation.
 - `opus` (security depth) — `security-reviewer-2`, security-dominated `tdd-author*`. `security-advisor` is SendMessage-resumed so it keeps its spawn model unless re-spawned with a new one.
 
 ### @staff-engineer (TDD) — name=`tdd-author` (ephemeral)

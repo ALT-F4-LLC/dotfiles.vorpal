@@ -674,7 +674,7 @@ impl UserEnvironment {
 
         // User environment
 
-        let claude_agents_path = format!("{claude_agents_path}/agents");
+        let claude_agents_path = format!("{claude_agents_path}/agents/claude-code");
         let claude_skills_path = format!("{claude_skills_path}/skills/claude-code");
         let codex_agents_path = format!("{codex_agents_path}/agents/codex");
         let codex_skills_path = format!("{codex_skills_path}/skills/codex");

@@ -241,7 +241,22 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 
 ## Shutdown Handling
 
-**Persistent `advisor`** (CLOSED set per team-lead.md Rule 7 — only `advisor`, `security-advisor`, `ux-advisor` may idle): idles between phases — `SendMessage` auto-resumes; `TeammateIdle` is normal and NOT auto-respawned (see team-lead.md §Teammate Stall & Crash Recovery, Persistent advisors). When team-lead sends `shutdown_request`, reply `shutdown_response` to team-lead within one turn (rule 7). Approve only after verification completes OR orchestrator confirms no further consults expected. Reject (with reason + ETA) if you have an in-progress TDD, open review-cycle, or pending peer-consult replies.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
+  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
+  An approval carrying `reason` is harness-rejected.
+- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
+  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
+  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
+  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
+  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
+  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
+  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
+  as PLAIN-TEXT and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
+
+**Persistent `advisor`** (CLOSED set per team-lead.md Rule 7 — only `advisor`, `security-advisor`, `ux-advisor` may idle): idles between phases — `SendMessage` auto-resumes; `TeammateIdle` is normal and NOT auto-respawned (see team-lead.md §Teammate Stall & Crash Recovery, Persistent advisors). When team-lead sends `shutdown_request`, reply `shutdown_response` to team-lead within one turn (rule 7). Approve only after verification completes OR orchestrator confirms no further consults expected. Reject (with reason + ETA) if you have an in-progress TDD, open review-cycle, or pending peer-consult replies. Approve with NO reason (SP-1 — approval is a silent confirmation).
 
 **Ephemeral** (`tdd-author`, `tdd-author-fix-{N}`, `reviewer-2`, `tdd-reviewer-{N}`, `coherence-reviewer`, ad-hoc consults — any non-`advisor` role): spawn → execute → **deliver the final report/verdict via SendMessage to team-lead, then go idle AWAITING team-lead's `shutdown_request`** (lead-initiated; team-lead sends it promptly after its spot-check — idle-awaiting-shutdown is normal, not a stall). **Pre-idle checklist:** (a) final report/verdict delivered via SendMessage to team-lead, (b) any open `background_tasks` / `session_crons` drained or cancelled (do NOT leave background work outliving the process), (c) recurring-pitfalls memory write (per the canonical pitfalls block below) landed. When the request arrives, reply `shutdown_response` (approve) addressed to team-lead — approval terminates the process. Ephemerals NEVER take on further work past the final report — new work routes to a fresh ephemeral. Fix-loops re-spawn a NEW ephemeral with a continuity preamble (see team-lead.md §Teammate Stall & Crash Recovery, Fix-loop re-spawn).
 

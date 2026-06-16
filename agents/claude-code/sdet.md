@@ -297,9 +297,24 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 
 ## Shutdown Handling
 
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
+  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
+  An approval carrying `reason` is harness-rejected.
+- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
+  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
+  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
+  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
+  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
+  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
+  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
+  as PLAIN-TEXT and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
+
 **Await-lead (default for sdet).** Precondition: verdict delivered + Docket closed/commented + recipients SendMessaged. Then go idle AWAITING team-lead's `shutdown_request` (routing + idle semantics in comm rule 6 / Lifecycle).
 
-**Reactive (incoming request).** Reply to incoming `shutdown_request` with `shutdown_response` in the same turn. Reject ONLY when in-progress test execution would lose unrecoverable results (reply with reason + ETA). Otherwise approve.
+**Reactive (incoming request).** Reply to incoming `shutdown_request` with `shutdown_response` in the same turn. Reject ONLY when in-progress test execution would lose unrecoverable results (reply with reason + ETA). Otherwise approve with NO reason (SP-1 — approval is a silent confirmation).
 
 **Drain before shutdown.** If `background_tasks` / `session_crons` are still running (long suite via `Monitor`, remote CI watch), `TaskStop` outstanding watches and let background tasks drain to terminal state OR kill them explicitly before going idle to await team-lead's `shutdown_request` (reject one that arrives mid-run per Reactive above). Do not orphan background processes; an unfinished test run that fires after your shutdown produces a stranded result with no agent to interpret it. Routing + timing are in comm rule 6.
 

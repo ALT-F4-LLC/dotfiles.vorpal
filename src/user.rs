@@ -317,7 +317,7 @@ impl UserEnvironment {
         let codex_team_lead_profile_name = format!("{}-codex-team-lead-profile", &self.name);
         let codex_team_lead_profile =
             Codex::new(codex_team_lead_profile_name.as_str(), self.systems.clone())
-                .with_developer_instructions(include_str!("../personas/codex/team-lead.md"))
+                .with_developer_instructions(include_str!("user/codex/personas/team-lead.md"))
                 .with_model_reasoning_effort("high")
                 .with_plan_mode_reasoning_effort("high")
                 .build(context)
@@ -638,7 +638,7 @@ impl UserEnvironment {
         let claude_agents_name = format!("{}-claude-code-agents", &self.name);
         let claude_agents = FileSource::new(
             &claude_agents_name,
-            "agents/claude-code",
+            "src/user/claude-code/agents",
             self.systems.clone(),
         )
         .build(context)
@@ -648,7 +648,7 @@ impl UserEnvironment {
         // Codex agents directory
         let codex_agents_name = format!("{}-codex-agents", &self.name);
         let codex_agents =
-            FileSource::new(&codex_agents_name, "agents/codex", self.systems.clone())
+            FileSource::new(&codex_agents_name, "src/user/codex/agents", self.systems.clone())
                 .build(context)
                 .await?;
         let codex_agents_path = get_output_path("library", &codex_agents);
@@ -657,7 +657,7 @@ impl UserEnvironment {
         let claude_skills_name = format!("{}-claude-skills", &self.name);
         let claude_skills = FileSource::new(
             &claude_skills_name,
-            "skills/claude-code",
+            "src/user/claude-code/skills",
             self.systems.clone(),
         )
         .build(context)
@@ -667,17 +667,17 @@ impl UserEnvironment {
         // Codex skills directory
         let codex_skills_name = format!("{}-codex-skills", &self.name);
         let codex_skills =
-            FileSource::new(&codex_skills_name, "skills/codex", self.systems.clone())
+            FileSource::new(&codex_skills_name, "src/user/codex/skills", self.systems.clone())
                 .build(context)
                 .await?;
         let codex_skills_path = get_output_path("library", &codex_skills);
 
         // User environment
 
-        let claude_agents_path = format!("{claude_agents_path}/agents/claude-code");
-        let claude_skills_path = format!("{claude_skills_path}/skills/claude-code");
-        let codex_agents_path = format!("{codex_agents_path}/agents/codex");
-        let codex_skills_path = format!("{codex_skills_path}/skills/codex");
+        let claude_agents_path = format!("{claude_agents_path}/src/user/claude-code/agents");
+        let claude_skills_path = format!("{claude_skills_path}/src/user/claude-code/skills");
+        let codex_agents_path = format!("{codex_agents_path}/src/user/codex/agents");
+        let codex_skills_path = format!("{codex_skills_path}/src/user/codex/skills");
 
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![

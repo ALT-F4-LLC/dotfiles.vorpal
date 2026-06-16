@@ -65,10 +65,10 @@ fn assert_no_banned_terms(path: &Path, content: &str) {
 
 #[test]
 fn codex_agent_toml_files_match_custom_agent_schema() {
-    let agents_dir = repo_root().join("agents/codex");
+    let agents_dir = repo_root().join("src/user/codex/agents");
 
     let actual_roles = fs::read_dir(&agents_dir)
-        .expect("agents/codex should be readable")
+        .expect("src/user/codex/agents should be readable")
         .map(|entry| {
             entry
                 .expect("directory entry should be readable")
@@ -129,7 +129,7 @@ fn codex_agent_toml_files_match_custom_agent_schema() {
 
 #[test]
 fn codex_project_manager_preserves_portable_parity_contract() {
-    let path = repo_root().join("agents/codex/project-manager.toml");
+    let path = repo_root().join("src/user/codex/agents/project-manager.toml");
     let content = fs::read_to_string(&path).expect("project-manager agent should be readable");
     let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
 
@@ -197,7 +197,7 @@ fn codex_project_manager_preserves_portable_parity_contract() {
 
 #[test]
 fn codex_team_lead_delegates_actual_work() {
-    let path = repo_root().join("personas/codex/team-lead.md");
+    let path = repo_root().join("src/user/codex/personas/team-lead.md");
     let instructions = fs::read_to_string(&path).expect("team-lead persona should be readable");
 
     assert!(
@@ -289,7 +289,7 @@ fn codex_team_lead_delegates_actual_work() {
 
 #[test]
 fn codex_profile_preserves_no_prose_code_comment_policy() {
-    let path = repo_root().join("personas/codex/team-lead.md");
+    let path = repo_root().join("src/user/codex/personas/team-lead.md");
     let content = fs::read_to_string(&path).expect("team-wide policy surface should be readable");
     let normalized = content.split_whitespace().collect::<Vec<_>>().join(" ");
 
@@ -306,7 +306,7 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
     );
 
     for role in ["senior-engineer", "sdet"] {
-        let path = repo_root().join("agents/codex").join(format!("{role}.toml"));
+        let path = repo_root().join("src/user/codex/agents").join(format!("{role}.toml"));
         let content = fs::read_to_string(&path).expect("code-writing role should be readable");
         assert!(
             content.contains("Do not add prose or narrative comments")
@@ -319,7 +319,7 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
     }
 
     for role in ["staff-engineer", "security-engineer"] {
-        let path = repo_root().join("agents/codex").join(format!("{role}.toml"));
+        let path = repo_root().join("src/user/codex/agents").join(format!("{role}.toml"));
         let content = fs::read_to_string(&path).expect("review role should be readable");
         assert!(
             content.contains("Flag prose or narrative comments in code under review")
@@ -334,7 +334,7 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
 
 #[test]
 fn codex_profile_preserves_runtime_context_discipline() {
-    let path = repo_root().join("personas/codex/team-lead.md");
+    let path = repo_root().join("src/user/codex/personas/team-lead.md");
     let content = fs::read_to_string(&path).expect("orchestration guidance should be readable");
 
     assert!(
@@ -350,7 +350,7 @@ fn codex_profile_preserves_runtime_context_discipline() {
 
 #[test]
 fn codex_brief_preserves_intake_routing_guards() {
-    let path = repo_root().join("skills/codex/brief/SKILL.md");
+    let path = repo_root().join("src/user/codex/skills/brief/SKILL.md");
     let content = fs::read_to_string(&path).expect("brief skill should be readable");
 
     assert!(
@@ -399,16 +399,16 @@ fn user_config_registers_existing_codex_agent_files() {
             .expect("config files should be relative to ./agents");
         assert!(
             repo_root()
-                .join("agents/codex")
+                .join("src/user/codex/agents")
                 .join(relative_path)
                 .exists(),
-            "{config_file} should point to an agents/codex TOML file"
+            "{config_file} should point to an src/user/codex/agents TOML file"
         );
     }
 
     assert!(
-        src.contains("FileSource::new(&codex_agents_name, \"agents/codex\""),
-        "user build should snapshot agents/codex"
+        src.contains("FileSource::new(&codex_agents_name, \"src/user/codex/agents\""),
+        "user build should snapshot src/user/codex/agents"
     );
     assert!(
         src.contains("\"$HOME/.codex/agents\""),
@@ -416,7 +416,7 @@ fn user_config_registers_existing_codex_agent_files() {
     );
     assert!(
         src.contains("$HOME/.codex/team-lead.config.toml")
-            && src.contains("include_str!(\"../personas/codex/team-lead.md\")"),
+            && src.contains("include_str!(\"user/codex/personas/team-lead.md\")"),
         "user build should install a team-lead profile backed by persona instructions"
     );
 }
@@ -439,10 +439,10 @@ fn user_config_routes_codex_metrics_through_alloy_otel() {
 
 #[test]
 fn codex_skills_have_required_frontmatter_and_no_claude_runtime_terms() {
-    let skills_dir = repo_root().join("skills/codex");
+    let skills_dir = repo_root().join("src/user/codex/skills");
 
     let actual_skills = fs::read_dir(&skills_dir)
-        .expect("skills/codex should be readable")
+        .expect("src/user/codex/skills should be readable")
         .filter_map(|entry| {
             let entry = entry.expect("directory entry should be readable");
             entry
@@ -498,7 +498,7 @@ fn codex_skills_have_required_frontmatter_and_no_claude_runtime_terms() {
 
 #[test]
 fn codex_init_specs_always_delegates_to_staff_engineers() {
-    let path = repo_root().join("skills/codex/init-specs/SKILL.md");
+    let path = repo_root().join("src/user/codex/skills/init-specs/SKILL.md");
     let content = fs::read_to_string(&path).expect("init-specs skill should be readable");
 
     assert!(

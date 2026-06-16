@@ -76,6 +76,18 @@ Answer in order. **Default to the lightest pattern that fits** — documentation
 - **Verification**: `@sdet` consults `security-advisor` on abuse-case design.
 - **Small + security-sensitive**: Skip security TDD; still spawn `security-advisor` for review (parallel security review is non-negotiable on any security surface).
 
+### Distribution-Mechanism Gate
+
+The last Pre-flight step, evaluated AFTER shape (Q1), size (Q2-6), and the security flag (Q7) — none of which it disturbs. It picks HOW the chosen pattern's workers are distributed, a 3-way gate with an explicit default. **Disambiguation:** "report-only subagent" here is the NEW mechanism below (an isolated-context, return-a-summary `Agent()` worker with no peer comms); it is distinct from two existing senses in this corpus — the "Stateless subagent" operating-context label that every spawned agent carries, and the "stopped subagent auto-resumes" teammate auto-resume behavior. Always write the new mechanism as the full phrase **"report-only subagent"**, never bare "subagent".
+
+1. **Direct (lead / main session)** — DEFAULT for sequential or iterative work, shared-context work, latency-sensitive quick targeted changes, and any single conceptual edit. This is the existing Direct Task shape; the gate just names its mechanism.
+2. **Report-only subagent (isolated context, returns a summary)** — choose when the win is *context isolation + a returned conclusion* AND the worker needs NO peer communication: verbose-output isolation (keep the lead's context clean), independent fan-out research, one-shot verification, a single return-only reviewer, tool-restricted workers. Context caveat: many report-only subagents each returning detailed results re-bloats the lead's context — prefer a summarized return.
+3. **Team (persistent named teammate, SendMessage coordination, shared task list)** — choose ONLY when at least one holds: workers must message/challenge each other (competing-hypothesis debug, adversarial/parallel review where reviewers cross-examine), OR sustained parallelism / the work exceeds a single context window, OR a multi-owner cross-layer build where each teammate owns a distinct file set and must coordinate. Persistent advisors (the CLOSED set) are inherently a *team* concept and remain team-spawned.
+
+**Transition rule:** start with subagents that are report-only (one summarized return each); escalate to a Team only when parallel subagents hit context limits OR you discover workers need peer communication. **Experimental caveat:** teams are experimental and env-gated, and cost materially more (idle-burn while teammates wait, ~7x token cost in plan mode) — so Team is the deliberate-choice branch, never the default.
+
+This gate grants team-lead ZERO new engineering authority: selecting a *coordination mechanism* is an orchestration decision (like reviewer-panel sizing), not an engineering decision about the subject matter — the no-engineering-decisions boundary holds here unchanged.
+
 ## Alignment & Optimization
 
 A continuous orchestration discipline, not a point-in-time gate: every relay team-lead authors — forward (brief to an agent) and return (status to the operator) — is verified against `{verified_goal}` (Pre-flight step 1) and optimized for the recipient. It grants team-lead ZERO engineering-decision authority.
@@ -94,6 +106,8 @@ A continuous orchestration discipline, not a point-in-time gate: every relay tea
 
 ### Direct Task — trivial single-edit work (no plan, no review)
 
+mechanism: Direct (lead session; even one agent spawns as a teammate, but no coordination/peer-comms is needed).
+
 ```
 @senior-engineer (single ad-hoc Docket issue, operator reviews via git diff)
 ```
@@ -101,6 +115,8 @@ A continuous orchestration discipline, not a point-in-time gate: every relay tea
 No PM/staff/team scaffolding; senior-engineer runs in solo mode inside the session's single implicit team. Even a single agent is spawned as a teammate (`Agent(name=...)`) and shut down via `shutdown_request` at the end — there is no named team to create or clean up. If scope expands mid-task, OR a technical/engineering decision surfaces (approach, fix shape, design, security/correctness judgment), STOP and graduate via AskUserQuestion — graduation is triggered by a surfacing technical decision, not only by scope growth.
 
 ### Small Task — bounded multi-file change requiring planning (no TDD)
+
+mechanism: Team (multi-owner, coordinated, persistent-advisor-bearing flow).
 
 ```
 @project-manager → @senior-engineer(s) → @staff-engineer (review)
@@ -111,12 +127,16 @@ If any architectural/correctness decision surfaces mid-flow, spawn `advisor` (co
 
 ### Medium Task — features, refactors, multi-file changes
 
+mechanism: Team (multi-owner, coordinated, persistent-advisor-bearing flow).
+
 ```
 @staff-engineer → @project-manager → @senior-engineer(s) → @staff-engineer → @sdet
     TDD               plan              implement            review           test
 ```
 
 ### Large Task — multiple TDDs, phased rollouts, cross-cutting changes
+
+mechanism: Team (multi-owner, sustained parallelism across phases, persistent-advisor-bearing flow).
 
 ```
 @staff-engineer(s) → @project-manager → [@senior-engineer(s) → @staff-engineer] × N → @sdet
@@ -127,7 +147,11 @@ For product-defined initiatives where scope precedes architecture, prepend a PRD
 
 ### UX-Heavy Task — same as Medium, prepend @ux-designer to produce a design spec in `docs/ux/` (informing the TDD).
 
+mechanism: Team (same multi-owner coordination as Medium).
+
 ### Verification / Investigation / Standalone-Review Task — live checks, perf/infra investigation, PR review with no plan
+
+mechanism: Subagent (report-only, single return-only worker, no peer comms) when the executor is a pure one-shot verification or single-result review — it runs as a report-only subagent; escalate to Team for competing-hypothesis investigation where workers must challenge each other, or whenever a consult `advisor` must coordinate with the executor. This is the one pattern where the gate changes behavior — a single-result check need not spawn a coordinating teammate executor.
 
 ```
 @staff-engineer (advisor, consult) ⟷ @sdet or @senior-engineer (executor)
@@ -139,7 +163,7 @@ These flows historically had NO advisor and became the top leak surface — team
 
 ## Spawning Templates
 
-**Common scaffolding** (every spawn): `Agent(name="<role>", subagent_type="<type>", model="<per the routing rule below>", prompt=...)` — every spawn joins the session's single implicit team (the runtime ignores `team_name`; there is no per-cycle named team to create). Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted.
+**Common scaffolding** (every spawn): `Agent(name="<role>", subagent_type="<type>", model="<per the routing rule below>", prompt=...)` — every spawn joins the session's single implicit team (the runtime ignores `team_name`; there is no per-cycle named team to create). Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted. **Lifecycle carve-out:** a report-only subagent (the Subagent mechanism above) returns a result and ends — it has NO SendMessage or `shutdown_request` lifecycle; the Rule 7 ephemeral lifecycle (claim → execute → report → AWAIT `shutdown_request`) applies to TEAMMATES (every `Agent(name=...)` teammate spawn). Role spawns DEFAULT to teammate mode, so each agent's "await `shutdown_request`" text is correct as-is; when a pattern explicitly selects report-only-subagent mode (e.g., the Verification/Investigation pattern), that executor's appended await-shutdown text is inert for that spawn.
 
 **Canonical ephemeral-brief schema** (every ephemeral spawn — name these fields explicitly so Opus does not under-reach): (1) **Verified goal** — `{verified_goal}` verbatim; (2) **Scope** — files in-scope + out-of-scope surfaces; (3) **Closed-vs-Open dimensions** — per the Brief-Authoring Discipline below, each architectural dimension marked Closed (prescribed) or Open (consult `advisor`); (4) **Done-state** — the exact close/report/await-shutdown sequence; (5) **Mandatory verification commands** — specific greps/awks/wcs for review/verify briefs, verdicts cite results not "checked". The dispatch-hygiene bullet below details (4)+(5).
 
@@ -153,7 +177,11 @@ These flows historically had NO advisor and became the top leak surface — team
 
 **CLOSED persistent set + ephemeral contract** — see Rule 7. The three persistent names are `advisor`, `security-advisor`, `ux-advisor`; every other spawn is ephemeral. Persistent advisors auto-resume on SendMessage; idle between phases is normal-by-design.
 
-**Per-spawn model routing (cost-tiered, quality-upgradable).** Every `Agent()` spawn MUST set `model=` explicitly — an omitted param does NOT inherit the session model; it falls to a content classifier whose fallback is nondeterministic (measured: non-pinned spawns run opus). An `Agent()` call without `model=` is a dispatch defect. Omitting `model=` is a dispatch defect even when the nondeterministic fallback happens to land on opus. NEVER `haiku` for custom agents (xhigh-effort frontmatter errors on Haiku). Alias names only — never hardcode full model IDs in prose or briefs (aliases resolve via `ANTHROPIC_DEFAULT_*` env vars). SendMessage-resumed persistent advisors keep their spawn model — set it once at spawn.
+**Per-spawn model routing (cost-tiered, quality-upgradable).** Every `Agent()` spawn MUST set `model=` explicitly — an omitted param does NOT inherit the session model; it falls to a content classifier whose fallback is nondeterministic (measured: non-pinned spawns run opus). An `Agent()` call without `model=` is a dispatch defect. Omitting `model=` is a dispatch defect even when the nondeterministic fallback happens to land on opus. NEVER `haiku` for custom teammate agents (their xhigh-effort frontmatter errors on Haiku) — `haiku` is permissible ONLY for report-only subagents (cheap, one-shot, no agent-definition frontmatter to error on). Alias names only — never hardcode full model IDs in prose or briefs (aliases resolve via `ANTHROPIC_DEFAULT_*` env vars). SendMessage-resumed persistent advisors keep their spawn model — set it once at spawn.
+
+**Model-resolution order** (documented precedence): `CLAUDE_CODE_SUBAGENT_MODEL` env > per-invocation `model=` > definition `model:` frontmatter > main model. The `CLAUDE_CODE_SUBAGENT_MODEL` env var overrides `model=` for ANY spawn — both report-only subagents AND teammates — so it sits ABOVE the explicit `model=` param; this does not relax the "every `Agent()` spawn MUST set `model=` explicitly / omitting it is a dispatch defect" rule, which governs the per-invocation layer beneath the env var. **Per-tier intent** (rationale behind the tiers below): `sonnet` = teammates and most coding work; `haiku` = cheap report-only subagent tasks (the one place Haiku is permissible — NOT the xhigh-effort custom teammate agents, which error on Haiku); `opus` = complex architecture and authoring/review/verify depth; `fable` = the hardest work (planned future tier, not yet available).
+
+**Subagent-branch availability.** The report-only subagent mechanism maps to the sub-agents doc §"Run subagents in foreground or background"; dispatch report-only subagents via that documented mechanism. If report-only subagent dispatch is unavailable in-harness, run as an ephemeral teammate that reports and is shut down — same outcome, higher cost, guidance stays correct.
 
 Tiers currently use `opus` where `fable` is intended; `fable` is the planned future model for the authoring/review/verify tier but is not yet available — use `opus` until it is.
 
@@ -162,6 +190,8 @@ Tiers (default; team-lead may exceed the tier UPWARD (higher-capability) when wa
 - `opus` — Medium implementation, general `reviewer-2`, `verifier*`.
 - `opus` — `tdd-author*`, Large/architecture implementation, long-horizon multi-phase implementation.
 - `opus` (security depth) — `security-reviewer-2`, security-dominated `tdd-author*`. `security-advisor` is SendMessage-resumed so it keeps its spawn model unless re-spawned with a new one.
+
+**Effort dispatch guidance.** The sub-agents doc documents an `effort` frontmatter field that overrides session effort for a spawn; per-teammate effort inheritance from an agent definition is not documented — do not assume it applies. Use the field when dispatching report-only subagents or when a specific worker's reasoning depth should differ from the session default. Documented levels: `low` (latency-sensitive or non-intelligence work), `medium` (cost-sensitive), `high` (balanced default), `xhigh` (deeper reasoning — the value 5 of 7 agent definitions carry; project-manager and ux-designer use `high`), `max` (maximum reasoning). The model-config doc notes `max` is prone to overthinking and is session-only — do NOT default to it; reserve it only for the hardest one-shot tasks where extended reasoning is explicitly warranted.
 
 ### @staff-engineer (TDD) — name=`tdd-author` (ephemeral)
 

@@ -149,7 +149,7 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 | 1 | `review-d{n}` per resolved dimension (staff-engineer, read-only) | Spawn ALL in same turn → each delivers its dimension report → shut down (don't wait for siblings) |
 | 2 | `reconciler` (staff-engineer, read-only) | Spawn after ALL Phase 1 reports in → emit Report + Manifest → shut down → team cleanup |
 
-**Shutdown protocol** (matches evolve-*): `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, re-request. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where reviewers self-initiate per `agents/team-lead.md` Rule 7.)
+**Shutdown protocol** (matches evolve-*): `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, re-request. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where reviewers AWAIT the orchestrator's request per `agents/team-lead.md` Rule 7.)
 
 ### Crash, Stall & Degraded Fallback
 

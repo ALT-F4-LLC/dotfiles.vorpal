@@ -179,5 +179,5 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Approve teammate shutdowns** — each `@staff-engineer` self-initiates a `shutdown_request` in its completion turn (per its agent definition and the Spawning Template), arriving in Step 2 alongside the completion message; approve each rather than originating your own. Originate a `shutdown_request` only for a `completed` agent that did not self-initiate one. Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
+2. **Shut down each teammate (lead-originated)** — after a `@staff-engineer` delivers its completion message and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). This is the canonical handshake — the lead SENDS the request, teammates AWAIT it and never self-initiate (per `agents/claude-code/team-lead.md` §Wrap-up shutdown direction + each teammate's CANONICAL:SHUTDOWN-PROTOCOL-LOCAL). Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
 3. **Clean up the team** — clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end.

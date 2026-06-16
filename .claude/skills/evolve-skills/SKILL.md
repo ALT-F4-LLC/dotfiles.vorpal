@@ -126,7 +126,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
 | 3 | `history-compactor` (gated) | Spawn after Phase 2 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers self-initiate `shutdown_request` per `agents/team-lead.md` Rule 7.)
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
 ### Crash & Stall Recovery
 

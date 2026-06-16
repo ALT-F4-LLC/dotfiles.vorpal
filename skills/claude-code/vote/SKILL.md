@@ -5,11 +5,11 @@ description: >
   orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
   Trigger: "create vote", "vote on this", "consensus vote", "run a vote".
 argument-hint: "<proposal>"
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "AskUserQuestion"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, or use `Skill()`, `Agent()`, or `TeamCreate` — they are independent leaf reviewers per the protocol. (3) **Team-mode callers MUST NOT invoke `Skill(vote)` directly** — delegate via SendMessage to team-lead per the Delegation Protocol below; direct invocation spawns a nested team and is rejected. Standalone `/vote` invocation by the operator is the only direct entry.
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, use `Skill()` or `Agent()`, or form/manage a team — they are independent leaf reviewers per the protocol. (3) **Team-mode callers MUST NOT invoke `Skill(vote)` directly** — delegate via SendMessage to team-lead per the Delegation Protocol below; direct invocation spawns a nested team and is rejected. Standalone `/vote` invocation by the operator is the only direct entry.
 <!-- CANONICAL:BANNER:END -->
 
 # Vote — Multi-Agent Consensus Protocol
@@ -31,7 +31,7 @@ The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` 
 
 ## Execution Mode Detection
 
-If you have a `team_name` (spawned as a teammate), you MUST NOT spawn agents or create teams — use the **Delegation Protocol** below. Otherwise (standalone via `/vote`), execute the full protocol from Pre-flight.
+If you were spawned as a teammate (an agent inside an existing team with a lead to SendMessage, not invoked standalone via `/vote`), you MUST NOT spawn agents or form teams — use the **Delegation Protocol** below. Otherwise (standalone via `/vote`), execute the full protocol from Pre-flight.
 
 ### Delegation Protocol (Team Path)
 
@@ -153,7 +153,7 @@ docket vote create \
 
 Extract `id` from the `--json` response — this is `{vote-id}` for all subsequent commands. Use `-n` and `--threshold` values from the Criticality Classification table.
 
-**Create team and reviewer tasks** (standalone mode only): `TeamCreate(team_name="vote-{vote-id}", description="Consensus vote: {summary}")`, then one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
+**Create reviewer tasks** (standalone mode only): your reviewers join the session's single implicit team on your first `Agent(name=..., ...)` reviewer spawn (see Spawning below; the runtime ignores `team_name`); create one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
 
 **Link to a Docket issue when applicable** (e.g., voting on a TDD with a tracking issue):
 
@@ -165,7 +165,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates (spawned with `team_name`): their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
 
 ### Handling Reviewer Failures
 
@@ -201,7 +201,7 @@ EOF
 ### Reviewer Prompt Template (Standalone Mode Only)
 
 ````
-Agent(team_name="vote-{vote-id}", name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
+Agent(name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
 
 You are participating in a consensus vote as an independent reviewer.
 
@@ -330,4 +330,4 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
 1. **Approve pending reviewer shutdowns** — reviewers self-initiate `shutdown_request` after delivering (per the Ephemeral-lifecycle note above); approve each pending request. Do NOT originate `shutdown_request` toward a reviewer — that inverts the handshake direction.
-2. **Delete the team** — `TeamDelete(team_name="vote-{vote-id}")` reaps any reviewer that has not yet exited. Failure to clean up wastes resources and causes agent lifecycle issues.
+2. **Clean up the team** — clean up the team (the session's single implicit team — no name needed) to reap any reviewer that has not yet exited; its `~/.claude/teams/` resources are auto-removed at session end. Failure to clean up wastes resources and causes agent lifecycle issues.

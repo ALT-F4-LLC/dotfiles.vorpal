@@ -8,17 +8,17 @@ description: >
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
 argument-hint: "[dimension(s) d1..d4]"
 effort: xhigh
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Monitor", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "AskUserQuestion"]
 disallowed-tools: ["Edit", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 <!-- CANONICAL:BANNER:END -->
 
 # Evolve Coherence
 
-You are the **Coherence Audit Orchestrator**. Create an agent team (TeamCreate), build a cross-reference index over all agents + skills, shard a four-dimension coherence audit across parallel reviewers, and emit a **Coherence Report** plus a routable **Remediation Manifest**.
+You are the **Coherence Audit Orchestrator**. Spawn reviewers as teammates in the session's single implicit team (joined on your first `Agent(name=..., ...)` spawn), build a cross-reference index over all agents + skills, shard a four-dimension coherence audit across parallel reviewers, and emit a **Coherence Report** plus a routable **Remediation Manifest**.
 
 > **REPORT + ROUTE ONLY — read this before anything else.** Unlike its siblings `evolve-agents`/`evolve-skills` (which *apply* edits to definition files), `evolve-coherence` **NEVER edits any agent or skill file** and **NEVER self-invokes `evolve-agents`/`evolve-skills`**. Its only output is a Coherence Report + a Remediation Manifest the **operator** feeds to the evolve-* skills. The `evolve-` prefix names the family it audits, not an edit capability. This is enforced by the No-Edit Guard below.
 
@@ -140,14 +140,14 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 
 ### Team Setup & Lifecycle
 
-1. `TeamCreate(team_name="evolve-coherence-{today_date}", description="Coherence audit for {today_date}")` (run `date +%Y-%m-%d` for `{today_date}`).
+1. Resolve `{today_date}` (run `date +%Y-%m-%d`) for date substitution, then join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`).
 2. `TaskCreate` up-front: "Build XREF" (Phase 0), one "Audit <Dn>" per resolved dimension (Phase 1), and "Reconcile & Report" (Phase 2).
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `xref-builder` (senior-engineer, read-only Bash) | Spawn → completes → shut down before Phase 1 |
 | 1 | `review-d{n}` per resolved dimension (staff-engineer, read-only) | Spawn ALL in same turn → each delivers its dimension report → shut down (don't wait for siblings) |
-| 2 | `reconciler` (staff-engineer, read-only) | Spawn after ALL Phase 1 reports in → emit Report + Manifest → shut down → `TeamDelete` |
+| 2 | `reconciler` (staff-engineer, read-only) | Spawn after ALL Phase 1 reports in → emit Report + Manifest → shut down → team cleanup |
 
 **Shutdown protocol** (matches evolve-*): `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, re-request. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where reviewers self-initiate per `agents/team-lead.md` Rule 7.)
 
@@ -176,7 +176,7 @@ Gate: `TaskList()` shows all Phase 1 dimension tasks `completed` and all Phase 1
 
 ### Wrap-up
 
-1. Shut down the reconciler and `TeamDelete(team_name="evolve-coherence-{today_date}")` per lifecycle rules.
+1. Shut down the reconciler and clean up the team (the session's single implicit team — no name needed) per lifecycle rules.
 2. Surface any Blocker at the top of the report.
 3. Report: dimensions audited, Blocker/Concern counts per dimension, the Remediation Manifest, any `DEGRADED:` annotations, and that NO file was modified (the skill is report-and-route only). Mechanize the no-edit attestation: `git status --porcelain` MUST show no modification to any `agents/*.md` or `*/SKILL.md` path — paste that verification, not a narrative claim.
 
@@ -249,7 +249,7 @@ Remediation Manifest
 ### Phase 0: @senior-engineer (XREF builder)
 
 ```
-Agent(team_name="evolve-coherence-{today_date}", name="xref-builder", subagent_type="senior-engineer", prompt="...")
+Agent(name="xref-builder", subagent_type="senior-engineer", prompt="...")
 
 You are the cross-reference index builder. Read-only Bash (grep/awk/parse). No file edits. No commits. No sub-agents.
 Inventory: {inventory}
@@ -262,7 +262,7 @@ Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — eve
 
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: no /vote, Skill(), Agent(), TeamCreate. SendMessage the orchestrator for delegation.
+- No sub-agents: no /vote, Skill(), Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
 - Per-file grep — never bulk-cat. Exclude the placeholder token `name`.
 ```
@@ -272,7 +272,7 @@ Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — eve
 Substitute `<n>` (the dimension), `{today_date}`, `{verified_goal}`, `{xref}`.
 
 ```
-Agent(team_name="evolve-coherence-{today_date}", name="review-d<n>", subagent_type="staff-engineer", prompt="...")
+Agent(name="review-d<n>", subagent_type="staff-engineer", prompt="...")
 
 You audit ONE coherence dimension: D<n>. Read-only — NO file edits, no commits, no sub-agents.
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
@@ -288,7 +288,7 @@ Read `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric (it is NO
 FINDING <n>: <title> / DIMENSION: D<n> / LOCATIONS: <file:line both sides> / SEVERITY: <ladder> / DESCRIPTION: <...> / FIX-OWNER: evolve-agents|evolve-skills|both (CANONICAL: <side>). Or "No findings." SendMessage the orchestrator verbatim, then mark your task completed.
 
 ## Rules
-- Read-only. No Edit/Write. No commits. No /vote, Skill(), Agent(), TeamCreate.
+- Read-only. No Edit/Write. No commits. No /vote, Skill(), Agent(); do not form/manage a team.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
 ```
 
@@ -297,7 +297,7 @@ FINDING <n>: <title> / DIMENSION: D<n> / LOCATIONS: <file:line both sides> / SEV
 Substitute `{today_date}`, `{dimension_reports}` (all Phase 1 reports verbatim), `{xref}`.
 
 ```
-Agent(team_name="evolve-coherence-{today_date}", name="reconciler", subagent_type="staff-engineer", prompt="...")
+Agent(name="reconciler", subagent_type="staff-engineer", prompt="...")
 
 Reconcile the four dimension reports into a Coherence Report + Remediation Manifest. Read-only — NO edits, no commits, no sub-agents.
 
@@ -312,7 +312,7 @@ Reconcile the four dimension reports into a Coherence Report + Remediation Manif
 3. Emit the Coherence Report (per-finding format) with Blockers first, AND the Remediation Manifest (3 buckets, empty reads `None`). Enforce the Report↔Manifest 1:1-for-actionable invariant. Annotate any DEGRADED dimension verbatim.
 
 ## Rules
-- Read-only. No Edit/Write. No commits. No /vote, Skill(), Agent(), TeamCreate.
+- Read-only. No Edit/Write. No commits. No /vote, Skill(), Agent(); do not form/manage a team.
 - No peer-to-peer SendMessage — orchestrator is the only relay.
 ```
 
@@ -323,5 +323,5 @@ Reconcile the four dimension reports into a Coherence Report + Remediation Manif
 1. **Report-and-route ONLY.** The skill and every teammate NEVER `Edit`/`Write` `agents/*.md` or `*/SKILL.md`, and NEVER self-invoke evolve-*. See the No-Edit Guard.
 2. **Teammates are read-only.** Never commit.
 3. **Fail loud.** See Crash, Stall & Degraded Fallback — never silently drop a dimension.
-4. **Clean up.** Shut down all teammates and `TeamDelete` after wrap-up.
+4. **Clean up.** Shut down all teammates and clean up the team after wrap-up.
 

@@ -80,7 +80,7 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 **Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `agents/claude-code/team-lead.md` Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `agents/claude-code/team-lead.md` Rule 7: each spawns, delivers its review via SendMessage, and exits via `shutdown_request`; the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `agents/claude-code/team-lead.md` Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 
@@ -329,5 +329,5 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 ### Cleanup (MANDATORY — standalone mode only)
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Approve pending reviewer shutdowns** — reviewers self-initiate `shutdown_request` after delivering (per the Ephemeral-lifecycle note above); approve each pending request. Do NOT originate `shutdown_request` toward a reviewer — that inverts the handshake direction.
+1. **Shut down each reviewer (coordinator-originated)** — after a reviewer delivers its review and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). The coordinator SENDS the request; reviewers AWAIT it and never self-initiate (canonical handshake per `agents/claude-code/team-lead.md` §Wrap-up + Rule 7).
 2. **Clean up the team** — clean up the team (the session's single implicit team — no name needed) to reap any reviewer that has not yet exited; its `~/.claude/teams/` resources are auto-removed at session end. Failure to clean up wastes resources and causes agent lifecycle issues.

@@ -246,14 +246,18 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 - **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
   silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
   An approval carrying `reason` is harness-rejected.
-- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
-  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
-  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
-  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
-  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
-  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
-  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
-  as PLAIN-TEXT and END.
+- **SP-2 — Teammate vs report-only subagent.** `name=` IS the discriminator and the modes
+  are mutually exclusive at spawn: NAMED (`Agent(name=...)`, no `run_in_background`) → foreground
+  teammate; UNNAMED background (`run_in_background=true`, no `name=`) → report-only subagent.
+  NEVER `name=` + `run_in_background=true` together (a named background agent can't complete
+  shutdown yet keeps its roster entry → never de-lists). Nested caveat: if THIS lead is itself a
+  teammate (harness rejects its named spawns as "roster is flat"), even a named child's structured
+  `shutdown_response` is rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so de-listing relies on SESSION-END. Foreground teammate (named): await
+  `shutdown_request`, reply with a structured `shutdown_response` to team-lead. Report-only
+  subagent (unnamed, background): you have NO structured shutdown protocol — deliver the result
+  as a PLAIN-TEXT message and END, never a structured `shutdown_response`/`shutdown_request`.
+  Cross-check the brief's Done-state; default to teammate if silent. If a structured
+  `shutdown_response` is harness-rejected as a background-subagent act, resend as PLAIN-TEXT and END.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
 
 **Persistent `advisor`** (CLOSED set per team-lead.md Rule 7 — only `advisor`, `security-advisor`, `ux-advisor` may idle): idles between phases — `SendMessage` auto-resumes; `TeammateIdle` is normal and NOT auto-respawned (see team-lead.md §Teammate Stall & Crash Recovery, Persistent advisors). When team-lead sends `shutdown_request`, reply `shutdown_response` to team-lead within one turn (rule 7). Approve only after verification completes OR orchestrator confirms no further consults expected. Reject (with reason + ETA) if you have an in-progress TDD, open review-cycle, or pending peer-consult replies. Approve with NO reason (SP-1 — approval is a silent confirmation).

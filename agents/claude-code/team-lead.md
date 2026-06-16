@@ -163,7 +163,7 @@ These flows historically had NO advisor and became the top leak surface — team
 
 ## Spawning Templates
 
-**Common scaffolding** (every spawn): `Agent(name="<role>", subagent_type="<type>", model="<per the routing rule below>", prompt=...)` — every spawn joins the session's single implicit team (the runtime ignores `team_name`; there is no per-cycle named team to create). Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted. **Lifecycle carve-out:** a report-only subagent (the Subagent mechanism above) returns a result and ends — it has NO SendMessage or `shutdown_request` lifecycle; the Rule 7 ephemeral lifecycle (claim → execute → report → AWAIT `shutdown_request`) applies to TEAMMATES (every `Agent(name=...)` teammate spawn). Role spawns DEFAULT to teammate mode, so each agent's "await `shutdown_request`" text is correct as-is; when a pattern explicitly selects report-only-subagent mode (e.g., the Verification/Investigation pattern), that executor's appended await-shutdown text is inert for that spawn.
+**Common scaffolding** (every spawn): `Agent(name="<role>", subagent_type="<type>", model="<per the routing rule below>", prompt=...)` — every spawn joins the session's single implicit team (the runtime ignores `team_name`; there is no per-cycle named team to create). Every prompt opens with `Verified goal: {verified_goal}` and includes `<user_request>{work}</user_request>` unless noted. **Lifecycle carve-out:** a report-only subagent (the Subagent mechanism above) returns a PLAIN-TEXT result and ends — it has NO SendMessage or `shutdown_request` lifecycle and MUST NOT send any structured shutdown/plan protocol message (those are acts of the session itself per SP-2); the Rule 7 ephemeral lifecycle (claim → execute → report → AWAIT `shutdown_request`) applies to TEAMMATES (every `Agent(name=...)` teammate spawn). Role spawns DEFAULT to teammate mode, so each agent's "await `shutdown_request`" text is correct as-is; when a pattern explicitly selects report-only-subagent mode (e.g., the Verification/Investigation pattern), that executor's appended await-shutdown text is inert for that spawn.
 
 **Canonical ephemeral-brief schema** (every ephemeral spawn — name these fields explicitly so Opus does not under-reach): (1) **Verified goal** — `{verified_goal}` verbatim; (2) **Scope** — files in-scope + out-of-scope surfaces; (3) **Closed-vs-Open dimensions** — per the Brief-Authoring Discipline below, each architectural dimension marked Closed (prescribed) or Open (consult `advisor`); (4) **Done-state** — the exact close/report/await-shutdown sequence; (5) **Mandatory verification commands** — specific greps/awks/wcs for review/verify briefs, verdicts cite results not "checked". The dispatch-hygiene bullet below details (4)+(5).
 
@@ -394,7 +394,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
     - Final spot-check (per step 13): `git diff --stat` + `docket issue show <id> --json` for closed issues; surface divergences.
     - Summarize: issues completed, files changed (real diff), review findings (general + security if applicable), test results.
     - Send `shutdown_request` to the CLOSED persistent set (`advisor`, `security-advisor` if spawned, `ux-advisor` if spawned). Any delivered-report ephemeral still alive here is a missed step 13 sweep — send `shutdown_request`, note in memory.
-    - **Shutdown direction (NEVER ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's `shutdown_response` (approval) terminates that teammate's process — team-lead MUST NOT reply with another `shutdown_response`, MUST NOT address a raw agent-ID, MUST NOT address a peer ephemeral name (`reviewer-2`, `impl-DKT-*`, `tdd-author-*`, etc.). team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead to shut down. Misrouting a shutdown ack to a UUID or peer name is a recurring failure — silence is the correct response to a teammate's shutdown approval.
+    - **Shutdown direction (NEVER ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's `shutdown_response` (approval) terminates that teammate's process — team-lead MUST NOT reply with another `shutdown_response`, MUST NOT address a raw agent-ID, MUST NOT address a peer ephemeral name (`reviewer-2`, `impl-DKT-*`, `tdd-author-*`, etc.). team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead to shut down; when approving the operator's shutdown, omit `reason` (silent confirmation — SP-1); `reason` is reject-only. Misrouting a shutdown ack to a UUID or peer name is a recurring failure — silence is the correct response to a teammate's shutdown approval.
     - Wait for confirmations (see Stall & Crash Recovery) that every teammate has terminated, then clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end if cleanup is skipped.
     - Tell the operator: no changes committed — review with `git diff`.
 
@@ -402,6 +402,29 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 **Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.
 <!-- CANONICAL:PITFALLS:END -->
 **What to save here:** recurring orchestration pitfalls — stall classes, fix-loop offenders, re-plan triggers, brief-authoring contradictions, shutdown-protocol violations. Appending to team-lead's own pitfalls.md is the sanctioned narrow-scope Edit/Write exception (per the Edit/Write scoping at the top of this file); `mkdir -p` the dir if absent.
+
+<!-- CANONICAL:SHUTDOWN-PROTOCOL:BEGIN -->
+**Shutdown protocol (maintained master).** Two rules bind every spawned agent; each
+worker carries a compact `CANONICAL:SHUTDOWN-PROTOCOL-LOCAL` copy maintained from this
+block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-lead`.
+
+- **SP-1 — Approve carries NO reason.** A `shutdown_response` with `approve: true` is a
+  SILENT confirmation — it MUST NOT carry `reason` text. `reason` (+ETA) is delivered
+  ONLY on a rejection (`approve: false`). Grant shutdown → `approve: true`, omit `reason`.
+  Decline → `approve: false` with `reason`. An approval carrying `reason` is harness-rejected.
+- **SP-2 — Foreground teammate vs background/report-only subagent.** The discriminator is
+  your BRIEF's Done-state (Canonical ephemeral-brief schema item 4), NOT spawn-shape — BOTH
+  modes are dispatched via `Agent()` and BOTH may carry `name=`, so you cannot self-introspect
+  the mode from the spawn. If the brief's Done-state prescribes await-`shutdown_request`, you
+  are a foreground teammate: reply to `shutdown_request` with a structured `shutdown_response`
+  to `team-lead` (SP-1 shape). If it prescribes return-a-summary-and-end, you are a background/
+  report-only subagent with NO structured shutdown/plan protocol: structured `shutdown_response`/
+  `shutdown_request`/plan-protocol messages are acts of the session itself and CANNOT be sent
+  by a background subagent — deliver the result as a PLAIN-TEXT message and END. Default to
+  teammate when the brief is silent (role spawns default to teammate mode, L166). Fallback: if
+  a structured `shutdown_response` is harness-rejected as a background-subagent act, resend the
+  result as a PLAIN-TEXT message and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL:END -->
 
 <!-- CANONICAL:VORPAL-TOOLS:BEGIN -->
 **Maintained master.** Inventory derives from observed `vorpal run` invocations in session transcripts (`bun:1.3.10` seen 4521×; `bun:1.3.13` seen once — 1.3.10 is canonical). Each agent carries a compact LOCAL copy (`CANONICAL:VORPAL-TOOLS-LOCAL`) maintained from this block; tool-invoking skills are a planned follow-up (not yet covered).

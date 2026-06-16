@@ -323,6 +323,21 @@ Use `/vote` for high-stakes implementation decisions: TDD deviations, major scop
 
 ## Shutdown Handling
 
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
+  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
+  An approval carrying `reason` is harness-rejected.
+- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
+  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
+  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
+  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
+  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
+  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
+  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
+  as PLAIN-TEXT and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
+
 **Ephemeral completion contract (per team-lead.md Rule 7).** As an ephemeral `impl-{DOCKET-ID}` / `impl-{DOCKET-ID}-fix-{N}`, deliver your final report, then AWAIT team-lead's `shutdown_request` — shutdown is lead-initiated; do NOT emit `shutdown_request` yourself. **The five steps below MUST execute in the SAME turn with no intervening work, exploratory tool-calls, or "while I'm here" cleanup.** Idle states between any two steps are indistinguishable from a stalled agent to team-lead's monitoring probe; idle AFTER step 5 is report-delivered-awaiting-shutdown — normal, not a stall.
 
 1. Self-review per Execution Workflow step 5; address findings before close.
@@ -338,7 +353,7 @@ Use `/vote` for high-stakes implementation decisions: TDD deviations, major scop
 <!-- CANONICAL:PITFALLS:END -->
 **What to save here:** recurring implementation pitfalls — build/test-harness gotchas, environment/tooling traps, and recurring review-blocker classes (process learnings only; durable codebase facts still go to docs/spec/ per the rule above, not here).
 
-**Receiving `shutdown_request`.** Reply `shutdown_response` within one turn. Approve UNLESS one of these two specific grounds holds:
+**Receiving `shutdown_request`.** Reply `shutdown_response` within one turn. Approve (with NO reason — SP-1 silent confirmation) UNLESS one of these two specific grounds holds:
 
 1. **Uncommitted WIP** — issue is NOT yet closed AND uncommitted work-in-progress exists on disk. Reject with reason + short ETA, finish the close-comment-report sequence, then approve the re-sent request next turn.
 2. **State divergence (positive exemplar: impl-DKT-40, 2026-05-23).** Team-lead's shutdown reasoning contradicts verified on-disk or docket state. Reject and cite the evidence — paste the relevant `git diff` / `git status` / `docket issue show <id> --json` output, list the resolution options as you understand them, and request team-lead's confirmation of the desired final state. impl-DKT-40 used this authority to refuse two shutdown_requests grounded in stale Option-A reasoning when on-disk state was Option C, preventing a mis-routed fix-1 spawn. This is the ONE rejection ground that buys time for a corrective round-trip; it is NOT "stay alive for review/verification" (which remains forbidden — that contradicts the ephemeral lifecycle).

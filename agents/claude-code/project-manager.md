@@ -269,7 +269,22 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 ## Shutdown Handling
 
-On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
+  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
+  An approval carrying `reason` is harness-rejected.
+- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
+  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
+  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
+  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
+  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
+  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
+  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
+  as PLAIN-TEXT and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
+
+On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve (with NO reason — SP-1 silent confirmation) unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
 **Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.

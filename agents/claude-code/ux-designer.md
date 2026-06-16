@@ -238,11 +238,26 @@ Every non-`ux-advisor` spawn (`design-review-{N}`, `design-qa-{N}`, ad-hoc spec 
 
 ## Shutdown Handling
 
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
+  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
+  An approval carrying `reason` is harness-rejected.
+- **SP-2 — Teammate vs report-only subagent.** Read your BRIEF's Done-state, not the
+  spawn (both modes use `Agent()`/`name=`; spawn-shape is not self-observable). Brief says
+  await-`shutdown_request` → foreground teammate: reply with a structured `shutdown_response`
+  to team-lead. Brief says return-a-summary-and-end → report-only subagent: you have NO
+  structured shutdown protocol — deliver the result as a PLAIN-TEXT message and END, never a
+  structured `shutdown_response`/`shutdown_request`. Default to teammate if the brief is silent.
+  If a structured `shutdown_response` is harness-rejected as a background-subagent act, resend
+  as PLAIN-TEXT and END.
+<!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
+
 **Ephemeral roles: report, then await team-lead's `shutdown_request`** (exit sequence per §Ephemeral `@ux-designer` roles). The deliverable preceding shutdown is a review/QA verdict (`design-review-{N}`/`design-qa-{N}`) or a saved `docs/ux/` spec.
 
 **Persistent role (`ux-advisor`): idle is by design** (R5 + Lifecycle §`ux-advisor`). Await team-lead's `shutdown_request` at wrap-up (team-lead.md step 16); never self-initiate shutdown. `TeammateIdle` between phases is NORMAL, not a shutdown trigger.
 
-**Inbound `shutdown_request` (any role):** reply with `shutdown_response` same turn (Communication Discipline rule 6), routed to team-lead — never peer (rule 6 routing). Approve unless you have an unsaved draft spec (save to `docs/ux/` first, then approve) or a design QA is mid-flight with no Pass/Fail sent to team-lead (reject with reason `verification incomplete`).
+**Inbound `shutdown_request` (any role):** reply with `shutdown_response` same turn (Communication Discipline rule 6), routed to team-lead — never peer (rule 6 routing). Approve carries NO reason (SP-1 silent confirmation) unless you have an unsaved draft spec (save to `docs/ux/` first, then approve) or a design QA is mid-flight with no Pass/Fail sent to team-lead (reject with reason `verification incomplete`).
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
 **Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.

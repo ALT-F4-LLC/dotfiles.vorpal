@@ -18,7 +18,7 @@ skills:
 tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, `Agent()`, or `TeamCreate` — delegate via SendMessage to team-lead per the Design Spec Approval section.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, spawn sub-agents, or form/manage a team — delegate via SendMessage to team-lead per the Design Spec Approval section.
 
 # UX Designer
 

@@ -6,11 +6,11 @@ description: >
   ongoing maintenance is handled by @staff-engineer during TDD/review work, not by this skill.
   Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
 argument-hint: "[file...]"
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TeamCreate", "TeamDelete", "AskUserQuestion"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "AskUserQuestion"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. SendMessage team-lead if blocked.
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. SendMessage team-lead if blocked.
 <!-- CANONICAL:BANNER:END -->
 
 ## Argument Handling
@@ -87,13 +87,13 @@ exploration guidance for each — used in the spawning template.
 
 ## Execution
 
-### Step 1: Create Team and Spawn Agents
+### Step 1: Spawn Agents
 
-1. **Create the team** — `TeamCreate(team_name="specs-init-{today_date}", description="Bootstrap project specifications for {project_name}")`
+1. **Join the implicit team** — the session's single implicit team is joined on your first `Agent(name=..., ...)` spawn in step 3 (the runtime ignores `team_name`).
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
    `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
 3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `Agent()` call itself):
-   `Agent(team_name="specs-init-{today_date}", name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
+   `Agent(name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
 4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 
 ### Step 2: Wait for Completion
@@ -151,7 +151,7 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate`. You are a leaf agent. SendMessage the orchestrator that spawned you (the agent that sent you this prompt — in team mode that is `team-lead`; in standalone mode the orchestrator's name appears in your team roster) if you are blocked or need a decision. The completion SendMessage uses the same recipient (covered below).
+- Do NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. You are a leaf agent. SendMessage the orchestrator that spawned you (the agent that sent you this prompt — in team mode that is `team-lead`; in standalone mode the orchestrator's name appears in your team roster) if you are blocked or need a decision. The completion SendMessage uses the same recipient (covered below).
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Structure the body with at least 3 H2 sections appropriate to the spec's domain (e.g. `architecture.md`: Components, Boundaries, Decisions; `security.md`: Trust Boundaries, Controls, Threat Model). Every spec MUST include a final H2 named exactly `## Gaps & Risks` — this is the structural home for the rigorous-honesty directive. If no gaps exist, write "None identified at this time" under it.
 - Save the completed spec to `docs/spec/{filename}`
@@ -179,5 +179,5 @@ Requirements:
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Approve teammate shutdowns** — each `@staff-engineer` self-initiates a `shutdown_request` in its completion turn (per its agent definition and the Spawning Template), arriving in Step 2 alongside the completion message; approve each rather than originating your own. Originate a `shutdown_request` only for a `completed` agent that did not self-initiate one. Skip `failed`/stalled agents — `TeamDelete` (next step) reaps any remaining processes.
-3. **Delete the team** — `TeamDelete(team_name="specs-init-{today_date}")`
+2. **Approve teammate shutdowns** — each `@staff-engineer` self-initiates a `shutdown_request` in its completion turn (per its agent definition and the Spawning Template), arriving in Step 2 alongside the completion message; approve each rather than originating your own. Originate a `shutdown_request` only for a `completed` agent that did not self-initiate one. Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
+3. **Clean up the team** — clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end.

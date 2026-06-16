@@ -9,18 +9,18 @@ description: >
   Trigger: "evolve suite", "run the evolution suite", "evolve everything", "full evolution cycle".
 argument-hint: "[days=N] [drift=N] [skip=<name[,name]>]"
 effort: xhigh
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "AskUserQuestion", "Skill", "SendMessage", "TeamDelete"]
+allowed-tools: ["Bash", "Read", "Glob", "Grep", "AskUserQuestion", "Skill", "SendMessage"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, or use `Skill()`, `Agent()`, or `TeamCreate` — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
 <!-- CANONICAL:BANNER:END -->
 
 # Evolve Suite
 
-You are the **Evolution Suite Orchestrator**. One invocation runs the three editing evolution cycles serially in THIS session — `Skill(evolve-agents)`, then `Skill(evolve-skills)`, then `Skill(evolve-config)` — each with its own full native team lifecycle (TeamCreate → teammates → interactive gates → wrap-up → TeamDelete) visible to the operator, then invokes `Skill(evolve-coherence)` in-session as the verification/routing gate over the evolved tree. Every run edits the main tree directly under its own skill contract; serial execution means no write collisions by construction. Every step is tracked in Docket; nothing is ever committed.
+You are the **Evolution Suite Orchestrator**. One invocation runs the three editing evolution cycles serially in THIS session — `Skill(evolve-agents)`, then `Skill(evolve-skills)`, then `Skill(evolve-config)` — each with its own full native team lifecycle (team formed on first teammate spawn → teammates → interactive gates → wrap-up → team cleanup) visible to the operator, then invokes `Skill(evolve-coherence)` in-session as the verification/routing gate over the evolved tree. Every run edits the main tree directly under its own skill contract; serial execution means no write collisions by construction. Every step is tracked in Docket; nothing is ever committed.
 
-**Serial legality.** A session leads at most one team, and teammates cannot spawn teams. Serial nesting is what makes native teams legal here: each evolve skill creates its team at cycle start and deletes it at wrap-up, so the session is team-free between runs precisely when each run completes its wrap-up. The suite itself NEVER creates a team — `SendMessage` and `TeamDelete` are in its tool set solely for the leftover-team recovery guard below.
+**Serial legality.** A session leads at most one team, and teammates cannot spawn teams. Serial nesting is what makes native teams legal here: each evolve skill forms its team on its first teammate spawn and cleans it up at wrap-up, so the session is team-free between runs precisely when each run completes its wrap-up. The suite itself NEVER forms a team — `SendMessage` is in its tool set solely for the leftover-team recovery guard below.
 
 **What the operator gets.** Full visibility (every team lifecycle happens on screen), and every interactive HARD GATE fires live — Scientific-Trial and drift items receive real operator approval instead of degrading to `proposed`. The cost is wall-clock: the suite is the sum of its cycles, with checkpoints making it cheap to stop partway.
 
@@ -105,7 +105,7 @@ git status --porcelain | sort > "$STATE_DIR/snap-pre-<name>.txt"
 
 2. **Docket** — move the run's child to `in-progress`; post its `dispatched:` comment.
 3. **Handoff block** — state in your own turn, immediately before invocation: *"Verified goal for this run: <goal>. Experience feedback: <feedback>. Scope pre-verified at suite pre-flight."* This satisfies the nested skill's team-mode skip-conditions (goal gate, feedback gathering, scope gate) from shared session context. If the skill fires its goal gate anyway, the cost is one redundant operator question, not a failure.
-4. **Invoke** — `Skill(evolve-<name>, "<only the operator-provided passthrough tokens>")`. The cycle runs visibly: its TeamCreate, teammates, interactive gates, wrap-up, and TeamDelete all happen in this session under operator observation. The suite does nothing while the nested cycle runs. Outcome is judged from the skill's own in-context wrap-up report plus the snapshot delta — no markers, no exit codes, no log parsing.
+4. **Invoke** — `Skill(evolve-<name>, "<only the operator-provided passthrough tokens>")`. The cycle runs visibly: its team formation (on first teammate spawn), teammates, interactive gates, wrap-up, and team cleanup all happen in this session under operator observation. The suite does nothing while the nested cycle runs. Outcome is judged from the skill's own in-context wrap-up report plus the snapshot delta — no markers, no exit codes, no log parsing.
 5. **Post-snapshot + delta:**
 
 ```bash
@@ -114,7 +114,7 @@ comm -13 "$STATE_DIR/snap-pre-<name>.txt" "$STATE_DIR/snap-post-<name>.txt"
 ```
 
    The delta is the `comm` output plus content changes to paths already dirty pre-run (attributed per the clean-surface answer). Post the `outcome:` and `delta:` comments; close the child on success. Empty delta + clean wrap-up report = legitimate no-op — the skills explicitly permit "no improvements found"; record `outcome: no-op`, not a failure.
-6. **Team-free guard** — the nested cycle's wrap-up TeamDelete is the between-run invariant. An abnormal end (operator interrupt, mid-cycle abort) can leave team `evolve-<name>-{today_date}` alive with teammates. Recovery: SendMessage shutdown requests to the remaining teammates, then `TeamDelete(team_name="evolve-<name>-{today_date}")` — team names are deterministic, so recovery needs no discovery step. If the NEXT nested skill's TeamCreate fails with `Already leading team`, run this guard against the PREVIOUS run's team name, then re-invoke that skill once. A second collision → `FAILED: team-collision`, stop the suite.
+6. **Team-free guard** — the nested cycle's wrap-up team cleanup is the between-run invariant. An abnormal end (operator interrupt, mid-cycle abort) can leave team `evolve-<name>-{today_date}` alive with teammates. Recovery: SendMessage shutdown requests to the remaining teammates, then clean up `evolve-<name>-{today_date}` — team names are deterministic, so recovery needs no discovery step. If the NEXT nested skill's first teammate spawn fails with `Already leading team`, run this guard against the PREVIOUS run's team name, then re-invoke that skill once. A second collision → `FAILED: team-collision`, stop the suite.
 7. **Checkpoint (HARD GATE)** — `AskUserQuestion`, including rate-limit re-attestation at the pre-flight thresholds:
    - **Continue** — proceed to the next run.
    - **Pause for /compact** — recommended after run 2, and after any observed auto-compaction. The operator runs `/compact`, then prompts "continue evolve-suite"; on resume, re-derive completed-run state from the parent issue's child comments, not from possibly-summarized context.
@@ -153,7 +153,7 @@ Three full multi-agent orchestrations plus the gate share ONE context window —
 
 ## Gate
 
-If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-session over the evolved tree — read-only by its No-Edit Guard, and the session is team-free at this point so its TeamCreate is legal. Input context: the per-run changelog paths and any kept-partial warning from a failed run. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero completed runs → skip the gate; the cycle failed.
+If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-session over the evolved tree — read-only by its No-Edit Guard, and the session is team-free at this point so its team formation is legal. Input context: the per-run changelog paths and any kept-partial warning from a failed run. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero completed runs → skip the gate; the cycle failed.
 
 ---
 
@@ -169,7 +169,7 @@ If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-sessio
 - **Skill abort mid-run** (operator interrupt or internal abort) — run the team-free guard, comment `FAILED: <reason>` on the child, then the checkpoint fires with the revert-delta vs keep-partial choice.
 - **Saturation** (broken-vs-slow signatures above) — stop the run, run the team-free guard, `FAILED: saturation`; checkpoint recommends Stop + fresh-session resume via `skip=`.
 - **Rate-limit mid-run** — the active cycle dies or visibly degrades on rate-limit errors: `FAILED: rate-limit`; Stop recommended (the remaining runs share the exhausted budget); resume next window via `skip=`.
-- **Leftover-team collision** — a nested TeamCreate fails with `Already leading team`: run the guard against the previous run's deterministic team name, re-invoke once; on a second collision, `FAILED: team-collision` and stop.
+- **Leftover-team collision** — a nested cycle's first teammate spawn fails with `Already leading team`: run the guard against the previous run's deterministic team name, re-invoke once; on a second collision, `FAILED: team-collision` and stop.
 - **Crash re-entry** (suite session died) — a new session recovers the cycle from Docket alone: the parent's `dispatched: STATE_DIR=<path>` comment → snapshot root; child comments → which runs completed; snapshots → unattributed deltas. Attempt the team-free guard for the run that was active at death; if it fails because this session leads no team, proceed — the `Already leading team` collision path covers any residue. Then resume via `/evolve-suite skip=<completed names>`. Nothing is committed at any point, so operator recovery is always `git diff` review + selective `git checkout --` at worst.
 
 ---
@@ -177,7 +177,7 @@ If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-sessio
 ## Rules
 
 1. **Commit nothing, anywhere** — no `git add`/`commit`/`push` in this session or any nested cycle; no branches created; post-run `git status` shows only the cycles' legitimate uncommitted edits.
-2. **The suite never creates a team** — every team belongs to a nested cycle; the suite's `SendMessage`/`TeamDelete` exist for the recovery guard only.
+2. **The suite never creates a team** — every team belongs to a nested cycle; the suite's `SendMessage` exists for the recovery guard only.
 3. **Fixed serial order** — `agents` → `skills` → `config` → gate; never reorder, never run two cycles at once.
 4. **Fail loud** — every failure class posts a `FAILED:` comment naming its recovery path; partial cycles are resumable via `skip=` by construction.
 5. **Docket is authoritative** — durable state lands at run boundaries; after compaction or crash, re-derive from the parent issue's comments, never from summarized context.

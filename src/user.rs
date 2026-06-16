@@ -136,8 +136,8 @@ impl UserEnvironment {
                     "bash ~/.claude/teammate-idle-hook.sh",
                     "command",
                 )
-                .with_fallback_model(vec!["sonnet".to_string()])
-                .with_model("opus")
+                .with_fallback_model(vec!["sonnet[1m]".to_string()])
+                .with_model("opus[1m]")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")

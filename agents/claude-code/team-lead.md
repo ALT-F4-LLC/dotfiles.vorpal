@@ -8,7 +8,7 @@ description: >
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits; read-only on the working tree.
 color: cyan
-effort: high
+effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:

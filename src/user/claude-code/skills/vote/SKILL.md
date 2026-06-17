@@ -35,6 +35,8 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 ### Delegation Protocol (Team Path)
 
+> **Precondition:** the Team Path depends on `SendMessage`, which exists only when agent teams are enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. With that var unset there is no team, no `team-lead` to delegate to, and no `SendMessage` tool — the only valid entry is then standalone `/vote` (the operator path). A teammate context implies the var is already set.
+
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
 3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}", summary: "{one-line}", artifact?: "{path}"})`. `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for `delegation_response` with matching `request_id`.

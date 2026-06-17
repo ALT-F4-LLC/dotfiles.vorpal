@@ -242,7 +242,7 @@ Silence is risk. If you hold context a teammate needs, SendMessage is not option
 ## Shutdown Handling
 
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
-**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
+**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL. **Precondition:** this handshake and all `SendMessage` routing presuppose agent teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — the tool does not exist otherwise.
 - **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
   silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
   An approval carrying `reason` is harness-rejected.

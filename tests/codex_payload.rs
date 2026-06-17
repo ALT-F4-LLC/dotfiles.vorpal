@@ -288,6 +288,44 @@ fn codex_team_lead_delegates_actual_work() {
 }
 
 #[test]
+fn codex_team_lead_execution_workflow_is_codex_native() {
+    let path = repo_root().join("src/user/codex/personas/team-lead.md");
+    let instructions = fs::read_to_string(&path).expect("team-lead persona should be readable");
+
+    for term in [
+        "Agent(",
+        "TaskCreate",
+        "TaskUpdate",
+        "TaskList",
+        "Monitor",
+        "Bash(run_in_background",
+        "TeamDelete",
+        "shutdown_request",
+        "shutdown_response",
+        "subagent_terminated",
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
+        "SendMessage",
+        "Skill(",
+    ] {
+        assert!(
+            !instructions.contains(term),
+            "{} should not include Claude-only execution workflow term {term:?}",
+            path.display()
+        );
+    }
+
+    assert!(
+        instructions.contains("spawn_agent(agent_type=\"worker\"")
+            && instructions.contains("wait_agent(targets=[...]")
+            && instructions.contains("close_agent(target=<agent-id>)")
+            && instructions.contains("local phase ledger")
+            && instructions.contains("Worker close gate"),
+        "{} should describe Codex-native spawn/wait/close workflow and context tracking",
+        path.display()
+    );
+}
+
+#[test]
 fn codex_profile_preserves_no_prose_code_comment_policy() {
     let path = repo_root().join("src/user/codex/personas/team-lead.md");
     let content = fs::read_to_string(&path).expect("team-wide policy surface should be readable");

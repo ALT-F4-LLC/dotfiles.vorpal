@@ -1,5 +1,21 @@
 # Changelog: security-engineer
 
+## 2026-06-17
+
+### Summary
+Fixed docket graph arg-order and added a persist-ordering gate to the secret-handling review dimension. Trial: persist-ordering gate → adopted.
+
+### Changes
+- CULL: `docket issue graph --direction up <id>` → `<id> --direction up` (L136), canonical positional form.
+- AMPLIFY: secret-handling dimension now verifies PERSIST ORDERING for strip/redact controls (a request-view transform can satisfy replay yet skip the at-rest path) — check framework source, not the app diff.
+- Verified NO-OP: phantom-deletion guard (L68) and relay-authority clause (L213) already encoded.
+
+### Dimensions Evaluated
+Spec Alignment (CULL), Capability Growth (AMPLIFY), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

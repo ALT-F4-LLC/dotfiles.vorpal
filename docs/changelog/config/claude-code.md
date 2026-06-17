@@ -1,5 +1,19 @@
 # Changelog: claude-code
 
+## 2026-06-17
+
+### Summary
+Added `uv` + `vorpal` to the sandbox `excludedCommands` — the dominant audit friction signal. Trial: sandbox uv/vorpal exclusion → adopted. Drift: 2 neutral rewordings of the SKILL.md historical-auditor output-format prose → adopted.
+
+### Changes
+- AMPLIFY: added `uv` (194× sandbox-blocked) + `vorpal` (67×) to `with_sandbox_excluded_commands` (src/user.rs) — both on the canonical vorpal-tools inventory; isolation forced .venv/system fallbacks. Behavioral: non-empty excludedCommands vec gains 2 entries → serialized `excludedCommands` output changes.
+
+### Dimensions Evaluated
+Sandbox (AMPLIFY); Core&model-routing / Permissions / Hooks&scripts / Skills&auto-mode / Plugins-UI-governance (RETAIN). Deferred → DKT-19: `.env.example` allowRead (verify layer first), OTEL endpoint split (operator decision), env-var-first idiom doc, `~/.kube` layer; CLAUDE_CODE_SUBAGENT_MODEL rejected (routing regression).
+
+### Rename
+No rename.
+
 ## 2026-06-12
 
 ### Summary

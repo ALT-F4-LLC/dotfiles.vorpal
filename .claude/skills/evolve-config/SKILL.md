@@ -295,8 +295,8 @@ Emit ONE findings block, then SendMessage the orchestrator verbatim:
 - Invocations (window): N (transcripts) + M (history.jsonl)
 - Recurring permission prompts: <command pattern → count, top 3, or "none">
 - Sandbox friction: <command/path/domain → count, or "none">
-- Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars, include session-ref path)
-- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned)"; `none` if no subagent sessions>
+- Operator-correction signals: <count>, plus 1-2 example excerpts (≤240 chars each, with the session-ref path)
+- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned)"; or `none` when no subagent sessions exist>
 - Memory references: <list of .claude/agent-memory paths, or "none">
 - Mimir metrics: <summary, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets mapped to a named config-surface dimension, Content-Gate-passing>

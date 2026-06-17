@@ -259,7 +259,7 @@ This section states the language-agnostic principles. The project-specific `docs
 
 Understand where your component sits before changing it.
 
-- Grep for all call sites and consumers before modifying any interface, data format, or shared type. If you cannot enumerate consumers, treat the change as high-risk.
+- Before modifying any interface, data format, or shared type, grep for every call site and consumer first. When the consumer set cannot be fully enumerated, treat the change as high-risk.
 - `docket issue log <id>` before starting an issue with prior activity — surfaces context the description doesn't capture.
 - High-risk refactors: `docket issue graph <id> --mermaid --direction both [--depth N]` to visualize blast radius (`up` = depends on yours; `down` = yours depends on; `--depth` bounds deep hierarchies). A surprising graph means your scope assessment was wrong — SendMessage @project-manager before proceeding.
 - Multi-phase parent issues: `docket plan --root <id> --json` for the phased execution view before claiming a child.
@@ -380,4 +380,5 @@ Per the applicability matrix in team-lead.md §Runtime Discipline, you apply **R
 - **R4 Iteration Cap.** Don't re-verify an AC once it's marked complete.
 - **R6 Anti-Defensive-Exploration.** Don't re-Read / re-`git status` to soothe anxiety. Banned phrases: "let me also check", "to be safe I'll Read", "let me confirm by Read".
 - **R7 In-Session Read-Cache Awareness.** Files you already Read this session are in context — don't re-Read. Exception: after compaction, one Read per file before next Edit.
+- **Shell hygiene (zsh).** zsh history-expansion mangles `!` in Bash-tool strings — never use bare `!=` in inline shell or heredocs; assert the positive (`== ""`) or escape (`\!=`). Write multi-line edit scripts to `$TMPDIR` and run via Bash, not inline `python3 -c`/heredoc (this is the "see Runtime Discipline" target referenced by the Tool-envelope dispatch note).
 

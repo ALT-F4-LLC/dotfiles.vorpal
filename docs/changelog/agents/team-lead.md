@@ -1,5 +1,22 @@
 # Changelog: team-lead
 
+## 2026-06-17
+
+### Summary
+TRIM self-review (589→587): docket-CLI drift fix, de-duplicated name/background exclusivity into canonical SP-2, removed a fable/opus restatement, Rule 5 staff-count parity. Drift: neutral reword of the Brief-Authoring "Detector" bullet → adopted.
+
+### Changes
+- CULL: `docket issue graph --direction up` → `<id> --direction up` (L312); `[id]` is the required first positional per `--help`.
+- CULL: collapsed the L166 name/background-exclusivity duplication into a one-line discriminator + pointer to canonical SP-2 (removes a two-site drift hazard).
+- CULL: removed the fable/opus sentence restated by the tier preamble; folded "use opus until fable available" into it.
+- Rule 5 parity: `@staff-engineer 1-9` → `1-10` (reflects staff's new relay-authority rule).
+
+### Dimensions Evaluated
+Actionability (CULL), Consolidation & Trimming (CULL — HIGHEST), Boundary Clarity (RETAIN), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

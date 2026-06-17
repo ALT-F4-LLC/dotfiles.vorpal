@@ -8,6 +8,7 @@ description: >
   block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
   nothing. Trigger: "brief", "create brief", "standardize this request".
 argument-hint: "<freeform work request>"
+allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

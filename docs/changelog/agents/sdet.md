@@ -1,5 +1,21 @@
 # Changelog: sdet
 
+## 2026-06-17
+
+### Summary
+Added sandbox-interaction patterns, a never-trust-0-failures set-diff procedure, and a shared-worktree baseline hazard. Trial: sandbox-patterns / set-diff / worktree-baseline → adopted. Drift: neutral reword of the @ux-designer testability-trigger bullet → adopted.
+
+### Changes
+- AMPLIFY: sandbox-interaction patterns (Monitor+kubectl → dangerouslyDisableSandbox kubectl wait; gh/curl TLS retry; `$TMPDIR` vs /tmp).
+- AMPLIFY: never trust an implementer's "0 new failures" — full-suite set-diff of before/after failing sets.
+- AMPLIFY: shared-worktree baseline hazard — use file-copy / dedicated worktree, not git stash.
+
+### Dimensions Evaluated
+Actionability (AMPLIFY), Completeness (AMPLIFY), Consolidation (RETAIN), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

@@ -160,11 +160,15 @@ When a test fails, diagnose before reporting:
 
 **Snapshots:** apply the §Testing Philosophy never-blind-update rule; prefer table-driven tests when authoring.
 
+**Shared-worktree baseline hazard.** When capturing a pre-implementation baseline in a shared worktree, do NOT `git stash` — it silently stashes another agent's in-progress changes. Use a file-copy (`cp -r . "$TMPDIR/baseline"`) or a dedicated `git worktree add`.
+
 **Long-running suites and CI watches.** Use the `Monitor` tool to stream test/CI output instead of blocking on Bash: launch the command with `run_in_background`, then `Monitor` the output path with an until-loop on a terminal pattern (PASS/FAIL line, exit marker). Use this for full test-suite runs >30s, flaky-test rerun loops (3-5x confirmation), and waiting on remote CI status. Do not chain `sleep` calls to poll. Monitor runs sandboxed — it cannot read credential paths (e.g. `~/.kube/config`); when the watch needs credentials, use a foreground poll loop instead. Never background long environment-provisioning commands (cluster creates, image pulls) — backgrounded provisions get reaped silently mid-operation; run them foreground with an explicit timeout.
 
 **Git lock recovery.** If `git diff` / `git status` fails with `.git/index.lock` exists, the lock is stale (no concurrent git process you control). Retry the same Bash with `dangerouslyDisableSandbox: true` — the sandbox can block the unlink. Do NOT `rm -f .git/index.lock` blindly.
 
 **Sandbox off-limits.** `.env` / `.env.*` files and the Docker socket are blocked by sandbox policy — attempts produce "Operation not permitted" or silent failure, not a missing-file error. Do NOT attempt to read credential files or `.env` variants in tests or fixtures; surface as a test-environment blocker to the operator. For container-dependent test environments, flag "docker socket unavailable" to team-lead rather than working around it.
+
+**Sandbox-interaction pitfall patterns (recurrent).** Three failures recur cross-repo: (1) **Monitor + kubectl** — Monitor can't read `~/.kube/config` in sandbox; use a bounded `Bash(dangerouslyDisableSandbox: true)` `kubectl wait` instead of a Monitor-watched kubectl stream. (2) **gh / curl TLS errors** — a TLS/cert failure to a non-whitelisted endpoint clears on retry with `dangerouslyDisableSandbox: true`. (3) **`$TMPDIR` vs `/tmp`** — always write temp files to `$TMPDIR`; a hardcoded `/tmp` path yields "Operation not permitted" in sandbox mode.
 
 ---
 
@@ -193,7 +197,7 @@ Any verifier invokes `Skill(verify-ac, "<scope>")` and emits its verdict to team
    describe intent; the diff describes reality, and past sessions have had stale or
    inaccurate completion claims. Always Read the actual files and inspect `git diff` /
    `git diff --stat` before scoring criteria.
-3. Verify each criterion individually with specific pass/fail evidence. When an AC or demo names a literal command, run THAT command verbatim — an equivalent invocation (`docker kill` vs `sh -c 'kill -USR1 1'`) leaves the named path unverified, and slim images may lack the binary the equivalent assumes. For grep-sweep ACs, derive line-range bounds from structural markers (`grep -n` the heading) at sweep time — hardcoded ranges go stale as docs grow and fail OPEN (false PASS).
+3. Verify each criterion individually with specific pass/fail evidence. When an AC or demo names a literal command, run THAT command verbatim — an equivalent invocation (`docker kill` vs `sh -c 'kill -USR1 1'`) leaves the named path unverified, and slim images may lack the binary the equivalent assumes. For grep-sweep ACs, derive line-range bounds from structural markers (`grep -n` the heading) at sweep time — hardcoded ranges go stale as docs grow and fail OPEN (false PASS). **Never trust an implementer's "0 new failures" claim** — run the full suite and set-diff the before/after failing-test sets (`run_tests --json > before.json`; after impl `> after.json`; diff the failing sets): any test failing in `after` but not `before` is a regression the targeted run hid.
 4. **Layer signals — prefer real-system evidence at trust boundaries.** Run the suite, trace key paths, diff output against baselines, verify generated artifacts are consumed correctly. Never rely on one signal. When the behavior under test crosses a real external boundary (auth provider, filesystem, network endpoint), at least one signal MUST be a real-system observation (forced refresh + inspect `~/.vorpal/credentials.json`, real HTTP exchange, on-disk artifact), not solely mock assertions — mocks pin contract, not reality. **Confirm with the operator before side-effecting auth boundaries** (credential refresh, token write) — these are only in-scope when the AC explicitly requires credential-state verification.
 5. Test beyond stated criteria and **decide** via `Skill(verify-ac)` — its FULL procedure runs the edge-case battery (empty/null/large, invalid/malicious, unavailable deps, boundaries) and binds the verdict ladder. BLOCK when criteria unmet, security tests fail, data integrity at risk, or critical coverage missing on high-risk paths; ACCEPT WITH CAVEATS when edge coverage is incomplete but core paths verified; err toward blocking for high-risk systems.
 
@@ -268,7 +272,7 @@ Run `docket init` at session start (idempotent). Run `docket version` for tracea
 **Consult before acting** (pull context): ask @senior-engineer when a failure could be a real defect vs. test bug and intent is unclear from code; ask @staff-engineer when unit/integration-boundary decisions need guidance. Proceed without consulting when specs, criteria, and repro steps are clear.
 
 **Incoming consults (respond promptly):**
-- @ux-designer testability check on a draft spec → review error states, edge cases, and concurrency sections; reply with acceptance-criteria gaps before they finalize
+- @ux-designer testability check on a draft spec → examine the error-state, edge-case, and concurrency sections, then reply with any acceptance-criteria gaps before the spec is finalized
 - @ux-designer new testable acceptance criteria in a finalized spec → fold edge/error/degraded cases into the test plan
 - @staff-engineer testability consult (TDD drafting OR pre-review alignment) → reply with edge cases, risk-tier coverage, and testability gaps before the artifact finalizes
 - @security-engineer security-test consult (abuse-case design, fuzzing targets, pre-review alignment) → reply with control-boundary edge cases, CI-gate proposals, and security-test coverage gaps before the artifact finalizes

@@ -1,5 +1,22 @@
 # Changelog: vote
 
+## 2026-06-17
+
+### Summary
+Added an AC-reconciliation check after commit, a deferred-vs-cancelled disposition-clarity rule on escalation, and corrected an inverted reviewer-template shutdown direction. Trial: AC-reconciliation / disposition-clarity / shutdown-direction → adopted.
+
+### Changes
+- AMPLIFY: AC-reconciliation check — an outcome reversing prior direction flags that pre-vote sub-issue ACs may encode the contradicted direction and must be reconciled before implementation.
+- AMPLIFY: disposition clarity — escalation `--outcome` must distinguish deferred ("blocked by X") from cancelled ("superseded by X") to prevent wrong issue closures.
+- CULL: reviewer-template "emit shutdown_request" → idle-AWAIT the coordinator's request (canonical protocol).
+- Deferred: `disable-model-invocation` (verify it doesn't block team-lead's `Skill(vote)` delegation first).
+
+### Dimensions Evaluated
+Completeness / Correctness (AMPLIFY), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

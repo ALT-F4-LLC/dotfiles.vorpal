@@ -54,7 +54,7 @@ Before spawning any agents:
    - Capture the verified goal (including any selected emphasis) as `{verified_goal}` for use in the spawning template.
 2. **Resolve context and prepare directory** — Run these Bash commands (parallel where possible):
    - `date +%Y-%m-%d` — capture as `{today_date}` for consistent frontmatter
-   - `basename $(git rev-parse --show-toplevel)` — capture as `{project_name}` for frontmatter
+   - `basename $(git rev-parse --git-common-dir) | sed 's/\.git$//'` — capture as `{project_name}` for frontmatter (works in worktree layouts where `--show-toplevel` returns the branch dir, not the repo name)
    - `mkdir -p docs/spec` — ensure output directory exists
 3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
 4. **If any file in the target set already exists**, use AskUserQuestion to present options. The "target set" is all 7 by default, or the `\$ARGUMENTS` subset:
@@ -105,7 +105,7 @@ need it for the stall check below.
 
 Poll `TaskList()` every ~2 minutes. Classify each task:
 - **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 600s` with no SendMessage activity since spawn.
+- **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 480s` with no SendMessage activity since spawn (480s gives a ~2-minute early-warning window before the harness ~10-min auto-fail reaps the agent).
 - **in_progress** — still working; continue polling.
 
 **On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling and stall classification credit the new agent, and record the replacement's spawn time in the spawn-time map), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
@@ -169,7 +169,7 @@ Requirements:
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
 - After saving the file, mark your task as completed via TaskUpdate, send a completion
-  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then emit a `shutdown_request` to that same orchestrator as your FINAL tool call and await `shutdown_response`. Do not idle awaiting further work.
+  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then go idle AWAITING the orchestrator's `shutdown_request` and reply `shutdown_response` (approve) to it when it arrives (lead-initiated per canonical protocol). Do not take on further work.
 ```
 
 ---

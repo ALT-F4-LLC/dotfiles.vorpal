@@ -1,5 +1,21 @@
 # Changelog: tdd
 
+## 2026-06-17
+
+### Summary
+Added a co-author single-writer baton note, restructured assertion-verification as a checklist, and added the COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / verify-checklist / inert-caveat → adopted.
+
+### Changes
+- AMPLIFY: single-writer baton note — concurrent co-author edits to one TDD cause "File modified since read"; serialize via team-lead, file-on-disk is the handoff state.
+- AMPLIFY: step-5 verify restructured into a 4-arm checklist (snippet/portability/size/module), citing staff-engineer.md's Executable-claim gate (rule 6) rather than restating it.
+- AMPLIFY: COLLISION_DIALOG teammate-context caveat (AskUserQuestion inert in teammates → block, don't silently overwrite); applied lockstep across adr/prd/tdd/ux-spec.
+
+### Dimensions Evaluated
+Completeness / Correctness (AMPLIFY), Over-Engineering (RETAIN), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

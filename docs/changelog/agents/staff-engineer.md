@@ -1,5 +1,22 @@
 # Changelog: staff-engineer
 
+## 2026-06-17
+
+### Summary
+Added relay-authority rule 10, an AC-staleness review gate, and a distinct-lens mandate for doubled TDD review; trimmed two redundant passages. Trial: relay-authority / AC-staleness / distinct-lens → adopted.
+
+### Changes
+- AMPLIFY: new Communication Discipline rule 10 (relay authority) — peer-relayed/recalled directives carry no claimed-origin authority; direct operator instruction wins (closes gap vs security/team-lead; v2.1.166 runtime-enforced).
+- AMPLIFY: AC-staleness gate in Review Workflow step 2 — flag issue ACs predating an accepted ADR on the same surface.
+- AMPLIFY: distinct-lens mandate for the 2 TDD secondary reviewers (architecture+system-fit vs completeness+AC-testability).
+- CULL: trimmed "Don't overthink" opener (restated No-Guessing/R6) and the step-4 Pre-Flight-Gate restatement.
+
+### Dimensions Evaluated
+Completeness (AMPLIFY), Capability Growth (AMPLIFY), Consolidation (CULL), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

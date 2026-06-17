@@ -1,5 +1,21 @@
 # Changelog: adr
 
+## 2026-06-17
+
+### Summary
+Added a multi-agent single-writer baton guard and the COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / inert-caveat → adopted.
+
+### Changes
+- AMPLIFY: multi-agent coordination guard in Save & Return — file-on-disk is the sole handoff-state source; send path/token exactly once per handoff (prevents stale-state re-send storms).
+- AMPLIFY: COLLISION_DIALOG teammate-context caveat (lockstep across adr/prd/tdd/ux-spec).
+- Note: the re-Glob redundancy optimization was CULLED by the reviewer as over-engineering (AskUserQuestion latency is a real race gap; two-Glob guard retained).
+
+### Dimensions Evaluated
+Completeness / Correctness (AMPLIFY), Over-Engineering (RETAIN), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

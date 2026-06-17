@@ -1,5 +1,19 @@
 # Changelog: brief
 
+## 2026-06-17
+
+### Summary
+Added `allowed-tools` frontmatter (was absent — brief inherited ALL tools, contradicting its read-only leaf banner). Trial: allowed-tools scoping → adopted.
+
+### Changes
+- AMPLIFY: declared `allowed-tools: Read, Grep, Glob, AskUserQuestion` — brief is read-only intake (writes no files, spawns nothing per its banner), so Write/Edit/Agent/Bash are removed from its pool.
+
+### Dimensions Evaluated
+Skill Design Quality (AMPLIFY — frontmatter completeness), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

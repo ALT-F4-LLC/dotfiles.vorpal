@@ -1,5 +1,20 @@
 # Changelog: senior-engineer
 
+## 2026-06-17
+
+### Summary
+Repaired the dead "see Runtime Discipline" cross-reference (L38) by adding a non-numbered Shell-hygiene (zsh) reminder. Drift: neutral reword of the grep-call-sites bullet → adopted.
+
+### Changes
+- AMPLIFY: added a non-numbered "Shell hygiene (zsh)" bullet to Runtime Discipline (`!=` mangling, `$TMPDIR` edit-scripts) — the real target for L38's dangling pointer; R1-R7 canon preserved (NOT a new R8).
+- Verified NO-OP: git-add overreach, locate-by-grep-not-line-number, out-of-order supersession already encoded.
+
+### Dimensions Evaluated
+Completeness / Actionability (AMPLIFY — xref repair), Consolidation (RETAIN), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

@@ -284,6 +284,8 @@ impl UserEnvironment {
                     "gh".to_string(),
                     "git".to_string(),
                     "kubectl".to_string(),
+                    "uv".to_string(),
+                    "vorpal".to_string(),
                 ])
                 .with_sandbox_filesystem_deny_read(vec![
                     "~/.ssh".to_string(),

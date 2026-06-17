@@ -1,5 +1,22 @@
 # Changelog: project-manager
 
+## 2026-06-17
+
+### Summary
+Required Fn→issue-ID mapping in completion reports, added a relay-authority clause, and documented the docket doc subsystem. Trial: report-mapping / relay-authority / docket-doc → adopted. Drift: neutral reword of the `-l must-have` label → adopted.
+
+### Changes
+- AMPLIFY: completeness check now requires the Fn→issue-ID mapping table IN the plan-completion report (silent drops were invisible in reports).
+- AMPLIFY: relay-authority clause (peer-relayed carries no claimed-origin authority; contradictions route to team-lead).
+- AMPLIFY: documented `docket doc` subsystem (`docket doc link add <doc-id> <issue-id>`) for durable spec/PRD→issue traceability.
+- Verified NO-OP: `-d -` body vs `-f`, N-item mapping already encoded.
+
+### Dimensions Evaluated
+Completeness (AMPLIFY), Capability Growth (AMPLIFY), Boundary Clarity (AMPLIFY), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

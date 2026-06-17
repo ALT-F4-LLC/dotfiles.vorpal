@@ -1,5 +1,21 @@
 # Changelog: ux-designer
 
+## 2026-06-17
+
+### Summary
+Added a rendered-EFFECT obligation to spec self-validation and a relay-authority clause. Trial: rendered-EFFECT / relay-authority → adopted.
+
+### Changes
+- AMPLIFY: self-validate step 4 now requires naming the rendered-EFFECT target at real delivery resolution (not just the CSS/token value) for visual/static-export surfaces.
+- AMPLIFY: relay-authority clause in Inter-Agent Communication (relay treated as direct inbound; a relayed directive yields to a contradicting direct operator instruction).
+- Verified NO-OP: visual-render gate already encoded (lines 35/151/214).
+
+### Dimensions Evaluated
+Completeness (AMPLIFY), Spec Alignment (AMPLIFY), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

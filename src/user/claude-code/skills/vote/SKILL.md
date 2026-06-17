@@ -254,7 +254,7 @@ Emit `[]` for any category with no items.
 One paragraph summarizing your overall assessment.
 
 ## Delivery (MANDATORY)
-SendMessage the COMPLETE structured review above to team-lead (your coordinator) — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then emit `shutdown_request`.
+SendMessage the COMPLETE structured review above to team-lead (your coordinator) — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then go idle AWAITING the coordinator's `shutdown_request` and reply `shutdown_response` (approve) when it arrives (lead-initiated per canonical protocol).
 
 ## Domain-Specific Checklist
 {Insert the relevant checklist below based on the reviewer's agent type}
@@ -283,6 +283,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
    ```bash
    docket vote commit {vote-id} --outcome "Approved with score {score}"
    ```
+   **AC-reconciliation check** — if the outcome reverses a prior direction (overturns an earlier vote or ADR), flag to the caller that sub-issues authored before this vote may encode the contradicted direction and MUST have their acceptance criteria reconciled before implementation proceeds. The coordinator surfaces this; acting on it is the caller's responsibility.
 2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
 3. Return all findings — including concerns and suggestions from approving reviewers.
@@ -301,6 +302,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
    - Consolidated findings from all rounds
    - Quorum scores from each round
    - Your recommendation based on the pattern of reviews
+   - **Disposition clarity** — your `--outcome` string on `docket vote commit` MUST distinguish *deferred* ("Escalated — decision deferred") from *cancelled* ("Escalated — proposal cancelled"). A downstream "superseded by X" issue closure is wrong when the decision was only deferred — use "blocked by X" instead.
 
 ---
 

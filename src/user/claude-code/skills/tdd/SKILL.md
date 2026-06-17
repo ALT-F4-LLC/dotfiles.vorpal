@@ -114,6 +114,8 @@ AskUserQuestion(
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
+**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
@@ -135,18 +137,26 @@ malformed frontmatter.
    marked "may be N/A" (Data Models §5, API Contracts §6) may contain a single
    `N/A.` paragraph with a one-line justification. The chosen alternative in §3
    must match the Architecture & System Design section (§4).
+
+   **Authoring hazard — single-writer baton.** When two agents co-author one TDD
+   (e.g., `@staff-engineer` drafts the body and `@security-engineer` appends the
+   security sections), only one holds the edit token at a time. Hand off via the
+   file on disk: the appending agent re-reads the file fresh immediately before
+   editing; concurrent edits to the same file cause "File modified since read"
+   failures. Serialize the handoff through team-lead, not async peer messages.
 4. **Mermaid diagrams**: draft at least one Mermaid block (component map, sequence,
    state, or data flow). Validation §5 is the gate.
-5. **Verify embedded technical assertions before stating them as fact.** Any
-   concrete claim the TDD commits to — a code/config/command/SQL snippet, a
-   cross-platform or cross-engine compatibility claim, an Implementation-Phase
-   grep AC, a quantitative or line-budget feasibility claim (sizes, counts,
-   fits-under-gate — measure with wc -l/sed -n, never estimate), or a reference
-   to existing modules/APIs/test infrastructure the design relies on — MUST be
-   checked against its actual target (run it, Grep/Read the target, or confirm
-   it exists) before it is written as settled. State unverified claims as
-   assumptions, not facts. A "verified" label MUST NOT claim broader scope than
-   was actually checked — name the artifact or command behind it.
+5. **Verify embedded technical assertions before stating them as fact.** For each
+   concrete claim the TDD commits to, apply the matching check arm and record the
+   artifact or command behind it — a "verified" label MUST NOT claim broader scope
+   than was actually checked; state unverified claims as assumptions, not facts.
+   - **Snippet / command**: execute it; record the exit code or an output excerpt.
+   - **Portability claim** (cross-platform, cross-engine, cross-dialect SQL): test
+     each declared target — "valid in both X and Y" requires a run in both (see
+     staff-engineer.md's Executable-claim gate, rule 6, for the SQL-dialect rule).
+   - **Line-budget / size claim**: measure with `wc -l` or `sed -n`; never estimate.
+   - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
+     target exists and its signature matches before writing it as settled.
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).

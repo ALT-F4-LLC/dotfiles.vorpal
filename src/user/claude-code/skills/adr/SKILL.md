@@ -110,6 +110,8 @@ AskUserQuestion(
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
+**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
@@ -246,6 +248,8 @@ For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 `docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
 ADR-specific full sequence: `mkdir → renumber re-Glob → Write → race-detection Glob → Emit`.
+
+**Multi-agent coordination (when applicable).** When two agents share authorship of one ADR (e.g., author + reviewer handing back edit rights), treat the file on disk as the sole handoff-state source of truth. Send the path + "token is yours" exactly once per handoff; do not re-send on subsequent turns — re-sending causes stale-state storms where each message crosses the prior one mid-flight.
 
 **Before Write**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}`). If `{NNNN}` changed, update frontmatter / body references before Write.
 

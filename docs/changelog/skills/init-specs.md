@@ -1,5 +1,21 @@
 # Changelog: init-specs
 
+## 2026-06-17
+
+### Summary
+Fixed the worktree project-name bug, corrected an inverted shutdown direction in the spawning template, and tightened the stall threshold. Trial: worktree-fix / shutdown-direction / stall-threshold → adopted.
+
+### Changes
+- CULL: `basename $(git rev-parse --show-toplevel)` → `basename $(git rev-parse --git-common-dir) | sed 's/\.git$//'` — `--show-toplevel` returned the branch dir (`main`), not the repo name, in worktree layouts (verified live).
+- CULL: spawning-template shutdown was inverted ("emit shutdown_request") — corrected to idle-AWAIT the orchestrator's request, reply shutdown_response (canonical protocol).
+- AMPLIFY: stall threshold 600s → 480s for a ~2-min early-warning window before the harness ~10-min auto-fail.
+
+### Dimensions Evaluated
+Skill Design Quality / Orchestration (CULL), Coherence (AMPLIFY), others RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

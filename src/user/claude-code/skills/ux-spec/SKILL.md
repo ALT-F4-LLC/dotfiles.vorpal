@@ -119,6 +119,8 @@ AskUserQuestion(
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
+**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->

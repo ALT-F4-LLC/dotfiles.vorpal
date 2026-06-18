@@ -12,7 +12,7 @@ allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
 <!-- CANONICAL:BANNER:END -->
 
 # Brief — Standardize a Freeform Work Request
@@ -45,7 +45,7 @@ When an option would create or route writes to a `docs/` path, check the owning 
 
 ## Output
 
-Emit exactly this block, filled in, then stop:
+Emit exactly this block, filled in. **This is your complete output — do not execute, implement, or apply the described work. Stop after the block.**
 
 ```
 Goal: <one sentence — what to optimize / done-state>
@@ -56,6 +56,8 @@ Size hint: trivial | bounded | needs-design
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
 ```
+
+**HALT.** Your job ends when the block is emitted. The operator takes the brief to team-lead's Pre-flight HARD GATE; execution does not begin until they confirm.
 
 ## When NOT to use
 

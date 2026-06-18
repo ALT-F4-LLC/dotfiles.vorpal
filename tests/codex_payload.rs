@@ -196,6 +196,35 @@ fn codex_project_manager_preserves_portable_parity_contract() {
 }
 
 #[test]
+fn codex_ux_designer_preserves_design_only_contract() {
+    let path = repo_root().join("src/user/codex/agents/ux-designer.toml");
+    let content = fs::read_to_string(&path).expect("ux-designer agent should be readable");
+
+    let required_markers = [
+        "Produces design specs in `docs/ux/`",
+        "does NOT write implementation code",
+        "You NEVER write implementation code or edit source",
+        "only `docs/ux/`",
+        ".codex/agent-memory/ux-designer/",
+        "ux-designer has 1 persistent name: `ux-advisor`; all other spawns ephemeral",
+        "Default = single `ux-advisor` via `send_input`",
+        "`ux-advisor` + `design-qa-{N}` ephemeral",
+        "team-lead owns `close_agent`",
+        "Format authority: `src/user/codex/skills/ux-spec/SKILL.md`",
+        "per team-lead.md Consensus Integration",
+    ];
+
+    for marker in required_markers {
+        assert!(
+            content.contains(marker),
+            "{} should preserve ux-designer design-only marker {:?}",
+            path.display(),
+            marker
+        );
+    }
+}
+
+#[test]
 fn codex_team_lead_delegates_actual_work() {
     let path = repo_root().join("src/user/codex/personas/team-lead.md");
     let instructions = fs::read_to_string(&path).expect("team-lead persona should be readable");
@@ -445,7 +474,10 @@ fn user_config_registers_existing_codex_agent_files() {
     }
 
     assert!(
-        src.contains("FileSource::new(&codex_agents_name, \"src/user/codex/agents\""),
+        src.contains("let codex_agents_name =")
+            && src.contains("let codex_agents = FileSource::new(")
+            && src.contains("&codex_agents_name,")
+            && src.contains("\"src/user/codex/agents\","),
         "user build should snapshot src/user/codex/agents"
     );
     assert!(

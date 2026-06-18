@@ -210,7 +210,7 @@ Lifecycle ends at operator plan approval (step 10); later divergence re-spawns `
 
 Context: common block + `{If project specs}: Reference docs/spec/`. Persistent `advisor` via `send_input` for architectural clarification.
 
-Requirements: explore via Read/Grep/Glob; create issues via `docket issue create -f <path>` for file scoping, `--parent` for hierarchy, `docket issue link add` for dependencies; organize into phases (VERIFY no two issues in one phase touch the same files); output `Phase N: [issue IDs and titles, files touched]` per phase.
+Requirements: explore via Read/Grep/Glob; create issues via `docket issue create -f <path>` for file scoping, `--parent` for hierarchy, `docket issue link add` for dependencies; organize into phases (VERIFY no two issues in one phase touch the same files); when a TDD exists, map each issue's file scope to the matching TDD `Implementation Phases` file scope and include adjacent adapter, factory, and test targets named or implied by that phase; output `Phase N: [issue IDs and titles, files touched]` per phase.
 
 ### @ux-designer — name=`ux-advisor` (persistent)
 
@@ -273,7 +273,7 @@ Rules (each): review existing comments first; write tests verifying ACs + run ex
 
 ### Implementation Phase
 
-11. **Execute one phase at a time.** Spawn one `@senior-engineer` per issue, all in the same turn (max 5; batch if more). Track each returned agent id against its Docket issue and file scope in the local phase ledger.
+11. **Execute one phase at a time.** **Pre-dispatch phase scope guard:** before spawning any `@senior-engineer`, compare each phase issue's declared Docket file list against the matching TDD `Implementation Phases` file scope. If the issue omits adapter, factory, or test paths named or implied by that TDD phase file scope, BLOCK implementation dispatch and return the issue to @project-manager for PM revision. team-lead detects list mismatches and missing named adjacent targets only; any judgment call about whether an implied target belongs routes to @project-manager or `advisor`, never to team-lead's own engineering decision. Spawn one `@senior-engineer` per issue, all in the same turn (max 5; batch if more). Track each returned agent id against its Docket issue and file scope in the local phase ledger.
 
 12. Wait for all phase subagents to complete before starting the next phase. Use `wait_agent(targets=[...], timeout_ms=...)` only when their result blocks the next step; prefer a minute-scale wait over repeated short waits. Close each `@senior-engineer` with `close_agent(target=<agent-id>)` only after (a) completion report has been consumed, (b) step 13 spot-check confirms diff matches claim, and (c) the worker close gate below passes. Fix-loops re-spawn a NEW ephemeral per Rule 7 — never keep one alive through review or verification. **Agent status is not the report.** A completed `wait_agent` status can arrive before team-lead has integrated the report content. Treat a completed agent whose report is not yet consumed as "report pending"; act on the received report and verified external state, never a bare completion flag. **Close acknowledgement is not cleanup evidence.** Only explicit tool or harness output for the same agent id proves the worker was terminated, reaped, or closed.
 

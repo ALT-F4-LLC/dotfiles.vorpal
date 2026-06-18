@@ -10,14 +10,14 @@ jobs:
   test-hooks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - run: bash tests/teammate-idle-hook.test.sh
 
   build-dev:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: ALT-F4-LLC/setup-vorpal-action@main
         with:
@@ -44,7 +44,7 @@ jobs:
         artifact:
           - user
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: ALT-F4-LLC/setup-vorpal-action@main
         with:

@@ -1,97 +1,62 @@
 ---
 name: brief
 description: >
-  Turn a freeform work request into a standardized intake brief block for
-  pre-flight goal verification. Use when the user says "brief", "create brief",
-  "standardize this request", or asks to collapse a work request into goal,
-  scope, acceptance criteria, size, security, and constraints. Instruction-only;
-  writes no files, commits nothing, and does not delegate to subagents.
+  Turn a freeform work request into a standardized brief block that team-lead's
+  Pre-flight HARD GATE consumes — collapsing goal verification to a single confirm.
+  Parses the request, derives every brief field it can support, asks ONE batched
+  AskUserQuestion round only for genuinely underdetermined fields, then emits the
+  block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
+  nothing. Trigger: "brief", "create brief", "standardize this request".
 ---
+<!-- CANONICAL:BANNER:BEGIN -->
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
+<!-- CANONICAL:BANNER:END -->
 
-# Brief - Standardize a Freeform Work Request
+# Brief — Standardize a Freeform Work Request
 
-Take the current user request or explicit `$brief` invocation text and emit one
-standardized brief block. The block is the artifact a lead agent can read for a
-single-pass pre-flight confirmation.
+You take the freeform request in `\$ARGUMENTS` and emit ONE standardized brief block. That block is the artifact team-lead's Pre-flight step 1 (the goal-verification HARD GATE) reads, so a well-formed brief lets the operator confirm the whole intake in a single pass instead of a multi-question gate.
 
-The deliverable is the block itself, emitted into the conversation. Do not write
-files, stage changes, commit, push, spawn subagents, invoke other skills, or
-delegate through parallel agent workflows. After emitting the block, stop.
+The deliverable is the block itself, emitted into context. **No file is written. No team is spawned.** After emitting the block, stop.
 
-## Brief Quality
+## What a good brief is
 
-Create a faithful, checkable distillation of the request. Do not expand the
-request, invent scope, fabricate acceptance criteria, or add constraints the
-user did not state. Use "not specified" or "none stated" when the source request
-does not support a stronger claim.
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose.
 
-Field semantics:
+Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
-- **Goal** - one sentence naming what to optimize and the done-state.
-- **Scope** - files, directories, systems, or surfaces in play, as concretely as
-  the request allows.
-- **Out-of-scope** - surfaces the user signaled not to touch, or "not specified".
-- **Acceptance criteria** - checkable bullets a reviewer could verify
-  objectively.
-- **Size hint** - `trivial` for a single edit, three or fewer files, and one
-  turn; `bounded` for one to four phases with no new architecture;
-  `needs-design` for new architecture, data-model work, or cross-cutting
-  concerns.
-- **Security-sensitive** - `yes` only when the work touches trust boundaries,
-  authn/authz, secrets, crypto, sandbox/permissions, supply chain changes such
-  as new dependencies or pinning, or untrusted input at a privilege boundary.
-  Otherwise use `no`.
-- **Constraints** - hard limits the user stated, such as no new dependencies,
-  frozen APIs, or performance budgets; otherwise "none stated".
+- **Goal** — one sentence naming what to optimize and the done-state. The single most load-bearing line.
+- **Scope** — files/dirs/surfaces in play, as concretely as the request allows.
+- **Out-of-scope** — surfaces the operator signaled NOT to touch (or "not specified").
+- **Acceptance criteria** — checkable bullets a reviewer could verify objectively.
+- **Size hint** — `trivial` (single edit, ≤3 files, one turn) | `bounded` (1-4 phases, no architecture) | `needs-design` (new architecture, data-model, or cross-cutting concern). Maps to team-lead's Direct/Small vs Medium+ split.
+- **Security-sensitive** — `yes` only when the work touches an enumerated surface: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new dep / pinning), or untrusted input at a privilege boundary. Otherwise `no`.
+- **Constraints** — hard limits the operator stated (no new deps, frozen APIs, perf budgets) or "none stated".
 
-## Resolving Gaps
+## Resolving underdetermined fields
 
-Derive every supported field yourself. Ask one clarification round only for
-fields that remain genuinely underdetermined and would change how the work is
-routed.
+Derive everything the request supports on your own. For fields that remain genuinely underdetermined AND would change how team-lead routes the work, ask ONE `AskUserQuestion` round — batch the gaps into at most 4 questions (max 4 options each), each with your best-guess option marked and a free-text fallback. Prioritize the gaps that flip a routing decision: **Size hint** and **Security-sensitive** first, then any scope boundary the request left ambiguous.
 
-Prefer a single concise message with at most four numbered questions. When a
-question presents choices, use no more than four options, mark your best-guess
-option, and allow free-form correction. If the runtime exposes a structured
-user-input tool, use it for that one clarification round; otherwise ask plainly
-in the conversation.
+Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
-Prioritize gaps that change routing:
-
-1. Size hint.
-2. Security-sensitive.
-3. Scope boundaries.
-4. Stated constraints.
-
-Do not ask cosmetic questions. If the request is clear enough to produce a
-truthful brief, emit the block without questions.
-
-When an option would create or route writes to a `docs/` path, check the local
-lead-agent docs path taxonomy before recommending that route. Never recommend a
-route that bypasses the declared owner. In this repo's Codex taxonomy, the seven
-reserved `docs/spec/` names are owned by `init-specs`; leave the route as "not
-specified" rather than guessing ownership when the taxonomy does not cover the
-path.
+When an option would create or route writes to a `docs/` path, check the owning writer in `src/user/claude-code/agents/team-lead.md` §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
 
 ## Output
 
-Emit exactly this block, filled in, then stop:
+Emit exactly this block, filled in. **This is your complete output — do not execute, implement, or apply the described work. Stop after the block.**
 
-```text
-Goal: <one sentence - what to optimize / done-state>
-Scope: <files/dirs/surfaces in play>
+```
+Goal: <one sentence — what to optimize / done-state>
+Scope: <files/dirs in play>
 Out-of-scope: <surfaces NOT to touch>
-Acceptance criteria:
-- <checkable criterion>
-- <checkable criterion>
+Acceptance criteria: <checkable bullets>
 Size hint: trivial | bounded | needs-design
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
 ```
 
-## When Not To Use
+**HALT.** Your job ends when the block is emitted. The operator takes the brief to team-lead's Pre-flight HARD GATE; execution does not begin until they confirm.
 
-- The request is already structured as goal, scope, and acceptance criteria.
-  There is nothing to standardize.
-- The request is a mid-cycle scope change on work already in flight. Route that
-  through the active plan or lead-agent re-plan path instead of a fresh brief.
+## When NOT to use
+
+- **The request is already structured** as a goal + scope + acceptance criteria — there is nothing to standardize; hand it straight to team-lead.
+- **A mid-cycle scope change** on work already in flight — those route through team-lead's re-plan path, not a fresh brief.

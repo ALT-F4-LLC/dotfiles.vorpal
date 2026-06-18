@@ -9,7 +9,7 @@ description: >
   Trigger: "design review", "review UX spec", "peer design review", "review this design".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and Docket comments after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging and Docket comments after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # Design Review — Peer Review of a Design Artifact
@@ -30,7 +30,7 @@ This skill is callable ONLY by `@ux-designer`. Match the calling agent's identif
 Abort message:
 
 ```
-Error: Skill(design-review) is restricted to @ux-designer. Calling agent: {agent}.
+Error: (design-review) is restricted to @ux-designer. Calling agent: {agent}.
 ```
 
 ## Argument Handling
@@ -40,7 +40,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(design-review, "<scope>") — name what to review (UX spec path, draft document path, TDD path with user-facing surfaces, or inline surface description).
+Error: Usage: (design-review, "<scope>") — name what to review (UX spec path, draft document path, TDD path with user-facing surfaces, or inline surface description).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -69,16 +69,16 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `src/user/claude-code/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-review-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-review-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `src/user/claude-code/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `src/user/claude-code/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via send_input, no ephemeral spawn — per `src/user/codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-review-{N}` via a Codex worker spawn, both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-review-{N}` delivers its verdict, then stops while the calling layer consumes the report and closes the returned worker id; the ephemeral lifecycle is owned by the calling layer per `src/user/codex/personas/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `(vote, ...)`; reviewers never address the operator directly) per `src/user/codex/personas/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
-- QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
-- Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
-- Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
-- Authoring a new UX spec — use `Skill(ux-spec, ...)`.
-- Multi-agent consensus voting on a design — use `Skill(vote, ...)` after this skill produces a review.
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/codex/personas/team-lead.md` Rule 8. -->
+- QA of shipped implementation against an accepted UX spec — that's `(design-qa, ...)`.
+- Production code review against engineering dimensions — that's `(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+- Acceptance-criteria verification — that's `(verify-ac, ...)`, callable by `@sdet`.
+- Authoring a new UX spec — use `(ux-spec, ...)`.
+- Multi-agent consensus voting on a design — use `(vote, ...)` after this skill produces a review.
 
 ## Pre-flight
 
@@ -134,7 +134,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 ### Common Discipline
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
 
@@ -217,7 +217,7 @@ If any check fails, ABORT:
 Error: validation failed: {section/field} — {detail}.
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(design-review, "<scope>")`.
+The calling agent corrects in its own context and re-invokes `(design-review, "<scope>")`.
 
 ## Save & Return
 
@@ -231,10 +231,10 @@ where `{recommendation}` is one of Approve / Approve with follow-up / Block / Re
 
 The calling agent owns (in order):
 
-- SendMessage the verdict per `src/user/claude-code/agents/ux-designer.md` Inter-Agent Communication triggers (under team-lead orchestration, to team-lead — who reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; standalone, to the author directly).
-- Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `src/user/claude-code/agents/ux-designer.md` Design Spec Approval.
+- send_input the verdict per `src/user/codex/agents/ux-designer.toml` Inter-Agent Communication triggers (under team-lead orchestration, to team-lead — who reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; standalone, to the author directly).
+- Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `(vote, ...)`; team mode: NEVER `(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `src/user/codex/agents/ux-designer.toml` Design Spec Approval.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is a closed-loop failure.
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I send_input the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the send_input. A silent turn after `Design review emitted (...)` is a closed-loop failure.
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.

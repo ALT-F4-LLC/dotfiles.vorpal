@@ -7,7 +7,7 @@ description: >
   Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. SendMessage team-lead if blocked.
+> **CRITICAL — applies to coordinator AND every spawned worker:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Workers are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, invoke other skills recursively, call `send_input`, or form/manage a team. Report blockers in the final worker report for the coordinator to route.
 <!-- CANONICAL:BANNER:END -->
 
 ## Argument Handling
@@ -21,11 +21,13 @@ The argument is **optional** — this skill has a single well-defined behavior.
 
 # Specs
 
-You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engineer` agents in parallel to populate `docs/spec/` with the Seven Spec Files. You coordinate and verify; you never write spec files yourself. Each agent works on an isolated file with no cross-agent handoffs.
+You are the **Spec Initializer** — a coordinator that bootstraps `docs/spec/` with the Seven Spec Files through delegated Codex staff-engineer workers. You coordinate and verify; you never write spec files yourself. Each worker owns one isolated file with no cross-agent handoffs.
+
+Always delegates spec authoring to parent-led Codex staff-engineer subagents. The coordinator may prepare directories, dispatch workers, wait for reports, verify outputs, and summarize results, but it does not author spec content.
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
-**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `src/user/claude-code/agents/team-lead.md` (Medium/Large Task patterns).
+**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `src/user/codex/personas/team-lead.md` (Medium/Large Task patterns).
 
 ---
 
@@ -67,7 +69,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by src/user/claude-code/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by src/user/codex/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
@@ -84,32 +86,25 @@ exploration guidance for each — used in the spawning template.
 
 ## Execution
 
-### Step 1: Spawn Agents
+### Step 1: Dispatch Workers
 
-1. **Join the implicit team** — the session's single implicit team is joined on your first `Agent(name=..., ...)` spawn in step 3 (the runtime ignores `team_name`).
-2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
-   `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
-3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `Agent()` call itself):
-   `Agent(name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
-4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
+1. Create a local phase ledger with one row per target file: filename, worker id, status (`planned | spawned | reported | verified | failed`), and output path.
+2. Dispatch one Codex `staff-engineer` subagent per target file. Spawn all independent workers in the SAME turn where the harness permits parallel dispatch.
+3. Each worker brief uses the Spawning Template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`. Track the returned Codex agent id in the local ledger.
+4. If the current harness cannot spawn workers from this skill context, emit the prepared worker briefs and stop with `Blocked: parent-led Codex staff-engineer subagents are required for spec authoring.` Do not write specs directly.
 
-### Step 2: Wait for Completion
+### Step 2: Wait for Reports
 
-Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
+Wait on the returned worker ids. As each report arrives, record whether it created `docs/spec/{filename}`, failed, or blocked.
 
-Record each agent's spawn time (`Bash date +%s`) in a local map keyed by agent name; you'll
-need it for the stall check below.
+Classify each ledger row:
+- **reported** — worker returned a final report and the file exists on disk.
+- **failed** — worker reported failure, timed out, or returned without creating its assigned file.
+- **spawned** — worker still running; continue bounded waiting.
 
-Poll `TaskList()` every ~2 minutes. Classify each task:
-- **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 480s` with no SendMessage activity since spawn (480s gives a ~2-minute early-warning window before the harness ~10-min auto-fail reaps the agent).
-- **in_progress** — still working; continue polling.
+**On any worker failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — dispatch a replacement `staff-engineer` worker for just that file with the same template and the failure context, (b) **skip** — leave the file absent and note the gap in the final report, or (c) **abort** — cancel remaining work and return partial state.
 
-**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling and stall classification credit the new agent, and record the replacement's spawn time in the spawn-time map), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
-
-> Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
-
-Proceed to Step 3 once every task is `completed` OR the operator has resolved every failure.
+Proceed to Step 3 once every target row is `reported` OR the operator has resolved every failure.
 
 ### Step 3: Verify
 
@@ -148,7 +143,7 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. You are a leaf agent. SendMessage the orchestrator that spawned you (the agent that sent you this prompt — in team mode that is `team-lead`; in standalone mode the orchestrator's name appears in your team roster) if you are blocked or need a decision. The completion SendMessage uses the same recipient (covered below).
+- Do NOT spawn sub-agents, invoke `/vote`, invoke other skills recursively, call `send_input`, or form/manage a team. You are a leaf worker. If blocked, return a final report naming the blocker and stop.
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Structure the body with at least 3 H2 sections appropriate to the spec's domain (e.g. `architecture.md`: Components, Boundaries, Decisions; `security.md`: Trust Boundaries, Controls, Threat Model). Every spec MUST include a final H2 named exactly `## Gaps & Risks` — this is the structural home for the rigorous-honesty directive. If no gaps exist, write "None identified at this time" under it.
 - Save the completed spec to `docs/spec/{filename}`
@@ -165,16 +160,15 @@ Requirements:
   ---
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
-- After saving the file, mark your task as completed via TaskUpdate, send a completion
-  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then go idle AWAITING the orchestrator's `shutdown_request` and reply `shutdown_response` (approve) to it when it arrives (lead-initiated per canonical protocol). Do not take on further work.
+- After saving the file, return a final report with `Completed docs/spec/{filename}`, commands or files inspected, and any gaps or risks. Then stop work; the coordinator owns worker closeout.
 ```
 
 ---
 
-## Wrap-up & Team Cleanup
+## Wrap-up & Worker Cleanup
 
 After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down each teammate (lead-originated)** — after a `@staff-engineer` delivers its completion message and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). This is the canonical handshake — the lead SENDS the request, teammates AWAIT it and never self-initiate (per `src/user/claude-code/agents/team-lead.md` §Wrap-up shutdown direction + each teammate's CANONICAL:SHUTDOWN-PROTOCOL-LOCAL). Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
-3. **Clean up the team** — clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end.
+2. Close each returned Codex worker id after its report is consumed and output verification is complete.
+3. Emit a concise completion summary: target set, created files, skipped files, failures, and verification evidence.

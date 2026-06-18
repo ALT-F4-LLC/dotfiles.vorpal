@@ -3,13 +3,13 @@ name: simplify-scout
 description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
-  src/user/claude-code/agents/senior-engineer.md (no new rubric). Idiomatic clarity first — fewer lines is the
+  src/user/codex/agents/senior-engineer.toml (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
-  applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
+  applies no edits. NOT a formal review verdict (that is (code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # Simplify Scout — Report-Only Simplification Opportunities
@@ -29,14 +29,14 @@ This is a **self-service implementation-hygiene aid** that `@senior-engineer` ru
 | Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
 | Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
 
-This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, and does **not** replace formal review. A clean scout report is not a substitute for `Skill(code-review-verdict, ...)` — it is the author cleaning up before handing the diff to the reviewer.
+This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, and does **not** replace formal review. A clean scout report is not a substitute for `(code-review-verdict, ...)` — it is the author cleaning up before handing the diff to the reviewer.
 
 ## Role Detection
 
 This skill is callable ONLY by `@senior-engineer`. Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
 
 ```
-Error: Skill(simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
+Error: (simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to (code-review-verdict) (@staff-engineer / @security-engineer).
 ```
 
 ## Argument Handling
@@ -46,7 +46,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(simplify-scout, "<scope>") — name what to scan ("uncommitted", a directory/module path, or one or more file paths).
+Error: Usage: (simplify-scout, "<scope>") — name what to scan ("uncommitted", a directory/module path, or one or more file paths).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -82,18 +82,18 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
-- **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
+- **Formal / authoritative code review** that gates a merge — use `(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
 - **Applying** simplifications automatically — this skill is report-only by design; the implementer edits the tree themselves after reading the report. The bundled `/simplify` skill applies fixes directly under its own rubric — distinct from this scout, which grounds in the 12 principles and never edits.
-- Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
-- Design QA / peer design review of user-facing surfaces — use `Skill(design-qa, ...)` / `Skill(design-review, ...)` (`@ux-designer`).
-- Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd|adr|prd|ux-spec, ...)`.
+- Acceptance-criteria verification against a Docket issue — use `(verify-ac, ...)` (`@sdet`).
+- Design QA / peer design review of user-facing surfaces — use `(design-qa, ...)` / `(design-review, ...)` (`@ux-designer`).
+- Authoring TDDs, ADRs, PRDs, or UX specs — use `(tdd|adr|prd|ux-spec, ...)`.
 - Bug hunting / correctness review — this scout targets *clarity*, not defects. Correctness gating lives in `code-review-verdict`'s Hard Gates.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `src/user/claude-code/agents/senior-engineer.md` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
+This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `src/user/codex/agents/senior-engineer.toml` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
 
-Quick reference (the authority is `src/user/claude-code/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
+Quick reference (the authority is `src/user/codex/agents/senior-engineer.toml`; this table is a lookup aid, not a substitute):
 
 | # | Principle | Simplification lens |
 |---|---|---|
@@ -224,7 +224,7 @@ LoC delta: {e.g. -3 (6 → 3)} · Why clearer: {one line — what the idiomatic 
 - Clear win: {count} · Likely win: {count} · Judgment call: {count}
 
 ### Reminder
-Report-only — no files written, no edits applied. The implementer chooses which findings to act on; this is not a merge verdict (formal review is Skill(code-review-verdict)).
+Report-only — no files written, no edits applied. The implementer chooses which findings to act on; this is not a merge verdict (formal review is (code-review-verdict)).
 ````
 
 Every finding MUST include: `file:line`, the mapped principle number (`1–12`) with its short name, the confidence rung, the current snippet, the idiomatic rewrite (comment-free), the LoC delta, and the one-line "Why clearer." Rewrites that point in the line-count direction at the cost of clarity MUST NOT appear — they fail Calibration and are dropped during the scan.
@@ -248,7 +248,7 @@ If any check fails, ABORT:
 Error: validation failed: {section/field} — {detail}.
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(simplify-scout, "<scope>")`.
+The calling agent corrects in its own context and re-invokes `(simplify-scout, "<scope>")`.
 
 ## Save & Return
 
@@ -260,4 +260,4 @@ Simplify scout emitted ({count} opportunities, 0 edits applied).
 
 where `{count}` is the number of findings (`0` for an empty/trivial scope).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive send_input triggers. This skill never edits, never messages peers, and never gates a merge.

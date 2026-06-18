@@ -9,7 +9,7 @@ description: >
   nothing. Trigger: "brief", "create brief", "standardize this request".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
 <!-- CANONICAL:BANNER:END -->
 
 # Brief — Standardize a Freeform Work Request
@@ -34,11 +34,13 @@ Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
 ## Resolving underdetermined fields
 
-Derive everything the request supports on your own. For fields that remain genuinely underdetermined AND would change how team-lead routes the work, ask ONE `AskUserQuestion` round — batch the gaps into at most 4 questions (max 4 options each), each with your best-guess option marked and a free-text fallback. Prioritize the gaps that flip a routing decision: **Size hint** and **Security-sensitive** first, then any scope boundary the request left ambiguous.
+Derive everything the request supports on your own. For fields that remain genuinely underdetermined AND would change how team-lead routes the work, ask ONE `AskUserQuestion` round — batch the gaps into at most 4 questions, no more than four options each, and mark your best-guess option with a free-form correction fallback. Prioritize the gaps that flip a routing decision: **Size hint** and **Security-sensitive** first, then any scope boundary the request left ambiguous.
 
 Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
-When an option would create or route writes to a `docs/` path, check the owning writer in `src/user/claude-code/agents/team-lead.md` §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
+When an option would create or route writes to a `docs/` path, check the local
+lead-agent docs path taxonomy in `src/user/codex/personas/team-lead.md` before marking any option Recommended. Never recommend a
+route that bypasses the declared owner: reserved `docs/spec/` names are owned by `init-specs`.
 
 ## Output
 

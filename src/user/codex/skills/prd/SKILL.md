@@ -6,7 +6,7 @@ description: >
   Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/", "write up requirements for", "scope this feature".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # PRD — Author a Product Requirements Document
@@ -32,7 +32,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: ({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -54,17 +54,17 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 - A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
 - The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
-- The team-lead Large Task pattern (`src/user/claude-code/agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
+- The team-lead Large Task pattern (`src/user/codex/personas/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
-  use `Skill(tdd, "<topic>")`.
-- Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`.
+  use `(tdd, "<topic>")`.
+- Architecture Decision Records (single decisions): use `(adr, "<topic>")`.
+- UX / design specs: use `(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
   `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 4
@@ -213,7 +213,7 @@ Error: validation failed: {field/section} — {detail}.
 ```
 
 The calling agent fixes the issue in its own context and re-invokes
-`Skill(prd, "<topic>")`.
+`(prd, "<topic>")`.
 
 ## Save & Return
 
@@ -245,7 +245,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by src/user/claude-code/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by src/user/codex/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security
@@ -260,7 +260,7 @@ testing
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(prd, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: (prd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Slug matches a reserved name (see list above) | Abort: `Error: '{slug}.md' is a reserved name owned by the init-specs skill. Pick a different topic or use the init-specs skill to bootstrap project specs.` No overwrite path. |
 | Output file already exists (and slug is not reserved) | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |

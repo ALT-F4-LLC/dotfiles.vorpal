@@ -10,7 +10,7 @@ description: >
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # Code Review Verdict — Conduct a Role-Scoped Review
@@ -29,7 +29,7 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 This skill is callable ONLY by `@staff-engineer` or `@security-engineer`; `{role}` is the calling agent's identifier (from prompt context) minus the `@`. Any other caller ABORTS:
 
 ```
-Error: Skill(code-review-verdict) is restricted to @staff-engineer and @security-engineer. Calling agent: {agent}.
+Error: (code-review-verdict) is restricted to @staff-engineer and @security-engineer. Calling agent: {agent}.
 ```
 
 ## Argument Handling
@@ -39,7 +39,7 @@ The argument is a single positional `<scope>` (free-text). No flags.
 If `<scope>` is missing or empty:
 
 ```
-Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR number/URL, branch, "uncommitted", "staged", or file paths).
+Error: Usage: (code-review-verdict, "<scope>") — name what to review (PR number/URL, branch, "uncommitted", "staged", or file paths).
 ```
 
 **Scope resolution** (apply rules in order; first match wins):
@@ -53,7 +53,7 @@ Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR 
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 
-**Path-list normalization (canonical grammar).** The canonical multi-file form is bare space-separated paths — `Skill(code-review-verdict, "src/a.rs tests/b.rs")`. Before applying the table, strip a leading `files`/`files:` keyword if present, then split the argument on commas and/or whitespace; resolve the resulting tokens via the File paths row. This collapses the three observed call forms — `path path`, `files path path`, `files: path, path` — to one token list. (Single bare tokens are unaffected: no prefix, no comma, so branch/PR detection still wins per the table order.)
+**Path-list normalization (canonical grammar).** The canonical multi-file form is bare space-separated paths — `(code-review-verdict, "src/a.rs tests/b.rs")`. Before applying the table, strip a leading `files`/`files:` keyword if present, then split the argument on commas and/or whitespace; resolve the resulting tokens via the File paths row. This collapses the three observed call forms — `path path`, `files path path`, `files: path, path` — to one token list. (Single bare tokens are unaffected: no prefix, no comma, so branch/PR detection still wins per the table order.)
 
 **Ambiguity rules** (apply when multiple forms could match):
 
@@ -76,18 +76,18 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule (under team-lead orchestration)
 
-When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `src/user/claude-code/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (TDD secondary review, security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14.
+When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via send_input, no ephemeral spawn — per `src/user/codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (TDD secondary review, security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14.
 
-Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispatch, verdict reconciliation, and degraded-single-reviewer fallback annotation are owned by the calling layer per `src/user/claude-code/agents/team-lead.md` (Rule 8, step 14) — do not duplicate that logic here. Outside team-lead orchestration, doubling is at the calling agent's discretion.
+Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispatch, verdict reconciliation, and degraded-single-reviewer fallback annotation are owned by the calling layer per `src/user/codex/personas/team-lead.md` (Rule 8, step 14) — do not duplicate that logic here. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
-- Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
-- Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
-- Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.
-- Design QA against a `docs/ux/` spec for shipped user-facing surfaces — use `Skill(design-qa, ...)`, callable by `@ux-designer`.
-- Peer design review of a draft UX spec or design proposal — use `Skill(design-review, ...)`, callable by `@ux-designer`.
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/codex/personas/team-lead.md` Rule 8. -->
+- Authoring TDDs, ADRs, PRDs, or UX specs — use `(tdd, ...)`, `(adr, ...)`, `(prd, ...)`, `(ux-spec, ...)`.
+- Multi-agent consensus voting on an artifact — use `(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
+- Acceptance-criteria verification against a Docket issue — use `(verify-ac, ...)`, callable by `@sdet`.
+- Design QA against a `docs/ux/` spec for shipped user-facing surfaces — use `(design-qa, ...)`, callable by `@ux-designer`.
+- Peer design review of a draft UX spec or design proposal — use `(design-review, ...)`, callable by `@ux-designer`.
 - Plan/scope/dependency review on a Docket plan — handled inline by the calling agent's advisory output.
 
 ## Pre-flight
@@ -120,10 +120,10 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 Apply the **6 dimensions**, weighted by what the change touches. Mark unaffected dimensions `N/A` in the checklist:
 
 1. **Architecture** — pattern fit, module boundaries, dependency direction, second-order effects, cross-cutting impact, precedent set.
-2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to SendMessage `@security-engineer` for a dedicated security pass before merge.
+2. **Security (general posture)** — input boundaries, error-path safety, default-deny defaults, accidental privilege escalation. Auth/secret/crypto/sandbox specifics defer to the parallel `@security-engineer` review when one is running; if a routine staff review surfaces such specifics and no parallel review is in flight, flag the finding as a Concern with `Next Steps` instructing the calling agent to send_input `@security-engineer` for a dedicated security pass before merge.
 3. **Operations** — observability hooks, runbook impact, deploy/rollback story, 3am-diagnosability, configuration footprint.
 4. **Performance** — algorithmic complexity, N+1 patterns, allocation hotspots, latency-budget impact, regression risk.
-5. **Code Quality** — apply the 12 code-philosophy principles per `src/user/claude-code/agents/senior-engineer.md` → Code Quality & Craftsmanship (format authority). Four principles carry mechanical Hard Gates enforced below: **#4 mutation locality** (G2), **#5 parse at the edge** (G3), **#6 error propagation** (G1), **#11 invariant over surface** (G4). The other eight (#1 abstraction, #2 names, #3 cohesion-over-length, #7 comments-justify, #8 tests-pin-behavior, #9 minimal-diff, #10 dep-posture, #12 deletability) belong to the Concern/Suggestion rubric — apply per touched file.
+5. **Code Quality** — apply the 12 code-philosophy principles per `src/user/codex/agents/senior-engineer.toml` → Code Quality & Craftsmanship (format authority). Four principles carry mechanical Hard Gates enforced below: **#4 mutation locality** (G2), **#5 parse at the edge** (G3), **#6 error propagation** (G1), **#11 invariant over surface** (G4). The other eight (#1 abstraction, #2 names, #3 cohesion-over-length, #7 comments-justify, #8 tests-pin-behavior, #9 minimal-diff, #10 dep-posture, #12 deletability) belong to the Concern/Suggestion rubric — apply per touched file.
 6. **Testing** — coverage of acceptance criteria, edge-case discipline, regression coverage, test fragility, what's untested and why. Test *quality* (asserts behavior vs implementation, mocks at boundaries only) lives under #8 above; this dimension covers *what* is tested — acceptance criteria, edges, regressions, untested-but-should-be-tested paths.
 
 **Severity ladder (general)**:
@@ -162,7 +162,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 
 ### Common Discipline (both roles)
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Report every finding — do NOT self-filter.** Report each issue you find, including low-severity and uncertain ones, each tagged with the role's severity (classification, not suppression) and a confidence note. Filtering and ranking happen downstream (team-lead step-14 reconciliation / operator), never here — declining to report a found issue because it seems minor is a recall defect. A finding a linter (`cargo clippy` / `cargo audit`) would also catch is reported as a `Suggestion` (general) / `Info` (security), not omitted. The severity ladder ranks; it does not gate what you surface.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
@@ -362,7 +362,7 @@ If any check fails, ABORT:
 Error: validation failed: {section/field} — {detail}.
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(code-review-verdict, "<scope>")`.
+The calling agent corrects in its own context and re-invokes `(code-review-verdict, "<scope>")`.
 
 ## Save & Return
 
@@ -374,14 +374,14 @@ Code review emitted ({recommendation}).
 
 where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the send_input to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I send_input the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 
-- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT SendMessage the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery (anti-anchoring — rationale owned by team-lead.md step 14). (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
-- Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never SendMessage `@senior-engineer` directly, per the team-lead spawn templates). Standalone: SendMessage `@senior-engineer` with file/finding/fix triplets.
+- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT send_input the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery (anti-anchoring — rationale owned by team-lead.md step 14). (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
+- Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never send_input `@senior-engineer` directly, per the team-lead spawn templates). Standalone: send_input `@senior-engineer` with file/finding/fix triplets.
 - Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
-- Escalating to vote if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance) — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per the calling agent's Consensus Voting section (`src/user/claude-code/agents/staff-engineer.md` / `src/user/claude-code/agents/security-engineer.md`). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
+- Escalating to vote if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance) — standalone: `(vote, ...)`; team mode: NEVER `(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per the calling agent's Consensus Voting section (`src/user/codex/agents/staff-engineer.toml` / `src/user/codex/agents/security-engineer.toml`). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
 
 ### Recommendation → Vote Verdict Map
 

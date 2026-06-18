@@ -7,7 +7,7 @@ description: >
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision"
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # ADR — Author an Architecture Decision Record
@@ -34,7 +34,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: ({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -64,14 +64,14 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the Codex doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/adr/`.
 - Full system designs spanning multiple components or phases: use
-  `Skill(tdd, "<topic>")`.
+  `(tdd, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
-  `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`.
+  `(prd, "<topic>")`.
+- UX / design specs: use `(ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
@@ -262,7 +262,7 @@ This catches different-slug concurrent races at the same `{NNNN}`. Same-slug rac
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: (adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Existing ADR filename does not match `^\d{4}-[a-z0-9-]+\.md$` | Abort: `Error: Could not determine next ADR number. Existing ADR filenames must start with NNNN- (4-digit zero-padded). Found malformed: {malformed}.` |
 | Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |

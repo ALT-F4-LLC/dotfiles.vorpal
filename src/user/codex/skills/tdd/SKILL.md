@@ -6,7 +6,7 @@ description: >
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # TDD — Author a Technical Design Document
@@ -34,7 +34,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: ({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -66,13 +66,13 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
-- Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
+- Architecture Decision Records (single decisions): use `(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
-  `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
+  `(prd, "<topic>")`.
+- UX / design specs: use `(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
@@ -208,7 +208,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    `Security Considerations` — enforced by Validation §7. Non-security TDDs
    may omit them. (Mixed-scope routing — when @security-engineer appends
    these to a @staff-engineer TDD via the Threat-Model Annotation pattern
-   — is owned by `src/user/claude-code/agents/security-engineer.md`, not this skill.)
+   — is owned by `src/user/codex/agents/security-engineer.toml`, not this skill.)
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation
@@ -271,7 +271,7 @@ Error: validation failed: {field/section} — {detail}.
 ```
 
 The calling agent fixes the issue in its own context and re-invokes
-`Skill(tdd, "<topic>")`.
+`(tdd, "<topic>")`.
 
 ## Save & Return
 
@@ -300,7 +300,7 @@ On operator Cancel during the collision dialog: emit
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: Skill(tdd, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: (tdd, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Output file already exists | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |

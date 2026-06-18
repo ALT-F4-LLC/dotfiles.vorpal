@@ -136,8 +136,7 @@ impl UserEnvironment {
                     "bash ~/.claude/teammate-idle-hook.sh",
                     "command",
                 )
-                .with_fallback_model(vec!["sonnet".to_string()])
-                .with_model("opus")
+                .with_model("sonnet")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
@@ -649,10 +648,13 @@ impl UserEnvironment {
 
         // Codex agents directory
         let codex_agents_name = format!("{}-codex-agents", &self.name);
-        let codex_agents =
-            FileSource::new(&codex_agents_name, "src/user/codex/agents", self.systems.clone())
-                .build(context)
-                .await?;
+        let codex_agents = FileSource::new(
+            &codex_agents_name,
+            "src/user/codex/agents",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
         let codex_agents_path = get_output_path("library", &codex_agents);
 
         // Claude skills directory
@@ -668,10 +670,13 @@ impl UserEnvironment {
 
         // Codex skills directory
         let codex_skills_name = format!("{}-codex-skills", &self.name);
-        let codex_skills =
-            FileSource::new(&codex_skills_name, "src/user/codex/skills", self.systems.clone())
-                .build(context)
-                .await?;
+        let codex_skills = FileSource::new(
+            &codex_skills_name,
+            "src/user/codex/skills",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
         let codex_skills_path = get_output_path("library", &codex_skills);
 
         // User environment

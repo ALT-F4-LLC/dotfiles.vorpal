@@ -279,15 +279,16 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 - **SP-2 — Teammate vs report-only subagent.** `name=` IS the discriminator and the modes
   are mutually exclusive at spawn: NAMED (`Agent(name=...)`, no `run_in_background`) → foreground
   teammate; UNNAMED background (`run_in_background=true`, no `name=`) → report-only subagent.
-  NEVER `name=` + `run_in_background=true` together (a named background agent can't complete
-  shutdown yet keeps its roster entry → never de-lists). Nested caveat: if THIS lead is itself a
-  teammate (harness rejects its named spawns as "roster is flat"), even a named child's structured
-  `shutdown_response` is rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so de-listing relies on SESSION-END. Foreground teammate (named): await
+  NEVER `name=` + `run_in_background=true` together (a named background agent can fail structured
+  shutdown yet keep its roster entry). Nested caveat: if THIS lead is itself a teammate
+  (harness rejects its named spawns as "roster is flat"), even a named child's structured
+  `shutdown_response` may be rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so SESSION-END may be the only de-list path. Foreground teammate (named): await
   `shutdown_request`, reply with a structured `shutdown_response` to team-lead. Report-only
   subagent (unnamed, background): you have NO structured shutdown protocol — deliver the result
   as a PLAIN-TEXT message and END, never a structured `shutdown_response`/`shutdown_request`.
   Cross-check the brief's Done-state; default to teammate if silent. If a structured
   `shutdown_response` is harness-rejected as a background-subagent act, resend as PLAIN-TEXT and END.
+  Ack type is not termination evidence; lead must observe `teammate_terminated` or cleanup/reap output before reporting shutdown complete.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
 
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve (with NO reason — SP-1 silent confirmation) unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.

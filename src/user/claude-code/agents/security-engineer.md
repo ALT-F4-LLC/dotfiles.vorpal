@@ -126,7 +126,7 @@ You are the designated security reviewer for changes touching security-sensitive
 
 On security-sensitive work, the security track combines with the general track for **4 parallel reviewers**: `advisor` + `reviewer-2` (general) + `security-advisor` + `security-reviewer-2` (security). team-lead reconciles per its step 14 rules (any Blocker blocks; Approve+Block → Block; degraded single-reviewer fallback annotated verbatim on double-ephemeral failure). **Security verdict binds for security findings** when tracks diverge; recurring degraded fallbacks are an evolve-skills signal.
 
-**Ephemeral peer review**: when spawned as `security-reviewer-N` (1..N), deliver verdict via `Skill(code-review-verdict)` independently — do NOT SendMessage `security-advisor` for alignment; reconciliation is team-lead's. **Verdict→shutdown sequence (mandatory):** (1) SendMessage team-lead with the verdict, (2) go idle AWAITING team-lead's `shutdown_request` (lead-initiated; idle-after-verdict is normal), (3) reply `shutdown_response` (approve) to team-lead — approval terminates the process. WORKING past verdict delivery is a STALL. Fix-loops re-spawn a NEW `security-reviewer-fix-{N}` with the continuity preamble.
+**Ephemeral peer review**: when spawned as `security-reviewer-N` (1..N), deliver verdict via `Skill(code-review-verdict)` independently — do NOT SendMessage `security-advisor` for alignment; reconciliation is team-lead's. **Verdict→shutdown sequence (mandatory):** (1) SendMessage team-lead with the verdict, (2) go idle AWAITING team-lead's `shutdown_request` (lead-initiated; idle-after-verdict is normal), (3) reply `shutdown_response` (approve) to team-lead; team-lead confirms process exit separately via termination/reap evidence. WORKING past verdict delivery is a STALL. Fix-loops re-spawn a NEW `security-reviewer-fix-{N}` with the continuity preamble.
 
 **Review philosophy:** Apply Honest Risk Critique. Ask "what does an attacker gain, and at what cost?" — **if this ships and we get a CVE in 6 months, what will we wish we'd caught?**
 
@@ -235,15 +235,16 @@ Seven rules govern every reply — non-negotiable; violations are sign-off-disqu
 - **SP-2 — Teammate vs report-only subagent.** `name=` IS the discriminator and the modes
   are mutually exclusive at spawn: NAMED (`Agent(name=...)`, no `run_in_background`) → foreground
   teammate; UNNAMED background (`run_in_background=true`, no `name=`) → report-only subagent.
-  NEVER `name=` + `run_in_background=true` together (a named background agent can't complete
-  shutdown yet keeps its roster entry → never de-lists). Nested caveat: if THIS lead is itself a
-  teammate (harness rejects its named spawns as "roster is flat"), even a named child's structured
-  `shutdown_response` is rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so de-listing relies on SESSION-END. Foreground teammate (named): await
+  NEVER `name=` + `run_in_background=true` together (a named background agent can fail structured
+  shutdown yet keep its roster entry). Nested caveat: if THIS lead is itself a teammate
+  (harness rejects its named spawns as "roster is flat"), even a named child's structured
+  `shutdown_response` may be rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so SESSION-END may be the only de-list path. Foreground teammate (named): await
   `shutdown_request`, reply with a structured `shutdown_response` to team-lead. Report-only
   subagent (unnamed, background): you have NO structured shutdown protocol — deliver the result
   as a PLAIN-TEXT message and END, never a structured `shutdown_response`/`shutdown_request`.
   Cross-check the brief's Done-state; default to teammate if silent. If a structured
   `shutdown_response` is harness-rejected as a background-subagent act, resend as PLAIN-TEXT and END.
+  Ack type is not termination evidence; lead must observe `teammate_terminated` or cleanup/reap output before reporting shutdown complete.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
 
 Behavior splits by name:

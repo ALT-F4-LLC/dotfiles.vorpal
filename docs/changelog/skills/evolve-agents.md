@@ -1,5 +1,36 @@
 # Changelog: evolve-agents
 
+## 2026-06-19
+
+### Summary
+Phase 2 coherence pass: concrete stall threshold + `TeammateIdle` backtick on stall-detect line, biodiversity CANONICAL-tag correctness cull (lockstep with evolve-skills), re-invocation failure signal added to historical-auditor. Parity checks 5-9 all CLEAN.
+
+### Changes
+- AMPLIFY: backticked `TeammateIdle` + added "≥2 turns with no new tool call is stall evidence" to stall-detect line — concretizes abstract trigger.
+- CULL: removed "CANONICAL tag" from biodiversity niche-token filter — matches every family carrier, defeats monoculture guard (correctness defect; lockstep with evolve-skills).
+- AMPLIFY: added re-invocation failure signal to historical-auditor (source bullet + output line) — closes measurement gap vs evolve-skills. Net +2 lines (498/500).
+
+### Dimensions Evaluated
+Coherence (parity fixes, TeammateIdle backtick); Correctness (CANONICAL-tag defect); Completeness (re-invocation signal).
+
+### Rename
+No rename.
+
+## 2026-06-19
+
+### Summary
+Drift: FOCUS-AREAS reorder → applied. Drift: Phase-1 Context read-order → applied. All 4 prioritized adaptive changes deferred or rejected: 3 parity-bound with evolve-skills (stall threshold, biodiversity CANONICAL-tag cull, shutdown parenthetical) routed to Phase 2 lockstep; Wrap-up pitfall-write rejected (Content Gate: Executable fail — no orchestrator pitfalls contract).
+
+### Changes
+- DRIFT: Phase 0 docs-researcher FOCUS AREAS reordered (coordination-primitives first, Changelog last) — neutral allele substitution, seed 6f0ab504 pick 1, net 0, non-parity-bound.
+- DRIFT: Phase 1 ## Context read-order reformulated (feedback-priority stated first) — neutral allele substitution, seed 6f0ab504 pick 2, net 0, non-parity-bound.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no agents-local additions survived gate). Parity: CANONICAL blocks intact; 3 deferred changes are byte-identical with evolve-skills and require Phase 2 lockstep.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

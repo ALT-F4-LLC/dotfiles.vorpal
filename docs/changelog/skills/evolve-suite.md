@@ -1,0 +1,18 @@
+# Changelog: evolve-suite
+
+## 2026-06-19
+
+### Summary
+Drift: reworded "Mid-run compaction is the expensive case" bullet (seed 6f0ab504, pick 7) — responsibility framing clarified, meaning preserved. Corrected stale named-team references (v2.1.178: runtime ignores team_name; one implicit team per session, auto-cleanup at session end). Replaced "REFUSE" with "strongly advise against" — a skill cannot refuse the operator. Compact now recommended after run 1 (heaviest) and run 2.
+
+### Changes
+- CULL: Team-free guard and leftover-team collision — removed stale `evolve-<name>-{today_date}` deterministic-team-name references; updated to implicit-team model (team-lead.md authority).
+- CULL: Rate-limit attestation >85% tier — "REFUSE" → "strongly advise against" (skill cannot refuse human operator).
+- AMPLIFY: /compact checkpoint — recommended after run 1 (evolve-agents, heaviest) AND run 2; previously "after run 2" only.
+- DRIFT: Context-Saturation mid-run compaction bullet reworded (nested cycle's responsibility) — neutral allele substitution, seed 6f0ab504 pick 7, net 0.
+
+### Dimensions Evaluated
+All 8; Correctness primary (stale team-naming; authority overstep). Operational accuracy (compact guidance). Coherence: CANONICAL:BANNER intact (no change). First changelog entry for this skill.
+
+### Rename
+No rename.

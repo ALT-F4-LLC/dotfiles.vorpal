@@ -1,5 +1,39 @@
 # Changelog: evolve-skills
 
+## 2026-06-19
+
+### Summary
+Phase 2 coherence pass: concrete stall threshold added to stall-detect line, biodiversity CANONICAL-tag correctness cull (lockstep with evolve-agents). Parity checks 5-9 all CLEAN.
+
+### Changes
+- AMPLIFY: added "≥2 turns with no new tool call is stall evidence" to stall-detect line — concretizes abstract trigger.
+- CULL: removed "CANONICAL tag" from biodiversity niche-token filter — matches every family carrier, defeats monoculture guard (correctness defect; lockstep with evolve-agents).
+
+### Dimensions Evaluated
+Coherence (stall threshold, biodiversity correctness defect).
+
+### Rename
+No rename.
+
+## 2026-06-19
+
+### Summary
+Drift: Changelog-Format read-latest clause reworded (seed 6f0ab504, pick 5) → applied. Drift: Crash & Stall "Re-spawn ONCE" bullet reworded (pick 6) → applied. BUG fix (docket-auditor scope), 2 wording AMPLIFYs, day= alias folded net-zero. File stays 498/500.
+
+### Changes
+- CULL: docket-auditor cross-reference `agents/` → `.claude/skills/` and `skills/` — copy-paste artifact from evolve-agents; evolve-skills never audits agents/ (confirmed via DOCS-PATHS-LOCAL).
+- AMPLIFY: Phase 1 template "first ~80 lines only" → explicit `Read(limit=80)` — machine-followable constraint.
+- AMPLIFY: Phase 2 task 4 "SendMessage trigger gaps between dependent skills" → "orchestrator-to-teammate SendMessage trigger completeness" — skills don't message each other.
+- AMPLIFY: accept `day=N` as alias for `days=N` in Argument Handling and Parsing (this session's `/evolve-skills day=7` would abort under prior parsing).
+- DRIFT: Changelog-Format read-latest clause reworded — neutral, pick 5, net 0.
+- DRIFT: Crash & Stall "Re-spawn ONCE" → "Re-spawn exactly once" — neutral, pick 6, net 0.
+
+### Dimensions Evaluated
+All 8; Coherence (BUG fix, Phase 2 task-4 accuracy); Actionability (Read(limit=80), day= alias); Over-Engineering (net 0). Parity: docket-auditor template is NOT byte-symmetry-bound with evolve-agents (scope correctly differs).
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

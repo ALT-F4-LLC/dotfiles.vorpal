@@ -45,7 +45,7 @@ You are the **Evolution Suite Orchestrator**. One invocation runs the three edit
 2. **Rate-limit attestation (HARD GATE).** No programmatic usage probe exists, so the operator attests their current seven-day rate-limit utilization from `/usage`:
    - **<70%** — proceed.
    - **70–85%** — warn; recommend a `skip=`-narrowed single-run pass; proceed with the full run only on explicit confirmation.
-   - **>85%** — REFUSE the default full run; offer a single-run pass or abort.
+   - **>85%** — strongly advise against the default full run; offer a single-run pass or abort.
 
    Re-attest at every between-run checkpoint — the budget the runs share is consumed as the suite proceeds.
 3. **Clean-surface check** — pre-existing dirt blurs per-run delta attribution and the final `git diff` review:
@@ -114,10 +114,10 @@ comm -13 "$STATE_DIR/snap-pre-<name>.txt" "$STATE_DIR/snap-post-<name>.txt"
 ```
 
    The delta is the `comm` output plus content changes to paths already dirty pre-run (attributed per the clean-surface answer). Post the `outcome:` and `delta:` comments; close the child on success. Empty delta + clean wrap-up report = legitimate no-op — the skills explicitly permit "no improvements found"; record `outcome: no-op`, not a failure.
-6. **Team-free guard** — the nested cycle's wrap-up team cleanup is the between-run invariant. An abnormal end (operator interrupt, mid-cycle abort) can leave team `evolve-<name>-{today_date}` alive with teammates. Recovery: SendMessage shutdown requests to the remaining teammates, then clean up `evolve-<name>-{today_date}` — team names are deterministic, so recovery needs no discovery step. If the NEXT nested skill's first teammate spawn fails with `Already leading team`, run this guard against the PREVIOUS run's team name, then re-invoke that skill once. A second collision → `FAILED: team-collision`, stop the suite.
+6. **Team-free guard** — the nested cycle's wrap-up team cleanup is the between-run invariant. An abnormal end (operator interrupt, mid-cycle abort) can leave the session's single implicit team alive with teammates (the runtime ignores `team_name`; there is no per-cycle named team — team-lead.md). Recovery: SendMessage shutdown requests to the remaining teammates, then clean up the implicit team (no name needed). If the NEXT nested skill's first teammate spawn fails with `Already leading team`, run this guard, then re-invoke that skill once. A second collision → `FAILED: team-collision`, stop the suite.
 7. **Checkpoint (HARD GATE)** — `AskUserQuestion`, including rate-limit re-attestation at the pre-flight thresholds:
    - **Continue** — proceed to the next run.
-   - **Pause for /compact** — recommended after run 2, and after any observed auto-compaction. The operator runs `/compact`, then prompts "continue evolve-suite"; on resume, re-derive completed-run state from the parent issue's child comments, not from possibly-summarized context.
+   - **Pause for /compact** — recommended after run 1 (evolve-agents is the heaviest run) and again after run 2, plus after any observed auto-compaction. The operator runs `/compact`, then prompts "continue evolve-suite"; on resume, re-derive completed-run state from the parent issue's child comments, not from summarized context.
    - **Stop — resume later** — resume contract: fresh session, `/evolve-suite skip=<completed names> days=… drift=…`, citing the parent issue. Clean by construction: completed runs' edits are already in the tree and Docket records which runs ran.
    - **(after a failed run only) Revert this run's delta vs keep partial edits** — revert uses the snapshot path list: `git checkout -- <modified paths>` plus `rm <new untracked paths>`. Default is KEEP: each evolve cycle applies per-target edits incrementally, and the gate exists precisely to flag any resulting incoherence.
 
@@ -143,7 +143,7 @@ Three full multi-agent orchestrations plus the gate share ONE context window —
 
 - **Durable state at run boundaries.** Everything needed to resume is on disk before each checkpoint: Docket comments (which runs ran, outcomes, deltas), porcelain snapshots in `$STATE_DIR`, changelog files, and the tree itself.
 - **Between-run compaction is the cheap case.** The checkpoint's Pause-for-/compact option aligns compaction with run boundaries, where transient state is at its minimum.
-- **Mid-run compaction is the expensive case** and is owned by the nested cycle: every evolve skill and agent definition carries its own post-compaction discipline (re-read before edit; orchestrator re-derivation). The suite cannot protect a nested cycle's internal state and does not claim to.
+- **Mid-run compaction is the expensive case**, and it is the nested cycle's responsibility — not the suite's. Each evolve skill and agent definition carries its own post-compaction discipline (re-read before edit; orchestrator re-derivation); the suite neither protects nor claims to protect a nested cycle's internal state.
 
 **Broken vs slow — the operator's heuristic.** A slow-but-healthy cycle still makes forward progress: new tool calls keep landing, the files being read and edited change from turn to turn, teammates post fresh Docket comments and task updates, and the orchestrator's narration tracks its current phase. A broken cycle (mid-run compaction casualty) shows distinct signatures: TeammateIdle notifications flood in without intervening work; the orchestrator re-reads the same files repeatedly without acting on them; unknown-team or unknown-teammate errors appear on messaging calls; or the orchestrator restarts a phase it already completed. Slow → wait. Broken → stop the run, run the team-free guard, mark the child `FAILED: saturation`, and take the checkpoint's Stop option with a fresh-session `skip=` resume.
 
@@ -169,7 +169,7 @@ If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-sessio
 - **Skill abort mid-run** (operator interrupt or internal abort) — run the team-free guard, comment `FAILED: <reason>` on the child, then the checkpoint fires with the revert-delta vs keep-partial choice.
 - **Saturation** (broken-vs-slow signatures above) — stop the run, run the team-free guard, `FAILED: saturation`; checkpoint recommends Stop + fresh-session resume via `skip=`.
 - **Rate-limit mid-run** — the active cycle dies or visibly degrades on rate-limit errors: `FAILED: rate-limit`; Stop recommended (the remaining runs share the exhausted budget); resume next window via `skip=`.
-- **Leftover-team collision** — a nested cycle's first teammate spawn fails with `Already leading team`: run the guard against the previous run's deterministic team name, re-invoke once; on a second collision, `FAILED: team-collision` and stop.
+- **Leftover-team collision** — a nested cycle's first teammate spawn fails with `Already leading team`: run the guard against the session's implicit team (no name needed), re-invoke once; on a second collision, `FAILED: team-collision` and stop.
 - **Crash re-entry** (suite session died) — a new session recovers the cycle from Docket alone: the parent's `dispatched: STATE_DIR=<path>` comment → snapshot root; child comments → which runs completed; snapshots → unattributed deltas. Attempt the team-free guard for the run that was active at death; if it fails because this session leads no team, proceed — the `Already leading team` collision path covers any residue. Then resume via `/evolve-suite skip=<completed names>`. Nothing is committed at any point, so operator recovery is always `git diff` review + selective `git checkout --` at worst.
 
 ---

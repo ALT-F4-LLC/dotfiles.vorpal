@@ -57,10 +57,10 @@ Target skill(s) and historical-audit window are determined by `\$ARGUMENTS`:
 
 - **No argument** (`/evolve-skills`): Improve ALL skills in `.claude/skills/*/SKILL.md` and `skills/*/SKILL.md`. Historical audit window defaults to 7 days.
 - **Skill name only** (`/evolve-skills tdd`): Improve only the named skill. Pre-flight step 5 validates the argument matches an existing skill directory.
-- **`days=N`** (optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
+- **`days=N`** (`day=N` accepted as alias, optional, e.g. `/evolve-skills tdd days=14` or `/evolve-skills day=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-skills drift=2` or `/evolve-skills tdd drift=0`): Override the genetic-drift rate — number of neutral drift proposals per cycle (see the genetic-drift operator). Integer ≥ 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
-**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=`/non-`drift=` token remains after stripping — `/evolve-skills days=7 drift=0` has NO skill-name token (all-skills mode).
+**Parsing:** strip the `days=N` (or `day=N`) and `drift=N` tokens from `\$ARGUMENTS` FIRST; the remaining token (if any) is the skill name. A "skill-name token" means a non-`days=`/non-`day=`/non-`drift=` token remains after stripping — `/evolve-skills days=7 drift=0` has NO skill-name token (all-skills mode).
 
 ---
 
@@ -108,7 +108,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -130,9 +130,9 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
-- **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
+- **Re-spawn exactly once** with the `-r2` suffix, supplying a `Resume context:` block that lists (a) the prior partial report, (b) the task ID to claim, (c) the target file.
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
@@ -179,7 +179,7 @@ The Phase 2 teammate:
 **After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `skills/`, `.claude/skills/`, `agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
 and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
 
-**Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining token (capability keyword, CANONICAL tag, or rule name) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
+**Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: History Compaction (terminal, gated)
 
@@ -224,7 +224,7 @@ OUTPUT: `- **<capability/change>**: <skill definition relevance>` under New Capa
 Agent(name="docket-auditor", subagent_type="senior-engineer", prompt="...")
 
 Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
-usage in `agents/` and `.claude/skills/`.
+usage in `.claude/skills/` and `skills/`.
 
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
 ```
@@ -399,7 +399,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files first ~80 lines only (both .claude/skills/ and skills/). Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files via `Read(limit=80)` only (both .claude/skills/ and skills/). Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}
@@ -470,7 +470,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 2. If renames listed, verify and prepare rename instructions (dir, frontmatter, references, changelog)
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
-4. Check cross-communication: identify SendMessage trigger gaps between dependent skills, flag hub-and-spoke patterns (>50% routing through one agent)
+4. Check cross-communication: verify orchestrator-to-teammate SendMessage trigger completeness, flag hub-and-spoke patterns (>50% routing through one agent)
 5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.

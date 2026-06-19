@@ -127,7 +127,7 @@ Join the session's single implicit team on your first `Agent(name=..., ...)` spa
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) TeammateIdle notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
@@ -162,7 +162,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `agents/`, `skills/`, `.claude/skills/`; never changelogs/pitfalls/prose)
 2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
-4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining token (capability keyword, CANONICAL tag, or rule name) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
+4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: History Compaction (terminal, gated)
 
@@ -201,7 +201,7 @@ MISSION: Research the LATEST Claude Code documentation for capabilities relevant
 PINNED INSTALLED-VERSION + CHANGELOG DIGEST (orchestrator-fetched; if `SKIPPED:`, fall back to your own WebSearch/WebFetch as primary):
 {latest_features_digest}
 
-FOCUS AREAS: Sub-agents, Agent Teams, Hooks, Skills, Changelog (recent releases, breaking changes), Settings, MCP, Tools, Memory, Permissions.
+FOCUS AREAS: Agent Teams, Sub-agents, Hooks, Skills, Settings, Permissions, MCP, Tools, Memory, Changelog (recent releases, breaking changes).
 
 OUTPUT: `- **<capability/change>**: <agent definition relevance>` grouped under:
 New Capabilities, Changed Features, Deprecated/Removed, Recommendations.
@@ -251,6 +251,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
    - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
    - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
+   - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by subagent-spawn UUID/timestamp, not replicated lines); ≥2 distinct spawns of the same agent in one session is a failure signal.
 3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
    - `-r2` respawn convention (canonical from `agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
@@ -271,6 +272,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Invocations (window): N (transcripts) + M (history.jsonl)
 - Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
 - Error/abort signals: <count> with example
+- Re-invocation signals: <count of sessions with ≥2 spawns of this agent>
 - Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
 - Model distribution: <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
 - Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
@@ -393,7 +395,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/agents/<name>.md, docs/spec/ selectively, other agent files first ~80 lines only. Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/agents/<name>.md entry, docs/spec/ selectively, and the first ~80 lines only of other agent files.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

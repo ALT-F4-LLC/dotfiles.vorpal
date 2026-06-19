@@ -1,5 +1,19 @@
 # Changelog: evolve-coherence
 
+## 2026-06-19
+
+### Summary
+Drift: reworded the Question-severity gloss in the Coherence Report ladder (seed 6f0ab504, pick 3) — meaning preserved. Both AMPLIFY findings rejected on ground truth: spawn-template disallowed-tools is non-executable (Agent() spawn takes no such param; tool restriction lives in the referenced subagent definition's frontmatter), and an evolve-config Remediation bucket is out-of-scope (no dimension audits src/*.rs; bucket would always read None).
+
+### Changes
+- DRIFT: Question-severity gloss reworded ("blocked on confirmation before dispositioned") — neutral allele substitution, net 0.
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (density load-bearing, no cull). Coherence: BANNER + EVOLUTION-MODEL byte-identical across all 3 evolve-* carriers (live-verified). $-escape clean.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

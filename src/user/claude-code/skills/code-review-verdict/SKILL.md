@@ -191,7 +191,7 @@ Four narrow, mechanically detectable symptoms gate the merge **regardless of fea
 **Block means return-for-fix, not discard.** A gate-triggered Blocker names the file/line, the gate (G1..G5), the symptom observed, and the required mitigation. The calling agent routes back to `@senior-engineer` for a fix pass; the diff returns for re-review. Hitting a hard gate is the review system working — surface it loudly.
 ## Output Contract
 
-Emit the review verbatim to the calling agent's context using the role-specific format below. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
+Emit the review verbatim to the calling agent's context using the role-specific format below. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format. **If the harness blocks this skill's invocation** (Stage-2 auto-mode classifier), render the review directly per THIS format authority — the role's banner heading, every required section in order (for `staff-engineer`: `Overrides Recognized` + `Hard Gates Triggered` G1..G5), and the verdict ladder — never an improvised structure.
 
 ### Staff-Engineer Output
 
@@ -343,6 +343,8 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 ### Round-N Re-Review (compact)
 
 On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
+
+**G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `git diff --stat` shows BOTH the AC regex block AND its named target files untouched since that round — cite it as `G5 PASS — unchanged since round {N}`. Never carry a prior G5 Blocker forward (re-run it); never carry forward when either the regex or any target file moved.
 
 ## Validation Before Emit
 

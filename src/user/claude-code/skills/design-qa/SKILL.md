@@ -132,7 +132,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 ## Output Contract
 
-Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
+Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format. **If the harness blocks this skill's invocation** (Stage-2 auto-mode classifier), render the QA report directly per THIS format authority — every required section in order and the `Pass` / `Pass with Issues` / `Fail` verdict ladder — never an improvised structure.
 
 ```
 ## Design QA: {Spec Title}

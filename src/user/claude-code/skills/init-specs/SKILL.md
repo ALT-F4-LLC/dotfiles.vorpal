@@ -100,15 +100,12 @@ exploration guidance for each — used in the spawning template.
 
 Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
 
-Record each agent's spawn time (`Bash date +%s`) in a local map keyed by agent name; you'll
-need it for the stall check below.
-
 Poll `TaskList()` every ~2 minutes. Classify each task:
 - **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR task is `in_progress` and `(now - spawn_time) > 480s` with no SendMessage activity since spawn (480s gives a ~2-minute early-warning window before the harness ~10-min auto-fail reaps the agent).
+- **failed** — agent SendMessaged a failure, OR the harness auto-fails the agent (Claude Code reaps stalled subagents at ~10 minutes). A `TeammateIdle` notification with no completion SendMessage and no spec file on disk is a stall, not a normal completion. Do NOT hand-roll a wall-clock timer — an idle teammate's row hides after 30s while still running (v2.1.181), so a hand-rolled heuristic can misread a hidden-but-live agent as stalled.
 - **in_progress** — still working; continue polling.
 
-**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling and stall classification credit the new agent, and record the replacement's spawn time in the spawn-time map), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling credits the new agent), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
 
 > Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
 

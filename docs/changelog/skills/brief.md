@@ -1,5 +1,20 @@
 # Changelog: brief
 
+## 2026-06-19
+
+### Summary
+Added a cite-source directive for requests that reference an accepted artifact, closing the brief↔TDD paraphrase-drift gap.
+
+### Changes
+- AMPLIFY ("What a good brief is"): when a request points to an accepted artifact (TDD/spec/ADR/vote) that fixes a field's value, cite the source line verbatim rather than paraphrase. Signal: hermes team-lead pitfall — paraphrased D-table values diverged from the voted TDD. Net +1.
+- Drift (rate 7): all SKIP — D0/D1 parity-bound to team-lead Pattern Decision Tree; D2–D6 headers/already-concrete.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

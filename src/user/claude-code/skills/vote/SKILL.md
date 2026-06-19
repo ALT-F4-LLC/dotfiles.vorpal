@@ -284,6 +284,9 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
    docket vote commit {vote-id} --outcome "Approved with score {score}"
    ```
    **AC-reconciliation check** — if the outcome reverses a prior direction (overturns an earlier vote or ADR), flag to the caller that sub-issues authored before this vote may encode the contradicted direction and MUST have their acceptance criteria reconciled before implementation proceeds. The coordinator surfaces this; acting on it is the caller's responsibility.
+
+   **Post-vote citation** — a committed outcome seals the voted artifact (TDD, ADR, plan) as the canonical authority for its values. Downstream briefs and dispatches that re-state those values MUST cite the committed artifact verbatim (file + line), never paraphrase — paraphrase drifts from what was approved. Surface this to the caller alongside the commit so it propagates into decomposition.
+
 2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
 3. Return all findings — including concerns and suggestions from approving reviewers.

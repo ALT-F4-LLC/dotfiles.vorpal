@@ -1,5 +1,20 @@
 # Changelog: design-qa
 
+## 2026-06-19
+
+### Summary
+Added a classifier-block fallback to the Output Contract (Phase-2 family lockstep): a blocked Stage-2 invocation renders the QA report per this format authority.
+
+### Changes
+- AMPLIFY (Output Contract): if the harness blocks invocation (Stage-2 auto-mode classifier), render the QA report per THIS format authority — required sections + Pass / Pass with Issues / Fail ladder. Family extension of verify-ac's measured fallback. Net +1.
+- Drift (rate 7): all 7 SKIP — output section headers / verdict-ladder / ABORT lines.
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence, Over-Engineering, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

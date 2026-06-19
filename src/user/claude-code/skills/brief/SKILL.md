@@ -23,7 +23,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose.
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted.
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 

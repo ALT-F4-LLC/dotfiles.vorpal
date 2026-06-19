@@ -144,7 +144,7 @@ malformed frontmatter.
    file on disk: the appending agent re-reads the file fresh immediately before
    editing; concurrent edits to the same file cause "File modified since read"
    failures. Serialize the handoff through team-lead, not async peer messages.
-4. **Mermaid diagrams**: draft at least one Mermaid block (component map, sequence,
+4. **Mermaid diagrams**: produce at least one Mermaid block (component map, sequence,
    state, or data flow). Validation §5 is the gate.
 5. **Verify embedded technical assertions before stating them as fact.** For each
    concrete claim the TDD commits to, apply the matching check arm and record the
@@ -221,18 +221,23 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 8. **Risks & Open Questions** — risk table (likelihood/impact/mitigation); open
    questions resolved or escalated before vote.
 9. **Testing Strategy** — test levels, smoke tests, coverage of acceptance
-   criteria, untested-claims inventory. **For security TDDs** (per §4
-   security-track gating), this section MUST include a named subsection
-   `### Abuse Cases` enumerating adversarial-input tests, not just happy-path
-   coverage.
+   criteria, and an **untested-claims inventory**: explicitly list every
+   forward-looking or currently-unreachable branch the design introduces that
+   has no Phase-1 trigger yet (dead-on-arrival arms, future-flag paths,
+   defensive fallbacks). When an acceptance criterion would demand a positive
+   test for such a branch, do NOT fabricate one against the unreachable path —
+   extract the branch's shape-builder into an exported pure function and unit-
+   test THAT in isolation; record the deferred end-to-end coverage as a known
+   gap. **For security TDDs** (per §4 security-track gating), this section MUST
+   include a named subsection `### Abuse Cases` enumerating adversarial-input
+   tests, not just happy-path coverage.
 10. **Observability & Operational Readiness** — signals, 3am diagnosability,
     production readiness, runbooks.
 11. **Implementation Phases** — partitioned phases that the planner consumes
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
-    (paths affected), (c) per-phase acceptance criteria — any grep/regex-based
-    AC must be run against the named files, hit set verified to cover all expected
-    matches (escape markdown, arm for word-order/formatting variants); a single-arm
-    regex that silently under-matches is a defect, (d) effort estimate
+    (paths affected), (c) per-phase acceptance criteria — grep/regex-based ACs
+   follow the executable-claim discipline (run against named files, hit set
+   verified) per §9 and staff-engineer.md rule 6, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags. Phases must be independently shippable or explicitly
     chained — no implicit ordering.
@@ -252,8 +257,7 @@ Before invoking `Write`, verify in the calling agent's context:
    documents another doc/skill may embed `##`/`###` example headings inside
    fences; those are content, not structure. Off-by-one against the listed
    sections is a defect.
-4. **Alternatives count** — Section 3 (Alternatives Considered) contains at
-   least two `###`-level subsections (counting only `###` headings outside
+4. **Alternatives count** — Section 3 (Alternatives Considered) carries no fewer than two `###`-level subsections (counting only `###` headings outside
    ``` code fences).
 5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
@@ -291,6 +295,9 @@ After Validation Before Save passes:
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
 The calling agent owns next steps (vote requests, decomposition, peer notification).
+Downstream agents must cite this TDD verbatim with line refs — never paraphrase its
+values from memory — and any prescribed `Skill(verify-ac)` is an EXPLICIT invocation,
+not a teammate-frontmatter assumption (teammates load only `tools`+`model`).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.

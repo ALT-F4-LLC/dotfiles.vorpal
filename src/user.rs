@@ -136,7 +136,7 @@ impl UserEnvironment {
                     "bash ~/.claude/teammate-idle-hook.sh",
                     "command",
                 )
-                .with_model("sonnet")
+                .with_model("opus")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")

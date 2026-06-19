@@ -1,5 +1,20 @@
 # Changelog: vote
 
+## 2026-06-19
+
+### Summary
+Added a post-vote citation note: a committed outcome seals the voted artifact as canonical authority, so downstream references cite it verbatim.
+
+### Changes
+- AMPLIFY (§If Quorum Is Reached, step 1): a committed outcome seals the voted artifact (TDD/ADR/plan); downstream briefs/dispatches MUST cite the committed artifact verbatim (file+line), never paraphrase. Reciprocal to team-lead.md:243 brief-citation requirement; closes the recurring post-vote-drift gap (hermes pitfall). Net +4.
+- Drift (rate 7): all 7 SKIP — template placeholders, output fields, detection-logic prose.
+
+### Dimensions Evaluated
+Behavioral Completeness, Over-Engineering, Coherence, Content Gate, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

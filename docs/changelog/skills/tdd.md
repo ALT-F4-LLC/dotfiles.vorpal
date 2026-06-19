@@ -1,5 +1,22 @@
 # Changelog: tdd
 
+## 2026-06-19
+
+### Summary
+Strengthened the §9 untested-claims inventory into an actionable anti-fabrication callout, offset by compressing redundant §11 grep/regex prose; added downstream verbatim-citation + explicit Skill(verify-ac) envelope reminders.
+
+### Changes
+- AMPLIFY §9: inventory now enumerates forward-looking/unreachable no-trigger branches and prescribes extract-pure-fn-and-unit-test remediation when an AC demands a positive test for an unreachable path (3 convergent cross-project pitfalls).
+- CULL §11: triplicated grep/regex-AC prose collapsed to a §9 + staff-engineer rule-6 pointer (core requirement kept inline).
+- AMPLIFY Save & Return: downstream must cite this TDD verbatim; prescribed Skill(verify-ac) is an explicit invocation.
+- Drift (rate 7): D2, D5 APPLY (neutral rewords); D0/D1/D3/D4/D6 SKIP (slug/CANONICAL/format parity).
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Non-redundancy, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

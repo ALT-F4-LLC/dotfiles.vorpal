@@ -1,5 +1,21 @@
 # Changelog: init-specs
 
+## 2026-06-19
+
+### Summary
+Re-anchored stall detection on harness-native signals and removed the hand-rolled 480s wall-clock timer + spawn-time map (grounded in v2.1.181 idle-row-hide behavior).
+
+### Changes
+- AMPLIFY (Step 2): classify a stall via TeammateIdle + the ~10-min harness auto-fail reap instead of a 480s wall-clock heuristic — an idle teammate's row hides after 30s while still running (v2.1.181). Now matches vote/SKILL.md + team-lead signal (f). Removed orphaned spawn-time-map clauses. Net -3.
+- DEFERRED: grep→awk batch (CHANGE 2) — proposed awk changed last_updated matching from substring to exact-equality; unverifiable, held.
+- Drift (rate 7): all SKIP — token/machine-coupled or already-minimal prose.
+
+### Dimensions Evaluated
+Over-Engineering, Actionability, Completeness, Coherence, Orchestration, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

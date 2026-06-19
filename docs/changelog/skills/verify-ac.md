@@ -1,5 +1,20 @@
 # Changelog: verify-ac
 
+## 2026-06-19
+
+### Summary
+Added an explicit classifier-block fallback to the Output Contract: a blocked Stage-2 auto-mode invocation renders the verdict per this format authority instead of improvising.
+
+### Changes
+- AMPLIFY: Output Contract directs a blocked invocation to render the FULL/LIGHT template + APPROVE/ACCEPT-WITH-CAVEATS/BLOCK ladder + required sections. Signal: 2 measured sessions bypassed format authority. Offset by trimming a 3×-redundant "Do NOT save to disk" clause. Net +1.
+- Drift (rate 7): all 7 SKIP — each target is a format-authority section header + internal anchor.
+
+### Dimensions Evaluated
+Skill Design Quality, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

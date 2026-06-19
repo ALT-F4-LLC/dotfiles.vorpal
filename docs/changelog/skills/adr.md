@@ -1,5 +1,20 @@
 # Changelog: adr
 
+## 2026-06-19
+
+### Summary
+Collapsed the ADR-specific dual-Glob (pre-Write renumber + post-Write race-detection) to a single post-Write race-detection Glob.
+
+### Changes
+- CULL: removed the pre-Write "Before Write: Re-run Pre-flight step 5" re-Glob — it defended against concurrent ADR authors at the same {NNNN}, a race the single-author topology precludes (parallel staff-engineer spawns are reviewers, not authors). The post-Write Glob remains as the sole detect-and-abort backstop. Tightened the full-sequence line to `mkdir → Write → race-detection Glob → Emit`. Signal: Phase-0 innovation (redundant prevention step). Net -4.
+- Drift (rate 7): all 7 SKIP — ordered-list ordinals + slug pseudo-code (parity).
+
+### Dimensions Evaluated
+Over-Engineering, Redundancy, Coherence, Content Gate, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

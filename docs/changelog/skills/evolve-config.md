@@ -3,6 +3,21 @@
 ## 2026-06-19
 
 ### Summary
+Coherence trim: removed a false git blame claim from the config-history-auditor description; the changelog-path operator question resolved as a NO-OP (config/claude-code.md is correct, distinct from skills/evolve-config.md).
+
+### Changes
+- AMPLIFY: dropped `git blame` from the config-history-auditor Bash description — the Phase-0 template runs only `git log`; over-stated tooling invited needless blame over the 1636-line claude_code.rs. Cited: auditor stall hot-spot (32 TeammateIdle / 9.5% idle on sonnet).
+- Drift (rate 7): all SKIP — D0/D3/D4/D5/D6 evolve-family parity (Phase-2 lockstep); D1 already drifted this date (same seed) — guarded as churn.
+
+### Dimensions Evaluated
+Coherence, Efficiency, Over-Engineering, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-19
+
+### Summary
 Drift: reworded the Crash & Stall "Compaction recovery" bullet (seed 6f0ab504, pick 4) — instruction order changed, meaning preserved. Tagged config-specific drift sentence CONFIG-ONLY and trimmed its duplicate rationale. All 5 innovation-scanner config features verified real but rejected — they lack claude_code.rs setters and are owned by the runtime innovation pipeline per cycle.
 
 ### Changes

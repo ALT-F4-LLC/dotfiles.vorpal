@@ -1,5 +1,21 @@
 # Changelog: code-review-verdict
 
+## 2026-06-19
+
+### Summary
+Added a G5 Round-N carry-forward rule to cut redundant regex re-execution on the dominant fix→re-review loop.
+
+### Changes
+- AMPLIFY (Round-N Re-Review): a prior-round G5 PASS is reusable without re-running the regex only when `git diff --stat` shows the AC regex block AND its named target files untouched since that round; prior G5 Blockers are never carried forward. Mirrors verify-ac §3a. Net +1.
+- AMPLIFY (Output Contract): added a classifier-block fallback — if the Stage-2 auto-mode classifier blocks invocation, render the review per THIS format authority (banner + required sections + verdict ladder). Phase-2 family extension of verify-ac's measured fallback. Net +1.
+- Drift (rate 7): all 7 SKIP — every target is a format-authority output-template line.
+
+### Dimensions Evaluated
+Over-Engineering, Actionability, Completeness, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

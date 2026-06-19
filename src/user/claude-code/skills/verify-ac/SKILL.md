@@ -167,7 +167,7 @@ Apply the full procedure. Scale evidence to risk.
 
 ## Output Contract
 
-Emit the verification report verbatim to the calling agent's context. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
+Emit the verification report verbatim to the calling agent's context. Do NOT echo the raw diff. Do NOT add a preamble or trailing notes outside the format. **If the harness blocks this skill's invocation** (Stage-2 auto-mode classifier), render the verdict directly per THIS format authority — the FULL Output template (or LIGHT Output one-liner), the APPROVE / ACCEPT WITH CAVEATS / BLOCK ladder, and every required section — never an improvised structure.
 
 ### LIGHT Output
 

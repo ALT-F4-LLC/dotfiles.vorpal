@@ -1,5 +1,21 @@
 # Changelog: design-review
 
+## 2026-06-19
+
+### Summary
+Phase-2 coherence: aligned the silent-completion self-check to the family anchor and added a classifier-block fallback to the Output Contract.
+
+### Changes
+- AMPLIFY (silent-completion self-check): replaced "closed-loop failure" with the family-anchored "silent-completion — the dominant defect class across this skill family (code-review-verdict, verify-ac, design-review, design-qa)". Net 0.
+- AMPLIFY (Output Contract): if the harness blocks invocation (Stage-2 auto-mode classifier), render the review per THIS format authority — required sections + Approve / Approve with follow-up / Block / Redesign / Incremental Improvement ladder. Family extension. Net +1.
+- Drift (rate 7): all 7 SKIP — descriptive / format-authority tokens.
+
+### Dimensions Evaluated
+Coherence, Actionability, Completeness, Over-Engineering, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

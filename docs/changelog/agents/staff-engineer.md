@@ -1,5 +1,21 @@
 # Changelog: staff-engineer
 
+## 2026-06-19
+
+### Summary
+Adopted two memory-sourced review-rigor directives (cited-authority live-`ls`; zero-hits-grep-is-suspect) and trimmed a 3×-stated after-compaction re-Read rule to a single owner. Net +2 (286→288). Drift: skipped (seed-target was the Consensus/vote cross-ref section — unsafe).
+
+### Changes
+- AMPLIFY: cited-authority live-`ls` directive in No Guessing — `ls` an external-authority doc's path live during review; absent path + "never restate" = HIGH coherence break (file-level gap vs the existing directory-level check).
+- AMPLIFY: zero-hits-grep-is-suspect addendum to the step-6 executable-claim gate — a zero-hit grep may be a quoting/word-split/loop bug; re-run a known-positive control before concluding absence.
+- CULL: collapsed the triple-stated after-compaction re-Read rule — R7's exception now points to rule 5 as sole owner.
+
+### Dimensions Evaluated
+Capability Growth (AMPLIFY), Actionability (AMPLIFY), Consolidation (CULL). Others RETAIN. Teammate-envelope rule (L119) verified accurate vs current docs — no edit.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

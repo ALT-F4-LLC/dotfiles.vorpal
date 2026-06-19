@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-06-19
+
+### Summary
+Fixed a reject-class CLI error: `docket doc link add/remove` requires the `--issue` flag, not a positional second arg; corrected both occurrences. Net 0 (364→364). Drift: neutral reorder of the two Session-Init state-reconstruction probes (`docket stats`/`docket plan --json`) → adopted.
+
+### Changes
+- CULL→AMPLIFY: `docket doc link add/remove <doc-id> <issue-id>` → `... --issue <issue-id>` (issue template + CLI reference); orchestrator-verified via `docket doc link add/remove --help`. Phase-0 docket-audit reject-class signal; only PM carried the positional form (cross-agent grep clean).
+
+### Dimensions Evaluated
+Spec Alignment (CULL→AMPLIFY: doc-link CLI). Role Realism / Actionability / Boundary Clarity / Completeness / Consolidation / Capability Growth / Rename — RETAIN (health high; 0 corrections/errors in window).
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

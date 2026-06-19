@@ -1,5 +1,21 @@
 # Changelog: team-lead
 
+## 2026-06-19
+
+### Summary
+TRIM self-review (589→588): merged two adjacent `opus` tier bullets (-1); compacted step-16 cleanup prose (~-81 words, all 12 behavioral rules retained, literal line-anchor replaced with a stable section reference); softened fable wording to "opus is the standing tier" (XC-6 + model-routing: fable-impl reworked 2/2). Drift: skipped (TRIM net-negative mandate — any neutral add violates it).
+
+### Changes
+- CULL: merged `opus` Medium-impl + `opus` tdd-author/Large bullets into one (-1 physical line).
+- CULL: step-16 cleanup density trim — duplicated "report only observed state" clause → stable pointer to the §Stall&Crash shutdown-ack rule (NOT a literal line number); dropped GH issue-number + DKT-20 forensic narration (reap-evidence rule preserved in SP-2).
+- AMPLIFY: tier-preamble fable wording softened to neutral "opus is the standing tier" (no unverified export-control claim).
+
+### Dimensions Evaluated
+Consolidation (CULL — OVERRIDING), Spec Alignment (fable). Others RETAIN. XC-5 (idle-row-30s) deferred — no deletable false-stall branch, net-add into over-budget file rejected. File remains 588 (>500) — needs a structural pass (flagged).
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

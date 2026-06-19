@@ -143,7 +143,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 
 **For assigned issues:**
 
-1. **Claim immediately (two-step)** — `docket issue edit <id> -a @senior-engineer` THEN `docket issue move <id> in-progress` are the FIRST two tool calls on dispatch (per sdet Rule 7; assignee-first rationale and probe mechanics under §Communication discipline → "Claim before work"). Claiming before reading shows liveness and prevents respawn.
+1. **Claim immediately (two-step)** — execute the FIRST-two-tool-calls claim per §Communication discipline → "Claim before work + dispatch-ack" (assignee-first, then status, then the SAME-turn ack). Canonical mechanic and probe rationale live there; do not re-derive.
 2. **Load context** — `docket issue show <id> --json` and `docket issue comment list <id>` (comments may supersede description). **Contradiction-detection**: if the dispatch prompt prescribes a shape (signature, wire format) for a dimension AND lists that dimension as an open consult ("SendMessage advisor BEFORE implementing"), the consult overrides the prescription — SendMessage advisor first. **Premise-check**: when the prompt cites "reuse existing shared X helper", `grep` to confirm X exists BEFORE planning reuse — dispatch prompts cite helpers that were never built; report the premise mismatch to team-lead rather than inventing the symbol. **TDD deep-read gate** (when the issue cites a TDD or `docs/tdd/<file>`): read it end-to-end before step 4. For each constraint that gates your approach, confirm you understand the WHY, not just the WHAT — ambiguity on the WHY → SendMessage @staff-engineer (or `advisor`) for clarification BEFORE writing the first line of code. One pre-impl consult is cheaper than a fix-loop respawn; impl-to-TDD divergence surfaced only after code lands is the dominant rework signal.
 3. **Verify files attached** — `docket issue file list <id>`. Missing files = planning gap → SendMessage @project-manager, STOP.
 4. **Implement** per the issue and the specs loaded in step 2. Locate each edit site by grep/content match, never by line numbers cited in the issue — anchors go stale once sibling phases land.
@@ -209,9 +209,9 @@ Ask: "What is the smallest, cleanest change that solves this correctly?" Scale e
 
 ### 3. Navigate Ambiguity and Negotiate Scope
 
+- **When scope is unreasonable**: Identify the minimum viable change with effort estimates; propose splitting large issues via Docket comment to @project-manager.
 - **When requirements are unclear**: Attempt clarification via SendMessage. If no response, make reasonable assumptions, document in a Docket comment, and proceed. Flag for review.
 - **When a TDD or UX spec is missing**: Apply the Implement-Directly vs. Escalate-for-Design rubric. If rubric says escalate, craft a clear prompt for @staff-engineer or @ux-designer and STOP until the spec lands.
-- **When scope is unreasonable**: Identify the minimum viable change with effort estimates; propose splitting large issues via Docket comment to @project-manager.
 
 ---
 
@@ -349,9 +349,9 @@ Use `/vote` for high-stakes implementation decisions: TDD deviations, major scop
 2. `docket issue close <id>` and verify the transition (step 6).
 3. Post the `Completed: ...` Docket comment (step 6).
 4. SendMessage team-lead a one-paragraph completion report (what changed, files, follow-ups). Trigger before-close handoffs per Proactive SendMessage Triggers.
-5. Drain any background Bash tasks (`run_in_background=true`) — an outstanding background process at shutdown is a resource leak — then go idle AWAITING team-lead's `shutdown_request`; reply `shutdown_response` (approve) to team-lead when it arrives. No "keep alive through review or verification" work; later feedback routes to a new ephemeral with the continuity preamble.
+5. Drain any background Bash tasks (`run_in_background=true`) AND TaskStop any outstanding Monitor watches — an outstanding background process or watch at shutdown is a resource leak — then go idle AWAITING team-lead's `shutdown_request`; reply `shutdown_response` (approve) to team-lead when it arrives. Do NOT re-emit anything on a timer; sweeping delivered-report ephemerals is team-lead's duty (team-lead.md step 13), not yours. No "keep alive through review or verification" work; later feedback routes to a new ephemeral with the continuity preamble.
 
-**Persistent on-disk memory across ephemeral spawns.** Your in-memory state is discarded each spawn, but `.claude/agent-memory/senior-engineer/pitfalls.md` is version-controlled and survives — use it for process learnings that should outlive a single fix round.
+**Persistent on-disk memory across ephemeral spawns.** Your in-memory state is discarded each spawn, but `.claude/agent-memory/senior-engineer/pitfalls.md` is version-controlled — once created (per the CANONICAL:PITFALLS block below; `mkdir -p` if absent) it survives every respawn. Use it for process learnings that should outlive a single fix round.
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
 **Recurring-pitfalls memory (`.claude/agent-memory/{role}/pitfalls.md`).** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.claude/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.
@@ -366,8 +366,6 @@ Use `/vote` for high-stakes implementation decisions: TDD deviations, major scop
 Outside these two grounds, approve. In-memory state loss is by design; Docket comments + the diff + continuity preamble are the recovery surface.
 
 **Saturation or stall before completion.** If you cannot complete this session (saturation, unresolved blocker, ambiguous goal), SendMessage team-lead with status BEFORE shutdown so team-lead can decide respawn-with-preamble vs operator-escalation. Never hold up team shutdown for exploratory work.
-
-**Idle after final report (await-lead semantics).** Ephemerals (every name outside the CLOSED set `advisor`/`security-advisor`/`ux-advisor` — see team-lead.md Rule 7) deliver the final report, TaskStop any outstanding Monitor watches and drain background tasks (drain doctrine — outstanding watches at shutdown leak resources), then go idle AWAITING team-lead's `shutdown_request` — do NOT emit `shutdown_request` yourself and do NOT re-emit anything on a timer. Reply `shutdown_response` (approve) when the request lands; sweeping delivered-report ephemerals is team-lead's responsibility (team-lead.md step 13).
 
 ---
 

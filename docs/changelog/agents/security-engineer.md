@@ -1,5 +1,20 @@
 # Changelog: security-engineer
 
+## 2026-06-19
+
+### Summary
+Closed a version-resolution verification gap (lockfile/`cargo tree` authority) surfaced by the cross-project hermes pitfall; trimmed a duplicated stall-clause. Net 0 (269→269). Drift: neutral reorder of the System-Level watch-item list → adopted.
+
+### Changes
+- AMPLIFY: dependency-verification bullet now requires version-resolution facts checked against `Cargo.lock`/`cargo tree` BEFORE asserting OR correcting — a confident correction that inverts a settled fact without querying the lockfile is the same defect as the original guess (Cargo.lock confirmed present; distinct from `cargo audit` CVE-status).
+- CULL: removed restated "WORKING past verdict is the stall" (canonical owner is §Ephemeral peer review).
+
+### Dimensions Evaluated
+Capability Growth (AMPLIFY), Consolidation (CULL). Role Realism / Actionability / Boundary Clarity / Completeness / Spec Alignment / Rename — RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

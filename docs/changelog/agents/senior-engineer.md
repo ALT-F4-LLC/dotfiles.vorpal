@@ -1,5 +1,21 @@
 # Changelog: senior-engineer
 
+## 2026-06-19
+
+### Summary
+Collapsed the duplicated two-step-claim mechanic to a pointer; folded the redundant "Idle after final report" paragraph's unique facts into the completion-contract step and removed it; corrected the pitfalls-memory survival claim (file verified absent on disk). Net -2 (384→382). Drift: neutral reorder of Core Operating Principle 3's three scenario-bullets → adopted.
+
+### Changes
+- CULL: Execution Workflow step 1 restated the claim command pair already owned by §Communication discipline → "Claim before work + dispatch-ack"; collapsed to a pointer.
+- CULL: "Idle after final report" paragraph duplicated the Ephemeral completion contract; its 2 unique facts (TaskStop Monitor watches; team-lead owns the sweep, step 13) folded into step 5, paragraph removed.
+- CORRECTION: pitfalls.md "is version-controlled and survives" → "version-controlled — once created … survives" (file absent; create-on-first-use).
+
+### Dimensions Evaluated
+Consolidation (CULL ×2), Spec Alignment (correction). Others RETAIN (fix-2 rate 2/22 healthy; shared-tree git-hygiene HELD per XC-1 spike-gate).
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

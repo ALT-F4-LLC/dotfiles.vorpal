@@ -1,5 +1,20 @@
 # Changelog: sdet
 
+## 2026-06-19
+
+### Summary
+Trimmed verify-ac-skill-owned duplication from §Verification Workflow (verbatim-command, layer-signals, edge-case battery, verdict ladder — all owned by the skill, verified at SKILL.md), preserving the 3 sdet-unique disciplines; removed a duplicate authority-path citation. Net -1 (369→368). Drift: skipped (seed-target was a CRITICAL section — unsafe).
+
+### Changes
+- CULL: §Verification Workflow steps 3-5 restated the verify-ac FULL procedure; collapsed to one skill-citing step + one step holding the 3 unique disciplines (grep-sweep marker, before/after set-diff, real-system+operator-confirm).
+- CULL: §Execution Workflow step 4 duplicate format-authority path citation (already owned by §Verification Output).
+
+### Dimensions Evaluated
+Consolidation & Trimming (CULL). Role Realism / Actionability / Boundary Clarity / Completeness / Capability Growth / Spec Alignment / Rename — RETAIN (health high).
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

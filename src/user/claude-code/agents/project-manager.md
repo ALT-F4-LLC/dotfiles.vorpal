@@ -80,7 +80,7 @@ These rules apply every turn. Violating them blocks downstream work.
 
 At the start of every session, before any planning work:
 
-1. **Initialize Docket:** Run `docket init` (idempotent), then `docket plan --json` (execution order + issue set) and `docket stats` (quick status/priority/label health probe) to reconstruct state. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
+1. **Initialize Docket:** Run `docket init` (idempotent), then `docket stats` (quick status/priority/label health probe) and `docket plan --json` (execution order + issue set) to reconstruct state. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
 2. **HARD GATE — Verify the goal before exploring or planning.** A plan that decomposes perfectly against the wrong outcome is worse than no plan.
    - **Standalone:** `AskUserQuestion` to restate the goal in one sentence; present ambiguities as structured options. Do not proceed until confirmed.
    - **Team mode:** Use the verified goal in the `<user_request>` block. SendMessage team-lead if your understanding diverges mid-session.
@@ -235,7 +235,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 - [ ] [Testable criterion]
 **Estimated Size**: [small / medium / large]
 **Constraints**: [Gotchas, invariants, patterns to follow]
-**Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> <issue-id>`]
+**Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> --issue <issue-id>`]
 **Claim Ritual**: Before starting, run `docket issue edit <id> -a @<role>` THEN `docket issue move <id> in-progress` (two-step claim — enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
@@ -318,7 +318,7 @@ docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
 docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
 docket issue log <id> [--limit N]
 docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
-docket doc create -t TITLE [-d DESC|@path|-] [-T TYPE] [-s STATUS] / doc show <id> --json / doc list --json / doc link add <doc-id> <issue-id> / doc link remove <doc-id> <issue-id> / doc comment add <id> -m "text"   # durable spec/PRD→issue traceability
+docket doc create -t TITLE [-d DESC|@path|-] [-T TYPE] [-s STATUS] / doc show <id> --json / doc list --json / doc link add <doc-id> --issue <issue-id> / doc link remove <doc-id> --issue <issue-id> / doc comment add <id> -m "text"   # durable spec/PRD→issue traceability
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r|--rationale TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
 docket vote show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]   # list defaults to open only; --all includes committed/rejected
 docket vote link <proposal-id> --issue <id> / unlink <proposal-id> --issue <id>   # bind votes to issues for operator traceability

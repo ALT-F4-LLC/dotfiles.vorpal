@@ -108,7 +108,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -117,14 +117,17 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 ### Team Setup & Agent Lifecycle
 
 1. Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`).
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target skill, "Coherence & Renames", and "History Compaction".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target skill, "Coherence & Renames", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
-| 3 | `history-compactor` (gated) | Spawn after Phase 2 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
+| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
+| 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
+
+**Self-budget.** This SKILL.md's own size budget is 535 lines, distinct from the review-target 500 the Phase 1 `## Size Budget` template enforces on every audited skill; when this file is later self-reviewed, treat 535 — not the template's review-target 500 — as its cap, so a self-audit does not flag it as over budget.
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -181,9 +184,21 @@ and updates changelogs for affected skills. Apply each parity-bound fix flagged 
 
 **Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
-### Phase 3: History Compaction (terminal, gated)
+### Phase 3: Disambiguation (sequential)
 
-Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 2 fixes are applied and the coherence-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/skills/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:BEGIN -->
+**Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
+
+Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="staff-engineer"`) over the post-coherence skill family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
+
+**Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
+
+**Mechanism (read-only-reviewer → orchestrator-applies, same shape as Phase 2 — teammates never edit):** the reviewer Reads the freshly-coherent skill files (`.claude/skills/*/SKILL.md`, `skills/*/SKILL.md`), emits structured disambiguation findings, and the orchestrator applies every edit (Read each target in-session before its first Edit; one Edit per finding; any finding touching a CANONICAL block or shared frontmatter applied family-wide in lockstep with byte-identity verification). The reviewer reports `No disambiguation findings.` when the family is clean — the stage always spawns its reviewer and no-ops cleanly. Shut down the `disambiguation-reviewer` per the orchestrator-driven `shutdown_request` protocol before the next phase.
+
+### Phase 4: History Compaction (terminal, gated)
+
+Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/skills/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect, counted in the ADR 0001 parity formula. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -191,11 +206,11 @@ The compactor's report MUST evidence invariant checks 0-5 per ADR 0001 (pure-add
 
 ### Wrap-up & Team Cleanup
 
-After Phase 3 (or its no-op gate check) completes:
+After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
 
 ---
 
@@ -284,14 +299,10 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-If a category is empty for a skill, write `none` — do not omit the line.
-
-After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty for a skill, write `none` — do not omit the line. After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills.
 ```
 
 ### Phase 0: Innovation Scan
@@ -310,9 +321,7 @@ Target skills: {target_skills}
 4. **Cross-Skill Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the skill family more effective as a whole (not just individually).
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only.
 - Focus on WHAT could be better and WHY — not on cataloguing what already works. Each finding must be actionable and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete).
 
 ## Output Format (per skill)
@@ -376,9 +385,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 If a category is empty for a skill, write `none` — do not omit the line.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-skill grep mandatory — never load wholesale.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-skill grep mandatory — never load wholesale.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -487,6 +494,35 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
+
+### Phase 3: @staff-engineer (Disambiguation)
+
+```
+Agent(name="disambiguation-reviewer", subagent_type="staff-engineer", prompt="...")
+
+Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
+Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
+
+**Charter & boundary (do not restate — apply as defined):** your charter is the **Phase 3 Disambiguation charter** CANONICAL block in the Phase 3: Disambiguation workflow section above (the three dimensions + the coherence-vs-disambiguation framing). The **two-arm boundary test** is the **Boundary** paragraph there: a kept finding PASSES every Phase 2 coherence invariant (Arm 1) yet still FAILS clarity (Arm 2); a finding failing Arm 1 is coherence-class — report it under "Coherence-Class (route to Phase 2)", not as a DISAMBIG.
+
+## Task
+1. Read ALL skill files in .claude/skills/*/SKILL.md and skills/*/SKILL.md (the freshly-coherent, post-Phase-2 genome).
+2. For each candidate ambiguity, apply the two-arm test. Keep only findings that PASS Arm 1 AND FAIL Arm 2.
+3. Classify each kept finding by DIMENSION: confusable-name | multi-reading | overlapping-ownership.
+
+## Output Format
+### Disambiguation Findings
+For each: `DISAMBIG <n>: <title>` / `DIMENSION:` (confusable-name | multi-reading | overlapping-ownership) / `FILE:` / `OLD_STRING:` (verbatim current text) / `NEW_STRING:` (disambiguated replacement) / `REASON:` (which clarity arm fails and the resolved reading). Or: "No disambiguation findings."
+### Coherence-Class (route to Phase 2)
+<findings that FAIL Arm 1 — they belong to coherence, not disambiguation. Or "None.">
+### Changelog Entries
+Standard format (4 sections, max 20 lines) for each affected skill.
+### Remaining Issues
+<Unresolvable issues, or "None">
+```
+
+Always run this stage — it spawns its reviewer every cycle and no-ops cleanly when the reviewer reports `No disambiguation findings.` Shut down with `SendMessage(to="disambiguation-reviewer", message={type: "shutdown_request", reason: "Phase 3 complete"})`; the reviewer replies `shutdown_response` to the orchestrator.
 
 ---
 

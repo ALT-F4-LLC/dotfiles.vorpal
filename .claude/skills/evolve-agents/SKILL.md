@@ -106,7 +106,7 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries. **Trial / Drift convention:** if a cycle includes a scientific trial (per Innovation Mandate), prepend a `Trial: <hypothesis> → <outcome>` line inside the `### Summary` section of the relevant agent's changelog entry; if a cycle applies a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary` (no new H3 section or file). ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the latest entry in existing changelogs. Report honestly if no improvements found. **Normalization:** orchestrator normalizes ONLY the new entry it just prepended — fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extra sections, truncates over 20 lines. Do not touch prior entries. **Trial / Drift convention:** if a cycle includes a scientific trial (per Innovation Mandate), prepend a `Trial: <hypothesis> → <outcome>` line inside the `### Summary` section of the relevant agent's changelog entry; if a cycle applies a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary` (no new H3 section or file). ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -114,14 +114,17 @@ All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory
 
 ### Team Setup & Agent Lifecycle
 
-Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", and "History Compaction".
+Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
-| 3 | `history-compactor` | Spawn after Phase 2 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
+| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
+| 4 | `history-compactor` | Spawn after Phase 3 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
+
+**Self-budget.** This SKILL.md's own size budget is 535 lines, distinct from the review-target budget the Phase 1 `## Size Budget` template enforces on audited agents; when this file is later self-reviewed, treat 535 — not the template's review-target 500 — as its cap.
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -150,7 +153,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 
 **Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the agent forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add.
 
-**Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Phase 1 never Edits/Writes/deletes any `pitfalls.md` — the agent-facing contract stays append-only; boundedness of THIS repo's pitfalls files is owned by the Phase 3 History Compaction phase per ADR 0001, and cross-project pitfalls files remain read-only ingest.
+**Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Phase 1 never Edits/Writes/deletes any `pitfalls.md` — the agent-facing contract stays append-only; boundedness of THIS repo's pitfalls files is owned by the Phase 4 History Compaction phase per ADR 0001, and cross-project pitfalls files remain read-only ingest.
 
 Cross-cutting items append to a running notes list passed verbatim into the Phase 2 prompt's "Phase 1 Coherence Issues" section. **Phase 1 SendMessage stays orchestrator-only** — peer-to-peer creates race conditions across independent edit surfaces.
 
@@ -164,9 +167,21 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
 4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
-### Phase 3: History Compaction (terminal, gated)
+### Phase 3: Disambiguation (sequential)
 
-ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 2 fixes are applied, the orchestrator runs two independent gate checks (read-only):
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:BEGIN -->
+**Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
+
+Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="staff-engineer"`) over the post-coherence agent family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
+
+**Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
+
+**Mechanism (read-only-reviewer → orchestrator-applies, same shape as Phase 2 — teammates never edit):** the reviewer Reads the freshly-coherent `agents/*.md`, emits structured disambiguation findings, and the orchestrator applies every edit (Read each target in-session before its first Edit; one Edit per finding; any finding touching a CANONICAL block or shared frontmatter applied family-wide in lockstep with byte-identity verification). The reviewer reports `No disambiguation findings.` when the family is clean — the stage always spawns its reviewer and no-ops cleanly. Shut down the `disambiguation-reviewer` per the orchestrator-driven `shutdown_request` protocol before the next phase.
+
+### Phase 4: History Compaction (terminal, gated)
+
+ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 3 fixes are applied, the orchestrator runs two independent gate checks (read-only):
 
 1. **Changelog arm** — one `wc -l docs/changelog/agents/*.md` pass; any file over the 300-line budget is compactable.
 2. **Pitfalls arm** — any entry in THIS repo's `.claude/agent-memory/*/pitfalls.md` that is un-ledgered yet dispositioned (applied / already-encoded / Docket-tracked) per this cycle's or a prior cycle's Phase 1 harvest-outcome report, committed at HEAD, and predating this cycle (full compactability criteria in ADR 0001).
@@ -180,10 +195,10 @@ The compactor's report MUST evidence, per file and in order, invariant checks 0-
 
 ### Wrap-up & Team Cleanup
 
-After Phase 3 completes or no-ops:
+After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
+3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
 
 ---
 
@@ -279,14 +294,10 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-If a category is empty for an agent, write `none` — do not omit the line.
-
-After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty for an agent, write `none` — do not omit the line. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents.
 ```
 
 ### Phase 0: Innovation Scan
@@ -305,9 +316,7 @@ Target agents: {target_agents}
 4. **Cross-Agent Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the agent family more effective as a whole (not just individually).
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only.
 - Focus on WHAT could be better and WHY — not on cataloguing what already works. Each finding must be actionable and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete).
 
 ## Output Format (per agent)
@@ -371,9 +380,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 If a category is empty for an agent, write `none` — do not omit the line.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale.
 ```
 
 ### Phase 1: Self-Review & Improve
@@ -487,6 +494,34 @@ Standard format (4 sections, max 20 lines) per affected agent.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
+
+### Phase 3: @staff-engineer (Disambiguation)
+
+```
+Agent(name="disambiguation-reviewer", subagent_type="staff-engineer", prompt="...")
+
+Surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes. Date: {today_date}. **Read-only — do not edit files.** **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
+
+**Charter & boundary (do not restate — apply as defined):** your charter is the **Phase 3 Disambiguation charter** CANONICAL block in the Phase 3: Disambiguation workflow section above (the three dimensions + the coherence-vs-disambiguation framing). The **two-arm boundary test** is the **Boundary** paragraph there: a kept finding PASSES every Phase 2 coherence invariant (Arm 1) yet still FAILS clarity (Arm 2); a finding failing Arm 1 is coherence-class — report it under "Coherence-Class (route to Phase 2)", not as a DISAMBIG.
+
+## Task
+1. Read ALL agent files in agents/*.md (the freshly-coherent, post-Phase-2 genome).
+2. For each candidate ambiguity, apply the two-arm test. Keep only findings that PASS Arm 1 AND FAIL Arm 2.
+3. Classify each kept finding by DIMENSION: confusable-name | multi-reading | overlapping-ownership.
+
+## Output Format
+
+### Disambiguation Findings
+For each: `DISAMBIG <n>: <title>` / `DIMENSION:` (confusable-name | multi-reading | overlapping-ownership) / `FILE:` / `OLD_STRING:` (verbatim current text) / `NEW_STRING:` (disambiguated replacement) / `REASON:` (which clarity arm fails and the resolved reading). Or: "No disambiguation findings."
+### Coherence-Class (route to Phase 2)
+<findings that FAIL Arm 1 — they belong to coherence, not disambiguation. Or "None.">
+### Changelog Entries
+Standard format (4 sections, max 20 lines) per affected agent.
+### Remaining Issues
+<Unresolvable issues, or "None">
+```
+
+Always run this stage — it spawns its reviewer every cycle and no-ops cleanly when the reviewer reports `No disambiguation findings.` Shut down with `SendMessage(to="disambiguation-reviewer", message={type: "shutdown_request", reason: "Phase 3 complete"})`; the reviewer replies `shutdown_response` to the orchestrator.
 
 ---
 

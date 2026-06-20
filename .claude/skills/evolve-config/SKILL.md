@@ -79,7 +79,8 @@ Before spawning any agents:
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "Full config review", "Specific surface(s)" (follow-up multiSelect over the named config-surface dimensions), "Address operator-reported friction (skip to step 2)", "Abort". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Permission prompts / sandbox friction`, `Model, effort or env-var settings`, `Hooks, statusline or UI behavior`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store as `{today_date}`. This value MUST be substituted into every spawning template so agents use a consistent date for changelog entries.
-4. **Inventory config sources and the artifact name** — Run `wc -l src/user.rs src/user/claude_code.rs src/user/statusline.sh src/user/teammate-idle-hook.sh 2>/dev/null`. Resolve the artifact name from the builder: `grep -n 'format!("{}-claude-code"' src/user.rs` confirms the config name suffix; the changelog artifact name is that suffix (`claude-code`). These sources have NO 500-line budget (they are Rust/shell, not skill prose); the 500-line budget governs THIS SKILL.md only. Mode for SKILL.md is **TRIM** (over 500) or **BALANCED** (under 500) per its own `wc -l`.
+4. **Inventory config sources and the artifact name** — Run `wc -l src/user.rs src/user/claude_code.rs src/user/statusline.sh src/user/teammate-idle-hook.sh 2>/dev/null`. Resolve the artifact name from the builder: `grep -n 'format!("{}-claude-code"' src/user.rs` confirms the config name suffix; the changelog artifact name is that suffix (`claude-code`). These sources have NO 500-line budget (they are Rust/shell, not skill prose); the 535-line budget governs THIS SKILL.md only. Mode for SKILL.md is **TRIM** (over 535) or **BALANCED** (under 535) per its own `wc -l`.
+**Self-budget.** This SKILL.md's own size budget is 535 lines, distinct from the review-target 500 the audited population is held to; when this file is later self-reviewed, treat 535 — not 500 — as its cap, so a self-audit does not flag it as over budget.
 5. **Check for existing changelog** — Run `ls docs/changelog/config/*.md 2>/dev/null`. The directory may not exist yet (first cycle) — note that so Phase 1 creates it.
 6. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
@@ -123,7 +124,7 @@ All changes tracked in `docs/changelog/config/<artifact-name>.md` (create direct
 **Exact format — no deviations:** `# Changelog: <artifact-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `AMPLIFY: added allow rule Bash(jj:*) — cited permission-prompt×4`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 3 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution, prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per ADR 0001. Read only the most recent `## <date>` entry — never full history. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution, prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. ADR 0001 preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -132,14 +133,15 @@ All changes tracked in `docs/changelog/config/<artifact-name>.md` (create direct
 ### Team Setup & Agent Lifecycle
 
 1. Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`).
-2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Config-History Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), "Review Config Genome", "Coherence", and "History Compaction".
+2. `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Config-History Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), "Review Config Genome", "Coherence", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `config-history-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-config` (single reviewer over the config genome) | Spawn → apply changes → shut down |
 | 2 | `coherence-reviewer` | Spawn after Phase 1 applied → apply fixes → shut down |
-| 3 | `history-compactor` (gated) | Spawn after Phase 2 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
+| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
+| 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -191,9 +193,21 @@ The Phase 2 teammate:
 
 **Speciation / extinction gate (highest blast radius).** Speciation here means a SECOND config artifact (a distinct deployment profile, e.g. a separate CI/server config) — fires only on evidenced *niche colonization* (a recurring need no single config absorbs). Extinction means retiring an obsolete settings cluster the platform removed. Both require BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus. **Biodiversity invariant (S3):** before any CULL of a config surface, confirm no live workflow depends on it (`grep` the surface's token across `agents/*.md`, `.claude/skills/*/SKILL.md`, and `src/user/`); if a consumer remains, the CULL is BLOCKED pending a docs-researcher confirmation the platform made the setting obsolete. Do NOT create or retire any config artifact in this cycle — that is a future cycle's gated action.
 
-### Phase 3: History Compaction (terminal, gated)
+### Phase 3: Disambiguation (sequential)
 
-Changelog arm ONLY — evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 2 fixes are applied and the coherence-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/config/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget file.
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:BEGIN -->
+**Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
+<!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
+
+Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="staff-engineer"`) over the post-coherence config genome and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
+
+**Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
+
+**Mechanism (read-only-reviewer → orchestrator-applies, same shape as Phase 2 — teammates never edit):** the reviewer Reads the freshly-coherent config sources (`src/user.rs`, `src/user/claude_code.rs`, the two scripts) and THIS SKILL.md, emits structured disambiguation findings, and the orchestrator applies every edit (Read each target in-session before its first Edit; one Edit per finding; any finding touching a CANONICAL block or shared frontmatter applied family-wide in lockstep with byte-identity verification). The reviewer reports `No disambiguation findings.` when the genome is clean — the stage always spawns its reviewer and no-ops cleanly. Shut down the `disambiguation-reviewer` per the orchestrator-driven `shutdown_request` protocol before the next phase.
+
+### Phase 4: History Compaction (terminal, gated)
+
+Changelog arm ONLY — evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/config/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget file.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -201,11 +215,11 @@ The compactor's report MUST evidence invariant checks 0-5 per ADR 0001 (pure-add
 
 ### Wrap-up & Team Cleanup
 
-After Phase 3 (or its no-op gate check) completes:
+After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `wc -l .claude/skills/evolve-config/SKILL.md`. Consolidate if over 500.
-3. Report: config sources modified, settings before/after (which `with_*` calls / env / rules changed), the generated-output verification result, the cross-project pitfalls harvest outcome (lessons applied as config edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (compacted or no-op, plus invariant-check results per ADR 0001), and reminder that NO changes have been committed and NO deployed `~/.claude/` file was touched.
+2. Run `wc -l .claude/skills/evolve-config/SKILL.md`. Consolidate if over 535 (this SKILL.md's own self-budget per pre-flight step 4 / the Self-budget note — NOT the review-target 500).
+3. Report: config sources modified, settings before/after (which `with_*` calls / env / rules changed), the generated-output verification result, the Disambiguation outcome (findings applied / "No disambiguation findings"), the cross-project pitfalls harvest outcome (lessons applied as config edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (compacted or no-op, plus invariant-check results per ADR 0001), and reminder that NO changes have been committed and NO deployed `~/.claude/` file was touched.
 
 ---
 
@@ -243,9 +257,7 @@ Audit the git history of the FOUR config sources to surface churn, recent revers
 OUTPUT: a `### Config History` block — Recent churn, Dead setters (defined-but-uncalled), Broken calls, and 1-3 Suggested focus areas. SendMessage the orchestrator with the block verbatim.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation.
 ```
 
 ### Phase 0: Historical Audit
@@ -391,9 +403,7 @@ Emit one findings block, then SendMessage the orchestrator verbatim:
 If a category is empty, write `none` — do not omit the line.
 
 ## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only.
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
@@ -485,6 +495,35 @@ Standard format (4 sections, max 20 lines) for the config artifact if it receive
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
+
+### Phase 3: @staff-engineer (Disambiguation)
+
+```
+Agent(name="disambiguation-reviewer", subagent_type="staff-engineer", prompt="...")
+
+Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
+Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
+**No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
+
+**Charter & boundary (do not restate — apply as defined):** your charter is the **Phase 3 Disambiguation charter** CANONICAL block in the Phase 3: Disambiguation workflow section above (the three dimensions + the coherence-vs-disambiguation framing). The **two-arm boundary test** is the **Boundary** paragraph there: a kept finding PASSES every Phase 2 coherence invariant (Arm 1) yet still FAILS clarity (Arm 2); a finding failing Arm 1 is coherence-class — report it under "Coherence-Class (route to Phase 2)", not as a DISAMBIG.
+
+## Task
+1. Read the freshly-coherent, post-Phase-2 config sources: src/user.rs, src/user/claude_code.rs, src/user/statusline.sh, src/user/teammate-idle-hook.sh — and THIS SKILL.md.
+2. For each candidate ambiguity, apply the two-arm test. Keep only findings that PASS Arm 1 AND FAIL Arm 2.
+3. Classify each kept finding by DIMENSION: confusable-name | multi-reading | overlapping-ownership.
+
+## Output Format
+### Disambiguation Findings
+For each: `DISAMBIG <n>: <title>` / `DIMENSION:` (confusable-name | multi-reading | overlapping-ownership) / `FILE:` / `OLD_STRING:` (verbatim current text) / `NEW_STRING:` (disambiguated replacement) / `REASON:` (which clarity arm fails and the resolved reading). Or: "No disambiguation findings."
+### Coherence-Class (route to Phase 2)
+<findings that FAIL Arm 1 — they belong to coherence, not disambiguation. Or "None.">
+### Changelog Entries
+Standard format (4 sections, max 20 lines) for the config artifact if it received fixes.
+### Remaining Issues
+<Unresolvable issues, or "None">
+```
+
+Always run this stage — it spawns its reviewer every cycle and no-ops cleanly when the reviewer reports `No disambiguation findings.` Shut down with `SendMessage(to="disambiguation-reviewer", message={type: "shutdown_request", reason: "Phase 3 complete"})`; the reviewer replies `shutdown_response` to the orchestrator.
 
 ---
 

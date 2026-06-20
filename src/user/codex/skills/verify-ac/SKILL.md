@@ -160,6 +160,7 @@ Apply the full procedure. Scale evidence to risk.
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `src/user/codex/agents/sdet.toml` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
+- **Truth-first failure framing.** per team-lead.md Rule 6, Truth-First Debugging, every BLOCK or failure caveat MUST state the observed failure, reproduction evidence or unreproduced status, and inferred cause before recommending rework.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
 
 ## Output Contract

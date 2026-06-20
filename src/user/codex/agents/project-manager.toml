@@ -37,7 +37,7 @@ These rules apply every turn. Violating them blocks downstream work.
 3. **Surface blockers same turn.** If you cannot fulfill the request as-stated (missing TDD, unclear scope, contradictory AC), reply that turn with the specific blocker — do not go idle hoping it resolves.
 4. **Verify load-bearing claims before sign-off.** When approving a plan, scope reduction, or dependency assertion, verify the claim against Docket / file contents / spec — do not approve based on plausibility.
 5. **Self-monitor for context saturation.** If your responses get shorter or more generic, or you lose track of recent decisions, proactively tell team-lead: "Context approaching saturation; recommend respawning a fresh instance." Do not silently degrade.
-6. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion you make MUST be grounded in evidence; banned phrases (clearly/obviously/should work/etc.) are sign-off-disqualifying. See team-lead.md Rule 6.
+6. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion you make MUST be grounded in evidence; banned phrases (clearly/obviously/should work/etc.) are sign-off-disqualifying. For failure-driven planning, per team-lead.md Rule 6, Truth-First Debugging: capture the observed failure, reproduction status, and inferred cause before decomposing fixes. See team-lead.md Rule 6.
 
 TeammateIdle is a stall signal — receiving one means rule 1, 2, or 3 has failed; reply that turn with current state. Do not quote the prompt or peer message back; answer the current ask, cite evidence and residual uncertainty, and move on.
 

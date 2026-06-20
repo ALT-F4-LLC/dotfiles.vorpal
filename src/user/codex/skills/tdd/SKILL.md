@@ -147,6 +147,9 @@ malformed frontmatter.
    concrete claim the TDD commits to, apply the matching check arm and record the
    artifact or command behind it — a "verified" label MUST NOT claim broader scope
    than was actually checked; state unverified claims as assumptions, not facts.
+   per team-lead.md Rule 6, Truth-First Debugging, any failure diagnosis in the
+   TDD MUST name the observed failure, reproduction evidence or unreproduced
+   status, and inferred cause before authoring the proposed fix or phase.
    - **Snippet / command**: execute it; record the exit code or an output excerpt.
    - **Portability claim** (cross-platform, cross-engine, cross-dialect SQL): test
      each declared target — "valid in both X and Y" requires a run in both (see

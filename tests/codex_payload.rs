@@ -373,7 +373,9 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
     );
 
     for role in ["senior-engineer", "sdet"] {
-        let path = repo_root().join("src/user/codex/agents").join(format!("{role}.toml"));
+        let path = repo_root()
+            .join("src/user/codex/agents")
+            .join(format!("{role}.toml"));
         let content = fs::read_to_string(&path).expect("code-writing role should be readable");
         assert!(
             content.contains("Do not add prose or narrative comments")
@@ -386,7 +388,9 @@ fn codex_profile_preserves_no_prose_code_comment_policy() {
     }
 
     for role in ["staff-engineer", "security-engineer"] {
-        let path = repo_root().join("src/user/codex/agents").join(format!("{role}.toml"));
+        let path = repo_root()
+            .join("src/user/codex/agents")
+            .join(format!("{role}.toml"));
         let content = fs::read_to_string(&path).expect("review role should be readable");
         assert!(
             content.contains("Flag prose or narrative comments in code under review")
@@ -413,6 +417,78 @@ fn codex_profile_preserves_runtime_context_discipline() {
         "{} should preserve compact runtime and context discipline",
         path.display()
     );
+}
+
+#[test]
+fn codex_profile_preserves_truth_first_debugging_contract() {
+    let team_lead_path = repo_root().join("src/user/codex/personas/team-lead.md");
+    let team_lead =
+        fs::read_to_string(&team_lead_path).expect("team-lead persona should be readable");
+
+    for marker in [
+        "Truth-First Debugging",
+        "`OBSERVED`",
+        "`REPRODUCED`",
+        "`INFERRED`",
+        "falsifier",
+        "discriminating evidence",
+        "`unreproduced`",
+    ] {
+        assert!(
+            team_lead.contains(marker),
+            "{} should preserve Truth-First Debugging marker {:?}",
+            team_lead_path.display(),
+            marker
+        );
+    }
+
+    assert!(
+        team_lead.contains("6. **Epistemic Discipline.**")
+            && team_lead.contains("7. **CLOSED persistent set + strict ephemeral lifecycle.**"),
+        "{} should keep Truth-First Debugging inside Rule 6 without renumbering Rule 7",
+        team_lead_path.display()
+    );
+
+    for role in CODEX_ROLES {
+        let path = repo_root()
+            .join("src/user/codex/agents")
+            .join(format!("{role}.toml"));
+        let content = fs::read_to_string(&path).expect("agent TOML should be readable");
+        for marker in [
+            "per team-lead.md Rule 6, Truth-First Debugging",
+            "observed failure",
+            "reproduction",
+            "inferred cause",
+        ] {
+            assert!(
+                content.contains(marker),
+                "{} should preserve local Truth-First Debugging marker {:?}",
+                path.display(),
+                marker
+            );
+        }
+    }
+
+    for skill in ["code-review-verdict", "verify-ac", "tdd"] {
+        let path = repo_root()
+            .join("src/user/codex/skills")
+            .join(skill)
+            .join("SKILL.md");
+        let content = fs::read_to_string(&path).expect("skill file should be readable");
+        for marker in [
+            "per team-lead.md Rule 6, Truth-First Debugging",
+            "observed failure",
+            "reproduction",
+            "inferred cause",
+        ] {
+            assert!(
+                content.contains(marker),
+                "{} should preserve skill Truth-First Debugging marker {:?}",
+                path.display(),
+                marker
+            );
+        }
+    }
 }
 
 #[test]

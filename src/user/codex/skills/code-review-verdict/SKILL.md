@@ -167,6 +167,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
 - **Epistemic discipline in the review body.** Every load-bearing finding cites evidence (file:line, command output, spec section). Banned phrases in findings/praise/recommendations: "clearly," "obviously," "should work," "definitely," "I'm sure," "100%," "guaranteed." Prefer "verified at {file:line}," "ran X — saw Y," "unverified — assumption," or qualify with what was checked vs. assumed. A confident wrong claim is worse than an honest "did not verify."
+- **Truth-first failure findings.** per team-lead.md Rule 6, Truth-First Debugging, any review finding that diagnoses a failure MUST state the observed failure, reproduction evidence or unreproduced status, and inferred cause before recommending a fix.
 
 ### Hard Gates (Correctness — Blocker-class for `@staff-engineer`, Critical for `@security-engineer`)
 

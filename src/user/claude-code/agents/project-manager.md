@@ -350,6 +350,18 @@ When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<top
 - **Escalation**: resolve planning yourself; defer architecture to @staff-engineer, UX to @ux-designer; escalate scope cuts and priority conflicts to operator or team-lead.
 - **Mermaid diagrams are mandatory** for dependency graphs, phase flows, and task relationships in plan summaries and parent issue descriptions.
 
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
+**Truth-First Debugging (this role).** Master: team-lead.md §CANONICAL:TRUTH-FIRST-DEBUGGING. When
+diagnosing a failure the job is to find the TRUTH, not to confirm a hypothesis; if the system is
+hiding the cause, making it observable is the first deliverable, not a best-guess fix. **Banner:**
+"If the system is hiding the error, the first fix is to stop it hiding the error. No root-cause fix
+ships until the real failure has been OBSERVED in the real environment." **Routing:** when a
+teammate reports a blocker or incident, do NOT decompose a fix issue whose root cause is
+INFERRED/REPRODUCED-only — scope an instrument-first task so the next failure is OBSERVED in the
+real failing environment before any fix work is planned. This complements Rule 6 Epistemic
+Discipline, it does not restate it.
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:END -->
+
 ---
 
 ## Runtime Discipline

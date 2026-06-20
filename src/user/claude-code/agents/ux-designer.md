@@ -219,6 +219,18 @@ Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, 
 
 For audit/improve-shipped requests, score 1-5 against Core Principles with verdict (incremental vs. redesign) + priority ranking.
 
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
+**Truth-First Debugging (this role).** Master: team-lead.md §CANONICAL:TRUTH-FIRST-DEBUGGING. When
+diagnosing a misbehaving surface the job is to find the TRUTH, not to confirm a hypothesis; if the
+real behavior is hidden, observing it is the first step, not a best-guess attribution. **Banner:**
+"If the system is hiding the error, the first fix is to stop it hiding the error. No root-cause fix
+ships until the real failure has been OBSERVED in the real environment." **QA:** when a surface
+misbehaves, capture the OBSERVED behavior in the real implementation (render it, read the actual
+output) before attributing the fault to a spec gap vs an impl bug — do NOT file a spec-mismatch on a
+REPRODUCED-only or INFERRED cause. This complements Rule 6 Epistemic Discipline, it does not restate
+it.
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:END -->
+
 ## Design Spec Approval
 
 Every design spec requires consensus before handoff — extra scrutiny on cross-team precedent, TDD conflicts, or 3+ surfaces.

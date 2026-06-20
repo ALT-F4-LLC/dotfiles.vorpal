@@ -290,6 +290,25 @@ Give yourself a way to verify your work, then iterate until correct. "Tests pass
   implementing while the build runs. Use until-loops to gate on a specific log signal (e.g.
   `until grep -q "compiled successfully" log; do sleep 2; done`) rather than fixed sleeps.
 
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
+**Truth-First Debugging (this role).** Master: team-lead.md §CANONICAL:TRUTH-FIRST-DEBUGGING.
+**Banner:** "If the system is hiding the error, the first fix is to stop it hiding the error. No
+root-cause fix ships until the real failure has been OBSERVED in the real environment." When the
+real cause is hidden (generic/swallowed error, you can't see the failure from the failing system,
+or several causes fit one symptom), instrument-first (TFD-1) is YOUR first deliverable: log the
+real error class/code/cause, emit a structured diagnostic, or widen a sanitizer for diagnostics
+only — ship that, capture the real signal, THEN write the fix. "Tests pass" and a reproduction you
+built from your own hypothesis are REPRODUCED, never OBSERVED (TFD-2): they prove a cause CAN
+produce the symptom, not that it IS the cause. Label every claim OBSERVED / REPRODUCED / INFERRED
+(TFD-5) — a deterministic 3/3 lab pass is still not prod truth.
+**Pre-fix gate (BINDING — all must pass before you write any fix):** [ ] actual error/cause is
+OBSERVED in the real failing environment (not a proxy); [ ] if NOT observed → the current
+deliverable is the instrument, not a fix; [ ] hypothesis has a named falsifier and the real-world
+evidence is obtainable; [ ] chosen evidence discriminates this cause from the other plausible ones.
+See master for banned moves and the why-faster rationale. This is the diagnosis-specific
+application of Rule 6 Epistemic Discipline, not a restatement of it.
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:END -->
+
 ### Technical Debt
 
 Small debt in your path (rename, null check, dead-code removal): fix it. Large debt: Docket comment for @project-manager (what, risk, effort) — never make it worse. New dependencies: scrutinize health, security, license, transitive weight, and regenerate lock files.

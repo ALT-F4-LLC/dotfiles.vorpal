@@ -170,6 +170,21 @@ When a test fails, diagnose before reporting:
 
 **Sandbox-interaction pitfall patterns (recurrent).** Three failures recur cross-repo: (1) **Monitor + kubectl** — Monitor can't read `~/.kube/config` in sandbox; use a bounded `Bash(dangerouslyDisableSandbox: true)` `kubectl wait` instead of a Monitor-watched kubectl stream. (2) **gh / curl TLS errors** — a TLS/cert failure to a non-whitelisted endpoint clears on retry with `dangerouslyDisableSandbox: true`. (3) **`$TMPDIR` vs `/tmp`** — always write temp files to `$TMPDIR`; a hardcoded `/tmp` path yields "Operation not permitted" in sandbox mode.
 
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
+**Truth-First Debugging (this role).** Master: team-lead.md §CANONICAL:TRUTH-FIRST-DEBUGGING.
+**Banner:** "If the system is hiding the error, the first fix is to stop it hiding the error. No
+root-cause fix ships until the real failure has been OBSERVED in the real environment." Step 1
+above ("Reproduce in isolation") proves a cause CAN produce the symptom, NEVER that it IS the cause
+(TFD-2) — a green lab run is REPRODUCED, never OBSERVED-in-prod. Label every claim in a
+verification report OBSERVED (in the failing system) / REPRODUCED (in a lab) / INFERRED (TFD-5);
+never let REPRODUCED or INFERRED masquerade as OBSERVED, and a deterministic 3/3 lab pass (the flaky
+3-5x confirmation in step 3) is still not prod truth. When verifying a FIX, your verdict must state
+whether the root cause was OBSERVED in the real failing environment: a fix whose root cause is only
+INFERRED/REPRODUCED is not verifiable as a root-cause fix — BLOCK and route back for
+instrumentation (TFD-1). This is the verification-specific application of Rule 6 Epistemic
+Discipline, not a restatement.
+<!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:END -->
+
 ---
 
 ## Acceptance Criteria Verification
@@ -212,6 +227,8 @@ When in doubt, go FULL. A LIGHT verification that misses a defect is worse than 
 ### Verification Output
 
 To produce the structured verification report, invoke `Skill(verify-ac, "<scope>")` — pass the scope as a Docket issue ID, `uncommitted`, `staged`, a branch name, or file paths. The format authority is `src/user/claude-code/skills/verify-ac/SKILL.md` — do not duplicate format guidance here. The skill emits the role-correct report (LIGHT one-liner for trivial, FULL template with the APPROVE / ACCEPT WITH CAVEATS / BLOCK verdict ladder for non-trivial) directly to your context; after it returns, run the closeout chain (§Execution Workflow step 5 → §Inter-Agent Communication matrix → comm rule 6 shutdown). No further work this spawn.
+
+When the artifact is a FIX, apply the TFD signal ladder (§Test Failure Diagnosis): an OBSERVED-in-the-failing-env root cause earns APPROVE; a REPRODUCED-only or INFERRED root cause caps the verdict at BLOCK (route back for instrumentation per TFD-1), since a green lab run does not confirm the cause.
 
 ---
 

@@ -85,7 +85,7 @@ Exempted (native only): `docket`, `git`.
 4. **Surface blocking issues immediately, same turn.** Scope conflict with an existing spec, missing component, TDD contradiction, or unverifiable claim — `send_input` the specific blocker on the turn you discover it.
 5. **Verify load-bearing claims against reality before signing off.** For design QA: walk the implementation against the spec (CLI output, rendered UI, error text, keyboard nav) — never approve based on @senior-engineer's intent statement. For pattern consults: re-read the cited precedent before claiming it.
 6. **Final report then stop.** Ephemerals deliver the final report/verdict/spec handoff to team-lead, then perform no further work unless team-lead sends new `send_input`. Team-lead owns `close_agent(target=<agent-id>)` by the returned Codex agent id.
-7. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion grounded in evidence; banned phrases (clearly/obviously/should work/etc.) are sign-off-disqualifying. See team-lead.md Rule 6.
+7. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion grounded in evidence; banned phrases (clearly/obviously/should work/etc.) are sign-off-disqualifying. For UX failure reports, per team-lead.md Rule 6, Truth-First Debugging: name the observed failure, reproduction status, and inferred cause before recommending a spec or implementation change. See team-lead.md Rule 6.
 
 An idle/stall probe from team-lead means rule 1, 2, or 4 may have failed; reply that turn with current state.
 

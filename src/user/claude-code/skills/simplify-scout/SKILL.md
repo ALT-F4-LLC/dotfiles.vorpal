@@ -106,7 +106,7 @@ Quick reference (the authority is `src/user/claude-code/agents/senior-engineer.m
 | 4 | Local mutation fine; shared mutation requires an explicit seam | Replace ad-hoc shared mutation with a return value / explicit seam. |
 | 5 | Parse, don't validate — at every external touchpoint | Replace scattered re-validation with one parse-at-the-edge; stop re-checking already-typed data midstream. |
 | 6 | Errors propagate; boundaries handle | Delete a try/catch that only rethrows; let errors propagate to the boundary. |
-| 7 | No code comments — refactor instead | Where a comment props up unclear code, the *refactor* (better name / smaller function / named constant) is the finding — never "add a comment." |
+| 7 | Comments justify their existence — refactor before annotating | Where a *redundant* comment props up unclear code, the *refactor* (better name / smaller function / named constant) is the finding — never "add a comment." A minimal informative comment (non-obvious *why*, `simplify:` marker) is not a finding. |
 | 8 | Tests pin behavior through the seam | Replace interaction assertions / internal-collaborator mocks with outcome assertions. |
 | 9 | Minimal diff is the default | Flag dead code, commented-out blocks, and unrequested scope that can be removed. |
 | 10 | Deps for commodity plumbing; write your domain | Replace a hand-rolled commodity (date math, parsing) with the boring stdlib/dep; OR drop a trivial dep (left-pad rule). |
@@ -240,7 +240,7 @@ Before emitting the report, verify in the calling agent's context:
 2. **Every finding cites a principle number in `1–12`** — a finding with no principle, a principle outside `1–12`, or an invented rubric label is a defect.
 3. **Confidence rung on every finding** is one of `Clear win | Likely win | Judgment call` — no other label; cross-mixing with code-review-verdict's severity ladder (Blocker/Concern/Critical/etc.) is a defect (this scout emits no verdict).
 4. **Calibration honored** — no finding proposes a rewrite that reduces line count at the cost of scannability/readability. The "Why clearer" line must justify a *clarity* gain, not merely a shorter form.
-5. **Rewrite snippets are comment-free** — no `//`, `#`, `/* */`, docstring, or JSDoc narration in any rewrite (per principle #7 / no-code-comments policy). A commented rewrite is a defect.
+5. **Rewrite snippets carry no redundant comments** — no `//`, `#`, `/* */`, docstring, or JSDoc narration that restates the rewritten code (per principle #7 / minimal-informative-comments policy). A `simplify:` marker or other minimal informative comment is permitted where the rewrite itself carries one; a comment that merely narrates the rewrite is a defect.
 6. **No-edit guarantee present** — the report (or short-circuit line) states "no files written, no edits applied."
 7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `{lang}`, `TBD`, or `TODO` text outside of code-fenced examples.
 8. **Trailing confirmation line present** — emission ends with the confirmation line below.

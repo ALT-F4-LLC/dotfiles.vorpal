@@ -1,5 +1,19 @@
 # Changelog: vote
 
+## 2026-06-20
+
+### Summary
+Closed the model= dispatch defect; net 0 (stays 340). BANNER (vote singleton) + Delegation Protocol anchor deferred to Phase 2.
+
+### Changes
+- AMPLIFY: pinned `model="opus"` on the standalone reviewer Agent() spawn template — omitted model= resolved non-deterministically (dispatch defect per team-lead.md); opus matches decision-review depth for the high-stakes calls vote gates (operator-approved per-tier pinning).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

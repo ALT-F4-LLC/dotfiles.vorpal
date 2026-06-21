@@ -1,5 +1,19 @@
 # Changelog: code-review-verdict
 
+## 2026-06-20
+
+### Summary
+Over-engineering merge; net -2 (398→396). Doubling Rule + silent-completion self-check deferred to Phase 2 (family-wide).
+
+### Changes
+- CULL: merged the Partial-tree + Moving-tree Pre-flight guards into one Snapshot-tree guard — both addressed the same "uncommitted/staged diff is an incomplete point-in-time snapshot" premise with duplicated framing; merged form keeps both behaviors (ABORT under orchestration; one-line caveat standalone). Verified non-parity (unique to this skill — only sibling reviewing a moving code tree).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename (trigger already disambiguates from the bundled /code-review).
+
 ## 2026-06-19
 
 ### Summary

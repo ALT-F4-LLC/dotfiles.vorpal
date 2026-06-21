@@ -50,7 +50,7 @@ Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue 
 
 | Form | Detection | Sources |
 |---|---|---|
-| Docket issue ID | `docket issue show {scope} --json` exits 0 | Pull issue + acceptance criteria + comments + file attachments via `docket issue show`, `docket issue comment list`, `docket issue file list`, `docket issue log` |
+| Docket issue ID | `docket issue show {scope} --json` exits 0 (abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` if CLI unavailable) | Pull issue + acceptance criteria + comments + file attachments via `docket issue show`, `docket issue comment list`, `docket issue file list`, `docket issue log` |
 | Branch name | `git rev-parse --verify {scope}` exits 0 | `git diff main...{scope}` + `git log main...{scope} --oneline` + `git diff --stat main...{scope}` |
 | Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD` |
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
@@ -160,7 +160,7 @@ Apply the full procedure. Scale evidence to risk.
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `src/user/claude-code/agents/sdet.md` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
 - **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
@@ -255,10 +255,4 @@ The calling agent owns (in order):
 
 On any abort during Pre-flight, Verification Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
 
-## Failure Modes
-
-The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, empty content, TDD status gate, and validation failure are specified inline at Argument Handling, Role Detection, and Pre-flight. The table below covers abort paths that introduce new abort text or scope-specific behavior:
-
-| Trigger | Handling |
-|---|---|
-| Docket CLI unavailable for an issue-ID scope | Abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` |
+_Abort paths are specified inline at Argument Handling, Role Detection, and Pre-flight._

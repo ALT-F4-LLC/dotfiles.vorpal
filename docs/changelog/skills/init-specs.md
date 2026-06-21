@@ -1,5 +1,20 @@
 # Changelog: init-specs
 
+## 2026-06-20
+
+### Summary
+Coherence/over-engineering + operator-approved model= pin; net -1 (180→179). Banner deferred to Phase 2.
+
+### Changes
+- CULL: replaced "Poll TaskList() every ~2 minutes" (Step 2) with a SendMessage-primary model + a single TaskList reconciliation pass — the poll loop contradicted the skill's own SendMessage-driven completion model and its "no hand-rolled wall-clock timer" rule (the now-moot v2.1.181 idle-row caveat went with it; a stale "polling" reference in the failure path was updated to "completion tracking").
+- AMPLIFY: pinned `model="sonnet"` on the 7-way spec-generation Agent() spawn template — closes the dispatch defect (omitted model= → non-deterministic teammate fallback); operator-approved per-tier pinning.
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

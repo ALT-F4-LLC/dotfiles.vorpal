@@ -6,7 +6,7 @@ description: >
   the calling agent (`@ux-designer`) drives the review, the skill enforces the format authority —
   six dimensions, severity ladder, recommendation ladder, required sections, validation rules.
   No file written; the report is emitted into the agent's context.
-  Trigger: "design review", "review UX spec", "peer design review", "review this design".
+  Invoke BEFORE implementation (spec/draft review). For post-implementation verification use Skill(design-qa). Trigger: "design review", "review UX spec", "peer design review", "review this design".
 argument-hint: "<scope>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
@@ -91,8 +91,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
    - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
    - For inline surface description: treat the description as the artifact text.
 4. **Cross-reference precedent**:
-   - `Grep -r "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs, and project specs.
-   - `Glob docs/tdd/adr/*.md` to identify accepted ADRs that may constrain the design.
+   - `Grep -rl "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs (under `docs/tdd/adr/`), and project specs.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
 5. **Empty-artifact guard**: if the artifact has no inspectable design content (empty file or description under 10 words), ABORT:
 

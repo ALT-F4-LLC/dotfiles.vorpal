@@ -42,7 +42,7 @@ You are the **Evolution Suite Orchestrator**. One invocation runs the three edit
 ## Pre-flight (interactive — the operator is present throughout)
 
 1. **Goal gate (HARD GATE)** — `AskUserQuestion` confirming: scope (which runs after `skip=`, plus the gate), `days`/`drift` passthrough values, and the cycle weight: three full multi-agent cycles plus the gate, serially, all in this one session. Gather `{experience_feedback}` once; it is restated in every run's handoff block.
-2. **Rate-limit attestation (HARD GATE).** No programmatic usage probe exists, so the operator attests their current seven-day rate-limit utilization from `/usage`:
+2. **Rate-limit attestation (HARD GATE).** No programmatic rate-limit-% probe exists, so the operator attests their current seven-day utilization from `/usage`. As informational evidence-context (does NOT replace the `/usage` read), surface the Mimir 7-day cost trend — query `sum(increase(claude_code_cost_usage[7d]))` at the Prometheus endpoint the model-routing-auditor uses (`https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query`); on any non-200/empty, note "Mimir cost trend unavailable" and proceed on the manual read alone (fail-open). Operator `/usage` thresholds:
    - **<70%** — proceed.
    - **70–85%** — warn; recommend a `skip=`-narrowed single-run pass; proceed with the full run only on explicit confirmation.
    - **>85%** — strongly advise against the default full run; offer a single-run pass or abort.
@@ -100,7 +100,7 @@ docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run 
 1. **Pre-snapshot:**
 
 ```bash
-git status --porcelain | sort > "$STATE_DIR/snap-pre-<name>.txt"
+git status --porcelain -- agents/ skills/ .claude/skills/ .claude/agent-memory/ src/user.rs src/user/ scripts docs/changelog/ | sort > "$STATE_DIR/snap-pre-<name>.txt"
 ```
 
 2. **Docket** — move the run's child to `in-progress`; post its `dispatched:` comment.
@@ -109,7 +109,7 @@ git status --porcelain | sort > "$STATE_DIR/snap-pre-<name>.txt"
 5. **Post-snapshot + delta:**
 
 ```bash
-git status --porcelain | sort > "$STATE_DIR/snap-post-<name>.txt"
+git status --porcelain -- agents/ skills/ .claude/skills/ .claude/agent-memory/ src/user.rs src/user/ scripts docs/changelog/ | sort > "$STATE_DIR/snap-post-<name>.txt"
 comm -13 "$STATE_DIR/snap-pre-<name>.txt" "$STATE_DIR/snap-post-<name>.txt"
 ```
 
@@ -166,11 +166,13 @@ If ≥1 run completed (no-op counts), invoke `Skill(evolve-coherence)` in-sessio
 
 ## Failure Runbook
 
-- **Skill abort mid-run** (operator interrupt or internal abort) — run the team-free guard, comment `FAILED: <reason>` on the child, then the checkpoint fires with the revert-delta vs keep-partial choice.
-- **Saturation** (broken-vs-slow signatures above) — stop the run, run the team-free guard, `FAILED: saturation`; checkpoint recommends Stop + fresh-session resume via `skip=`.
-- **Rate-limit mid-run** — the active cycle dies or visibly degrades on rate-limit errors: `FAILED: rate-limit`; Stop recommended (the remaining runs share the exhausted budget); resume next window via `skip=`.
-- **Leftover-team collision** — a nested cycle's first teammate spawn fails with `Already leading team`: run the guard against the session's implicit team (no name needed), re-invoke once; on a second collision, `FAILED: team-collision` and stop.
-- **Crash re-entry** (suite session died) — a new session recovers the cycle from Docket alone: the parent's `dispatched: STATE_DIR=<path>` comment → snapshot root; child comments → which runs completed; snapshots → unattributed deltas. Attempt the team-free guard for the run that was active at death; if it fails because this session leads no team, proceed — the `Already leading team` collision path covers any residue. Then resume via `/evolve-suite skip=<completed names>`. Nothing is committed at any point, so operator recovery is always `git diff` review + selective `git checkout --` at worst.
+Index to the inline recovery contracts; each names its `FAILED:` class and primary home:
+
+- **Skill abort mid-run** → `FAILED: <reason>` → team-free guard (Run Loop step 6) + checkpoint revert-vs-keep (step 7).
+- **Saturation** → `FAILED: saturation` → broken-vs-slow recovery (Context-Saturation Management) + checkpoint Stop.
+- **Rate-limit mid-run** → `FAILED: rate-limit` → checkpoint guidance + Fallback; Stop recommended (remaining runs share the exhausted budget).
+- **Leftover-team collision** → `FAILED: team-collision` (on 2nd) → team-free guard (step 6).
+- **Crash re-entry** → recover from Docket alone (Docket Protocol AUTHORITY rule → STATE_DIR + completed runs), team-free guard, resume `/evolve-suite skip=<completed names>`.
 
 ---
 

@@ -9,7 +9,7 @@ description: >
   "post my review comments on <PR>".
 argument-hint: "<PR — number, full URL, or owner/repo#number>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read"]
-disallowed-tools: ["Edit", "Write"]
+disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->

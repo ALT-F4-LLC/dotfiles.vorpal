@@ -148,13 +148,16 @@ malformed frontmatter.
    state, or data flow). Validation §5 is the gate.
 5. **Verify embedded technical assertions before stating them as fact.** For each
    concrete claim the TDD commits to, apply the matching check arm and record the
-   artifact or command behind it — a "verified" label MUST NOT claim broader scope
-   than was actually checked; state unverified claims as assumptions, not facts.
+   artifact or command behind it. A "verified" label must not over-claim scope;
+   state unverified claims as assumptions.
    - **Snippet / command**: execute it; record the exit code or an output excerpt.
    - **Portability claim** (cross-platform, cross-engine, cross-dialect SQL): test
      each declared target — "valid in both X and Y" requires a run in both (see
      staff-engineer.md's Executable-claim gate, rule 6, for the SQL-dialect rule).
    - **Line-budget / size claim**: measure with `wc -l` or `sed -n`; never estimate.
+   - **Concrete value** (image tag, count, path, flag, version) the TDD asserts as
+     fact: `Grep` the committed artifact that owns it and confirm they match — a tag
+     vs. the workflow's pin, a diagram count vs. the assets actually referenced.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
      target exists and its signature matches before writing it as settled.
 6. **Proceed to Validation Before Save** — that step is the single source of
@@ -235,9 +238,9 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
     production readiness, runbooks.
 11. **Implementation Phases** — partitioned phases that the planner consumes
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
-    (paths affected), (c) per-phase acceptance criteria — grep/regex-based ACs
-   follow the executable-claim discipline (run against named files, hit set
-   verified) per §9 and staff-engineer.md rule 6, (d) effort estimate
+    (paths affected), (c) per-phase acceptance criteria — a grep/regex-based AC
+   must embed the exact command and its expected hit count (run it; the count is
+   the evidence) per §9 and staff-engineer.md rule 6, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags. Phases must be independently shippable or explicitly
     chained — no implicit ordering.

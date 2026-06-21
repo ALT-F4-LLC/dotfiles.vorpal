@@ -5,6 +5,7 @@ description: >
   across four dimensions, emit a Coherence Report + Remediation Manifest, and ROUTE fixes to
   evolve-agents/evolve-skills. REPORT-AND-ROUTE ONLY: despite the evolve- prefix it NEVER edits
   any agent/skill file and NEVER self-invokes the evolve-* skills.
+  Run as a post-edit gate after standalone evolve-agents/evolve-skills edits (evolve-suite runs it automatically).
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
 argument-hint: "[dimension(s) d1..d4]"
 effort: xhigh
@@ -127,8 +128,8 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 4. **Doubling Rule / panel sizing** — `agents/team-lead.md` Rule 8 is source of truth (reference). Citing skills must not contradict its numbers: `skills/code-review-verdict/SKILL.md` single-default + opt-up-to-doubled language; `skills/vote/SKILL.md` panel-sizing table base 2/2/3/4, doubled 4/4/6/8 capped at 8.
 
 **Detection (seeds).**
-- Matrix parity: locate by header row `grep -n '| Rule | tl | st | se | pm | ux | sd | sr' agents/team-lead.md` (SUBSTRING match — the live row has a trailing `| Lines |` column); parse the rows below into the expected per-agent map; detect R-rule presence via `grep -nE 'R[1-7]\b' agents/<agent>.md` (the `\b` matches senior-engineer's bulleted `- **R1 ...**`) AND the `see team-lead.md §Runtime Discipline R{N}` pointer phrase; compare to expected. For senior-engineer confirm presence by cross-tag prose, NOT a numbered-line count.
-- Block byte-parity: for each `CANONICAL:<TAG>` extract the body between BEGIN/END in every carrier, normalize trailing whitespace, hash, and **group carriers by FAMILY first (keyed on opening-prefix string)** — for BANNER: leaf (`This is a leaf skill` → strip trailing peer-messaging clause via WITHIN-LINE substitution `sed 's/ The calling agent handles peer messaging.*$//'` before hashing) / orchestrator-prefix (`applies to orchestrator AND every spawned teammate` → compare to the evolve-* body; init-specs's shorter body is a documented variant) / vote-singleton (`applies to coordinator AND every spawned reviewer`). Pipe the strip through `sed 's/[[:space:]]*$//'` before `shasum`, and assert the strip-normalized bodies are **BYTE-EQUAL AND non-empty** (an all-empty collapse must NOT pass — guard against the vacuous empty==empty match). Compute the per-family modal hash; flag only carriers diverging from THEIR family's image. PITFALLS (7 agents) and the doc-skill blocks are single-family (flag any divergent hash). HARVEST blocks are byte-identical across evolve-agents/evolve-skills (the agent-vs-skill distinction is in surrounding prose, not the marked block). EVOLUTION-MODEL blocks are byte-identical across evolve-agents + evolve-skills + evolve-coherence (single family, no documented variants — flag any of the 3 carriers diverging from the family hash).
+- Matrix parity: locate by header row `grep -n '| Rule | tl | st | se | pm | ux | sd | sr' agents/team-lead.md` (SUBSTRING match — the live row has a trailing `| Lines |` column); parse the rows below into the expected per-agent map; detect R-rule presence via `grep -nE 'R[1-7]\b' agents/<agent>.md` (the `\b` matches senior-engineer's bulleted `- **R1 ...**`) AND the `see team-lead.md §Runtime Discipline R{N}` pointer phrase; compare to expected (senior-engineer parse handled in the Rule-numbering seed below).
+- Block byte-parity: for each `CANONICAL:<TAG>`, extract the BEGIN/END body per carrier, apply the family rule from invariant #2 (group by opening-prefix; for leaf, strip the peer-messaging clause first via `sed 's/ The calling agent handles peer messaging.*$//'`), pipe through `sed 's/[[:space:]]*$//'`, `shasum`, then flag carriers diverging from THEIR family's modal hash. Assert each strip-normalized body is BYTE-EQUAL **AND non-empty** (guard the vacuous empty==empty match).
 - Rule-numbering: extract the highest top-level rule number per agent (`grep -noE '^[0-9]+\.'` in the rules section) vs expected count — **SKIP this numeric parse for `@senior-engineer`** (unnumbered bullets); confirm its 10 rules by cross-tag prose match.
 - Doubling/panel: compare `skills/vote/SKILL.md` panel numbers and `skills/code-review-verdict/SKILL.md` single-default/opt-up language against team-lead Rule 8.
 
@@ -249,7 +250,7 @@ Remediation Manifest
 ### Phase 0: @senior-engineer (XREF builder)
 
 ```
-Agent(name="xref-builder", subagent_type="senior-engineer", prompt="...")
+Agent(name="xref-builder", subagent_type="senior-engineer", model="sonnet", prompt="...")
 
 You are the cross-reference index builder. Read-only Bash (grep/awk/parse). No file edits. No commits. No sub-agents.
 Inventory: {inventory}
@@ -272,7 +273,7 @@ Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — eve
 Substitute `<n>` (the dimension), `{today_date}`, `{verified_goal}`, `{xref}`.
 
 ```
-Agent(name="review-d<n>", subagent_type="staff-engineer", prompt="...")
+Agent(name="review-d<n>", subagent_type="staff-engineer", model="opus", prompt="...")
 
 You audit ONE coherence dimension: D<n>. Read-only — NO file edits, no commits, no sub-agents.
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
@@ -297,7 +298,7 @@ FINDING <n>: <title> / DIMENSION: D<n> / LOCATIONS: <file:line both sides> / SEV
 Substitute `{today_date}`, `{dimension_reports}` (all Phase 1 reports verbatim), `{xref}`.
 
 ```
-Agent(name="reconciler", subagent_type="staff-engineer", prompt="...")
+Agent(name="reconciler", subagent_type="staff-engineer", model="opus", prompt="...")
 
 Reconcile the four dimension reports into a Coherence Report + Remediation Manifest. Read-only — NO edits, no commits, no sub-agents.
 

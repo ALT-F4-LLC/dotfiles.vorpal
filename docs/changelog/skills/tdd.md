@@ -1,5 +1,20 @@
 # Changelog: tdd
 
+## 2026-06-20
+
+### Summary
+Encoded two recurring cross-project TDD pitfalls; net +3 (319→322). CANONICAL blocks deferred to Phase 2.
+
+### Changes
+- AMPLIFY: added a §5 "Concrete value" assertion-check arm — Grep the committed artifact that owns an asserted value (tag/count/path/flag/version) and confirm match. Cited Phase-0 canonical-fact-drift pitfall (`:latest` vs `:v1`; "8 diagrams" when 5 exist).
+- AMPLIFY: §11(c) grep/regex ACs must now embed the exact command + expected hit count inline as evidence. Cited Phase-0 regex-AC-brittleness pitfall (fixed-word-order regex never run before completion).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

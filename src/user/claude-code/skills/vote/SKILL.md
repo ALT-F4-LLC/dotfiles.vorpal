@@ -203,7 +203,7 @@ EOF
 ### Reviewer Prompt Template (Standalone Mode Only)
 
 ````
-Agent(name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
+Agent(name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", model="opus", prompt="...")
 
 You are participating in a consensus vote as an independent reviewer.
 

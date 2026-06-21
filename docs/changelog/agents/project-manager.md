@@ -1,5 +1,19 @@
 # Changelog: project-manager
 
+## 2026-06-21
+
+### Summary
+Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 8 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary
@@ -151,135 +165,6 @@ Consolidation & Trimming (primary), Actionability, Completeness, Boundary Clarit
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Encoded three CONFIRMED recurring historical pitfalls the file did not previously cover, all verified against the zero-drift Docket CLI audit (`-d` sets body / accepts `-` stdin; `-f` only attaches refs). Net +2 (332→334). §9 DOC-link tail (duplicate of §10) trimmed as partial offset.
-
-### Changes
-- §6 Decompose: same-file-same-layer leaves now require a DIRECT `depends_on` (co-gating behind independent parents does NOT serialize; both succeed in isolation then collide at apply); check extends to TEST files.
-- §8 Write Descriptions: stated `-d` sets the body (use `-d -` for multi-line stdin) vs `-f` only attaches refs — passing the body via `-f` yields an empty description + a dead attachment.
-- §9 Attach File Refs: `-f` must be the leaf's real EDIT/CREATE target (read What/Where); fixed the "must resolve on disk" rule to handle new-file deliverables; dropped DOC-link tail duplicating §10.
-
-### Dimensions Evaluated
-Capability Growth (PRIMARY — all 3 historical pitfalls) · Actionability (`-d -` idiom) · Consolidation & Trimming (§9 tail dedup) · Spec Alignment (CLI ground-truth verified).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Three Consolidation & Trimming edits (net -2 lines; 324→322) removing internal redundancy. §Strict Ephemeral Lifecycle stated the FRESH-ephemeral / continuity-preamble / doubling-exemption facts across three paragraphs; §Plan Monitoring re-enumerated the preamble with a stale "§6 continuity preamble" self-reference (no §6 exists in this file); §Shutdown "What to save here" duplicated the top-of-file memory description. Canonical homes (team-lead.md Rule 8, §Teammate Stall & Crash Recovery) preserved as pointers; no behavioral loss.
-
-### Changes
-- §Strict Ephemeral Lifecycle: merged the standalone "Doubling rule does NOT apply" paragraph into "Re-planning spawns a FRESH ephemeral"; condensed re-enumerated preamble contents to a pointer.
-- §Plan Monitoring §Re-engagement: dropped the duplicated preamble sentence; fixed the stale "§6 continuity preamble" reference to defer to team-lead's preamble.
-- §Shutdown "What to save here": replaced the duplicate of the top-of-file memory description with a pointer + pitfalls-vs-memory distinction.
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — all 3) · Boundary Clarity (senior-engineer single-ad-hoc-issue carve-out verified intact) · Completeness (no net-new capability warranted) · Spec Alignment (absent-dir case already handled)
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-One change closing the cross-cutting brief-integrity gap (historical finding: PM authored issue bodies citing nonexistent file refs + stale TDD line numbers). §9 now requires verifying each `-f` path resolves on disk before attaching and re-confirming spec line-refs against the live file; swapped in place for the triplicated `issue edit -f` REPLACES warning (canonical home retained at Docket Reference foot-guns). Within-line; 324 lines unchanged.
-
-### Changes
-- §9 Attach File References: added "Verify before attaching" (confirm path resolves via `ls`/Read; re-confirm cited spec line-refs against the live file — line numbers drift); dropped the redundant inline `edit -f` warning, pointing to Docket Reference foot-guns.
-
-### Dimensions Evaluated
-Capability Growth (PRIMARY — brief-integrity discipline, historical finding) · Consolidation & Trimming (de-triplicated `edit -f` warning)
-
-### Rename
-No rename.
-
-## 2026-05-26
-
-### Summary
-Codified the P0 historical signal — explicitly close the parent epic after all children close (children do NOT auto-close the parent). Applied SubagentStop drain doctrine to the Monitor auto-shutdown procedure (TaskStop the watch before emitting shutdown_request). Dropped redundant `docket stats` from session init per CLI audit. Consolidated Risks bullets and Persistent-advisors lifecycle clause. Net: -7 lines (326 → 319).
-
-### Changes
-- §Plan Monitoring §Cancellation/completion: explicit `docket issue close <epic-id>` after children close — child closure does NOT cascade.
-- §Session Initialization: dropped `docket stats` (redundant with `board --json` + `plan --json`).
-- §Shutdown Handling §Auto-shutdown on idle: TaskStop the Monitor watch before emitting shutdown_request (drain doctrine, v2.1.145).
-- §Assess Risks: four single-sentence bullets inlined into lede paragraph (-5 lines).
-- §Strict Ephemeral Lifecycle: folded "Persistent advisors unaffected" clause into Lifecycle opener (-2 lines).
-
-### Dimensions Evaluated
-Capability Growth (epic-close rule, drain doctrine) · Consolidation & Trimming (Risks inline, Persistent-advisors fold, docket stats drop) · Completeness (docs research v2.1.145)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 — strip 4 dangling docs/tdd/* citations)
-
-### Summary
-Stripped 4 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
-
-### Changes
-- L41 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
-- L45 Re-planning: replaced "§6 continuity preamble per docs/tdd/reviewer-doubling-lifecycle.md" with "continuity preamble (per team-lead.md §Stall & Crash Recovery)".
-- L47 Doubling rule: replaced "TDD §4.1" + "TDD §6" with team-lead.md Rule 8 + §Stall & Crash Recovery anchors.
-- L317 Runtime Discipline opener: replaced "agents-token-optimization.md §4.5" with team-lead.md §Runtime Discipline anchor.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — No Guessing violation closed)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 1 — planner FINAL-tool-call + two-step claim ritual)
-
-### Summary
-Encoded planner shutdown semantics (FINAL TOOL CALL on approval turn; CLOSED-set boundary callout) and embedded the two-step claim ritual in the standard/complex issue description template — the docket-auditor's primary capability-growth recommendation enabling team-lead's proactive `docket issue list -a <role> -s in-progress --json` liveness probe. Consolidation: collapsed re-engagement duplication between Strict Ephemeral Lifecycle and Plan Monitoring; trimmed redundant TDD §4.1 verbatim quote. Net -1 line (389 → 388).
-
-### Changes
-- §Strict Ephemeral Lifecycle: planner `shutdown_request` is FINAL TOOL CALL on approval turn; async-by-design caveat ("do NOT continue working after emitting"); explicit "NOT in CLOSED persistent set" boundary callout.
-- §Plan Monitoring (re-engagement): collapsed duplicated lifecycle backstory; kept unique first-turn duties + portfolio-rollup guidance.
-- §Issue Template: added `Claim Ritual` footer prescribing two-step claim (`docket issue edit -a @<role>` + `docket issue move in-progress`) — the mechanism enabling team-lead's proactive sweep probe.
-- §Doubling rule on planning: trimmed redundant TDD §4.1 verbatim quote.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — planner exit sequence, two-step claim) · Boundary Clarity (CLOSED-set callout) · Capability Growth (claim ritual = proactive-monitoring enabler) · Consolidation & Trimming (re-engagement dedup + TDD quote trim)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 2 coherence — P7a drop)
-
-### Summary
-Single coherence fix: dropped dead "(P7a)" cross-reference from R7 exception clause (fleet-wide cleanup).
-
-### Changes
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Actionability (dead-reference removal)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 1 self-review — docs-dir fallback + memory threshold)
-
-### Summary
-Four targeted fixes addressing the confirmed session-d4949934 docs-dir error, empty-memory root cause (over-conservative "recurring" threshold), a redundant lifecycle note, and a CLI audit doc gap. Net: 0 lines.
-
-### Changes
-- §Operating Context: Compressed "Persistent advisor consults" paragraph to one line (redundant with §Cross-Agent Communication)
-- §Core Responsibilities > Check specs: Added `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` guard — skip absent dirs silently (fixes audit error in session d4949934)
-- §Shutdown Handling: Rewrote memory-check trigger — operator priority/routing signals now save on **first occurrence** (not "recurring" only); removes the threshold that was causing zero memory writes across all sessions
-- §Docket CLI Reference: Added `"0"` as alternative to `"none"` for `--parent` flag per CLI audit
-
-### Dimensions Evaluated
-Role Realism · Actionability (docs-dir fix) · Boundary Clarity · Completeness · Consolidation & Trimming · Capability Growth (memory threshold) · Spec Alignment (CLI fix) · Rename
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -326,3 +211,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-19: Phase 2 coherence: Canonical "Visibility contract" heading alignment + cross-cutting-fallback clause + `[PM→team-lead]` escalation prefix for…
 - 2026-05-19: Activated the dormant `.claude/agent-memory/project-manager/` channel via a shutdown-time memory check. Reinforces the existing memory-description examples
 - 2026-05-24: Closed the 6 historical shutdown-routing errors by adding the routing rule to the Shutdown Handling section. `planner` ephemerals shut down after operator plan
+- 2026-05-25: Phase 1 self-review — four targeted fixes: docs-dir guard (`ls -d` guard), memory-check trigger (first-occurrence), lifecycle compress, CLI `--parent "0"` alias.
+- 2026-05-25: Phase 2 coherence — dropped dead "(P7a)" cross-reference from R7 exception clause (fleet-wide cleanup).
+- 2026-05-26: Phase 1 — planner FINAL-tool-call + two-step claim ritual; two-step claim ritual in issue template enabling team-lead liveness probe. Net -1.
+- 2026-05-26: Phase 2 — stripped 4 dangling docs/tdd/* citations; redirected to team-lead.md anchors.
+- 2026-05-26: Epic-close rule, drain doctrine (TaskStop Monitor), docket stats drop, Risks inline, Persistent-advisors fold. Net -7.
+- 2026-05-30: Brief-integrity gap — §9 verify-before-attaching + live line-ref re-confirmation; de-triplicated `edit -f` warning.
+- 2026-05-30: Consolidation — §Strict Ephemeral Lifecycle/§Plan Monitoring/§Shutdown de-duped. Net -2.
+- 2026-06-05: Three historical pitfalls: `depends_on` direct-gate, `-d` sets body vs `-f` attaches refs, §9 resolve-on-disk. Net +2.

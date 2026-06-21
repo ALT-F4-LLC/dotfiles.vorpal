@@ -1,5 +1,19 @@
 # Changelog: senior-engineer
 
+## 2026-06-20
+
+### Summary
+One net-zero in-place edit extending an incoming-trigger to cover late/out-of-order directives contradicting closed work; five strongest Phase-0 signals confirmed already-encoded (NO-OP). Net 0 (488→488). Drift: disabled (drift=0).
+
+### Changes
+- AMPLIFY (cited: historical message-ordering signal): the @project-manager plan-change incoming-trigger now also catches any late directive contradicting already-closed on-disk state — resolution is reply-with-evidence-and-ask-which-is-final before acting.
+
+### Dimensions Evaluated
+1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN (TFD pre-flight, git-diff scoping, zsh `!` hygiene already encoded) · 5 Consolidation RETAIN · 6 Cross-Comm AMPLIFY · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

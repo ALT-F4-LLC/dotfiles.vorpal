@@ -1,5 +1,21 @@
 # Changelog: staff-engineer
 
+## 2026-06-20
+
+### Summary
+Fixed the docket graph flag-order drift, hardened the moving-tree gate to an explicit team-lead-GO gate (resolving a self-contradiction), and cross-referenced the Executable-claim gate from the review path. Net 0 (302→302). Drift: disabled (drift=0).
+
+### Changes
+- CULL (cited: docket-audit drift): `docket issue graph --mermaid <id>` → `<id> --mermaid` (matches help text + 4 other agents).
+- AMPLIFY (cited: historical advisor-early-start, 3×): the moving-tree gate is now a hard "no verdict until explicit team-lead GO confirming tree frozen" gate; removed the self-contradicting "blockedBy edge IS the freeze gate" (demoted to a corroborating signal — neither blockedBy nor task-assignment binds a persistent advisor).
+- AMPLIFY (cited: innovation): review step 7 now cross-references the Executable-claim gate (regex ACs + cross-dialect SQL EXECUTED, never approved by inspection).
+
+### Dimensions Evaluated
+1 Role Realism RETAIN · 2 Actionability AMPLIFY · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN · 5 Consolidation RETAIN · 6 Cross-Comm AMPLIFY · 7 Spec Alignment CULL+AMPLIFY · 8 Rename RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

@@ -1,5 +1,20 @@
 # Changelog: design-review
 
+## 2026-06-20
+
+### Summary
+Disambiguation + efficiency; net -1 (243→242). Severity ladder + Doubling Rule deferred to Phase 2.
+
+### Changes
+- AMPLIFY: added an "Invoke BEFORE implementation / use Skill(design-qa) for post-impl verification" qualifier to the description — cited Phase-0 design-review-vs-design-qa conflation signal (design-qa already reciprocates the cross-link).
+- CULL: collapsed Pre-flight step 4's Grep + Glob into one `grep -rl` — `docs/tdd/adr/` is under `docs/tdd/`, so the ADR Glob was redundant (one fewer tool call, zero info loss).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

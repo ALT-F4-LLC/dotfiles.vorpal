@@ -1,5 +1,22 @@
 # Changelog: evolve-coherence
 
+## 2026-06-20
+
+### Summary
+Over-engineering trim + AMPLIFY (Phase 1) and model= pinned on all 3 Agent() spawns (Phase 2). Net +1 line (327→328). Shared-CANONICAL-source flagged for a future cycle.
+
+### Changes
+- CULL: collapsed the D4 BANNER byte-parity detection-seed to method-only — it restated invariant #2's full family rules verbatim (Content Gate Non-redundant).
+- CULL: dropped the triplicate @senior-engineer cross-tag clause from the Matrix-parity seed — already stated at invariant #3 and the Rule-numbering seed.
+- AMPLIFY: added a post-edit-gate cue to the description — cited Phase-0 historical signal (standalone evolve-agents/skills edits skipped the coherence gate this window).
+- AMPLIFY (Phase 2): pinned `model=` on the 3 Agent() spawns — xref-builder→sonnet, review-d<n>/reconciler→opus (dispatch-defect rule; operator-approved).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

@@ -1,5 +1,20 @@
 # Changelog: verify-ac
 
+## 2026-06-20
+
+### Summary
+Over-engineering trim + sibling-parity fix; net -6 (264→258). Silent-completion self-check consolidation deferred to Phase 2.
+
+### Changes
+- CULL: collapsed the single-row Failure Modes table into an inline pointer + folded the Docket-CLI-unavailable abort into the Docket-issue-ID scope-table row (no info lost).
+- AMPLIFY: added the "Peer SendMessage is the calling agent's job, not this skill's" clause to match siblings code-review-verdict + design-qa (closes a parity gap).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

@@ -1,5 +1,20 @@
 # Changelog: evolve-config
 
+## 2026-06-20
+
+### Summary
+Phase 2: pinned model= (aliases) on all 8 Agent() spawns + added a $TMPDIR scratch guard to 3 auditor Rules lines. In-line edits, no line growth (stays 535, at self-budget).
+
+### Changes
+- AMPLIFY: pinned `model=` on every Agent() spawn — sonnet (config-history/historical/model-routing auditors) / opus (docs-researcher, innovation-scanner, review-config, coherence-reviewer, disambiguation-reviewer). Cited the dispatch-defect rule; operator-approved per-tier pinning.
+- AMPLIFY: appended a `$TMPDIR`-not-`/tmp` scratch guard to the config-history-auditor + historical-auditor + model-routing-auditor Rules — directly fixes the cited run ERROR `operation not permitted: /tmp/...` (config-history-auditor).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

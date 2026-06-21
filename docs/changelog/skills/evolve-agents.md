@@ -1,5 +1,34 @@
 # Changelog: evolve-agents
 
+## 2026-06-20
+
+### Summary
+Phase 2: pinned model= (aliases) on all 8 Agent() spawns + added a $TMPDIR scratch guard to the shell-heavy auditor Rules. In-line edits, no line growth (stays 533).
+
+### Changes
+- AMPLIFY: pinned `model=` on every Agent() spawn — sonnet (docket/historical/model-routing auditors) / opus (docs-researcher, innovation-scanner, review-<name>, coherence-reviewer, disambiguation-reviewer). Cited team-lead.md "an Agent() call without model= is a dispatch defect"; operator-approved per-tier pinning.
+- AMPLIFY: appended a `$TMPDIR`-not-`/tmp` scratch guard to the historical-auditor + model-routing-auditor Rules lines — cited the config-history-auditor run ERROR `operation not permitted: /tmp/...`.
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
+## 2026-06-20
+
+### Summary
+Compacted 7 entries (2026-06-04..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 7 oldest committed entries (entries 11-17) with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per ADR 0001, not a review cycle.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary
@@ -133,116 +162,17 @@ Skill Design Quality (arg-escape); Coherence (byte-parity with evolve-skills on 
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Full-cycle audit (1-day window): NO changes. Both historical focus areas verified already-encoded via fresh grep: docs-researcher ADOPTION grep gate (L174) and post-apply re-wc/NET_LINES-untrusted rule (L134), both byte-parity with evolve-skills.
-
-### Changes
-- None (NO-OP verdict). Documentary `$ARGUMENTS` escaping question (L48/54/64/73/198) routed to Phase 2, parity-bound with evolve-skills.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no bloat at 368 lines); Coherence (CANONICAL:BANNER + HARVEST byte-parity confirmed with evolve-skills).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Three mid-run-safe gate additions (368→367, net −1 via offset): docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping.
-
-### Changes
-- docs-researcher MISSION: grep local ADOPTION before asserting current-repo state (doc existence ≠ adoption) — fixes prior false "agents use no optional fields" assertion. PARITY-BOUND, mirrored to evolve-skills lockstep (clause parity verified).
-- Phase-1 Content Gate line: flag unescaped `\$`+digit in documentary prose (renders empty; examples escaped at apply time — reviewer's originals were self-violating). PARITY-BOUND.
-- Phase-2 rename step: reference updates scoped to live def files (agents/, skills/, .claude/skills/), never changelogs/pitfalls/prose.
-- Offset: historical-auditor rules bullets collapsed (2 lines → 1).
-
-### Dimensions Evaluated
-All 8. Over-Engineering: net −1. Coherence: 2 parity-bound applied lockstep. HARVEST byte-parity preserved. Reasoning-echo clean.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2: historical-auditor correction-regex FP guard (lockstep with evolve-skills); WebFetch added to allowed-tools (lockstep).
-
-### Changes
-- Auditor template: correction-phrase scan now matches only operator-typed turns; mirror clause preserved.
-- allowed-tools gains WebFetch (byte-identical with evolve-skills).
-
-### Dimensions Evaluated
-Coherence (cross-pipeline symmetry), Actionability.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Codified the TRIM-mode budget lesson from team-lead pitfalls (claimed −10 vs actual −2 on a prior cycle): NET_LINES is the physical-newline `wc -l` delta, and the orchestrator's post-apply `wc -l` is the only budget truth. Net 0.
-
-### Changes
-- Phase 1 template Size Budget: NET_LINES defined as physical-newline (`wc -l`) delta, not soft-wrapped display lines; whole bullet/list-line removals move the count.
-- Orchestrator post-review step 2: post-apply `wc -l` is the only budget truth — reviewer estimates untrusted; a still-over-budget file is not-done. PARITY: mirror both to evolve-skills in Phase 2.
-
-### Dimensions Evaluated
-All 8. Over-Engineering (HIGHEST): both changes net 0 in-place. Coherence: correction-regex FP fix + allowed-tools WebFetch routed to Phase 2 as parity-bound. No unescaped `$`+digit; frontmatter sound.
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Two redundancy trims (368 lines, net -2). Phase 1: removed a per-agent narration line (~L113) that restated the auditor's binding "stay per-agent" rule and an already-implied "feeds Phase 1" fact, resolving an asymmetry vs evolve-skills. Phase 2 (lockstep with evolve-skills): trimmed the historical-auditor Rules bullet's trailing "never bulk-cat ~/Development" clause — verbatim-duplicated in the same template's CANONICAL:HARVEST block (clause survives there; no info lost).
-
-### Changes
-- Phase 0 §: removed redundant per-agent narration line.
-- Phase 0 historical-auditor Rules: dropped duplicated cross-project-scan clause; kept the unique transcript-scan half. PARITY-BOUND — applied identically to evolve-skills.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — both findings redundancy), Coherence (sibling parity verified; BANNER/HARVEST byte-identical post-edit). Other dimensions sound; DISTINCT-sessionId + $TMPDIR focus items NO-OP/N-A.
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Symmetric trim (paired with evolve-skills): removed the redundant reviewer read-list recap from the Phase 1 workflow prose (L112) — the read-list + 8-dimension mandate already live verbatim in this skill's Phase 1 template (L264/L280). Net 0 (one-line shorten). The 8-dimension review otherwise found all signals NO-OP.
-
-### Changes
-- Phase 1 workflow: shortened the template-forwarding sentence to drop the duplicated read-list / 8-dimension recap. Content-Gate non-redundant fix, parity with evolve-skills. (Optional-token parse + audit-resolution verification already encoded; CANONICAL:BANNER/HARVEST verified byte-identical with evolve-skills; no `$`+digit present.)
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — sole redundancy), Coherence (symmetric with evolve-skills). Remaining dimensions sound; all Phase 0 signals NO-OP.
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Fixed the `days=N` argument parse defect (parallel to the evolve-skills fix): the all-agents scope HARD GATE and inventory validation no longer mis-fire on a bare `days=N` invocation.
-
-### Changes
-- Added a **Parsing:** rule to Argument Handling: strip `days=N` first; the remaining token is the agent name.
-- Reworded pre-flight step 5 to key on "agent-name token present" instead of `$ARGUMENTS` set.
-- Reworded pre-flight step 7 scope gate to "no agent-name token (all-agents mode)" so the HARD GATE runs on `/evolve-agents days=N`.
-
-### Dimensions Evaluated
-Coherence (cross-skill parse parity with evolve-skills), Completeness (scope-gate coverage), Actionability.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
 
+- 2026-06-04: Fixed `days=N` argument parse defect — all-agents scope HARD GATE and inventory validation no longer mis-fire on bare `days=N`; Parsing rule strips window token first.
+- 2026-06-05: Symmetric trim with evolve-skills — removed redundant Phase 1 reviewer read-list recap from template-forwarding sentence (already verbatim in template); net 0.
+- 2026-06-08: Two redundancy trims (368→366): Phase 1 per-agent narration line and historical-auditor "never bulk-cat ~/Development" clause (duplicated in CANONICAL:HARVEST); parity with evolve-skills.
+- 2026-06-09: NET_LINES budget lesson codified — physical-newline `wc -l` delta only; post-apply `wc -l` is the only budget truth; both mirrored to evolve-skills Phase 2.
+- 2026-06-09: Phase 2 — historical-auditor correction-regex FP guard (operator-typed turns only); WebFetch added to allowed-tools; lockstep with evolve-skills.
+- 2026-06-09: Three mid-run-safe additions (368→367): docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping; 2 parity-bound with evolve-skills.
+- 2026-06-09: NO-OP (368 lines) — documentary `$ARGUMENTS` escape and NET_LINES wording routed to Phase 2 parity-bound with evolve-skills; CANONICAL:BANNER + HARVEST byte-parity confirmed.
 - 2026-03-19: Added Pre-flight section with 5 validation steps; fixed duplicate step numbering; removed hardcoded roles; graceful WebFetch degradation.
 - 2026-03-19: Added {today_date} propagation to Phase 1/2 templates; Agent identifier line; spec selectivity guidance.
 - 2026-03-19: Added allowed-tools frontmatter; compressed Wrap-up 22→9 lines and Team Setup; self-evolution note.

@@ -1,5 +1,19 @@
 # Changelog: review-and-comment
 
+## 2026-06-20
+
+### Summary
+Defense-in-depth coherence; net 0 (stays 110). Skill-specific CRITICAL banner unchanged (intentionally outside CANONICAL).
+
+### Changes
+- AMPLIFY: added `Agent` + `SendMessage` to `disallowed-tools` — mechanically enforces the no-team/no-delegate CRITICAL banner (skill is self-contained, posts via gh Bash, never spawns or messages). Per-turn defense-in-depth atop the prose banner (Phase-0 innovation signal).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

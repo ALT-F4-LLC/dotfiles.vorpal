@@ -93,19 +93,18 @@ exploration guidance for each — used in the spawning template.
 2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
    `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
 3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `Agent()` call itself):
-   `Agent(name="spec-{filename-without-ext}", subagent_type="staff-engineer", prompt="...")`
+   `Agent(name="spec-{filename-without-ext}", subagent_type="staff-engineer", model="sonnet", prompt="...")`
 4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
 
 ### Step 2: Wait for Completion
 
-Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)".
+Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)". A `TeammateIdle` notification with no completion SendMessage and no spec file on disk is a stall, not a normal completion.
 
-Poll `TaskList()` every ~2 minutes. Classify each task:
+Once all expected SendMessages have arrived (or a stall is declared), run a single `TaskList()` reconciliation pass to confirm task states before proceeding to Step 3. Classify each task:
 - **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR the harness auto-fails the agent (Claude Code reaps stalled subagents at ~10 minutes). A `TeammateIdle` notification with no completion SendMessage and no spec file on disk is a stall, not a normal completion. Do NOT hand-roll a wall-clock timer — an idle teammate's row hides after 30s while still running (v2.1.181), so a hand-rolled heuristic can misread a hidden-but-live agent as stalled.
-- **in_progress** — still working; continue polling.
+- **failed** — agent SendMessaged a failure, OR the harness auto-fails the agent (Claude Code reaps stalled subagents at ~10 minutes).
 
-**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so polling credits the new agent), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so completion tracking credits the new agent), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
 
 > Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
 

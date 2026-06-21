@@ -1,5 +1,21 @@
 # Changelog: evolve-suite
 
+## 2026-06-20
+
+### Summary
+Trial: surface Mimir 7-day cost trend to inform the rate-limit attestation → adopted (operator-approved). Scoped per-run snapshot walks + de-duplicated the Failure Runbook. Net +2 lines (183→185).
+
+### Changes
+- AMPLIFY: scoped both per-run `git status --porcelain` snapshots to the run-surface pathspec already used by the clean-surface check — cheaper walks + sharper delta attribution (innovation signal c).
+- CULL: compressed the Failure Runbook from restated recovery bodies to a one-line-per-class pointer index; each class's full contract already lives inline at its primary home (Content Gate Non-redundant).
+- AMPLIFY (Trial, adopted): added an informational Mimir 7-day cost-trend probe to the rate-limit attestation step — fail-open, supplements (does not replace) the manual /usage read.
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

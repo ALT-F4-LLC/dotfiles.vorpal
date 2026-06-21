@@ -1,5 +1,21 @@
 # Changelog: brief
 
+## 2026-06-20
+
+### Summary
+Defense-in-depth + double-invocation fix; net 0 (stays 65). BANNER deferred to Phase 2 (parity).
+
+### Changes
+- AMPLIFY: added `disallowed-tools: Edit, Write, Bash, Agent, SendMessage` frontmatter — per-turn mechanical enforcement atop the BANNER prose (Phase-0 innovation signal; brief is a pure transform that must never execute).
+- AMPLIFY: strengthened the terminal HALT signal — cited Phase-0 double-invocation signal (operator re-ran /brief when the first done-state was ambiguous).
+- CULL: removed the derivable "mid-cycle scope change" When-NOT-to-use bullet (over-engineering; offsets the +1).
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

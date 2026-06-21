@@ -1,5 +1,19 @@
 # Changelog: design-qa
 
+## 2026-06-20
+
+### Summary
+One non-parity trim; net -1 (212→211). Render-to-image gate confirmed already present (NO-OP on the Phase-0 signal). Doubling Rule + self-check removals deferred to Phase 2 (family-wide).
+
+### Changes
+- CULL: removed the "Long-running surface preparation" Pre-flight note — generic background+Monitor guidance already provided by the harness Bash tooling, not design-qa-specific.
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

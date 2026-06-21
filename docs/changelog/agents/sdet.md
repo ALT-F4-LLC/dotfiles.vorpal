@@ -1,5 +1,19 @@
 # Changelog: sdet
 
+## 2026-06-21
+
+### Summary
+Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 9 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary
@@ -152,147 +166,6 @@ Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-One Consolidation & Trimming dedup (line count unchanged at 348; fewer words). §Verification Output's trailing closeout recap re-stated the close/comment → SendMessage → shutdown chain already owned by comm rule 6, Lifecycle, and Execution Workflow step 5 — collapsed to a single back-reference chain. AskUserQuestion-on-spawn flag investigated and dismissed (correctly gated behind "Standalone:"); flagged to Phase 2 as a parity-bound fleet pattern.
-
-### Changes
-- §Verification Output: collapse duplicated closeout-sequence enumeration to a back-reference chain (targets verified: comm rule 6, §Execution Workflow step 5, §Inter-Agent Communication matrix).
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary), Spec Alignment, Boundary Clarity, Role Realism, Actionability, Completeness, Capability Growth, Rename
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Two Consolidation & Trimming dedups (net 0 lines; 341 lines). Execution Workflow step 2 collapsed to a comm rule 7 back-reference (claim convention was near-verbatim duplicated). §Shutdown Proactive's idle-role enumeration collapsed to a comm rule 6 / Lifecycle back-reference, keeping only the unique precondition. Both historical focus areas resolved: literal-command-AC already encoded in verify-ac skill (NO-OP); destroy-recreate-NEW-backend is a runtime concern outside sdet's static-verification charter (routed to a tracking issue, not dropped).
-
-### Changes
-- §Execution Workflow step 2: fold spawn-type claim convention into a comm rule 7 back-reference (target verified present at L50).
-- §Shutdown Handling Proactive: collapse duplicated advisor/idle-role enumeration to a comm rule 6 / Lifecycle back-reference (targets L38/L304 verified present); retain unique precondition.
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — 2 dedups) · Boundary Clarity (single canonical home for idle-role doctrine) · Spec Alignment (team-lead anchors + docket commands verified extant).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Phase 2 coherence: removed the dangling `§6 continuity preamble` pointer (1× — L38). No §6 heading exists; the preamble is defined in team-lead.md §Teammate Stall & Crash Recovery. Within-line; 341 lines.
-
-### Changes
-- `§6 continuity preamble` → `continuity preamble`. Fleet-symmetric sweep across senior-engineer/security-engineer/team-lead.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — dangling cross-ref) · Terminology consistency.
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Two Consolidation & Trimming edits (net -3 lines; 344→341) deduping content the verify-ac SKILL already owns. §Verification Workflow step 5's edge-case battery (verbatim verify-ac SKILL.md) folded into a `Skill(verify-ac)` back-reference with the BLOCK/ACCEPT decide-clause merged in (old step 6 absorbed; 6-step list → 5). §Verification Output's "Closeout sequence" triplicated §Execution Workflow step 5 + the recipient matrix + comm rule 6 — collapsed to single back-references. Rejected deleting §Verification Depth (verify-ac names sdet.md as the depth-judgment authority). No behavioral loss.
-
-### Changes
-- §Verification Workflow: fold step 5 edge-case list into a verify-ac back-reference; merge old step 6 (decide ladder) into it.
-- §Verification Output: collapse the closeout-sequence enumeration to back-references (§Execution Workflow step 5 / §Inter-Agent Communication matrix / comm rule 6).
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — 2 dedups vs verify-ac skill) · Boundary Clarity (closeout now points to single-actor §Execution Workflow step 5) · Completeness (no Task() drift; frontmatter memory/effort/color already wired)
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Two edits from the evolve-agents self-review (net ~0; 344 lines). (1) Deduped the §Test Failure Diagnosis snapshot sentence — verbatim-redundant with §Testing Philosophy's "never blind-update; trace each diff..."; folded to a back-reference + the non-redundant table-driven pointer. (2) Scoped "move" in the §CRITICAL: Verify Issues header to read-only/BLOCK-reopen-only, closing the historical-audit verifier-ephemeral claim-drift gap at the section opener (Rule 7 / step 2 already encode it; the header undercut them).
-
-### Changes
-- §Test Failure Diagnosis Snapshots para: collapse redundant blind-update clause to a §Testing Philosophy back-reference.
-- §CRITICAL: Verify Issues header: scope "move" to READ-ONLY + BLOCK-reopen; cross-reference comm rule 7.
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — snapshot dedup) · Boundary Clarity (claim-drift gap at section header, historical-audit focus) · Spec Alignment (verify-ac rename consistent, no Task( drift; hook events TeammateIdle/background_tasks/session_crons correct)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 coherence)
-
-### Summary
-Two coherence fixes from Phase 2 cross-agent review. (1) §Execution Workflow step 5 contradicted senior-engineer.md step 6 — both closed the issue, making sdet's `docket issue close` a no-op. Rewritten as "issue already closed by senior; APPROVE = comment-only; ACCEPT WITH CAVEATS = comment + route follow-up; BLOCK = reopen+comment (step 6)". (2) §Shutdown Handling auto-shutdown block now matches project-manager.md's inline `TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources)` between final-report and `shutdown_request` per drain-doctrine symmetry.
-
-### Changes
-- §Execution Workflow step 5: rewrite to acknowledge prior @senior-engineer close; branch by verdict (APPROVE/ACCEPT-WITH-CAVEATS/BLOCK) without re-closing.
-- §Shutdown Handling §Auto-shutdown on idle bullet: add inline TaskStop the Monitor watch per PM symmetry.
-
-### Dimensions Evaluated
-Boundary Clarity (PRIMARY — close-flow ownership now single-actor) · Spec Alignment (drain doctrine fleet-symmetric)
-
-### Rename
-No rename.
-
-## 2026-05-26
-
-### Summary
-Two systemic alignments net +2 lines (337 → 339). (1) §Verifier Composition contradicted team-lead.md — said "no single variant" while team-lead.md DEFAULTS to single `verifier` and opts up to paired only on ≥3 issues / ≥5 files / security-sensitive. Rewritten to match, with canonical-name guard against the 20+ observed drift variants (`verifier-DKT-16`, `verifier-full`, etc.). (2) Claim-via-`docket issue move` drift (team-lead pitfalls.md in cross-project memory flagged sdet ephemerals generalizing senior-engineer's claim-first rule to verification, regressing issue state). Comm rule 7 + Execution Workflow step 2 + rule 2 reference now distinguish: verification = ack-only (no `docket issue move`); test-infra writing = claim+ack per @senior-engineer convention.
-
-### Changes
-- §Verifier Composition: rewrite to default-single + opt-up-paired (team-lead Rule 8); codify three canonical spawn names; refuse issue-scoped drift variants.
-- §Lifecycle (L38): spawn-name list reframed; fix-loop wording matches default-single.
-- §Comm Discipline rule 7 (L50): split verification (ack-only, no move) from test-infra (claim+ack).
-- §Execution Workflow step 2 (L237): mirror rule 7 split.
-- §Comm Discipline rule 2 (L45): updated cross-reference to rule 7's spawn-type branches.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — verifier-composition realignment with team-lead Rule 8) · Boundary Clarity (PRIMARY — claim-via-move drift fix) · Capability Growth (canonical-name guard against drift variants)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 — strip 4 dangling docs/tdd/* citations)
-
-### Summary
-Stripped 4 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
-
-### Changes
-- L34 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
-- L162 Verifier Composition: dropped "+ reviewer-doubling-lifecycle.md §4.2 row 3" tail.
-- L167 reconciliation note: replaced "TDD §4.3" with team-lead.md step 14 anchor.
-- L319 Runtime Discipline opener: replaced "§4.5 applicability matrix" with team-lead.md §Runtime Discipline anchor.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — No Guessing violation closed)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 1 — shutdown coordination: proactive emit + drain)
-
-### Summary
-Five edits encoding proactive ephemeral self-shutdown (verdict-then-`shutdown_request` as FINAL TOOL CALL same turn) per operator directive. Lifecycle, Comm Rule 6, Verifier Composition, Verification Output, and Shutdown Handling all clarified. Background-task drain rule added. Sister-verifier coordination clarified as peer-only (not joint persistence). Net +4 lines (367 → 371).
-
-### Changes
-- §Lifecycle: enumerated three ephemeral spawn names; explicit "not one of the three sanctioned idle advisors"; sequence ends with `shutdown_request` as FINAL TOOL CALL the same turn.
-- §Comm Rule 6: split into proactive-emit (default for sdet, post-verdict) vs reactive-reply; routing rule strengthened.
-- §Verifier Composition: sister coordination is peer messaging only — each verifier shuts down independently.
-- §Verification Output: explicit 3-step closeout sequence ending in `shutdown_request`.
-- §Shutdown Handling: proactive subsection added; `background_tasks`/`session_crons` drain rule added; "only the three advisors stay idle" framing.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — verdict-then-shutdown as final tool call) · Boundary Clarity (sister-verifier peer-only) · Capability Growth (proactive emission + drain rule) · Completeness (background-task drain)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -337,3 +210,12 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-24: Phase 2 coherence — shutdown_response routing rule: Closed the 6 historical `is_error:true` "shutdown_response must be sent to team-lead"…
 - 2026-05-25: Three behavioral gaps from 10+ sandbox-blocked errors and 2 operator over-reach interruptions in historical audit: sandbox off-limits documentation, jq
 - 2026-05-25: Three coherence fixes from Phase 2 audit: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 for fleet parity with
+- 2026-05-26: Phase 1 — shutdown coordination: proactive emit + drain; Lifecycle/Rule 6/Verifier Composition/Verification Output/Shutdown Handling. Net +4.
+- 2026-05-26: Phase 2 — stripped 4 dangling docs/tdd/* citations; redirected to team-lead.md anchors.
+- 2026-05-26: Verifier Composition realigned to default-single (team-lead Rule 8); canonical spawn names; claim-via-move drift fix (verification = ack-only). Net +2.
+- 2026-05-26: Phase 2 coherence — step 5 close-flow ownership fixed (SE closes, sdet branches by verdict); drain-doctrine TaskStop parity.
+- 2026-05-30: Test Failure Diagnosis dedup + §CRITICAL header claim-drift gap fix. Net ~0.
+- 2026-05-30: Consolidation — step 5 edge-case folded into verify-ac; §Verification Output closeout collapsed. Net -3.
+- 2026-05-30: Phase 2 coherence — dangling `§6 continuity preamble` pointer removed (fleet sweep). Within-line.
+- 2026-06-05: Two Consolidation & Trimming dedups — step 2 claim convention, Shutdown Proactive idle-role enumeration. Net 0.
+- 2026-06-09: Consolidation — §Verification Output closeout recap collapsed to back-reference chain. Net 0.

@@ -3,6 +3,35 @@
 ## 2026-06-20
 
 ### Summary
+Phase-2 coherence: closed a GO-gate producer/consumer deadlock + a within-file shutdown-sweep de-restatement. Net 0 lines (still 637 — budget overage routed to a structural-refactor ADR). Drift: disabled (drift=0).
+
+### Changes
+- AMPLIFY (coherence): the routine single-reviewer dispatch (step 14) now MUST carry the `GO — review NOW` trigger — closes a deadlock where staff-engineer.md's Moving-tree gate hard-gates EVERY verdict on a GO the default path never sent.
+- CULL (redundancy): step-13 line 314 de-duplicated against the step-13 Shutdown-sweep bullet (316), which owns the still-alive sweep in full.
+
+### Dimensions Evaluated
+Producer/consumer gate consistency (FIX) · within-file redundancy (FIX) · CANONICAL dedup (measured — none net-reduce, NONE applied) · line budget (remains 137 over — structural-refactor ADR recommended).
+
+### Rename
+No rename.
+
+## 2026-06-21
+
+### Summary
+Compacted 11 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 11 oldest committed date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-06-20
+
+### Summary
 Fable-5 accuracy correction + word-level consolidations + two encodable gap-fills; net 0 physical lines (still 637 — TRIM goal UNMET, see Changes). Drift: disabled (drift=0).
 
 ### Changes
@@ -155,170 +184,6 @@ Consolidation & Trimming, Spec Alignment, Actionability, Completeness, Role Real
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-evolve-skills cycle reference update: code-review skill renamed → code-review-verdict (bundled-skill collision, operator-approved); 7 references updated (banner example, project-registration list, 4 spawn-template invocations, R2 example).
-
-### Changes
-- All `Skill(code-review...)` invocations and skill-name mentions → code-review-verdict.
-
-### Verification
-- `grep -rnE 'Skill\(code-review[,)]' agents/` returns zero hits.
-
-## 2026-06-09
-
-### Summary
-TRIM cycle: brought team-lead.md from 504 (over budget) to 483 by consolidating duplicated prose. No rule semantics changed; sibling files reference the R-rule bodies via pointer, not verbatim copy, so the R-rule trims orphan nothing (verified family-wide in Phase 2). Net −21.
-
-### Changes
-- Phase 1: collapsed the two async-shutdown paragraphs (shutdown-protocol + post-final-report-idle) into one.
-- Phase 1: deduped "return verdict / never route directly" out of both review templates into the common context block (Rule 1 already mandates it).
-- Phase 2: compacted R1 batched-calls+escape-hatch, R5 self-summary body (7-bullet block → 3 bullets), and R6 banned-phrase bullet — semantics preserved, padding removed.
-- Confirmed already-mitigated (no design change): the artifacts.vorpal shutdown-loop lesson; AskUserQuestion usage is correct (team-lead runs as MAIN thread).
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary — under 500), Role Realism, Boundary Clarity, Spec Alignment, Completeness, Capability Growth, Rename
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: added a visual-deliverable render-verification pointer to the step-13 spot-check, deferring visual surfaces to ux-advisor (coherent with ux-designer.md's new render-to-image gate) rather than duplicating render-to-image in team-lead; offset by a within-line Phantom-deletion trim. Net 0; 481 lines.
-
-### Changes
-- Step 13 spot-check: added "Visual deliverables are render-verified, not Read-verified → defer to ux-advisor design-QA" so a source-diff-green pass does not approve a slide/static-export/rendered-UI surface. Offset by compacting the Phantom-deletion sub-case wording (behavioral content retained).
-
-### Dimensions Evaluated
-ux↔team-lead Coherence (PRIMARY) · Consolidation & Trimming (net-zero offset, held 481/500) · No-duplication (routes to ux-advisor, does not re-implement render-to-image).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Generalized §Mid-cycle redirect-race rule into the canonical one-authoritative-message rule (net +0; 481 lines). The historical audit's most-repeated team-lead lesson ("one authoritative message per teammate, then WAIT; decide once; never flip-flop a low-stakes call mid-flight") was only partially encoded — only the AskUserQuestion-override instance existed; the general async-ordering principle was absent here and in all 6 peer files.
-
-### Changes
-- §Mid-cycle redirect-race rule: prepended the general "one authoritative message per teammate per wait-window, then WAIT; do not flip-flop a low-stakes call mid-flight (a superseding message crosses the prior, teammate replies to STALE)" principle; demoted the AskUserQuestion-override case to "the redirect instance". Heading substring kept (L121 back-reference).
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY) · Consolidation & Trimming (net +0; declined near-ceiling additions) · Completeness (docs-researcher recs #1/#3/#5/#6 confirmed already-applied NO-OPs; #2/#7 flagged cross-cutting for Phase 2).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Phase 2 coherence: (1) removed the dangling `§6 continuity preamble` pointer (6× — L128/154/168/287/313/344); team-lead is the file that DEFINES the preamble (§Teammate Stall & Crash Recovery, Fix-loop re-spawn), so `§6` was pure noise. (2) Corrected the Rule 5 numbering table: `@staff-engineer 1-8` → `1-9` (staff carries a 9th Advisor-topology rule; the table was the stale side — a wrong count risks a future evolve cycle deleting a real rule). Within-line; 481 lines.
-
-### Changes
-- `§6 continuity preamble` → `continuity preamble` (×6).
-- Rule 5: `@staff-engineer 1-8` → `1-9`, noting the 9th Advisor-topology rule (recommendations route through team-lead).
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — self-referential dangling ptr + table-vs-reality drift) · Rule-numbering convention accuracy.
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Three within-line correctness fixes (net 0; 481 lines). (1) Healed the dangling `§4.3 reconciliation rules` pointer (2× — step 15 + Rule 8; no §4.3 heading exists, rules live in step 14) → "step 14 reconciliation rules", and corrected the wrong "(1-8)" count → "(1-6)" (step 14 has exactly 6 rules). (2+3) Reworded two phrasings that read like fabricated docket subcommands (Phase 0 docket-audit items) — "docket issue stuck `in-progress`" → noun phrase, and resume-preamble "check docket issue state" → "run `docket issue show <id>`". No speculative consolidation near the 500 ceiling.
-
-### Changes
-- Step 15 + Rule 8: `§4.3 reconciliation rules` → `step 14 reconciliation rules`; `(1-8)` → `(1-6)`.
-- §Stall & Crash Recovery detection bullet (d): "docket issue stuck `in-progress`" → "a docket issue sitting in `in-progress`".
-- §Stall & Crash Recovery resume preamble: "check docket issue state + comments" → "run `docket issue show <id>` + comment list".
-
-### Dimensions Evaluated
-Spec Alignment / Cross-Agent Coherence (PRIMARY — 2 dangling pointers + 1 wrong count) · Actionability (2 Docket-CLI clarity rewordings) · Consolidation & Trimming (declined near-ceiling churn)
-
-### Rename
-No rename.
-
-## 2026-05-30 (Phase 2 — coherence)
-
-### Summary
-Completed the Rule 2 canonical role-prefix example registry. The visibility-contract examples listed only `[LEAD→…]`/`[PM→…]`/`[SE→…]`, but the fleet also uses `[STAFF→…]`, `[SEC→…]`, `[SDET→…]`, `[UX→…]` (all valid `[{ROLE}→@{recipient}]` instantiations). Added the four missing tokens so Rule 2 is authoritative for all 7 roles. Within-line; 481 lines.
-
-### Changes
-- Rule 2 (Visibility contract): appended `[STAFF→…]`, `[SEC→…]`, `[SDET→…]`, `[UX→…]` to the canonical-prefix example list.
-
-### Dimensions Evaluated
-Spec Alignment / Cross-Agent Coherence (Rule 2 prefix registry now complete for all 7 roles)
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Two changes, net -2 (483→481), trim-leaning near the 500 ceiling. (1) Promoted the recurring `.env*` phantom-deletion pitfall (RECURS across agentic-services + weft memory) into the EXISTING step-13 sandbox-masked-diff caveat — deny-listed paths surface as `Operation not permitted` / phantom-DELETED, `dangerouslyDisableSandbox` does not lift it, treat as masked state. (2) Consolidated the standalone "Trust state-divergence rejections" paragraph into the pre-shutdown gate step 3 (which it restated), keeping only the non-redundant "don't override by re-issuing the same reasoning" directive. Docs-research recs already satisfied.
-
-### Changes
-- Step 13 spot-check sandbox-masked caveat: appended phantom-deletion sub-case (`.env*` → `Operation not permitted` → masked state, never a real deletion).
-- Pre-shutdown gate step 3: folded in the "trust the rejection / don't re-issue same reasoning" directive; deleted the standalone "Trust state-divergence rejections." paragraph (-2 lines).
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — net-negative achieved) · Capability Growth (cross-repo recurring memory promoted into an existing rule)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 coherence)
-
-### Summary
-Two coherence fixes from Phase 2 cross-agent review. (1) §Spawning Templates @ux-designer line said "doubled per Rule 8" — but Rule 8 DEFAULTS to single, opts up to doubled. ux-designer.md Responsibility 5 had it right; team-lead Spawning Template was the outlier. Rewritten to match (default single ux-advisor via SendMessage; opt up to doubled). (2) Added one-line frontmatter `skills:`/`mcpServers:` caveat to §Spawning Templates Common context-block — spawned-teammate mode IGNORES frontmatter `skills:` (only `--agent` main-thread honors them per v2.1.117 docs). Single fleet-wide note avoids 6x duplication across agents that declare skills.
-
-### Changes
-- §Spawning Templates @ux-designer (L161): "doubled per Rule 8" → "default single `ux-advisor` via SendMessage per Rule 8; opt up to doubled per Rule 8 conditions".
-- §Spawning Templates Common context-block: new bullet — frontmatter `skills:`/`mcpServers:` caveat with the 9 team-relied-upon skills listed.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — Spawning Template now matches Rule 8) · Boundary Clarity (frontmatter caveat prevents future silent-fail when adding skills)
-
-### Rename
-No rename.
-
-## 2026-05-26
-
-### Summary
-Deleted 2 redundant reconciliation rules in step 14 (rule 3 "Approve+Block→Block wins" restated rule 1; rule 8 "Eager parallel dispatch" restated section intro). Renumbered remaining 4-7 → 3-6; updated 3 cross-references at lines 253 (intro), 319 (Stall & Crash Recovery), 353 (Rule 8). Added sandbox-masked-diff caveat to step 13 spot-check (ports CC-1 from cross-project pitfalls.md into the rule body). Compressed Brief-Authoring Discipline (5→4 lines via Detector inline) and Security-Sensitive flag enumeration (deduped trigger list). Net: -3 lines (480 → 477).
-
-### Changes
-- Step 14 reconciliation rules: deleted rule 3 + rule 8 (-2 lines); renumbered 4-7 → 3-6.
-- Cross-references updated at 3 sites (intro at line 253, Stall & Crash Recovery at 319, Rule 8 at 353) — "rule 8" / "rule 7" stripped or renumbered to "rule 6".
-- Step 13 spot-check `git diff --stat` bullet: appended "Sandbox-masked diff caveat" — retry with `dangerouslyDisableSandbox=true` when teammate references files absent from your diff.
-- Pattern Decision Tree step 6: Security-Sensitive trigger enumeration deduplicated (was stated twice).
-- @senior-engineer Brief-Authoring Discipline: folded Detector paragraph into bulleted list (-1 line).
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — net-negative achieved despite ceiling pressure) · Spec Alignment (cross-project pitfalls.md item ported; 3 stale cross-refs healed)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 — strip 12 dangling docs/tdd/* citations)
-
-### Summary
-Stripped all 12 dangling citations to `docs/tdd/reviewer-doubling-lifecycle.md` and `docs/tdd/agents-token-optimization.md` (files do not exist in this repo per Phase 0 verification). Each citation replaced with intra-team-lead anchor pointing at the inline rule it claimed to reference (Rule 7, Rule 8, step 14 reconciliation rules 1-8, §Teammate Stall & Crash Recovery, §Runtime Discipline).
-
-### Changes
-- 12 strip-only edits across L188, L206, L240, L242, L244, L256, L274, L282, L306, L331, L334, L340, L346.
-- Common patterns: "TDD §4.3" → "step 14 rules" / "reconciliation rule N in step 14"; "TDD §4.4" → "Rule 7"; "TDD §4.2" → "Rule 8"; "§6 continuity preamble" → "continuity preamble (per Stall & Crash Recovery)"; "§4.5 applicability matrix" → "this section is the source of truth".
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — No Guessing violation closed) · Boundary Clarity (intra-file anchors are unambiguous)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -341,3 +206,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-25: Encoded 5 active memory pitfalls (solution-dimension HARD GATE, ls-before-dispatch, budget-table per-row arithmetic, mechanical-fix shortcut + cycle-bloat
 - 2026-05-25: Single coherence fix: dropped dead "(P7a)" cross-reference from R7 canonical body (fleet-wide cleanup; no agent canonically labels its Read rule as P7a).
 - 2026-05-26: Encoded proactive shutdown-coordination per operator directive. New end-of-turn shutdown sweep step (probes `docket issue list -a @<role> -s in-progress
+- 2026-05-26: Phase 2 — stripped 12 dangling docs/tdd/* citations; redirected to intra-team-lead anchors (Rule 7/8, step 14 rules, Stall & Crash Recovery, Runtime Discipline).
+- 2026-05-26: Step 14 reconciliation rules: deleted rule 3 + rule 8, renumbered 4-7→3-6; sandbox-masked-diff caveat; Brief-Authoring Discipline inline; trigger dedup. Net -3.
+- 2026-05-26: Phase 2 coherence — ux-designer Spawning Template corrected to default-single; frontmatter skills/mcpServers caveat added to Common context-block.
+- 2026-05-30: `.env*` phantom-deletion pitfall promoted to step 13; "Trust state-divergence rejections" folded into pre-shutdown gate step 3. Net -2.
+- 2026-05-30: Phase 2 coherence — Rule 2 prefix registry completed with STAFF/SEC/SDET/UX tokens. Within-line.
+- 2026-05-30: Three correctness fixes: §4.3→step 14 reconciliation rules; (1-8)→(1-6); two fabricated docket-subcommand phrasings reworded. Net 0.
+- 2026-05-30: Phase 2 coherence — dangling `§6 continuity preamble` ×6 removed; Rule 5 staff count 1-8→1-9 corrected. Within-line.
+- 2026-06-05: One-authoritative-message rule generalized; AskUserQuestion-override demoted to the redirect instance. Net 0.
+- 2026-06-05: Phase 2 coherence — visual-deliverable render-verification pointer added to step-13 spot-check; Phantom-deletion wording trimmed. Net 0.
+- 2026-06-09: TRIM cycle: 504→483 by consolidating duplicated prose (async-shutdown, return-verdict, R1/R5/R6). Net -21.
+- 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 7 references updated.

@@ -1,5 +1,19 @@
 # Changelog: ux-designer
 
+## 2026-06-21
+
+### Summary
+Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 8 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary
@@ -147,135 +161,6 @@ Consolidation & Trimming, Completeness, Spec Alignment, Role Realism, Boundary C
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Encoded two render-gate pitfalls from agent memory (static-export render-to-image QA gate; rendered-effect-at-delivery-resolution spec guidance), plus a within-line trim of a redundant Shutdown bullet. Physical net +4 (245→249; two new paragraphs each add a blank+content line; the CHANGE-3 trim was within-line so it did not offset on a line basis).
-
-### Changes
-- QA Workflow: added a MANDATORY static-export/slide render-to-image-and-Read gate — "build green" ≠ render pass; broken-image placeholder / dead embed = Blocker; verify at real delivery resolution. (agent-memory pitfall; grep-verified absent across all agents)
-- Spec content rule: added rendered-EFFECT-at-delivery-resolution + color-paired-with-text-fallback (CSS-contract-met ≠ design-intent-met).
-- §Shutdown "Ephemeral roles" bullet trimmed to a pointer; Lifecycle §Ephemeral roles (L220) remains canonical owner of the exit sequence (verified).
-
-### Dimensions Evaluated
-Completeness + Spec Alignment (two render-gate pitfalls) · Consolidation & Trimming (Shutdown bullet) · Role Realism, Boundary Clarity (no change).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-One consolidation fix (net 0 lines; single-line paragraph, 245 unchanged). §Shutdown Handling's ephemeral paragraph restated the verdict-then-shutdown exit sequence + fresh-ephemeral mechanic already canonical in §Ephemeral `@ux-designer` roles; trimmed to a pointer preserving only its unique fact — an ad-hoc spec-author ephemeral delivers a saved `docs/ux/` spec, not a review/QA verdict.
-
-### Changes
-- §Shutdown Handling (ephemeral paragraph): full mechanic restatement → 1-line pointer to §Ephemeral `@ux-designer` roles; retains the verdict-vs-saved-spec deliverable distinction.
-
-### Dimensions Evaluated
-Consolidation (PRIMARY — cross-section dedup) · Boundary Clarity (What-You-Are-NOT intact) · Cross-Communication (team-lead cross-refs resolve: Rule 7/8, reconciliation rule 6, R1-R7) · Spec Alignment (docs/ux + docs/spec empty — n/a)
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Three coherence/consolidation fixes driven from first-principles + cross-agent coherence (zero in-window historical signal — lowest-invocation role, empty docs/ux + docs/spec). (1) Gated AskUserQuestion to standalone-only at the Honest-critique line and Spec Workflow step 5 — the teammate path cannot call it (docs-validated); team mode routes via SendMessage team-lead, matching the staff/security fleet pattern. (2) Corrected a dangling cross-ref: the DEGRADED fallback is team-lead step 14 reconciliation rule 6, not 7. (3) Consolidated the verdict-then-shutdown / continuity-preamble mechanic stated 4× (R2, R5, Ephemeral roles, Shutdown Handling); trimmed the two R2/R5 Fix-loop blocks to pointers preserving each unique fact. Content trimmed; 245 lines (single-line paragraphs, count unchanged).
-
-### Changes
-- §Honest critique / §Spec Workflow step 5: AskUserQuestion split into standalone (`AskUserQuestion`) vs team (SendMessage team-lead) — closes the teammate-path-unavailable gap.
-- §Ephemeral roles: reconciliation "rule 7" → "rule 6" (matches team-lead step-14 list + L317 cross-ref).
-- R2 / R5 Fix-loop continuity: full mechanic → 1-line pointers to §Ephemeral `@ux-designer` roles; unique facts retained.
-
-### Dimensions Evaluated
-Consolidation (PRIMARY) · Cross-Communication (AskUserQuestion fleet parity + rule-6 cross-ref) · Spec Alignment (teammate-path tool availability) · Actionability (no ambiguous team-mode AskUserQuestion instruction)
-
-### Rename
-No rename.
-
-## 2026-05-26
-
-### Summary
-Realigned R2/R5 "Doubled Reviewer Pattern" subsections with team-lead.md Rule 8 (default = single reviewer `ux-advisor` via SendMessage; doubled = opt-up). Previous framing implied doubled was default, contradicting Rule 8's "single verdict is final, no ephemeral peer spawn." Renamed subsections to "Reviewer Panel" to capture both modes. Pluralized hardcoded `design-qa-2` / `design-review-2` to `{N}` for naming-convention parity with team-lead spawn names. Net 0 lines (text content shifted; line count preserved).
-
-### Changes
-- R5 §Reviewer Panel (L186-187): renamed "Doubled Reviewer Pattern" → "Reviewer Panel"; prepend default-single + opt-up-doubled framing; pluralize `design-qa-2` → `design-qa-{N}`.
-- R2 §Reviewer Panel (L158-159): mirror rename + pluralization in the pointer subsection.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — closes Rule 8 default-mismatch) · Cross-Agent Coherence (team-lead spawn-naming parity) · Actionability (default-vs-opt-up clarity for ux-advisor receiving design-QA requests)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 — strip 6 dangling docs/tdd/* citations)
-
-### Summary
-Stripped 6 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
-
-### Changes
-- L168 design-review Fix-loop: replaced "§6 continuity preamble per docs/tdd/reviewer-doubling-lifecycle.md" with §Stall & Crash Recovery anchor.
-- L185 Doubled reviewer pattern: dropped "+ reviewer-doubling-lifecycle.md §4.2 row design-qa" tail.
-- L197 design-QA Fix-loop: same fix as L168 (parity).
-- L210 Lifecycle: dropped "+ docs/tdd/reviewer-doubling-lifecycle.md §4.4" tail.
-- L213 ux-advisor idle: replaced "TDD §4.4 rule 5" with team-lead.md §Stall & Crash Recovery anchor.
-- L216 ephemeral roles: replaced "§6" + "TDD §4.3 rule 7" with §Stall & Crash Recovery + step 14 anchors.
-
-### Dimensions Evaluated
-Spec Alignment (PRIMARY — No Guessing violation closed)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 1 — proactive ephemeral self-shutdown vs idle-OK persistent)
-
-### Summary
-Distinguished ephemeral (`design-review-{N}`, `design-qa-{N}`) verdict-then-self-shutdown discipline from persistent `ux-advisor` idle-OK lifecycle. Encoded verdict-then-`shutdown_request` SAME turn as the canonical ephemeral exit sequence; pluralized hardcoded `design-review-2`/`design-qa-2` to `{N}`/`{N+1}` to match team-lead spawn naming. Precautionary parity edit — historical profile is clean (TeammateIdle=0). Net +4 lines (331 → 335).
-
-### Changes
-- §Shutdown Handling: expanded to three sub-sections — Ephemeral (verdict-then-`shutdown_request` SAME turn), Persistent `ux-advisor` (idle-OK by design), Inbound shutdown_request reply rule.
-- §Ephemeral `@ux-designer` roles: explicit exit sequence "deliver final report → emit shutdown_request → stop"; pluralized `{N}`.
-- §Responsibility 2 (design-review) Fix-loop continuity: replaced "exit on shutdown_request" passive framing with "self-shutdown after delivering verdict (SAME turn)".
-- §Responsibility 5 (design-qa) Fix-loop continuity: parity edit with above; pluralized.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — proactive self-shutdown) · Boundary Clarity (ephemeral vs `ux-advisor` lifecycle distinction) · Capability Growth (verdict-then-shutdown parity with fleet)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 2 coherence — shutdown WRONG/RIGHT, sec-incoming trigger, P7a drop)
-
-### Summary
-Three coherence fixes: (1) added concrete WRONG/RIGHT shutdown-routing example to Comm Discipline rule 6 (fleet parity); (2) added @security-engineer feasibility-consult incoming trigger to close bidirectionality gap (security-engineer already had both outgoing+incoming for consent/defaults; ux-designer only had outgoing); (3) dropped dead "(P7a)" cross-reference from R7.
-
-### Changes
-- Comm Discipline rule 6: appended WRONG/RIGHT (`to="design-review-2"`/`"design-qa-2"` WRONG; `to="team-lead"` RIGHT)
-- §Inter-Agent Communication Incoming triggers: added @security-engineer feasibility-consult entry after @staff-engineer
-- §R7 exception clause: dropped "(P7a)" suffix
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — bidirectional sec↔ux trigger pair + shutdown example) · Actionability (P7a dead-reference removal)
-
-### Rename
-No rename.
-
-## 2026-05-25 (Phase 1 self-review — Read-before-Edit compaction + doubled-reviewer consolidation)
-
-### Summary
-Closed the own-session `File has not been read yet` error (session 435785d7) by promoting compaction-awareness from buried R7 exception to the top-level Read-before-Edit/Write rule (mirrors senior-engineer.md line 33 phrasing). Consolidated near-identical "Doubled Reviewer Pattern" subsections from Responsibility 2 (design-review) and Responsibility 5 (design-QA) into one canonical block under Responsibility 5; Responsibility 2 now references it with the `design-review-2` slot-substitution. Added explicit memory save trigger to address persistent memory-gap.
-
-### Changes
-- §Read before Edit/Write rule (line 34): appended compaction-awareness clause mirroring senior-engineer.md phrasing — addresses session 435785d7 error
-- §Persistent memory: appended explicit save trigger ("after every design-QA verdict that surfaced a recurring root cause; after every cross-surface precedent decision") to address memory-gap-despite-active-invocations audit finding
-- §Responsibility 2 → Doubled Reviewer Pattern: collapsed to a one-line reference pointing to the canonical block under Responsibility 5 (slot-substitute `design-review-2` for `design-qa-2`)
-
-### Dimensions Evaluated
-Actionability (PRIMARY — own-session Read-before-Edit fix) · Consolidation & Trimming (doubled-reviewer subsection merge) · Cross-Agent Coherence (Read-before-Edit phrasing aligned with senior-engineer canonical form) · Capability Growth (memory save trigger)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -320,3 +205,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-17: Added canonical `TeammateIdle` stall-signal line for cross-agent terminology coherence.
 - 2026-05-19: Addressed the "highest-leverage coherence fix" flagged by historical audit: promoted Visibility contract from conditional mirroring ("When an exchange ties to
 - 2026-05-24: Closed the 6 historical shutdown-routing errors by making the routing rule explicit at Communication Discipline rule 6. `design-review-2` and `design-qa-2`
+- 2026-05-25: Phase 1 self-review — Read-before-Edit compaction-awareness promoted; Doubled Reviewer Pattern consolidated into R5 canonical block; memory save trigger added.
+- 2026-05-25: Phase 2 coherence — rule 6 WRONG/RIGHT shutdown example; @security-engineer incoming trigger added; P7a dropped from R7.
+- 2026-05-26: Phase 1 — ephemeral verdict-then-shutdown vs persistent ux-advisor idle-OK lifecycle distinguished; design-review-{N}/design-qa-{N} pluralized. Net +4.
+- 2026-05-26: Phase 2 — stripped 6 dangling docs/tdd/* citations; redirected to team-lead.md anchors.
+- 2026-05-26: R2/R5 Reviewer Panel realigned to default-single + opt-up-doubled (Rule 8); design-qa-{N} naming convention parity. Net 0.
+- 2026-05-30: Three coherence/consolidation fixes: AskUserQuestion standalone-only gate; reconciliation rule 6 (not 7); R2/R5 Fix-loop → pointers. Net 0.
+- 2026-05-30: Consolidation — §Shutdown Handling ephemeral restatement → 1-line pointer to §Ephemeral roles. Net 0.
+- 2026-06-05: Two render-gate pitfalls encoded: render-to-image QA gate + rendered-EFFECT-at-delivery-resolution spec rule. Net +4.

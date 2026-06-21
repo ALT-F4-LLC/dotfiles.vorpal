@@ -1,5 +1,19 @@
 # Changelog: senior-engineer
 
+## 2026-06-21
+
+### Summary
+Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 9 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary
@@ -153,133 +167,6 @@ Consolidation & Trimming, Actionability, Completeness, Role Realism, Boundary Cl
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-evolve-skills cycle reference update: code-review skill renamed → code-review-verdict; 1 reference updated (Hard Gates enforcement mention in code-philosophy through-line).
-
-### Changes
-- "the reviewer enforces hard gates via the code-review-verdict skill".
-
-## 2026-06-09
-
-### Summary
-Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to Execution Workflow step 6 (within the existing close-noop line; line count unchanged at 360). Encodes recurring 4/5-repo docket-clobber/stale-reader theme A — no prior cwd-failure-mode coverage.
-
-### Changes
-- Step 6: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at` advanced; a stale read is not a write-failure (reconcile by timestamp, never force-write).
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Consolidation & Trimming, Rename
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Collapsed the triplicated docs-exploration block into the canonical Docs-paths block + rubric (net −6; 366→360). Historical-memory focus items (git-add-under-no-commit, state-divergence authority) confirmed already-encoded — no additions. The dead-AskUserQuestion-path finding was DEFERRED to Phase 2 as a fleet-wide parity-bound question (reviewers disagree on whether "Standalone" is reachable).
-
-### Changes
-- §Implement: collapsed restated per-dir docs descriptions (duplicated the CANONICAL Docs-paths block + Implement-Directly rubric) into one line; kept ls-guard, `adr/` location, and conflict/deviation escalation.
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary), Spec Alignment, Completeness, Boundary Clarity, Role Realism, Actionability, Capability Growth, Rename
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Four changes, physical net +1 (358→359; the reviewer's intended consolidation offset was a within-line token reduction, not a line removal). Two historical-memory gaps folded into existing structure (shared-tree git-diff scoping; dispatch-cited reuse-helper premise-check), one consolidation of duplicated probe-rationale, one fix of a `\!=` zsh-escape artifact that had leaked literally into step 6.
-
-### Changes
-- Step 6 (close/verify/comment): `status \!= "in-progress"` → assert `status` is `done` — removed the markdown-rendered backslash-bang; aligns with the agent's own "assert the positive" memory and is more precise (close = move done).
-- Build & Commit Hygiene: added "Shared-tree diff scoping" bullet — `git diff` shows all agents' work; scope to your own paths; never `git add` siblings (highest cross-cutting senior-engineer trap; was absent).
-- Execution Workflow step 2: added "Premise-check" to Contradiction-detection — grep to confirm a dispatch-cited "reuse existing X helper" exists before planning reuse (distinct from staff TDD-claim rule).
-- Execution Workflow step 1: consolidated near-verbatim probe-rationale to a §Communication discipline → "Claim before work" back-reference (L44 verified canonical).
-
-### Dimensions Evaluated
-Completeness + Capability Growth (two memory gaps) · Consolidation & Trimming (step-1/L44 dedup) · Actionability (escape-artifact fix) · Boundary Clarity, Role Realism, Spec Alignment, Rename (no change).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Phase 2 coherence: removed the dangling `§6 continuity preamble` pointer (5 occurrences — the full phrase ×4 at L42/L54/L174/L326 + a `§6 preamble` variant at L340). No §6 heading exists; the continuity preamble is defined in team-lead.md §Teammate Stall & Crash Recovery (Fix-loop re-spawn). Within-line; 358 lines.
-
-### Changes
-- `§6 continuity preamble` → `continuity preamble` (×4) and `§6 preamble` → `continuity preamble` (×1). Self-defining term; fleet-symmetric with the same sweep across sdet/security-engineer/team-lead.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (PRIMARY — dangling cross-ref) · Terminology consistency.
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-One consolidation (net 0 lines; ~120 fewer duplicated words). Compressed the frontmatter `**No code comments.**` block to a terse rule + pointer; Code Quality principle 7 is the canonical home for the full remedy, the machine-required-directives allowlist, and the override path — the frontmatter block restated all three and already forward-referenced "rule 7". Up-front hard-rule placement preserved (sibling-parity with sdet.md).
-
-### Changes
-- Frontmatter `**No code comments.**`: full restatement (allowlist + remedy + override path) → rule + remove-on-changed-lines + pointer to principle 7 / Override Convention. Behavior unchanged (principle 7 governs identically).
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — frontmatter/principle-7 dedup) · Completeness (12 code-philosophy principles audited; each a distinct gate — NOT a consolidation target) · Boundary Clarity (ad-hoc-issue carve-out intact) · Cross-references (sdet 6/7/8, security Consensus Voting, team-lead Rule 7 — stable)
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Two self-contained edits (net -1; 359→358). Removed the dead `commit` skill from `skills:` frontmatter (no such skill exists anywhere — verified — and it contradicted the no-commit CRITICAL banner) and trimmed the frozen "(32 fix-round ephemerals)" audit count from the TDD deep-read gate. The recommended closure-authority gate was DEFERRED to Phase 2 coherence — it is paired with a team-lead brief-template change that review-team-lead declined, and an unpaired flag would never fire (fails the Behavioral gate).
-
-### Changes
-- `skills:` frontmatter: removed `commit` (dead reference; contradicted no-commit banner). `vote`/`simplify-scout` retained (both exist + invoked in-body).
-- Execution Workflow step 2: trimmed frozen "(32 fix-round ephemerals)" count from the TDD deep-read gate.
-- DEFERRED to Phase 2: closure-authority gate (cross-cutting; paired team-lead change in dispute).
-
-### Dimensions Evaluated
-Consolidation & Trimming (PRIMARY — frontmatter + frozen-count trim) · Boundary Clarity (no-commit contradiction resolved) · Capability Growth (closure-authority deferred to coherence)
-
-### Rename
-No rename.
-
-## 2026-05-26 (Phase 2 coherence)
-
-### Summary
-Two coherence fixes from Phase 2 cross-agent review. (1) §Proactive SendMessage Triggers ux-designer line was vacuous when `docs/ux/` is empty (current repo state) — "not resolvable from docs/ux/" read as always-true OR never-true. Reworded as "Introducing a new user-facing pattern OR an existing docs/ux/ spec is ambiguous." (2) §Shutdown Handling auto-shutdown block now matches project-manager.md's inline `TaskStop the Monitor watch (drain doctrine — outstanding watches at shutdown leak resources)` per drain-doctrine symmetry.
-
-### Changes
-- §Proactive SendMessage Triggers (L165): reword ux-designer trigger from "not resolvable from docs/ux/" to "Introducing a new pattern OR existing spec is ambiguous" — unambiguous when docs/ux/ is empty.
-- §Shutdown Handling §Auto-shutdown on idle bullet: add inline TaskStop the Monitor watch per PM symmetry.
-
-### Dimensions Evaluated
-Actionability (PRIMARY — vacuous trigger now concrete) · Spec Alignment (drain doctrine fleet-symmetric)
-
-### Rename
-No rename.
-
-## 2026-05-26
-
-### Summary
-Two targeted changes net -7 lines (360 → 353). (1) Added TDD deep-read gate to Execution Workflow step 2 — when issue cites a TDD, read end-to-end and consult @staff-engineer/advisor on any WHY ambiguity BEFORE first line of code. Directly targets the audit's dominant rework signal: 32 fix-round ephemerals (DKT-3 fix-3, DKT-15/31/122/138 fix-2) indicating impl-to-TDD divergence surfaced only after code lands. One pre-impl consult is cheaper than a fix-loop respawn. (2) Compressed Override Convention subsection — format authority already stated inline at §Code Quality opener and through-line.
-
-### Changes
-- Execution Workflow step 2 (L139): appended "**TDD deep-read gate**" clause — when issue cites TDD, read end-to-end pre-impl; ambiguous WHY → SendMessage advisor BEFORE coding (citing the 32 fix-round audit signal as load-bearing context).
-- §Code Quality / Override Convention: compressed prose block to a one-paragraph spec preserving the `OVERRIDE: code-philosophy/<id> — <reason>` format and visible-not-silent principle.
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (PRIMARY — pre-impl consult gate targets dominant rework signal) · Actionability (concrete checkpoint inside existing workflow step) · Consolidation & Trimming (Override Convention compression)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -330,3 +217,12 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-25: Two coherence fixes: (1) added docs-dir existence guard to "Check Specs Before Implementing" matching project-manager/staff-engineer convention (prevents
 - 2026-05-26: Encoded two-step claim ritual (`docket issue edit -a @senior-engineer` BEFORE `docket issue move in-progress`) across bash codeblock + Communication Discipline
 - 2026-05-26: Stripped 3 dangling citations (Phase 0 verified files do not exist in this repo). Redirected to team-lead.md anchors.
+- 2026-05-26: TDD deep-read gate added to step 2; Override Convention compressed. Net -7.
+- 2026-05-26: Phase 2 coherence — ux-designer trigger reworded (vacuous → concrete); TaskStop drain doctrine fleet parity.
+- 2026-05-30: Dead `commit` skill removed from frontmatter; frozen "(32 fix-round ephemerals)" count trimmed. Net -1.
+- 2026-05-30: Frontmatter `**No code comments.**` block compressed to pointer to principle 7. Net 0.
+- 2026-05-30: Phase 2 coherence — dangling `§6 continuity preamble` pointer removed ×5 (fleet sweep). Within-line.
+- 2026-06-05: Shared-tree diff scoping + Premise-check + `\!=` escape fix + step-1 probe dedup. Net +1.
+- 2026-06-09: Docs-exploration block triplicated → canonical Docs-paths block. Net -6.
+- 2026-06-09: Docket cwd-outside-repo guard added to Execution Workflow step 6. Net 0.
+- 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 1 reference updated.

@@ -1,5 +1,19 @@
 # Changelog: security-engineer
 
+## 2026-06-20
+
+### Summary
+Encoded the `api.github.com` sandbox-TLS retry cue on the supply-chain CVE/advisory verification path. Net 0 (283→283). Drift: disabled (drift=0).
+
+### Changes
+- AMPLIFY (cited: historical-audit — security-engineer has zero pitfalls memory + gh-api supply-chain dead-end): the Dependency-CVEs rule now notes that `gh api`/`curl api.github.com` SHA/advisory checks fail on the first sandboxed call with a TLS error and must retry with a bounded `dangerouslyDisableSandbox: true` (cross-refs sdet sandbox-interaction patterns); closes a dead-end where a first-call TLS error reads as "advisory feed unreachable."
+
+### Dimensions Evaluated
+1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness AMPLIFY · 5 Consolidation RETAIN · 6 Cross-Comm RETAIN · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

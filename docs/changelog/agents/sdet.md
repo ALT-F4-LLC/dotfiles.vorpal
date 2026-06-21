@@ -1,5 +1,20 @@
 # Changelog: sdet
 
+## 2026-06-20
+
+### Summary
+Folded two uncovered sandbox/verification lessons into existing blocks + deduped the kubectl/credential restatement. Net 0 physical lines (472→472; additions appended to existing lines). Drift: disabled (drift=0).
+
+### Changes
+- AMPLIFY (cited: historical memory-lesson c + focus 1): the sandbox-interaction block now covers `!`-negation/process-substitution misfires + a 3-bucket OPENED/FAILED/INDETERMINATE connectivity classifier; deduped the Monitor+kubectl credential restatement already present at line 252.
+- AMPLIFY (cited: focus 2): added verification discipline (d) "exact consumer command path" (reproduce the literal consumer call, never an equivalent); bumped the list intro "Three→Four disciplines" for numbering coherence.
+
+### Dimensions Evaluated
+1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness AMPLIFY · 5 Consolidation AMPLIFY (kubectl dedup) · 6 Cross-Comm AMPLIFY · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

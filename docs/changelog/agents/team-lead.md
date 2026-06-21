@@ -1,5 +1,21 @@
 # Changelog: team-lead
 
+## 2026-06-20
+
+### Summary
+Fable-5 accuracy correction + word-level consolidations + two encodable gap-fills; net 0 physical lines (still 637 — TRIM goal UNMET, see Changes). Drift: disabled (drift=0).
+
+### Changes
+- AMPLIFY: Fable tier text corrected to SUSPENDED-worldwide (2026-06-12 US export-control directive; do-not-pin, use `opus`/`best`) — overrode the reviewer's "GA-selectable" framing after web research + operator decision confirmed the worldwide suspension; `opus` stays standing default.
+- AMPLIFY: doubled-panel reviewer GO-gate ("dispatch message IS the GO"; cited 3× early-review-before-GO signal) + TFD fix-stall→operator escalation (cited operator-abandonment signal).
+- CULL: condensed step-16 cleanup prose, Distribution-Gate disambiguation tail, Subagent-branch note (word-level density only — no physical-line reduction; file remains 137 over the 500 cap, carried as backlog for CANONICAL-block dedup).
+
+### Dimensions Evaluated
+1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN · 5 Trimming CULL×3 (ineffective on line count) · 6 Capability Growth AMPLIFY×2 · 7 Spec Alignment AMPLIFY×2 (Fable) · 8 Rename RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

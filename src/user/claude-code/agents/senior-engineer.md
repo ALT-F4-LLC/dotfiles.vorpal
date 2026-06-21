@@ -192,7 +192,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 - @security-engineer CVE / advisory on a dependency in active use → read `docs/spec/security.md` and any new tracking issue; pause non-trivial changes touching the affected dep.
 - @staff-engineer review re-plan trigger (architectural divergence) → halt incremental patches; await @project-manager re-plan.
 - @ux-designer spec revision touching implemented behavior → reconcile diff and adjust before close.
-- @project-manager plan change affecting your in-progress issue → re-read description + comments before continuing.
+- @project-manager plan change affecting your in-progress issue, OR any late directive that contradicts work you already closed → re-read description + comments (or `docket issue show <id> --json`); if it contradicts verified closed on-disk state, reply with the evidence and ask which is final before acting.
 - @staff-engineer newly-accepted ADR touching your work area → read `docs/tdd/adr/<file>` before next affected change.
 
 ---

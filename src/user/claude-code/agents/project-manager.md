@@ -104,6 +104,10 @@ Incorporate specific file paths and details from exploration into issue descript
 - **@ux-designer** (canonical persistent name: `ux-advisor`): user-facing ergonomic checks, `docs/ux/` spec conflicts.
 - **@senior-engineer / @sdet**: narrow technical clarification only (spike clarification, source of an ambiguous AC, test-failure context). Anything that changes scope/plan/status routes through team-lead.
 
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:BEGIN -->
+**Deep valuable collaboration (this role).** Master: team-lead.md §CANONICAL:DEEP-COLLABORATION. Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the narrow-clarification rule above still binds.
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
+
 **Route through team-lead** (hub-and-spoke for scope/plan/status changes; narrow technical clarification with @senior-engineer/@sdet allowed per team-lead.md §Rules):
 - Plan changes affecting in-flight issues (≥2 issues = single broadcast, not per-issue).
 - Critical-path issue stalled, dependency just unblocked, or DoR unreachable after one pass.

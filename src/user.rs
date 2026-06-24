@@ -10,14 +10,15 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bat::Bat, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum,
-    jj::Jj, jq::Jq, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, ripgrep::Ripgrep,
-    sesh::Sesh, tmux::Tmux, zoxide::Zoxide,
+    awscli2::Awscli2, bat::Bat, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf,
+    gum::Gum, jj::Jj, jq::Jq, just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
+    neovim::Neovim, nnn::Nnn, ripgrep::Ripgrep, sesh::Sesh, starship::Starship, tmux::Tmux,
+    tree_sitter::TreeSitter, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
     artifact,
-    artifact::{gh::Gh, git::Git, gopls::Gopls},
+    artifact::{gh::Gh, git::Git, gopls::Gopls, nodejs::NodeJS},
     context::ConfigContext,
 };
 
@@ -46,6 +47,7 @@ impl UserEnvironment {
 
         let awscli2 = Awscli2::new().build(context).await?;
         let bat = Bat::new().build(context).await?;
+        let delta = Delta::new().build(context).await?;
         let direnv = Direnv::new().build(context).await?;
         let doppler = Doppler::new().build(context).await?;
         let fd = Fd::new().build(context).await?;
@@ -56,13 +58,18 @@ impl UserEnvironment {
         let gum = Gum::new().build(context).await?;
         let jj = Jj::new().build(context).await?;
         let jq = Jq::new().build(context).await?;
+        let just = Just::new().build(context).await?;
         let k9s = K9s::new().build(context).await?;
         let kubectl = Kubectl::new().build(context).await?;
         let lazygit = Lazygit::new().build(context).await?;
+        let neovim = Neovim::new().build(context).await?;
         let nnn = Nnn::new().build(context).await?;
+        let nodejs = NodeJS::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
+        let starship = Starship::new().build(context).await?;
         let tmux = Tmux::new().build(context).await?;
+        let tree_sitter = TreeSitter::new().build(context).await?;
         let zoxide = Zoxide::new().build(context).await?;
 
         // Configuration files
@@ -506,7 +513,7 @@ impl UserEnvironment {
         let ghostty_config = GhosttyConfig::new(ghostty_config_name.as_str(), self.systems.clone())
             .with_background_opacity(0.95)
             .with_font_family("GeistMono NFM")
-            .with_font_size(18)
+            .with_font_size(16)
             .with_macos_option_as_alt(true)
             .with_theme("TokyoNight")
             .build(context)
@@ -697,6 +704,7 @@ impl UserEnvironment {
                 // Dependencies
                 awscli2,
                 bat,
+                delta,
                 direnv,
                 doppler,
                 fd,
@@ -707,13 +715,18 @@ impl UserEnvironment {
                 gum,
                 jj,
                 jq,
+                just,
                 k9s,
                 kubectl,
                 lazygit,
+                neovim,
                 nnn,
+                nodejs,
                 ripgrep,
                 sesh,
+                starship,
                 tmux,
+                tree_sitter,
                 zoxide,
                 // Dependencies configurations
                 bat_config,

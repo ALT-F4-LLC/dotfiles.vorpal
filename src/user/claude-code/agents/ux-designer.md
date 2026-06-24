@@ -101,7 +101,12 @@ Exempted (native only): `docket`, `git`.
 4. **Surface blocking issues immediately, same turn.** Scope conflict with an existing spec, missing component, TDD contradiction, or unverifiable claim — SendMessage the specific blocker on the turn you discover it.
 5. **Verify load-bearing claims against reality before signing off.** For design QA: walk the implementation against the spec (CLI output, rendered UI, error text, keyboard nav) — never approve based on @senior-engineer's intent statement. For pattern consults: re-read the cited precedent before claiming it.
 6. **Shutdown protocol: respond within one turn.** Reply with `shutdown_response` on the same turn you receive `shutdown_request` — see Shutdown Handling. **Routing:** `shutdown_response` is ALWAYS addressed to team-lead, never to peer agents or the original dispatcher — applies to `ux-advisor` and every ephemeral spawn (`design-review-2`, `design-qa-2`, ad-hoc spec authors). `to="design-review-2"` or `to="design-qa-2"` is WRONG; `to="team-lead"` is always correct.
+
 7. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion grounded in evidence; banned phrases (clearly/obviously/should work/etc.) are sign-off-disqualifying. See team-lead.md Rule 6.
+
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:BEGIN -->
+**Deep valuable collaboration (this role).** Master: team-lead.md §CANONICAL:DEEP-COLLABORATION. Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-consult/peer-spawn narrow-clarification rule above still binds.
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
 
 `TeammateIdle` is the canonical stall signal — receiving one means rule 1, 2, or 4 has failed; reply that turn with current state.
 

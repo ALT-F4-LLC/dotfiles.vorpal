@@ -53,6 +53,10 @@ Silence to a direct question or a stall under load is a quality defect on YOUR w
 9. **Read before Edit/Write.** Every test file or fixture you intend to Write or Edit MUST be Read first in the same session — the harness rejects "File has not been read yet". Applies after compaction.
 10. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion grounded in evidence; banned phrases (clearly/obviously/should work/definitely/I'm sure/trust me/100%/guaranteed) are sign-off-disqualifying. Distinguish observation from inference; qualify load-bearing claims (verified vs assumed); silence beats confident wrong. See team-lead.md Rule 6.
 
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:BEGIN -->
+**Deep valuable collaboration (this role).** Master: team-lead.md §CANONICAL:DEEP-COLLABORATION. Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-handoff/dispatch narrow-clarification rule above still binds.
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
+
 `TeammateIdle` is the canonical stall signal — receiving one means rule 1, 2, 7, 8, or 9 has failed; reply that turn with current state.
 
 ---

@@ -33,6 +33,14 @@ digest = "098f2d1d808bc417bfa1dc63419ffedb1781ca65dd780858c0f8f67e9decb57b"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "delta"
+path = "https://github.com/dandavison/delta/releases/download/0.18.2/delta-0.18.2-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "5d91e97d17f534ad0edbebcc1d424d22163b1c93d0555d325c76094d5a047a98"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "direnv"
 path = "https://github.com/direnv/direnv/releases/download/v2.37.1/direnv.darwin-arm64"
 includes = []
@@ -121,6 +129,14 @@ digest = "718c0fbb8f728c4b62cac2e65dba61cbdf2eed5e7eff38681097ec7b04dd815a"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "just"
+path = "https://github.com/casey/just/releases/download/1.45.0/just-1.45.0-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "8f34d86872a3a379ca58b96f1d5c2cf06076212fc8c1f8e4edbc794c523f4f49"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "k9s"
 path = "https://github.com/derailed/k9s/releases/download/v0.50.18/k9s_Darwin_arm64.tar.gz"
 includes = []
@@ -161,11 +177,27 @@ digest = "e67077219f4e56cc6cc56958104a9271871ef65ef7985081aced1fd5024f9f47"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "neovim"
+path = "https://github.com/neovim/neovim/releases/download/v0.12.3/nvim-macos-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "54110529d739e5b8811f222df075c49d4d17ac442f8d95153f1ca4d434035949"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "nnn"
 path = "https://github.com/jarun/nnn/archive/refs/tags/v5.1.tar.gz"
 includes = []
 excludes = []
 digest = "a0a9e0cff52847ffdd91673adc7dffbda2177e67a87d7fdba5717c898ea0518f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "nodejs"
+path = "https://sdk.vorpal.build/source/node-v22.22.0-darwin-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "852a244f9da062f7d22326a7bc3d7836745521232bd44b06468ec48e1cf359e4"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -249,11 +281,27 @@ digest = "2efb04b9de0b7bc99f87ab3e2a0f20fa9de946f162b45b362a1b626849a19cf7"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "starship"
+path = "https://github.com/starship/starship/releases/download/v1.25.1/starship-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "43fcef328b7ddd3f8e2b2ceb7adefb9dca5719c853627f26a25ac7f2a1e2faee"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "tmux"
 path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
 includes = []
 excludes = []
 digest = "70691bfbbe623d25d99561192dfb52211ca7e1fa120271c57ae56fe24ca97521"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "tree-sitter"
+path = "https://github.com/tree-sitter/tree-sitter/releases/download/v0.26.9/tree-sitter-cli-macos-arm64.zip"
+includes = []
+excludes = []
+digest = "a2fcfe68911f1076f81258f9bed01cb6c53f7be3068ea71dc0d3f08857922a6f"
 platform = "aarch64-darwin"
 
 [[sources]]

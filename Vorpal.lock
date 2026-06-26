@@ -545,6 +545,14 @@ digest = "852a244f9da062f7d22326a7bc3d7836745521232bd44b06468ec48e1cf359e4"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "op"
+path = "https://cache.agilebits.com/dist/1P/op2/pkg/v2.34.1/op_darwin_arm64_v2.34.1.zip"
+includes = []
+excludes = []
+digest = "a178768e4a235c4bccf1350b81c2af0225e7f8029cc73a1d58d7c22ee72be769"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "opencode"
 path = "https://github.com/anomalyco/opencode/releases/download/v1.17.11/opencode-darwin-arm64.zip"
 includes = []

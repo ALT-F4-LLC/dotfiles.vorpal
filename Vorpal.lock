@@ -9,11 +9,331 @@ digest = "7debfa42bc88109f226700e6c2620ef19497d51932d9d6d8859791fd5f470b20"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bash-language-server"
+path = "https://registry.npmjs.org/bash-language-server/-/bash-language-server-5.6.0.tgz"
+includes = []
+excludes = []
+digest = "9602ed7f00a9aa18d8aa05f910c147a8da5430ab8b4deb8fb9a597b7f6ad5cd7"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "bat"
 path = "https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-aarch64-apple-darwin.tar.gz"
 includes = []
 excludes = []
 digest = "3abca7df1be4d52ef37ccd22f0b01da87f149f4ca1f74633d53deba87d98b078"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-balanced-match"
+path = "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz"
+includes = []
+excludes = []
+digest = "5472a2f9517223c70ede2f6c2f970b5229769760b1b709c859de3706f59489c3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-brace-expansion"
+path = "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.0.1.tgz"
+includes = []
+excludes = []
+digest = "d7ff9f72158fabf609a4c4eb309853d40d0910e974a2aa78f3e4961e93cc3046"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-braces"
+path = "https://registry.npmjs.org/braces/-/braces-3.0.3.tgz"
+includes = []
+excludes = []
+digest = "369fb69f30979f0cad137e30c2d726459c94684f64f6fa894ba00447883276a1"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-commander"
+path = "https://registry.npmjs.org/commander/-/commander-15.0.0.tgz"
+includes = []
+excludes = []
+digest = "28368d2fe0265f1759857d0ed1b5c4e97eb5c89859fc7dffc48940a4615c8184"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-editorconfig"
+path = "https://registry.npmjs.org/editorconfig/-/editorconfig-2.0.1.tgz"
+includes = []
+excludes = []
+digest = "f97c38586f2c4aa805b60cc48fbfa35ea0c5f8e9bc14acd3c438d3e71be07a65"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fast-glob"
+path = "https://registry.npmjs.org/fast-glob/-/fast-glob-3.3.3.tgz"
+includes = []
+excludes = []
+digest = "c62a9c29a78c2795539b8aa566360a13eed5857ec7649a61616c5f360970f4da"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fastq"
+path = "https://registry.npmjs.org/fastq/-/fastq-1.20.1.tgz"
+includes = []
+excludes = []
+digest = "7da2d3cb64f29c2adb2b260d7f4fc7de33958205b86709c37d9a17f37b065ecf"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fill-range"
+path = "https://registry.npmjs.org/fill-range/-/fill-range-7.1.1.tgz"
+includes = []
+excludes = []
+digest = "40dae5ba10940c7092c013b511e784eb4a48ec295a0f2b6b0be97fba80e6b194"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-fuzzy-search"
+path = "https://registry.npmjs.org/fuzzy-search/-/fuzzy-search-3.2.1.tgz"
+includes = []
+excludes = []
+digest = "04781a4a02ffa9786f0fda7e16e86a6e5a7ad0c4c3dd268e74a0ac306c1f59de"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-glob-parent"
+path = "https://registry.npmjs.org/glob-parent/-/glob-parent-5.1.2.tgz"
+includes = []
+excludes = []
+digest = "87338cc1a9ff0b3300683ab9981fbd16e8a0e0e6fd9f0b19f6ad42c0666fc7bf"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-is-extglob"
+path = "https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz"
+includes = []
+excludes = []
+digest = "d6e18eab80db8c08cb7ff9b1f78b615092866d19109aec9bd93ca419e649d23a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-is-glob"
+path = "https://registry.npmjs.org/is-glob/-/is-glob-4.0.3.tgz"
+includes = []
+excludes = []
+digest = "ff1cffd23b79ccd47343d4a3d5c901b03a17bb7994710c1a3215ca14b6c70d30"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-is-number"
+path = "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz"
+includes = []
+excludes = []
+digest = "d63f5863b4accfdb52510ccda01a4681ee9f14594c87dc31039e317cc8ce0e27"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-merge2"
+path = "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz"
+includes = []
+excludes = []
+digest = "343739a9118dcddb5913756c087d7842843c1559cdafdb5d9d40aa6ddd4f6c70"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-micromatch"
+path = "https://registry.npmjs.org/micromatch/-/micromatch-4.0.8.tgz"
+includes = []
+excludes = []
+digest = "6e06635f54df8f87ba52935ba401c6b4f756378fb453e4ff9c6b4acfff92c429"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-minimatch"
+path = "https://registry.npmjs.org/minimatch/-/minimatch-10.0.1.tgz"
+includes = []
+excludes = []
+digest = "8d587f80713945afadc92f127ed7e238bdef7dab0e2a2bf4b041274c65dac6cd"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-mixmark-domino"
+path = "https://registry.npmjs.org/@mixmark-io/domino/-/domino-2.2.0.tgz"
+includes = []
+excludes = []
+digest = "bc42d1fa14c5a95b84456dab4d37d3ed812d3a1ae1fe670829e4cc5396ad050e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-node-fetch"
+path = "https://registry.npmjs.org/node-fetch/-/node-fetch-2.7.0.tgz"
+includes = []
+excludes = []
+digest = "e9a331173565996a542f3d6e8dc112b17f6e5d7c2bea7fd6b821e519a5758f86"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-nodelib-fs-scandir"
+path = "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
+includes = []
+excludes = []
+digest = "e800bcc56aed33d5e45525e77d81f5bd21e145623af190a7074dac652b7f8798"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-nodelib-fs-stat"
+path = "https://registry.npmjs.org/@nodelib/fs.stat/-/fs.stat-2.0.5.tgz"
+includes = []
+excludes = []
+digest = "91bafa32af897cc0d7765880cfc94966a3c46b139ffc466797114f7dcbc642a6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-nodelib-fs-walk"
+path = "https://registry.npmjs.org/@nodelib/fs.walk/-/fs.walk-1.2.8.tgz"
+includes = []
+excludes = []
+digest = "0b98aac5b73a3b113f3b4e47d99ae78e2e4e1adf48b099ea0fbfcfef3dcd9a5c"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-one-ini-wasm"
+path = "https://registry.npmjs.org/@one-ini/wasm/-/wasm-0.2.0.tgz"
+includes = []
+excludes = []
+digest = "46b7a9963210f1a9ffd37d901dd70975ab73fe01c9a79913f09cfb3d7243c437"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-picomatch"
+path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz"
+includes = []
+excludes = []
+digest = "1d174edd33c12d1e0e342ad763f8d2c63dc99c2cc29171317c6ef5ac0ab782f2"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-queue-microtask"
+path = "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
+includes = []
+excludes = []
+digest = "05f6c7babbafab550a3c08f9a34321795d1f4514267edc2c3e9baefd2939803f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-reusify"
+path = "https://registry.npmjs.org/reusify/-/reusify-1.1.0.tgz"
+includes = []
+excludes = []
+digest = "1959fbbc38ef73d803d68ee4ab0cd927659504a24b8dd8bca323037400840863"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-run-parallel"
+path = "https://registry.npmjs.org/run-parallel/-/run-parallel-1.2.0.tgz"
+includes = []
+excludes = []
+digest = "c9961f5bf925ee301be4212377e254a6f966a3309e163b6623a099973089282b"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-semver"
+path = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
+includes = []
+excludes = []
+digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-to-regex-range"
+path = "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz"
+includes = []
+excludes = []
+digest = "1c1d1ab512395935b2ee5b7d1e2cf2778da71cf943ada371342118187a82208c"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-tr46"
+path = "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
+includes = []
+excludes = []
+digest = "be6e7c90a0d865073e2abe44dc582f06dceb3cbd3294aecc377330eda098dbaf"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-turndown"
+path = "https://registry.npmjs.org/turndown/-/turndown-7.2.0.tgz"
+includes = []
+excludes = []
+digest = "16e64331cf87527da046a9b5a0187d4aa21854cb0bf58d9cc71c95891a91c72e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.0.2.tgz"
+includes = []
+excludes = []
+digest = "654278949d7d75cdf73fd9cdf4d61d036d6eaae26302bcd177d0d94f84adf1e0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-8.0.2.tgz"
+includes = []
+excludes = []
+digest = "b861e4dcfa4fac9a3d5ea30e3aad490ded66073c27203a7669c5f0361bf43531"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.2.tgz"
+includes = []
+excludes = []
+digest = "aaa1213ccd584485b0b3a4e8cafa00d43bdd927a4f2b174d6219b6a214d52c85"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.12.tgz"
+includes = []
+excludes = []
+digest = "bfac61d25c7266cc4f0a91795c0177435f8b421fd61c564f075d813a87a760c0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.2.tgz"
+includes = []
+excludes = []
+digest = "c4a90cc44272ab27883841fdb41cd947b975d19dc772c9a98bbbcfb41e8e60ab"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-web-tree-sitter"
+path = "https://registry.npmjs.org/web-tree-sitter/-/web-tree-sitter-0.24.5.tgz"
+includes = []
+excludes = []
+digest = "9effbc07c4ec4618d51f943d17cff87e741081d2838da5c5dfe66b98b23b1c0a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-webidl-conversions"
+path = "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
+includes = []
+excludes = []
+digest = "cf4528c2c81d01184341265747c6032074776f39d42eb0faa91a72f057cdbc24"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-whatwg-url"
+path = "https://registry.npmjs.org/whatwg-url/-/whatwg-url-5.0.0.tgz"
+includes = []
+excludes = []
+digest = "36c3a6f2d039aea001e4173b8b3eb8322cf7d45db4227b62b016096a81d76295"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "bls-zod"
+path = "https://registry.npmjs.org/zod/-/zod-3.24.2.tgz"
+includes = []
+excludes = []
+digest = "5c41cc6b2009eea9bb9ea78063d5d74e9aa7af143ed3825103fc3982d535274e"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -30,6 +350,14 @@ path = "https://sdk.vorpal.build/source/clippy-1.93.1-aarch64-apple-darwin.tar.g
 includes = []
 excludes = []
 digest = "098f2d1d808bc417bfa1dc63419ffedb1781ca65dd780858c0f8f67e9decb57b"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "cue"
+path = "https://github.com/cue-lang/cue/releases/download/v0.15.1/cue_v0.15.1_darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "b22048682013f1d2e1e3fe2ecadf6fb4c1c87232283d18f07d8e148b3791d68e"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -113,6 +441,14 @@ digest = "ae3c5778aaf3e3c06757b7c1cf11771a6dddf96b215d1fc21d34aac4104f4eec"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "herdr"
+path = "https://github.com/ogulcancelik/herdr/releases/download/v0.7.1/herdr-macos-aarch64"
+includes = []
+excludes = []
+digest = "df1986c6712f5ae735f6f2a5ecfd441ceb9d82c3de586d3bbcce8c2b8ed397c1"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "jj"
 path = "https://github.com/jj-vcs/jj/releases/download/v0.37.0/jj-v0.37.0-aarch64-apple-darwin.tar.gz"
 includes = []
@@ -169,6 +505,14 @@ digest = "22fdbe5a18db114046227ccde47cc8fbe11fa9ee2170b235f949275a161853ee"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "lua-language-server"
+path = "https://github.com/LuaLS/lua-language-server/releases/download/3.18.2/lua-language-server-3.18.2-darwin-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "0af75d2d31b1c1918cc0f47403b724da62ae01e936ca9fa161d1f262e8631884"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "ncurses"
 path = "https://sdk.vorpal.build/source/ncurses-6.5-20250809.tar.gz"
 includes = []
@@ -198,6 +542,14 @@ path = "https://sdk.vorpal.build/source/node-v22.22.0-darwin-arm64.tar.gz"
 includes = []
 excludes = []
 digest = "852a244f9da062f7d22326a7bc3d7836745521232bd44b06468ec48e1cf359e4"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "opencode"
+path = "https://github.com/anomalyco/opencode/releases/download/v1.17.11/opencode-darwin-arm64.zip"
+includes = []
+excludes = []
+digest = "da43578becb9b9900d84d2d1f26d655ee94f96b9f2b735f5f58359066539c610"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -289,6 +641,14 @@ digest = "43fcef328b7ddd3f8e2b2ceb7adefb9dca5719c853627f26a25ac7f2a1e2faee"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "terraform"
+path = "https://releases.hashicorp.com/terraform/1.13.1/terraform_1.13.1_darwin_arm64.zip"
+includes = []
+excludes = []
+digest = "a67245b7b54156f38f6df535e4bdf0154195f1a47a0a0bf692d4f80f260d200b"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "tmux"
 path = "https://github.com/tmux/tmux/releases/download/3.5a/tmux-3.5a.tar.gz"
 includes = []
@@ -305,11 +665,443 @@ digest = "a2fcfe68911f1076f81258f9bed01cb6c53f7be3068ea71dc0d3f08857922a6f"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "typescript"
+path = "https://registry.npmjs.org/typescript/-/typescript-6.0.3.tgz"
+includes = []
+excludes = []
+digest = "44444464088bfaca1b661ae019259cd92586fd91a80209aabaac9a3fe0dc912a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "typescript-language-server"
+path = "https://registry.npmjs.org/typescript-language-server/-/typescript-language-server-5.3.0.tgz"
+includes = []
+excludes = []
+digest = "a7a1f522fb471627564b358892dce3f611fdbe1224e05a2e993d0cd01ea776ad"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "user-bat-theme"
 path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.1/extras/sublime/tokyonight_night.tmTheme"
 includes = []
 excludes = []
 digest = "d28f08c120bea39b2f4c8700443d6ea9c2c5e7de01adf839789eeae81a484bf0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-boolbase"
+path = "https://registry.npmjs.org/boolbase/-/boolbase-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "316b55881cd9e091151f060042446974e27e0ac6b8690a5d367e50bdf264fd4e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-core-js"
+path = "https://registry.npmjs.org/core-js/-/core-js-3.49.0.tgz"
+includes = []
+excludes = []
+digest = "b1c4c717f4306fc68bd326723207811d212e56bcec86e1b50cae705deee737f4"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-css-select"
+path = "https://registry.npmjs.org/css-select/-/css-select-5.2.2.tgz"
+includes = []
+excludes = []
+digest = "59abd1ae5564bcd84e5ddfbded18ef66ccc011efd43146dac0a5cd01424412b0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-css-what"
+path = "https://registry.npmjs.org/css-what/-/css-what-6.2.2.tgz"
+includes = []
+excludes = []
+digest = "74643fb6496739314cd039857929d3cabe52d4b7d792c5a2bb50930d59a1838b"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-dom-serializer"
+path = "https://registry.npmjs.org/dom-serializer/-/dom-serializer-2.0.0.tgz"
+includes = []
+excludes = []
+digest = "0f3c699cfd3328aca11773f0fa10f14100f62068f44720cc984ac06248598f90"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-domelementtype"
+path = "https://registry.npmjs.org/domelementtype/-/domelementtype-2.3.0.tgz"
+includes = []
+excludes = []
+digest = "35a93d285b27173232f13d059fde81ef34056d07221d524b58a8fb99a8e5bc3f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-domhandler"
+path = "https://registry.npmjs.org/domhandler/-/domhandler-5.0.3.tgz"
+includes = []
+excludes = []
+digest = "5413509613b58809d8558fef05b0a61487fe2902c1d3b054b5dc50198fdf6758"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-domutils"
+path = "https://registry.npmjs.org/domutils/-/domutils-3.2.2.tgz"
+includes = []
+excludes = []
+digest = "d62cb1005e441a875dc8b7fba9a17ea7582eef783e874731e7096cf01edcbd9a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-entities"
+path = "https://registry.npmjs.org/entities/-/entities-4.5.0.tgz"
+includes = []
+excludes = []
+digest = "6de5b4af5bcd75b57029f8ae66ab6ed3068b53ed3e599467651b93326439af9c"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-he"
+path = "https://registry.npmjs.org/he/-/he-1.2.0.tgz"
+includes = []
+excludes = []
+digest = "fd3442169db2c70f4dd4da5fee0de3a3703d2eeaaf27320cefa17c2635237297"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-jsonc-parser"
+path = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+includes = []
+excludes = []
+digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-node-html-parser"
+path = "https://registry.npmjs.org/node-html-parser/-/node-html-parser-6.1.15-0.tgz"
+includes = []
+excludes = []
+digest = "7c034f1c0a02ffc3bd6b168b4cb99f54a94f33abda4b35375de1b0b157e0b9e3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-nth-check"
+path = "https://registry.npmjs.org/nth-check/-/nth-check-2.1.1.tgz"
+includes = []
+excludes = []
+digest = "884e88fb74a458186a6c3e58398af5f4de8b3d1db8ca2af7415e7dfe14999c02"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-picomatch"
+path = "https://registry.npmjs.org/picomatch/-/picomatch-2.3.2.tgz"
+includes = []
+excludes = []
+digest = "4530e29ec072a2fd31ef627ba733acf29f412b7ad309ac3af50bc2524bbc893c"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-regenerator-runtime"
+path = "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.11.tgz"
+includes = []
+excludes = []
+digest = "6ba1a79f567c048f5cfab16e100ebaafd4b246d609b2d036de4be43bd4202ae0"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-request-light"
+path = "https://registry.npmjs.org/request-light/-/request-light-0.7.0.tgz"
+includes = []
+excludes = []
+digest = "8307312d71878ff50ca4150464df2a3134b5ce8a4c876b28bf5e949c36a48606"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-semver"
+path = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
+includes = []
+excludes = []
+digest = "a92457e9abcf8c44bf92b5c2dfe53a1ce4cc47f269f6dd4eb0fbaefc0e05d2f6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-typescript"
+path = "https://registry.npmjs.org/typescript/-/typescript-4.9.5.tgz"
+includes = []
+excludes = []
+digest = "7e0e8a5f4a4114ea30ce26eacba1e09ce0ce7cb6b40a3cc7b873ca2fa346291e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-css-languageservice"
+path = "https://registry.npmjs.org/vscode-css-languageservice/-/vscode-css-languageservice-6.3.10.tgz"
+includes = []
+excludes = []
+digest = "503464b5f9a492d9a0cec630881a32f9da739f00e66ae8b07f49ced8ea5c274a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-html-languageservice"
+path = "https://registry.npmjs.org/vscode-html-languageservice/-/vscode-html-languageservice-5.6.2.tgz"
+includes = []
+excludes = []
+digest = "2ac8c1e711a29cbe985f02adde19aa61bf8bac768bfb97b2933d0f55affad010"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-json-languageservice"
+path = "https://registry.npmjs.org/vscode-json-languageservice/-/vscode-json-languageservice-5.7.2.tgz"
+includes = []
+excludes = []
+digest = "eb35e54e30fd57a4cc2719952edec70d451e897eb014d782549eefdeebbd2533"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-9.0.0-next.1.tgz"
+includes = []
+excludes = []
+digest = "f9079530325bdb8df80f9fb1095f5af6ea424f7e71eeafd6009a691bc60f3150"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-l10n"
+path = "https://registry.npmjs.org/@vscode/l10n/-/l10n-0.0.18.tgz"
+includes = []
+excludes = []
+digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-10.0.1.tgz"
+includes = []
+excludes = []
+digest = "d146145727e3648a969a453881789a74bf57e7895d463d35ed6ba9db08a5e941"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.18.1.tgz"
+includes = []
+excludes = []
+digest = "215e597ff453e14896fd824d7c00d807c2abbd70c1027d9cc72b1160c56d8010"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
+includes = []
+excludes = []
+digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.18.0.tgz"
+includes = []
+excludes = []
+digest = "a3f41d4867d0a16b9584fe2a65dea44ea2177a8e30e87db145f0733ebc61e33e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-markdown-languageservice"
+path = "https://registry.npmjs.org/vscode-markdown-languageservice/-/vscode-markdown-languageservice-0.5.0-alpha.1.tgz"
+includes = []
+excludes = []
+digest = "447e958ac57a0766d2b8bdd53640fafbe83e6fe06f42fb4ff8d7819ff96ee087"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-nls"
+path = "https://registry.npmjs.org/vscode-nls/-/vscode-nls-5.2.0.tgz"
+includes = []
+excludes = []
+digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vlse-vscode-uri"
+path = "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.1.0.tgz"
+includes = []
+excludes = []
+digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "vscode-langservers-extracted"
+path = "https://registry.npmjs.org/vscode-langservers-extracted/-/vscode-langservers-extracted-4.10.0.tgz"
+includes = []
+excludes = []
+digest = "fc17196fc98070d02c9eabf5e523329e34ee4d0bcabcee521f22cdee5c2a0caa"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yaml-language-server"
+path = "https://registry.npmjs.org/yaml-language-server/-/yaml-language-server-1.23.0.tgz"
+includes = []
+excludes = []
+digest = "a622f5be54da6b02083e300f5058fa143d8e8ff70529ee64103bd460fdc2142f"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-ajv"
+path = "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz"
+includes = []
+excludes = []
+digest = "a0ef90036d7f210e358ad2e170b2ee921eb697023cd7182888c8e894329cbc7c"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-ajv-draft-04"
+path = "https://registry.npmjs.org/ajv-draft-04/-/ajv-draft-04-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "a4a531fd47c2e05e1918e41165d6673a184dae16b040efca78be03fd0bb916d3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-ajv-i18n"
+path = "https://registry.npmjs.org/ajv-i18n/-/ajv-i18n-4.2.0.tgz"
+includes = []
+excludes = []
+digest = "76867268fcdaa6bbe49e59add7a75cf3ae1e9610d74aa26f7dc0455fdb033c71"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-fast-deep-equal"
+path = "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz"
+includes = []
+excludes = []
+digest = "6763f654eb92f5b1ec2431ae4a60923ad01617a68f8cb9033babb988d8318edf"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-fast-uri"
+path = "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.2.tgz"
+includes = []
+excludes = []
+digest = "2e440470838fe3f30eb483cd91bbead68ba18fb8559d98ac3384db2755401d36"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-json-schema-traverse"
+path = "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz"
+includes = []
+excludes = []
+digest = "e6ee77f952e27e346dd6e8cbbab182e157c535679ff326b0a792c15f48b2987d"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-jsonc-parser"
+path = "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+includes = []
+excludes = []
+digest = "0c07ac7a46068e04667268026ae825fbc6c4a1204bad8e67d04e0bdd06aaab06"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-prettier"
+path = "https://registry.npmjs.org/prettier/-/prettier-3.8.4.tgz"
+includes = []
+excludes = []
+digest = "1fd159d6652dd85d3190adab9f42b20081bbbbb3b86f1a8a66b904402e2171e1"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-request-light"
+path = "https://registry.npmjs.org/request-light/-/request-light-0.5.8.tgz"
+includes = []
+excludes = []
+digest = "0b5c4acbb76ccd47bf17b63f9aafb0c76dbbc91e613b7ac1b8d94703598afbdf"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-require-from-string"
+path = "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz"
+includes = []
+excludes = []
+digest = "5ab713ae092a5eae232b5d035b7713de3e8a66693d646a409841869f3f115e9a"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-json-languageservice"
+path = "https://registry.npmjs.org/vscode-json-languageservice/-/vscode-json-languageservice-4.1.8.tgz"
+includes = []
+excludes = []
+digest = "f63fba2935070f01db92066a570e2f44b94577b70e629527dcea067dc3aac5d3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-jsonrpc"
+path = "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-8.2.0.tgz"
+includes = []
+excludes = []
+digest = "ee3367dab7d8048cfcf3b38ea26f64255afafb954e876945f766a62bc35edf12"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-l10n"
+path = "https://registry.npmjs.org/@vscode/l10n/-/l10n-0.0.18.tgz"
+includes = []
+excludes = []
+digest = "f51294bb2038cef307be242f7c2346a3d2af92aeb0d281720fb4c448e2dbb2dc"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver"
+path = "https://registry.npmjs.org/vscode-languageserver/-/vscode-languageserver-9.0.1.tgz"
+includes = []
+excludes = []
+digest = "f42a33bc9f833f747e3825dd2d8d57608c49ed3bcb2244a7499f43043631ce60"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver-protocol"
+path = "https://registry.npmjs.org/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.17.5.tgz"
+includes = []
+excludes = []
+digest = "829769485e9c762c336e3d730def7f9fd236578cc59df7ce3ebc726830fed03e"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver-textdocument"
+path = "https://registry.npmjs.org/vscode-languageserver-textdocument/-/vscode-languageserver-textdocument-1.0.13.tgz"
+includes = []
+excludes = []
+digest = "84d69006e41b5d8ea37bead0a240dc572402128d5f1fded980aa98272ad95096"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-languageserver-types"
+path = "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.17.5.tgz"
+includes = []
+excludes = []
+digest = "6a3ebf4ea45489f50fffd514a91c011dd317036f5c1debe89a947cab1e714061"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-nls"
+path = "https://registry.npmjs.org/vscode-nls/-/vscode-nls-5.2.0.tgz"
+includes = []
+excludes = []
+digest = "3ef164c5d32b72db8e1e0467df00ef9f98ca66a9d1b287e40baca745abffc0e3"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-vscode-uri"
+path = "https://registry.npmjs.org/vscode-uri/-/vscode-uri-3.1.0.tgz"
+includes = []
+excludes = []
+digest = "c96d56c27c33fa4c7ce81a34281772bc84684f8ef119c061cb896864831827d6"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "yls-yaml"
+path = "https://registry.npmjs.org/yaml/-/yaml-2.8.3.tgz"
+includes = []
+excludes = []
+digest = "a0412e454289b3a32833c5a3a0869c19601ebb008429580a04fdcbf94679501d"
 platform = "aarch64-darwin"
 
 [[sources]]

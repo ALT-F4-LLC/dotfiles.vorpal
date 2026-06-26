@@ -20,7 +20,7 @@ use vorpal_artifacts::artifact::{
     direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, jj::Jj, jq::Jq,
     just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
     lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, op::Op, opencode::Opencode,
-    ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
+    pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
     tree_sitter::TreeSitter, typescript::Typescript,
     typescript_language_server::TypescriptLanguageServer,
     vscode_langservers_extracted::VscodeLangserversExtracted,
@@ -82,6 +82,7 @@ impl UserEnvironment {
         let nnn = Nnn::new().build(context).await?;
         let nodejs = NodeJS::new().build(context).await?;
         let op = Op::new().build(context).await?;
+        let pi = Pi::new().build(context).await?;
         let opencode = Opencode::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
@@ -931,6 +932,7 @@ impl UserEnvironment {
                 nnn,
                 nodejs,
                 op,
+                pi,
                 opencode,
                 ripgrep,
                 sesh,

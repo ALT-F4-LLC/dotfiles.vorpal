@@ -4,16 +4,21 @@ use crate::{
 };
 use anyhow::Result;
 use bat::BatConfig;
-use claude_code::ClaudeCode;
+use claude_code::Config as ClaudeCodeConfig;
 use codex::{AgentRole, Codex, Otel, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
-use opencode::{AutoUpdate, Opencode, PermissionAction, PermissionRule};
+use opencode::{AutoUpdate, Config as OpenCodeConfig, PermissionAction, PermissionRule};
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bat::Bat, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf,
-    gum::Gum, jj::Jj, jq::Jq, just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
-    neovim::Neovim, nnn::Nnn, ripgrep::Ripgrep, sesh::Sesh, starship::Starship, tmux::Tmux,
-    tree_sitter::TreeSitter, zoxide::Zoxide,
+    awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue, delta::Delta,
+    direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, jj::Jj, jq::Jq,
+    just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
+    lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, opencode::Opencode,
+    ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
+    tree_sitter::TreeSitter, typescript::Typescript,
+    typescript_language_server::TypescriptLanguageServer,
+    vscode_langservers_extracted::VscodeLangserversExtracted,
+    yaml_language_server::YamlLanguageServer, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     api::artifact::ArtifactSystem,
@@ -46,7 +51,9 @@ impl UserEnvironment {
         // Dependencies
 
         let awscli2 = Awscli2::new().build(context).await?;
+        let bash_language_server = BashLanguageServer::new().build(context).await?;
         let bat = Bat::new().build(context).await?;
+        let cue = Cue::new().build(context).await?;
         let delta = Delta::new().build(context).await?;
         let direnv = Direnv::new().build(context).await?;
         let doppler = Doppler::new().build(context).await?;
@@ -56,20 +63,28 @@ impl UserEnvironment {
         let git = Git::new().build(context).await?;
         let gopls = Gopls::new().build(context).await?;
         let gum = Gum::new().build(context).await?;
+        let herdr = Herdr::new().build(context).await?;
         let jj = Jj::new().build(context).await?;
         let jq = Jq::new().build(context).await?;
         let just = Just::new().build(context).await?;
         let k9s = K9s::new().build(context).await?;
         let kubectl = Kubectl::new().build(context).await?;
         let lazygit = Lazygit::new().build(context).await?;
+        let lua_language_server = LuaLanguageServer::new().build(context).await?;
         let neovim = Neovim::new().build(context).await?;
         let nnn = Nnn::new().build(context).await?;
         let nodejs = NodeJS::new().build(context).await?;
+        let opencode = Opencode::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
         let starship = Starship::new().build(context).await?;
+        let terraform = Terraform::new().build(context).await?;
         let tmux = Tmux::new().build(context).await?;
         let tree_sitter = TreeSitter::new().build(context).await?;
+        let typescript = Typescript::new().build(context).await?;
+        let typescript_language_server = TypescriptLanguageServer::new().build(context).await?;
+        let vscode_langservers_extracted = VscodeLangserversExtracted::new().build(context).await?;
+        let yaml_language_server = YamlLanguageServer::new().build(context).await?;
         let zoxide = Zoxide::new().build(context).await?;
 
         // Configuration files
@@ -99,7 +114,7 @@ impl UserEnvironment {
 
         let claude_code_config_name = format!("{}-claude-code", &self.name);
         let claude_code_config =
-            ClaudeCode::new(claude_code_config_name.as_str(), self.systems.clone())
+            ClaudeCodeConfig::new(claude_code_config_name.as_str(), self.systems.clone())
                 .with_agent("team-lead")
                 .with_always_thinking_enabled(true)
                 .with_attribution_commit("")
@@ -476,34 +491,35 @@ impl UserEnvironment {
         );
 
         let opencode_config_name = format!("{}-opencode", &self.name);
-        let opencode_config = Opencode::new(opencode_config_name.as_str(), self.systems.clone())
-            .with_schema("https://opencode.ai/config.json")
-            .with_autoupdate(AutoUpdate::Boolean(false))
-            .with_bash_permissions(vec![
-                ("*", PermissionAction::Ask),
-                ("cat*", PermissionAction::Allow),
-                ("echo*", PermissionAction::Allow),
-                ("file*", PermissionAction::Allow),
-                ("find*", PermissionAction::Allow),
-                ("git branch*", PermissionAction::Allow),
-                ("git log*", PermissionAction::Allow),
-                ("grep*", PermissionAction::Allow),
-                ("head*", PermissionAction::Allow),
-                ("ls*", PermissionAction::Allow),
-                ("sort*", PermissionAction::Allow),
-                ("test*", PermissionAction::Allow),
-                ("tree*", PermissionAction::Allow),
-                ("wc*", PermissionAction::Allow),
-            ])
-            .with_permission_edit(PermissionRule::Simple(PermissionAction::Ask))
-            .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
-            .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
-            .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
-            .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
-            .with_permission_webfetch(PermissionAction::Allow)
-            .with_theme("tokyonight")
-            .build(context)
-            .await?;
+        let opencode_config =
+            OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
+                .with_schema("https://opencode.ai/config.json")
+                .with_autoupdate(AutoUpdate::Boolean(false))
+                .with_bash_permissions(vec![
+                    ("*", PermissionAction::Ask),
+                    ("cat*", PermissionAction::Allow),
+                    ("echo*", PermissionAction::Allow),
+                    ("file*", PermissionAction::Allow),
+                    ("find*", PermissionAction::Allow),
+                    ("git branch*", PermissionAction::Allow),
+                    ("git log*", PermissionAction::Allow),
+                    ("grep*", PermissionAction::Allow),
+                    ("head*", PermissionAction::Allow),
+                    ("ls*", PermissionAction::Allow),
+                    ("sort*", PermissionAction::Allow),
+                    ("test*", PermissionAction::Allow),
+                    ("tree*", PermissionAction::Allow),
+                    ("wc*", PermissionAction::Allow),
+                ])
+                .with_permission_edit(PermissionRule::Simple(PermissionAction::Ask))
+                .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
+                .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
+                .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
+                .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
+                .with_permission_webfetch(PermissionAction::Allow)
+                .with_theme("tokyonight")
+                .build(context)
+                .await?;
         let opencode_config_path = format!(
             "{}/{opencode_config_name}",
             get_output_path("library", &opencode_config)
@@ -711,8 +727,8 @@ impl UserEnvironment {
                 fzf,
                 gh,
                 git,
-                gopls,
                 gum,
+                herdr,
                 jj,
                 jq,
                 just,
@@ -722,13 +738,24 @@ impl UserEnvironment {
                 neovim,
                 nnn,
                 nodejs,
+                opencode,
                 ripgrep,
                 sesh,
                 starship,
+                terraform,
                 tmux,
-                tree_sitter,
                 zoxide,
-                // Dependencies configurations
+                // Neovim
+                bash_language_server,
+                cue,
+                gopls,
+                lua_language_server,
+                tree_sitter,
+                typescript,
+                typescript_language_server,
+                vscode_langservers_extracted,
+                yaml_language_server,
+                // Tools
                 bat_config,
                 bat_theme,
                 claude_agents,

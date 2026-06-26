@@ -644,7 +644,7 @@ pub struct ExperimentalConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Opencode {
+pub struct Config {
     // Metadata (not serialized to JSON)
     #[serde(skip)]
     name: String,
@@ -711,7 +711,7 @@ pub struct Opencode {
     experimental: Option<ExperimentalConfig>,
 }
 
-impl Opencode {
+impl Config {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             agent: BTreeMap::new(),

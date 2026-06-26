@@ -237,7 +237,7 @@ pub struct ChannelPlugin {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ClaudeCode {
+pub struct Config {
     // Metadata (not serialized to JSON)
     #[serde(skip)]
     name: String,
@@ -253,7 +253,11 @@ pub struct ClaudeCode {
     model_overrides: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     available_models: Vec<String>,
-    #[serde(rename = "fallbackModel", skip_serializing_if = "Vec::is_empty", default)]
+    #[serde(
+        rename = "fallbackModel",
+        skip_serializing_if = "Vec::is_empty",
+        default
+    )]
     fallback_model: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     output_style: Option<String>,
@@ -473,7 +477,7 @@ pub struct ClaudeCode {
     wsl_inherits_windows_settings: Option<bool>,
 }
 
-impl ClaudeCode {
+impl Config {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             name: name.to_string(),

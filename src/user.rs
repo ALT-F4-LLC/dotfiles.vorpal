@@ -9,11 +9,12 @@ use codex::{AgentRole, Codex, Otel, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 use opencode::{AutoUpdate, Config as OpenCodeConfig, PermissionAction, PermissionRule};
+use opencode_tui::Config as OpenCodeTuiConfig;
 use vorpal_artifacts::artifact::{
     awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue, delta::Delta,
     direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, jj::Jj, jq::Jq,
     just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
-    lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, opencode::Opencode,
+    lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, op::Op, opencode::Opencode,
     ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
     tree_sitter::TreeSitter, typescript::Typescript,
     typescript_language_server::TypescriptLanguageServer,
@@ -33,6 +34,7 @@ mod codex;
 mod ghostty;
 mod k9s;
 mod opencode;
+mod opencode_tui;
 
 pub struct UserEnvironment {
     name: String,
@@ -74,6 +76,7 @@ impl UserEnvironment {
         let neovim = Neovim::new().build(context).await?;
         let nnn = Nnn::new().build(context).await?;
         let nodejs = NodeJS::new().build(context).await?;
+        let op = Op::new().build(context).await?;
         let opencode = Opencode::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
@@ -517,12 +520,23 @@ impl UserEnvironment {
                 .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_webfetch(PermissionAction::Allow)
-                .with_theme("tokyonight")
                 .build(context)
                 .await?;
         let opencode_config_path = format!(
             "{}/{opencode_config_name}",
             get_output_path("library", &opencode_config)
+        );
+
+        let opencode_tui_config_name = format!("{}-opencode-tui", &self.name);
+        let opencode_tui_config =
+            OpenCodeTuiConfig::new(opencode_tui_config_name.as_str(), self.systems.clone())
+                .with_schema("https://opencode.ai/tui.json")
+                .with_theme("tokyonight")
+                .build(context)
+                .await?;
+        let opencode_tui_config_path = format!(
+            "{}/{opencode_tui_config_name}",
+            get_output_path("library", &opencode_tui_config)
         );
 
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
@@ -738,6 +752,7 @@ impl UserEnvironment {
                 neovim,
                 nnn,
                 nodejs,
+                op,
                 opencode,
                 ripgrep,
                 sesh,
@@ -794,6 +809,7 @@ impl UserEnvironment {
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
                 (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
+                (opencode_tui_config_path.as_str(), "$HOME/.config/opencode/tui.json"),
             ])
             .build(context)
             .await

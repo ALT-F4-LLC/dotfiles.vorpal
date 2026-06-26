@@ -51,9 +51,9 @@ pub enum PermissionAction {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum DiffStyle {
-    Auto,
-    Stacked,
+pub enum PolicyEffect {
+    Allow,
+    Deny,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,202 +69,6 @@ pub enum McpType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
-pub struct KeybindsConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub leader: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_exit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub editor_open: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub theme_list: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sidebar_toggle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub scrollbar_toggle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub username_toggle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status_view: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_export: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_new: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_list: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_timeline: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_fork: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_rename: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_share: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_unshare: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_interrupt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_compact: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_page_up: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_page_down: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_half_page_up: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_half_page_down: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_first: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_last: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_next: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_previous: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_last_user: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_copy: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_undo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_redo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages_toggle_conceal: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_details: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model_list: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model_cycle_recent: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model_cycle_recent_reverse: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model_cycle_favorite: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model_cycle_favorite_reverse: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub command_list: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub agent_list: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub agent_cycle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub agent_cycle_reverse: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub variant_cycle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_clear: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_paste: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_submit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_newline: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_move_left: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_move_right: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_move_up: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_move_down: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_left: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_right: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_up: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_down: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_line_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_line_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_line_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_line_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_visual_line_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_visual_line_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_visual_line_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_visual_line_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_buffer_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_buffer_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_buffer_home: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_buffer_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete_line: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete_to_line_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete_to_line_start: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_backspace: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_undo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_redo: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_word_forward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_word_backward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_word_forward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_select_word_backward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete_word_forward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_delete_word_backward: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub history_previous: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub history_next: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_child_cycle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_child_cycle_reverse: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_parent: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub terminal_suspend: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub terminal_title_toggle: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tips_toggle: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub struct ScrollAcceleration {
-    pub enabled: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub struct TuiConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub scroll_speed: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub scroll_acceleration: Option<ScrollAcceleration>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub diff_style: Option<DiffStyle>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
 pub struct ServerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub port: Option<u16>,
@@ -272,6 +76,9 @@ pub struct ServerConfig {
     pub hostname: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mdns: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "mdnsDomain")]
+    pub mdns_domain: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub cors: Vec<String>,
 }
@@ -295,6 +102,26 @@ pub struct CommandConfig {
 pub struct WatcherConfig {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub ignore: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct AttachmentImageConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_resize: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_width: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_height: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_base64_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct AttachmentConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<AttachmentImageConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -596,6 +423,19 @@ pub struct CompactionConfig {
     pub auto: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prune: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reserved: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct PolicyConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effect: Option<PolicyEffect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -613,6 +453,54 @@ pub struct HookConfig {
     pub file_edited: Option<BTreeMap<String, Vec<HookCommand>>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub session_completed: Vec<HookCommand>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct SkillsConfig {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub paths: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub urls: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub struct ToolOutputConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_lines: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ReferenceGitConfig {
+    pub repository: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ReferenceLocalConfig {
+    pub path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ReferenceValue {
+    String(String),
+    Git(ReferenceGitConfig),
+    Local(ReferenceLocalConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -636,6 +524,8 @@ pub struct ExperimentalConfig {
     pub continue_loop_on_deny: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mcp_timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub policies: Vec<PolicyConfig>,
 }
 
 // ============================================================================
@@ -656,15 +546,15 @@ pub struct Config {
     #[serde(rename = "$schema")]
     schema: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    theme: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    keybinds: Option<KeybindsConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     log_level: Option<LogLevel>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tui: Option<TuiConfig>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     server: Option<ServerConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    shell: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<BTreeMap<String, bool>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    attachment: Option<AttachmentConfig>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     command: BTreeMap<String, CommandConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -709,12 +599,20 @@ pub struct Config {
     compaction: Option<CompactionConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     experimental: Option<ExperimentalConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    skills: Option<SkillsConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "tool_output")]
+    tool_output: Option<ToolOutputConfig>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    references: BTreeMap<String, ReferenceValue>,
 }
 
 impl Config {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             agent: BTreeMap::new(),
+            attachment: None,
             autoupdate: None,
             command: BTreeMap::new(),
             compaction: None,
@@ -725,7 +623,6 @@ impl Config {
             experimental: None,
             formatter: None,
             instructions: Vec::new(),
-            keybinds: None,
             log_level: None,
             lsp: None,
             mcp: BTreeMap::new(),
@@ -734,14 +631,17 @@ impl Config {
             permission: None,
             plugin: Vec::new(),
             provider: BTreeMap::new(),
+            references: BTreeMap::new(),
             schema: None,
             server: None,
             share: None,
+            shell: None,
+            skills: None,
             small_model: None,
             snapshot: None,
             systems,
-            theme: None,
-            tui: None,
+            tool_output: None,
+            tools: None,
             username: None,
             watcher: None,
         }
@@ -754,12 +654,6 @@ impl Config {
     #[allow(dead_code)]
     pub fn with_schema(mut self, schema: &str) -> Self {
         self.schema = Some(schema.to_string());
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_theme(mut self, theme: &str) -> Self {
-        self.theme = Some(theme.to_string());
         self
     }
 
@@ -835,731 +729,17 @@ impl Config {
         self
     }
 
-    // ========================================================================
-    // Keybinds Builder Methods (82 methods)
-    // ========================================================================
-
-    #[allow(dead_code)]
-    pub fn with_keybind_leader(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.leader = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_app_exit(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.app_exit = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_editor_open(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.editor_open = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_theme_list(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.theme_list = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_sidebar_toggle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.sidebar_toggle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_scrollbar_toggle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.scrollbar_toggle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_username_toggle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.username_toggle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_status_view(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.status_view = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_export(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_export = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_new(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_new = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_list(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_list = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_timeline(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_timeline = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_fork(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_fork = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_rename(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_rename = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_share(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_share = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_unshare(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_unshare = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_interrupt(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_interrupt = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_compact(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_compact = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_page_up(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_page_up = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_page_down(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_page_down = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_half_page_up(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_half_page_up = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_half_page_down(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_half_page_down = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_first(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_first = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_last(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_last = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_next(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_next = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_previous(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_previous = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_last_user(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_last_user = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_copy(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_copy = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_undo(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_undo = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_redo(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_redo = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_messages_toggle_conceal(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.messages_toggle_conceal = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_tool_details(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.tool_details = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_model_list(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.model_list = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_model_cycle_recent(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.model_cycle_recent = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_model_cycle_recent_reverse(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.model_cycle_recent_reverse = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_model_cycle_favorite(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.model_cycle_favorite = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_model_cycle_favorite_reverse(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.model_cycle_favorite_reverse = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_command_list(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.command_list = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_agent_list(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.agent_list = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_agent_cycle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.agent_cycle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_agent_cycle_reverse(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.agent_cycle_reverse = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_variant_cycle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.variant_cycle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_clear(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_clear = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_paste(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_paste = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_submit(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_submit = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_newline(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_newline = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_move_left(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_move_left = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_move_right(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_move_right = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_move_up(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_move_up = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_move_down(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_move_down = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_left(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_left = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_right(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_right = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_up(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_up = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_down(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_down = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_line_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_line_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_line_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_line_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_line_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_line_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_line_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_line_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_visual_line_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_visual_line_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_visual_line_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_visual_line_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_visual_line_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_visual_line_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_visual_line_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_visual_line_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_buffer_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_buffer_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_buffer_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_buffer_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_buffer_home(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_buffer_home = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_buffer_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_buffer_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete_line(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete_line = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete_to_line_end(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete_to_line_end = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete_to_line_start(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete_to_line_start = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_backspace(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_backspace = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_undo(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_undo = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_redo(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_redo = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_word_forward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_word_forward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_word_backward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_word_backward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_word_forward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_word_forward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_select_word_backward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_select_word_backward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete_word_forward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete_word_forward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_input_delete_word_backward(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.input_delete_word_backward = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_history_previous(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.history_previous = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_history_next(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.history_next = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_child_cycle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_child_cycle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_child_cycle_reverse(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_child_cycle_reverse = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_session_parent(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.session_parent = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_terminal_suspend(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.terminal_suspend = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_terminal_title_toggle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.terminal_title_toggle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_keybind_tips_toggle(mut self, keys: &str) -> Self {
-        let mut keybinds = self.keybinds.unwrap_or_default();
-        keybinds.tips_toggle = Some(keys.to_string());
-        self.keybinds = Some(keybinds);
-        self
-    }
-
-    // ========================================================================
-    // TUI Settings Builder Methods
-    // ========================================================================
-
-    #[allow(dead_code)]
-    pub fn with_tui_scroll_speed(mut self, speed: f64) -> Self {
-        let mut tui = self.tui.unwrap_or_default();
-        tui.scroll_speed = Some(speed);
-        self.tui = Some(tui);
-        self
-    }
-
     #[allow(dead_code)]
-    pub fn with_tui_scroll_acceleration(mut self, enabled: bool) -> Self {
-        let mut tui = self.tui.unwrap_or_default();
-        tui.scroll_acceleration = Some(ScrollAcceleration { enabled });
-        self.tui = Some(tui);
+    pub fn with_shell(mut self, shell: &str) -> Self {
+        self.shell = Some(shell.to_string());
         self
     }
 
     #[allow(dead_code)]
-    pub fn with_tui_diff_style(mut self, style: DiffStyle) -> Self {
-        let mut tui = self.tui.unwrap_or_default();
-        tui.diff_style = Some(style);
-        self.tui = Some(tui);
+    pub fn with_tool(mut self, name: &str, enabled: bool) -> Self {
+        let mut tools = self.tools.unwrap_or_default();
+        tools.insert(name.to_string(), enabled);
+        self.tools = Some(tools);
         self
     }
 
@@ -1592,6 +772,14 @@ impl Config {
     }
 
     #[allow(dead_code)]
+    pub fn with_server_mdns_domain(mut self, domain: &str) -> Self {
+        let mut server = self.server.unwrap_or_default();
+        server.mdns_domain = Some(domain.to_string());
+        self.server = Some(server);
+        self
+    }
+
+    #[allow(dead_code)]
     pub fn with_server_cors(mut self, domain: &str) -> Self {
         let mut server = self.server.unwrap_or_default();
         server.cors.push(domain.to_string());
@@ -1618,6 +806,50 @@ impl Config {
         let mut watcher = self.watcher.unwrap_or_default();
         watcher.ignore.push(pattern.to_string());
         self.watcher = Some(watcher);
+        self
+    }
+
+    // ========================================================================
+    // Attachment Configuration Builder Methods
+    // ========================================================================
+
+    #[allow(dead_code)]
+    pub fn with_attachment_image_auto_resize(mut self, enabled: bool) -> Self {
+        let mut attachment = self.attachment.unwrap_or_default();
+        let mut image = attachment.image.unwrap_or_default();
+        image.auto_resize = Some(enabled);
+        attachment.image = Some(image);
+        self.attachment = Some(attachment);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_attachment_image_max_width(mut self, max_width: u32) -> Self {
+        let mut attachment = self.attachment.unwrap_or_default();
+        let mut image = attachment.image.unwrap_or_default();
+        image.max_width = Some(max_width);
+        attachment.image = Some(image);
+        self.attachment = Some(attachment);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_attachment_image_max_height(mut self, max_height: u32) -> Self {
+        let mut attachment = self.attachment.unwrap_or_default();
+        let mut image = attachment.image.unwrap_or_default();
+        image.max_height = Some(max_height);
+        attachment.image = Some(image);
+        self.attachment = Some(attachment);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_attachment_image_max_base64_bytes(mut self, max_bytes: u64) -> Self {
+        let mut attachment = self.attachment.unwrap_or_default();
+        let mut image = attachment.image.unwrap_or_default();
+        image.max_base64_bytes = Some(max_bytes);
+        attachment.image = Some(image);
+        self.attachment = Some(attachment);
         self
     }
 
@@ -2106,6 +1338,14 @@ impl Config {
         self
     }
 
+    #[allow(dead_code)]
+    pub fn with_compaction_reserved(mut self, tokens: u32) -> Self {
+        let mut compaction = self.compaction.unwrap_or_default();
+        compaction.reserved = Some(tokens);
+        self.compaction = Some(compaction);
+        self
+    }
+
     // ========================================================================
     // Experimental Builder Methods
     // ========================================================================
@@ -2189,6 +1429,68 @@ impl Config {
         hook.session_completed.push(command);
         experimental.hook = Some(hook);
         self.experimental = Some(experimental);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_experimental_policy(mut self, effect: PolicyEffect, action: &str, resource: &str) -> Self {
+        let mut experimental = self.experimental.unwrap_or_default();
+        experimental.policies.push(PolicyConfig {
+            effect: Some(effect),
+            action: Some(action.to_string()),
+            resource: Some(resource.to_string()),
+        });
+        self.experimental = Some(experimental);
+        self
+    }
+
+    // ========================================================================
+    // Skills Builder Methods
+    // ========================================================================
+
+    #[allow(dead_code)]
+    pub fn with_skill_path(mut self, path: &str) -> Self {
+        let mut skills = self.skills.unwrap_or_default();
+        skills.paths.push(path.to_string());
+        self.skills = Some(skills);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_skill_url(mut self, url: &str) -> Self {
+        let mut skills = self.skills.unwrap_or_default();
+        skills.urls.push(url.to_string());
+        self.skills = Some(skills);
+        self
+    }
+
+    // ========================================================================
+    // Tool Output Builder Methods
+    // ========================================================================
+
+    #[allow(dead_code)]
+    pub fn with_tool_output_max_lines(mut self, max_lines: u64) -> Self {
+        let mut tool_output = self.tool_output.unwrap_or_default();
+        tool_output.max_lines = Some(max_lines);
+        self.tool_output = Some(tool_output);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_tool_output_max_bytes(mut self, max_bytes: u64) -> Self {
+        let mut tool_output = self.tool_output.unwrap_or_default();
+        tool_output.max_bytes = Some(max_bytes);
+        self.tool_output = Some(tool_output);
+        self
+    }
+
+    // ========================================================================
+    // References Builder Methods
+    // ========================================================================
+
+    #[allow(dead_code)]
+    pub fn with_reference(mut self, name: &str, value: ReferenceValue) -> Self {
+        self.references.insert(name.to_string(), value);
         self
     }
 

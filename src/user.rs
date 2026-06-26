@@ -8,8 +8,13 @@ use claude_code::Config as ClaudeCodeConfig;
 use codex::{AgentRole, Codex, Otel, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
-use opencode::{AutoUpdate, Config as OpenCodeConfig, PermissionAction, PermissionRule};
+pub use opencode::ModelLimit;
+use opencode::{
+    AutoUpdate, Config as OpenCodeConfig, LspServerConfig, ModelConfig, PermissionAction,
+    PermissionRule, ProviderConfig, ProviderOptions,
+};
 use opencode_tui::Config as OpenCodeTuiConfig;
+use std::collections::BTreeMap;
 use vorpal_artifacts::artifact::{
     awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue, delta::Delta,
     direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, jj::Jj, jq::Jq,
@@ -497,29 +502,202 @@ impl UserEnvironment {
         let opencode_config =
             OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
                 .with_schema("https://opencode.ai/config.json")
+                .with_model("qwen3.6:27b")
+                .with_small_model("qwen3-coder-next:q4_K_M")
                 .with_autoupdate(AutoUpdate::Boolean(false))
                 .with_bash_permissions(vec![
+                    // Default: ask for anything not explicitly allowed or denied
                     ("*", PermissionAction::Ask),
+                    // Allow — CC full bash allowlist parity (src/user.rs:170-231)
+                    ("bun run*", PermissionAction::Allow),
+                    ("bun test*", PermissionAction::Allow),
+                    ("cargo build*", PermissionAction::Allow),
+                    ("cargo check*", PermissionAction::Allow),
+                    ("cargo clippy*", PermissionAction::Allow),
+                    ("cargo fmt*", PermissionAction::Allow),
+                    ("cargo outdated*", PermissionAction::Allow),
+                    ("cargo run*", PermissionAction::Allow),
+                    ("cargo search*", PermissionAction::Allow),
+                    ("cargo test*", PermissionAction::Allow),
+                    ("cargo tree*", PermissionAction::Allow),
+                    ("cargo update*", PermissionAction::Allow),
                     ("cat*", PermissionAction::Allow),
+                    ("chmod*", PermissionAction::Allow),
+                    ("cue*", PermissionAction::Allow),
+                    ("docker images*", PermissionAction::Allow),
+                    ("docker logs*", PermissionAction::Allow),
+                    ("docker ps*", PermissionAction::Allow),
+                    ("docket*", PermissionAction::Allow),
                     ("echo*", PermissionAction::Allow),
                     ("file*", PermissionAction::Allow),
                     ("find*", PermissionAction::Allow),
+                    ("gh pr diff*", PermissionAction::Allow),
+                    ("gh pr list*", PermissionAction::Allow),
+                    ("gh pr view*", PermissionAction::Allow),
+                    ("git add*", PermissionAction::Allow),
                     ("git branch*", PermissionAction::Allow),
+                    ("git diff*", PermissionAction::Allow),
                     ("git log*", PermissionAction::Allow),
+                    ("git remote get-url*", PermissionAction::Allow),
+                    ("git show*", PermissionAction::Allow),
+                    ("git status*", PermissionAction::Allow),
+                    ("go build*", PermissionAction::Allow),
+                    ("go doc*", PermissionAction::Allow),
+                    ("go list*", PermissionAction::Allow),
+                    ("go mod tidy*", PermissionAction::Allow),
+                    ("go test*", PermissionAction::Allow),
+                    ("go version*", PermissionAction::Allow),
+                    ("go vet*", PermissionAction::Allow),
+                    ("gofmt*", PermissionAction::Allow),
                     ("grep*", PermissionAction::Allow),
                     ("head*", PermissionAction::Allow),
+                    ("jq*", PermissionAction::Allow),
                     ("ls*", PermissionAction::Allow),
+                    ("make*", PermissionAction::Allow),
+                    ("npm run build*", PermissionAction::Allow),
+                    ("npm run lint*", PermissionAction::Allow),
+                    ("npm run test*", PermissionAction::Allow),
+                    ("npx tsc*", PermissionAction::Allow),
+                    ("rg*", PermissionAction::Allow),
                     ("sort*", PermissionAction::Allow),
+                    ("staticcheck*", PermissionAction::Allow),
+                    ("tail*", PermissionAction::Allow),
+                    ("tar*", PermissionAction::Allow),
                     ("test*", PermissionAction::Allow),
                     ("tree*", PermissionAction::Allow),
+                    ("vorpal build*", PermissionAction::Allow),
+                    ("vorpal inspect*", PermissionAction::Allow),
+                    ("vorpal run*", PermissionAction::Allow),
                     ("wc*", PermissionAction::Allow),
+                    ("xargs*", PermissionAction::Allow),
+                    ("yarn build*", PermissionAction::Allow),
+                    ("yarn lint*", PermissionAction::Allow),
+                    ("yarn test*", PermissionAction::Allow),
+                    // Deny — CC bash deny rules (src/user.rs:245-246)
+                    ("git checkout*", PermissionAction::Deny),
+                    ("git reset*", PermissionAction::Deny),
                 ])
-                .with_permission_edit(PermissionRule::Simple(PermissionAction::Ask))
+                .with_permission_edit(PermissionRule::Object({
+                    let mut m = BTreeMap::new();
+                    m.insert("*".to_string(), PermissionAction::Ask);
+                    // CC Edit deny rules approximated (src/user.rs:247-263)
+                    m.insert("/Applications/**".to_string(), PermissionAction::Deny);
+                    m.insert("/Library/**".to_string(), PermissionAction::Deny);
+                    m.insert("/System/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.claude.json".to_string(), PermissionAction::Deny);
+                    m.insert("~/.codex/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.doppler/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.gemini/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.netrc".to_string(), PermissionAction::Deny);
+                    m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.vorpal/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
+                    m
+                }))
                 .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_read(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_webfetch(PermissionAction::Allow)
+                .with_permission_read(PermissionRule::Object({
+                    let mut m = BTreeMap::new();
+                    m.insert("*".to_string(), PermissionAction::Allow);
+                    // CC Read deny rules approximated (src/user.rs:264-283)
+                    m.insert(".env".to_string(), PermissionAction::Deny);
+                    m.insert(".env.*".to_string(), PermissionAction::Deny);
+                    m.insert("/Applications/**".to_string(), PermissionAction::Deny);
+                    m.insert("/Library/**".to_string(), PermissionAction::Deny);
+                    m.insert("/System/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.aws/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.claude.json".to_string(), PermissionAction::Deny);
+                    m.insert("~/.codex/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.doppler/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.gemini/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.netrc".to_string(), PermissionAction::Deny);
+                    m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/.vorpal/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
+                    m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
+                    m
+                }))
+                .with_permission_webfetch(PermissionAction::Ask)
+                .with_permission_websearch(PermissionAction::Allow)
+                .with_lsp(
+                    "gopls",
+                    LspServerConfig {
+                        command: vec!["gopls".to_string()],
+                        extensions: vec![".go".to_string()],
+                        ..Default::default()
+                    },
+                )
+                .with_lsp(
+                    "rust-analyzer",
+                    LspServerConfig {
+                        command: vec!["rust-analyzer".to_string()],
+                        extensions: vec![".rs".to_string()],
+                        ..Default::default()
+                    },
+                )
+                .with_lsp(
+                    "typescript-language-server",
+                    LspServerConfig {
+                        command: vec!["typescript-language-server".to_string()],
+                        extensions: vec![".ts".to_string(), ".tsx".to_string()],
+                        ..Default::default()
+                    },
+                )
+                .with_experimental_open_telemetry(true)
+                .with_provider(
+                    "ollama",
+                    ProviderConfig {
+                        npm: Some("@ai-sdk/openai-compatible".to_string()),
+                        name: Some("Ollama".to_string()),
+                        options: Some(ProviderOptions {
+                            base_url: Some("http://localhost:11434/v1".to_string()),
+                            ..Default::default()
+                        }),
+                        models: [
+                            (
+                                "qwen3.6:27b-q8_0".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3.6:27b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "qwen3.6:35b-a3b-q8_0".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3.6:35b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "qwen3-coder-next:q4_K_M".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3-coder-next".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "devstral-small-2:24b-instruct-2512-q8_0".to_string(),
+                                ModelConfig {
+                                    name: Some("devstral-small-2".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        ..Default::default()
+                    },
+                )
                 .build(context)
                 .await?;
         let opencode_config_path = format!(
@@ -786,11 +964,19 @@ impl UserEnvironment {
                 k9s_skin_config,
                 markdown_vim_config,
                 opencode_config,
+                opencode_tui_config,
             ])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),
                 "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
+                "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=https://loki.bulbasaur.altf4.domains/otlp/v1/logs".to_string(),
+                "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf".to_string(),
+                "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics".to_string(),
+                "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=http/protobuf".to_string(),
+                "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
+                "OTEL_LOGS_EXPORTER=otlp".to_string(),
+                "OTEL_METRICS_EXPORTER=otlp".to_string(),
             ])
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),

@@ -533,7 +533,7 @@ pub struct ExperimentalConfig {
 // ============================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct Config {
     // Metadata (not serialized to JSON)
     #[serde(skip)]
@@ -545,6 +545,7 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "$schema")]
     schema: Option<String>,
+    #[serde(rename = "logLevel")]
     #[serde(skip_serializing_if = "Option::is_none")]
     log_level: Option<LogLevel>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -602,7 +603,6 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     skills: Option<SkillsConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "tool_output")]
     tool_output: Option<ToolOutputConfig>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     references: BTreeMap<String, ReferenceValue>,

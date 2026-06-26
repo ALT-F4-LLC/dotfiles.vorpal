@@ -561,6 +561,14 @@ digest = "da43578becb9b9900d84d2d1f26d655ee94f96b9f2b735f5f58359066539c610"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "pi"
+path = "https://github.com/earendil-works/pi/releases/download/v0.80.2/pi-darwin-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "1404305e5eeac508537f22ab754602d053bc12ce35ee2805158ebfb09654daa4"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "pkg-config"
 path = "https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz"
 includes = []

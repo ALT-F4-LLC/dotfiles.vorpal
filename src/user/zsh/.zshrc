@@ -1,5 +1,11 @@
 # START MIGRATION: Needs to be moved to Vorpal
 
+export HISTSIZE=100000
+# Maximum lines saved to $HISTFILE
+export SAVEHIST=100000
+# Like INC_APPEND_HISTORY + re-read history whenever accessing it
+setopt SHARE_HISTORY
+
 ## Claude Code
 c () {
   emulate -L zsh
@@ -104,6 +110,10 @@ eval "$(starship init zsh)"
 
 ## Zoxide
 eval "$(zoxide init zsh)"
+
+## History search
+bindkey -v
+bindkey '^R' history-incremental-search-backward
 
 # END MIGRATION: Needs to be moved to Vorpal
 

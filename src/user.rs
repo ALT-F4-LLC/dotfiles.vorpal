@@ -356,8 +356,8 @@ impl UserEnvironment {
         let codex_team_lead_profile =
             Codex::new(codex_team_lead_profile_name.as_str(), self.systems.clone())
                 .with_developer_instructions(include_str!("user/codex/personas/team-lead.md"))
-                .with_model_reasoning_effort("high")
-                .with_plan_mode_reasoning_effort("high")
+                .with_model_reasoning_effort("xhigh")
+                .with_plan_mode_reasoning_effort("xhigh")
                 .build(context)
                 .await?;
         let codex_team_lead_profile_path = format!(
@@ -444,7 +444,7 @@ impl UserEnvironment {
             .with_model("gpt-5.5")
             .with_model_context_window(1_000_000)
             .with_model_provider("openai")
-            .with_model_reasoning_effort("high")
+            .with_model_reasoning_effort("xhigh")
             .with_model_reasoning_summary("auto")
             .with_model_verbosity("medium")
             .with_otel(Otel {
@@ -471,7 +471,7 @@ impl UserEnvironment {
                 ..Default::default()
             })
             .with_personality("pragmatic")
-            .with_plan_mode_reasoning_effort("high")
+            .with_plan_mode_reasoning_effort("xhigh")
             .with_project_doc_max_bytes(32768)
             .with_sandbox_mode("workspace-write")
             .with_shell_environment_exclude(vec![

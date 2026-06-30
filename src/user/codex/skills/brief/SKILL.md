@@ -56,9 +56,8 @@ Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
 ```
 
-**HALT.** Your job ends when the block is emitted. The operator takes the brief to team-lead's Pre-flight HARD GATE; execution does not begin until they confirm.
+**HALT — brief complete.** The block above is the deliverable. Do not continue, do not execute, do not ask follow-up questions. The operator carries the block to team-lead's Pre-flight HARD GATE; execution does not begin until they confirm.
 
 ## When NOT to use
 
 - **The request is already structured** as a goal + scope + acceptance criteria — there is nothing to standardize; hand it straight to team-lead.
-- **A mid-cycle scope change** on work already in flight — those route through team-lead's re-plan path, not a fresh brief.

@@ -55,6 +55,7 @@ Error: Usage: (verify-ac, "<scope>") — name what to verify (Docket issue ID, "
 
 **Ambiguity rules** (apply when multiple forms could match):
 
+- If the `docket` CLI is unavailable for an issue-ID scope, ABORT: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.`
 - A token matching the Docket issue ID pattern (e.g., `DKT-123`, `ISS-45`) always tries Docket-issue resolution first. If `docket issue show` exits non-zero (no such issue), fall through to subsequent forms.
 - A single token that is BOTH a valid branch name AND an existing file is treated as a branch. To force file-path scope, supply multiple tokens or prefix with `./` (e.g., `./main`).
 
@@ -158,10 +159,11 @@ Apply the full procedure. Scale evidence to risk.
 **Common discipline:**
 
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
+- **Peer `send_input` is the calling agent's job.** This skill emits the report into context; the calling `@sdet` handles all peer messages and Docket comments after the skill returns.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `src/user/codex/agents/sdet.toml` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
 - **Truth-first failure framing.** per team-lead.md Rule 6, Truth-First Debugging, every BLOCK or failure caveat MUST state the observed failure, reproduction evidence or unreproduced status, and inferred cause before recommending rework.
-- **Stream long commands.** For test suites, builds, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use Monitor with an exit-on-deviation pattern.
+- **Stream long commands.** For test suites, builds, or scans expected to take >30s, use the supported Codex shell background mode with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll. For flaky-test confirmation (3-5x reruns), use the same background mode with an exit-on-deviation pattern.
 
 ## Output Contract
 
@@ -255,8 +257,4 @@ On any abort during Pre-flight, Verification Procedure, or Validation Before Emi
 
 ## Failure Modes
 
-The abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, empty content, TDD status gate, and validation failure are specified inline at Argument Handling, Role Detection, and Pre-flight. The table below covers abort paths that introduce new abort text or scope-specific behavior:
-
-| Trigger | Handling |
-|---|---|
-| Docket CLI unavailable for an issue-ID scope | Abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` |
+Abort paths for missing/invalid `<scope>`, role-mismatched callers, unresolvable scope, Docket CLI unavailable for issue-ID scope, empty content, TDD status gate, and validation failure are specified inline above.

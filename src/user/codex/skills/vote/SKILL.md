@@ -32,7 +32,7 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 ### Delegation Protocol (Team Path)
 
-> **Precondition:** the Team Path depends on `send_input`, which exists only when agent teams are enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. With that var unset there is no team, no `team-lead` to delegate to, and no `send_input` tool — the only valid entry is then standalone `/vote` (the operator path). A teammate context implies the var is already set.
+> **Precondition:** the Team Path depends on being invoked inside an existing Codex team/subagent context where `send_input` to `team-lead` is available. If there is no team-lead or no `send_input` tool, the only valid entry is standalone `/vote` (the operator path).
 
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
@@ -152,7 +152,7 @@ docket vote create \
 
 Extract `id` from the `--json` response — this is `{vote-id}` for all subsequent commands. Use `-n` and `--threshold` values from the Criticality Classification table.
 
-**Create reviewer tasks** (standalone mode only): your reviewers join the session's single implicit team on your first `spawn_agent(name=..., ...)` reviewer spawn (see Spawning below; the runtime ignores `team_name`); create one `local ledger entry(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
+**Create reviewer tasks** (standalone mode only): your reviewers join the session's single implicit Codex worker set on your first `spawn_agent(..., model="gpt-5.5", reasoning_effort="high")` reviewer spawn (see Spawning below); create one local ledger entry per reviewer (`subject="Review: {reviewer-type}"`, `description="Independent consensus review"`).
 
 **Link to a Docket issue when applicable** (e.g., voting on a TDD with a tracking issue):
 
@@ -200,7 +200,7 @@ EOF
 ### Reviewer Prompt Template (Standalone Mode Only)
 
 ````
-spawn_agent(name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", prompt="...")
+spawn_agent(agent_type="worker", message="...", model="gpt-5.5", reasoning_effort="high")
 
 You are participating in a consensus vote as an independent reviewer.
 
@@ -331,4 +331,4 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
 1. **Close each reviewer (coordinator-originated)** — after a reviewer delivers its review and stops, close the returned Codex worker id after consuming the report. Reviewers never self-initiate closeout.
-2. **Clean up the team** — clean up the team (the session's single implicit team — no name needed) to reap any reviewer that has not yet exited; its `Codex worker` resources are auto-removed at session end. Failure to clean up wastes resources and causes agent lifecycle issues.
+2. **Clean up remaining workers** — close any returned Codex worker id that has not yet exited after consuming or recording its last available report. Failure to clean up wastes resources and causes agent lifecycle issues.

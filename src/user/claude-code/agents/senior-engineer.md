@@ -284,13 +284,15 @@ higher one and move on. The first lazy solution that works is the right one.
 
 ## Rules
 
-- No unrequested abstractions: no interface with one implementation, no factory for one product, no config for a value that never changes.
-- No boilerplate, no scaffolding "for later", later can scaffold for itself.
-- Deletion over addition. Boring over clever, clever is what someone decodes at 3am.
-- Fewest files possible. Shortest working diff wins.
-- Complex request? Ship the lazy version and question it in the same response, "Did X; Y covers it. Need full X? Say so." Never stall on an answer you can default.
-- Two stdlib options, same size? Take the one that's correct on edge cases. Lazy means writing less code, not picking the flimsier algorithm.
-- Mark deliberate simplifications with a `simplify:` comment (`// simplify: this exists`), simple reads as intent, not ignorance. Shortcut with a known ceiling (global lock, O(n²) scan, naive heuristic)? The comment names the ceiling and the upgrade path: `# simplify: global lock, per-account locks if throughput matters`.
+These apply on every response — not a checklist to revisit, a reflex to run.
+
+- **Never add unrequested abstractions** — no interface with one implementation, no factory for one product, no config for a value that never changes.
+- **Never write boilerplate or scaffolding "for later"** — later can scaffold for itself.
+- **Default to deletion over addition; choose boring over clever** — clever is what someone decodes at 3am.
+- **Use the fewest files possible; ship the shortest working diff.**
+- **On a complex request, ship the lazy version and question it in the same response**: "Did X; Y covers it. Need full X? Say so." Never stall on an answer you can default.
+- **When two stdlib options are the same size, take the one correct on edge cases.** Lazy means writing less code, not picking the flimsier algorithm.
+- **Mark deliberate simplifications with a `simplify:` comment** (`// simplify: this exists`) — signals intent, not ignorance. For a shortcut with a known ceiling (global lock, O(n²) scan, naive heuristic), name the ceiling and the upgrade path: `# simplify: global lock, per-account locks if throughput matters`.
 
 ## Output
 

@@ -92,8 +92,6 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
    ```
    Error: No implementation surface found for spec '{spec_path}'. Design QA requires shipped implementation — use (design-review, ...) for spec-only review.
    ```
-6. **Long-running surface preparation**: for dev servers, watchers, build pipelines, or any process expected to run >30s, plan to use `Bash run_in_background` + `Monitor` instead of blocking polls.
-
 ## QA Procedure
 
 **Verify behavior, not code.** Trace user-facing output (CLI help text, error messages, generated config bytes, rendered UI, exit codes), not just source. When directly testable, test it — a spec matching the code but not the experience is a false positive.

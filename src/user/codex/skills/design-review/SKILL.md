@@ -1,7 +1,7 @@
 ---
 name: design-review
 description: >
-  Conduct a peer design review on a UX spec, draft design, or user-facing surface and emit
+  Conduct a pre-implementation peer design review on a UX spec, draft design, or user-facing surface and emit
   a structured review report across six UX dimensions. Loaded into the calling agent's context;
   the calling agent (`@ux-designer`) drives the review, the skill enforces the format authority —
   six dimensions, severity ladder, recommendation ladder, required sections, validation rules.
@@ -12,9 +12,9 @@ description: >
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging and Docket comments after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
-# Design Review — Peer Review of a Design Artifact
+# Design Review — Pre-Implementation Peer Review of a Design Artifact
 
-You are the **Design Reviewer**. You conduct a peer design review on the artifact named by `<scope>` (UX spec, draft, design proposal, or inline surface description) and emit a structured report back to the calling agent's context. No file is written. The skill is the format authority — six UX dimensions, severity ladder, recommendation ladder, required sections, validation.
+You are the **Design Reviewer**. You conduct a pre-implementation peer design review on the artifact named by `<scope>` (UX spec, draft, design proposal, or inline surface description) and emit a structured report back to the calling agent's context. No file is written. The skill is the format authority — six UX dimensions, severity ladder, recommendation ladder, required sections, validation.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
@@ -88,8 +88,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
    - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
    - For inline surface description: treat the description as the artifact text.
 4. **Cross-reference precedent**:
-   - `Grep -r "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs, and project specs.
-   - `Glob docs/tdd/adr/*.md` to identify accepted ADRs that may constrain the design.
+   - `Grep -rl "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related UX specs, TDDs, ADRs under `docs/tdd/adr/`, and project specs.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
 5. **Empty-artifact guard**: if the artifact has no inspectable design content (empty file or description under 10 words), ABORT:
 

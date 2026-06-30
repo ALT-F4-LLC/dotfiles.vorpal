@@ -89,7 +89,7 @@ exploration guidance for each — used in the spawning template.
 ### Step 1: Dispatch Workers
 
 1. Create a local phase ledger with one row per target file: filename, worker id, status (`planned | spawned | reported | verified | failed`), and output path.
-2. Dispatch one Codex `staff-engineer` subagent per target file. Spawn all independent workers in the SAME turn where the harness permits parallel dispatch.
+2. Dispatch one Codex `staff-engineer` subagent per target file. Each `spawn_agent` call MUST set an explicit Codex worker model and effort: default `model="gpt-5.4"` and `reasoning_effort="medium"` unless the verified brief explicitly justifies an upgrade for a specific spec. Record the model/effort in the local ledger. Spawn all independent workers in the SAME turn where the harness permits parallel dispatch.
 3. Each worker brief uses the Spawning Template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`. Track the returned Codex agent id in the local ledger.
 4. If the current harness cannot spawn workers from this skill context, emit the prepared worker briefs and stop with `Blocked: parent-led Codex staff-engineer subagents are required for spec authoring.` Do not write specs directly.
 
@@ -127,7 +127,7 @@ Use this template for each spec file, substituting `{filename}`, `{exploration_g
 `{today_date}`, `{project_name}`, and `{verified_goal}` (from the pre-flight steps).
 
 ```
-Use the @staff-engineer agent to generate a project specification:
+Use the @staff-engineer agent to generate a project specification. Dispatch as a Codex worker with `model="gpt-5.4"` and `reasoning_effort="medium"` unless the verified brief explicitly justifies an upgraded model/effort for this file.
 
 Generate the `docs/spec/{filename}` project specification file.
 

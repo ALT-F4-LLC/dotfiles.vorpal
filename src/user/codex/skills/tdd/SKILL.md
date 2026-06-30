@@ -155,6 +155,7 @@ malformed frontmatter.
      each declared target — "valid in both X and Y" requires a run in both (see
      staff-engineer.md's Executable-claim gate, rule 6, for the SQL-dialect rule).
    - **Line-budget / size claim**: measure with `wc -l` or `sed -n`; never estimate.
+   - **Concrete value** (image tag, count, path, flag, version): verify the exact value against the source of truth (`git grep`, manifest, lockfile, generated output, or CLI result) before the TDD asserts it.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
      target exists and its signature matches before writing it as settled.
 6. **Proceed to Validation Before Save** — that step is the single source of
@@ -230,7 +231,8 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 11. **Implementation Phases** — partitioned phases that the planner consumes
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
     (paths affected), (c) per-phase acceptance criteria — any grep/regex-based
-    AC must be run against the named files, hit set verified to cover all expected
+    AC must embed the exact command and its expected hit count, and it must be run
+    against the named files with the hit set verified to cover all expected
     matches (escape markdown, arm for word-order/formatting variants); a single-arm
     regex that silently under-matches is a defect, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit

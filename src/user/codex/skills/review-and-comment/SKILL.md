@@ -9,7 +9,7 @@ description: >
   "post my review comments on <PR>".
 ---
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or send_input, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting.
+> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use `spawn_agent` or `send_input`, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting.
 
 # Review-and-Comment — Dual-Lens PR Review → Inline Comments in Your Voice
 
@@ -21,7 +21,7 @@ A single positional `<PR>`: a bare number (`109`), a full URL (`https://github.c
 
 ## Operational preconditions (read once)
 
-- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true`.
+- **GitHub API calls can fail under the sandbox** (TLS x509 errors via the proxy). If a `gh`/`git` network call fails with a sandbox/TLS error, rerun that same call through the approved Codex escalation path before treating the endpoint as unreachable.
 - **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip.
 - Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting.
 
@@ -95,7 +95,7 @@ post() {  # body path line
 }
 ```
 
-Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal; `jq --arg` handles JSON escaping. Run with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account.
+Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal; `jq --arg` handles JSON escaping. If the posting call fails with a sandbox/TLS error, rerun that same call through the approved Codex escalation path. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account.
 
 ## Step 9 — Clean up & report
 

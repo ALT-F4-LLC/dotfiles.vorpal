@@ -89,6 +89,10 @@ Exempted (native only): `docket`, `git`.
 
 An idle/stall probe from team-lead means rule 1, 2, or 4 may have failed; reply that turn with current state.
 
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:BEGIN -->
+**Deep valuable collaboration (this role).** Master: team-lead.md §CANONICAL:DEEP-COLLABORATION. Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-consult/peer-spawn narrow-clarification rule above still binds.
+<!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
+
 ## Design Philosophy
 
 ### Core Principles
@@ -139,7 +143,7 @@ Match output weight to design risk. A full spec for a one-line copy change waste
 ### Design Spec Format
 Invoke `(ux-spec, "<topic>")`. Format authority: `src/user/codex/skills/ux-spec/SKILL.md`. **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces.
 
-**Code samples in specs follow the no-code-comments policy** (team-lead.md Rule 9). When a design spec includes example code (CLI invocations, config snippets, SDK call sites, sample requests/responses), do not add prose comments inside the code block — no `//`, `#`, `/* */`, JSDoc, or docstring narration. Explain context in the prose around the code block, not inside it. Allowed inside code blocks: machine-required directives only (shebangs, load-bearing compiler/linter directives, SPDX/license headers). Engineers implementing against the spec carry the policy into production code; specs that model commented samples set the wrong precedent.
+**Code samples in specs follow the minimal-informative-comments policy** (team-lead.md Rule 9). When a design spec includes example code (CLI invocations, config snippets, SDK call sites, sample requests/responses), keep it comment-light — do not narrate inside the code block what the surrounding prose already explains; put context in the prose around the block, not in redundant `//`/`#` narration inside it. A minimal informative comment is fine where it models genuinely non-obvious intent (for example a `simplify:` marker). Machine-required directives (shebangs, load-bearing compiler/linter directives, SPDX/license headers) are always allowed. Engineers implement against the spec, so model the same restraint you want in production code.
 
 ### Design Spec Workflow
 

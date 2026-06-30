@@ -666,6 +666,13 @@ impl UserEnvironment {
                         }),
                         models: [
                             (
+                                "devstral-small-2:24b-instruct-2512-q8_0".to_string(),
+                                ModelConfig {
+                                    name: Some("devstral-small-2".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
                                 "qwen3.6:27b-q8_0".to_string(),
                                 ModelConfig {
                                     name: Some("qwen3.6:27b".to_string()),
@@ -687,9 +694,9 @@ impl UserEnvironment {
                                 },
                             ),
                             (
-                                "devstral-small-2:24b-instruct-2512-q8_0".to_string(),
+                                "ornith:35b".to_string(),
                                 ModelConfig {
-                                    name: Some("devstral-small-2".to_string()),
+                                    name: Some("ornith:35b".to_string()),
                                     ..Default::default()
                                 },
                             ),

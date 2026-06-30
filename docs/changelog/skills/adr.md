@@ -1,5 +1,20 @@
 # Changelog: adr
 
+## 2026-06-30
+
+### Summary
+Removed a mis-homed multi-agent coordination block that contradicted the leaf BANNER and single-author invariant; verified the cited self-validation path-fragility fix is already applied. Net -2 (273→271).
+
+### Changes
+- CULL: removed the "Multi-agent coordination (when applicable)" block — it prescribed a `SendMessage` handoff ("token is yours") that the CANONICAL BANNER forbids a leaf skill from doing, and contradicted "ADR authoring is single-author"; cross-agent coordination is the calling agent's concern (already delegated). Source: internal contradiction (file-cited signal).
+- NO-OP (verified already-fixed): the cited fragile self-validation `cd docs/tdd/adr && f=0001-*.md && grep -n '^## '` no longer exists; validation is context-based and the race guard uses a repo-root-relative Glob.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (highest): net -2. OPTIONAL-mermaid stance left intact (no parse mandate). No model/routing/drift change; no unescaped `$`+digit. Routed to evolve-agents (out of scope here): the removed stale-state-storm guidance may belong in agents/staff-engineer.md.
+
+### Rename
+No rename.
+
 ## 2026-06-19
 
 ### Summary

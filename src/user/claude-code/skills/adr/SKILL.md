@@ -249,8 +249,6 @@ For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 
 ADR-specific full sequence: `mkdir → Write → race-detection Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative; ADR authoring is single-author, so no pre-Write renumber is needed — the post-Write Glob below is the sole race guard.
 
-**Multi-agent coordination (when applicable).** When two agents share authorship of one ADR (e.g., author + reviewer handing back edit rights), treat the file on disk as the sole handoff-state source of truth. Send the path + "token is yours" exactly once per handoff; do not re-send on subsequent turns — re-sending causes stale-state storms where each message crosses the prior one mid-flight.
-
 **After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
 
 ```

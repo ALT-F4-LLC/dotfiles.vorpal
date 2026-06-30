@@ -1,5 +1,34 @@
 # Changelog: ux-spec
 
+## 2026-06-30
+
+### Summary
+Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
+
+### Changes
+- AMPLIFY: §5's keyword list is now `e.g.`-prefixed (non-exhaustive) and adds `journey`, `classDiagram`, `gantt` — the Phase-2 4-keyword list would have rejected valid diagram types. Applied byte-identically across tdd/prd/ux-spec §5. Phase-3 remaining-issue catch.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0. Correctness: closed a self-introduced validation gap. No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Phase-2 family-wide: strengthened Validation §5 from mermaid presence-only to "presence & shape" (renderer-free diagram-type-keyword check), applied byte-identically across tdd/prd/ux-spec §5 in lockstep. Phase 1 was RETAIN (wireframe-preview candidate already encoded at Authoring Procedure step 5).
+
+### Changes
+- AMPLIFY: §5 now requires the mermaid block's first non-blank line to declare a diagram-type keyword — catches the empty/typeless block that renders broken but passed presence-only. Renderer-free (no mermaid CLI in-repo, verified). Cited INNOVATION.
+- NO-OP (verified already-encoded): the AskUserQuestion `preview`-for-wireframes recommendation already exists at Authoring Procedure step 5.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: +5 lines, justified. No model/routing/drift change.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

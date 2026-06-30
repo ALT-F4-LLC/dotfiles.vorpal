@@ -1,5 +1,34 @@
 # Changelog: tdd
 
+## 2026-06-30
+
+### Summary
+Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
+
+### Changes
+- AMPLIFY: §5's keyword list is now `e.g.`-prefixed (non-exhaustive) and adds `journey`, `classDiagram`, `gantt` — the Phase-2 4-keyword list would have rejected valid diagram types (prd's Mandate invites a `journey` diagram). Applied byte-identically across tdd/prd/ux-spec §5. Phase-3 remaining-issue catch.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0. Correctness: closed a self-introduced validation gap. No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Phase-2 family-wide: strengthened Validation §5 from mermaid presence-only to "presence & shape" (renderer-free diagram-type-keyword check). Applied byte-identically across tdd/prd/ux-spec §5 in lockstep. Phase 1 was RETAIN (cited fenced-code section-order fix already encoded).
+
+### Changes
+- AMPLIFY: §5 now requires the mermaid block's first non-blank line to declare a diagram-type keyword (graph/flowchart, sequenceDiagram, stateDiagram, erDiagram) — catches the empty/typeless block that renders broken but passed presence-only. Renderer-free (no mermaid CLI in-repo, verified). Cited INNOVATION. Satellites (§5-by-number refs) need no edit.
+- NO-OP (verified already-encoded): the cross-project fenced-code section-order exclusion is already present (§3/§4/§6 "outside code fences").
+
+### Dimensions Evaluated
+All 8. Over-Engineering: +5 lines, justified (closes a real malformed-block gap), renderer-free. No model/routing/drift change.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

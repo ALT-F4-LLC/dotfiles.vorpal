@@ -1,5 +1,20 @@
 # Changelog: vote
 
+## 2026-06-30
+
+### Summary
+Two cited robustness fixes (both net 0, verified against live docket b59dd2f): Pre-flight DB-existence detection and an operational findings-JSON heredoc mandate + retry guard. Stays 340 lines.
+
+### Changes
+- AMPLIFY: Pre-flight step 1 now detects a missing docket DB (`docket vote list` probe → exit 2) and prompts (standalone `AskUserQuestion docket init`/abort) or escalates to team-lead (team mode) instead of hard-failing later at `docket vote create`. DB-creation location stays an operator/orchestrator decision. Cited HISTORICAL signal (2).
+- AMPLIFY: Recording Votes now mandates the stdin heredoc (`--findings-json -`/`--findings -`), NEVER inline `--findings-json "..."` (reviewer prose `!`/backslash corrupts the payload, exit 3), and retries with plaintext `--findings -` on a JSON parse error. Cited HISTORICAL signal (1). `@file` rejected — unsupported by CLI (stdin `-` only, verified).
+
+### Dimensions Evaluated
+All 8. Over-Engineering (highest): net 0, temp-file approach rejected as over-engineered. No model/routing change (reviewer template stays opus — the sonnet hypothesis had no data); no drift; no unescaped `$`+digit. Phase-2 deferrals: delegation-protocol CANONICAL (shared with team-lead.md); BANNER family block.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

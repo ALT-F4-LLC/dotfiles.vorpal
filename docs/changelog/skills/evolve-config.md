@@ -1,5 +1,47 @@
 # Changelog: evolve-config
 
+## 2026-06-30
+
+### Summary
+Phase-3 disambiguation: resolved the "genome" multi-reading. Inline, net 0 (stays 535).
+
+### Changes
+- AMPLIFY: the intro line defined "genome" as "the settings.json artifact produced by the Rust builders" while line 38 defines genome = the four source files and settings.json = phenotype. Reworded the intro so genome = the Rust builder sources (per SOURCE-OF-TRUTH) and settings.json = phenotype (per EVOLUTION-MODEL), since all edit-targeting language keys off "genome". Phase-3 finding DISAMBIG 1.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0. Clarity: intra-file multi-reading fix. No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Phase-2 coherence: restored 3-way Crash & Stall parity. Inline, net 0 (stays 535).
+
+### Changes
+- AMPLIFY: Crash & Stall detection (a) now carries the "— ≥2 turns with no new tool call is stall evidence" clause that evolve-agents + evolve-skills already had (config had dropped it). Restores byte-parity on the stall clause across the 3 editing evolve skills.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0. Coherence: parity-drift fix. No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Named SessionStart + MessageDisplay as candidate hook surfaces in Config-Surface dimension 4 so the Phase-1 config reviewer can evaluate wiring them. Inline (net 0, stays 535). No config-source changes this cycle.
+
+### Changes
+- AMPLIFY: dimension 4 (Hooks & scripts) now names `SessionStart` (reloadSkills/sessionTitle) + `MessageDisplay` (v2.1.147+) as candidate surfaces, gated behind a cited fitness signal — cited docs-research signal; the dimension can't surface a setter it never names. Wording corrected at apply (reloadSkills re-scans for newly-added skills; edits auto-apply via file-watching).
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0 (no destructive trim forced on a no-signal RETAIN-biased organism). No model/routing/drift changes. No unescaped `$`+digit. Phase-2 deferral: Crash & Stall Recovery parity — evolve-config is missing the "≥2 turns no new tool call is stall evidence" clause both siblings carry → CANONICAL-ize family-wide.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

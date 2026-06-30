@@ -1,5 +1,19 @@
 # Changelog: evolve-agents
 
+## 2026-06-30
+
+### Summary
+Phase-2 coherence: propagated the glob-abort find-form (same bug class fixed in evolve-skills this cycle) to all 4 single-root inventory/changelog globs. Inline, net 0 (stays 533). Phase 1 was RETAIN (no-signal organism).
+
+### Changes
+- CULL: replaced `wc -l agents/*.md`/`ls docs/changelog/agents/*.md` globs (pre-flight steps 4 & 6, Phase 4 gate, wrap-up step 2) with `find <root> -maxdepth N -name … -exec wc -l {} + 2>/dev/null` — zsh nomatch aborts a bare glob even with `2>/dev/null` when the root is empty/absent (real risk: fresh-repo changelog dir). Family-consistency with the evolve-skills fix. All find-forms verified under zsh.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0 (533/535 self-budget). No model/routing/drift change. Cross-organism items routed to evolve-agents cycle (clean-up-team reword; adr stale-state guidance; $ARGUMENTS-banner escaping).
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

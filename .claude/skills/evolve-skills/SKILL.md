@@ -75,11 +75,10 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory skill files and sizes** — Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory skill files and sizes** — Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when the top-level `skills/` root is absent). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
-7. **Check for existing changelogs** — Run `ls docs/changelog/skills/*.md 2>/dev/null` to see
-   which changelogs already exist. Spawned agents will need this information.
+7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
@@ -198,7 +197,7 @@ Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied
 
 ### Phase 4: History Compaction (terminal, gated)
 
-Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/skills/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
+Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `find docs/changelog/skills -name '*.md' -exec wc -l {} + 2>/dev/null` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect, counted in the ADR 0001 parity formula. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -209,7 +208,7 @@ The compactor's report MUST evidence invariant checks 0-5 per ADR 0001 (pure-add
 After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `wc -l .claude/skills/*/SKILL.md skills/*/SKILL.md`. Consolidate any over 500 lines.
+2. Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
 
 ---
@@ -406,7 +405,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files via `Read(limit=80)` only (both .claude/skills/ and skills/). Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files via ranged Read of the relevant section (both .claude/skills/ and skills/; a blanket 80-line cap can hide a cross-file contract past line 80). Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

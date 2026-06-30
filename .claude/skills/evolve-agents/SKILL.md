@@ -75,9 +75,9 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory agent files and sizes** — Run `wc -l agents/*.md 2>/dev/null`. Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory agent files and sizes** — Run `find agents -maxdepth 1 -name '*.md' -exec wc -l {} + 2>/dev/null` (find tolerates an absent/empty `agents/` root; a zsh `agents/*.md` glob nomatch-aborts even with `2>/dev/null`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, abort. If an agent-name token is present (per Argument Handling parsing) and `agents/<token>.md` does not exist, inform user and abort.
-6. **Check for existing changelogs** — Run `ls docs/changelog/agents/*.md 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
+6. **Check for existing changelogs** — Run `find docs/changelog/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
@@ -183,7 +183,7 @@ Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied
 
 ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 3 fixes are applied, the orchestrator runs two independent gate checks (read-only):
 
-1. **Changelog arm** — one `wc -l docs/changelog/agents/*.md` pass; any file over the 300-line budget is compactable.
+1. **Changelog arm** — one `find docs/changelog/agents -name '*.md' -exec wc -l {} + 2>/dev/null` pass; any file over the 300-line budget is compactable.
 2. **Pitfalls arm** — any entry in THIS repo's `.claude/agent-memory/*/pitfalls.md` that is un-ledgered yet dispositioned (applied / already-encoded / Docket-tracked) per this cycle's or a prior cycle's Phase 1 harvest-outcome report, committed at HEAD, and predating this cycle (full compactability criteria in ADR 0001).
 
 If neither arm fires, no compactor is spawned and the Wrap-up report carries a single no-op line. Otherwise spawn ephemeral `history-compactor` (`subagent_type="senior-engineer"`, tools Bash + Edit) with the over-budget file list and the dispositioned-entry list. Compaction is summarize-then-remove, never silent deletion — only content reachable in `git show HEAD:<file>` may be compacted; uncommitted entries are never touched. Per file:
@@ -197,7 +197,7 @@ The compactor's report MUST evidence, per file and in order, invariant checks 0-
 
 After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `wc -l agents/*.md`. Consolidate any over 500 lines.
+2. Run `find agents -maxdepth 1 -name '*.md' -exec wc -l {} + 2>/dev/null`. Consolidate any over 500 lines.
 3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
 
 ---

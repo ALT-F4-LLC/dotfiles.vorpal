@@ -262,7 +262,7 @@ Before invoking `Write`, verify in the calling agent's context:
    sections is a defect.
 4. **Alternatives count** — Section 3 (Alternatives Considered) carries no fewer than two `###`-level subsections (counting only `###` headings outside
    ``` code fences).
-5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
+5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (e.g. `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails — it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 7. **Security-track subsections** — if `updated_by` is `@security-engineer`,

@@ -1,5 +1,33 @@
 # Changelog: evolve-coherence
 
+## 2026-06-30
+
+### Summary
+Phase-2 coherence: fixed a high-risk glob-abort in the Phase-0 inventory command. Inline, net 0 (stays 328).
+
+### Changes
+- CULL: replaced the step-3 inventory `wc -l agents/*.md skills/*/SKILL.md .claude/skills/*/SKILL.md` + `ls -d skills/*/ .claude/skills/*/` globs (both contain the guaranteed-absent top-level `skills/` root → zsh nomatch-aborts the whole command even with `2>/dev/null`) with `find … -exec wc -l {} +` / `find … -type d` forms that tolerate absent roots and preserve the exact `{inventory}` set. Same bug class fixed in evolve-skills this cycle; verified under zsh.
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline, net 0. Coherence/Completeness: glob-abort robustness. Report-and-route invariant preserved; no model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Encoded the cited ranged-Read confirmation efficiency gain at both binding sites with an absence/coverage grep carve-out. RETAIN otherwise (no-signal organism, 0 invocations). Net ~0 lines (inline expansion).
+
+### Changes
+- AMPLIFY: ranged `Read` of a pinned XREF `file:line` is now the default confirmation path for Phase 1 reviewers (cheaper than whole-file re-grep); grep retained for absence/coverage checks where no line anchor exists. Source: Phase 0 INNOVATION (a), cited — Edit-after-grep v2.1.160 + 1M context.
+
+### Dimensions Evaluated
+All 8 (Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename). Report-and-route invariant preserved; no model/routing change; drift=0. Phase-2 deferral noted: add report-family silent-completion/Round-N CANONICAL tags as D4 byte-parity carriers once they exist.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

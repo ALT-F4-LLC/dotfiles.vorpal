@@ -1,5 +1,19 @@
 # Changelog: brief
 
+## 2026-06-30
+
+### Summary
+Added an explicit fallback for Docket-issue references so brief stops stalling against the permission gate. Inline (net 0, stays 65). brief→sonnet routing trial declined by operator.
+
+### Changes
+- AMPLIFY: when the request references a Docket issue by ID, brief no longer attempts disallowed `Bash`/`docket` fetches (retrying variants stalls the intake) — it asks the operator to paste the body or emits a bare-ID placeholder Goal flagging the body unavailable. Cited HISTORICAL stall (agentic-services, 2026-06-30; operator had to manually interrupt).
+
+### Dimensions Evaluated
+All 8. Over-Engineering: inline append, net 0. disallowed-tools frontmatter preserved; no model/routing/drift change. Phase-2 deferrals: tagged-fence emission (brief↔team-lead gate coordination); `$ARGUMENTS`-escaping family convention pass.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

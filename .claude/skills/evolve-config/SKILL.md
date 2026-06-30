@@ -17,7 +17,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Web
 
 # Evolve Config
 
-You are the **Config Evolution Orchestrator**. The target is the **Claude Code configuration genome** — the `settings.json` artifact produced by the Rust builders, not the deployed file. All additions pass through the Content Gate.
+You are the **Config Evolution Orchestrator**. The target is the **Claude Code configuration genome** — the Rust builder sources that produce `settings.json` (the four files named under CANONICAL:SOURCE-OF-TRUTH below), never the deployed `settings.json`, which is the *phenotype* (see CANONICAL:EVOLUTION-MODEL). All additions pass through the Content Gate.
 
 <!-- CANONICAL:SOURCE-OF-TRUTH:BEGIN -->
 **Source of truth is the Rust builder — NEVER deploy to `~/.claude/` directly.** The config is generated from `src/user/claude_code.rs` (the `ClaudeCode` builder struct + `with_*` setters) and assembled in `src/user.rs` (the `.with_*` call chain that materializes the live config), with two wired scripts: `src/user/statusline.sh` (status line) and `src/user/teammate-idle-hook.sh` (TeammateIdle hook). EVERY recommendation this cycle produces is a change to ONE of those four source files — a new/changed `with_*` setter, an edited call-chain value, or a script edit. The deployed `~/.claude/settings.json`, `~/.claude/statusline.sh`, and `~/.claude/teammate-idle-hook.sh` are BUILD OUTPUTS: never edit, never inspect them as the source of truth, never recommend a direct edit to them. A recommendation phrased as "edit `~/.claude/...`" is reject-class.
@@ -98,7 +98,7 @@ The single Phase 1 reviewer evaluates the config genome against these named surf
 1. **Core & model routing** — `model`, `model_overrides`, `available_models`, `effort_level`, `output_style`, `auto_updates_channel`, env model aliases (`ANTHROPIC_DEFAULT_*_MODEL`), OTEL/telemetry env, the auto-mode flag env. Routing changes require Model Routing Audit evidence.
 2. **Permissions** — `allow`/`ask`/`deny` rules, `default_mode`, bypass-mode controls. A recurring permission prompt in the audit is a fitness signal to add an `allow` rule; an over-broad rule is a CULL candidate.
 3. **Sandbox** — `enabled`, filesystem `deny_read`/`allow_write` paths, network `allowed_domains`/`denied_domains`, `excluded_commands`, local-binding. A sandbox rule that blocks legitimate work (error/abort signal) is a fitness signal.
-4. **Hooks & scripts** — the `TeammateIdle` hook wired to `teammate-idle-hook.sh`, `status_line` wired to `statusline.sh`, plus the script bodies themselves. Verify the wired command path matches the deployed script name.
+4. **Hooks & scripts** — the `TeammateIdle` hook wired to `teammate-idle-hook.sh`, `status_line` wired to `statusline.sh`, plus the script bodies themselves, AND newer platform hook events not yet wired — `SessionStart` (can carry `reloadSkills: true` to re-scan skill directories, or `sessionTitle`) and `MessageDisplay` (transforms assistant message display; v2.1.147+); evaluate wiring either ONLY against a cited fitness signal. Verify the wired command path matches the deployed script name.
 5. **Skills & auto-mode** — `skill_listing_budget_fraction`, `skill_overrides`, `max_skill_description_chars`, `auto_mode` allow/deny lists, `use_auto_mode_during_plan`.
 6. **Plugins, UI & governance** — `enabled_plugins` (LSPs), `teammate_mode`, `tui`, `show_thinking_summaries`, `preferred_notif_channel`, attribution, worktree, managed-only fields.
 
@@ -147,7 +147,7 @@ All changes tracked in `docs/changelog/config/<artifact-name>.md` (create direct
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file(s).
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.

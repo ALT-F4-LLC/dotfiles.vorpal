@@ -1,5 +1,21 @@
 # Changelog: evolve-skills
 
+## 2026-06-30
+
+### Summary
+Fixed the live zsh-nomatch glob-abort across all 4 inventory/changelog glob sites (reproduced this cycle: a missing top-level `skills/` root aborted pre-flight discovery and `2>/dev/null` does not suppress nomatch) and added a last-run preamble so re-running isn't the only way to confirm prior completion. Net -1 (534→533).
+
+### Changes
+- CULL: replaced 4 `*/SKILL.md`/`*.md` globs (pre-flight steps 4 & 7, Phase 4 gate, wrap-up step 2) with `find … -maxdepth 2 -name … -exec wc -l {} + 2>/dev/null` — cited HISTORICAL BUG, reproduced live (zsh aborts mid-discovery, yielding zero inventory).
+- AMPLIFY: pre-flight step 7 now surfaces `Last evolve-skills changelog entry: <date>` — cited HISTORICAL signal (3 same-day re-runs were the only way to confirm prior completion); also collapses 2 lines to 1.
+- AMPLIFY: Phase 1 template `Read(limit=80)` → ranged Read of the relevant section — cited INNOVATION (the 80-line cap predates the 1M-context default and can hide a cross-file contract past line 80).
+
+### Dimensions Evaluated
+All 8. Over-Engineering: net -1 (TRIM honored, 533/535). No model/routing/drift changes (none data-justified, operator hard-gate). No unescaped `$`+digit. Phase-2 deferrals: glob-abort family propagation; report-only auditor conversion.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

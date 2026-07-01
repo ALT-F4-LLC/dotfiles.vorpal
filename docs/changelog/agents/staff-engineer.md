@@ -1,5 +1,34 @@
 # Changelog: staff-engineer
 
+## 2026-07-01
+
+### Summary
+Phase 2 coherence follow-up: added the staff receiver for team-lead-routed implementation PLAN review.
+
+### Changes
+- FIX: incoming senior PLAN trigger reviews TDD conformance and returns proceed/revise plus `routing_recommendation` to team-lead.
+- CLARIFY: plan review does not waive later diff review.
+
+### Dimensions Evaluated
+PA receiver symmetry, hub-and-spoke routing, review lifecycle.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: lifecycle close-ready/routing schema -> applied. Staff reviews now route final verdicts/recommendations through team-lead.
+
+### Changes
+- Added `routing_recommendation` fields, close-ready report schema, team-lead verdict handoff, and doubled-review cap/fix-loop wording.
+
+### Dimensions Evaluated
+2 Actionability AMPLIFY; 3 Boundary Clarity AMPLIFY; 6 Cross-Comm AMPLIFY; 7 Spec Alignment RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

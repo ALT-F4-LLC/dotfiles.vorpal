@@ -1,5 +1,81 @@
 # Changelog: team-lead
 
+## 2026-07-01
+
+### Summary
+Compacted 4 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the four oldest committed date-headed entries outside the 10-entry keep-window with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 3 Disambiguation follow-up: removed direct verifier peer routing and normalized shutdown report fields.
+
+### Changes
+- DISAMBIG: rewrote SDET verifier context so team-lead owns fix-loop and advisor routing; lone verifier reports only to team-lead.
+- DISAMBIG: normalized master SP-1 final-report schema with explicit `safe_to_close` close readiness.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation; verifier routing; shutdown schema.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 2 TRIM correction: removed two spacer lines from `team-lead.md` after coherence left it over budget.
+
+### Changes
+- CULL: removed blank lines around `Plan-approval mode` in the @senior-engineer section; behavior unchanged.
+
+### Dimensions Evaluated
+Consolidation & Trimming; Phase 2 coherence follow-up.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 2 coherence follow-up: wired plan-approval dispatch, supply-chain evidence packet routing, and `planner-fix-{N}` lifecycle wording.
+
+### Changes
+- FIX: `mode=plan` dispatch now routes senior implementation PLANs to advisor/security/UX receivers and relays `plan_approval_response`.
+- FIX: security review dispatch now carries or requires a security-owned `Cargo.lock` evidence packet for supply-chain verdicts.
+- FIX: Rule 7 ephemeral examples include `planner-fix-{N}`.
+
+### Dimensions Evaluated
+Lifecycle, PA dispatch, security review routing, Rule 7 consistency.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: team-lead TRIM and report-only close gate -> applied. Net trim targeted the over-budget team-lead file.
+
+### Changes
+- CULL: compacted Alignment/Optimization and Orchestration Patterns into a routing matrix.
+- CULL: replaced volatile model metrics with tier policy while keeping intentional model/reasoning routing.
+- AMPLIFY: normalized lone verifier as report-only; added minimal close gate, file-list checks, and draft-TDD override handoff.
+- CULL: collapsed Rule 8 to step 14/15 sizing and reconciliation pointers.
+
+### Dimensions Evaluated
+Consolidation, Spec Alignment, Lifecycle/Verification close semantics, Docket executability.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary
@@ -172,69 +248,6 @@ All 8; Consolidation primary; routing-table invariant validated against measured
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 15 entries (2026-05-07..2026-05-24) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 15 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 optimization: added per-spawn model-routing subsection (sonnet/inherit/fable/opus by cognitive load; never haiku) and a canonical 5-field ephemeral-brief schema; offset by trimming the over-enumerated "don't overthink" banned-list (Fable degrades on exhaustive lists). Net +8 (481→489).
-
-### Changes
-- Spawning Templates: new Per-spawn model routing block — per-invocation param overrides frontmatter, no model: pins; security reviewers pinned opus (Fable classifier reroute determinism).
-- Common context block: new canonical ephemeral-brief schema naming 5 fields; dispatch-hygiene bullet now its detail.
-- Pre-flight overthink directive: collapsed 5-item banned-list to 2 (Fable offset).
-- [NO-OP, cited] Reasoning-echo clean; Monitor triggers complete; apply-batch 1:1, post-compaction re-Read, budget-table checks already encoded.
-
-### Dimensions Evaluated
-Capability Growth (model routing), Actionability + Consolidation (brief schema), Consolidation & Trimming (overthink trim), reasoning-echo audit, capability-trigger audit.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip (operator-decided): ephemerals report then AWAIT team-lead's `shutdown_request`; sweep = team-lead SENDS on delivered report. Added R6 stale-own-reader extension and canonical Relayed-authority sentence (Rule 1). Net +1 (481→482).
-
-### Changes
-- Dispatch hygiene, impl template, step 13 sweep ×2, step 16, §Stall shutdown-protocol paragraph, Rule 7, stall-detection guard: self-emit → await-lead (FIX 1-8).
-- CANONICAL:PITFALLS lead sentence reworded family-wide, byte-parity preserved (FIX 32).
-- R6: lagging-reader STOP-re-reading extension (FIX 33). Rule 1: relayed-authority canonical sentence (FIX 34).
-
-### Dimensions Evaluated
-Spec Alignment (agent-teams docs), Coherence (lockstep across 7), Completeness, Boundary Clarity.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Updated the frontmatter skills/mcpServers caveat to cite the officially documented teammate-envelope rule (tools+model honored, body appended). Deduplicated the triple-stated DEGRADED single-reviewer fallback, folding the surviving-sister-verifier clause into step 14 rule 6. Encoded 1:1 edit-to-finding traceability for self-applied batches and aligned the Mechanical-fix shortcut with the default single-reviewer panel. Net -2 (483 → 481).
-
-### Changes
-- Replaced "v2.1.117 docs" inference with the documented envelope rule: teammates honor only `tools`+`model`, body is appended, `skills`/`mcpServers` not applied (verified against code.claude.com agent-teams docs).
-- Removed the §Stall & Crash Recovery "Double-ephemeral failure" paragraph (duplicate of step 14 rule 6 + Rule 8); preserved "(or surviving sister verifier)" in rule 6.
-- Mechanical-fix shortcut: "BOTH reviewers" → "ALL dispatched reviewers" (default panel is 1); added 1:1 self-applied-edit-to-finding traceability (audit: fabricated edit in an 8-edit batch).
-
-### Dimensions Evaluated
-Consolidation & Trimming, Spec Alignment, Actionability, Completeness, Role Realism, Boundary Clarity, Capability Growth, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -268,3 +281,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Phase 2 coherence — visual-deliverable render-verification pointer added to step-13 spot-check; Phantom-deletion wording trimmed. Net 0.
 - 2026-06-09: TRIM cycle: 504→483 by consolidating duplicated prose (async-shutdown, return-verdict, R1/R5/R6). Net -21.
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 7 references updated.
+- 2026-06-09: Compacted 15 oldest entries (2026-05-07..2026-05-24) into ledger entries per ADR 0001 (DKT-264).
+- 2026-06-09: Added per-spawn model routing and canonical 5-field ephemeral brief schema; trimmed over-enumerated guidance. Net +8.
+- 2026-06-09: Flipped ephemeral shutdown to report then await team-lead close; added R6 stale-reader and Rule 1 relayed-authority text. Net +1.
+- 2026-06-09: Corrected teammate-envelope caveat, deduped DEGRADED fallback, and added edit-to-finding traceability. Net -2.

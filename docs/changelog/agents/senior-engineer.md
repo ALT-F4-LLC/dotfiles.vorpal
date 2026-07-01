@@ -1,5 +1,21 @@
 # Changelog: senior-engineer
 
+## 2026-07-01
+
+### Summary
+Trial: close-safety and plan-mode dispatch -> applied.
+
+### Changes
+- AMPLIFY: close handling now drains background shell tasks before the final report, requires `safe_to_close`, and names report contents plus idle-after-report boundaries.
+- AMPLIFY: Plan mode dispatch now claims first, reads Docket/TDD/spec context, sends assumptions plus verification commands, and waits for proceed/revise before edits.
+- CORRECTION: Docket file attachment example now uses repeatable `--file <path>` / `-f <path>` flags.
+
+### Dimensions Evaluated
+Close Safety, Plan Dispatch, Docket Traceability.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

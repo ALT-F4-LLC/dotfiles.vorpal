@@ -1,5 +1,36 @@
 # Changelog: ux-designer
 
+## 2026-07-01
+
+### Summary
+Phase 3 Disambiguation follow-up: normalized UX shutdown report fields.
+
+### Changes
+- DISAMBIG: updated local SP-1 to require scope or changed files, checks run, unresolved risks, and explicit `safe_to_close` close readiness.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation; shutdown schema.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: UX lifecycle and QA classification -> applied. Phase 1 update tightened dispatch, plan-review, QA evidence, and ephemeral close guidance for ux-designer only.
+
+### Changes
+- AMPLIFY: dispatch now includes operator-visible lifecycle, cleanup, status, and handoff flow changes.
+- AMPLIFY: incoming @senior-engineer implementation PLAN review returns Pass / Pass-with-Issues / Fail with pattern, copy, and error-state findings.
+- AMPLIFY: design-QA findings now classify deviation/spec/tradeoff/operator-choice class and name inspected commands/artifacts/outputs.
+- AMPLIFY: ephemeral close handling adds a pre-idle checklist; removed duplicate Fix-loop continuity paragraph.
+
+### Dimensions Evaluated
+Capability Growth, Lifecycle Coherence, QA Evidence, Consolidation.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

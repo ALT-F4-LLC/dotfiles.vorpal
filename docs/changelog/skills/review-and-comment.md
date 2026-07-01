@@ -1,5 +1,20 @@
 # Changelog: review-and-comment
 
+## 2026-06-30
+
+### Summary
+Net 0; AMPLIFY diff-anchor validation and duplicate-comment filtering.
+
+### Changes
+- AMPLIFY: added PR-files diff anchor index.
+- AMPLIFY: added same-path:line/same-concern dedupe against existing PR comments.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

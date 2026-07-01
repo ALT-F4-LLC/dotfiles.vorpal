@@ -3,6 +3,20 @@
 ## 2026-06-30
 
 ### Summary
+AMPLIFY sparse-repo prior-art discovery; net 0; no model-routing/frontmatter changes.
+
+### Changes
+- AMPLIFY: build prior-art search roots only from existing docs directories.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
 
 ### Changes

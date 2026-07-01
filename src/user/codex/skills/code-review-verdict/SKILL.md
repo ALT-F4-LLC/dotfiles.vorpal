@@ -237,6 +237,12 @@ For substantive changes:
 - {file:line} — gate G{1..5} — `OVERRIDE: code-philosophy/{id} — {reason}` (operator decides whether the reason holds)
 - ... or "None"
 
+### Findings JSON
+```json
+{"blockers":[],"concerns":[],"suggestions":[],"questions":[],"praise":[],"overrides_recognized":[]}
+```
+Emit `[]` for empty categories; preserve severity buckets exactly.
+
 ### Hard Gates Triggered
 List any of G1..G5 that produced a Blocker in this review (after override recognition). If no gates fired, write "None".
 
@@ -313,6 +319,12 @@ For substantive security-relevant changes:
 **Info** ({count}):
 - ... or "None"
 
+### Findings JSON
+```json
+{"critical":[],"high":[],"medium":[],"low":[],"info":[]}
+```
+Emit `[]` for empty categories; preserve severity buckets exactly.
+
 ### Required Mitigations
 - {numbered list of must-do mitigations before merge — or "None"}
 
@@ -354,6 +366,7 @@ Before emitting the structured review, verify in the calling agent's context:
 8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
 10. **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
+11. **Findings JSON validity** — parse the `### Findings JSON` block as JSON and verify every severity array exists and its item count matches the corresponding human severity bucket.
 
 If any check fails, ABORT:
 
@@ -375,19 +388,6 @@ where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `B
 
 **The trailing confirmation line is NOT the deliverable.** The deliverable is the send_input to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I send_input the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
-The calling agent owns (in order):
-
-- **Deliver the verdict to team-lead; reconciliation is team-lead's, not yours.** Under team-lead orchestration, team-lead reconciles the parallel verdicts per its step 14 (any Blocker blocks; security verdict binds for security findings) and prevents contradictory handoffs to `@senior-engineer`. Do NOT send_input the counterpart (`@security-engineer` ↔ `@staff-engineer`) for alignment before delivery (anti-anchoring — rationale owned by team-lead.md step 14). (Standalone, no orchestrator: reconcile directly with the parallel reviewer if one was run.)
-- Routing blockers / concerns / critical / high findings — under orchestration, carry them in the verdict body to team-lead (team-lead routes them to the `impl-{DOCKET-ID}-fix-{N}` ephemeral; reviewers never send_input `@senior-engineer` directly, per the team-lead spawn templates). Standalone: send_input `@senior-engineer` with file/finding/fix triplets.
-- Reporting outcomes to team-lead / operator with appropriate cc per the agent's Proactive Communication triggers.
-- Escalating to vote if the review meets a vote-criticality threshold (500+ lines, security-critical surface, breaking-change plan, residual-risk acceptance) — standalone: `(vote, ...)`; team mode: NEVER `(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per the calling agent's Consensus Voting section (`src/user/codex/agents/staff-engineer.toml` / `src/user/codex/agents/security-engineer.toml`). When escalating, map this skill's Recommendation to the vote verdict per the table below; pass the structured Findings as `--findings-json` to preserve severity buckets through `docket vote cast`.
-
-### Recommendation → Vote Verdict Map
-
-| This skill's Recommendation | Vote verdict (for `docket vote cast -v`) |
-|---|---|
-| Approve / Approve (security) | `approve` |
-| Approve with follow-up | `approve-with-concerns` |
-| Request changes | `approve-with-concerns` (with explicit Concerns in findings) |
-| Block / Block (security) | `reject` |
-| Split required | Do NOT escalate to vote — return Split-required to caller and let them re-scope before any vote |
+The calling agent owns delivery, routing, reporting, and escalation after this skill returns:
+- Under orchestration, send the structured verdict to team-lead; team-lead reconciles parallel verdicts, applies security-binding rules, and routes fixes. Standalone: route blockers/critical/high findings to the author and reconcile directly with any parallel reviewer.
+- Escalate to vote only when thresholds trigger; pass `### Findings JSON` via `--findings-json -`. Map recommendations as: Approve / Approve (security) → `approve`; Approve with follow-up / Request changes → `approve-with-concerns`; Block / Block (security) → `reject`; Split required → no vote until re-scoped.

@@ -1,5 +1,33 @@
 # Changelog: design-review
 
+## 2026-06-30
+
+### Summary
+Clarified operator-triggered design review ownership.
+
+### Changes
+- DISAMBIG: reworded the When to Use operator trigger so it routes through `@ux-designer` and names pre-implementation design feedback.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation: overlapping-ownership.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Tightened self-check to prevent silent completion in report-emission family, net 0.
+
+### Changes
+- AMPLIFY: self-check now requires the structured verdict body to be sent before idling or marking complete.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

@@ -3,6 +3,36 @@
 ## 2026-06-30
 
 ### Summary
+Restored evolve-agents/evolve-skills symmetry for innovation and model-routing audit text.
+
+### Changes
+- AMPLIFY: innovation-scanner now uses the shared script-path skip/fail-open wording.
+- AMPLIFY: model-routing auditor now matches the session JSON and Mimir discovery wording used by evolve-agents, with skill nouns substituted.
+
+### Dimensions Evaluated
+Phase 2 coherence.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Pre-flight pins the two Codex skill roots and Phase 1 budget honors prompted caps including the 535-line self-budget. Net 0.
+
+### Changes
+- AMPLIFY: pre-flight names `.codex/skills` and `src/user/codex/skills` as the only Codex skill roots — cited historical `find: skills: No such file or directory` abort.
+- AMPLIFY: Phase 1 NET_LINES guidance now follows the prompted cap, including the 535-line evolve-skills self-budget — cited self-review budget mismatch.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Fixed the live zsh-nomatch glob-abort across all 4 inventory/changelog glob sites (reproduced this cycle: a missing top-level `skills/` root aborted pre-flight discovery and `2>/dev/null` does not suppress nomatch) and added a last-run preamble so re-running isn't the only way to confirm prior completion. Net -1 (534→533).
 
 ### Changes

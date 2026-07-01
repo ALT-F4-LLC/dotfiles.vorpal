@@ -1,5 +1,20 @@
 # Changelog: verify-ac
 
+## 2026-06-30
+
+### Summary
+Culled comma-batched issue scopes and strengthened AC evidence planning, net 0.
+
+### Changes
+- CULL: comma-batched Docket issue scopes now abort and require one invocation per issue.
+- AMPLIFY: acceptance-criteria execution planning maps each AC to dispatch commands, helper output, or AC-derived evidence.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

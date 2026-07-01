@@ -71,15 +71,14 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 3. Every skill named in a team-lead spawn template / orchestration prose exists and is registered in Codex source.
 4. Source-vs-runtime is respected: repo-managed Codex skills live under `src/user/codex/skills/`, project-local skills live under `.codex/skills/`, and installed runtime skills live under `${CODEX_HOME:-~/.codex}/skills`. Flag any OpenAI Codex runtime reliance that can only be satisfied by a project-local `.codex/skills/` path without an explicit project-local assumption; do not edit Rust projection logic or generated runtime output.
 5. No dead/unregistered refs (a skill invocation or agent skill declaration pointing at a non-existent dir).
-6. **Lifecycle ownership** — for each Codex lifecycle operation threaded through the family, verify ownership: the orchestrator calls `spawn_agent`, tracks the returned agent ID, waits with `wait_agent` only when the report blocks the next step, relays necessary prompts with `send_input`, and closes with `close_agent`; peer/advisor/reviewer roles deliver verdicts/reports to the orchestrator and never claim to close sibling agents or manage cohorts. Cross-check parallel roles — the coherent ones reveal the outlier. This is a cross-file invariant no single per-agent reviewer can see.
+6. **Lifecycle and report-delivery ownership** — for each Codex lifecycle operation threaded through the family, verify ownership: the orchestrator calls `spawn_agent`, tracks the returned agent ID, waits with `wait_agent` only when the report blocks the next step, relays necessary prompts with `send_input`, and closes with `close_agent`; workers/peers/advisors/reviewers deliver required reports, verdicts, and final reports to the orchestrator before idle/close and never claim to close sibling agents or manage cohorts. Cross-check parallel roles and report-delivery obligations — the coherent ones reveal the outlier. This is a cross-file invariant no single per-agent reviewer can see.
 
 **Detection (seeds).**
 - Registry: `for d in .codex/skills/*/ src/user/codex/skills/*/; do dir=$(basename "$d"); name=$(awk -F': ' '/^name:/{print $2; exit}' "$d/SKILL.md"); echo "$dir|$name|$d"; done` — flag rows where `dir != name`.
 - Refs: grep Codex agent/persona sources for existing invocation grammar such as `(<skill-name>` and legacy `Skill(<token>)` examples; strip to token → drop token `name` → resolve against registry.
 - Skill declarations: parse any Codex agent source skill declarations when present → resolve each by directory.
-- Spawn mentions: grep `src/user/codex/personas/team-lead.md` for skill-invocation tokens + prose skill names → resolve.
+- Spawn/report mentions: grep `src/user/codex/personas/team-lead.md` and agent/skill lifecycle sections for skill-invocation tokens, prose skill names, `spawn_agent` templates, and report/final-report delivery obligations; emit lifecycle refs under `skill_refs` and report contracts under `report_delivery_obligations`.
 - Root: registry row's path prefix (`src/user/codex/skills/` = repo-managed Codex source; `.codex/skills/` = project-local).
-- Script-backed checks: if a coherence seed references a helper script, use an existing Codex-compatible path under `.codex/scripts/` or `src/user/codex/scripts/`; when no such script exists, report `not available; skip/fail-open` and keep the manual grep/parse path.
 
 ### D2 — Role & format-authority consistency
 
@@ -193,6 +192,7 @@ No persistent data plane. Two **in-context** artifacts (NOT written to disk — 
   "registry":           [{"dir": "code-review-verdict", "name": "code-review-verdict", "root": ".codex/skills|src/user/codex/skills", "runtime": "project-local|repo-managed|installed"}],
   "skill_refs":         [{"file": "src/user/codex/personas/team-lead.md", "line": 251, "token": "code-review-verdict", "kind": "codex-invocation|legacy-skill-call|prose"}],
   "agent_skill_declarations": [{"agent": "staff-engineer", "skill": "tdd"}],
+  "report_delivery_obligations": [{"file": "src/user/codex/agents/staff-engineer.toml", "line": 1, "role": "staff-engineer", "obligation": "final report/verdict to orchestrator before close", "kind": "worker-report|advisor-reply|review-verdict"}],
   "role_claims":        [{"skill": "verify-ac", "file": "src/user/codex/skills/verify-ac/SKILL.md", "line": 25, "claimed_agent": "sdet", "restriction": "hard-abort|soft-typically"}],
   "ladders":            [{"name": "staff-severity", "def_site": "src/user/codex/skills/code-review-verdict/SKILL.md:350", "citations": ["src/user/codex/agents/staff-engineer.toml:170"]}],
   "canonical_blocks":   [{"tag": "BANNER", "family": "leaf|orchestrator|vote|single", "carriers": ["src/user/codex/skills/tdd/SKILL.md:12"], "family_hash": "<computed-live>"}],
@@ -226,7 +226,7 @@ Severity ladder reuses the staff-engineer ladder (the report is a staff-engineer
 
 ## Remediation Manifest (Phase 2 output, in-context — routable)
 
-A structured block the operator feeds to the evolve skills. One bucket per fix-owner so the operator can paste the relevant slice. Empty buckets read `None`. Manifest entries may include innovation-mandate and trial-protocol gaps detected during audit — for example, a mandate section absent from a sibling skill, trial protocol steps missing or incomplete (hypothesis / trial / operator approval / measurement / adopt or rollback), a missing operator-approval gate, or vocabulary drift between siblings (e.g., one skill uses different terminology for "model frontier" or "adopt or rollback"). These route under the appropriate fix-owner bucket (evolve-agents or evolve-skills) as Concerns.
+A structured block the operator feeds into the next evolve-agents/evolve-skills Phase 0 input as signals-to-verify. One bucket per fix-owner so the operator can paste the relevant slice. Empty buckets read `None`. Manifest entries may include innovation-mandate and trial-protocol gaps detected during audit — for example, a mandate section absent from a sibling skill, trial protocol steps missing or incomplete (hypothesis / trial / operator approval / measurement / adopt or rollback), a missing operator-approval gate, or vocabulary drift between siblings (e.g., one skill uses different terminology for "model frontier" or "adopt or rollback"). These route under the appropriate fix-owner bucket (evolve-agents or evolve-skills) as Concerns.
 
 ```
 Remediation Manifest
@@ -255,7 +255,7 @@ You are the cross-reference index builder. Read-only shell access (grep/awk/pars
 Inventory: {inventory}
 
 ## Task
-Build the XREF index over ALL Codex agent/persona sources (`src/user/codex/agents/*.toml`, `src/user/codex/personas/*.md`) and ALL skills (`.codex/skills/*/SKILL.md`, `src/user/codex/skills/*/SKILL.md`) using the detection seeds in the rubric — read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric first; it is NOT in this prompt — (D1 registry/refs/agent_skill_declarations; D2 role_claims; D3 ladders/coupling_notes; D4 canonical_blocks/rule_presence). Compute family_hash LIVE per the D4 family rule (key on the opening-prefix string, strip trailing whitespace via `sed 's/[[:space:]]*$//'` before `shasum`). You do NOT judge — emit signals only.
+Build the XREF index over ALL Codex agent/persona sources (`src/user/codex/agents/*.toml`, `src/user/codex/personas/*.md`) and ALL skills (`.codex/skills/*/SKILL.md`, `src/user/codex/skills/*/SKILL.md`) using the detection seeds in the rubric — read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric first; it is NOT in this prompt — (D1 registry/refs/agent_skill_declarations/report_delivery_obligations; D2 role_claims; D3 ladders/coupling_notes; D4 canonical_blocks/rule_presence). Compute family_hash LIVE per the D4 family rule (key on the opening-prefix string, strip trailing whitespace via `sed 's/[[:space:]]*$//'` before `shasum`). You do NOT judge — emit signals only.
 
 ## Output
 Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — every key present, `null`/`[]` for absent, never omit a key. send_input the orchestrator the json block verbatim and let the orchestrator update the local phase ledger.

@@ -3,6 +3,21 @@
 ## 2026-06-30
 
 ### Summary
+Hardened prior-art discovery for sparse docs dirs and made Docket overlap reporting table-shaped, net 0.
+
+### Changes
+- AMPLIFY: prior-art discovery builds a search set from existing docs directories and tolerates sparse repos.
+- AMPLIFY: Docket overlap reporting is a compact table with unavailable-Docket fallback.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
 
 ### Changes

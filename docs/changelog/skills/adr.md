@@ -3,6 +3,21 @@
 ## 2026-06-30
 
 ### Summary
+Missing documentation directories explicitly non-fatal in ADR numbering and prior-art discovery, net -1.
+
+### Changes
+- AMPLIFY: treat absent/no-match ADR directory as an empty ADR set.
+- AMPLIFY: prior-art searches existing dirs only.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Removed a mis-homed multi-agent coordination block that contradicted the leaf BANNER and single-author invariant; verified the cited self-validation path-fragility fix is already applied. Net -2 (273→271).
 
 ### Changes

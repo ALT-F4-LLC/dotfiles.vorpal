@@ -67,7 +67,7 @@ Error: Could not resolve <scope>: '{scope}'. Expected Docket issue ID, branch na
 
 If extra positional args follow `<scope>`, ignore them silently.
 
-**Comma-batched Docket IDs.** A `<scope>` of comma-separated Docket issue IDs (`DKT-45,DKT-46,DKT-47`) is N distinct verifications, not one merged scope — each issue carries its own acceptance criteria and verdict. Split on commas and run the full Pre-flight → Verification → Output cycle once per ID, emitting one report per issue. (Contrast `code-review-verdict`'s comma path-list, which forms a single scope: there the tokens are files in one diff; here they are independent issues.)
+**Comma-batched Docket IDs.** If `<scope>` contains commas, ABORT: `Error: comma-batched Docket issue scopes are not supported; re-invoke (verify-ac, "<issue-id>") once per issue so evidence, state resets, and verdicts stay isolated.`
 
 ## Doubling Rule
 
@@ -116,7 +116,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 6a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.
-7. **Mandatory verification commands check.** When invoked under team-lead orchestration, the dispatch brief SHOULD contain a `Mandatory verification commands` subsection listing greps / awks / wcs / test commands to execute against the artifact. If the brief lacks this subsection AND the change is non-trivial (any code change beyond a typo/doc edit), surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed by selecting commands derived from the acceptance criteria; cite each command's evidence in the report. Do NOT silently substitute text-inspection for empirical execution per `src/user/codex/agents/sdet.toml` Epistemic Discipline.
+7. **Acceptance-criteria execution plan.** Before scoring, map each AC to evidence to collect: dispatch `Mandatory verification commands`, issue/TDD-referenced helper output when such a helper exists, or AC-derived commands/reads. If a team-lead dispatch brief lacks `Mandatory verification commands` for non-trivial code, surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed with the AC-derived plan. Do NOT silently substitute text-inspection for empirical execution per `src/user/codex/agents/sdet.toml` Epistemic Discipline.
 
 ## Verification Procedure
 

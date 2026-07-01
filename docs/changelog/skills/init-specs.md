@@ -1,5 +1,19 @@
 # Changelog: init-specs
 
+## 2026-06-30
+
+### Summary
+AMPLIFY Mermaid verification from presence-only to renderer-free diagram-type shape validation, net 0.
+
+### Changes
+- AMPLIFY: verification and spawning-template requirements now reject missing, empty, or typeless Mermaid blocks with a renderer-free diagram-type check.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

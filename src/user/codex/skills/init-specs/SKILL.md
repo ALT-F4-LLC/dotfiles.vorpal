@@ -112,7 +112,7 @@ After all agents complete, run verification **scoped to files generated this run
 
 1. Confirm every file in the expected target set exists on disk (`ls docs/spec/` and intersect with the target set). Flag any missing files.
 2. Run `head -1 {generated_files}` and confirm every file starts with `---` (YAML frontmatter delimiter). Flag any file that does not — it indicates a malformed spec.
-3. Run `grep -L '```mermaid' {generated_files} 2>/dev/null` to flag any newly-generated spec missing the required Mermaid diagram (per Spawning Template). Diagram presence is a sanity check; if a spec genuinely has no relationships/flows to diagram, the agent should have noted that — flag it for operator review.
+3. Run a renderer-free Mermaid shape check over `{generated_files}`: flag files with no ` ```mermaid ` block unless the spec explicitly explains why no relationship/flow diagram applies, and flag any Mermaid block whose first non-blank content line is empty or not a Mermaid diagram-type keyword (for example, `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`).
 4. Run `grep -L "last_updated: \"{today_date}\"" {generated_files} 2>/dev/null` to flag any spec whose `last_updated` does not match today's resolved date — indicates the agent ignored the pre-flight context.
 5. Run `grep -L "^## Gaps & Risks" {generated_files} 2>/dev/null` to flag any newly-generated spec missing the required Gaps & Risks section — enforces the structural home for the rigorous-honesty directive.
 
@@ -144,7 +144,7 @@ Requirements:
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
 - Do NOT spawn sub-agents, invoke `/vote`, invoke other skills recursively, call `send_input`, or form/manage a team. You are a leaf worker. If blocked, return a final report naming the blocker and stop.
-- Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
+- Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components. Any ` ```mermaid ` block MUST have a first non-blank content line declaring a Mermaid diagram type (for example, `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`).
 - Structure the body with at least 3 H2 sections appropriate to the spec's domain (e.g. `architecture.md`: Components, Boundaries, Decisions; `security.md`: Trust Boundaries, Controls, Threat Model). Every spec MUST include a final H2 named exactly `## Gaps & Risks` — this is the structural home for the rigorous-honesty directive. If no gaps exist, write "None identified at this time" under it.
 - Save the completed spec to `docs/spec/{filename}`
 - Begin the file with YAML frontmatter (--- delimited) using this structure:

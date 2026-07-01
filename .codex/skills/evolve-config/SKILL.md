@@ -82,7 +82,7 @@ Before spawning any agents:
    - `{history_cutoff_epoch_ms}` via shell: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux.
    Resolve `CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"` (defaulting to `~/.codex`). Probe session availability with `find "$CODEX_HOME/sessions" -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` to `"SKIPPED: no Codex sessions in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0.
    Resolve drift parameters here too: parse `drift=N` (default `1`; `drift=0` disables; reject negatives) and compute `{drift_seed}` with `printf '%s' "evolve-config-{today_date}" | shasum | cut -c1-8`.
-7. **Pin latest Codex features** - Run `codex --version` via shell. Then research current Codex config documentation from official OpenAI sources, starting at `https://developers.openai.com/codex/`. If the version probe OR docs fetch fails, set `{latest_features_digest}` to `"SKIPPED: codex --version or Codex docs unavailable - researcher uses official OpenAI docs search/fetch as primary"` so the docs-researcher template stays valid.
+7. **Pin latest Codex features** - Run `codex --version` via shell. Then fetch official OpenAI Codex config docs with the available OpenAI docs/manual helper first, falling back to official OpenAI web/search. Distill installed-version plus new/changed/deprecated config-field notes into `{latest_features_digest}`; if either probe fails, set it to `"SKIPPED: codex --version or Codex docs unavailable - researcher uses official OpenAI docs search/fetch as primary"` so the docs-researcher template stays valid.
 
 ---
 
@@ -154,7 +154,7 @@ Spawn ONE @staff-engineer worker (read-only) over the config genome per the Phas
 
 1. Reviews recommendations against the Content Gate.
 2. Applies approved changes to the config SOURCES (read `src/user.rs` and `src/user/codex.rs` in-session before first edit; target content strings, never stale line numbers). NEVER edit any deployed `$HOME/.codex/` file.
-3. **Verify generated output.** A config change is not done until generated output is checked. Confirm the changed setter produces the intended `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml` field; re-read the `src/user/codex.rs` `#[serde(...)]` attribute for rename/skip semantics.
+3. **Verify generated output.** A config change is not done until generated output is checked. Compare the before/after generated phenotype for the intended `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml` field without editing either deployed file; re-read the `src/user/codex.rs` `#[serde(...)]` attribute for rename/skip semantics.
 4. Writes/normalizes `docs/changelog/config/codex.md` per Changelog Format.
 5. **Self-correct:** if a change worsens the config without behavioral gain, revert and retry.
 
@@ -230,7 +230,7 @@ You are the config-history auditor. Read-only. No file edits. No commits. No sub
 Audit the git history of the Codex config sources to surface churn, recent reversals, and settings that were added-then-removed:
 - `git log --oneline -30 -- src/user.rs src/user/codex.rs`
 - For each surface that changed recently, `git log -p -5 -- <file>` and summarize what setting changed and why.
-- Flag any setting added and later removed, any `with_*` setter defined in src/user/codex.rs but never called in the Codex call chain in src/user.rs, and any Codex call in src/user.rs to a setter that does not exist.
+- If a repo-owned setter/call-chain inventory helper path exists, run it; otherwise use `rg -n 'pub fn with_|\.with_' src/user/codex.rs src/user.rs` and flag any added-then-removed setting, uncalled `with_*` setter, or Codex call whose setter is absent.
 
 OUTPUT: a `### Config History` block - Recent churn, Dead setters, Broken calls, and 1-3 Suggested focus areas. send_input the orchestrator with the block verbatim.
 

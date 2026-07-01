@@ -179,17 +179,7 @@ Gate: the local phase ledger shows the Phase 2 task `completed`, ALL Phase 2 fix
 
 ### Phase 4: History Compaction (terminal, gated)
 
-ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 3 fixes are applied, the orchestrator runs two independent gate checks (read-only):
-
-1. **Changelog arm** — one `find docs/changelog/agents -name '*.md' -exec wc -l {} + 2>/dev/null` pass; any file over the 300-line budget is compactable.
-2. **Pitfalls arm** — any entry in THIS repo's `.codex/agent-memory/*/pitfalls.md` that is un-ledgered yet dispositioned (applied / already-encoded / Docket-tracked) per this cycle's or a prior cycle's Phase 1 harvest-outcome report, committed at HEAD, and predating this cycle (full compactability criteria in ADR 0001).
-
-If neither arm fires, no compactor is spawned and the Wrap-up report carries a single no-op line. Otherwise spawn ephemeral `history-compactor` (role `senior-engineer`, with shell and file-edit access) with the over-budget file list and the dispositioned-entry list. Compaction is summarize-then-remove, never silent deletion — only content reachable in `git show HEAD:<file>` may be compacted; uncommitted entries are never touched. Per file:
-
-- **Changelogs**: keep the 10 most recent `^## 20` entries verbatim (keep-window); compact older entries oldest-first until under the 300-line budget; each compacted entry becomes one ledger line in a terminal `## Compacted history` section per ADR 0001's format; preserve every `Trial:` line verbatim inside its ledger line; prepend one compaction entry recording the act — a normal Changelog Format entry in every respect (the rule's sole scoped exception).
-- **Pitfalls**: each compactable entry becomes one ledger line under `## Harvested ledger (compacted)` immediately below the H1 per ADR 0001's format; undispositioned entries are never touched; cross-project pitfalls files (other repos) remain read-only ingest.
-
-The compactor's report MUST evidence, per file and in order, invariant checks 0-5 exactly as defined in ADR 0001 (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, budget). On any failed check the orchestrator rejects that file's compaction: the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or the file is left untouched, and the Wrap-up report flags it — never ship a partial compaction silently. Close the compactor agent ID before cleanup.
+ADR 0001 (`docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md`) is the sole authority for gate formulas, ledger formats, compactability, and invariant checks; cite it rather than restating it. After Phase 3, run the changelog and pitfalls gate checks; if either fires, spawn `history-compactor` with only compactable files/entries, require checks 0-5 per file, and reject/revert failed compactions before cleanup. If neither fires, report a no-op.
 
 ### Wrap-up & Agent Cleanup
 
@@ -289,7 +279,7 @@ Emit one block per target agent, then send_input the orchestrator with all block
 - Mimir metrics: <summary of discovered Codex-labeled metrics, or "Mimir evidence is unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-If a category is empty for an agent, write `none` — do not omit the line. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty for an agent, write `none`. After the per-agent blocks, append (1) a compact coordination/lifecycle heatmap `agent | corrections | errors | reinvocations | wait stalls | respawns | close failures` and (2) the verbatim **CROSS-PROJECT PITFALLS MANIFEST** grouped by repo root. If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
 - Read-only (no file edits, no commit). No subagents: do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts. No peer-to-peer send_input — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
@@ -391,7 +381,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/agents/<name>.md entry, docs/spec/ selectively, and the first ~80 lines only of other Codex agent definition files.
+Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/agents/<name>.md entry, docs/spec/ selectively, and relevant sections of other Codex agent definition files by heading/search instead of fixed line-count windows.
 
 ## OpenAI Codex Documentation Research
 {docs_research_findings}
@@ -416,15 +406,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 ## Task: Evaluate ALL 8 dimensions. Consolidation & Trimming is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
 **Selection disposition (natural selection — see CANONICAL:EVOLUTION-MODEL).** The Phase 0 audit blocks above ARE the fitness assay; assign every trait you act on exactly one disposition — AMPLIFY (strengthen a trait that demonstrably reduces a failure class) or CULL (remove a trait correlated with recurring failure or superseded), both REQUIRING a cited fitness signal from those blocks (session ref, pitfalls re-fire, stall, routing datum); RETAIN is the unstated default for untouched traits. A non-RETAIN disposition without a cited fitness signal is reject-class.
 
-1. **Role Realism**: Senior practitioner behavior, actionable by Codex?
-2. **Actionability**: Specific workflows, concrete steps, defined outputs?
-3. **Boundary Clarity**: Non-overlapping roles, accurate "What You Are NOT", handoff patterns?
-4. **Completeness**: Gaps or new capabilities to leverage?
-5. **Consolidation & Trimming (HIGHEST PRIORITY)**: Remove, shorten, merge. Every addition offset here.
-6. **Capability Growth & Cross-Communication**: New patterns? Proactive send_input triggers ("notify X
-   when Y")? Agent lifecycle patterns (`spawn_agent`, `wait_agent`, `send_input`, `close_agent`, local phase ledger)? Flag gaps.
-7. **Spec Alignment**: Aligned with docs/spec/?
-8. **Rename**: Only if compelling.
+Evaluate these 8 dimensions: **Role Realism**, **Actionability**, **Boundary Clarity**, **Completeness**, **Consolidation & Trimming** (highest priority; every addition offset by removal), **Capability Growth & Cross-Communication** (send_input triggers and lifecycle patterns), **Spec Alignment**, and **Rename**.
 
 ## Rules
 - **No subagents**: Do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts.
@@ -462,15 +444,9 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 ## Task
 1. Read ALL Codex agent definition files: `src/user/codex/agents/*.toml` and `src/user/codex/personas/team-lead.md`
 2. If renames listed, verify and prepare rename instructions (file, frontmatter, references, changelog)
-3. Check coherence: "What You Are NOT" accuracy, bidirectional cross-references, no gaps/overlaps,
-   consistent terminology, handoff patterns work both ways
-4. Check cross-communication: enumerate send_input trigger pairs, identify missing triggers between
-   dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
-5. Run a Codex-compatible symmetry helper only if one exists in the current repo. No Codex-compatible helper is currently available; record `not available; skip/fail-open` and perform the manual checks below instead of inventing a script path.
-6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", lifecycle target variable); flag any drift.
-7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (lifecycle target variable — "target agents" vs "target skills"); flag any drift.
-8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent` label where discovered → `skill`; "target agents" → "target skills"); flag any drift.
-9. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
+3. Check coherence and cross-communication: "What You Are NOT" accuracy, bidirectional refs, handoff gaps, send_input trigger pairs, and hub-and-spoke patterns.
+4. Reuse `.codex/skills/evolve-coherence/SKILL.md` XREF rubric/detection seeds for registry, role claims, ladders, coupling notes, CANONICAL block parity, and R-rule presence; if a Codex-compatible helper exists, run it, else record `not available; skip/fail-open` and confirm with focused grep/ranged reads.
+5. Verify evolve-agents/evolve-skills byte-symmetry for HARVEST, innovation-scanner, model-routing-auditor, and Mimir, allowing only established agent-vs-skill noun substitutions; historical-auditor templates are intentionally asymmetric, so require Mimir-note presence only.
 
 ## Output Format
 

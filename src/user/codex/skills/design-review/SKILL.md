@@ -65,7 +65,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 - Reviewing a draft UX spec authored by another agent (peer review before consensus).
 - Reviewing a `@staff-engineer` TDD that proposes user-facing surfaces (CLI, API, config format, error copy).
 - Reviewing a `@senior-engineer` design proposal embedded in a design comment or chat.
-- Operator requests feedback on a design decision before it sets precedent.
+- Operator asks `@ux-designer` for pre-implementation feedback on a design decision before it sets precedent; `@ux-designer` remains the only valid caller.
 
 ## Doubling Rule
 
@@ -234,6 +234,6 @@ The calling agent owns (in order):
 - Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `(vote, ...)`; team mode: NEVER `(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `src/user/codex/agents/ux-designer.toml` Design Spec Approval.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: the calling agent MUST self-check — "Did I send_input the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the send_input. A silent turn after `Design review emitted (...)` is a closed-loop failure.
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I send_input the structured verdict body (not summarized) this same turn?* (in team mode, to team-lead; standalone, to the author). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.

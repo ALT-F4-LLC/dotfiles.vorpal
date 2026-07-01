@@ -3,6 +3,20 @@
 ## 2026-06-30
 
 ### Summary
+AMPLIFY frontmatter invocation guard for report-only investigations; target 334 -> 335 lines.
+
+### Changes
+- AMPLIFY: frontmatter says load only for actual consensus decisions, not report-only investigations that merely mention votes.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Two cited robustness fixes (both net 0, verified against live docket b59dd2f): Pre-flight DB-existence detection and an operational findings-JSON heredoc mandate + retry guard. Stays 340 lines.
 
 ### Changes

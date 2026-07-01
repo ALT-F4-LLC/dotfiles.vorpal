@@ -124,12 +124,12 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/spec/ docs/tdd/ docs/ux/`. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `src/user/codex/agents/ux-designer.toml`: same concept gets the same name across all surfaces).
+1. **Gather prior art**: build the search set from existing directories among `docs/spec/`, `docs/tdd/`, and `docs/ux/`; skip missing dirs, run `Grep -r "{topic-keywords}" <existing-dirs>` only if any remain, and continue without error if none do. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `src/user/codex/agents/ux-designer.toml`: same concept gets the same name across all surfaces).
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required Sections). Every section listed MUST appear, in the order shown. Match spec fidelity to problem complexity — sections that do not apply to the surface type (e.g., accessibility for a non-interactive config schema) may contain a single `N/A.` paragraph with a one-line justification, but omitting them is a defect.
 4. **Mermaid diagrams**: satisfy the Mermaid Mandate (see below) — at least one block.
-   ASCII wireframes are encouraged alongside Mermaid but do not replace it.
+   Structure sketches may supplement Mermaid only when they name rendered effect target and states.
 5. **Propose actual copy**: per `src/user/codex/agents/ux-designer.toml` content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
    states, and tooltips. No placeholder strings. **When the calling agent must resolve
@@ -188,11 +188,11 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
    (quantitative).
 2. **Information Architecture** — user-facing data model,
    navigation/discoverability, information hierarchy.
-3. **Layout & Structure** — wireframes/structure adapted to surface (ASCII for
-   TUI, command tree for CLI, schemas for API, file tree for doc structures).
+3. **Layout & Structure** — structure adapted to surface (command tree for CLI,
+   schemas for API, file tree for docs) and rendered-effect target for any sketch.
 4. **Interaction Design** — user flows with error branches, input patterns,
    feedback patterns, perceived performance, keyboard/shortcut map, destructive
-   action confirmation.
+   action confirmation, and a per-component/workflow interaction-state matrix.
 5. **Visual & Sensory Design** — semantic color palette, typography hierarchy,
    spacing/density, motion (where it aids comprehension), terminal constraints.
    Specify the rendered EFFECT target at real delivery resolution (screenshare,

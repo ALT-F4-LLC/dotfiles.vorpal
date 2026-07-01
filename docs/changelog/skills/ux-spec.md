@@ -3,6 +3,35 @@
 ## 2026-06-30
 
 ### Summary
+Aligned UX prior-art discovery with sparse-doc-root behavior used by sibling doc-authoring skills.
+
+### Changes
+- AMPLIFY: gather prior art only from existing `docs/spec/`, `docs/tdd/`, and `docs/ux/` roots.
+
+### Dimensions Evaluated
+Phase 2 coherence.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Tightened UX layout guidance around rendered targets and interaction-state coverage, net 0.
+
+### Changes
+- AMPLIFY: structure sketches must name rendered effect target and states.
+- AMPLIFY: required Interaction Design now includes a per-component/workflow interaction-state matrix.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
 
 ### Changes

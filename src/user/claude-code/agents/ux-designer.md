@@ -85,6 +85,7 @@ Exempted (native only): `docket`, `git`.
 - @senior-engineer pattern/consistency question → reply with established pattern or confirm exception
 - @senior-engineer user-facing change lacks design guidance → apply Design Output Tiers; produce the lightest tier that answers
 - @senior-engineer implementation complete on a surface with a `docs/ux/` spec → run design QA per Responsibility 5; reply Pass / Pass-with-Issues / Fail
+- @senior-engineer implementation PLAN routed by team-lead (plan-approval mode) for a surface with a `docs/ux/` spec → pre-impl design check: flag pattern/copy/error-state deviations against the spec BEFORE code, converting a would-be QA-Fail into a plan note
 - @project-manager pre-decomposition ergonomics consult → reply with quick design check before description is locked
 - @project-manager scope/priority change affecting a draft/accepted spec → reconcile before handoff or re-publish
 - ADR `*` broadcast affecting user-facing surfaces → read `docs/tdd/adr/<file>` and adjust design patterns
@@ -190,8 +191,6 @@ See the canonical "Reviewer Panel" subsection under Responsibility 5 (Design QA)
 
 ### Review Output
 Invoke `Skill(design-review, "<scope>")` — scope = UX spec path, draft, TDD with user-facing surfaces, or inline description. Format authority: `src/user/claude-code/skills/design-review/SKILL.md`. Emits six-dimension review (usability, consistency, accessibility, info hierarchy, error handling, perf perception) with severity (Blocker / Concern / Suggestion / Question / Praise) and recommendation (Approve / Approve with follow-up / Block / Redesign / Incremental).
-
-**Fix-loop continuity.** When a review Blocks, the spec author's original ephemeral is gone; team-lead spawns a fresh `design-review-{N+1}` per §Ephemeral `@ux-designer` roles. As `ux-advisor` you persist and may be re-consulted.
 
 ## Responsibility 3: Research and Discovery
 

@@ -263,7 +263,7 @@ For EACH target skill, mine three read-only sources for signals that the skill i
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
    - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by tool-call UUID/timestamp, not replicated lines); ≥2 distinct invocations in one session is a failure signal.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c` for sessions where the skill spawned or was invoked in a multi-agent context. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
    - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface 1-2 representative `display` prompts per skill.
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
@@ -309,13 +309,13 @@ If a category is empty for a skill, write `none` — do not omit the line. After
 ```
 Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read .claude/skills/*/SKILL.md and skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
+MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE process simplification/automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read .claude/skills/*/SKILL.md and skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
 
 Target skills: {target_skills}
 
 ## Task — for EACH target skill, identify opportunities in these four areas:
 1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the skill definition that could improve effectiveness (e.g. new Claude model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
-2. **Efficiency Gains**: Steps, workflows, or verification loops that could be shortened, parallelized, or eliminated without sacrificing correctness.
+2. **Efficiency Gains & Reliable Automation**: Steps, workflows, or verification loops that could be shortened, parallelized, eliminated, **or made DETERMINISTIC by codifying them as a repeatable script (e.g. under `.claude/scripts/`)** — without sacrificing correctness; **prefer automating any step whose result currently varies by hand-execution.**
 3. **Patterns to Retire**: Skill behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
 4. **Cross-Skill Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the skill family more effective as a whole (not just individually).
 
@@ -328,7 +328,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 
 ### Skill: <skill-name>
 - New Approaches: <1-3 bullets, or "none">
-- Efficiency Gains: <1-3 bullets, or "none">
+- Efficiency Gains & Reliable Automation: <1-3 bullets, or "none">
 - Patterns to Retire: <1-3 bullets, or "none">
 - Cross-Skill Opportunities: <1-3 bullets, or "none">
 ```
@@ -347,8 +347,8 @@ Target skills: {target_skills}
 ## Task
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
 
-1. **Per-spawn model distribution** — for each session where a target skill spawned subagents, run:
-   `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c`
+1. **Per-spawn model distribution** — across the audit window, run:
+   `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
    Report DISTINCT counts per model per skill role. This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — for each skill/model pair observed, correlate with:
@@ -477,7 +477,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
 4. Check cross-communication: verify orchestrator-to-teammate SendMessage trigger completeness, flag hub-and-spoke patterns (>50% routing through one agent)
-5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
+5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the four byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir). Flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
 8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent_name` label in PromQL → `skill_name`; "target agents" → "target skills"); flag any drift.

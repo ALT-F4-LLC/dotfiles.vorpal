@@ -1,5 +1,36 @@
 # Changelog: security-engineer
 
+## 2026-06-30
+
+### Summary
+Phase 2 (operator-approved PA): landed the PA shift-left review triggers — outgoing (recommend team-lead dispatch @senior-engineer in plan-approval mode) + incoming (review a team-lead-routed plan on a security-sensitive surface before the diff). Net +2 (287→289). Trial: PA plan-approval → applied.
+
+### Changes
+- AMPLIFY: outgoing trigger — security-sensitive impl about to start → recommend team-lead run @senior-engineer in plan-approval mode so security-advisor reviews the PLAN before the diff.
+- AMPLIFY: incoming trigger (FIX 2 receiver symmetry) — @senior-engineer PLAN routed by team-lead (plan-approval mode) on a security-sensitive surface → pre-impl security review delivered to team-lead as a plan note.
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY×2. 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Added a plan-phase @sdet abuse-case handoff for small security-sensitive work with no TDD (today such work has no Testing-Strategy handoff, so security tests only appear post-diff), offset by culling the non-load-bearing Model-floor paragraph. Net -1 (288→287). PA shift-left plan-review trigger deferred to Phase 2 (needs team-lead PA counterpart).
+
+### Changes
+- AMPLIFY: new outgoing trigger — Small security-sensitive change with NO TDD → plan-phase abuse-case consult to @sdet. Signal: Phase 0 agent finding (3), non-TDD path has no abuse-case handoff.
+- CULL: removed Model-floor paragraph — informational (agent can't choose its model); grounding clause covered by Comm Discipline rule 5 + No Guessing. Signal: MODEL ROUTING (110× opus, 100% pinned, floor never corrective). Reconciliation-safe (not a pin change).
+- Deferred: PA shift-left review trigger → Phase 2 (cross-cutting; needs team-lead PA primitive + senior-engineer plan-mode receiver).
+
+### Dimensions Evaluated
+All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → 1 AMPLIFY (PA deferred). 1/2/3/4/7/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

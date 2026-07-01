@@ -1,5 +1,34 @@
 # Changelog: project-manager
 
+## 2026-06-30
+
+### Summary
+Phase 2 coherence: aligned the Claim Ritual to the chained one-call (`docket issue edit -a && docket issue move in-progress`) so the issue-body template @senior-engineer reads no longer contradicts the applied chained-claim convention. Net 0 (380→380).
+
+### Changes
+- Aligned Claim Ritual from "edit THEN move (two-step)" to the chained one-call (assignee first, then status). Signal: FIX 7 coherence (senior/team-lead/sdet all chained).
+
+### Dimensions Evaluated
+Coherence alignment only. 1/2/3/4/5/6/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Deduped the triple `edit -f` REPLACES-attachments warning (canonical copy stays on the CLI edit line; `--orphan` foot-gun preserved) and added a boundary-safe note to surface multi-TDD decomposition parallelization to team-lead instead of serially decomposing all TDDs. Net 0 (380→380).
+
+### Changes
+- CULL: collapsed the grooming-section `edit -f` warning duplicate (stated 3×; canonical inline copy on the edit line retained). Signal: Phase 0 Consolidation + in-file triple-statement.
+- AMPLIFY: Complex tier surfaces multi-TDD parallel-decomposition option to team-lead (PM does not spawn — line-24 boundary + SP-2 nested-teammate). Signal: Phase 0 PM INNOVATION (serial multi-TDD decomposition).
+
+### Dimensions Evaluated
+All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → 1 AMPLIFY. 1/2/3/4/7/8 RETAIN (docket audit ZERO fabrications; `-d -` body guidance already correct; no routing changes — alias cutover only).
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

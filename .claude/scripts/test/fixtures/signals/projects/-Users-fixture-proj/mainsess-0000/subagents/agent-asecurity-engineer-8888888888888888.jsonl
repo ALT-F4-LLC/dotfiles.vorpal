@@ -1,0 +1,2 @@
+{ this is not valid json ]
+{"type": "assistant", "sessionId": "sess-mal", "timestamp": "2026-06-30T15:00:00.000Z", "message": {"model": "claude-opus-4-8", "id": "msg-2026-06-30T15:00:00.000Z", "content": [{"type": "text", "text": "\u2026"}]}}

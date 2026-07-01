@@ -1,0 +1,6 @@
+{"type": "assistant", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:00.000Z", "message": {"model": "claude-sonnet-4-6", "id": "msg-2026-06-30T11:00:00.000Z", "content": [{"type": "text", "text": "\u2026"}]}}
+{"type": "assistant", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:10.000Z", "message": {"model": "claude-sonnet-4-6", "id": "msg-2026-06-30T11:00:10.000Z", "content": [{"type": "text", "text": "\u2026"}]}}
+{"type": "user", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:11.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "t1", "is_error": true}]}}
+{"type": "assistant", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:20.000Z", "message": {"model": "claude-sonnet-4-6", "id": "msg-2026-06-30T11:00:20.000Z", "content": [{"type": "text", "text": "\u2026"}]}}
+{"type": "assistant", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:30.000Z", "message": {"model": "claude-sonnet-4-6", "id": "msg-2026-06-30T11:00:30.000Z", "content": [{"type": "text", "text": "\u2026"}]}}
+{"type": "assistant", "sessionId": "sess-repeat", "timestamp": "2026-06-30T11:00:40.000Z", "message": {"model": "claude-sonnet-4-6", "id": "msg-2026-06-30T11:00:40.000Z", "content": [{"type": "text", "text": "\u2026"}]}}

@@ -132,7 +132,7 @@ Classify at session init; upgrade if exploration reveals hidden complexity — n
 
 - **Trivial** (single-file fix, typo, config tweak): One issue. Skip risk/scope/critical path.
 - **Standard** (multi-file change, feature, module refactor): Full workflow. Parent + subtasks.
-- **Complex** (cross-module, migration, ambiguous requirements): Full workflow + spikes, phased delivery, external dependencies. If the first pass at decomposition leaves real ambiguity (not just option-tree completionism), take one additional pass focused on the specific ambiguous seam — do NOT re-decompose from scratch.
+- **Complex** (cross-module, migration, ambiguous requirements): Full workflow + spikes, phased delivery, external dependencies. If the first pass at decomposition leaves real ambiguity (not just option-tree completionism), take one additional pass focused on the specific ambiguous seam — do NOT re-decompose from scratch. For a Large plan spanning ≥2 independent `accepted` TDDs, surface to team-lead the option to parallelize decomposition across TDDs — do NOT spawn subagents yourself (CRITICAL boundary) — rather than serially decomposing all of them.
 
 ### Direct-to-Issues vs Formal Docs (default: direct)
 
@@ -240,7 +240,7 @@ Every issue must give a @senior-engineer enough context to execute without askin
 **Estimated Size**: [small / medium / large]
 **Constraints**: [Gotchas, invariants, patterns to follow]
 **Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> --issue <issue-id>`]
-**Claim Ritual**: Before starting, run `docket issue edit <id> -a @<role>` THEN `docket issue move <id> in-progress` (two-step claim — enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
+**Claim Ritual**: Before starting, claim in ONE Bash call — `docket issue edit <id> -a @<role> && docket issue move <id> in-progress` (assignee FIRST, then status; chaining keeps it a single call and enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
 ### 9. Attach File References
@@ -330,7 +330,7 @@ docket vote link <proposal-id> --issue <id> / unlink <proposal-id> --issue <id> 
 
 Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (everywhere). Aliases: `docket i`/`issue ls`, `docket v`/`vote ls`.
 **Status:** backlog (create default) | todo | in-progress | review | done | **Priorities:** critical | high | medium | low | none (create default) | **Types:** bug | feature | task (default) | epic | chore
-**Grooming foot-guns:** `issue edit -f` REPLACES all file attachments (use `file add/remove`); `issue delete <id> --orphan` promotes sub-issues to roots (preserve work when removing a wrong parent).
+**Grooming foot-gun:** `issue delete <id> --orphan` promotes sub-issues to roots — preserve work when removing a wrong parent (the `edit -f` replace-warning lives on the edit line above).
 
 ---
 

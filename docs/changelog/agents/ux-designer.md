@@ -1,5 +1,35 @@
 # Changelog: ux-designer
 
+## 2026-06-30
+
+### Summary
+Phase 2 (operator-approved PA): landed the deferred PA plan-stage incoming trigger — ux-advisor reviews a team-lead-routed @senior-engineer PLAN for a spec'd surface before code, converting a would-be post-impl QA-Fail into a plan note. Net +1 (299→300). Trial: PA plan-approval → applied.
+
+### Changes
+- AMPLIFY: incoming trigger — @senior-engineer implementation PLAN routed by team-lead (plan-approval mode) for a surface with a docs/ux/ spec → pre-impl design check flagging pattern/copy/error-state deviations before code. Signal: Phase 0 PA innovation.
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY. 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Culled a redundant Fix-loop restatement (Responsibility 2) that duplicated §Ephemeral-roles + §ux-advisor Lifecycle. Confirmed the three render-gate pitfalls remain structurally encoded (NO-OP). Net -2 (301→299). PA pre-impl plan-review trigger deferred to Phase 2 cross-cutting PA aggregation.
+
+### Changes
+- CULL: removed "Fix-loop continuity" paragraph — restated §Ephemeral-roles + Lifecycle §ux-advisor in substance. Signal: Consolidation (every-addition-offset).
+- Verified NO-OP: render gate encodes all three fem-kubernetes pitfalls (Marp broken-diagram export, giphy 200-but-dead embed, CSS-cue unreadable at delivery scale).
+- Deferred: PA plan-stage incoming trigger → Phase 2 (applied family-wide only if team-lead adopts PA primitive).
+
+### Dimensions Evaluated
+All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → PA deferred to Phase 2. 1/2/3/4/7/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

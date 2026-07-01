@@ -1,0 +1,1 @@
+{"agentType":"verifier","description":"Verify synthetic acceptance criteria (synthetic fixture)","name":"verifier","spawnDepth":0,"taskKind":"in_process_teammate","teamName":"session-fixture-noop","color":"cyan","planModeRequired":false,"customAgentType":"sdet","model":"opus","permissionMode":"auto"}

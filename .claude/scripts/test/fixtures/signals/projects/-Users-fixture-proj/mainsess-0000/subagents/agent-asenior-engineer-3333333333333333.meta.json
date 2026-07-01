@@ -1,0 +1,7 @@
+{
+  "agentType": "impl-DKT-31",
+  "customAgentType": "senior-engineer",
+  "name": "senior-engineer",
+  "model": "sonnet",
+  "description": "repeated model; agentType is the spawn INSTANCE name, customAgentType is the actual ROLE"
+}

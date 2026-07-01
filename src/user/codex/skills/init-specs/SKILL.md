@@ -4,7 +4,7 @@ description: >
   One-time bootstrap of docs/spec/ — spawns @staff-engineer agents in parallel to generate
   project specification files. Re-invocation prompts before overwriting existing specs;
   ongoing maintenance is handled by @staff-engineer during TDD/review work, not by this skill.
-  Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
+  Trigger: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
 > **CRITICAL — applies to coordinator AND every spawned worker:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Workers are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, invoke other skills recursively, call `send_input`, or form/manage a team. Report blockers in the final worker report for the coordinator to route.

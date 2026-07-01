@@ -1,5 +1,34 @@
 # Changelog: senior-engineer
 
+## 2026-06-30
+
+### Summary
+Phase 2: landed the PA (plan-approval) mode bullet now that team-lead adopted PA dispatch (operator-approved). Net +1 (489→490). Trial: PA plan-approval → applied.
+
+### Changes
+- AMPLIFY: PA-mode bullet — on a TDD-bearing issue dispatched `mode="plan"`, emit the impl PLAN and AWAIT approval before any edit; rejection returns to plan mode with feedback (no respawn). Catches impl-to-TDD divergence pre-edit. Signal: Phase 0 PA innovation (senior = PA's primary home).
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY. 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Chained the two docket claim-writes into one Bash call (claim+ack 3→2 tool calls; reconciled the §Implementation L146 "two-step" wording to "chained" to stay internally coherent). Net -1 (490→489). PA-mode bullet deferred to Phase 2 (conditional on team-lead PA dispatch adoption).
+
+### Changes
+- AMPLIFY: dispatch claim now `docket issue edit -a && docket issue move in-progress` in ONE call (assignee-first preserved — team-lead's probe key intact). Signal: Phase 0 efficiency, highest-volume agent (124 inv/41 sessions).
+- Deferred: PA-mode impl bullet (emit plan + await approval before edit) → Phase 2 (cross-cutting; dangling without team-lead PA dispatch + reviewer-side wiring).
+
+### Dimensions Evaluated
+All 8. 2 (Actionability) AMPLIFY. 5 (Consolidation) AMPLIFY (bash -1). 6 (Capability Growth) → PA deferred. 4 (Completeness) RETAIN (Read-before-Edit complete+top-placed despite 144 is_error — execution-discipline gap, not docs). 1/3/7/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

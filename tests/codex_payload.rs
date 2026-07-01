@@ -568,10 +568,11 @@ fn user_config_registers_existing_codex_agent_files() {
 }
 
 #[test]
-fn user_config_routes_codex_metrics_through_alloy_otel() {
+fn user_config_routes_codex_metrics_to_mimir_otlp() {
     let src = fs::read_to_string(repo_root().join("src/user.rs"))
         .expect("src/user.rs should be readable");
-    let metrics_endpoint = r#""endpoint": "https://otel.bulbasaur.altf4.domains/v1/metrics""#;
+    let metrics_endpoint = r#""endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics""#;
+    let old_metrics_endpoint = "https://otel.bulbasaur.altf4.domains/v1/metrics";
 
     assert!(
         src.contains(".with_analytics_enabled(true)"),
@@ -579,7 +580,11 @@ fn user_config_routes_codex_metrics_through_alloy_otel() {
     );
     assert!(
         src.contains(metrics_endpoint),
-        "Codex metrics should flow through Alloy OTLP HTTP before Mimir remote write"
+        "Codex metrics should use the Mimir OTLP endpoint"
+    );
+    assert!(
+        !src.contains(old_metrics_endpoint),
+        "Codex metrics should not use the retired Alloy OTLP metrics endpoint"
     );
 }
 

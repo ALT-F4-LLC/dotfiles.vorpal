@@ -20,7 +20,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. If the request references a Docket issue by ID (for example, `brief: implement DKT-26`), do NOT attempt shell or `docket` access to fetch the body — those tools are disallowed in this leaf skill and retrying variants only stalls intake against the permission gate; instead ask the operator to paste the issue body, or use the Docket-ID fallback: emit the brief with the bare issue ID as the placeholder Goal and note that the issue body was unavailable.
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. If the request cites an accepted artifact (TDD/spec/ADR/vote), preserve the source-backed values and list the artifact under `Source context` instead of paraphrasing beyond the request. If the request references only a Docket issue ID (for example, `brief: implement DKT-26`), do NOT attempt shell or `docket` access and do NOT ask a body-paste question solely to enrich the brief; emit the brief with the bare issue ID as a placeholder where needed and put `Docket body unavailable` under `Unavailable context`.
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
@@ -54,10 +54,8 @@ Acceptance criteria: <checkable bullets>
 Size hint: trivial | bounded | needs-design
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
+Source context: <operator-provided text, cited artifact, or none>
+Unavailable context: <issue bodies, files, or facts not fetched; none if complete>
 ```
 
 **HALT — brief complete.** The block above is the deliverable. Do not continue, do not execute, do not ask follow-up questions. The operator carries the block to team-lead's Pre-flight HARD GATE; execution does not begin until they confirm.
-
-## When NOT to use
-
-- **The request is already structured** as a goal + scope + acceptance criteria — there is nothing to standardize; hand it straight to team-lead.

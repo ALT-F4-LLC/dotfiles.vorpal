@@ -3,6 +3,21 @@
 ## 2026-06-30
 
 ### Summary
+Amplified Docket/artifact context handling and culled structured-request skip, net -1.
+
+### Changes
+- AMPLIFY: add Source context/Unavailable context and deterministic Docket-ID fallback.
+- CULL: remove already-structured carve-out.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Added an explicit fallback for Docket-issue references so brief stops stalling against the permission gate. Inline (net 0, stays 65). brief→sonnet routing trial declined by operator.
 
 ### Changes

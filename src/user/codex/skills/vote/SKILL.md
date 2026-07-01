@@ -2,7 +2,8 @@
 name: vote
 description: >
   Multi-agent consensus voting protocol. Standalone: spawns reviewers. Team: delegates to
-  orchestrator. Computes weighted quorum via docket. Use for decisions needing structured validation.
+  orchestrator. Computes weighted quorum via docket. Use only for actual consensus decisions
+  needing structured validation; do not load for report-only investigations that merely mention votes.
   Trigger: "create vote", "vote on this", "consensus vote", "run a vote".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->

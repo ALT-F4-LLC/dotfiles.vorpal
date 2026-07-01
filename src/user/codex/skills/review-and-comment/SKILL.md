@@ -56,23 +56,23 @@ Distinguish real defects from intentional design. If the change is large or high
 
 ## Step 4 — Anchor each finding
 
-For each finding, record: `path` (repo-relative), `line` (line number in the PR's NEW file version), and `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment. Verify line numbers against the clone (`grep -n`).
+Before drafting, build a diff anchor index from `gh api repos/<owner>/<repo>/pulls/<num>/files --paginate --jq '.[] | {filename,patch,status}'`. For each finding, record: `path` (repo-relative), `line` (line number in the PR's NEW file version), and `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment; validate against the patch/new-file status and the clone line when a clone exists.
 
 ## Step 5 — Match the operator's voice
 
-Sample the operator's real comment style so drafts read like them:
+Sample the operator's real comment style and list existing PR comments for duplicate checks:
 
 ```
 LOGIN=$(gh api user --jq .login)
-gh api "repos/<owner>/<repo>/pulls/comments?per_page=100" --jq "[.[]|select(.user.login==\"$LOGIN\")][0:15]|.[].body"
+gh api "repos/<owner>/<repo>/pulls/<num>/comments?per_page=100" --jq '.[]|{path,line,body,user:.user.login}'
 gh api "users/$LOGIN/events?per_page=100" --jq '.[]|select(.type=="IssueCommentEvent" or .type=="PullRequestReviewCommentEvent")|.payload.comment.body // empty'
 ```
 
 If no samples surface, draft in a concise first-person engineer voice (short, direct, suggests a concrete fix) and tell the operator you had no samples — let them calibrate tone on the first 1–2 comments, then match the rest.
 
-## Step 6 — Draft one single-line comment per finding
+## Step 6 — Draft one single-line comment per unique finding
 
-One inline comment per finding (never a single consolidated mega-comment). Each: short, first-person, names the concern + a concrete suggestion. Prefix nits with `nit:`. Keep high-severity ones direct but collegial (questions over commands). Map findings → anchors from Step 4.
+Before presenting drafts, compare findings against existing PR comments from Step 5 and drop duplicates by same `path:line` plus materially same concern; if a thread-resolution helper exists in the repo, use it to narrow this check to unresolved threads. One inline comment per remaining finding (never a consolidated mega-comment). Each: short, first-person, names the concern + a concrete suggestion. Prefix nits with `nit:`. Keep high-severity ones direct but collegial (questions over commands). Map findings → anchors from Step 4.
 
 ## Step 7 — Per-item approval gate (MANDATORY)
 

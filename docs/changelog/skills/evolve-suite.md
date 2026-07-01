@@ -1,5 +1,19 @@
 # Changelog: evolve-suite
 
+## 2026-06-30
+
+### Summary
+Folded a read-only capacity-plan checkpoint into the existing goal gate. Net 0.
+
+### Changes
+- AMPLIFY: goal gate now computes intended runs, fixed order, checkpoints, final gate, and passthrough values before operator confirmation — cited capacity clarity with no new gate.
+
+### Dimensions Evaluated
+All 8. Over-Engineering primary.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

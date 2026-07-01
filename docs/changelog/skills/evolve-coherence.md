@@ -3,6 +3,22 @@
 ## 2026-06-30
 
 ### Summary
+Phase-1 coherence follow-up: expanded D1 lifecycle ownership into lifecycle + report-delivery ownership, added report-delivery obligations to the XREF schema, and clarified that Remediation Manifest output is Phase-0 input signals-to-verify for sibling evolve cycles. Net +1 schema field; no report-and-route capability change.
+
+### Changes
+- AMPLIFY: D1 now audits report/final-report delivery obligations alongside spawn/lifecycle ownership and emits them in `report_delivery_obligations`, so coherence reviewers can detect silent-completion drift instead of treating lifecycle close semantics alone as sufficient.
+- AMPLIFY: Remediation Manifest handoff wording now says operators feed findings into the next evolve-agents/evolve-skills Phase 0 as signals-to-verify, preserving report-and-route and avoiding treating manifest lines as pre-verified facts.
+- CULL: removed the stale script-backed-check seed from D1; no Codex-compatible helper path is part of this skill's current contract.
+
+### Dimensions Evaluated
+All 8. Coherence/Completeness primary (report-delivery obligations + XREF schema). Over-Engineering: one stale helper-script seed culled. Report-and-route invariant preserved; no model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-2 coherence: fixed a high-risk glob-abort in the Phase-0 inventory command. Inline, net 0 (stays 328).
 
 ### Changes

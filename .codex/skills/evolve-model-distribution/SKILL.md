@@ -89,7 +89,7 @@ All model-routing changes tracked in `docs/changelog/model-distribution/<target>
 
 | Phase | Worker(s) | role / model | Lifecycle |
 |---|---|---|---|
-| 0 | `distribution-auditor` (+ optional `model-policy-researcher`) | senior-engineer/`gpt-5.4-mini`; staff-engineer/`gpt-5.5` | Spawn parallel → collect reports with `wait_agent` → `close_agent` before Phase 1 |
+| 0 | `distribution-auditor` | senior-engineer/`gpt-5.4-mini` | Spawn → collect report with `wait_agent` → `close_agent` before Phase 1 |
 | 1 | `routing-proposer` | staff-engineer/`gpt-5.5` | Spawn → emit proposals (read-only) → `close_agent` |
 | 2 | — (orchestrator) | — | Evidence re-verify gate → operator-approval HARD GATE per proposal batch → orchestrator applies edits → writes changelog |
 | 3 | `coherence-verifier` | staff-engineer/`gpt-5.5` | Spawn after edits applied → verify (read-only) → orchestrator applies fixes → `close_agent` |
@@ -101,7 +101,7 @@ All workers are READ-ONLY; the orchestrator applies every edit itself (the same 
 **Close protocol (orchestrator-driven).** Use `wait_agent(targets=[<id>], timeout_ms=...)` to collect the phase report, use `send_input(target=<id>, ...)` only for required clarifications while the worker is alive, then call `close_agent(target=<id>)` when the phase is complete. If `wait_agent` reports a blocker or no progress, read the status, address it once, and continue through Crash & Stall Recovery if it still does not complete. Agent IDs, not display names, are the lifecycle authority.
 ### Phase 0: Collection (LOCAL per-spawn + REMOTE Mimir)
 
-Pre-flight already gated this phase: `{local_metrics_status}` = SKIPPED aborts the whole run (Improvement-Only Mandate — no ground truth, no edits), and `{mimir_status}` is either `available` after Codex metric discovery or the `"Mimir evidence is unavailable: <reason>"` string. Spawn the `distribution-auditor` (ALWAYS) and the `model-policy-researcher` (OPTIONAL — skippable) in parallel. Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{today_date}`, `{codex_home}`, `{mimir_status}`, and the discovered metric names from pre-flight; do NOT let a worker re-compute the window.
+Pre-flight already gated this phase: `{local_metrics_status}` = SKIPPED aborts the whole run (Improvement-Only Mandate — no ground truth, no edits), and `{mimir_status}` is either `available` after Codex metric discovery or the `"Mimir evidence is unavailable: <reason>"` string. Spawn the `distribution-auditor` only. Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{today_date}`, `{codex_home}`, `{mimir_status}`, and the discovered metric names from pre-flight; do NOT let the worker re-compute the window.
 
 #### distribution-auditor (always)
 
@@ -166,37 +166,13 @@ On any non-200, network error, empty `data.result`, or missing discovered cost m
 send_input the orchestrator verbatim:
 
 - Headline: `<N spawns, M distinct models>` (from the aggregate).
-- Per-spawn distribution: the `agent ID → role → requested → resolved` rows, grouped by role, with a per-role spawn count.
+- Per-spawn distribution: TSV rows from the join loop with fields `agent_id, role, nickname, requested, resolved, parent, path`, grouped by role, with a per-role spawn count.
 - Fallback-drift candidates: rows where the joined `spawn_agent` request confirms `model=` was absent — list agent ID + role + resolved + session ref.
 - Mimir: discovered metric names plus labeled token/cost totals by `model` and `agent_name`, or the `"Mimir evidence is unavailable: <reason>"` string.
 - Sessions scanned: the in-window spawned Codex transcript paths the loop covered.
 
 ## Rules
 Read-only (no file edits, no commit). No subagents. No peer send_input — orchestrator only. Per-session grep — never load transcripts wholesale. Every count carries its session path.
-```
-
-#### model-policy-researcher (optional — skippable)
-
-Spawn ONLY when a Policy-stale check is wanted (a measured or canonical alias may reference a suspended alias like `fable`). Skippable: if skipped or if it fails twice under Crash & Stall Recovery, substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` and the Policy-stale divergence class degrades to operator judgment (no auto-correction of a suspended alias).
-
-```
-spawn_agent(agent_type="worker", message="model-policy-researcher prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
-
-You are the model-policy researcher. Read-only. No file edits. No commits. No subagents. send_input the orchestrator only.
-
-## Task
-Report the CURRENT valid model-alias policy so the proposer can flag any measured/canonical alias that references a suspended or nonexistent tier:
-1. Read the `team-lead.md` per-spawn model-routing prose (search the `**Per-spawn model routing` paragraph + the `Tiers (default — ` list) for the alias set it names (`sonnet`/`opus`/`opus-security-depth`/`haiku`) and any suspension/`best`-alias note.
-2. State, as a short list: valid aliases in force, any SUSPENDED alias (e.g. `fable`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
-
-## Output Format
-send_input the orchestrator verbatim:
-- Valid aliases (in force): <list>
-- Suspended → replacement: <e.g. `fable` → `best`/`opus`, or "none">
-- Stale references in team-lead.md: <alias + anchor, or "none">
-
-## Rules
-Read-only. No subagents. Orchestrator-only send_input. Search the two routing structures by content string, never by line number.
 ```
 
 #### LOCAL/REMOTE reconciliation
@@ -208,31 +184,19 @@ Combine the two arms by AUTHORITY, never by averaging:
 - **Fallbacks** (already gated in pre-flight, restated for the auditor): Mimir non-200/empty/no Codex metric discovery match → `"Mimir evidence is unavailable: <reason>"`, proceed LOCAL-only with cost claims skipped; LOCAL empty → the run already SKIPPED the edit phases and reported "no local metrics — cannot ground edits".
 ### Phase 1: Categorization + routing-proposer (READ-ONLY)
 
-Phase 0 handed the orchestrator the per-spawn `agent ID → role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, the Mimir cost arm (or the `"Mimir evidence is unavailable: <reason>"` string), and `{model_policy_status}`. Phase 1 spawns ONE `routing-proposer` (staff-engineer/`gpt-5.5`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
+Phase 0 handed the orchestrator the per-spawn `agent ID → role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, and the Mimir cost arm (or the `"Mimir evidence is unavailable: <reason>"` string). Phase 1 spawns ONE `routing-proposer` (staff-engineer/`gpt-5.5`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
 
-#### Categorization AUTHORITY rule (live Tiers = SINGLE SOURCE OF TRUTH)
+#### Categorization AUTHORITY rule (live routing table = SINGLE SOURCE OF TRUTH)
 
-The live `team-lead.md` Tiers list is the SINGLE SOURCE OF TRUTH for the category → canonical-tier map. The proposer RE-READS it at runtime and builds the map from what it reads — it MUST NOT trust any table embedded in this SKILL.md. Locate + read the block by content string, never a line number (line refs drift):
+The live `team-lead.md` "Sizing: senior-engineer and peers by task depth" table is the SINGLE SOURCE OF TRUTH for the role/work → model/effort map. The proposer RE-READS it at runtime and builds the map from the table rows plus the immediately following upgrade/floor prose — it MUST NOT trust any static table embedded in this SKILL.md. Locate + read by content string, never a line number:
 
 ```bash
-grep -n 'Tiers (default — ' src/user/codex/personas/team-lead.md      # locate the block
-grep -nE '^- .(sonnet|opus). —' src/user/codex/personas/team-lead.md  # the canonical-tier bullets
+grep -n 'Sizing: senior-engineer and peers by task depth' src/user/codex/personas/team-lead.md
+grep -nE '^\| .*`gpt-5\.[0-9]' src/user/codex/personas/team-lead.md
+grep -n 'never downgrade authoring/review/verify/security roles below their table tier' src/user/codex/personas/team-lead.md
 ```
 
-Read the `Tiers (default — ` preamble (its escape-hatch prose: "exceed the tier UPWARD … NEVER … BELOW opus") AND every `^- ` bullet beneath it, including the `opus (security depth)` bullet, and build category → canonical-tier from those bullets alone.
-
-The table below is an ILLUSTRATIVE SNAPSHOT for this document only — documentation, NOT the classification input and NOT auto-synced. If it and the live Tiers diverge, `team-lead.md` wins and this snapshot is stale-by-definition. NEVER feed it into a proposal.
-
-| Category (spawn class) — *illustrative; live authority is `team-lead.md`* | Canonical tier |
-|---|---|
-| `impl-{ID}` — Direct / Small / Medium | `sonnet` |
-| `impl-{ID}` — Large / architecture / long-horizon | `opus` |
-| `planner` (project-manager ephemeral) | `sonnet` |
-| general `reviewer-2`, `verifier*`, `tdd-author*` | `opus` |
-| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors | `opus` (security depth) |
-| cheap one-shot report-only subagents | `haiku` (only place permitted) |
-
-**Tier-invariant floor.** Authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are ALWAYS `opus` and are NEVER downgrade candidates — a below-`opus` measurement for those is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`sonnet` ≤ Medium, `opus` at Large).
+Build category → canonical model/effort from the live rows only. Treat the prose below the table as the hard-floor rule: authoring/review/verify/security roles are never downgrade candidates below their table tier; upward upgrades are allowed when the brief's uncertainty, blast radius, or review cost warrants it. Any missing anchor is a coherence failure to report, not a reason to use an embedded fallback table.
 
 #### Fallback-vs-intentional corroboration (C2b — the spawn request record decides)
 
@@ -252,8 +216,6 @@ Each disposition requires an evidence citation — session path + measured per-r
 2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`wait_agent` no-progress/blocker status, fix-round respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
 3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`spawn_agent` model argument PRESENT, per C2b) AND non-trivial Mimir cost from discovered Codex cost metrics → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates. If Mimir evidence is unavailable or lacks cost evidence, skip cost/downshift claims and record the proposal as rejected for unavailable cost evidence.
 4. **Fallback-drift (corroborated)** — a role whose `spawn_agent` request omitted the model argument (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
-5. **Policy-stale** — a measured/canonical alias references a SUSPENDED alias (`fable`) or a nonexistent tier → **FILE-EDIT**: correct to a live alias (`opus` / `best`), fed by the optional `model-policy-researcher`. If that researcher was SKIPPED (`{model_policy_status}` = SKIPPED), this class degrades to operator judgment — no auto-correction of a suspended alias.
-
 **AMBIGUOUS (over-canonical)** — the missing-request-record case from C2b: resolved > canonical but the parent `spawn_agent` request is unreadable, so pin-vs-fallback is undecidable → REPORT for operator judgment, never auto-edit.
 
 #### routing-proposer (always)
@@ -263,12 +225,12 @@ spawn_agent(agent_type="worker", message="routing-proposer prompt (role: staff-e
 
 You are the routing proposer. Read-only. You edit NOTHING — `team-lead.md` included; the orchestrator applies every edit in Phase 2. No commits. No subagents (do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts). send_input the orchestrator only. Any scratch file goes under $TMPDIR, never /tmp.
 
-Inputs (verbatim from the orchestrator's Phase-0 collection): the per-spawn `agent ID → role → requested → resolved` rows grouped by role, the fallback-drift candidate list, the Mimir token/cost arm (or the "Mimir evidence is unavailable: <reason>" string), and {model_policy_status}.
+Inputs (verbatim from the orchestrator's Phase-0 collection): the per-spawn `agent ID → role → requested → resolved` rows grouped by role, the fallback-drift candidate list, and the Mimir token/cost arm (or the "Mimir evidence is unavailable: <reason>" string).
 
 ## Task
 1. Read the LIVE Tiers (the Categorization AUTHORITY rule) and build category → canonical-tier from it — NEVER a static copy.
 2. For each measured spawn, assign a category and compare resolved vs canonical, applying the C2b spawn-request corroboration.
-3. Classify each divergence into one of the five classes (or AMBIGUOUS) and attach its disposition (FILE-EDIT / RUNTIME-DISCIPLINE REPORT / Trial-only).
+3. Classify each divergence into one of the four classes (or AMBIGUOUS) and attach its disposition (FILE-EDIT / RUNTIME-DISCIPLINE REPORT / Trial-only).
 4. Emit one proposal per divergence under the Improvement-Only Mandate below.
 
 ## Improvement-Only Mandate (evidence-or-reject)
@@ -350,7 +312,7 @@ If the verifier reports a contradiction, the orchestrator applies the single fix
 Mirrors evolve-agents, translated to Codex agent IDs. Detect failure via: (a) `wait_agent(targets=[<id>], timeout_ms=...)` returning no-progress/blocker status, or no new report past expected progress in the local phase ledger; (b) `close_agent(target=<id>)` returning an explicit failure after the phase report was captured; (c) a `spawn_agent()` call returning an explicit error.
 
 - **Re-spawn ONCE** and record `retry_of=<prior-agent-id>` plus the incremented retry count in the local phase ledger with a `Resume context:` block listing (a) the prior partial report, (b) the Docket issue or phase label to claim, (c) the phase inputs already computed (window, cutoffs, the Phase-0 collection). Store the new agent ID beside the failed one; never reuse a stale ID.
-- **Second failure** → record the audit as unavailable and continue; never do the worker's work directly. `distribution-auditor` twice → no LOCAL ground truth → SKIP the edit phases and report "no distribution audit — cannot ground edits" (the same terminal state as an empty LOCAL window). `model-policy-researcher` twice → substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` (Policy-stale degrades to operator judgment). `routing-proposer` / `coherence-verifier` twice → record "no proposals / no coherence check performed — worker unavailable" and no-op that phase.
+- **Second failure** → record the audit as unavailable and continue; never do the worker's work directly. `distribution-auditor` twice → no LOCAL ground truth → SKIP the edit phases and report "no distribution audit — cannot ground edits" (the same terminal state as an empty LOCAL window). `routing-proposer` / `coherence-verifier` twice → record "no proposals / no coherence check performed — worker unavailable" and no-op that phase.
 - **Compaction recovery** — after a context compaction, re-read the verified goal, the local phase ledger, the latest changelog entry, and the active phase content before any new `send_input` / `spawn_agent` call.
 
 ### Wrap-up

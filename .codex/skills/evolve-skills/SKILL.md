@@ -72,7 +72,7 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via shell and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory skill files and sizes** — Run `find .codex/skills src/user/codex/skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when a root is absent). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory skill files and sizes** — Run `find .codex/skills src/user/codex/skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null`; these are the only Codex skill roots — do not add a generic `skills/` fallback (historical abort: `find: skills: No such file or directory`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
 5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.codex/skills/<arg>/SKILL.md` or `src/user/codex/skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `request_user_input` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
@@ -303,13 +303,13 @@ If a category is empty for a skill, write `none` — do not omit the line. After
 ```
 spawn_agent(agent_type="worker", message="innovation-scanner prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
 
-MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE process simplification/automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC and REPEATABLE.** No Codex-compatible shared script path exists in this repo today; report repeatable automation ideas as proposals with `not available; skip/fail-open` rather than naming a path. Read .codex/skills/*/SKILL.md and src/user/codex/skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use available web/search tools for external discovery (new OpenAI Codex model capabilities, emerging orchestration patterns) and search/read for internal pattern discovery.
+MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE process simplification/automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a Codex-compatible shared script if an appropriate path already exists. If no such path exists, report `not available; skip/fail-open` rather than inventing one.** Read `.codex/skills/*/SKILL.md` and `src/user/codex/skills/*/SKILL.md`, then surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new OpenAI Codex model capabilities, new orchestration patterns) and search/read for internal pattern discovery.
 
 Target skills: {target_skills}
 
 ## Task — for EACH target skill, identify opportunities in these four areas:
 1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the skill definition that could improve effectiveness (e.g. new OpenAI Codex model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
-2. **Efficiency Gains & Reliable Automation**: Steps, workflows, or verification loops that could be shortened, parallelized, eliminated, **or made DETERMINISTIC by a repeatable Codex-compatible mechanism** — without sacrificing correctness; **prefer automating any step whose result currently varies by hand-execution.**
+2. **Efficiency Gains & Reliable Automation**: Steps, workflows, or verification loops that could be shortened, parallelized, eliminated, **or made DETERMINISTIC by codifying them as a repeatable Codex-compatible script if an appropriate path already exists; otherwise record `not available; skip/fail-open`** — without sacrificing correctness; **prefer automating any step whose result currently varies by hand-execution.**
 3. **Patterns to Retire**: Skill behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
 4. **Cross-Skill Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the skill family more effective as a whole (not just individually).
 
@@ -341,8 +341,7 @@ Target skills: {target_skills}
 ## Task
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
 
-1. **Per-spawn model distribution** — across the audit window, run:
-   Codex metric discovery over `$CODEX_HOME/sessions` and any session sidecars for `"model"` and `"reasoning_effort"`. No Codex-compatible distribution script exists in this repo; emit `not available: Codex distribution script missing; skip/fail-open` instead of calling legacy scripts. Report DISTINCT counts per model per skill role when evidence exists. This is ground truth — do NOT assume inherit semantics.
+1. **Per-spawn model distribution** — across the audit window, inspect `$CODEX_HOME/sessions` JSONL for measured `"model"` fields grouped by skill role/skill ID. A Codex-compatible distribution helper script is not available; skip/fail-open and report `not available; skip/fail-open` for helper output. Report DISTINCT counts per model per skill role only from discovered session fields. This is ground truth when present — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — for each skill/model pair observed, correlate with:
    - Stall signals: `wait_agent` timeout, progress-silence, or close-failure markers within ±5 lines of the skill name; count distinct events by agent ID/session ID where present.
@@ -353,7 +352,7 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 3. **`$CODEX_HOME/history.jsonl`** — count operator-typed `/<skill>` invocations in the window per target skill (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 
 4. **Codex memory** — `grep -lri 'model\|routing\|gpt\|reasoning_effort\|effort' "$CODEX_HOME/memories" .codex/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
-5. **Mimir metrics (primary factual arm when available)**: Use metric discovery at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for Codex-labeled series using `{history_days}` from pre-flight — do NOT compute the window yourself. Only query discovered Codex metrics with model/skill labels. If no Codex-labeled metrics are found, emit `"Mimir evidence is unavailable: no Codex-labeled metrics found"` and skip cost claims. On any non-200 response or empty result, emit `"Mimir evidence is unavailable: <reason>"` and proceed using local session signals only. Mimir results, when available, supplement and cross-check the session grep above — cite discrepancies between the two signal sources.
+5. **Mimir metrics (primary factual arm when Codex-labeled metrics exist)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` only after metric discovery. First discover metric names and labels, filtering for Codex/OpenAI Codex. If no Codex-labeled metrics are found, emit `"Mimir evidence is unavailable: no Codex-labeled metrics found"` and skip all cost/token claims. If Codex metrics exist, query only discovered metric names using `{history_days}` from pre-flight — do NOT compute the window yourself. Mimir results are factual ground truth that supplements and cross-checks the session grep above; cite discrepancies between the two signal sources.
 
 ## Improvement-Only Mandate
 Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
@@ -390,7 +389,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change as the physical-newline (`wc -l`) delta — NOT soft-wrapped display lines; removing whole bullet/list lines moves the count, rewording wrapped prose rarely does.
+Budget is the prompted cap (normally 500 lines; evolve-skills self-review uses the explicit 535-line cap). **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES as the physical-newline (`wc -l`) delta; only physical line additions/removals change it.
 
 ## Context
 

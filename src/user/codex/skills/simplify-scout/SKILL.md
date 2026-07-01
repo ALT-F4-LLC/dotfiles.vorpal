@@ -169,7 +169,7 @@ When clarity and length point in opposite directions, **clarity wins and you sta
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable. Apply the large-scope guard for directory scopes.
 3. **Empty-scope guard**: if the resolved scope yields no source lines (empty diff, empty file set, directory with no source files), short-circuit to the empty-scope output below — do NOT fabricate findings.
 4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file. Stream long scans (>30s, large directory) via the supported Codex shell background mode with an until-loop on a completion marker rather than a blocking poll.
-5. **Scan for opportunities** against the 12-principle rubric, prioritizing #1/#3/#9/#12 and the junior-tells. For each candidate, apply the Calibration rule: keep it ONLY if the idiomatic form is genuinely clearer. Drop anything that trades scannability for line count, and anything that does not map to a principle in `1–12`.
+5. **Scan for opportunities** against the 12-principle rubric, prioritizing #1/#3/#9/#12 and the junior-tells. For each candidate, apply the Calibration rule: keep it ONLY if the idiomatic form is genuinely clearer. Drop anything that trades scannability for line count, anything that does not map to a principle in `1–12`, and anything that requires changing product behavior, API contracts, architecture, or shared interfaces; those are escalation items for the calling agent, not simplify-scout findings.
 6. **Assign a confidence rung** (see Output Contract) to each kept finding.
 7. **Validate, then emit** per Validation Before Emit and Output Contract.
 
@@ -260,4 +260,4 @@ Simplify scout emitted ({count} opportunities, 0 edits applied).
 
 where `{count}` is the number of findings (`0` for an empty/trivial scope).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive send_input triggers. This skill never edits, never messages peers, and never gates a merge.
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself and routing any out-of-scope design/API/shared-interface concern through its own Proactive send_input triggers. This skill never edits, never messages peers, and never gates a merge.

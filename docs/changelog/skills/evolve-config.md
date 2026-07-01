@@ -3,6 +3,22 @@
 ## 2026-06-30
 
 ### Summary
+Strengthened official-docs digestion, generated-phenotype verification, and setter/call-chain inventory fallback. Net 0; stays 475.
+
+### Changes
+- AMPLIFY: Codex config docs research now prefers the OpenAI docs/manual helper and distills installed-version plus config-field changes — cited stale-docs risk.
+- AMPLIFY: generated-output verification now compares before/after phenotype without editing deployed `$HOME/.codex/` files — cited source-of-truth safety.
+- AMPLIFY: config-history audit now uses a repo-owned inventory helper when present, otherwise an `rg` fallback — cited dead-setter detection robustness.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-3 disambiguation: resolved the "genome" multi-reading. Inline, net 0 (stays 535).
 
 ### Changes

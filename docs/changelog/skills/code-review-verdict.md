@@ -1,5 +1,20 @@
 # Changelog: code-review-verdict
 
+## 2026-06-30
+
+### Summary
+Added vote-compatible Findings JSON contract while keeping skill at 393 lines.
+
+### Changes
+- AMPLIFY: added Staff/Security Findings JSON blocks and parse/count validation.
+- CULL: compressed duplicated delivery/vote routing prose.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

@@ -114,8 +114,8 @@ malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
 5. **ADR numbering** (ADR-specific):
-   1. `Glob docs/tdd/adr/*.md`.
-   2. For each filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
+   1. `Glob docs/tdd/adr/*.md`; if the directory is absent or no files match, treat the ADR set as empty.
+   2. For each returned filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
       filenames that do not match in `malformed[]`.
    3. If `malformed` is non-empty, ABORT:
 
@@ -132,9 +132,8 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
-   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
-   Read any candidate predecessors so the new ADR cites them in `Context`.
+1. **Gather prior art**: build the search set from existing directories among `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, and `docs/ux/`; skip missing dirs, run `Grep -r "{topic-keywords}" <existing-dirs>` only if any remain, and continue without error if none do.
+   Read any candidate predecessors so the new ADR cites superseded, reinforced, or contradicted decisions in `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.

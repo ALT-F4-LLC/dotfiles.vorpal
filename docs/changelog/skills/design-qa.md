@@ -1,5 +1,33 @@
 # Changelog: design-qa
 
+## 2026-06-30
+
+### Summary
+Clarified operator/team-lead-triggered design QA ownership.
+
+### Changes
+- DISAMBIG: reworded the When to Use operator/team-lead trigger so it routes through `@ux-designer` and names implementation QA against an existing UX spec.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation: overlapping-ownership.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Route verify-ac OUT-OF-SCOPE runtime/render criteria on docs/ux surfaces into design-qa, net 0.
+
+### Changes
+- AMPLIFY: design-qa invocation now covers verify-ac OUT-OF-SCOPE runtime/render criteria on docs/ux surfaces.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

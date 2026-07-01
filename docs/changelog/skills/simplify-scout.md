@@ -1,5 +1,20 @@
 # Changelog: simplify-scout
 
+## 2026-06-30
+
+### Summary
+Product/API/architecture/shared-interface changes are retired during scan rather than emitted, net 0.
+
+### Changes
+- AMPLIFY: scan drops candidates requiring product behavior, API contract, architecture, or shared-interface changes.
+- AMPLIFY: Save & Return routes out-of-scope design/API/shared-interface concerns through the calling agent rather than scout findings.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-10
 
 ### Summary

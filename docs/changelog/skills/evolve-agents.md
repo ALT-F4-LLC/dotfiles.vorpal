@@ -3,6 +3,22 @@
 ## 2026-06-30
 
 ### Summary
+Trimmed evolve-agents from 522 to estimated 498 lines while adding Phase 0 coordination/lifecycle heatmap output and replacing fixed line-window reads with relevant-section reads.
+
+### Changes
+- AMPLIFY: historical-auditor output now includes a compact coordination/lifecycle heatmap — cited recurring lifecycle-signal correlation needs.
+- AMPLIFY: Phase 2 coherence now reuses evolve-coherence XREF rubric/detection seeds — cited cross-family drift detection reuse.
+- CULL: collapsed the verbose 8-dimension list and ADR 0001 compaction restatement — cited over-budget prose duplication.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
 Phase-2 coherence: propagated the glob-abort find-form (same bug class fixed in evolve-skills this cycle) to all 4 single-root inventory/changelog globs. Inline, net 0 (stays 533). Phase 1 was RETAIN (no-signal organism).
 
 ### Changes

@@ -117,16 +117,16 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-6. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
-   whose slug appears as a substring of `<topic>` (case-insensitive), include
-   its relative path in the `dependencies` frontmatter array. The calling
-   agent may add others from broader judgment.
+6. **Related-doc probe**: build `{doc_search_roots}` from existing directories among
+   `docs/spec/`, `docs/ux/`, and `docs/tdd/` (absent roots are valid in sparse repos).
+   Glob `*.md` only under existing `docs/spec/` and `docs/ux/` roots. For each match
+   whose slug appears in `<topic>` (case-insensitive), include its relative path in
+   `dependencies`; the calling agent may add others from broader judgment.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
-   parent PRD or UX spec identified in Pre-flight step 6. Read existing TDDs in
-   `docs/tdd/` touching adjacent areas — reference, not contradict, prior accepted work.
+1. **Gather prior art**: if `{doc_search_roots}` is non-empty, `Grep -r "{topic-keywords}" {doc_search_roots}` and read candidate parent PRDs, UX specs, or adjacent TDDs.
+   If it is empty, continue with no prior-art docs. Reference, not contradict, prior accepted work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
 3. **Draft each Required Section in order** (see Output Contract → Required

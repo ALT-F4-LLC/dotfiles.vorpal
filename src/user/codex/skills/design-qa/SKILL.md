@@ -60,8 +60,8 @@ If extra positional args follow `<scope>`, ignore them silently.
 ## When to Use
 
 - `@senior-engineer` reports user-facing implementation complete against a `docs/ux/` spec and `@ux-designer` is performing the QA pass.
-- `@sdet` reports a design deviation during verification and `@ux-designer` must adjudicate.
-- Operator or team-lead requests a design audit against an existing spec.
+- `@sdet` reports a design deviation or `verify-ac` marks a `docs/ux/` surface criterion OUT-OF-SCOPE because it needs runtime/render verification; `@ux-designer` must adjudicate.
+- Operator or team-lead asks `@ux-designer` to run implementation QA against an existing UX spec; `@ux-designer` remains the only valid caller.
 
 ## Doubling Rule
 

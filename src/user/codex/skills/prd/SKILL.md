@@ -113,14 +113,14 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read related PRDs
-   already in `docs/spec/` (the 7 reserved engineering specs — see the Reserved-Name
-   List — are project-level conventions, not PRDs; skip them unless the PRD genuinely
-   depends on one). Read any TDDs in `docs/tdd/` or design specs in `docs/ux/` that
-   touch the same surface — the new PRD should reference, not contradict, prior accepted
-   product definitions, and record each one the PRD builds on in the `dependencies`
-   frontmatter field so reviewers and decomposition can trace the lineage.
-2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues under a "Pre-existing Docket issues" sub-bullet in Risks & Open Questions.
+1. **Gather prior art**: Build a context search set from existing `docs/spec/`,
+   `docs/tdd/`, and `docs/ux/` directories; skip absent directories, and if none exist,
+   continue with no prior-art docs. Run `rg -n "{topic-keywords}" <existing-doc-dirs>`
+   against that set, then read related PRDs, TDDs, and UX specs. Reserved engineering
+   specs are project-level conventions, not PRDs, unless this PRD genuinely depends on
+   one. Reference, do not contradict, prior accepted product definitions, and list each
+   dependency in frontmatter.
+2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues as a compact "Pre-existing Docket issues" table in Risks & Open Questions with columns `Issue`, `Status`, `Overlap`, and `Decision`; if Docket is unavailable, note `Docket probe unavailable: {raw error}` and continue.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required

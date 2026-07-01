@@ -1,5 +1,36 @@
 # Changelog: staff-engineer
 
+## 2026-06-30
+
+### Summary
+Phase 2 (operator-approved PA + coherence): added Impl-plan REVIEW (advisor is the plan's engineering reviewer; team-lead — not advisor — emits `plan_approval_response`) and a shared pre-computed brief clause for doubled code-review panels. Net +2 (309→311). Trial: PA plan-approval → applied.
+
+### Changes
+- AMPLIFY: Impl-plan review (plan-approval mode) — advisor delivers an approve/reject conformance verdict on the impl PLAN to team-lead before edits; does NOT waive diff review. FIX 1 corrected the emitter (only the spawner team-lead sends plan_approval_response; advisor must not message an in-flight impl ephemeral — rule 9). Signal: Phase 0 PA innovation.
+- AMPLIFY: shared pre-computed brief clause in §Responsibility 2 (Code Review) — ask team-lead to fold one changed-file list + spec excerpts + cargo audit (Cargo.lock-hash-keyed) into every reviewer's brief. Signal: Phase 0 efficiency.
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY×2. 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Encoded the fresh regression-guard falsifier check into the TFD block and de-duped the §Shutdown ephemeral roster to a §Lifecycle cross-ref. Net +2 (307→309). PA impl-plan approval + doubled-panel shared-brief pre-computation deferred to Phase 2 (both need team-lead/senior wiring).
+
+### Changes
+- AMPLIFY: TFD block now flags a success-path-only regression guard/smoke test as indistinguishable from a no-op — require the failing-input assertion. Signal: local pitfall 2026-06-30 (falsifier never confirmed).
+- CULL: de-duped the §Shutdown ephemeral roster to "(roster at §Lifecycle)" — matches the existing L59 cross-ref pattern. Signal: Consolidation (roster listed twice).
+- Deferred: PA impl-plan approval (advisor-as-approver) + shared-brief pre-computation → Phase 2 (cross-cutting; need team-lead + senior-engineer counterparts).
+
+### Dimensions Evaluated
+All 8. 2 (Actionability) AMPLIFY. 5 (Consolidation) CULL. 6 (Capability Growth) → PA + shared-brief deferred. 1/3/4/7/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

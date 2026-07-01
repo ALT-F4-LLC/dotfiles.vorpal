@@ -198,7 +198,7 @@ Before invoking `Write`, verify in the calling agent's context:
    in frontmatter is a defect.
 3. **`maturity` value** — within the allowed set defined under Field rules above.
 4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed. Count only `##` headings at column 0 *outside* ``` code fences — a PRD that documents another doc/skill may embed `##`/`###` example headings inside fences; those are content, not structure.
-5. **Mermaid presence** — at least one ` ```mermaid ` fenced block in the body.
+5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (for example, `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails because it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
 7. **Success Metrics concreteness** — every bullet/item under the Success Metrics

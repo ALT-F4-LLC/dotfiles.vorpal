@@ -1,0 +1,2 @@
+{"type": "assistant", "sessionId": "sess-syn", "timestamp": "2026-06-30T12:00:00.000Z", "message": {"model": "<synthetic>", "id": "msg-2026-06-30T12:00:00.000Z", "content": [{"type": "text", "text": "\u2026"}]}}
+{"type": "assistant", "sessionId": "sess-syn", "timestamp": "2026-06-30T12:00:10.000Z", "message": {"model": "<synthetic>", "id": "msg-2026-06-30T12:00:10.000Z", "content": [{"type": "text", "text": "\u2026"}]}}

@@ -74,6 +74,7 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 3. Every skill named in a team-lead spawn template / orchestration prose exists and is registered.
 4. Deployed-vs-project-local is respected: a skill relied on at deployed (`~/.claude`) runtime must live under top-level `skills/` (only that root is symlinked per `src/user.rs`); a `.claude/skills/`-only skill is project-local. Flag any deployed-runtime reliance on a `.claude/skills/`-only skill.
 5. No dead/unregistered refs (a `Skill(x)` or frontmatter entry pointing at a non-existent dir).
+6. **Protocol-message emitter/ownership** — for each harness protocol message (`shutdown_request`/`_response`, `plan_approval_request`/`_response`) threaded through the family, verify every cross-ref's EMITTER: only the spawner (team-lead) emits a `_response`; peer/advisor/reviewer roles must "deliver verdict/review to team-lead", never "emit the structured `_response`". Cross-check parallel roles — the coherent ones reveal the outlier. This is a cross-file invariant no single per-agent reviewer can see.
 
 **Detection (seeds).**
 - Registry: `for d in skills/*/ .claude/skills/*/; do dir=$(basename "$d"); name=$(awk -F': ' '/^name:/{print $2; exit}' "$d/SKILL.md"); echo "$dir|$name|$d"; done` — flag rows where `dir != name`.

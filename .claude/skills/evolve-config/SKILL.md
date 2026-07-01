@@ -280,7 +280,7 @@ Mine three read-only sources for signals that a CONFIG SETTING is causing fricti
    - **Sandbox friction:** `"Operation not permitted"`, `dangerouslyDisableSandbox`, sandbox denial strings tied to a command/path/domain — each is a candidate sandbox-rule change. De-dupe by distinct command/path + session.
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals.
    - Operator-correction phrases after a config-related turn: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Extract ≤240-char excerpts.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — ground truth. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c`. Non-pinned spawns run `claude-opus-4-8` via classifier fallback. Report distribution; any model/effort env recommendation MUST be grounded in these measured models.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — ground truth. Run `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`. Non-pinned spawns run `claude-opus-4-8` via classifier fallback. Report distribution; any model/effort env recommendation MUST be grounded in these measured models.
 2. **`~/.claude/history.jsonl`** (`display` field carries operator input, `timestamp` epoch-ms): `grep -E '"display":"/evolve-config' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`).
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `*/*.md`, relative to repo; dir may not exist — treat absence as `none`): `grep -lri 'permission\|sandbox\|allow rule\|settings\|config' .claude/agent-memory/ 2>/dev/null` — durable lessons about config friction.
 <!-- CANONICAL:HARVEST:BEGIN -->
@@ -326,13 +326,13 @@ If a category is empty, write `none` — do not omit the line. After the block, 
 ```
 Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT config settings for the Claude Code genome — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read src/user/claude_code.rs (available setters) and src/user.rs (current call chain) and surface concrete settings opportunities beyond what friction-correction alone would find. Use WebSearch/WebFetch for external discovery (new settings fields, sandbox/hook primitives) and Grep/Read for internal pattern discovery.
+MISSION: Discover NEW and MORE-EFFICIENT config settings for the Claude Code genome — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE config automation: manual, repetitive, or error-prone setup/verification steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read src/user/claude_code.rs (available setters) and src/user.rs (current call chain) and surface concrete settings opportunities beyond what friction-correction alone would find. Use WebSearch/WebFetch for external discovery (new settings fields, sandbox/hook primitives) and Grep/Read for internal pattern discovery.
 
 Target: the Claude Code config genome.
 
 ## Task — identify opportunities in these four areas:
 1. **New Settings**: Available `claude_code.rs` setters NOT yet called in `src/user.rs`, or newly-shipped platform fields with no setter yet, that would improve the dev experience (e.g. a permission/sandbox/hook/env setting the platform now supports).
-2. **Efficiency Gains**: Permission/sandbox rules that could be broadened to cut prompt friction without widening blast radius; env or model-routing settings that reduce cost/latency.
+2. **Efficiency Gains & Reliable Automation**: Permission/sandbox rules that could be broadened to cut prompt friction without widening blast radius; env or model-routing settings that reduce cost/latency, **or manual setup/verification steps that could be made DETERMINISTIC by codifying them as a repeatable script (e.g. under `.claude/scripts/`)**; **prefer automating any step whose result currently varies by hand-execution.**
 3. **Settings to Retire**: Config values that were once necessary but are now obsolete, superseded by a platform default, or contradicted by a newer setting.
 4. **Cross-Surface Opportunities**: Settings that interact (e.g. a hook + an env var, a sandbox domain + a permission rule) that should be tuned together.
 
@@ -347,7 +347,7 @@ Emit one findings block, then SendMessage the orchestrator verbatim:
 
 ### Config Innovation
 - New Settings: <1-3 bullets, each naming the setter, or "none">
-- Efficiency Gains: <1-3 bullets, or "none">
+- Efficiency Gains & Reliable Automation: <1-3 bullets, or "none">
 - Settings to Retire: <1-3 bullets, or "none">
 - Cross-Surface Opportunities: <1-3 bullets, or "none">
 ```
@@ -366,8 +366,8 @@ Target: the Claude Code config genome — specifically `model`, `effort_level`, 
 ## Task
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes, to inform the config's model/effort env settings. Report only factual, evidence-cited findings.
 
-1. **Per-spawn model distribution** — for each session in window with subagents:
-   `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c`
+1. **Per-spawn model distribution** — across the audit window:
+   `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
    Report DISTINCT counts per model. This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — correlate each model with:

@@ -44,7 +44,7 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 ## Pre-flight
 
-1. **Verify docket is available** — `docket version --quiet` (canonical liveness check; vote ships in the same binary).
+1. **Verify docket is available and initialized** — `docket version --quiet` confirms the binary (vote ships in the same binary). Then confirm a docket DB exists: `docket vote list >/dev/null 2>&1` exits non-zero with `no docket database found` on a repo with no DB. If missing, do NOT let the later `docket vote create` hard-fail mid-protocol — **standalone mode**: use `AskUserQuestion` to ask whether to run `docket init` (creates the DB in the cwd) or abort; **team mode**: `send_input` team-lead that the repo has no docket DB and await direction (DB location is an orchestrator decision, so never silently run `docket init`).
 2. **Classify criticality** — Apply the Criticality Classification table below to the proposal. In team mode, prefer caller-specified criticality (e.g., "criticality: high") and skip re-classification.
 3. **Confirm goal-alignment (HARD GATE)** — Do not proceed past this gate until the goal is confirmed.
    - **Standalone mode**: `AskUserQuestion` with three questions: (1) header `Decision`, options `Confirm` (framing is accurate) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options `Confirm {classified-level}` (with one-line rationale in description) / `Override` (follow-up free-text or 4-option pick: `low`/`medium`/`high`/`critical`).
@@ -176,7 +176,7 @@ Codex may fail stalled subagents at 10 minutes. Also handle: spawn_agent() spawn
 
 ### Recording Votes
 
-After each reviewer returns, cast their vote using the JSON block from the reviewer's output (see Reviewer Prompt Template `### Findings JSON`) as the primary path; fall back to the plaintext heredoc only when the JSON block is malformed or absent.
+After each reviewer returns, cast their vote using the JSON block from the reviewer's output (see Reviewer Prompt Template `### Findings JSON`) as the primary path. ALWAYS pass findings via the stdin heredoc (`--findings-json -` / `--findings -`) shown below, NEVER inline as a `--findings-json "..."` argument — reviewer prose can contain `!` (zsh history-expansion inside double quotes) or stray backslashes that corrupt the payload and surface as `--findings-json is not valid JSON: invalid character ... in string escape code` (exit 3). The `<<'EOF'` single-quoted delimiter passes the body literally. If a `--findings-json` cast still exits non-zero with a JSON parse error (reviewer emitted malformed JSON), retry the SAME cast with the plaintext `--findings -` heredoc — do not skip recording the vote.
 
 ```bash
 # Primary: structured JSON (preferred — preserves blocker/concern/suggestion arrays for docket aggregation)

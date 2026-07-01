@@ -16,9 +16,9 @@ use opencode::{
 use opencode_tui::Config as OpenCodeTuiConfig;
 use std::collections::BTreeMap;
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue, delta::Delta,
-    direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, jj::Jj, jq::Jq,
-    just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
+    abtop::Abtop, awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue,
+    delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr,
+    hunk::Hunk, jj::Jj, jq::Jq, just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
     lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, op::Op, opencode::Opencode,
     pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
     tree_sitter::TreeSitter, typescript::Typescript,
@@ -57,6 +57,7 @@ impl UserEnvironment {
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         // Dependencies
 
+        let abtop = Abtop::new().build(context).await?;
         let awscli2 = Awscli2::new().build(context).await?;
         let bash_language_server = BashLanguageServer::new().build(context).await?;
         let bat = Bat::new().build(context).await?;
@@ -71,6 +72,7 @@ impl UserEnvironment {
         let gopls = Gopls::new().build(context).await?;
         let gum = Gum::new().build(context).await?;
         let herdr = Herdr::new().build(context).await?;
+        let hunk = Hunk::new().build(context).await?;
         let jj = Jj::new().build(context).await?;
         let jq = Jq::new().build(context).await?;
         let just = Just::new().build(context).await?;
@@ -168,7 +170,7 @@ impl UserEnvironment {
                     "command",
                 )
                 .with_include_git_instructions(false)
-                .with_model("opus")
+                .with_model("claude-opus-4-8[1m]")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
@@ -308,7 +310,7 @@ impl UserEnvironment {
                 .with_show_thinking_summaries(true)
                 .with_skill_listing_budget_fraction(0.02)
                 .with_spinner_tips_enabled(false)
-                .with_status_line("bash ~/.claude/statusline.sh")
+                .with_status_line("bash ~/.claude/abtop-statusline.sh")
                 .with_status_line_padding(0)
                 .with_sandbox_enabled(true)
                 .with_sandbox_fail_if_unavailable(true)
@@ -918,6 +920,7 @@ impl UserEnvironment {
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
                 // Dependencies
+                abtop,
                 awscli2,
                 bat,
                 delta,
@@ -929,6 +932,7 @@ impl UserEnvironment {
                 git,
                 gum,
                 herdr,
+                hunk,
                 jj,
                 jq,
                 just,

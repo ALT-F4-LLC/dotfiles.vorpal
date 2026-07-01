@@ -1,6 +1,14 @@
 lockfile = 1
 
 [[sources]]
+name = "abtop"
+path = "https://github.com/graykode/abtop/releases/download/v0.5.1/abtop-aarch64-apple-darwin.tar.xz"
+includes = []
+excludes = []
+digest = "5a287568e0a5c5d801e3bbb024171aa95caac3ef466db976dedebb978e65a63a"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "awscli2"
 path = "https://awscli.amazonaws.com/AWSCLIV2-2.33.1.pkg"
 includes = []

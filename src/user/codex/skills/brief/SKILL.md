@@ -20,7 +20,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose.
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. If the request references a Docket issue by ID (for example, `brief: implement DKT-26`), do NOT attempt shell or `docket` access to fetch the body — those tools are disallowed in this leaf skill and retrying variants only stalls intake against the permission gate; instead ask the operator to paste the issue body, or use the Docket-ID fallback: emit the brief with the bare issue ID as the placeholder Goal and note that the issue body was unavailable.
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 

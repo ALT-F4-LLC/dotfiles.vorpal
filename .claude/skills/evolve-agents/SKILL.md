@@ -151,7 +151,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
-**Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the agent forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add.
+**Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the agent family; applying one reviewer's isolated recommendation breaks parity, and per-agent reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the agent forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add. When a Phase-2 change flips a cross-cutting DEFAULT/mechanism (e.g. teammate→report-only subagent), sweep EVERY SendMessage-dependent assertion in each affected agent — ack-on-dispatch, progress signal, peer-routing, closeout — not just shutdown; a report-only subagent has no SendMessage, so a partially-swept agent ships half-reconciled.
 
 **Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target agent, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the agent files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly) rather than silently dropping it. Phase 1 never Edits/Writes/deletes any `pitfalls.md` — the agent-facing contract stays append-only; boundedness of THIS repo's pitfalls files is owned by the Phase 4 History Compaction phase per ADR 0001, and cross-project pitfalls files remain read-only ingest.
 
@@ -271,7 +271,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
    - `-r2` respawn convention (canonical from `agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
    - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c` for each session where the agent spawned subagents. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
 5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
@@ -305,13 +305,13 @@ If a category is empty for an agent, write `none` — do not omit the line. Afte
 ```
 Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT ways for agents to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read agents/*.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
+MISSION: Discover NEW and MORE-EFFICIENT ways for agents to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE process simplification/automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read agents/*.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
 
 Target agents: {target_agents}
 
 ## Task — for EACH target agent, identify opportunities in these four areas:
 1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the agent definition that could improve effectiveness (e.g. new Claude model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
-2. **Efficiency Gains**: Steps, workflows, or verification loops that could be shortened, parallelized, or eliminated without sacrificing correctness.
+2. **Efficiency Gains & Reliable Automation**: Steps, workflows, or verification loops that could be shortened, parallelized, eliminated, **or made DETERMINISTIC by codifying them as a repeatable script (e.g. under `.claude/scripts/`)** — without sacrificing correctness; **prefer automating any step whose result currently varies by hand-execution.**
 3. **Patterns to Retire**: Agent behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
 4. **Cross-Agent Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the agent family more effective as a whole (not just individually).
 
@@ -324,7 +324,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 
 ### Agent: <agent-name>
 - New Approaches: <1-3 bullets, or "none">
-- Efficiency Gains: <1-3 bullets, or "none">
+- Efficiency Gains & Reliable Automation: <1-3 bullets, or "none">
 - Patterns to Retire: <1-3 bullets, or "none">
 - Cross-Agent Opportunities: <1-3 bullets, or "none">
 ```
@@ -343,8 +343,8 @@ Target agents: {target_agents}
 ## Task
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
 
-1. **Per-spawn model distribution** — for each session where a target agent spawned subagents, run:
-   `grep -oh '"model":"[^"]*"' ~/.claude/projects/<session>/subagents/*.jsonl | sort | uniq -c`
+1. **Per-spawn model distribution** — across the audit window, run:
+   `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
    Report DISTINCT counts per model per agent role. This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — for each agent/model pair observed, correlate with:
@@ -477,7 +477,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    consistent terminology, handoff patterns work both ways
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
-5. Verify the cross-project pitfalls harvest protocol (Phase 0 scan command) is byte-symmetric between evolve-agents and evolve-skills except for the per-file agent-vs-skill mapping; flag any drift.
+5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the four byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir). Flag any drift.
 6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
 7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
 8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent_name` label in PromQL → `skill_name`; "target agents" → "target skills"); flag any drift.

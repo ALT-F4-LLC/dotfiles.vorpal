@@ -1,5 +1,52 @@
 # Changelog: sdet
 
+## 2026-06-30
+
+### Summary
+Phase 3 disambiguation polish: sharpened the report-only default verifier wording so it doesn't blur the report-only-vs-teammate distinction. Net 0.
+
+### Changes
+- DISAMBIG polish: "one ephemeral covers BOTH..." → "one report-only worker covers BOTH...". Signal: Phase 3 remaining-issue ("ephemeral" overloaded vs Rule 7 teammate lifecycle).
+
+### Dimensions Evaluated
+Phase 3 disambiguation.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Phase 2 coherence: reconciled the DEFAULT lone `verifier` to run as a report-only subagent (mirrors team-lead step 15) across Lifecycle / comm rule 6 / Verifier Composition / Shutdown + 5 scope-notes (comm rules 2, 7, 8, Inter-Agent matrix, step 5 closeout) so the no-SendMessage path is coherent; added the incoming abuse-case consult trigger; chained the test-infra claim. Net +1 (476→477).
+
+### Changes
+- AMPLIFY: DEFAULT single `verifier` = report-only subagent (plain-text verdict to team-lead, no shutdown handshake); paired-panel verifiers stay ephemeral teammates. Signal: team-lead step 15 (Distribution-Mechanism Gate).
+- AMPLIFY: 5 scope-notes clarifying the SendMessage-based rules (ack, progress, matrix routing, closeout) apply to teammate/paired paths; the report-only default returns its verdict to team-lead, who routes. Signal: coherence (report-only has no SendMessage).
+- AMPLIFY: incoming trigger — @security-engineer plan-phase abuse-case consult on a no-TDD security change → reply with abuse cases before the diff (FIX 5, mirrors security outgoing).
+- Aligned test-infra claim to the chained one-call (FIX 7).
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY + coherence reconciliation. 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Folded one new cross-project pitfall (GitOps selfHeal signal-timing) and one path-handling guard (EISDIR) into existing lines, offset by deduping the TFD FIX-verdict restatement. Net 0 (476→476). Two live-cluster Phase 0 items (kind-reaping, Monitor/~/.kube/config) already covered — not re-added. verifier-as-report-only-subagent flagged to Phase 2 (team-lead-owned).
+
+### Changes
+- CULL: line 322 FIX-verdict ladder restated the TFD-LOCAL block (lines 269-275); collapsed to a terse cross-ref, both verdict poles preserved. Signal: Consolidation HIGHEST.
+- AMPLIFY: GitOps selfHeal:true reverts hand-applied resources — capture real-system signal AFTER sync, folded into verification discipline (c). Signal: cross-project pitfall ×2 repos.
+- AMPLIFY: EISDIR directory-path guard folded into Verification Workflow step 2. Signal: the one real is_error in the historical audit.
+
+### Dimensions Evaluated
+All 8. 2 (Actionability) AMPLIFY (EISDIR). 4 (Completeness) AMPLIFY (selfHeal). 5 (Consolidation) AMPLIFY (TFD dedup). 1/3/6/7/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-21
 
 ### Summary

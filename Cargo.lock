@@ -1353,9 +1353,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-pki-types"
-version = "1.14.1"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30a7197ae7eb376e574fe940d068c30fe0462554a3ddbe4eca7838e049c937a9"
+checksum = "764899a24af3980067ee14bc143654f297b22eaebfe3c7b6b211920a5a59b046"
 dependencies = [
  "web-time",
  "zeroize",
@@ -1994,7 +1994,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-artifacts"
 version = "0.1.0"
-source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#6fa96bed1de54eacf42325f6d13976df7d49ab8b"
+source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#1ba57baa22a84af1f175f613feb9d447833def58"
 dependencies = [
  "anyhow",
  "indoc",

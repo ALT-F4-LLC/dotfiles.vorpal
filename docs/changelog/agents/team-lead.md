@@ -1,5 +1,56 @@
 # Changelog: team-lead
 
+## 2026-06-30
+
+### Summary
+Phase 3 disambiguation: clarified the `verifier` name collision, distinguished the PA impl plan from the PM phase plan, and made advisor TDD-conformance plan-routing explicit. Net 0.
+
+### Changes
+- DISAMBIG (confusable-name): step 15 "ephemeral-teammate `verifier`" → "paired ephemeral-teammate verifiers (`verifier-criteria`/`verifier-integration`)" — the lone `verifier` is report-only, never a teammate.
+- DISAMBIG (term overload): step 11 "read-only plan" → "read-only implementation plan (distinct from the PM phase/decomposition plan the operator approves at step 10)".
+- DISAMBIG (overlapping-ownership): step 11 now routes TDD-bearing plans to `advisor` for TDD-conformance review (aligns staff Impl-plan review), then additionally to security-advisor/ux-advisor for security/spec'd surfaces.
+
+### Dimensions Evaluated
+Phase 3 disambiguation (confusable-name, term-overload, overlapping-ownership).
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+Phase 2 cross-cutting (operator-approved). Adopted the PA plan-approval overlay for risky dispatches; defaulted the lone step-15 verifier to a report-only subagent; added a shared pre-computed reviewer brief (Rule 8) + parallel `planner-{slug}` Large-Task decomposition; aligned the senior-template claim wording to the chained one-call. Net +2 (661→663). Trial: PA plan-approval overlay adopted family-wide → applied (measure next cycle).
+
+### Changes
+- AMPLIFY: step 11 Plan-approval (PA) overlay — dispatch @senior-engineer `mode="plan"`, team-lead emits `plan_approval_response`, route security/spec'd plans to security-advisor/ux-advisor. Signal: Phase 0 innovation (PA = top unused lever).
+- AMPLIFY: step 15 lone verifier → report-only subagent per Distribution-Mechanism Gate. Signal: Phase 0 innovation + internal incoherence.
+- AMPLIFY: Rule 8 shared pre-computed brief (`git diff --stat` + spec excerpts + `cargo audit` keyed to Cargo.lock hash). Signal: Phase 0 efficiency (redundant re-runs across panels).
+- AMPLIFY: Large-Task parallel `planner-{slug}` decomposition counterpart to PM's surfaced option.
+
+### Dimensions Evaluated
+6 (Capability Growth) AMPLIFY×3 + coherence alignment (claim wording). 1/2/3/4/5/7/8 RETAIN.
+
+### Rename
+No rename.
+
+## 2026-06-30
+
+### Summary
+TRIM cycle, within-file safe whole-line trims (-6) + EI effort correction (net 0). Net -6 (667→661). PA overlay + verifier-as-report-only deferred to Phase 2 (operator-gated, cross-cutting). PRIMARY budget lever — relocating the Truth-First-Debugging MASTER out of the debugging-forbidden orchestrator — deferred to an evolve-coherence/ADR follow-up (deleting the master with no replacement is unsafe within one agents cycle); file stays >500 this cycle.
+
+### Changes
+- CULL: removed restating "The tell" line (dup of FORBIDDEN bullet + Per-turn self-audit). Signal: Consolidation; low historical violation rate (1 correction/72 sessions).
+- CULL: collapsed two Alignment example bullets into their blockquote (kept the "question exists" nuance). Signal: Consolidation (restated the preceding blockquote).
+- CULL: folded "Subagent-branch availability" paragraph into the Distribution-Mechanism Gate item 2. Signal: Consolidation.
+- AMPLIFY (Spec Alignment, EI): corrected stale effort claim — teammates DO inherit the lead's SESSION effort (v2.1.186); only the definition's `effort:` FRONTMATTER is unhonored on the teammate path.
+- Deferred: PA plan-approval overlay + lone-verifier→report-only-subagent → Phase 2 (operator-gated). TFD-MASTER relocation → evolve-coherence/ADR.
+
+### Dimensions Evaluated
+All 8. 5 (Consolidation) CULL×3 (structural relocation deferred). 7 (Spec Alignment) AMPLIFY (EI). 6 (Capability) → PA + verifier deferred to Phase 2. 1/2/3/4/8 RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-06-20
 
 ### Summary

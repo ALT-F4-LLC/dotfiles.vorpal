@@ -1292,4 +1292,28 @@ mod tests {
         assert!(content.contains("[features]"));
         assert!(content.contains("[tools]"));
     }
+
+    #[test]
+    fn serializes_otel_metrics_exporter_otlp_http() {
+        let content = toml::to_string_pretty(
+            &Codex::new("codex", Vec::new()).with_otel(Otel {
+                metrics_exporter: Some(
+                    toml::Value::try_from(serde_json::json!({
+                        "otlp-http": {
+                            "endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
+                            "protocol": "binary",
+                        },
+                    }))
+                    .expect("test OTel metrics exporter config should be TOML-serializable"),
+                ),
+                ..Default::default()
+            }),
+        )
+        .expect("codex config should serialize OTel metrics exporter to TOML");
+
+        assert!(content.contains("[otel.metrics_exporter.otlp-http]"));
+        assert!(content
+            .contains("endpoint = \"https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics\""));
+        assert!(content.contains("protocol = \"binary\""));
+    }
 }

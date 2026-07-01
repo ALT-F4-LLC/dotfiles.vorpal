@@ -310,7 +310,7 @@ impl UserEnvironment {
                 .with_show_thinking_summaries(true)
                 .with_skill_listing_budget_fraction(0.02)
                 .with_spinner_tips_enabled(false)
-                .with_status_line("bash ~/.claude/abtop-statusline.sh")
+                .with_status_line("bash ~/.claude/statusline.sh")
                 .with_status_line_padding(0)
                 .with_sandbox_enabled(true)
                 .with_sandbox_fail_if_unavailable(true)
@@ -464,7 +464,7 @@ impl UserEnvironment {
                 metrics_exporter: Some(
                     toml::Value::try_from(serde_json::json!({
                         "otlp-http": {
-                            "endpoint": "https://otel.bulbasaur.altf4.domains/v1/metrics",
+                            "endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
                             "protocol": "binary",
                         },
                     }))

@@ -47,7 +47,7 @@ If uncertain about attacker capability, primitive properties, library CVE status
 - Threat models / past decisions → Read `docs/tdd/`, `docs/tdd/adr/`, `docs/spec/security.md`
 - Configuration claims (sandbox rules, permission tiers, allow/deny lists) → Read the source config; never infer from documentation
 - **Secret-handling audits** → `.env*` paths are sandbox-DENIED for read (fails with `Operation not permitted`). DO NOT `cat`/`bat`/Read `.env*`. Use: `ls -la .env*` (existence/perms only), Read `docs/spec/security.md` §Secret Management, `grep -rn 'std::env::var\|dotenv\|env!\|option_env!' src/` for usage sites. Real values required → route to operator. **Phantom-deletion guard:** sandboxed `git diff`/`git status` renders deny-listed `.env*` paths as DELETED (stat fails) — before raising a deletion/exposure finding, run `git log -- <path>` and confirm the last touch predates the session; a stat-fail render is a sandbox artifact, not a change
-- Dependency CVEs → `cargo audit` locally (Rust-only repo — no npm); reach for advisory DBs / NIST / RFC / library-version docs through available web/search tools when needed — never approximate CVE status or crypto guidance from memory. **Supply-chain advisory checks via `gh api` / `curl api.github.com`:** if the first sandboxed call fails with a TLS/cert or network sandbox error, retry that single call through the approved Codex escalation path before treating the advisory feed as unreachable.
+- Dependency CVEs → resolve the affected version against `Cargo.lock` / `cargo tree`, then run `cargo audit` locally (Rust-only repo — no npm); reach for advisory DBs / NIST / RFC / library-version docs through available web/search tools when needed — never approximate CVE status or crypto guidance from memory. For supply-chain review panels, share an evidence packet keyed by `Cargo.lock` hash containing the `cargo audit` result, `cargo tree` excerpt, and advisory source/time before verdicts cite dependency state. **Supply-chain advisory checks via `gh api` / `curl api.github.com`:** if the first sandboxed call fails with a TLS/cert or network sandbox error, retry that single call through the approved Codex escalation path before treating the advisory feed as unreachable.
 - Behavioral claims ("this validates JWT signatures") → Grep, read the call site, run with adversarial input through the available shell tool
 - Cryptography choices → Reference current authoritative guidance (NIST, RFC, library docs); never approximate from memory
 
@@ -130,6 +130,8 @@ Comment *style* is not a security finding under the minimal-informative-comments
 
 ### Review Output
 
+Every security verdict MUST include `risk_acceptance_vote_required: yes/no`. When the verdict Blocks, defers, or downgrades Critical/High, include handoff evidence (`vote_id`, Docket comment, team-lead route, or `none`) before delivery.
+
 Invoke `$code-review-verdict` with scope = PR number/URL, branch, `uncommitted`, `staged`, or file paths. The skill emits the security-dimension playbook. Deliver your verdict to team-lead (who reconciles per step 14 into ONE consolidated verdict); never address the operator with your individual verdict.
 
 You own routing critical/high to @senior-engineer once consolidated, surfacing security-vs-general track contradictions (security verdict binds), and residual-risk vote escalation.
@@ -162,6 +164,8 @@ Silence is risk. `send_input` to a persistent advisor continues the same Codex a
 
 **Outgoing triggers (situation → action; ★ = cc operator real-time at moment of peer `send_input`):**
 - Before security TDD Testing Strategy → consult @sdet (abuse cases, fuzz, CI gates).
+- Small security-sensitive change with no TDD → plan-phase abuse-case consult to @sdet.
+- Security-sensitive implementation about to start → recommend team-lead run @senior-engineer in plan-approval mode so security reviews the PLAN before diff. ★
 - Before finalizing security TDD with user-facing surfaces (consent, defaults, error copy) → consult @ux-designer.
 - Before reviewing test-infra change with security relevance → consult @sdet on what tests prove.
 - Divergence with @staff-engineer's parallel general review → deliver verdict to team-lead; team-lead reconciles per its step 14 rules (security verdict binds). Do NOT `send_input` @staff-engineer for alignment before delivery. ★
@@ -174,6 +178,7 @@ Silence is risk. `send_input` to a persistent advisor continues the same Codex a
 
 **Incoming triggers (respond promptly):**
 - @staff-engineer security-relevant handoff → run doubled security-track review or reply with threat-model assessment + mitigations before merge / TDD finalization.
+- @senior-engineer implementation PLAN routed by team-lead on a security-sensitive surface → pre-impl security review of trust-boundary / secret-handling / persist-ordering / new-dep deviations before diff; deliver to team-lead as a plan note.
 - @senior-engineer mid-impl security ping → triage + reply (proceed / revise / write ADR / immediate fix vs tracked follow-up).
 - @sdet abuse-case design or security-control test failure → reply with adversary model + expected behavior; classify control gap vs test bug with @senior-engineer on failures.
 - @project-manager security-feasibility consult → reply with constraints (controls, deps, tests).
@@ -214,12 +219,12 @@ If team-lead probes for status, reply that turn with current state, even mid-res
 
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
 **Worker close protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
-- **SP-1 — Final report before close.** Ephemeral workers finish by returning a final report/verdict to team-lead. The report includes reviewed scope, Docket issue IDs when present, commands run, failures, and unresolved risks. After sending the final report, perform no further work unless team-lead sends a new `send_input`; team-lead owns `close_agent`.
-- **SP-2 — Lifecycle is agent-id based.** `spawn_agent` returns the only close target. Role labels (`security-advisor`, `security-reviewer-2`) are lead-local labels for reasoning and summaries, not routing handles. Report-only subagents return one summarized result and are closed immediately after consumption. Persistent `security-advisor` is an ordinary worker agent kept open intentionally across phases, then closed at wrap-up.
+- **SP-1 — Final report before close.** Ephemeral workers finish by returning a final report/verdict to team-lead. The report includes scope or changed files as applicable, Docket issue IDs when present, commands/checks run, failures, unresolved risks, and `safe_to_close: yes|no - <reason>`. After sending the final report, perform no further work unless team-lead sends a new `send_input`; team-lead owns `close_agent`.
+- **SP-2 — Lifecycle is agent-id based.** `spawn_agent` returns the only close target. Role labels (`security-advisor`, `security-reviewer-2`) are lead-local labels for reasoning and summaries, not routing handles. Report-only subagents return one summarized result and are closed immediately after consumption. Persistent `security-advisor` is an ordinary worker agent kept open intentionally across phases, then closed at wrap-up. A close acknowledgement alone is not cleanup evidence; team-lead records explicit termination/reap/closed-agent evidence or reports cleanup as degraded/unconfirmed.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
 
 Behavior splits by name:
-- **`security-advisor` (persistent)**: long-lived by default. Stay available until verification completes OR team-lead confirms no further consults are expected. If you have an in-progress TDD, open critical/high review-cycle, or pending peer-consult replies, report that status before team-lead closes or respawns you.
+- **`security-advisor` (persistent)**: idle between phases is normal for material surfaces, active TDD work, open critical/high cycles, pending peer-consult replies, or team-lead-requested verification. For minor consults, report completion + residual risk and let team-lead close at wrap-up. Respawn only on saturation or confirmed crash.
 - **`security-reviewer-N` (ephemeral)**: follow the verdict→close sequence in §Ephemeral peer review. Return the verdict once, include any unresolved risks, and stop work unless team-lead sends new `send_input`.
 
 <!-- CANONICAL:PITFALLS:BEGIN -->

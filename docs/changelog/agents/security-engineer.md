@@ -1,5 +1,49 @@
 # Changelog: security-engineer
 
+## 2026-07-01
+
+### Summary
+Phase 3 Disambiguation follow-up: normalized security shutdown report fields.
+
+### Changes
+- DISAMBIG: updated local SP-1 to require scope or changed files, checks run, unresolved risks, and explicit `safe_to_close` close readiness.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation; shutdown schema.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 2 coherence follow-up: aligned security local shutdown copy with master cleanup-evidence semantics.
+
+### Changes
+- FIX: SP-2 now states close acknowledgement alone is not cleanup evidence; team-lead records explicit closed-agent evidence or degraded cleanup.
+
+### Dimensions Evaluated
+Canonical shutdown sense parity, close handling.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: security plan handoffs and risk acceptance fields -> applied.
+
+### Changes
+- AMPLIFY: plan-phase abuse-case + plan-approval security PLAN handoffs; CVE evidence now resolves `Cargo.lock` / `cargo tree` and panel packets before dependency verdicts.
+- AMPLIFY: verdicts require `risk_acceptance_vote_required` plus handoff evidence for Blocks, deferrals, or Critical/High downgrades.
+- CULL: persistent `security-advisor` close handling now uses active-obligation semantics and minor-consult wrap-up.
+
+### Dimensions Evaluated
+Capability Growth, Completeness, Cross-Communication, Lifecycle Semantics.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

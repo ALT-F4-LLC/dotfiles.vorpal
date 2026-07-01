@@ -1,5 +1,34 @@
 # Changelog: project-manager
 
+## 2026-07-01
+
+### Summary
+Phase 2 coherence follow-up: added PM's local shutdown protocol copy.
+
+### Changes
+- FIX: added `CANONICAL:SHUTDOWN-PROTOCOL-LOCAL` for `planner` / `planner-fix-{N}` lifecycle and close evidence semantics.
+
+### Dimensions Evaluated
+Canonical shutdown parity, planner lifecycle.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: PM delta planning and collision evidence -> applied.
+
+### Changes
+- AMPLIFY: added planner-fix delta mode, deterministic Collision table, Worker Handoff, final PM close-state verification, and situational Mermaid guidance.
+- FIX: corrected Docket doc-link syntax and file attachment examples to `--issue` / repeatable `--file`.
+
+### Dimensions Evaluated
+Phase 1 targeted fixes: Docket CLI accuracy, delta planning, collision evidence, worker/final closeout, plan-summary ergonomics.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

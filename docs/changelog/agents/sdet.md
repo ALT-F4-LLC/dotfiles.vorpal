@@ -1,5 +1,65 @@
 # Changelog: sdet
 
+## 2026-07-01
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
+
+### Changes
+- Replaced the 2 oldest date-headed entries beyond the 10-entry keep-window with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (ADR 0001)
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 3 Disambiguation follow-up: clarified SDET report-only defect routing and shutdown report fields.
+
+### Changes
+- DISAMBIG: scoped defect Docket comments to interactive paired/test-infra spawns; lone verifier defects stay in the team-lead final report.
+- DISAMBIG: normalized SP-1 final-report schema with explicit `safe_to_close` close readiness.
+
+### Dimensions Evaluated
+Phase 3 Disambiguation; report-only routing; shutdown schema.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Phase 2 coherence follow-up: made lone `verifier` report-only semantics read-only across Docket and tests.
+
+### Changes
+- FIX: default report-only verifier no longer comments, reopens, or writes tests; findings return to team-lead for routing.
+- FIX: draft-TDD override Docket mirroring is scoped to team-lead or interactive spawns, not lone report-only verification.
+
+### Dimensions Evaluated
+Report-only lifecycle, Docket mutation scope, verifier composition.
+
+### Rename
+No rename.
+
+## 2026-07-01
+
+### Summary
+Trial: report-only verifier lifecycle -> applied. Phase 1 SDET-only edits aligned lifecycle/progress, verifier composition, risk-gated set-diff, TDD override handling, and `fix_owner` output.
+
+### Changes
+- AMPLIFY: default `verifier` is report-only: one final report to team-lead, no teammate `send_input`; paired verifiers and test-infra stay interactive.
+- AMPLIFY: risk-gated failing-test set diff; LIGHT checks may run targeted command only and state why full set-diff was not risk-justified.
+- AMPLIFY: explicit operator override required for normally blocking TDD gate; verdict relays append `fix_owner`.
+
+### Dimensions Evaluated
+Phase 1 approved edits: lifecycle, progress, composition, risk gate, TDD override, output contract.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary
@@ -181,38 +241,6 @@ Spec Alignment, Coherence, Boundary Clarity.
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Encoded the three historical-audit focus areas as within-line appends: verbatim-command verification, marker-derived (never hardcoded) sweep bounds, Monitor-sandbox + no-backgrounded-provisions. Re-verified the 2026-06-05 "already in verify-ac" NO-OP claim — rule absent from SKILL.md (grep-refuted), so encoded here; mirror routed to evolve-skills. Net -8 (348→340).
-
-### Changes
-- §Verification Workflow step 3: literal-command verbatim rule + marker-derived grep-sweep bounds (stale hardcoded ranges fail OPEN).
-- §Test Failure Diagnosis: Monitor is sandboxed (no credential paths — foreground poll loops); never background long provisioning commands.
-- Operating context: memory save-list deduped to §Shutdown Handling back-reference.
-- §Defect Analysis folded into §Bug Reporting opener (-4).
-- §Greenfield Test Strategy: 4-step list → single prose line (-4).
-
-### Dimensions Evaluated
-Actionability (3 historical focus areas), Consolidation & Trimming (3 trims), Spec Alignment (verify-ac NO-OP claim refuted), Boundary Clarity, Completeness, Role Realism, Capability Growth, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 fleet decision: added the docket cwd-outside-repo silent-no-op guard + reconcile-by-`updated_at` discipline to comm rule 7 (within the existing claim-convention line; count unchanged at 348). Covers sdet's `reopen`/`comment add`/test-infra `move` writes — recurring theme A.
-
-### Changes
-- Comm rule 7: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at`; a stale read is not a write-failure (reconcile by timestamp, never force-write).
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Rename
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -266,3 +294,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Phase 2 coherence — dangling `§6 continuity preamble` pointer removed (fleet sweep). Within-line.
 - 2026-06-05: Two Consolidation & Trimming dedups — step 2 claim convention, Shutdown Proactive idle-role enumeration. Net 0.
 - 2026-06-09: Consolidation — §Verification Output closeout recap collapsed to back-reference chain. Net 0.
+- 2026-06-09: Encoded historical-audit focus areas: verbatim commands, marker-derived sweep bounds, Monitor sandbox/no-background provisioning; net -8.
+- 2026-06-09: Added cwd-outside-repo docket no-op guard and `updated_at` reconcile discipline to comm rule 7; count unchanged.

@@ -7,6 +7,7 @@ description: >
   review, dependency evaluation, and code reviews. Never writes implementation code.
 color: blue
 effort: xhigh
+model: opus
 memory: project
 permissionMode: dontAsk
 skills:

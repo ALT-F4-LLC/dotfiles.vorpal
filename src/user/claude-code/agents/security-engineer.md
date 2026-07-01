@@ -11,6 +11,7 @@ description: >
   implementation code.
 color: orange
 effort: xhigh
+model: opus
 memory: project
 permissionMode: dontAsk
 skills:

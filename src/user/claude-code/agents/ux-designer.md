@@ -9,6 +9,7 @@ description: >
 color: purple
 permissionMode: dontAsk
 effort: high
+model: sonnet
 memory: project
 skills:
   - design-qa

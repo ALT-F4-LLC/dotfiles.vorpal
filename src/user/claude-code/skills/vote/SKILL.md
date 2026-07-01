@@ -260,6 +260,8 @@ SendMessage the COMPLETE structured review above to team-lead (your coordinator)
 {Insert the relevant checklist below based on the reviewer's agent type}
 ````
 
+CRITICAL-criticality proposals MAY upgrade reviewers to `fable` — upward-only, mirrors team-lead's escape hatch.
+
 | Agent | Checklist Focus |
 |---|---|
 | @staff-engineer | Architecture fit, backward compatibility, operational readiness, cross-cutting concerns, pattern adherence |

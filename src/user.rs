@@ -170,7 +170,7 @@ impl UserEnvironment {
                     "command",
                 )
                 .with_include_git_instructions(false)
-                .with_model("claude-opus-4-8[1m]")
+                .with_model("claude-fable-5")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")

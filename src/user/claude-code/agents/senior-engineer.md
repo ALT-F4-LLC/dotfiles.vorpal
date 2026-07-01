@@ -8,6 +8,7 @@ description: >
 color: green
 permissionMode: dontAsk
 effort: xhigh
+model: sonnet
 memory: project
 skills:
   - vote

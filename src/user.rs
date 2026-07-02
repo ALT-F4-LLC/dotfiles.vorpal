@@ -44,6 +44,8 @@ mod opencode_tui;
 const OTEL_LOGS_ENDPOINT: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
 const OTEL_METRICS_ENDPOINT: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
+const OPENCODE_MODEL: &str = "zai-coding-plan/glm-5.2";
+const OPENCODE_VARIANT: &str = "max";
 
 pub struct UserEnvironment {
     name: String,
@@ -484,8 +486,8 @@ impl UserEnvironment {
         let opencode_config =
             OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
                 .with_schema("https://opencode.ai/config.json")
-                .with_model("qwen3.6:27b")
-                .with_small_model("qwen3-coder-next:q4_K_M")
+                .with_model(OPENCODE_MODEL)
+                .with_small_model(OPENCODE_MODEL)
                 .with_autoupdate(AutoUpdate::Boolean(false))
                 .with_bash_permissions(vec![
                     // Default: ask for anything not explicitly allowed or denied
@@ -637,9 +639,24 @@ impl UserEnvironment {
                 )
                 .with_experimental_open_telemetry(true)
                 .with_agent(
+                    "build",
+                    AgentConfig {
+                        model: Some(OPENCODE_MODEL.to_string()),
+                        variant: Some(OPENCODE_VARIANT.to_string()),
+                        ..Default::default()
+                    },
+                )
+                .with_agent(
+                    "plan",
+                    AgentConfig {
+                        model: Some(OPENCODE_MODEL.to_string()),
+                        variant: Some(OPENCODE_VARIANT.to_string()),
+                        ..Default::default()
+                    },
+                )
+                .with_agent(
                     "staff-engineer",
                     opencode_agent(
-                        "qwen3.6:27b",
                         "blue",
                         "Technical architect and code reviewer. Produces TDDs in docs/tdd/ and ADRs in docs/tdd/adr/. Reviews senior-engineer changes. Never writes implementation code.",
                         include_str!("user/opencode/agents/staff-engineer.md"),
@@ -648,7 +665,6 @@ impl UserEnvironment {
                 .with_agent(
                     "senior-engineer",
                     opencode_agent(
-                        "qwen3-coder-next:q4_K_M",
                         "green",
                         "Senior software engineer focused on implementation quality. Writes code and edits source files. Does not produce design documents or perform code reviews.",
                         include_str!("user/opencode/agents/senior-engineer.md"),
@@ -657,7 +673,6 @@ impl UserEnvironment {
                 .with_agent(
                     "security-engineer",
                     opencode_agent(
-                        "qwen3.6:27b",
                         "orange",
                         "Staff-level Security Engineer. Owns security architecture, threat modeling, and security-focused review. Never writes implementation code.",
                         include_str!("user/opencode/agents/security-engineer.md"),
@@ -666,7 +681,6 @@ impl UserEnvironment {
                 .with_agent(
                     "project-manager",
                     opencode_agent(
-                        "qwen3-coder-next:q4_K_M",
                         "yellow",
                         "Technical project manager that decomposes work into structured Docket issues. Only plans — never writes code or edits source files.",
                         include_str!("user/opencode/agents/project-manager.md"),
@@ -675,7 +689,6 @@ impl UserEnvironment {
                 .with_agent(
                     "ux-designer",
                     opencode_agent(
-                        "qwen3-coder-next:q4_K_M",
                         "purple",
                         "UX designer and developer experience specialist. Produces design specs in docs/ux/. Does NOT write implementation code.",
                         include_str!("user/opencode/agents/ux-designer.md"),
@@ -684,7 +697,6 @@ impl UserEnvironment {
                 .with_agent(
                     "sdet",
                     opencode_agent(
-                        "qwen3.6:27b",
                         "red",
                         "Software Development Engineer in Test. Owns test infrastructure and verifies Docket issues against acceptance criteria. Does not write production code.",
                         include_str!("user/opencode/agents/sdet.md"),
@@ -1072,9 +1084,10 @@ fn codex_agent_role(
     }
 }
 
-fn opencode_agent(model: &str, color: &str, description: &str, prompt: &str) -> AgentConfig {
+fn opencode_agent(color: &str, description: &str, prompt: &str) -> AgentConfig {
     AgentConfig {
-        model: Some(model.to_string()),
+        model: Some(OPENCODE_MODEL.to_string()),
+        variant: Some(OPENCODE_VARIANT.to_string()),
         mode: Some(AgentMode::Subagent),
         color: Some(color.to_string()),
         description: Some(description.to_string()),

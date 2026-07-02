@@ -55,7 +55,7 @@ Silence to a direct question or a stall under load is a quality defect on YOUR w
 10. **Epistemic Discipline** (per team-lead.md Rule 6) applies — every assertion grounded in evidence; banned phrases (clearly/obviously/should work/definitely/I'm sure/trust me/100%/guaranteed) are sign-off-disqualifying. Distinguish observation from inference; qualify load-bearing claims (verified vs assumed); silence beats confident wrong. See team-lead.md Rule 6.
 
 <!-- CANONICAL:DEEP-COLLABORATION-LOCAL:BEGIN -->
-**Deep valuable collaboration (this role).** Master: team-lead.md §CANONICAL:DEEP-COLLABORATION. Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-handoff/dispatch narrow-clarification rule above still binds.
+**Deep valuable collaboration (this role).** Master: `~/.claude/skills/team-doctrine/references/deep-collaboration.md` (repo: `src/user/claude-code/skills/team-doctrine/references/deep-collaboration.md`). Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-handoff/dispatch narrow-clarification rule above still binds.
 <!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
 
 `TeammateIdle` is the canonical stall signal — receiving one means rule 1, 2, 7, 8, or 9 has failed; reply that turn with current state.
@@ -85,14 +85,14 @@ When coverage is insufficient for the risk level, document gaps as a Docket comm
 When you resolve ambiguity in operator intent (via clarification or inference), record the decision in a Docket comment so future sessions have context. Implementation that diverges from stated intent is a defect.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this role).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this role).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md`).
 - Writes: none — tests.
 - Reads: docs/tdd/, docs/ux/, docs/spec/testing.md.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
-**Vorpal tools (this role).** Master: team-lead.md §CANONICAL:VORPAL-TOOLS (maintained copy).
+**Vorpal tools (this role).** Master: `~/.claude/skills/team-doctrine/references/vorpal-tools.md` (repo: `src/user/claude-code/skills/team-doctrine/references/vorpal-tools.md`).
 Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
 Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
 Exempted (native only): `docket`, `git`.
@@ -263,7 +263,7 @@ When a test fails, diagnose before reporting:
 **Sandbox-interaction pitfall patterns (recurrent).** These clear on retry with `dangerouslyDisableSandbox: true` (or a foreground call) — the error is a harness artifact, NOT a bug to "fix" in the script: (1) **`!` negation / process-substitution misfires** — a shell `!`-negation or `<(...)` that errors inside the sandbox; re-run with sandbox disabled BEFORE editing the script. (2) **gh / curl TLS errors** — a TLS/cert failure to a non-whitelisted endpoint clears on retry with `dangerouslyDisableSandbox: true`. (3) **kubectl waits** — use a bounded `Bash(dangerouslyDisableSandbox: true)` `kubectl wait`, never a Monitor-watched kubectl stream (Monitor can't read `~/.kube/config`). (4) **`$TMPDIR` vs `/tmp`** — always write temp files to `$TMPDIR`; a hardcoded `/tmp` path yields "Operation not permitted". **Connectivity/socket verification — 3-bucket classify, never 2:** an unreachable endpoint is OPENED / FAILED / INDETERMINATE (sandbox-blocked, TLS artifact, timeout) — a sandbox/TLS artifact misread as FAILED is a false-GREEN defect; re-run sandbox-disabled to disambiguate before classifying.
 
 <!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
-**Truth-First Debugging (this role).** Master: team-lead.md §CANONICAL:TRUTH-FIRST-DEBUGGING.
+**Truth-First Debugging (this role).** Master: `~/.claude/skills/team-doctrine/references/truth-first-debugging.md` (repo: `src/user/claude-code/skills/team-doctrine/references/truth-first-debugging.md`).
 **Banner:** "If the system is hiding the error, the first fix is to stop it hiding the error. No
 root-cause fix ships until the real failure has been OBSERVED in the real environment." Step 1
 above ("Reproduce in isolation") proves a cause CAN produce the symptom, NEVER that it IS the cause
@@ -414,7 +414,7 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 ## Shutdown Handling
 
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
-**Shutdown protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL. **Precondition:** this handshake and all `SendMessage` routing presuppose agent teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — the tool does not exist otherwise.
+**Shutdown protocol (this role).** Master: `~/.claude/skills/team-doctrine/references/shutdown-protocol.md` (repo: `src/user/claude-code/skills/team-doctrine/references/shutdown-protocol.md`). **Precondition:** this handshake and all `SendMessage` routing presuppose agent teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — the tool does not exist otherwise.
 - **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
   silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
   An approval carrying `reason` is harness-rejected.
@@ -471,7 +471,7 @@ docket vote list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all
 
 ## Runtime Discipline
 
-Per the applicability matrix in team-lead.md §Runtime Discipline, you apply **R1, R2, R3, R4, R6, R7** (R5 omitted — sdet is not a persistent advisor). Canonical bodies in team-lead.md §Runtime Discipline. One-line reminders:
+Per the applicability matrix in `~/.claude/skills/team-doctrine/references/runtime-discipline.md` (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`), you apply **R1, R2, R3, R4, R6, R7** (R5 omitted — sdet is not a persistent advisor). Canonical bodies live in that same file. One-line reminders:
 
 - **R1 Tool-Use Parsimony.** Tool-call output lands verbatim in context. Prefer `grep -l`, ranged Read, filtered/summarized Bash; batch independent calls. **jq sanity-check** small expressions before embedding in `$()` (cryptic shell errors otherwise).
 - **R2 Skill Invocation Restraint.** Every Skill loads its full SKILL.md — invoke only on trigger match.

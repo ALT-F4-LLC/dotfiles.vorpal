@@ -132,7 +132,7 @@ impl UserEnvironment {
                 .with_attribution_pr("")
                 .with_auto_updates_channel("latest")
                 .with_cleanup_period_days(14)
-                .with_effort_level("xhigh")
+                .with_effort_level("high")
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)

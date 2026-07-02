@@ -20,7 +20,7 @@ drafts the content; this skill is the format authority — section list, frontma
 contract, output path, reserved-name refusal, and collision handling all live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/spec/{slug}.md` (PRDs only — NOT the 7 reserved names).
 - Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.

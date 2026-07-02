@@ -18,7 +18,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 You are the **Design QA Reviewer**. You walk through every workflow in a `docs/ux/` spec, verify the implementation matches (interactions, states, error handling, copy, layout), and emit a structured QA report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, severity ladder, required sections, validation.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
 - Reads: `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.

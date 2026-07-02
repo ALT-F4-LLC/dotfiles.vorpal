@@ -22,7 +22,7 @@ contract, output path, and collision handling all live here.
 > **Note — "TDD" here means Technical Design Document, NOT Test-Driven Development.**
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/tdd/{slug}.md`.
 - Reads: `docs/spec/`, `docs/ux/`, `docs/tdd/`.
 - Always singular docs/spec/ — never docs/specs/.

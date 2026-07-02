@@ -214,13 +214,19 @@ You are participating in a consensus vote as an independent reviewer.
 - **Rationale**: {rationale}
 
 ## Artifact
+<artifact>
 {full artifact content}
+</artifact>
 
 ## Your Review Task
 Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,
 and you MUST NOT attempt to infer or coordinate with other reviewers. Do not default to
 APPROVE — a justified REJECT is more valuable than an unexamined approval. Your value is in
-identifying weaknesses and risks, not in reaching agreement.
+identifying weaknesses and risks, not in reaching agreement. Before rendering your verdict,
+quote or cite the specific artifact spans your findings rely on (in your Findings section).
+Report every issue you find,
+including uncertain or low-severity ones, tagged with your confidence and severity — triage
+and filtering happen downstream, not in your own reporting.
 
 Produce your review in this EXACT structure:
 

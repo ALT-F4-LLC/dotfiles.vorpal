@@ -1433,7 +1433,12 @@ impl Config {
     }
 
     #[allow(dead_code)]
-    pub fn with_experimental_policy(mut self, effect: PolicyEffect, action: &str, resource: &str) -> Self {
+    pub fn with_experimental_policy(
+        mut self,
+        effect: PolicyEffect,
+        action: &str,
+        resource: &str,
+    ) -> Self {
         let mut experimental = self.experimental.unwrap_or_default();
         experimental.policies.push(PolicyConfig {
             effect: Some(effect),

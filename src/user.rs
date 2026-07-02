@@ -10,8 +10,8 @@ use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 pub use opencode::ModelLimit;
 use opencode::{
-    AutoUpdate, Config as OpenCodeConfig, LspServerConfig, ModelConfig, PermissionAction,
-    PermissionRule, ProviderConfig, ProviderOptions,
+    AgentConfig, AgentMode, AutoUpdate, Config as OpenCodeConfig, LspServerConfig, ModelConfig,
+    PermissionAction, PermissionRule, ProviderConfig, ProviderOptions,
 };
 use opencode_tui::Config as OpenCodeTuiConfig;
 use std::collections::BTreeMap;
@@ -40,6 +40,10 @@ mod ghostty;
 mod k9s;
 mod opencode;
 mod opencode_tui;
+
+const OTEL_LOGS_ENDPOINT: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
+const OTEL_METRICS_ENDPOINT: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
+const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
 pub struct UserEnvironment {
     name: String,
@@ -145,16 +149,10 @@ impl UserEnvironment {
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
                 .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-8[1m]")
                 .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-                .with_env(
-                    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-                    "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
-                )
-                .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "http/protobuf")
-                .with_env(
-                    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-                    "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
-                )
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "http/protobuf")
+                .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT)
+                .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
+                .with_env("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", OTEL_METRICS_ENDPOINT)
+                .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
                 .with_env(
                     "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
                     "cumulative",
@@ -266,10 +264,8 @@ impl UserEnvironment {
                 .with_permission_deny("Edit(~/.vorpal/**)")
                 .with_permission_deny("Edit(~/Desktop/**)")
                 .with_permission_deny("Edit(~/Downloads/**)")
-                // .with_permission_deny("Edit(~/Library/**)")
                 .with_permission_deny("Read(.env)")
                 .with_permission_deny("Read(.env.*)")
-                // .with_permission_deny("Read(.envrc)")
                 .with_permission_deny("Read(/Applications/**)")
                 .with_permission_deny("Read(/Library/**)")
                 .with_permission_deny("Read(/System/**)")
@@ -287,7 +283,6 @@ impl UserEnvironment {
                 .with_permission_deny("Read(~/.vorpal/**)")
                 .with_permission_deny("Read(~/Desktop/**)")
                 .with_permission_deny("Read(~/Downloads/**)")
-                // .with_permission_deny("Read(~/Library/**)")
                 .with_permission_deny("Write(/Applications/**)")
                 .with_permission_deny("Write(/Library/**)")
                 .with_permission_deny("Write(/System/**)")
@@ -304,7 +299,6 @@ impl UserEnvironment {
                 .with_permission_deny("Write(~/.vorpal/**)")
                 .with_permission_deny("Write(~/Desktop/**)")
                 .with_permission_deny("Write(~/Downloads/**)")
-                // .with_permission_deny("Write(~/Library/**)")
                 .with_permission_default_mode("auto")
                 .with_permission_disable_bypass_permissions_mode("disable")
                 .with_preferred_notif_channel("ghostty")
@@ -453,24 +447,8 @@ impl UserEnvironment {
             .with_otel(Otel {
                 log_user_prompt: Some(false),
                 environment: Some("dev".to_string()),
-                exporter: Some(
-                    toml::Value::try_from(serde_json::json!({
-                        "otlp-http": {
-                            "endpoint": "https://loki.bulbasaur.altf4.domains/otlp/v1/logs",
-                            "protocol": "binary",
-                        },
-                    }))
-                    .expect("Codex OTel logs exporter config must be TOML-serializable"),
-                ),
-                metrics_exporter: Some(
-                    toml::Value::try_from(serde_json::json!({
-                        "otlp-http": {
-                            "endpoint": "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics",
-                            "protocol": "binary",
-                        },
-                    }))
-                    .expect("Codex OTel metrics exporter config must be TOML-serializable"),
-                ),
+                exporter: codex_otlp_exporter(OTEL_LOGS_ENDPOINT),
+                metrics_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT),
                 ..Default::default()
             })
             .with_personality("pragmatic")
@@ -658,6 +636,60 @@ impl UserEnvironment {
                     },
                 )
                 .with_experimental_open_telemetry(true)
+                .with_agent(
+                    "staff-engineer",
+                    opencode_agent(
+                        "qwen3.6:27b",
+                        "blue",
+                        "Technical architect and code reviewer. Produces TDDs in docs/tdd/ and ADRs in docs/tdd/adr/. Reviews senior-engineer changes. Never writes implementation code.",
+                        include_str!("user/opencode/agents/staff-engineer.md"),
+                    ),
+                )
+                .with_agent(
+                    "senior-engineer",
+                    opencode_agent(
+                        "qwen3-coder-next:q4_K_M",
+                        "green",
+                        "Senior software engineer focused on implementation quality. Writes code and edits source files. Does not produce design documents or perform code reviews.",
+                        include_str!("user/opencode/agents/senior-engineer.md"),
+                    ),
+                )
+                .with_agent(
+                    "security-engineer",
+                    opencode_agent(
+                        "qwen3.6:27b",
+                        "orange",
+                        "Staff-level Security Engineer. Owns security architecture, threat modeling, and security-focused review. Never writes implementation code.",
+                        include_str!("user/opencode/agents/security-engineer.md"),
+                    ),
+                )
+                .with_agent(
+                    "project-manager",
+                    opencode_agent(
+                        "qwen3-coder-next:q4_K_M",
+                        "yellow",
+                        "Technical project manager that decomposes work into structured Docket issues. Only plans — never writes code or edits source files.",
+                        include_str!("user/opencode/agents/project-manager.md"),
+                    ),
+                )
+                .with_agent(
+                    "ux-designer",
+                    opencode_agent(
+                        "qwen3-coder-next:q4_K_M",
+                        "purple",
+                        "UX designer and developer experience specialist. Produces design specs in docs/ux/. Does NOT write implementation code.",
+                        include_str!("user/opencode/agents/ux-designer.md"),
+                    ),
+                )
+                .with_agent(
+                    "sdet",
+                    opencode_agent(
+                        "qwen3.6:27b",
+                        "red",
+                        "Software Development Engineer in Test. Owns test infrastructure and verifies Docket issues against acceptance criteria. Does not write production code.",
+                        include_str!("user/opencode/agents/sdet.md"),
+                    ),
+                )
                 .with_provider(
                     "ollama",
                     ProviderConfig {
@@ -737,7 +769,7 @@ impl UserEnvironment {
             .with_theme("TokyoNight")
             .build(context)
             .await?;
-        let ghosty_config_path = format!(
+        let ghostty_config_path = format!(
             "{}/{ghostty_config_name}",
             get_output_path("library", &ghostty_config)
         );
@@ -984,10 +1016,10 @@ impl UserEnvironment {
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),
                 "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
-                "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=https://loki.bulbasaur.altf4.domains/otlp/v1/logs".to_string(),
-                "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf".to_string(),
-                "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics".to_string(),
-                "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL=http/protobuf".to_string(),
+                format!("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT={OTEL_LOGS_ENDPOINT}"),
+                format!("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
+                format!("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT={OTEL_METRICS_ENDPOINT}"),
+                format!("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
                 "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
                 "OTEL_LOGS_EXPORTER=otlp".to_string(),
                 "OTEL_METRICS_EXPORTER=otlp".to_string(),
@@ -1005,7 +1037,7 @@ impl UserEnvironment {
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
                 (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
                 (&codex_skills_path, "$HOME/.agents/skills"),
-                (ghosty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
+                (ghostty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
                 (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
@@ -1014,6 +1046,15 @@ impl UserEnvironment {
             .build(context)
             .await
     }
+}
+
+fn codex_otlp_exporter(endpoint: &str) -> Option<toml::Value> {
+    Some(
+        toml::Value::try_from(serde_json::json!({
+            "otlp-http": { "endpoint": endpoint, "protocol": "binary" }
+        }))
+        .expect("Codex OTLP exporter config must be TOML-serializable"),
+    )
 }
 
 fn codex_agent_role(
@@ -1028,5 +1069,16 @@ fn codex_agent_role(
             .iter()
             .map(|candidate| candidate.to_string())
             .collect(),
+    }
+}
+
+fn opencode_agent(model: &str, color: &str, description: &str, prompt: &str) -> AgentConfig {
+    AgentConfig {
+        model: Some(model.to_string()),
+        mode: Some(AgentMode::Subagent),
+        color: Some(color.to_string()),
+        description: Some(description.to_string()),
+        prompt: Some(prompt.to_string()),
+        ..Default::default()
     }
 }

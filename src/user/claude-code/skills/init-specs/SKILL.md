@@ -33,7 +33,7 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 ---
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/spec/` (Seven reserved Spec Files; via spawned agents).
 - Reads: codebase, `docs/tdd/`.
 - Always singular docs/spec/ — never docs/specs/.

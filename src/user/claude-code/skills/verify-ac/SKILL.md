@@ -20,7 +20,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 You are the **Verifier**. You verify the artifact named by `<scope>` against its acceptance criteria and emit a structured verification report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, required sections, severity, validation rules.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
 - Reads: `docs/tdd/` (accepted only), `docs/ux/`, `docs/spec/`.
 - Always singular docs/spec/ — never docs/specs/.

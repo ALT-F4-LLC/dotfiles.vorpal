@@ -181,6 +181,8 @@ pub struct AgentConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub variant: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
@@ -867,6 +869,14 @@ impl Config {
     pub fn with_agent_model(mut self, agent_name: &str, model: &str) -> Self {
         let mut config = self.agent.get(agent_name).cloned().unwrap_or_default();
         config.model = Some(model.to_string());
+        self.agent.insert(agent_name.to_string(), config);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_agent_variant(mut self, agent_name: &str, variant: &str) -> Self {
+        let mut config = self.agent.get(agent_name).cloned().unwrap_or_default();
+        config.variant = Some(variant.to_string());
         self.agent.insert(agent_name.to_string(), config);
         self
     }

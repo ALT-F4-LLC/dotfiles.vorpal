@@ -655,10 +655,26 @@ impl UserEnvironment {
                     },
                 )
                 .with_agent(
+                    "team-lead",
+                    AgentConfig {
+                        model: Some(OPENCODE_MODEL.to_string()),
+                        variant: Some(OPENCODE_VARIANT.to_string()),
+                        mode: Some(AgentMode::Primary),
+                        color: Some("cyan".to_string()),
+                        description: Some(
+                            "The operator's single entry point — a task-to-subagent prompt-engineering and routing layer that turns each request into recipient-optimized briefs/relays and model/effort/mechanism dispatch decisions across the specialist agents (@staff-engineer, @security-engineer, @project-manager, @ux-designer, @senior-engineer, @sdet). MUST BE USED PROACTIVELY for any multi-step software task that benefits from upfront design, planning, implementation, review, and verification. Coordinates only: never writes code, never creates issues, never commits; read-only on the working tree.".to_string(),
+                        ),
+                        prompt: Some(
+                            include_str!("user/opencode/agents/team-lead.md").to_string(),
+                        ),
+                        ..Default::default()
+                    },
+                )
+                .with_agent(
                     "staff-engineer",
                     opencode_agent(
                         "blue",
-                        "Technical architect and code reviewer. Produces TDDs in docs/tdd/ and ADRs in docs/tdd/adr/. Reviews senior-engineer changes. Never writes implementation code.",
+                        "Technical architect and code reviewer. Produces TDDs in `docs/tdd/` and ADRs in `docs/tdd/adr/`. Reviews all @senior-engineer changes. MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design review, dependency evaluation, and code reviews. Never writes implementation code.",
                         include_str!("user/opencode/agents/staff-engineer.md"),
                     ),
                 )
@@ -666,7 +682,7 @@ impl UserEnvironment {
                     "senior-engineer",
                     opencode_agent(
                         "green",
-                        "Senior software engineer focused on implementation quality. Writes code and edits source files. Does not produce design documents or perform code reviews.",
+                        "Senior software engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
                         include_str!("user/opencode/agents/senior-engineer.md"),
                     ),
                 )
@@ -674,7 +690,7 @@ impl UserEnvironment {
                     "security-engineer",
                     opencode_agent(
                         "orange",
-                        "Staff-level Security Engineer. Owns security architecture, threat modeling, and security-focused review. Never writes implementation code.",
+                        "Staff-level Security Engineer — owns security architecture, threat modeling, and risk management. Authors security TDDs in `docs/tdd/` and security ADRs in `docs/tdd/adr/`. Performs security-focused review of code, designs, dependencies, and configurations alongside @staff-engineer's general review. MUST BE USED PROACTIVELY for trust-boundary changes, authn/authz design, secret handling, cryptography, supply-chain decisions, sandbox/permission models, and any change touching security-sensitive surfaces. Aligns security posture with business goals and risk tolerance. Never writes implementation code.",
                         include_str!("user/opencode/agents/security-engineer.md"),
                     ),
                 )
@@ -682,7 +698,7 @@ impl UserEnvironment {
                     "project-manager",
                     opencode_agent(
                         "yellow",
-                        "Technical project manager that decomposes work into structured Docket issues. Only plans — never writes code or edits source files.",
+                        "Technical project manager that breaks down problems and tasks into well-structured Docket issues. MUST BE USED PROACTIVELY when the user describes a problem, feature request, project, migration, or any body of work that needs to be planned and decomposed before execution begins. This agent ONLY plans — it creates issues, subtasks, dependencies, and priorities in Docket. It NEVER writes code or edits source files. It uses Read, Grep, and Glob to explore the codebase and surfaces deeper technical investigation needs to the user or team lead. Aware of @staff-engineer (TDDs in `docs/tdd/`), @ux-designer (design specs in `docs/ux/`), @senior-engineer (implementation), and @sdet (testing). The primary agent that creates Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.",
                         include_str!("user/opencode/agents/project-manager.md"),
                     ),
                 )
@@ -690,7 +706,7 @@ impl UserEnvironment {
                     "ux-designer",
                     opencode_agent(
                         "purple",
-                        "UX designer and developer experience specialist. Produces design specs in docs/ux/. Does NOT write implementation code.",
+                        "UX designer and developer experience specialist. Produces design specs in `docs/ux/` — does NOT write implementation code. Use PROACTIVELY for designing interfaces (web, mobile, CLI, TUI), evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs, SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task decomposition and @senior-engineer for implementation.",
                         include_str!("user/opencode/agents/ux-designer.md"),
                     ),
                 )
@@ -698,7 +714,7 @@ impl UserEnvironment {
                     "sdet",
                     opencode_agent(
                         "red",
-                        "Software Development Engineer in Test. Owns test infrastructure and verifies Docket issues against acceptance criteria. Does not write production code.",
+                        "Software Development Engineer in Test — owns test infrastructure, automation, and quality engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria, performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context. Does not write production code, design documents, or perform production code reviews.",
                         include_str!("user/opencode/agents/sdet.md"),
                     ),
                 )

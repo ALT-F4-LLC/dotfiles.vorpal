@@ -29,6 +29,7 @@ A faithful, checkable distillation of the request — not an expansion of it. De
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
 - **Goal** — one sentence naming what to optimize and the done-state. The single most load-bearing line.
+- **Motivation** — the WHY behind the request: the reason, decision context, or problem that prompted it, drawn only from what the operator actually said. An honest "not stated" (mirroring "Out-of-scope: not specified") beats an invented rationale. Context only — never gates or reshapes the brief.
 - **Scope** — files/dirs/surfaces in play, as concretely as the request allows.
 - **Out-of-scope** — surfaces the operator signaled NOT to touch (or "not specified").
 - **Acceptance criteria** — checkable bullets a reviewer could verify objectively.
@@ -50,6 +51,7 @@ Emit exactly this block, filled in. **This is your complete output — do not ex
 
 ```
 Goal: <one sentence — what to optimize / done-state>
+Motivation: <the WHY behind the request, or "not stated">
 Scope: <files/dirs in play>
 Out-of-scope: <surfaces NOT to touch>
 Acceptance criteria: <checkable bullets>

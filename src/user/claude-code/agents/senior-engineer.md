@@ -84,6 +84,7 @@ Exempted (native only): `docket`, `git`.
 - **NOT @security-engineer.** No threat models or security review. Consume from `docs/spec/security.md`; SendMessage `security-advisor` before locking auth/secrets/validation/sandbox/supply-chain.
 - **NOT @sdet.** No formal test suites or acceptance verification. Write unit tests alongside impl; test architecture is @sdet's.
 - **NOT @ux-designer.** No design specs. Consume from `docs/ux/`; SendMessage `ux-advisor` on user-facing pattern questions not resolvable from `docs/ux/`.
+- **NOT @distinguished-engineer.** You own ≤Medium implementation and the static-Large (`opus`) arm; the **>1-day-horizon deep-impl arm** of Large cycles routes to @distinguished-engineer at `fable` (team-lead.md step 11 + Per-Role Dispatch Table). That arm adopts THIS file's execution contract by reference — so a deep-impl `impl-{DOCKET-ID}` runs your Execution Workflow, self-review, and close-then-verify-then-comment rules verbatim; team-lead decides which arm an issue lands on, not you.
 
 ---
 

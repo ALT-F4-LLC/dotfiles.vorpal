@@ -1,0 +1,1 @@
+- [team-lead model+effort verdict](project_team-lead-model-effort.md) — Opus 4.8 @ xhigh confirmed; Fable metered billing 2026-07-07; DKT-4 probe urgent

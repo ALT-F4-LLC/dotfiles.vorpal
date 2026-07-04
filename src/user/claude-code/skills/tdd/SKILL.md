@@ -214,7 +214,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    `Security Considerations` — enforced by Validation §7. Non-security TDDs
    may omit them. (Mixed-scope routing — when @security-engineer appends
    these to a @staff-engineer TDD via the Threat-Model Annotation pattern
-   — is owned by `src/user/claude-code/agents/security-engineer.md`, not this skill.)
+   — is owned by `~/.claude/agents/security-engineer.md` (repo: `src/user/claude-code/agents/security-engineer.md`), not this skill.)
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation

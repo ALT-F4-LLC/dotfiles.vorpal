@@ -1,7 +1,8 @@
 # Deep Collaboration — Maintained Master
 
-**LOCAL-copy consumers:** all 6 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`) plus `team-lead.md`,
+**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
+`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
+`distinguished-engineer.md`) plus `team-lead.md`,
 each carrying a `CANONICAL:DEEP-COLLABORATION-LOCAL` pointer to this master. Relocated from
 `src/user/claude-code/agents/team-lead.md` §Distribution-Mechanism Gate (DKT-59/60
 doctrine-home migration). Deployed at

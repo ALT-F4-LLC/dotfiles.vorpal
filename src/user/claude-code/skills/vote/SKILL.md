@@ -74,15 +74,15 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 | high | 3 | 75% weighted approval | Zero rejects |
 | critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `src/user/claude-code/agents/team-lead.md` Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
+**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
 
 **Doubled reviewer counts** (thresholds + constraints identical to the base table above; sole delta: medium allows "No more than 2 rejects"): low=4, medium=4, high=6, critical=8.
 
-**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `src/user/claude-code/agents/team-lead.md` Rule 8 first.
+**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8 first.
 
-**Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `src/user/claude-code/agents/team-lead.md` Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
+**Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `src/user/claude-code/agents/team-lead.md` Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 
@@ -123,8 +123,11 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 | `"sdet"`, or starts with `"verifier-"` | `sdet` |
 | `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
 | `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
+| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md:224` recusal; absent from Agent Selection). Its TDD reviewers are the two `@staff-engineer` ephemerals, which must stay selectable. |
 
 > Unmapped `created_by`: apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
+
+**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD reviewers. **Subtle-correctness point:** if a DE-authored proposal were ever created with `created_by="advisor"`/`"tdd-author-*"`, the current table would exclude `staff-engineer` and strip the intended reviewers — the role-identity convention is what prevents this.
 
 ### Uniqueness Constraint
 
@@ -344,5 +347,5 @@ Committed via: `docket vote commit {vote-id} --outcome "Approved with score {sco
 ### Cleanup (MANDATORY — standalone mode only)
 
 In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Shut down each reviewer (coordinator-originated)** — after a reviewer delivers its review and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). The coordinator SENDS the request; reviewers AWAIT it and never self-initiate (canonical handshake per `src/user/claude-code/agents/team-lead.md` §Wrap-up + Rule 7).
+1. **Shut down each reviewer (coordinator-originated)** — after a reviewer delivers its review and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). The coordinator SENDS the request; reviewers AWAIT it and never self-initiate (canonical handshake per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) §Wrap-up + Rule 7).
 2. **Clean up the team** — clean up the team (the session's single implicit team — no name needed) to reap any reviewer that has not yet exited; its `~/.claude/teams/` resources are auto-removed at session end. Failure to clean up wastes resources and causes agent lifecycle issues.

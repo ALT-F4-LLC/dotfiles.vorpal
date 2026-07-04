@@ -1,7 +1,8 @@
 # Runtime Discipline (R1-R7) — Maintained Master
 
-**LOCAL-copy consumers:** all 6 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`) plus `team-lead.md`,
+**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
+`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
+`distinguished-engineer.md`) plus `team-lead.md`,
 which retains compact `CANONICAL:RUNTIME-DISCIPLINE-LOCAL` bodies for R1/R3/R4/R6 (it is a
 runtime consumer of those four rules on every turn) and a pointer for R2/R5/R7. Relocated from
 `src/user/claude-code/agents/team-lead.md` §Runtime Discipline (DKT-59/60 doctrine-home
@@ -15,15 +16,15 @@ demand only — never `Skill(team-doctrine)`.
 
 Canonical R-rule bodies for the team. Other agents include rule bodies inline only where the rule applies; cross-agent pointers resolve here. Per-agent applicability per the matrix below; team-lead itself uses R2/R5/R7 via pointer style (▾) and the rest as bodies. This file is the source of truth for the R-rule bodies.
 
-| Rule | tl | st | se | pm | ux | sd | sr | Lines |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| **R1 Tool-Use Parsimony** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~8 |
-| **R2 Skill Invocation Restraint** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
-| **R3 SendMessage Terseness** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~5 |
-| **R4 Iteration Cap** | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ~4 |
-| **R5 Persistent-Advisor Self-Summary** | ▾ | ✓* | ✓* | — | ✓* | — | — | ~7+variants |
-| **R6 Anti-Defensive-Exploration** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
-| **R7 In-Session Read-Cache Awareness** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~3 |
+| Rule | tl | st | de | se | pm | ux | sd | sr | Lines |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **R1 Tool-Use Parsimony** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~8 |
+| **R2 Skill Invocation Restraint** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
+| **R3 SendMessage Terseness** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~5 |
+| **R4 Iteration Cap** | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ~4 |
+| **R5 Persistent-Advisor Self-Summary** | ▾ | ✓* | ✓* | ✓* | — | ✓* | — | — | ~7+variants |
+| **R6 Anti-Defensive-Exploration** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
+| **R7 In-Session Read-Cache Awareness** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~3 |
 
 ✓ = full body; ▾ = pointer (`see skills/team-doctrine/references/runtime-discipline.md §R{N}`); — = omit; ✓* = canonical body + per-advisor variant trigger.
 

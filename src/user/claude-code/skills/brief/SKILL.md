@@ -43,7 +43,7 @@ Derive everything the request supports on your own. For fields that remain genui
 
 Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
-When an option would create or route writes to a `docs/` path, check the owning writer in `src/user/claude-code/agents/team-lead.md` §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
+When an option would create or route writes to a `docs/` path, check the owning writer in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
 
 ## Output
 

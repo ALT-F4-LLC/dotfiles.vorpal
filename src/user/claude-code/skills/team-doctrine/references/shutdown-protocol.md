@@ -1,7 +1,8 @@
 # Shutdown Protocol — Maintained Master
 
-**LOCAL-copy consumers:** all 6 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`) plus `team-lead.md`,
+**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
+`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
+`distinguished-engineer.md`) plus `team-lead.md`,
 each carrying a compact `CANONICAL:SHUTDOWN-PROTOCOL-LOCAL` copy — `team-lead.md` retains its
 own LOCAL copy because it operates the handshake every cycle and needs SP-1/SP-2 in-context.
 Relocated from `src/user/claude-code/agents/team-lead.md` §Shutdown Protocol (DKT-59/60

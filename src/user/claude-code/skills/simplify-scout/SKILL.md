@@ -3,7 +3,7 @@ name: simplify-scout
 description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
-  src/user/claude-code/agents/senior-engineer.md (no new rubric). Idiomatic clarity first — fewer lines is the
+  ~/.claude/agents/senior-engineer.md (repo: src/user/claude-code/agents/senior-engineer.md) (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
@@ -27,7 +27,7 @@ This is a **self-service implementation-hygiene aid** that `@senior-engineer` ru
 
 | | `simplify-scout` (this skill) | `code-review-verdict` |
 |---|---|---|
-| Caller | `@senior-engineer` only | `@staff-engineer` / `@security-engineer` only |
+| Caller | `@senior-engineer` / `@distinguished-engineer` (deep-impl) | `@staff-engineer` / `@security-engineer` only |
 | Purpose | Surface idiomatic-clarity opportunities to the author | Authoritative merge-gating verdict |
 | Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
 | Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
@@ -36,10 +36,10 @@ This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, a
 
 ## Role Detection
 
-This skill is callable ONLY by `@senior-engineer`. Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
+This skill is callable by `@senior-engineer` or `@distinguished-engineer` (deep-impl mode only — adopts senior's execution contract by reference, `distinguished-engineer.md:162`). Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
 
 ```
-Error: Skill(simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
+Error: Skill(simplify-scout) is restricted to @senior-engineer and @distinguished-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
 ```
 
 ## Argument Handling
@@ -94,9 +94,9 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `src/user/claude-code/agents/senior-engineer.md` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
+This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.claude/agents/senior-engineer.md` (repo: `src/user/claude-code/agents/senior-engineer.md`) (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
 
-Quick reference (the authority is `src/user/claude-code/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
+Quick reference (the authority is `~/.claude/agents/senior-engineer.md` — repo: `src/user/claude-code/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
 
 | # | Principle | Simplification lens |
 |---|---|---|

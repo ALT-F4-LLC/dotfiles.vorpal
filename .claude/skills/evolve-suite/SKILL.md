@@ -83,7 +83,7 @@ docket issue create -t "evolve-suite: <name> run {today_date}" -d "Dispatch, out
 docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run coherence gate" -T task -p medium -l evolve-suite -l "run:gate" --parent <parent-id> --quiet
 ```
 
-**Comment protocol** (plain comments — no `[ROLE→]` tag; the role-tag set is closed at seven):
+**Comment protocol** (plain comments — no `[ROLE→]` tag; the role-tag set is closed at eight):
 
 - Parent, before the first run: `dispatched: STATE_DIR=<path>` — the single crash-recovery anchor.
 - Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap=<pre-snapshot path>`.

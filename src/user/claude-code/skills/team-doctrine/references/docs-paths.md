@@ -1,7 +1,8 @@
 # Docs-Path Taxonomy — Maintained Master
 
-**LOCAL-copy consumers:** all 6 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`) plus `team-lead.md`,
+**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
+`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
+`distinguished-engineer.md`) plus `team-lead.md`,
 plus 9 docs-path-touching skills (`adr`, `code-review-verdict`, `design-qa`, `design-review`,
 `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`), each carrying a compact, role-scoped
 `CANONICAL:DOCS-PATHS-LOCAL` copy. Relocated from
@@ -19,10 +20,10 @@ Maintained master and authoritative source for `docs/` output-path conventions. 
 
 | Path | Writer | Readers | Owning skill/agent | Notes |
 |---|---|---|---|---|
-| `docs/spec/{name}.md` | `init-specs` (Seven Spec Files); `prd` (`{slug}.md`) | all 7 agents | `init-specs`, `prd` | Seven reserved Spec-File names owned by `init-specs`: `architecture.md`, `code-quality.md`, `operations.md`, `performance.md`, `review-strategy.md`, `security.md`, `testing.md`. Any other `docs/spec/{slug}.md` is a `prd`-authored PRD. Singular `spec` — NOT `specs`. |
-| `docs/tdd/{slug}.md` | `tdd` skill | staff/security/senior/sdet/pm/ux | `tdd` | Technical design records. |
-| `docs/tdd/adr/{NNNN}-{slug}.md` | `adr` skill | staff/security/senior/sdet/pm/ux | `adr` | Numbered ADRs nested under `docs/tdd/`. |
-| `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff consumes | `ux-spec` | User-facing design specs. |
+| `docs/spec/{name}.md` | `init-specs` (Seven Spec Files); `prd` (`{slug}.md`) | all 8 agents | `init-specs`, `prd` | Seven reserved Spec-File names owned by `init-specs`: `architecture.md`, `code-quality.md`, `operations.md`, `performance.md`, `review-strategy.md`, `security.md`, `testing.md`. Any other `docs/spec/{slug}.md` is a `prd`-authored PRD. Singular `spec` — NOT `specs`. |
+| `docs/tdd/{slug}.md` | `tdd` skill | staff/security/senior/sdet/pm/ux/distinguished | `tdd` | Technical design records. |
+| `docs/tdd/adr/{NNNN}-{slug}.md` | `adr` skill | staff/security/senior/sdet/pm/ux/distinguished | `adr` | Numbered ADRs nested under `docs/tdd/`. |
+| `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff + distinguished consume | `ux-spec` | User-facing design specs. |
 | `docs/changelog/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
 | `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
 | `docs/changelog/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-routing (`team-lead.md`) evolution changelog. |

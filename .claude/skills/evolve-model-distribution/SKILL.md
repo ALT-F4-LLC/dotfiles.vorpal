@@ -179,7 +179,7 @@ Read-only (no Edit/Write, no commit). No sub-agents. No peer SendMessage — orc
 
 #### model-policy-researcher (optional — skippable)
 
-Spawn ONLY when a Policy-stale check is wanted (a measured or canonical alias may reference a suspended alias like `fable`). Skippable: if skipped or if it fails twice under Crash & Stall Recovery, substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` and the Policy-stale divergence class degrades to operator judgment (no auto-correction of a suspended alias).
+Spawn ONLY when a Policy-stale check is wanted (a measured or canonical alias may reference a suspended alias like `haiku`). Skippable: if skipped or if it fails twice under Crash & Stall Recovery, substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` and the Policy-stale divergence class degrades to operator judgment (no auto-correction of a suspended alias).
 
 ```
 Agent(name="model-policy-researcher", subagent_type="staff-engineer", model="opus", prompt="...")
@@ -188,13 +188,13 @@ You are the model-policy researcher. Read-only. No file edits. No commits. No su
 
 ## Task
 Report the CURRENT valid model-alias policy so the proposer can flag any measured/canonical alias that references a suspended or nonexistent tier:
-1. Read the `team-lead.md` per-spawn model-routing prose (grep the `**Per-spawn model routing` paragraph + the `Tiers (default — ` list) for the alias set it names (`sonnet`/`opus`/`opus-security-depth`/`haiku`) and any suspension/`best`-alias note.
-2. State, as a short list: valid aliases in force, any SUSPENDED alias (e.g. `fable`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
+1. Read the `team-lead.md` per-spawn model-routing prose (grep the `**Per-spawn model routing` paragraph + the `Tiers (default — ` list) for the alias set it names (`sonnet`/`opus`/`opus-security-depth`/`fable`) and any suspension/`best`-alias note (`haiku` is the out-of-vocabulary/suspended alias per team-lead.md — NOT `fable`, which is the routed top tier for the Fable-seat classes).
+2. State, as a short list: valid aliases in force, any SUSPENDED alias (e.g. `haiku`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
 
 ## Output Format
 SendMessage the orchestrator verbatim:
 - Valid aliases (in force): <list>
-- Suspended → replacement: <e.g. `fable` → `best`/`opus`, or "none">
+- Suspended → replacement: <e.g. `haiku` → `best`/`opus`, or "none">
 - Stale references in team-lead.md: <alias + anchor, or "none">
 
 ## Rules
@@ -231,11 +231,12 @@ The table below is an ILLUSTRATIVE SNAPSHOT for this document only — documenta
 | `impl-{ID}` — Direct / Small / Medium | `sonnet` |
 | `impl-{ID}` — Large / architecture / long-horizon | `opus` |
 | `planner` (project-manager ephemeral) | `sonnet` |
-| general `reviewer-2`, `verifier*`, `tdd-author*` | `opus` |
-| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors | `opus` (security depth) |
+| general `reviewer-2`, `verifier*` | `opus` |
+| `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, >1-day-horizon deep-impl | `fable` (opus fallback when unavailable) |
+| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors (non-Medium+) | `opus` (security depth) |
 | cheap one-shot report-only subagents | `haiku` (only place permitted) |
 
-**Tier-invariant floor.** Authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are ALWAYS `opus` and are NEVER downgrade candidates — a below-`opus` measurement for those is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`sonnet` ≤ Medium, `opus` at Large).
+**Tier-invariant floor.** `opus` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `verifier*` / `security-*` sit AT `opus`; `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `fable` (falling back to `opus` only when fable is unavailable — never below). None of these roles are ever downgrade candidates — a below-`opus` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`sonnet` ≤ Medium, `opus` at static-Large, `fable` at the >1-day-horizon deep-impl arm).
 
 #### Fallback-vs-intentional corroboration (C2b — the `.meta.json` sidecar decides)
 
@@ -255,7 +256,7 @@ Each disposition requires an evidence citation — session path + measured per-r
 2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`TeammateIdle`, `-r2` respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
 3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`.meta.json.model` PRESENT, per C2b) AND non-trivial Mimir cost → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates.
 4. **Fallback-drift (corroborated)** — a role whose `.meta.json.model` is ABSENT (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
-5. **Policy-stale** — a measured/canonical alias references a SUSPENDED alias (`fable`) or a nonexistent tier → **FILE-EDIT**: correct to a live alias (`opus` / `best`), fed by the optional `model-policy-researcher`. If that researcher was SKIPPED (`{model_policy_status}` = SKIPPED), this class degrades to operator judgment — no auto-correction of a suspended alias.
+5. **Policy-stale** — a measured/canonical alias references a SUSPENDED alias (`haiku`) or a nonexistent tier → **FILE-EDIT**: correct to a live alias (`opus` / `best`), fed by the optional `model-policy-researcher`. If that researcher was SKIPPED (`{model_policy_status}` = SKIPPED), this class degrades to operator judgment — no auto-correction of a suspended alias.
 
 6. **Quality-mismatch (match-suboptimality) — the ONE class that fires on a CONFORMANT spawn (resolved == canonical).** Classes 1-5 all require resolved ≠ canonical; this asks whether the canonical tier ITSELF matches the task's cognitive demand. It evaluates the MAP, not conformance to it, and its bar is set by DIRECTION (the anti-backdoor lock; formal statement in the Improvement-Only Mandate):
    - **Capability-ADDING (under-match UPGRADE or granularity SPLIT)** — admissible on a QUALITY ARGUMENT even with zero/few measured spawns, because a capability-match claim is NON-COUNTERFACTUAL and falsifiable-by-reading. MUST cite a READ role-definition demand anchor (`effort: xhigh`, architecture-ownership, the defect-class if it underperforms) + task-cognitive-demand reasoning + the exact seam → **FILE-EDIT** (raise the category tier, or split a too-coarse category and tier the finer sub-category up). Legitimate prophylactically because an upgrade only ADDS cost — a bounded, reversible failure mode (walk back via the class-3 Trial-downgrade path), not the invisible harm a downgrade risks. A measured harm signal strengthens but is not required.
@@ -323,7 +324,7 @@ Every evidence-confirmed proposal MUST clear an explicit operator approval befor
 
 For each operator-approved proposal the orchestrator applies the edit to `src/user/claude-code/agents/team-lead.md` ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the Tiers/prose per the Categorization AUTHORITY rule), Read `team-lead.md` in-session before the first Edit, and apply exactly one Edit per approved proposal:
 
-- **FILE-EDIT (upgrade / policy-stale)** — edit the Tiers-list bullet or the routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a policy-stale fix corrects a suspended alias (`fable`) to a live one (`opus` / `best`).
+- **FILE-EDIT (upgrade / policy-stale)** — edit the Tiers-list bullet or the routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a policy-stale fix corrects a suspended alias (`haiku`) to a live one (`opus` / `best`).
 - **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower the Tiers entry. The hard-floor authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are NEVER downgrade candidates.
 - **RUNTIME-DISCIPLINE REPORT** — no file edit; the file is already correct (team-lead deviated at spawn time), so surface the finding to the operator and record it.
 
@@ -343,7 +344,7 @@ The orchestrator has just applied model-routing edits to src/user/claude-code/ag
 1. Re-read the `Tiers (default — ` list and the `**Per-spawn model routing` prose (grep by content string, never a line number).
 2. Confirm the Tiers bullets and the routing prose AGREE — no tier named in one contradicts the other, no dangling reference to a tier that was renamed or removed.
 3. Confirm NO authoring/review/verify role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) is routed BELOW `opus` (the "NEVER … BELOW opus" hard floor).
-4. Confirm no edit introduced a suspended alias (`fable`) or a nonexistent tier.
+4. Confirm no edit introduced a suspended alias (`haiku`) or a nonexistent tier.
 
 ## Output Format
 SendMessage the orchestrator verbatim:

@@ -322,7 +322,7 @@ When in doubt, go FULL. A LIGHT verification that misses a defect is worse than 
 
 ### Verification Output
 
-To produce the structured verification report, invoke `Skill(verify-ac, "<scope>")` — pass the scope as a Docket issue ID, `uncommitted`, `staged`, a branch name, or file paths. The format authority is `src/user/claude-code/skills/verify-ac/SKILL.md` — do not duplicate format guidance here. The skill emits the role-correct report (LIGHT one-liner for trivial, FULL template with the APPROVE / ACCEPT WITH CAVEATS / BLOCK verdict ladder for non-trivial) directly to your context; after it returns, run the closeout chain (§Execution Workflow step 5 → §Inter-Agent Communication matrix → comm rule 6 shutdown). No further work this spawn.
+To produce the structured verification report, invoke `Skill(verify-ac, "<scope>")` — pass the scope as a Docket issue ID, `uncommitted`, `staged`, a branch name, or file paths. The format authority is `~/.claude/skills/verify-ac/SKILL.md` (repo: `src/user/claude-code/skills/verify-ac/SKILL.md`) — do not duplicate format guidance here. The skill emits the role-correct report (LIGHT one-liner for trivial, FULL template with the APPROVE / ACCEPT WITH CAVEATS / BLOCK verdict ladder for non-trivial) directly to your context; after it returns, run the closeout chain (§Execution Workflow step 5 → §Inter-Agent Communication matrix → comm rule 6 shutdown). No further work this spawn.
 
 FIX artifacts: the §Truth-First Debugging FIX-verdict rule binds — OBSERVED root cause → APPROVE-eligible; REPRODUCED-only/INFERRED → BLOCK (route back per TFD-1).
 
@@ -401,7 +401,7 @@ Use `/vote` for: critical defect validation before BLOCK, test architecture deci
 
 **Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
 agent team. First create the proposal via `docket vote create -c CRITICALITY -d "<question/evidence>" -n VOTERS --created-by "@sdet" --json` to capture `vote_id`, then delegate to the orchestrator via SendMessage:
-`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "protocol_version": "1", "skill": "vote", "request_id": "{uuid}", "vote_id": "{vote-id}", "from": "@sdet", "summary": "Should we block issue {id} due to {defect}? Severity: {assessment}."})` per `src/user/claude-code/skills/vote/` Delegation Protocol. The authoritative proposal (full evidence) lives in docket; `summary` is an operator-observability hint. Sending raw context without `vote_id` triggers a `failed` response.
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "protocol_version": "1", "skill": "vote", "request_id": "{uuid}", "vote_id": "{vote-id}", "from": "@sdet", "summary": "Should we block issue {id} due to {defect}? Severity: {assessment}."})` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`). The authoritative proposal (full evidence) lives in docket; `summary` is an operator-observability hint. Sending raw context without `vote_id` triggers a `failed` response.
 
 **Standalone mode:** Invoke directly via `Skill(vote, "question")`.
 

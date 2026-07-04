@@ -68,7 +68,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `src/user/claude-code/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `src/user/claude-code/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `src/user/claude-code/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `~/.claude/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.claude/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
@@ -204,7 +204,7 @@ where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
 The calling agent owns (in order):
 
-- SendMessage to peers per `src/user/claude-code/agents/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
+- SendMessage to peers per `~/.claude/agents/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
 - Mirroring the QA outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 - Proposing a spec revision via `Skill(ux-spec, ...)` if QA reveals a spec ambiguity rather than an implementation defect.
 

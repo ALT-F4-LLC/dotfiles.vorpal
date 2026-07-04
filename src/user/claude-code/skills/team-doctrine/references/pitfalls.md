@@ -1,7 +1,8 @@
 # Recurring-Pitfalls Memory Convention — Maintained Master
 
-**LOCAL-copy consumers:** all 6 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`) plus `team-lead.md`,
+**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
+`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
+`distinguished-engineer.md`) plus `team-lead.md`,
 each carrying a copy of this `CANONICAL:PITFALLS` block plus its own role-specific
 "What to save here" line. Relocated from `src/user/claude-code/agents/team-lead.md`
 §Wrap-up & Team Cleanup (DKT-59/60 doctrine-home migration). Deployed at

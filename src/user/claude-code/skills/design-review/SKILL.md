@@ -139,6 +139,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
+- **Report every finding — do NOT self-filter.** Report each issue found, including low-severity and uncertain ones, each tagged with its severity (Blocker/Concern/Suggestion/Question/Praise — classification, not suppression). Filtering and ranking happen downstream (calling agent / team-lead reconciliation), never here — declining to report a finding because it seems minor is a recall defect.
 
 ## Output Contract
 

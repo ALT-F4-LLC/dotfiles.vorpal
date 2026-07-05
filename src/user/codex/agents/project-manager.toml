@@ -319,7 +319,7 @@ Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥
 
 ## Authoring Feature-Level PRDs
 
-When the PRD trigger fires (see Plan Complexity Tiers), invoke `$prd` with the topic — output lands at `docs/spec/<slug>.md`. Format authority: `src/user/codex/skills/prd/SKILL.md`. The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `init-specs` skill — never to `prd`.
+When the PRD trigger fires (see Plan Complexity Tiers), invoke `$prd` with the topic — output lands at `docs/spec/<slug>.md`. Format authority: `~/.codex/skills/prd/SKILL.md`. The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `init-specs` skill — never to `prd`.
 
 ---
 

@@ -1,10 +1,10 @@
 ---
 name: evolve-config
 description: >
-  Review and improve the Codex configuration defined in the repo's Rust builders
-  (src/user.rs plus src/user/codex.rs) via multi-agent self-review. Phase 0
-  includes a historical audit of recent Codex sessions, history, and agent memory
-  plus a git-history audit of the config sources.
+  Report on the Codex configuration defined in the repo's Rust builders
+  (src/user.rs plus src/user/codex.rs) via multi-agent self-review. Normal runs are
+  read-only for those Rust sources. Phase 0 includes a historical audit of recent
+  Codex sessions, history, and agent memory plus a git-history audit of the config sources.
   Trigger: "evolve config", "improve config", "review config", "refine Codex settings".
 ---
 
@@ -14,15 +14,15 @@ description: >
 
 # Evolve Config
 
-You are the **Config Evolution Orchestrator**. The target is the **Codex configuration genome**: the Rust builder source that produces `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`, never those deployed TOML files themselves. All additions pass through the Content Gate.
+You are the **Config Evolution Orchestrator**. The target is a read-only report over the **Codex configuration genome**: the Rust builder source that produces `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`, never those deployed TOML files themselves. All findings pass through the Content Gate.
 
 <!-- CANONICAL:SOURCE-OF-TRUTH:BEGIN -->
-**Source of truth is the Rust builder - NEVER deploy to `$HOME/.codex/` directly.** The Codex config is generated from `src/user/codex.rs` (the `Codex` builder struct plus `with_*` setters) and assembled in `src/user.rs` (the Codex `.with_*` call chain that materializes the live config). EVERY recommendation this cycle produces is a change to one of those two source files: a new/changed `with_*` setter or an edited call-chain value. The deployed `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml` are BUILD OUTPUTS: never edit them as source of truth and never recommend a direct edit to them. A recommendation phrased as "edit `$HOME/.codex/...`" is reject-class.
+**Source of truth is the Rust builder - audit it, do not edit it in normal runs.** The Codex config is generated from `src/user/codex.rs` (the `Codex` builder struct plus `with_*` setters) and assembled in `src/user.rs` (the Codex `.with_*` call chain that materializes the live config). EVERY finding this cycle produces cites one of those two source files, but normal `evolve-config` runs DO NOT edit either file. The deployed `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml` are BUILD OUTPUTS: never edit them as source of truth and never recommend a direct edit to them. A recommendation phrased as "edit `$HOME/.codex/...`" is reject-class.
 <!-- CANONICAL:SOURCE-OF-TRUTH:END -->
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/config/codex.md` for future Codex config changelog entries. Do not rename, rewrite, or backfill older config changelogs.
+- Writes: `docs/changelog/codex/config/codex.md` for future Codex config report entries. Do not rename, rewrite, or backfill older config changelogs.
 - Reads: `docs/spec/`, `src/user.rs`, `src/user/codex.rs`.
 - Always singular docs/spec/ - never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -33,7 +33,7 @@ You are the **Config Evolution Orchestrator**. The target is the **Codex configu
 **Evolutionary model (shared vocabulary - evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator corrections, lifecycle stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness: AMPLIFY (cited gain means propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure means remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval plus vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce**: it is the **reproductive-isolation monitor** that detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
 <!-- CANONICAL:EVOLUTION-MODEL-CONFIG:END -->
 
-For this skill-definition evolution cycle, the **genome is THIS SKILL.md's config-generation workflow**: the instructions that audit, select, edit, and verify Codex config sources. The skill's normal implementation target remains the Codex config sources (`src/user/codex.rs` plus the Codex call chain in `src/user.rs`), whose **phenotype** is `$HOME/.codex/config.toml` plus `$HOME/.codex/team-lead.config.toml`. A trait is one workflow instruction for handling a Codex config setting: a `with_*` call, model/provider setting, approval/sandbox setting, agent role, skill config, memory/history setting, hook entry, telemetry field, or shell environment rule. Selection acts on workflow instructions that demonstrably reduce a failure class or are obsolete/superseded by a platform change.
+For this skill-definition evolution cycle, the **genome is THIS SKILL.md's config-report workflow**: the instructions that audit, select, and report Codex config-source findings. The skill's normal implementation target is the report/changelog record, not the Codex config sources (`src/user/codex.rs` plus the Codex call chain in `src/user.rs`). Those Rust files remain the read-only evidence source whose **phenotype** is `$HOME/.codex/config.toml` plus `$HOME/.codex/team-lead.config.toml`. A trait is one workflow instruction for handling a Codex config setting: a `with_*` call, model/provider setting, approval/sandbox setting, agent role, skill config, memory/history setting, hook entry, telemetry field, or shell environment rule. Selection acts on workflow instructions that demonstrably reduce a failure class or are obsolete/superseded by a platform change.
 
 ## Innovation Mandate
 
@@ -41,13 +41,13 @@ Each cycle sources variation three ways: the **innovation-scanner** (directed ad
 
 ## Scientific Trial Protocol
 
-Every non-neutral adaptive change to THIS SKILL.md's config-generation workflow AND every drift proposal passes this gate: **Hypothesis** (expected improvement plus why) -> **Operator approval (HARD GATE)** - present hypothesis, scope, and blast radius via `request_user_input` BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> -> proposed` or `Drift: ... -> proposed` and NOT implemented -> **Measurement** (reuse the Phase 0 audit; add no new infrastructure) -> **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in `docs/changelog/skills/evolve-config.md` under `### Summary`.
+Every non-neutral adaptive config-report finding AND every drift proposal passes this gate: **Hypothesis** (expected improvement plus why) -> **Operator approval (HARD GATE)** - present hypothesis, scope, and blast radius via `request_user_input` BEFORE recording; an unapproved item is recorded as `Trial: <hypothesis> -> proposed` or `Drift: ... -> proposed` and NOT implemented -> **Measurement** (reuse the Phase 0 audit; add no new infrastructure) -> **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/reject step). Record the outcome as a `Trial:`/`Drift:` line in `docs/changelog/codex/config/codex.md` under `### Summary`.
 
 ## Genetic-Drift Operator
 
 Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele substitutions per cycle (default 1; `drift=0` skips this operator entirely).
 
-**Target selection is structural, NOT auditor-derived.** The no-signal trait set is materialized by the orchestrator from file STRUCTURE, never from the Phase 0 auditor's narrative output: (1) enumerate this SKILL.md's candidate traits as headings and top-level list items with `grep -nE '^#{2,4} |^- |^[0-9]+\\. ' .codex/skills/evolve-config/SKILL.md`; (2) subtract any candidate whose heading/bullet text the historical-auditor cited in a finding; (3) index the sorted no-signal set with `{drift_seed} mod len(set)` to pick `{drift_rate}` traits. Empty no-signal set means drift is a no-op this cycle. Drift targets THIS SKILL's prose, never the config sources.
+**Target selection is structural, NOT auditor-derived.** The no-signal trait set is materialized by the orchestrator from file STRUCTURE, never from the Phase 0 auditor's narrative output: (1) enumerate candidate report traits from the config-source evidence and this skill's current headings with `grep -nE '^#{2,4} |^- |^[0-9]+\\. ' .codex/skills/evolve-config/SKILL.md`; (2) subtract any candidate whose heading/bullet text the historical-auditor cited in a finding; (3) index the sorted no-signal set with `{drift_seed} mod len(set)` to pick `{drift_rate}` traits. Empty no-signal set means drift is a no-op this cycle. Drift is recorded as a report/changelog proposal only; `.codex/skills/evolve-config/SKILL.md` is not edited in normal future runs unless the operator explicitly scopes a self-migration.
 
 **Gate + caveat.** Every drift proposal routes through the same operator-approval HARD GATE as adaptive trials and is recorded as a `Drift:` line. Because `{drift_seed}` is the cycle identity, two runs on the same date reproduce the same drift target.
 
@@ -57,7 +57,7 @@ Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele subs
 
 `\$ARGUMENTS` supplies only the historical-audit window and the drift rate - with a single config target, no name token exists:
 
-- **No argument** (`/evolve-config`): Full review of the Codex config genome; the historical-audit window falls back to its 7-day default.
+- **No argument** (`/evolve-config`): Full read-only review of the Codex config genome; the historical-audit window falls back to its 7-day default.
 - **`days=N`** (optional, e.g. `/evolve-config days=14`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-config drift=2` or `/evolve-config drift=0`): Override the genetic-drift rate. Integer >= 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
@@ -74,9 +74,9 @@ Before spawning any agents:
 1. **Verify evolution goal (HARD GATE)** - Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `request_user_input` with options "Full config review", "Narrow scope or friction", "Abort". Store as `{verified_goal}`.
 2. **Gather experience feedback** - Skip if orchestrator prompt already includes `experience_feedback`. Otherwise ask up to three `request_user_input` category questions covering approval/sandbox friction, model/effort/provider settings, and agents/skills/UI behavior. Store as `{experience_feedback}`.
 3. **Resolve today's date** - Run `date +%Y-%m-%d` via shell and store as `{today_date}`.
-4. **Inventory config sources and artifact names** - Run `wc -l src/user.rs src/user/codex.rs 2>/dev/null`. Resolve the main artifact from `grep -n 'format!("{}-codex"' src/user.rs` and the lead profile from `grep -n 'team-lead.config.toml\\|codex-team-lead-profile' src/user.rs`. The future changelog file is always `docs/changelog/config/codex.md`. These Rust sources have NO 500-line prose budget; the 535-line budget governs THIS SKILL.md only.
+4. **Inventory config sources and artifact names** - Run `wc -l src/user.rs src/user/codex.rs 2>/dev/null`. Resolve the main artifact from `grep -n 'format!("{}-codex"' src/user.rs` and the lead profile from `grep -n 'team-lead.config.toml\\|codex-team-lead-profile' src/user.rs`. The future changelog file is always `docs/changelog/codex/config/codex.md`. These Rust sources are read-only evidence and have NO 500-line prose budget; the 535-line budget governs THIS SKILL.md only.
    **Self-budget.** This SKILL.md's own size budget is 535 lines.
-5. **Check for existing changelog** - Run `ls docs/changelog/config/*.md 2>/dev/null`. The future edit target for this skill is `docs/changelog/config/codex.md`; absence means Phase 1 creates it.
+5. **Check for existing changelog** - Run `find docs/changelog/codex -path '*/config/*.md' -type f 2>/dev/null | sort`. The future record target for this skill is `docs/changelog/codex/config/codex.md`; absence means Phase 1 has no prior config changelog to read.
 6. **Resolve historical-audit window** - Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90`). Store `{history_days}`. Compute BOTH cutoff representations in pre-flight:
    - `{history_cutoff_iso}` via shell: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux.
    - `{history_cutoff_epoch_ms}` via shell: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux.
@@ -97,7 +97,7 @@ The single Phase 1 reviewer evaluates the Codex config genome against these name
 5. **Skills, memories and history** - `skill_config`, `memories`, `history`, project docs, compact prompt files, and related feature flags.
 6. **TUI, auth, apps and governance** - TUI status/notifications/theme/keymap, auth credential stores, MCP config, apps/plugins, attribution, analytics/feedback, notices, and update checks.
 
-A finding on any surface MUST cite the field by its `src/user/codex.rs` setter name and the `src/user.rs` call-site value, and carry a fitness signal from Phase 0 for any non-RETAIN disposition.
+A finding on any surface MUST cite the field by its `src/user/codex.rs` setter name and the `src/user.rs` call-site value, and carry a fitness signal from Phase 0 for any non-RETAIN disposition. It is a report finding, not permission to edit the Rust sources.
 
 ---
 
@@ -105,8 +105,8 @@ A finding on any surface MUST cite the field by its `src/user/codex.rs` setter n
 
 **Every proposed addition MUST pass ALL 4 checks. Reject content that fails ANY check.**
 
-1. **Executable** - Is this a config change Codex can make to the Rust source in a stateless session? Reject aspirational tuning with no concrete setter.
-2. **Behavioral** - Does the setting change `$HOME/.codex/config.toml`, `$HOME/.codex/team-lead.config.toml`, or behavior reached from those TOML files? Reject settings that serialize identically to current output.
+1. **Executable** - Is this a config finding Codex can ground in the Rust source during a stateless session? Reject aspirational tuning with no concrete setter or call-site.
+2. **Behavioral** - Would the setting change `$HOME/.codex/config.toml`, `$HOME/.codex/team-lead.config.toml`, or behavior reached from those TOML files if implemented later? Reject settings that serialize identically to current output.
 3. **Non-redundant** - Already set elsewhere in the call chain or covered by an existing rule? Reject duplicate approval/sandbox/tool rules even if reworded.
 4. **Concrete** - A specific setter, value, env var, hook entry, or call-chain edit? Reject aspirational fluff.
 
@@ -114,7 +114,7 @@ A finding on any surface MUST cite the field by its `src/user/codex.rs` setter n
 
 ## Changelog Format
 
-All future changes are tracked in `docs/changelog/config/codex.md`.
+All future report entries are tracked in `docs/changelog/codex/config/codex.md`.
 
 **Exact format - no deviations:** `# Changelog: codex` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 
@@ -126,14 +126,14 @@ All future changes are tracked in `docs/changelog/config/codex.md`.
 
 ### Worker Setup & Agent Lifecycle
 
-All workers are read-only; the orchestrator applies every edit. Spawn workers with `spawn_agent(agent_type="worker", message=..., model=..., reasoning_effort=...)`, capture the returned agent ID, and track phase state with the current Codex plan/task surface. After a worker delivers its final report, close it with `close_agent(target=<agent-id>)`.
+All workers are read-only, and the orchestrator is read-only for Rust config sources. The orchestrator may write the config changelog record only. Spawn workers with `spawn_agent(agent_type="worker", message=..., model=..., reasoning_effort=...)`, capture the returned agent ID, and track phase state with the current Codex plan/task surface. After a worker delivers its final report, close it with `close_agent(target=<agent-id>)`.
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher`, `config-history-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel -> all complete -> close all before Phase 1 |
-| 1 | `review-config` (single reviewer over the config genome) | Spawn -> apply approved changes -> close |
-| 2 | `coherence-reviewer` | Spawn after Phase 1 applied -> apply fixes -> close |
-| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied -> apply fixes -> close |
+| 1 | `review-config` (single reviewer over the config genome) | Spawn -> record accepted findings -> close |
+| 2 | `coherence-reviewer` | Spawn after Phase 1 findings recorded -> record accepted findings -> close |
+| 3 | `disambiguation-reviewer` | Spawn after Phase 2 findings recorded -> record accepted findings -> close |
 | 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips -> compact -> close before cleanup |
 
 ### Crash & Stall Recovery
@@ -152,28 +152,28 @@ Spawn ONE @staff-engineer worker (read-only) over the config genome per the Phas
 
 **After the Phase 1 worker completes**, the orchestrator:
 
-1. Reviews recommendations against the Content Gate.
-2. Applies approved changes to the config SOURCES (read `src/user.rs` and `src/user/codex.rs` in-session before first edit; target content strings, never stale line numbers). NEVER edit any deployed `$HOME/.codex/` file.
-3. **Verify generated output.** A config change is not done until generated output is checked. Compare the before/after generated phenotype for the intended `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml` field without editing either deployed file; re-read the `src/user/codex.rs` `#[serde(...)]` attribute for rename/skip semantics.
-4. Writes/normalizes `docs/changelog/config/codex.md` per Changelog Format.
-5. **Self-correct:** if a change worsens the config without behavioral gain, revert and retry.
+1. Reviews findings against the Content Gate.
+2. Re-verifies each accepted finding against `src/user.rs` and `src/user/codex.rs` by content search. Do NOT edit those Rust files in normal `evolve-config` runs.
+3. **Verify generated-output relevance.** A finding is recordable only when it would affect the intended `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml` field if implemented later; re-read the `src/user/codex.rs` `#[serde(...)]` attribute for rename/skip semantics.
+4. Writes/normalizes `docs/changelog/codex/config/codex.md` per Changelog Format.
+5. **Self-correct:** if a finding is not behavioral or is not grounded in the config sources, reject it rather than recording it.
 
 **Defer parity-bound and CANONICAL-block findings to Phase 2 - never apply piecemeal.** Any Phase 1 finding that edits a `CANONICAL`-tagged block in THIS SKILL.md maintains byte-identical parity across the evolve-* family where shared; route to Phase 2 for a family-wide lockstep call. Before adopting any newly-shipped config field from docs research, read its official lifecycle/clearing semantics and confirm `src/user/codex.rs` actually has or needs a setter.
 
-**Triage every harvested pitfalls lesson - apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST: (a) if already encoded in the config, no-op after confirming against the call chain; (b) if encodable as a config-source edit this cycle, apply it via Phase 1; (c) if it cannot be applied this cycle, capture it as a Docket tracking issue via the normal project-manager path. Never edit/write/delete any `pitfalls.md`.
+**Triage every harvested pitfalls lesson - record, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST: (a) if already encoded in the config, no-op after confirming against the call chain; (b) if it would require a config-source edit, record the finding/changelog entry or capture a follow-up issue via the normal project-manager path; (c) if it cannot be assessed this cycle, capture it as a Docket tracking issue via the normal project-manager path. Never edit/write/delete any `pitfalls.md`.
 
 ### Phase 2: Coherence (sequential)
 
-Gate: Phase 1 task completed, all Phase 1 edits applied, and the Phase 1 worker closed. Only then spawn a single @staff-engineer coherence-reviewer.
+Gate: Phase 1 task completed, all Phase 1 findings recorded, and the Phase 1 worker closed. Only then spawn a single @staff-engineer coherence-reviewer.
 
 The Phase 2 worker:
 
-1. Reads the freshly-improved config sources (`src/user.rs`, `src/user/codex.rs`) and THIS SKILL.md.
-2. Verifies internal coherence: every Codex `with_*` call in `src/user.rs` resolves to a setter in `src/user/codex.rs`; deployed output guidance names `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`; no contradictory approval/sandbox/shell environment rules; no dead setter introduced this cycle.
+1. Reads the current config sources (`src/user.rs`, `src/user/codex.rs`) and THIS SKILL.md.
+2. Verifies internal coherence for report purposes: every Codex `with_*` call in `src/user.rs` resolves to a setter in `src/user/codex.rs`; deployed output guidance names `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`; no contradictory approval/sandbox/shell environment rules.
 3. Verifies shared CANONICAL blocks in THIS SKILL.md are byte-identical to the evolve-agents/evolve-skills siblings where shared.
 4. Reports structured recommendations and then awaits orchestrator close.
 
-**After completion**, the orchestrator applies coherence fixes via file edits, applying any parity-bound fix as identical OLD->NEW to all family members in one turn, then verifies byte identity. Updates `docs/changelog/config/codex.md` for any affected fix.
+**After completion**, the orchestrator records accepted coherence findings. It may apply parity-bound fixes to THIS SKILL.md only when the operator explicitly requested skill-definition self-migration; normal config-source files stay read-only. Updates `docs/changelog/codex/config/codex.md` for any affected finding.
 
 **Speciation / extinction gate.** Speciation here means a second Codex config artifact or deployment profile; extinction means retiring an obsolete settings cluster. Both require the Scientific Trial Protocol operator HARD GATE and vote consensus. Do NOT create or retire any config artifact in this cycle.
 
@@ -183,13 +183,13 @@ The Phase 2 worker:
 **Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
 <!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
 
-Gate: Phase 2 task completed, all Phase 2 fixes applied by the orchestrator, and the coherence-reviewer closed. Only then spawn a read-only `disambiguation-reviewer`.
+Gate: Phase 2 task completed, all Phase 2 findings recorded by the orchestrator, and the coherence-reviewer closed. Only then spawn a read-only `disambiguation-reviewer`.
 
-The reviewer reads the post-coherence config sources (`src/user.rs`, `src/user/codex.rs`) and THIS SKILL.md, keeps only findings that pass every Phase 2 coherence invariant yet still fail clarity, then reports `No disambiguation findings.` when clean. The orchestrator applies every accepted edit and closes the reviewer.
+The reviewer reads the current config sources (`src/user.rs`, `src/user/codex.rs`) and THIS SKILL.md, keeps only findings that pass every Phase 2 coherence invariant yet still fail clarity, then reports `No disambiguation findings.` when clean. The orchestrator records accepted findings and closes the reviewer; Rust config sources remain read-only.
 
 ### Phase 4: History Compaction (terminal, gated)
 
-Changelog arm ONLY - evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is closed, the orchestrator runs one `wc -l docs/changelog/config/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget means no compactor is spawned. Otherwise spawn ephemeral `history-compactor` for the over-budget file.
+Changelog arm ONLY - evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 findings are recorded and the disambiguation-reviewer is closed, the orchestrator runs one `find docs/changelog/codex -path '*/config/*.md' -type f -exec wc -l {} + 2>/dev/null | sort` pass against the 300-line per-file budget (ADR 0001). All files under budget means no compactor is spawned. Otherwise spawn ephemeral `history-compactor` for the over-budget file.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim, compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -198,8 +198,8 @@ Per over-budget file the compactor keeps the 10 most recent date-headed entries 
 After Phase 4 completes or no-ops:
 
 1. Close any remaining workers with `close_agent(target=<agent-id>)`.
-2. Run `wc -l .codex/skills/evolve-config/SKILL.md`. Consolidate if over 535.
-3. Report: config sources modified, settings before/after, generated-output verification result for `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`, Disambiguation outcome, cross-project pitfalls harvest outcome, History Compaction outcome, and reminder that NO changes have been committed and NO deployed `$HOME/.codex/` file was touched.
+2. Run `wc -l .codex/skills/evolve-config/SKILL.md` as a self-budget report. Do not consolidate `.codex/skills/evolve-config/SKILL.md` in normal runs; record an explicit self-migration follow-up if it exceeds 535 lines.
+3. Report: config-source findings, generated-output relevance for `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`, Disambiguation outcome, cross-project pitfalls harvest outcome, History Compaction outcome, and reminder that NO changes have been committed and NO deployed `$HOME/.codex/` file or Rust config source was touched.
 
 ---
 
@@ -293,7 +293,7 @@ Append the verbatim CROSS-PROJECT PITFALLS MANIFEST. If the scan found nothing, 
 ```
 spawn_agent(agent_type="worker", message="innovation-scanner prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
 
-MISSION: Discover NEW and MORE-EFFICIENT config settings for the Codex genome - evolutionary variation and exploration, NOT auditing past failures. Read `src/user/codex.rs` (available setters) and `src/user.rs` (current Codex call chain) and surface concrete settings opportunities beyond what friction-correction alone would find. Use official docs and local source search for discovery. Codex-compatible automation under `.codex/scripts` is not available; skip/fail-open instead of inventing a script path.
+MISSION: Discover NEW and MORE-EFFICIENT config settings for the Codex genome - evolutionary variation and exploration, NOT auditing past failures. Read `src/user/codex.rs` (available setters) and `src/user.rs` (current Codex call chain) and surface concrete report-only findings beyond what friction-correction alone would find. Use official docs and local source search for discovery. Codex-compatible automation under `.codex/scripts` is not available; skip/fail-open instead of inventing a script path.
 
 Target: the Codex config genome.
 
@@ -305,7 +305,7 @@ Target: the Codex config genome.
 
 ## Rules
 - Read-only. No subagents: do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts. send_input the orchestrator only.
-- Each finding must be actionable, name the `src/user/codex.rs` setter, and pass the Content Gate.
+- Each finding must be actionable as a report item, name the `src/user/codex.rs` setter, and pass the Content Gate.
 
 ## Output Format
 ### Config Innovation
@@ -324,7 +324,7 @@ spawn_agent(agent_type="worker", message="model-routing-auditor prompt (role: se
 
 You are the model-routing auditor. Read-only. No file edits. No commits. No subagents.
 Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-Target: the Codex config genome - specifically model, provider, reasoning effort, plan-mode effort, verbosity, service tier, and OTEL settings in `src/user.rs`.
+Target: the Codex config genome - specifically model, provider, reasoning effort, plan-mode effort, verbosity, service tier, and OTEL settings read from `src/user.rs`.
 
 ## Task
 Resolve `CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"` (defaulting to `~/.codex`). Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes.
@@ -356,15 +356,15 @@ Substitute `{today_date}`, `{verified_goal}`, `{experience_feedback}`, and the P
 ```
 spawn_agent(agent_type="worker", message="review-config prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
 
-Target: the Codex config genome - `src/user/codex.rs` (setters) plus the Codex call chain in `src/user.rs`.
+Target: the Codex config genome - read-only report over `src/user/codex.rs` (setters) plus the Codex call chain in `src/user.rs`.
 Verified goal: {verified_goal}
 Experience feedback: {experience_feedback}
 
 ## Source of Truth (HARD)
-Recommendations are changes to the two source files above. NEVER recommend editing `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml`; those are build outputs.
+Findings cite the two source files above but do not edit them in normal runs. NEVER recommend editing `$HOME/.codex/config.toml` or `$HOME/.codex/team-lead.config.toml`; those are build outputs.
 
 ## Context
-Date: {today_date}. Read the latest changelog entry from `docs/changelog/config/codex.md` (may not exist), docs/spec/ selectively, and the full Codex call chain in `src/user.rs` first.
+Date: {today_date}. Read the latest changelog entry from `docs/changelog/codex/config/codex.md` (may not exist), docs/spec/ selectively, and the full Codex call chain in `src/user.rs` first.
 
 ## Codex Documentation Research
 {docs_research_findings}
@@ -381,13 +381,13 @@ Date: {today_date}. Read the latest changelog entry from `docs/changelog/config/
 ## Model Routing Audit Findings
 {model_routing_findings}
 
-> **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a config field or platform feature from the audit blocks above, re-confirm it against ground truth: grep `src/user/codex.rs` for the setter and `src/user.rs` for the call. A field claimed "available" with no setter in `src/user/codex.rs` needs a setter ADDED first.
+> **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any finding relies on a config field or platform feature from the audit blocks above, re-confirm it against ground truth: grep `src/user/codex.rs` for the setter and `src/user.rs` for the call. A field claimed "available" with no setter in `src/user/codex.rs` is a follow-up finding, not an edit to apply in this cycle.
 
 ## Content Gate
 Apply the 4-check gate (Executable, Behavioral, Non-redundant, Concrete). A `with_*` call whose value serializes identically to current output fails Behavioral.
 
 ## Your Task
-Evaluate the config genome against the SIX named config-surface dimensions. Every added setting MUST be justified by a fitness signal; do not default to approval.
+Evaluate the config genome against the SIX named config-surface dimensions. Every suggested setting MUST be justified by a fitness signal; do not default to approval.
 
 For EACH surface, check:
 1. Recurring friction the audit surfaced that a setting would resolve.
@@ -396,7 +396,7 @@ For EACH surface, check:
 4. Coherence within the surface.
 
 ## Rules
-- Read-only - analyze and recommend only; orchestrator applies all edits.
+- Read-only - analyze and report only; the orchestrator records accepted findings.
 - No subagents: do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts. send_input the orchestrator for delegation.
 - send_input orchestrator IMMEDIATELY on a change touching approval/sandbox/secrets, a setter-add plus call-chain change, or a blocker.
 
@@ -404,9 +404,9 @@ For EACH surface, check:
 ### Summary
 <1-2 sentences or "No changes needed"> | Surfaces evaluated: <list>
 ### Recommended Changes
-For each: `CHANGE <n>: <title>` / `SURFACE:` / `DISPOSITION: AMPLIFY|CULL` / `FILE: src/user.rs | src/user/codex.rs` / `CONTEXT: <fitness signal + session ref>` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add - show the anchor line)
+For each: `FINDING <n>: <title>` / `SURFACE:` / `DISPOSITION: AMPLIFY|CULL` / `SOURCE: src/user.rs | src/user/codex.rs` / `CONTEXT: <fitness signal + session ref>` / `CURRENT:` / `SUGGESTED FOLLOW-UP:`
 ### Changelog Entry
-Standard `docs/changelog/config/codex.md` entry under 20 lines, 4 sections.
+Standard `docs/changelog/codex/config/codex.md` entry under 20 lines, 4 sections.
 ### Coherence Issues
 For each: `ISSUE: <title>` / `DETAIL: <one-line + suggested action>`. Or: "None."
 ```
@@ -416,24 +416,24 @@ For each: `ISSUE: <title>` / `DETAIL: <one-line + suggested action>`. Or: "None.
 ```
 spawn_agent(agent_type="worker", message="coherence-reviewer prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
 
-Use the @staff-engineer agent to check config coherence and recommend fixes.
-Today's date: {today_date}. Read-only - the orchestrator applies all changes.
+Use the @staff-engineer agent to check config coherence and report findings.
+Today's date: {today_date}. Read-only - the orchestrator records accepted findings.
 No subagents - do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts. send_input the orchestrator for delegation.
 
 ## Phase 1 Coherence Issues
 <list issues from Phase 1, or "None reported.">
 
 ## Task
-1. Read the freshly-improved config sources: `src/user.rs`, `src/user/codex.rs`, and THIS SKILL.md.
+1. Read the current config sources: `src/user.rs`, `src/user/codex.rs`, and THIS SKILL.md.
 2. Verify config coherence: every Codex `with_*` call in `src/user.rs` resolves to a setter in `src/user/codex.rs`; output guidance names `$HOME/.codex/config.toml` and `$HOME/.codex/team-lead.config.toml`; no contradictory approval/sandbox/shell environment rules; no dead setter introduced this cycle.
 3. Verify shared CANONICAL blocks in THIS SKILL.md where applicable.
 4. Report structured recommendations.
 
 ## Output Format
-### Coherence Fixes
-For each: `FIX <n>: <title>` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`. Or: "No coherence issues found."
+### Coherence Findings
+For each: `FINDING <n>: <title>` / `SOURCE:` / `CURRENT:` / `SUGGESTED FOLLOW-UP:` / `REASON:`. Or: "No coherence issues found."
 ### Changelog Entries
-Standard format for `docs/changelog/config/codex.md` if fixes landed.
+Standard format for `docs/changelog/codex/config/codex.md` if findings landed.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
@@ -443,22 +443,22 @@ Standard format for `docs/changelog/config/codex.md` if fixes landed.
 ```
 spawn_agent(agent_type="worker", message="disambiguation-reviewer prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
 
-Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
-Today's date: {today_date}. Read-only - the orchestrator applies all changes.
+Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and report findings.
+Today's date: {today_date}. Read-only - the orchestrator records accepted findings.
 No subagents - do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage other agents/cohorts. send_input the orchestrator for delegation.
 
 ## Task
-1. Read the freshly-coherent config sources: `src/user.rs`, `src/user/codex.rs`, and THIS SKILL.md.
+1. Read the current config sources: `src/user.rs`, `src/user/codex.rs`, and THIS SKILL.md.
 2. For each candidate ambiguity, keep only findings that pass every Phase 2 coherence invariant yet still fail clarity.
 3. Classify each kept finding by DIMENSION: confusable-name | multi-reading | overlapping-ownership.
 
 ## Output Format
 ### Disambiguation Findings
-For each: `DISAMBIG <n>: <title>` / `DIMENSION:` / `FILE:` / `OLD_STRING:` / `NEW_STRING:` / `REASON:`. Or: "No disambiguation findings."
+For each: `DISAMBIG <n>: <title>` / `DIMENSION:` / `SOURCE:` / `CURRENT:` / `SUGGESTED FOLLOW-UP:` / `REASON:`. Or: "No disambiguation findings."
 ### Coherence-Class (route to Phase 2)
 <findings that belong to coherence, or "None.">
 ### Changelog Entries
-Standard format for `docs/changelog/config/codex.md` if fixes landed.
+Standard format for `docs/changelog/codex/config/codex.md` if findings landed.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
@@ -470,6 +470,6 @@ Always run this stage; it no-ops cleanly when the reviewer reports `No disambigu
 ## Rules
 
 1. **Always run Phase 2** - even when Phase 1 made no config changes.
-2. **Orchestrator-only edits.** Workers are read-only. Never commit. Never touch deployed `$HOME/.codex/` files.
+2. **Report-only config sources.** Workers are read-only; the orchestrator never edits `src/user.rs`, `src/user/codex.rs`, or deployed `$HOME/.codex/` files in normal runs. Never commit.
 3. **Fail loud.** See Crash & Stall Recovery.
 4. **Clean up.** Close all workers after wrap-up.

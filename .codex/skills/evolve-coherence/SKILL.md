@@ -4,7 +4,8 @@ description: >
   Audit coherence between Codex agent/persona sources and the skill ecosystem
   (.codex/skills/* + src/user/codex/skills/*)
   across four dimensions, emit a Coherence Report + Remediation Manifest, and ROUTE fixes to
-  evolve-agents/evolve-skills. REPORT-AND-ROUTE ONLY: despite the evolve- prefix it NEVER edits
+  evolve-agents/evolve-skills for Codex source targets or operator review for project-local
+  .codex/skills findings. REPORT-AND-ROUTE ONLY: despite the evolve- prefix it NEVER edits
   any agent/skill file and NEVER self-invokes the evolve-* skills.
   Run as a post-edit gate after standalone evolve-agents/evolve-skills edits (evolve-suite runs it automatically).
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
@@ -18,7 +19,7 @@ description: >
 
 You are the **Coherence Audit Orchestrator**. Spawn reviewers with `spawn_agent(agent_type="worker", message=..., model=..., reasoning_effort=...)`, record each returned agent ID in a local phase ledger, build a cross-reference index over all Codex agents/personas + skills, shard a four-dimension coherence audit across parallel reviewers, and emit a **Coherence Report** plus a routable **Remediation Manifest**.
 
-> **REPORT + ROUTE ONLY — read this before anything else.** Unlike its siblings `evolve-agents`/`evolve-skills` (which *apply* edits to definition files), `evolve-coherence` **NEVER edits any agent or skill file** and **NEVER self-invokes `evolve-agents`/`evolve-skills`**. Its only output is a Coherence Report + a Remediation Manifest the **operator** feeds to the evolve-* skills. The `evolve-` prefix names the family it audits, not an edit capability. This is enforced by the No-Edit Guard below.
+> **REPORT + ROUTE ONLY — read this before anything else.** Unlike its siblings `evolve-agents`/`evolve-skills` (which *apply* edits to Codex source definition files), `evolve-coherence` **NEVER edits any agent or skill file** and **NEVER self-invokes `evolve-agents`/`evolve-skills`**. Its only output is a Coherence Report + a Remediation Manifest the **operator** feeds to the evolve-* skills for Codex source targets, or handles as explicit operator-reviewed self-migration for project-local `.codex/skills` findings. The `evolve-` prefix names the family it audits, not an edit capability. This is enforced by the No-Edit Guard below.
 
 <!-- CANONICAL:EVOLUTION-MODEL:BEGIN -->
 **Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, stalled `wait_agent` results, retry entries in the local phase ledger, close-agent failures, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
@@ -168,7 +169,7 @@ Spawn one `review-d{n}` per resolved dimension, **all in the same turn** for par
 
 Gate: the local phase ledger shows all Phase 1 dimension entries `completed`, each Phase 1 report consumed, and every Phase 1 agent ID closed or explicitly marked degraded. Then spawn one `reconciler`. Read-only. It:
 1. Merges the reviewers' findings, **de-duplicating** by `(dimension, primary-location)` — a single ref can surface under D1 (unresolved) and D3 (rename drift); keep the most specific, cross-link the rest.
-2. Assigns each confirmed finding a **fix-owner**: agent-side drift → `evolve-agents`; skill-side drift → `evolve-skills`; cross-cutting (both sides of one ref disagree) → `both`, noting which side is canonical (ladders → the skill is canonical; R-rules → team-lead is canonical).
+2. Assigns each confirmed finding a **fix-owner**: agent-side drift → `evolve-agents`; repo-managed skill-side drift under `src/user/codex/skills/` → `evolve-skills`; project-local skill-side drift under `.codex/skills/` → `operator-review` (explicit self-migration only, not normal evolve-skills writes); cross-cutting (both sides of one ref disagree) → `both`, noting which side is canonical (ladders → the skill is canonical; R-rules → team-lead is canonical).
 3. Emits the **Coherence Report** + **Remediation Manifest** into the orchestrator context.
 
 ### Wrap-up
@@ -217,7 +218,7 @@ DIMENSION: D<n>
 LOCATIONS: <agent-side file:line> [↔ <skill-side file:line> where applicable]
 SEVERITY: Blocker | Concern | Suggestion | Question | Praise
 DESCRIPTION: <what drifted and why it matters>
-FIX-OWNER: evolve-agents | evolve-skills | both (CANONICAL: <side>)
+FIX-OWNER: evolve-agents | evolve-skills | operator-review | both (CANONICAL: <side>)
 ```
 
 Severity ladder reuses the staff-engineer ladder (the report is a staff-engineer artifact; D3 itself forbids ladder proliferation): **Blocker** (dead/unresolved ref, constraint contradiction — runtime-breaking), **Concern** (semantic drift that misleads but doesn't break), **Suggestion** (parity nit), **Question** (blocked on operator/agent confirmation before it can be dispositioned), **Praise** (notably coherent area). A clean run reports `0 Blockers, 0 Concerns` per dimension with an explicit `None` per manifest bucket.
@@ -232,8 +233,10 @@ A structured block the operator feeds into the next evolve-agents/evolve-skills 
 Remediation Manifest
 » evolve-agents   (agent-side drift; run: /evolve-agents [or /evolve-agents <agent>])
   - [D<n>][<severity>] <src/user/codex/agents/file.toml:line or src/user/codex/personas/file.md:line> — <one-line finding> → <suggested correction>
-» evolve-skills   (skill-side drift; run: /evolve-skills [or /evolve-skills <skill>])
-  - [D<n>][<severity>] <.codex/skills/.../SKILL.md or src/user/codex/skills/.../SKILL.md:line> — <one-line finding> → <suggested correction>
+» evolve-skills   (repo-managed skill-side drift; run: /evolve-skills [or /evolve-skills <skill>])
+  - [D<n>][<severity>] <src/user/codex/skills/.../SKILL.md:line> — <one-line finding> → <suggested correction>
+» operator-review (project-local `.codex/skills` drift; explicit self-migration only)
+  - [D<n>][<severity>] <.codex/skills/.../SKILL.md:line> — <one-line finding> → <suggested correction>
 » both            (cross-cutting; canonical side noted; run both, fix canonical side first)
   - [D<n>][<severity>] <agent-side:line> ↔ <skill-side:line> — <finding> — CANONICAL: <side> → <correction>
 ```
@@ -308,8 +311,8 @@ Reconcile the four dimension reports into a Coherence Report + Remediation Manif
 
 ## Task
 1. Merge + de-dupe findings by (dimension, primary-location) — keep the most specific, cross-link the rest.
-2. Assign each finding a fix-owner (evolve-agents / evolve-skills / both + canonical side: ladders→skill canonical, R-rules→team-lead canonical).
-3. Emit the Coherence Report (per-finding format) with Blockers first, AND the Remediation Manifest (3 buckets, empty reads `None`). Enforce the Report↔Manifest 1:1-for-actionable invariant. Annotate any DEGRADED dimension verbatim.
+2. Assign each finding a fix-owner (`evolve-agents`, `evolve-skills`, `operator-review`, or `both` + canonical side: ladders→skill canonical, R-rules→team-lead canonical).
+3. Emit the Coherence Report (per-finding format) with Blockers first, AND the Remediation Manifest (4 buckets, empty reads `None`). Enforce the Report↔Manifest 1:1-for-actionable invariant. Annotate any DEGRADED dimension verbatim.
 
 ## Rules
 - Read-only. No file edits. No commits. Do NOT invoke `/vote`, invoke skills, call `spawn_agent`, or manage agent lifecycles.

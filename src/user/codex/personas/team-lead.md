@@ -372,7 +372,7 @@ Detection + recovery differ by lifecycle (see Rule 7 above and the lifecycle sub
 ## Docs-Path Taxonomy
 
 <!-- CANONICAL:DOCS-PATHS:BEGIN -->
-Docs-path taxonomy: maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`src/user/codex/skills/*` and `.codex/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear. The reserved project-spec set owned by `init-specs` is listed below; any brief that authorizes a docs write must name the exact output path.
+Docs-path taxonomy: maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`~/.codex/skills/*` and `.codex/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear. The reserved project-spec set owned by `init-specs` is listed below; any brief that authorizes a docs write must name the exact output path.
 
 | Path | Writer | Readers | Owning skill/agent | Notes |
 |---|---|---|---|---|
@@ -380,9 +380,12 @@ Docs-path taxonomy: maintained master and authoritative source for `docs/` outpu
 | `docs/tdd/{slug}.md` | `tdd` skill | staff/security/senior/sdet/pm/ux | `tdd` | Technical design records. |
 | `docs/tdd/adr/{NNNN}-{slug}.md` | `adr` skill | staff/security/senior/sdet/pm/ux | `adr` | Numbered ADRs nested under `docs/tdd/`. |
 | `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff consumes | `ux-spec` | User-facing design specs. |
-| `docs/changelog/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
-| `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
-| `docs/changelog/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-distribution changelog. |
+| `docs/changelog/codex/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Codex agent-evolution changelog. |
+| `docs/changelog/codex/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Codex skill-evolution changelog. |
+| `docs/changelog/codex/config/*.md` | `evolve-config` skill | evolve cycles | `evolve-config` | Codex config-source report changelog; `evolve-config` reads Rust config sources but does not normally edit them. |
+| `docs/changelog/codex/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Codex model-distribution changelog. |
+| `docs/changelog/claude-code/**` | reserved | none in Codex workflows | reserved | Reserved for Claude Code platform changelogs. Codex agents and skills do not write this family. |
+| `docs/changelog/opencode/**` | reserved | none in Codex workflows | reserved | Reserved for OpenCode platform changelogs. Do not create empty directories for this family. |
 
 **On-disk status ≠ orphan.** A path family with a declared writer in the table above is canonical whether or not it currently exists on disk. Skill-owned paths created on first write — currently `docs/spec/`, `docs/ux/`, and `docs/tdd/adr/` are not yet materialized — are NOT orphans; their absence on disk simply means no one has invoked the owning skill yet. A future drift-lint MUST treat "declared writer, absent on disk" as healthy, never as an orphan.
 

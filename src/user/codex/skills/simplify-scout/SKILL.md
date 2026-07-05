@@ -3,7 +3,7 @@ name: simplify-scout
 description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
-  src/user/codex/agents/senior-engineer.toml (no new rubric). Idiomatic clarity first — fewer lines is the
+  ~/.codex/agents/senior-engineer.toml (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
   applies no edits. NOT a formal review verdict (that is (code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
@@ -91,9 +91,9 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `src/user/codex/agents/senior-engineer.toml` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
+This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.codex/agents/senior-engineer.toml` (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
 
-Quick reference (the authority is `src/user/codex/agents/senior-engineer.toml`; this table is a lookup aid, not a substitute):
+Quick reference (the authority is `~/.codex/agents/senior-engineer.toml`; this table is a lookup aid, not a substitute):
 
 | # | Principle | Simplification lens |
 |---|---|---|

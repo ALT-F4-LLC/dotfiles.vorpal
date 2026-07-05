@@ -21,7 +21,7 @@ You are the **Evolution Suite Orchestrator**. One invocation runs the three edit
 
 **What the operator gets.** Full visibility (every subagent lifecycle happens on screen), and every interactive HARD GATE fires live — Scientific-Trial and drift items receive real operator approval instead of degrading to `proposed`. The cost is wall-clock: the suite is the sum of its cycles, with checkpoints making it cheap to stop partway.
 
-**Self-reference policy.** `evolve-suite` is itself a normal evolve-skills target. The evolve-skills run may edit `.codex/skills/evolve-suite/SKILL.md` directly in the main tree mid-suite. This is safe: the running instance's body is already in context, and the edit takes effect on the next invocation. The edit is live in the tree when the gate audits it — which is correct; the gate should audit the new text. The suite never dispatches itself — no recursion.
+**Self-reference policy.** `evolve-suite` lives under project-local `.codex/skills`, so it is NOT a normal future `evolve-skills` write target. Suite self-migration requires an explicit operator-scoped request. Normal suite runs may read `.codex/skills/evolve-suite/SKILL.md` as project-local inventory, and any edits take effect only on the next invocation. The suite never dispatches itself — no recursion.
 
 ---
 
@@ -48,7 +48,7 @@ You are the **Evolution Suite Orchestrator**. One invocation runs the three edit
 3. **Clean-surface check** — pre-existing dirt blurs per-run delta attribution and the final `git diff` review:
 
 ```bash
-git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md .codex/skills/ src/user/codex/skills/ .codex/agent-memory/ src/user.rs src/user/codex.rs docs/changelog/
+git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md src/user/codex/skills/ .codex/agent-memory/ docs/changelog/codex/
 ```
 
    Non-empty → `request_user_input` (proceed anyway / abort). State explicitly: proceeding means the pre-existing edits will appear inside run 1's delta attribution.
@@ -86,7 +86,7 @@ docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run 
 
 - Parent, before the first run: `dispatched: STATE_DIR=<path>` — the single crash-recovery anchor.
 - Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap_pre=<pre-snapshot path> ledger=<local phase ledger path>`.
-- Per run child, at end: `outcome: status=<ok|partial|failed|no-op> evidence=<one-line> snap_post=<post-snapshot path> delta_count=<N> changelog=docs/changelog/<area>/{today_date}.md`; close the child on success.
+- Per run child, at end: `outcome: status=<ok|partial|failed|no-op> evidence=<one-line> snap_post=<post-snapshot path> delta_count=<N> changelog=docs/changelog/codex/<area>/<target>.md`; close the child on success.
 - Failed run: `FAILED: <reason>` — leave the child open.
 - Gate child: `manifest: <Remediation Manifest headline + route counts>`.
 
@@ -99,7 +99,7 @@ docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run 
 1. **Pre-snapshot:**
 
 ```bash
-git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md .codex/skills/ src/user/codex/skills/ .codex/agent-memory/ src/user.rs src/user/codex.rs docs/changelog/ | sort > "$STATE_DIR/snap-pre-<name>.txt"
+git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md src/user/codex/skills/ .codex/agent-memory/ docs/changelog/codex/ | sort > "$STATE_DIR/snap-pre-<name>.txt"
 ```
 
 2. **Docket** — move the run's child to `in-progress`; post its `dispatched:` comment.
@@ -108,7 +108,7 @@ git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-le
 5. **Post-snapshot + delta:**
 
 ```bash
-git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md .codex/skills/ src/user/codex/skills/ .codex/agent-memory/ src/user.rs src/user/codex.rs docs/changelog/ | sort > "$STATE_DIR/snap-post-<name>.txt"
+git status --porcelain -- src/user/codex/agents/ src/user/codex/personas/team-lead.md src/user/codex/skills/ .codex/agent-memory/ docs/changelog/codex/ | sort > "$STATE_DIR/snap-post-<name>.txt"
 comm -13 "$STATE_DIR/snap-pre-<name>.txt" "$STATE_DIR/snap-post-<name>.txt"
 ```
 
@@ -128,9 +128,9 @@ This table is an attribution/rollback reference, not an enforcement input — th
 
 | Run | Expected surface | Shared (serial-safe) |
 |---|---|---|
-| evolve-agents | `src/user/codex/agents/*.toml`, `src/user/codex/personas/team-lead.md`, `docs/changelog/agents/` | `.codex/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
-| evolve-skills | `.codex/skills/*/SKILL.md`, `src/user/codex/skills/*/SKILL.md`, `docs/changelog/skills/` | `.codex/agent-memory/*/pitfalls.md` (appends) |
-| evolve-config | `src/user.rs`, `src/user/codex.rs`, own `SKILL.md` CANONICAL blocks, `docs/changelog/config/` | `.codex/agent-memory/*/pitfalls.md` (appends) |
+| evolve-agents | `src/user/codex/agents/*.toml`, `src/user/codex/personas/team-lead.md`, `docs/changelog/codex/agents/` | `.codex/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
+| evolve-skills | `src/user/codex/skills/*/SKILL.md`, `docs/changelog/codex/skills/` | `.codex/skills/*/SKILL.md` is read-only project-local inventory; `.codex/agent-memory/*/pitfalls.md` appends |
+| evolve-config | report-only reads of `src/user.rs` and `src/user/codex.rs`, `docs/changelog/codex/config/` | no normal Rust config-source edits; `.codex/agent-memory/*/pitfalls.md` appends |
 
 Pitfalls appends are serial and therefore race-free; no merge step exists or is needed.
 

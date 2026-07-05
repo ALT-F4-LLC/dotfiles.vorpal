@@ -72,15 +72,15 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 | high | 3 | 75% weighted approval | Zero rejects |
 | critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `src/user/codex/personas/team-lead.md` Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
+**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `~/.codex/personas/team-lead.md` Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
 
 **Doubled reviewer counts** (thresholds + constraints identical to the base table above; sole delta: medium allows "No more than 2 rejects"): low=4, medium=4, high=6, critical=8.
 
-**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `src/user/codex/personas/team-lead.md` Rule 8 first.
+**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `~/.codex/personas/team-lead.md` Rule 8 first.
 
-**Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `src/user/codex/personas/team-lead.md` Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
+**Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `~/.codex/personas/team-lead.md` Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `src/user/codex/personas/team-lead.md` Rule 7: each spawns, delivers its review via send_input, then stops while the coordinator consumes the report and closes the returned worker id. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `~/.codex/personas/team-lead.md` Rule 7: each spawns, delivers its review via send_input, then stops while the coordinator consumes the report and closes the returned worker id. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
 
 ---
 

@@ -20,7 +20,7 @@ You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pip
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/model-distribution/team-lead.md` (sole writer of this family).
+- Writes: `docs/changelog/claude-code/model-distribution/team-lead.md` (sole writer of this family).
 - Reads: `docs/spec/`, `src/user/claude-code/agents/team-lead.md` (the routing edit target — build source), `~/.claude/projects/**/subagents/` (LOCAL per-spawn metrics), Mimir (REMOTE aggregate).
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -72,7 +72,7 @@ Before spawning any teammates:
 
 ## Changelog Format
 
-All model-routing changes tracked in `docs/changelog/model-distribution/<target>.md` (the sole current target is `team-lead.md`; create the directory if needed).
+All model-routing changes tracked in `docs/changelog/claude-code/model-distribution/<target>.md` (the sole current target is `team-lead.md`; create the directory if needed).
 
 **Exact format — no deviations:** `# Changelog: model-distribution/<target>` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order:
 
@@ -328,7 +328,7 @@ For each operator-approved proposal the orchestrator applies the edit to `src/us
 - **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower the Tiers entry. The hard-floor authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are NEVER downgrade candidates.
 - **RUNTIME-DISCIPLINE REPORT** — no file edit; the file is already correct (team-lead deviated at spawn time), so surface the finding to the operator and record it.
 
-After applying the approved batch, prepend ONE new entry to `docs/changelog/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** never route a role that needs an `effort` level to `haiku` (which supports no effort levels).
+After applying the approved batch, prepend ONE new entry to `docs/changelog/claude-code/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** never route a role that needs an `effort` level to `haiku` (which supports no effort levels).
 
 ### Phase 3: coherence-verifier (read-only, post-apply)
 

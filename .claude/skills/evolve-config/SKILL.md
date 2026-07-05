@@ -25,7 +25,7 @@ You are the **Config Evolution Orchestrator**. The target is the **Claude Code c
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/config/<artifact-name>.md` (artifact name = the config name minus the project prefix, e.g. `claude-code`).
+- Writes: `docs/changelog/claude-code/config/<artifact-name>.md` (artifact name = the config name minus the project prefix, e.g. `claude-code`).
 - Reads: `docs/spec/`, `src/user.rs`, `src/user/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -81,7 +81,7 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store as `{today_date}`. This value MUST be substituted into every spawning template so agents use a consistent date for changelog entries.
 4. **Inventory config sources and the artifact name** — Run `wc -l src/user.rs src/user/claude_code.rs src/user/statusline.sh src/user/teammate-idle-hook.sh 2>/dev/null`. Resolve the artifact name from the builder: `grep -n 'format!("{}-claude-code"' src/user.rs` confirms the config name suffix; the changelog artifact name is that suffix (`claude-code`). These sources have NO size budget (they are Rust/shell, not skill prose); the skill-population byte budget (evolve-skills pre-flight step 4 is authoritative) governs THIS SKILL.md only. Mode for SKILL.md is **TRIM** (over budget) or **BALANCED** (under budget) per its own `wc -c`.
 **Self-budget.** This SKILL.md is an ordinary member of the skill population governed by evolve-skills' byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
-5. **Check for existing changelog** — Run `ls docs/changelog/config/*.md 2>/dev/null`. The directory may not exist yet (first cycle) — note that so Phase 1 creates it.
+5. **Check for existing changelog** — Run `ls docs/changelog/claude-code/config/*.md 2>/dev/null`. The directory may not exist yet (first cycle) — note that so Phase 1 creates it.
 6. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
@@ -119,7 +119,7 @@ A finding on any surface MUST cite the field by its `claude_code.rs` setter name
 
 ## Changelog Format
 
-All changes tracked in `docs/changelog/config/<artifact-name>.md` (create directory if needed; artifact name from pre-flight step 4, e.g. `claude-code`).
+All changes tracked in `docs/changelog/claude-code/config/<artifact-name>.md` (create directory if needed; artifact name from pre-flight step 4, e.g. `claude-code`).
 
 **Exact format — no deviations:** `# Changelog: <artifact-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `AMPLIFY: added allow rule Bash(jj:*) — cited permission-prompt×4`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
@@ -165,7 +165,7 @@ Spawn ONE @staff-engineer teammate (read-only) over the config genome per the Ph
 1. Reviews recommendations against the **Content Gate** — reject any failing check.
 2. Applies approved changes via Edit to the config SOURCES (Read each of `src/user.rs` / `src/user/claude_code.rs` / the scripts in-session before its first Edit; target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE). NEVER edit any deployed `~/.claude/` file (per CANONICAL:SOURCE-OF-TRUTH).
 3. **Verify the generated output.** A config change is not done until the build output is checked. Confirm the changed setter produces the intended `settings.json` field (re-read the `claude_code.rs` `#[serde(...)]` attribute for the field to confirm rename/skip semantics; a `skip_serializing_if` field set to its default produces NO output diff and fails the Content Gate Behavioral check). For script edits, confirm the script still parses (`bash -n src/user/<script>.sh`).
-4. Writes/normalizes `docs/changelog/config/<artifact-name>.md` per Changelog Format.
+4. Writes/normalizes `docs/changelog/claude-code/config/<artifact-name>.md` per Changelog Format.
 5. **Self-correct**: if a change worsens the config without behavioral gain, revert and retry.
 
 **Defer parity-bound and CANONICAL-block findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a `CANONICAL`-tagged block in THIS SKILL.md (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL, SOURCE-OF-TRUTH) maintains byte-identical parity across the evolve-* family where shared; route to Phase 2 for a single family-wide lockstep call. Before adopting any newly-shipped settings field from the docs-researcher, read its official LIFECYCLE / clearing semantics, not just headline behavior, and confirm the `ClaudeCode` struct actually has (or needs) a setter for it — a field with no setter requires a `claude_code.rs` addition first. Check the prior changelog entry for an existing decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add.
@@ -207,7 +207,7 @@ Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied
 
 ### Phase 4: History Compaction (terminal, gated)
 
-Changelog arm ONLY — evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/config/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget file.
+Changelog arm ONLY — evolve-config has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `wc -l docs/changelog/claude-code/config/*.md` pass against the 300-line per-file budget (ADR 0001). All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget file.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -424,7 +424,7 @@ Experience feedback: {experience_feedback}
 Recommendations are changes to the FOUR source files above. NEVER recommend editing any deployed `~/.claude/` file — those are build outputs. A `~/.claude/...` edit recommendation is reject-class.
 
 ## Context
-Date: {today_date} (for changelog). Read the latest changelog entry from docs/changelog/config/<artifact-name>.md (may not exist — first cycle), docs/spec/ selectively, and the full call chain in src/user.rs first.
+Date: {today_date} (for changelog). Read the latest changelog entry from docs/changelog/claude-code/config/<artifact-name>.md (may not exist — first cycle), docs/spec/ selectively, and the full call chain in src/user.rs first.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

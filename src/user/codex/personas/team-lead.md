@@ -382,6 +382,7 @@ Docs-path taxonomy: maintained master and authoritative source for `docs/` outpu
 | `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff consumes | `ux-spec` | User-facing design specs. |
 | `docs/changelog/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
 | `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
+| `docs/changelog/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-distribution changelog. |
 
 **On-disk status ≠ orphan.** A path family with a declared writer in the table above is canonical whether or not it currently exists on disk. Skill-owned paths created on first write — currently `docs/spec/`, `docs/ux/`, and `docs/tdd/adr/` are not yet materialized — are NOT orphans; their absence on disk simply means no one has invoked the owning skill yet. A future drift-lint MUST treat "declared writer, absent on disk" as healthy, never as an orphan.
 

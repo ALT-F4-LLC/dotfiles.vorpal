@@ -3,7 +3,8 @@ name: evolve-model-distribution
 description: >
   Full worker-spawning evolve-* orchestrator that collects LOCAL per-spawn + REMOTE aggregate
   Codex model metrics, categorizes every spawn into a task-tier → model-tier taxonomy,
-  and applies evidence-grounded, operator-gated model-routing edits to team-lead.md.
+  and applies evidence-grounded, operator-gated model-routing edits to the Codex
+  team-lead build source.
   Trigger: "evolve model distribution", "improve model routing", "model distribution", "audit model tiers".
 ---
 
@@ -13,14 +14,20 @@ description: >
 
 # Evolve Model Distribution
 
-You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pipeline — collect (Phase 0) → propose (Phase 1) → operator-gated apply (Phase 2) → verify (Phase 3) — that measures the ACTUAL per-spawn model distribution across recent Codex sessions and applies evidence-grounded routing edits to the `team-lead.md` model-routing prose + Tiers list. Every spawned worker is READ-ONLY; the orchestrator applies every edit itself. No edit lands without an explicit operator approval (the Phase 2 HARD GATE), and every edit MUST cite measured distribution + outcome signals (the Improvement-Only Mandate) — speculative or regression-risk edits are rejected and recorded. Commits nothing.
+You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pipeline — collect (Phase 0) → propose (Phase 1) → operator-gated apply (Phase 2) → verify (Phase 3) — that measures the ACTUAL per-spawn model distribution across recent Codex sessions and applies evidence-grounded routing edits to the `src/user/codex/personas/team-lead.md` model-routing prose + tier bullets. Every spawned worker is READ-ONLY; the orchestrator applies every edit itself. No edit lands without an explicit operator approval (the Phase 2 HARD GATE), and every edit MUST cite measured distribution + outcome signals (the Improvement-Only Mandate) — speculative or regression-risk edits are rejected and recorded. Commits nothing.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/model-distribution/team-lead.md` (sole writer of this family).
+- Writes: `src/user/codex/personas/team-lead.md` (routing edits only), `docs/changelog/model-distribution/team-lead.md` (sole writer of this family).
 - Reads: `docs/spec/`, `src/user/codex/personas/team-lead.md` (the routing edit target — build source), `CODEX_HOME` (default `~/.codex`), `$CODEX_HOME/sessions`, `$CODEX_HOME/history.jsonl`, `$CODEX_HOME/memories`, repo `.codex/agent-memory` where needed (LOCAL per-spawn evidence), Mimir after Codex metric discovery (REMOTE aggregate).
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
+
+## Target Boundaries
+
+- Codex routing edit target: `src/user/codex/personas/team-lead.md` only.
+- Codex changelog target: `docs/changelog/model-distribution/team-lead.md` only.
+- Prohibited update targets: `.claude/**`, `src/user/claude/**`, Claude Code skills, Claude Code scripts, and Claude Code agent-memory. Read Claude Code paths only when the operator explicitly requests comparison context; never update them from this skill.
 
 ---
 
@@ -75,11 +82,11 @@ All model-routing changes tracked in `docs/changelog/model-distribution/<target>
 **Exact format — no deviations:** `# Changelog: model-distribution/<target>` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order:
 
 - `### Summary` — 1-2 sentences.
-- `### Routing Changes` — one bullet per applied edit, EACH citing measured distribution + an outcome signal (e.g. `UPGRADE tdd-author* sonnet→opus — 3 spawns measured sonnet, correlated fix-round respawns×2 in sess <ref>`). A downgrade is recorded as a `Trial:` bullet (hypothesis + adopt-or-rollback framing), NEVER a direct permanent edit.
+- `### Routing Changes` — one bullet per applied edit, EACH citing measured distribution + an outcome signal (e.g. `UPGRADE hard-ambiguous verification Standard→Top — 3 spawns measured Standard, correlated fix-round respawns×2 in sess <ref>`). A downgrade is recorded as a `Trial:` bullet (hypothesis + adopt-or-rollback framing), NEVER a direct permanent edit.
 - `### Evidence` — LOCAL session refs the edits were grounded in + Mimir availability (`available` or the `"Mimir evidence is unavailable: <reason>"` string).
 - `### Rejected` — every non-applied proposal (evidence-gate mismatch, operator rejection, or speculative/regression-risk), one bullet each, or `None.`
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing entries — always prepend a NEW entry**, even if one already exists for today's date (stacked same-date entries are fine; the topmost is the latest). This is a NEW dedicated changelog family (writer = this skill), deliberately NOT byte-symmetric with the evolve-agents changelog — do NOT copy its `### Changes`/`### Dimensions Evaluated`/`### Rename` shape; use the four sections above. `docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md` is the sole authority for the optional terminal compaction step — cite it, never restate it.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing entries — always prepend a NEW entry**, even if one already exists for today's date (stacked same-date entries are fine; the topmost is the latest). This is a NEW dedicated Codex changelog family (writer = this skill), deliberately NOT byte-symmetric with the evolve-agents changelog — do NOT copy its `### Changes`/`### Dimensions Evaluated`/`### Rename` shape; use the four sections above. `docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md` is the sole authority for the optional terminal compaction step — cite it, never restate it.
 
 ---
 
@@ -180,41 +187,40 @@ Read-only (no file edits, no commit). No subagents. No peer send_input — orche
 Combine the two arms by AUTHORITY, never by averaging:
 - **LOCAL wins for model IDENTITY** — fallback-drift detection and per-role tier assignment require per-spawn Codex transcript evidence plus the joined `spawn_agent` request record; Mimir has no per-spawn granularity.
 - **REMOTE wins for COST magnitude and population breadth** — Mimir catches cross-session/cross-machine spend LOCAL cannot see and is authoritative for how much a tier actually costs.
-- **Disagreements are REPORTED, not silently resolved.** Where the two disagree (e.g. LOCAL shows a role always `sonnet` but Mimir shows `opus` tokens for that `agent_name`), surface the discrepancy explicitly as a signal that other machines route differently or that labels map differently — do NOT pick one and drop the other.
+- **Disagreements are REPORTED, not silently resolved.** Where the two disagree (e.g. LOCAL shows a role at Standard but Mimir shows Top tokens for that `agent_name`), surface the discrepancy explicitly as a signal that other machines route differently or that labels map differently — do NOT pick one and drop the other.
 - **Fallbacks** (already gated in pre-flight, restated for the auditor): Mimir non-200/empty/no Codex metric discovery match → `"Mimir evidence is unavailable: <reason>"`, proceed LOCAL-only with cost claims skipped; LOCAL empty → the run already SKIPPED the edit phases and reported "no local metrics — cannot ground edits".
 ### Phase 1: Categorization + routing-proposer (READ-ONLY)
 
-Phase 0 handed the orchestrator the per-spawn `agent ID → role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, and the Mimir cost arm (or the `"Mimir evidence is unavailable: <reason>"` string). Phase 1 spawns ONE `routing-proposer` (staff-engineer/`gpt-5.5`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
+Phase 0 handed the orchestrator the per-spawn `agent ID → role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, and the Mimir cost arm (or the `"Mimir evidence is unavailable: <reason>"` string). Phase 1 spawns ONE `routing-proposer` (staff-engineer/`gpt-5.5`, read-only) that categorizes every spawn against the LIVE `team-lead.md` tier policy and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
 
-#### Categorization AUTHORITY rule (live routing table = SINGLE SOURCE OF TRUTH)
+#### Categorization AUTHORITY rule (live tier policy = SINGLE SOURCE OF TRUTH)
 
-The live `team-lead.md` "Sizing: senior-engineer and peers by task depth" table is the SINGLE SOURCE OF TRUTH for the role/work → model/effort map. The proposer RE-READS it at runtime and builds the map from the table rows plus the immediately following upgrade/floor prose — it MUST NOT trust any static table embedded in this SKILL.md. Locate + read by content string, never a line number:
+The live `team-lead.md` `**Per-spawn model routing (tier policy).**` block plus the following Mini/Standard/Top/Optional preview bullets are the SINGLE SOURCE OF TRUTH for the role/work → model/effort map. The proposer RE-READS that block at runtime and MUST NOT trust any static table embedded in this SKILL.md. Locate + read by content string, never a line number:
 
 ```bash
-grep -n 'Sizing: senior-engineer and peers by task depth' src/user/codex/personas/team-lead.md
-grep -nE '^\| .*`gpt-5\.[0-9]' src/user/codex/personas/team-lead.md
-grep -n 'never downgrade authoring/review/verify/security roles below their table tier' src/user/codex/personas/team-lead.md
+rg -nF '**Per-spawn model routing (tier policy).**' src/user/codex/personas/team-lead.md
+rg -n '^- (Mini|Standard|Top) \(|^- Optional preview:' src/user/codex/personas/team-lead.md
 ```
 
-Build category → canonical model/effort from the live rows only. Treat the prose below the table as the hard-floor rule: authoring/review/verify/security roles are never downgrade candidates below their table tier; upward upgrades are allowed when the brief's uncertainty, blast radius, or review cost warrants it. Any missing anchor is a coherence failure to report, not a reason to use an embedded fallback table.
+Build category → live canonical tier/effort from the live block only. Compare ordered tiers as Mini < Standard < Top. Treat Optional preview as conditional and outside normal tier comparisons; report preview use separately, never as an upgrade or downgrade. Preserve the live policy: Mini covers cheap read-heavy scans, summarized report-only checks, mechanical Closed Small fixes, and straightforward `planner` work; Standard covers normal implementation, review, verification, and design review/QA; Top covers TDDs, architecture-heavy implementation, hard ambiguous review/verification, and security-heavy advisor/reviewer roles. Upward upgrades are allowed when uncertainty, blast radius, or review cost warrants it. Any missing anchor is a coherence failure to report, not a reason to use an embedded fallback table.
 
 #### Fallback-vs-intentional corroboration (C2b — the spawn request record decides)
 
 A spawned transcript may record only the RESOLVED model, so it alone cannot separate a silent fallback from a permitted upgrade. The `spawn_agent` request record (from the parent transcript, `$CODEX_HOME/history.jsonl`, or the local phase ledger when it captured the returned agent ID) decides it:
 
-- `spawn_agent(..., model=...)` **PRESENT** (bare alias, e.g. `opus`) → the spawn was explicitly pinned. A resolved tier ABOVE canonical is a **permitted upgrade**, NOT fallback-drift (becomes an over-powered / Trial-only candidate ONLY when Mimir cost backs it — class 3).
+- `spawn_agent(..., model=...)` **PRESENT** (model ID or tier alias, e.g. `gpt-5.5`) → the spawn was explicitly pinned. A resolved tier ABOVE canonical is a **permitted upgrade**, NOT fallback-drift (becomes an over-powered / Trial-only candidate ONLY when Mimir cost backs it — class 3).
 - `spawn_agent` model argument **ABSENT/empty** → `model=` was omitted → **confirmed fallback-drift** (class 4); the resolved tier is the fallback landing.
 - request record **MISSING/UNREADABLE** → only then is the case **AMBIGUOUS (over-canonical)**: pin-vs-fallback is undecidable, so REPORT for operator judgment — never auto-classify, never auto-edit.
 
-A below-floor measurement on a hard-floor role is a DEFECT regardless of the request record (the escape hatch never authorizes a downgrade); C2b decides only over-canonical cases.
+A below-canonical measurement on a live-policy work class is a DEFECT regardless of the request record (the escape hatch never authorizes a downgrade); C2b decides only over-canonical cases.
 
 #### Divergence classes → disposition
 
 Each disposition requires an evidence citation — session path + measured per-role count + outcome signal. Disposition is a **FILE-EDIT** (change the Tiers/prose) or a **RUNTIME-DISCIPLINE REPORT** (surface to the operator, NO file edit).
 
-1. **Under-powered defect** — a hard-floor role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) measured BELOW `opus`. The file already mandates `opus`, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the Tiers entry is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
-2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`wait_agent` no-progress/blocker status, fix-round respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
-3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`spawn_agent` model argument PRESENT, per C2b) AND non-trivial Mimir cost from discovered Codex cost metrics → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates. If Mimir evidence is unavailable or lacks cost evidence, skip cost/downshift claims and record the proposal as rejected for unavailable cost evidence.
+1. **Under-powered defect** — a role measured below its live canonical tier for the work class: normal implementation/review/verification/design QA below Standard, or TDDs/architecture-heavy implementation/hard ambiguous review/verification/security-heavy advisor/reviewer work below Top. The file already mandates the live tier, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the tier-policy bullet is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
+2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`wait_agent` no-progress/blocker status, fix-round respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the tier bullets.
+3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`spawn_agent` model argument PRESENT, per C2b) AND non-trivial Mimir cost from discovered Codex cost metrics → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). Categories the live policy places at Standard or Top are never downgrade candidates below their live canonical tier. If Mimir evidence is unavailable or lacks cost evidence, skip cost/downshift claims and record the proposal as rejected for unavailable cost evidence.
 4. **Fallback-drift (corroborated)** — a role whose `spawn_agent` request omitted the model argument (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
 **AMBIGUOUS (over-canonical)** — the missing-request-record case from C2b: resolved > canonical but the parent `spawn_agent` request is unreadable, so pin-vs-fallback is undecidable → REPORT for operator judgment, never auto-edit.
 
@@ -228,7 +234,7 @@ You are the routing proposer. Read-only. You edit NOTHING — `team-lead.md` inc
 Inputs (verbatim from the orchestrator's Phase-0 collection): the per-spawn `agent ID → role → requested → resolved` rows grouped by role, the fallback-drift candidate list, and the Mimir token/cost arm (or the "Mimir evidence is unavailable: <reason>" string).
 
 ## Task
-1. Read the LIVE Tiers (the Categorization AUTHORITY rule) and build category → canonical-tier from it — NEVER a static copy.
+1. Read the LIVE tier policy (the Categorization AUTHORITY rule) and build category → canonical-tier from it — NEVER a static copy.
 2. For each measured spawn, assign a category and compare resolved vs canonical, applying the C2b spawn-request corroboration.
 3. Classify each divergence into one of the four classes (or AMBIGUOUS) and attach its disposition (FILE-EDIT / RUNTIME-DISCIPLINE REPORT / Trial-only).
 4. Emit one proposal per divergence under the Improvement-Only Mandate below.
@@ -266,21 +272,21 @@ This gate is the apply-side instance of the Improvement-Only Mandate: an edit sh
 
 #### Step 2 — Operator-approval HARD GATE (per proposal batch — no auto-apply)
 
-Every evidence-confirmed proposal MUST clear an explicit operator approval before it is applied; there is NO auto-apply path. Present the confirmed proposals as a `request_user_input` batch (per the Pre-flight operator-prompt rules: pre-generated selectable options, 2-3 mutually exclusive options per question, ≤12-char `header`; free-text only for pasted session refs). Offer each proposal an initial disposition choice: **Apply** (a FILE-EDIT upgrade or policy-stale correction), **Trial downgrade** (mandatory for every downgrade — Step 3), or **No edit**. If the operator selects **No edit**, ask a follow-up disposition of **Report** (RUNTIME-DISCIPLINE REPORT — surface, no file edit) or **Reject** (record, no edit). If more than three proposals are confirmed, split them into successive `request_user_input` rounds of up to three proposal questions. Anything the operator does not approve for apply is recorded — never silently dropped (AC7).
+Every evidence-confirmed proposal MUST clear an explicit operator approval before it is applied; there is NO auto-apply path. Present the confirmed proposals as a `request_user_input` batch (per the Pre-flight operator-prompt rules: pre-generated selectable options, 2-3 mutually exclusive options per question, ≤12-char `header`; free-text only for pasted session refs). Offer each proposal an initial disposition choice: **Apply** (a FILE-EDIT upgrade or tier-policy correction), **Trial downgrade** (mandatory for every downgrade — Step 3), or **No edit**. If the operator selects **No edit**, ask a follow-up disposition of **Report** (RUNTIME-DISCIPLINE REPORT — surface, no file edit) or **Reject** (record, no edit). If more than three proposals are confirmed, split them into successive `request_user_input` rounds of up to three proposal questions. Anything the operator does not approve for apply is recorded — never silently dropped (AC7).
 
 #### Step 3 — Orchestrator apply workflow (orchestrator edits; workers never do)
 
-For each operator-approved proposal the orchestrator applies the edit to `src/user/codex/personas/team-lead.md` ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the Tiers/prose per the Categorization AUTHORITY rule), read `team-lead.md` in-session before the first edit, and apply exactly one file edit per approved proposal:
+For each operator-approved proposal the orchestrator applies routing edits only to the Codex build source, `src/user/codex/personas/team-lead.md`, ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the live tier policy per the Categorization AUTHORITY rule), read `src/user/codex/personas/team-lead.md` in-session before the first edit, and apply exactly one file edit per approved proposal. Claude Code paths (`.claude/**`, `src/user/claude/**`, Claude Code skills, Claude Code scripts, Claude Code agent-memory) may be read only when the operator explicitly requests comparison context; they are never updated by this skill.
 
-- **FILE-EDIT (upgrade / policy-stale)** — edit the Tiers-list bullet or the routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a policy-stale fix corrects a suspended alias (`fable`) to a live one (`opus` / `best`).
-- **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower the Tiers entry. The hard-floor authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are NEVER downgrade candidates.
+- **FILE-EDIT (upgrade / tier-policy correction)** — edit the tier-policy bullet or routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a tier-policy correction aligns stale prose to the live GPT-5.x tiers.
+- **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower a category below its live canonical tier.
 - **RUNTIME-DISCIPLINE REPORT** — no file edit; the file is already correct (team-lead deviated at spawn time), so surface the finding to the operator and record it.
 
-After applying the approved batch, prepend ONE new entry to `docs/changelog/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** never route a role that needs an `effort` level to `haiku` (which supports no effort levels).
+After applying the approved batch, prepend ONE new entry to `docs/changelog/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** normal tier comparisons use Mini, Standard, and Top only; Optional preview remains conditional and outside upgrade/downgrade comparisons.
 
 ### Phase 3: coherence-verifier (read-only, post-apply)
 
-After the Phase 2 edits are applied, spawn ONE `coherence-verifier` to confirm the edited `team-lead.md` is INTERNALLY consistent — the Tiers list agrees with the per-spawn routing prose and no authoring/review/verify role sits below `opus`. It is READ-ONLY; the orchestrator applies any fix it surfaces.
+After the Phase 2 edits are applied, spawn ONE `coherence-verifier` to confirm the edited `team-lead.md` is INTERNALLY consistent — the tier bullets agree with the per-spawn routing prose and no work class sits below its live canonical tier. It is READ-ONLY; the orchestrator applies any fix it surfaces.
 
 ```
 spawn_agent(agent_type="worker", message="coherence-verifier prompt (role: staff-engineer)", model="gpt-5.5", reasoning_effort="high")
@@ -289,16 +295,16 @@ You are the coherence verifier. Read-only. You edit NOTHING — the orchestrator
 
 ## Task
 The orchestrator has just applied model-routing edits to src/user/codex/personas/team-lead.md. Verify the edited file is INTERNALLY consistent:
-1. Re-read the `Tiers (default — ` list and the `**Per-spawn model routing` prose (grep by content string, never a line number).
-2. Confirm the Tiers bullets and the routing prose AGREE — no tier named in one contradicts the other, no dangling reference to a tier that was renamed or removed.
-3. Confirm NO authoring/review/verify role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) is routed BELOW `opus` (the "NEVER … BELOW opus" hard floor).
-4. Confirm no edit introduced a suspended alias (`fable`) or a nonexistent tier.
+1. Re-read the `**Per-spawn model routing (tier policy).**` block and Mini/Standard/Top/Optional preview bullets (grep by content string, never a line number).
+2. Confirm the tier bullets and routing prose AGREE — no tier named in one contradicts the other, no dangling reference to a tier that was renamed or removed.
+3. Confirm each work class remains at or above its live canonical tier: normal implementation/review/verification/design QA at Standard or higher, and TDDs/architecture-heavy implementation/hard ambiguous review/verification/security-heavy advisor/reviewer work at Top.
+4. Confirm no edit introduced a model outside `gpt-5.4-mini`, `gpt-5.4`, `gpt-5.5`, or the conditional Optional preview wording.
 
 ## Output Format
 send_input the orchestrator verbatim:
-- Tiers ↔ prose: CONSISTENT, or the exact contradiction (quote both anchors).
-- Hard-floor check: PASS, or the offending role + where it sits below opus.
-- Alias check: PASS, or the stale/suspended alias + anchor.
+- Tier bullets ↔ prose: CONSISTENT, or the exact contradiction (quote both anchors).
+- Live-tier check: PASS, or the offending role + where it sits below canonical.
+- Model check: PASS, or the stale/unknown model + anchor.
 - Fix needed: the exact string to change + replacement, or "none."
 
 ## Rules

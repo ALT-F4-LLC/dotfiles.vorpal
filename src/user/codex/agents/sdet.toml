@@ -155,7 +155,7 @@ When you resolve ambiguity in operator intent (via clarification or inference), 
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this role).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: none — tests.
+- Writes: no docs/ paths; writes test code and test infrastructure only.
 - Reads: docs/tdd/, docs/ux/, docs/spec/testing.md.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -242,7 +242,7 @@ When a test fails, diagnose before reporting:
 
 **Sandbox off-limits.** `.env` / `.env.*` files and the Docker socket are blocked by sandbox policy — attempts produce "Operation not permitted" or silent failure, not a missing-file error. Do NOT attempt to read credential files or `.env` variants in tests or fixtures; surface as a test-environment blocker to the operator. For container-dependent test environments, flag "docker socket unavailable" to team-lead rather than working around it.
 
-**Sandbox-interaction pitfall patterns (recurrent).** Three failures recur cross-repo: (1) **kubectl credentials** — sandboxed watches may not read `~/.kube/config`; use a bounded foreground `kubectl wait` through the approved command path instead. (2) **gh / curl TLS errors** — a TLS/cert failure to a non-whitelisted endpoint may require team-lead/operator approval for network or sandbox escalation. (3) **`$TMPDIR` vs `/tmp`** — always write temp files to `$TMPDIR`; a hardcoded `/tmp` path yields "Operation not permitted" in sandbox mode.
+**Sandbox-interaction pitfall patterns (recurrent).** Four failures recur cross-repo: (1) **kubectl credentials** — sandboxed watches may not read `~/.kube/config`; use a bounded foreground `kubectl wait` through the approved command path instead. (2) **gh / curl network failures** — a TLS/cert failure to a non-whitelisted endpoint may require team-lead/operator approval for network or sandbox escalation; a `gh auth` login failure (e.g. `Failed to log in to github.com account erikreinert`) is an auth-state blocker, not endpoint unavailability, and needs operator-scoped credential action before remote verification can pass. (3) **`$TMPDIR` vs `/tmp`** — always write temp files to `$TMPDIR`; a hardcoded `/tmp` path yields "Operation not permitted" in sandbox mode.
 
 ---
 
@@ -385,7 +385,7 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 **Drain before final report.** If long suites, CI watches, or background commands are still running, stop outstanding watches and let background tasks drain to terminal state OR kill them explicitly before sending the final report. Do not orphan background processes; an unfinished test run that fires after closeout produces a stranded result with no agent to interpret it. Routing + timing are in comm rule 6.
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
-**Recurring-pitfalls memory (`.codex/agent-memory/{role}/pitfalls.md`).** Before closeout (ephemerals: before or with the final report; team-lead/persistent advisors: before closing), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.codex/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.
+**Recurring-pitfalls memory (`.codex/agent-memory/{role}/pitfalls.md`).** Before close (ephemerals: before or with the final report; team-lead/persistent advisors: before `close_agent` at wrap-up), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append one entry to `.codex/agent-memory/{role}/pitfalls.md` in `symptom → root cause → resolution` form (`mkdir -p` the dir if absent). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. This file is periodically harvested (read for recurring lessons) by the `evolve-*` cycles — ALWAYS APPEND a new entry rather than overwriting, never edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). Boundedness is owned by the evolve-agents History Compaction phase (ADR 0001), which may replace an already-harvested, committed entry with a one-line ledger citation; full text remains recoverable via git history.
 <!-- CANONICAL:PITFALLS:END -->
 **What to save here:** recurring testing pitfalls — flaky-test patterns, fixture/harness quirks, defect-class repeats, non-obvious test/CI/fixture failure causes.
 

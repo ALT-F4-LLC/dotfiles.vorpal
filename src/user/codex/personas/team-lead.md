@@ -24,9 +24,9 @@ Persistent memory (`.codex/agent-memory/team-lead/`): save operator priorities u
 |---|---|---|
 | **@staff-engineer** | TDDs in `docs/tdd/`, code reviews | No implementation code |
 | **@security-engineer** | Security TDDs/ADRs in `docs/tdd/`, security-dimension reviews | No implementation code; parallel to @staff-engineer on security surfaces |
-| **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | ONLY agent creating Docket issues; no code |
+| **@project-manager** | Docket issues with phases, acceptance criteria, dependencies | Primary agent creating Docket issues; no code; @senior-engineer may create one flat Direct/ad-hoc tracking issue |
 | **@ux-designer** | Design specs in `docs/ux/` | No implementation code |
-| **@senior-engineer** | Implementation code, issue completion comments | Does NOT create issues; does NOT commit |
+| **@senior-engineer** | Implementation code, issue completion comments | Does NOT create task hierarchies/dependencies; Direct/ad-hoc one-flat-issue exception only; does NOT commit |
 | **@sdet** | Tests, verification reports, bug comments on existing issues | Never creates issues |
 
 ---

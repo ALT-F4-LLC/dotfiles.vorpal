@@ -48,7 +48,7 @@ Error: Usage: (design-review, "<scope>") — name what to review (UX spec path, 
 | Form | Detection | Sources |
 |---|---|---|
 | UX spec path | `Bash test -e {path}` and path matches `docs/ux/.*\.md` | `Read` the spec |
-| TDD path | `Bash test -e {path}` and path matches `docs/tdd/.*\.md` | `Read` the TDD; focus review on user-facing surface sections |
+| TDD path | `Bash test -e {path}` and path matches `docs/tdd/.*\.md` | Extract headings and docs/ux links first; read only sections that define user-facing CLI/API/config/error-copy surfaces |
 | Draft document path | `Bash test -e {path}` and path ends in `.md` | `Read` the file directly |
 | Inline surface description | Otherwise (free-text description of the design under review) | The description IS the artifact — review the design as articulated; cross-reference `docs/ux/`, `docs/tdd/`, `docs/spec/` for precedent |
 
@@ -85,7 +85,8 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Read the artifact**:
-   - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
+   - For UX spec / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
+   - For TDD path: extract headings and linked UX refs first, then read only user-facing sections needed to review CLI/API/config/error-copy workflows.
    - For inline surface description: treat the description as the artifact text.
 4. **Cross-reference precedent**:
    - `Grep -rl "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related UX specs, TDDs, ADRs under `docs/tdd/adr/`, and project specs.
@@ -141,7 +142,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 Emit the review verbatim to the calling agent's context. Do NOT echo the raw artifact body. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
 
-```
+````
 ## Design Review: {Artifact Title}
 
 ### Assessment
@@ -151,6 +152,11 @@ Emit the review verbatim to the calling agent's context. Do NOT echo the raw art
 - Source: {path or "Inline description"}
 - Type: {UX spec / TDD / draft / inline}
 - Maturity / status: {maturity from frontmatter — and status if present, or "N/A" for inline}
+
+### Journey Simulation
+| Workflow / Surface | Result | Evidence |
+|---|---|---|
+| {workflow or surface} | pass / concern / fail / N/A | {artifact section plus entry point -> success path -> error branches -> accessibility/copy/exit notes} |
 
 ### What's Strong
 - {praise 1 — pattern + why it works}
@@ -175,6 +181,12 @@ Emit the review verbatim to the calling agent's context. Do NOT echo the raw art
 - {open question for the artifact author}
 - ... or "None"
 
+### Findings JSON
+```json
+{"blockers":[],"concerns":[],"suggestions":[],"questions":[],"praise":[]}
+```
+Emit `[]` for empty categories; preserve severity buckets exactly.
+
 ### Open Questions
 - {unresolved decision the artifact must address before approval, or "None"}
 
@@ -193,7 +205,7 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 
 ### Next Steps
 {What the calling agent should do — e.g., deliver the structured verdict to the calling agent / team-lead, escalate to vote for cross-surface precedent, route Blockers to the author for revision, propose redesign with concrete starting points}
-```
+````
 
 ## Validation Before Emit
 
@@ -206,9 +218,11 @@ Before emitting the report, verify in the calling agent's context:
 5. **Every Blocker has an alternative or required fix** — a Blocker bullet without `—` separator and an alternative/fix fragment is a defect.
 6. **Dimension Checklist covers all six dimensions** — each row present with one of pass/concern/fail/N/A. Off-by-one is a defect.
 7. **Empty severity buckets explicit** — every bucket (Blockers/Concerns/Suggestions/Questions) reads `None` or lists items. Silent omission is a defect.
-8. **Required sections present, in order** — Assessment, Artifact, What's Strong, What Needs Work, Open Questions, Dimension Checklist, Recommendation, Next Steps.
-9. **Placeholder scan** — body contains no literal `{Artifact Title}`, `{dimension}`, `{count}`, `TBD`, or `TODO` text outside of code-fenced examples.
-10. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in What's Strong, What Needs Work, Open Questions, or Next Steps. Use evidence-anchored language ("verified at {section}," "the workflow at {path} shows …," "assumption: …"). A hit is a defect.
+8. **Journey Simulation coverage** — the table has one row per workflow/surface identified in the artifact, or a single N/A row only when no concrete workflow/surface is present.
+9. **Findings JSON parse/count parity** — JSON parses, carries exactly `blockers`, `concerns`, `suggestions`, `questions`, `praise`, and array lengths match the severity bucket counts plus What's Strong praise bullets.
+10. **Required sections present, in order** — Assessment, Artifact, Journey Simulation, What's Strong, What Needs Work, Findings JSON, Open Questions, Dimension Checklist, Recommendation, Next Steps.
+11. **Placeholder scan** — body contains no literal `{Artifact Title}`, `{dimension}`, `{count}`, `TBD`, or `TODO` text outside of code-fenced examples.
+12. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in What's Strong, What Needs Work, Open Questions, or Next Steps. Use evidence-anchored language ("verified at {section}," "the workflow at {path} shows …," "assumption: …"). A hit is a defect.
 
 If any check fails, ABORT:
 

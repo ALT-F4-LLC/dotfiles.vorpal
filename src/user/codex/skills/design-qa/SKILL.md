@@ -129,7 +129,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw diff. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format.
 
-```
+````
 ## Design QA: {Spec Title}
 
 ### Spec Reference
@@ -140,28 +140,34 @@ Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw 
 ### Verdict
 One of: **Pass** / **Pass with Issues** / **Fail**
 
+### Workflow Evidence Matrix
+| Workflow / Surface | Result | Evidence |
+|---|---|---|
+| {workflow or surface} | Pass / Blocker / Concern / Suggestion / OUT-OF-SCOPE / Deferred | {command output, file:line, render artifact path, or surface state; OUT-OF-SCOPE names route; Deferred cites §9 MVP cutline} |
+
 ### Issues
 
 | # | Severity | Spec Section | Description |
 |---|---|---|---|
 | 1 | Blocker / Concern / Suggestion | {spec heading or "Cross-surface"} | {what's wrong + expected per spec + observed in implementation} |
-| ... | | | |
 
 (If no issues: write "None" in place of the table.)
 
+### Findings JSON
+```json
+{"blockers":[],"concerns":[],"suggestions":[],"praise":[]}
+```
+Emit `[]` for empty categories; preserve severity buckets exactly.
+
 ### What's Implemented Well
-- {praise 1 — pattern + why it works}
-- {praise 2}
-- ... or "None to highlight"
+- {praise entries with pattern + why, or "None to highlight"}
 
 ### Acceptable Deviations
-- {deviation 1} — {engineering rationale + why it does not affect usability}
-- {deviation 2}
-- ... or "None"
+- {deferred MVP-cutline items or tradeoff deviations + rationale, or "None"}
 
 ### Recommendation
 {One paragraph: verdict + concrete next steps for the calling agent — e.g., route Blockers to @senior-engineer, escalate spec ambiguity to operator, propose spec revision}
-```
+````
 
 ## Validation Before Emit
 
@@ -172,11 +178,14 @@ Before emitting the report, verify in the calling agent's context:
    - Any Blocker finding → Verdict MUST be Fail.
    - Any Concern finding (no Blockers) → Verdict MUST be Pass with Issues.
    - No Blockers and no Concerns → Verdict MUST be Pass.
-3. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Cross-surface precedent findings may use the literal `"Cross-surface"` at any severity; Suggestions and Praise may also use general references.
-4. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
-5. **Required sections present, in order** — Spec Reference, Verdict, Issues, What's Implemented Well, Acceptable Deviations, Recommendation. Off-by-one omissions are defects.
-6. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
-7. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Issues, What's Implemented Well, Acceptable Deviations, or Recommendation. Use evidence-anchored language. A hit is a defect.
+3. **Workflow Evidence Matrix completeness** — every workflow from the spec appears once with Pass / Blocker / Concern / Suggestion / OUT-OF-SCOPE / Deferred; Deferred rows cite §9 MVP cutline, and OUT-OF-SCOPE rows name the route.
+4. **Visual/static render evidence** — any visual or static-export surface that is not OUT-OF-SCOPE includes the reviewed render artifact path or surface-state evidence in the matrix.
+5. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Cross-surface precedent findings may use the literal `"Cross-surface"` at any severity; Suggestions and Praise may also use general references.
+6. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
+7. **Required sections present, in order** — Spec Reference, Verdict, Workflow Evidence Matrix, Issues, Findings JSON, What's Implemented Well, Acceptable Deviations, Recommendation.
+8. **Findings JSON validity** — parse the `### Findings JSON` block as JSON and verify every severity array exists and its item count matches the corresponding human severity bucket.
+9. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
+10. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Issues, What's Implemented Well, Acceptable Deviations, or Recommendation. Use evidence-anchored language. A hit is a defect.
 
 If any check fails, ABORT:
 
@@ -188,20 +197,10 @@ The calling agent corrects in its own context and re-invokes `(design-qa, "<scop
 
 ## Save & Return
 
-No file is written (Output Contract owns the emission rules). End with the confirmation line:
-
-```
-Design QA report emitted ({verdict}).
-```
-
-where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
+No file is written (Output Contract owns emission). End with `Design QA report emitted ({verdict}).`, where verdict is Pass / Pass with Issues / Fail.
 
 **Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I send_input the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
-The calling agent owns (in order):
-
-- send_input to peers per `src/user/codex/agents/ux-designer.toml` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
-- Mirroring the QA outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
-- Proposing a spec revision via `(ux-spec, ...)` if QA reveals a spec ambiguity rather than an implementation defect.
+The calling agent owns peer send_input, Docket mirroring with `[UX→@agent] {summary}`, and spec-revision routing via `(ux-spec, ...)` per `src/user/codex/agents/ux-designer.toml`.
 
 On any abort during Pre-flight, QA Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.

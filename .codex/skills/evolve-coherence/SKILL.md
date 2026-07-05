@@ -131,8 +131,6 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 - Rule-numbering: extract the highest top-level rule number per agent (`grep -noE '^[0-9]+\.'` in the rules section) vs expected count — **SKIP this numeric parse for `@senior-engineer`** (unnumbered bullets); confirm its 10 rules by cross-tag prose match.
 - Doubling/panel: compare `src/user/codex/skills/vote/SKILL.md` panel numbers and `src/user/codex/skills/code-review-verdict/SKILL.md` single-default/opt-up language against team-lead Rule 8.
 
-> **Intentional variants (do NOT mis-flag)** are enumerated inline per dimension (each carries a `(D<n> #<m>)` carve-out) and re-listed in the Phase 1 spawn template's `## Task` — reviewers honor them from those two sources.
-
 ---
 
 ## Orchestration Workflow
@@ -197,11 +195,13 @@ No persistent data plane. Two **in-context** artifacts (NOT written to disk — 
   "ladders":            [{"name": "staff-severity", "def_site": "src/user/codex/skills/code-review-verdict/SKILL.md:350", "citations": ["src/user/codex/agents/staff-engineer.toml:170"]}],
   "canonical_blocks":   [{"tag": "BANNER", "family": "leaf|orchestrator|vote|single", "carriers": ["src/user/codex/skills/tdd/SKILL.md:12"], "family_hash": "<computed-live>"}],
   "coupling_notes":     [{"file": "src/user/codex/skills/adr/SKILL.md", "line": 64, "family": "doc-authoring", "stated_count": 5, "named_siblings": ["prd","tdd","ux-spec","init-specs"]}],
-  "rule_presence":      [{"agent": "project-manager", "rules_present": ["R1","R2","R3","R5","R6","R7"], "top_rule_count": 6, "numbering_parse": "numbered|unnumbered-crosstag"}]
+  "rule_presence":      [{"agent": "project-manager", "rules_present": ["R1","R2","R3","R5","R6","R7"], "top_rule_count": 6, "numbering_parse": "numbered|unnumbered-crosstag"}],
+  "intentional_variants": [{"dimension": "D3", "rule": "severity-ladder", "files": ["src/user/codex/skills/design-qa/SKILL.md"], "variant": "omits Question", "reason": "intentional dimension-local carve-out"}],
+  "dependency_graph_dot": "digraph coherence { ... }"
 }
 ```
 
-`coupling_notes` (D3 #6), `canonical_blocks.family`/`family_hash` (D4 #2), and `rule_presence.numbering_parse` (senior-engineer exception) are part of the pinned contract. `family_hash` is computed LIVE each run — pinned is the FIELD's presence, NEVER a fixed hash value.
+`coupling_notes` (D3 #6), `canonical_blocks.family`/`family_hash` (D4 #2), `rule_presence.numbering_parse` (senior-engineer exception), `intentional_variants`, and `dependency_graph_dot` are part of the pinned contract. `family_hash` is computed LIVE each run — pinned is the FIELD's presence, NEVER a fixed hash value.
 
 **`[]` vs `null` semantics:** an empty array `[]` means "computed, none found"; `null` means "dimension not computed". On the `d1..d4` dimension-subset arg path, keys for UN-selected dimensions are `null` (not computed this run), distinct from a selected dimension that found nothing (`[]`).
 
@@ -252,10 +252,10 @@ Remediation Manifest
 spawn_agent(agent_type="worker", message="xref-builder prompt (role: senior-engineer)", model="gpt-5.4-mini", reasoning_effort="medium")
 
 You are the cross-reference index builder. Read-only shell access (grep/awk/parse). No file edits. No commits. No subagents.
-Inventory: {inventory}
+Inventory: {inventory}; Resolved dimensions: {dimensions}
 
 ## Task
-Build the XREF index over ALL Codex agent/persona sources (`src/user/codex/agents/*.toml`, `src/user/codex/personas/*.md`) and ALL skills (`.codex/skills/*/SKILL.md`, `src/user/codex/skills/*/SKILL.md`) using the detection seeds in the rubric — read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric first; it is NOT in this prompt — (D1 registry/refs/agent_skill_declarations/report_delivery_obligations; D2 role_claims; D3 ladders/coupling_notes; D4 canonical_blocks/rule_presence). Compute family_hash LIVE per the D4 family rule (key on the opening-prefix string, strip trailing whitespace via `sed 's/[[:space:]]*$//'` before `shasum`). You do NOT judge — emit signals only.
+Build the XREF index only for `{dimensions}` over Codex agent/persona sources (`src/user/codex/agents/*.toml`, `src/user/codex/personas/*.md`) and skills (`.codex/skills/*/SKILL.md`, `src/user/codex/skills/*/SKILL.md`) using the detection seeds in the rubric — read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric first; it is NOT in this prompt. Dimension-owned keys for unselected dimensions are `null`, not `[]`: D1 `registry`/`skill_refs`/`agent_skill_declarations`/`report_delivery_obligations`; D2 `role_claims`; D3 `ladders`/`coupling_notes`/`intentional_variants`; D4 `canonical_blocks`/`rule_presence`/`dependency_graph_dot`. Include selected-dimension `intentional_variants` and a DOT dependency graph built from skill refs, role claims, and report obligations when their owning dimensions are selected. Compute `family_hash` LIVE per the D4 family rule (key on the opening-prefix string, strip trailing whitespace via `sed 's/[[:space:]]*$//'` before `shasum`). You do NOT judge — emit signals only.
 
 ## Output
 Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — every key present, `null`/`[]` for absent, never omit a key. send_input the orchestrator the json block verbatim and let the orchestrator update the local phase ledger.
@@ -282,7 +282,7 @@ Verified goal: {verified_goal} (pre-verified — re-verify if your understanding
 > Before emitting ANY finding, confirm it against ground truth. To CONFIRM a pinned XREF signal, a ranged read of the cited `file:line` suffices (cheaper than a fresh whole-file grep); re-grep only for ABSENCE/coverage checks (a stale name anywhere, a missing carrier) where no line anchor exists. XREF is a signal; a finding built on an unconfirmed signal is reject-class.
 
 ## Task
-Read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric (it is NOT in this prompt), then apply the D<n> invariants + detection seeds. HONOR the whitelist of intentional variants — do NOT mis-flag design-qa's "no Question" ladder, the byte-identical HARVEST blocks, the `Skill(name)` placeholder, the meta-instruction verify-ac rule-body example in staff-engineer source, bundled-runtime `verify`, agent-banner semantic parity, the 3 BANNER families (incl. init-specs's shorter body + vote's singleton + leaf trailing clauses), review-and-comment's intentionally non-CANONICAL skill-specific banner, or the one-directional COUPLING bridges (simplify-scout, ux-spec).
+Read `.codex/skills/evolve-coherence/SKILL.md` §The Coherence Rubric (it is NOT in this prompt), then apply the D<n> invariants + detection seeds. HONOR `intentional_variants` from XREF as signals-to-verify, not facts: confirm each against ground truth before suppressing a finding, and report any stale or missing variant as a finding instead of inheriting it.
 
 ## Output (per finding)
 FINDING <n>: <title> / DIMENSION: D<n> / LOCATIONS: <file:line both sides> / SEVERITY: <ladder> / DESCRIPTION: <...> / FIX-OWNER: evolve-agents|evolve-skills|both (CANONICAL: <side>). Or "No findings." send_input the orchestrator verbatim; the orchestrator updates the local phase ledger.

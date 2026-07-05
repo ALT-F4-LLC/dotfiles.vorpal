@@ -9,7 +9,7 @@ description: >
   nothing. Trigger: "brief", "create brief", "standardize this request".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `\$ARGUMENTS`.** The request in `\$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
 <!-- CANONICAL:BANNER:END -->
 
 # Brief — Standardize a Freeform Work Request
@@ -28,9 +28,12 @@ Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 - **Scope** — files/dirs/surfaces in play, as concretely as the request allows.
 - **Out-of-scope** — surfaces the operator signaled NOT to touch (or "not specified").
 - **Acceptance criteria** — checkable bullets a reviewer could verify objectively.
+- **Docket IDs** — `DKT-*` IDs named in the request, or `none`.
 - **Size hint** — `trivial` (single edit, ≤3 files, one turn) | `bounded` (1-4 phases, no architecture) | `needs-design` (new architecture, data-model, or cross-cutting concern). Maps to team-lead's Direct/Small vs Medium+ split.
 - **Security-sensitive** — `yes` only when the work touches an enumerated surface: trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new dep / pinning), or untrusted input at a privilege boundary. Otherwise `no`.
 - **Constraints** — hard limits the operator stated (no new deps, frozen APIs, perf budgets) or "none stated".
+- **Execution authorization** — always `no`; this leaf skill standardizes intake and never starts work.
+- **Mandatory verification commands** — operator-provided commands to preserve for execution, or `none specified`.
 
 ## Resolving underdetermined fields
 
@@ -47,13 +50,16 @@ route that bypasses the declared owner: reserved `docs/spec/` names are owned by
 Emit exactly this block, filled in. **This is your complete output — do not execute, implement, or apply the described work. Stop after the block.**
 
 ```
-Goal: <one sentence — what to optimize / done-state>
+Goal: <one sentence - what to optimize / done-state>
 Scope: <files/dirs in play>
 Out-of-scope: <surfaces NOT to touch>
 Acceptance criteria: <checkable bullets>
+Docket IDs: <DKT-* IDs named in request; none>
 Size hint: trivial | bounded | needs-design
 Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
+Execution authorization: no
+Mandatory verification commands: <operator-provided commands; none specified>
 Source context: <operator-provided text, cited artifact, or none>
 Unavailable context: <issue bodies, files, or facts not fetched; none if complete>
 ```

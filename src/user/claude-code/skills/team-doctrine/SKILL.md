@@ -4,8 +4,10 @@ description: >
   Read-on-demand reference home for team-wide doctrine relocated out of team-lead.md's system
   prompt — Runtime Discipline (R1-R7), Truth-First Debugging, Docs-Path Taxonomy, the
   Vorpal-managed tool inventory, Deep Collaboration mechanics, the recurring-pitfalls memory
-  convention, the Shutdown Protocol (SP-1/SP-2), and the Communication-Discipline
-  rule-numbering convention. This is a reference index, NOT an invocable workflow — do not
+  convention, the Shutdown Protocol (SP-1/SP-2), the Communication-Discipline
+  rule-numbering convention, the Design-Complete Gate (per-pattern artifact/acceptance table,
+  Design-source grammar), and the Fable-distilled completeness / Monitor-for-Orchestration
+  watch-pattern heuristics. This is a reference index, NOT an invocable workflow — do not
   `Skill(team-doctrine)`. Read the specific `references/*.md` file a `CANONICAL:*-LOCAL`
   pointer in an agent file cites; there is no trigger phrase that should load this into
   context speculatively.
@@ -31,3 +33,6 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/shutdown-protocol.md` | Shutdown protocol (SP-1 silent-approve, SP-2 teammate-vs-subagent discriminator) | all 7 agents + `team-lead.md` (also retains a compact LOCAL copy — the lead operates the handshake every cycle) |
 | `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` only (self-referential meta-convention; no worker agent cites this master) |
 | `references/laziness-discipline.md` | Laziness Discipline (the lazy-developer ladder, Rules, Output, When NOT to be lazy, Boundaries) | `senior-engineer.md`, `sdet.md` |
+| `references/design-gate.md` | Design-Complete Gate (per-pattern artifact/acceptance table, Design-source grammar, mid-cycle interaction) | `team-lead.md` only (Rule 10 + choke-point hooks — pointer-only, no LOCAL copy) |
+| `references/fable-completeness-heuristics.md` | Fable-distilled completeness heuristics (provenance, honest scope, full bullet bodies) | `team-lead.md` (compact LOCAL copy) |
+| `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` (compact LOCAL copy) |

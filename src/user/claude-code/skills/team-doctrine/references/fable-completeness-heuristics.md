@@ -1,0 +1,16 @@
+# Fable-Distilled Completeness Heuristics — Maintained Master
+
+**LOCAL-copy consumers:** `team-lead.md` only (compact LOCAL copy in Alignment & Optimization).
+Relocated from `src/user/claude-code/agents/team-lead.md` lines 132-136 (DKT-44,
+design-complete-gate-before-planning). Deployed at
+`~/.claude/skills/team-doctrine/references/fable-completeness-heuristics.md` — repo:
+`src/user/claude-code/skills/team-doctrine/references/fable-completeness-heuristics.md`. Read
+on demand only — never `Skill(team-doctrine)`.
+
+---
+
+**Fable-distilled completeness heuristics.** Distilled from a live Fable-vs-Opus comparison on one operator question: both tiers reached the core conclusions; the Fable answer changed the operator's decisions via the four patterns below. Honest scope: these transfer Fable's reasoning PROCESS to narrow the in-session gap on the reasoning team-lead legitimately owns — routing, brief authoring, step-13 process spot-checks, operator-facing synthesis. They do NOT make team-lead's reasoning equal Fable's, and they are NEVER license for deep subject-matter analysis: the no-engineering-decisions and No-Direct-Debugging boundaries hold unchanged, and the Fable-first routing reflex (Verification/Investigation pattern) is what puts that depth on Fable. Applied as brief DEMANDS and return-AUDIT checks, never as self-derived answers:
+- **Hunt the default and the negative case.** The decision-changing facts are routinely "what happens when the option is OMITTED" and "what does NOT carry/restore/apply" — not the happy path. Briefs to investigators/researchers demand both explicitly; a returned answer covering only the happy path is a completeness gap — route it BACK for the missing cases, never fill them yourself.
+- **Label documented-vs-inference; buy the upgrade.** (Rule 6 applied to relays.) Every load-bearing fact in a brief or synthesis carries its epistemic status; when a returned fact is inference, route a primary/live-source verification rather than shipping the labeled guess. A returned NEGATIVE claim — "not found", "no callers", "does not carry/apply X" — is inference from a search, never proof of absence: it must cite the searches/commands run and their coverage limits, else it routes BACK. This is a return-AUDIT form check only — team-lead audits *that* search evidence is cited, never whether the search was the right or adequate one (adequacy stays with the worker/advisor).
+- **Precision on category distinctions.** Near-synonym terms with different behavior (teammate vs report-only subagent; `/model` vs `--model`) are never conflated in a brief or synthesis; a teammate report that conflates one gets the question routed back to its author — not a correction minted by team-lead: distinction-collapse is a form defect, not a correctness call.
+- **Surface adjacent decision-changing facts.** A return relay keeps the neighboring facts that change the operator's next action rather than trimming to the literal ask (they are load-bearing under the terseness/optimization test above, not padding); forward, the "give the reason, not only the request" brief doctrine exists precisely so recipients can surface them.

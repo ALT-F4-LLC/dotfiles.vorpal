@@ -18,7 +18,7 @@ You are the **Agent Evolution Orchestrator**. Spawn each reviewer with `spawn_ag
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `src/user/codex/agents/*.toml`, `src/user/codex/personas/team-lead.md` where applicable, and new `docs/changelog/agents/<name>.md` entries.
+- Writes: `src/user/codex/agents/*.toml`, `src/user/codex/personas/team-lead.md` where applicable, and new `docs/changelog/codex/agents/<name>.md` entries.
 - Reads: `docs/spec/`, `src/user/codex/agents/`, `src/user/codex/personas/team-lead.md`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -75,7 +75,7 @@ Before spawning any agents:
    a consistent date for changelog entries.
 4. **Inventory agent files and sizes** — Run `find src/user/codex/agents -maxdepth 1 -name '*.toml' -exec wc -l {} + 2>/dev/null` and `wc -l src/user/codex/personas/team-lead.md 2>/dev/null` (find tolerates an absent/empty agent root; zsh globs can nomatch-abort even with `2>/dev/null`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count, mode, and resolved path in each agent's spawning prompt.
 5. **Validate inventory** — If no Codex agent files found, abort. If an agent-name token is present (per Argument Handling parsing), resolve `team-lead` to `src/user/codex/personas/team-lead.md` and any other token to `src/user/codex/agents/<token>.toml`; if the resolved path does not exist, inform user and abort.
-6. **Check for existing changelogs** — Run `find docs/changelog/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
+6. **Check for existing changelogs** — Run `find docs/changelog/codex/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `request_user_input` with options: "Proceed with all <N> agents", "Narrow agent scope", "Abort". If narrowing, ask sequenced follow-up questions that first route to a specific agent or named-agent set, then split the inventory into 2-3 option batches. List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Resolve `CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"` and store `{codex_home}`; Codex audit sources are `$CODEX_HOME/sessions`, `$CODEX_HOME/history.jsonl`, `$CODEX_HOME/memories`, and this repo's `.codex/agent-memory`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via shell: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
@@ -99,7 +99,7 @@ Before spawning any agents:
 
 ## Changelog Format
 
-All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory if needed).
+All changes tracked in `docs/changelog/codex/agents/<agent-name>.md` (create directory if needed).
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited wait-agent stall count 3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
@@ -145,7 +145,7 @@ Spawn one worker per target using the Phase 1 template. **Spawn all in the same 
 **After each Phase 1 worker completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
 2. Applies approved changes via file edits (read each target file in-session before its first edit; after any grep/mv that shifts line numbers, re-read and target content strings, never stale line numbers; apply exactly one edit per approved CHANGE — no silent merge or drop); runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, search/read) before applying — reject drift
-3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
+3. Writes/normalizes `docs/changelog/codex/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
@@ -160,9 +160,9 @@ Cross-cutting items append to a running notes list passed verbatim into the Phas
 Gate: the local phase ledger shows all Phase 1 entries `completed`, all Phase 1 edits applied, AND every Phase 1 agent ID closed per lifecycle rules. Only then spawn a single `coherence-reviewer` per the Phase 2 template and record the Phase 2 ledger entry.
 
 **After the Phase 2 worker completes**, the orchestrator:
-1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `src/user/codex/agents/`, `src/user/codex/personas/`, `src/user/codex/skills/`, `.codex/skills/`; never changelogs/pitfalls/prose)
+1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `src/user/codex/agents/`, `src/user/codex/personas/`, `src/user/codex/skills/`; never `.codex/skills/`, changelogs, pitfalls, or prose)
 2. Applies coherence fixes using file edits — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
-3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
+3. Updates `docs/changelog/codex/agents/<name>.md` for any agent that received coherence fixes
 4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — repeated wait-agent stalls or close-agent rejection reasons cluster around scope/ownership → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' src/user/codex/agents/*.toml src/user/codex/personas/team-lead.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: Disambiguation (sequential)
@@ -381,7 +381,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/agents/<name>.md entry, docs/spec/ selectively, and relevant sections of other Codex agent definition files by heading/search instead of fixed line-count windows.
+Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/codex/agents/<name>.md entry, docs/spec/ selectively, and relevant sections of other Codex agent definition files by heading/search instead of fixed line-count windows.
 
 ## OpenAI Codex Documentation Research
 {docs_research_findings}

@@ -210,7 +210,7 @@ fn codex_ux_designer_preserves_design_only_contract() {
         "Default = single `ux-advisor` via `send_input`",
         "`ux-advisor` + `design-qa-{N}` ephemeral",
         "team-lead owns `close_agent`",
-        "Format authority: `src/user/codex/skills/ux-spec/SKILL.md`",
+        "Format authority: `~/.codex/skills/ux-spec/SKILL.md`",
         "per team-lead.md Consensus Integration",
     ];
 
@@ -564,6 +564,47 @@ fn user_config_registers_existing_codex_agent_files() {
         src.contains("$HOME/.codex/team-lead.config.toml")
             && src.contains("include_str!(\"user/codex/personas/team-lead.md\")"),
         "user build should install a team-lead profile backed by persona instructions"
+    );
+}
+
+#[test]
+fn user_config_installs_codex_personas_and_skills_under_codex_home() {
+    let src = fs::read_to_string(repo_root().join("src/user.rs"))
+        .expect("src/user.rs should be readable");
+
+    assert!(
+        src.contains("let codex_personas_name =")
+            && src.contains("let codex_personas = FileSource::new(")
+            && src.contains("&codex_personas_name,")
+            && src.contains("\"src/user/codex/personas\","),
+        "user build should snapshot src/user/codex/personas"
+    );
+    assert!(
+        src.contains("let codex_skills_name =")
+            && src.contains("let codex_skills = FileSource::new(")
+            && src.contains("&codex_skills_name,")
+            && src.contains("\"src/user/codex/skills\","),
+        "user build should snapshot src/user/codex/skills"
+    );
+    assert!(
+        src.contains("(&codex_personas_path, \"$HOME/.codex/personas\")"),
+        "user build should symlink Codex personas into ~/.codex/personas"
+    );
+    assert!(
+        src.contains("(&codex_skills_path, \"$HOME/.codex/skills\")"),
+        "user build should symlink Codex skills into ~/.codex/skills"
+    );
+    assert!(
+        src.contains("with_skill_config(SkillConfig {")
+            && src.contains("path: Some(\"$HOME/.codex/skills\".to_string()),")
+            && src.contains("enabled: Some(true),"),
+        "Codex config should register ~/.codex/skills for discovery"
+    );
+
+    let legacy_skill_path = ["$HOME/.agents", "skills"].join("/");
+    assert!(
+        !src.contains(&legacy_skill_path),
+        "Codex skills should not install into the legacy agent skill path"
     );
 }
 

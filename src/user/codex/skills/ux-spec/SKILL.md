@@ -57,17 +57,17 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
   flows, error states, accessibility — before implementation, and should land at
   `docs/ux/{slug}.md` as the authoritative design record.
 - The calling agent (typically `@ux-designer`) is producing a design spec per
-  Responsibility 1 of the agent prompt (`src/user/codex/agents/ux-designer.toml`).
+  Responsibility 1 of the agent prompt (`~/.codex/agents/ux-designer.toml`).
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.codex/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
 - Internal-only surfaces (agent-to-agent protocols, internal scripts, build
   tooling without external users), single-tier design fits (CLI flag rename,
   copy tweak, one-shot error message), or work that fits the calling agent's
-  Design Output Tiers 1–3 (`src/user/codex/agents/ux-designer.toml` Responsibility 1) — use the
+  Design Output Tiers 1–3 (`~/.codex/agents/ux-designer.toml` Responsibility 1) — use the
   appropriate lighter tier instead. Full UX specs are reserved for Tier 4
   (new interaction pattern, multi-surface, core workflow change,
   precedent-setting).
@@ -124,13 +124,13 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: build the search set from existing directories among `docs/spec/`, `docs/tdd/`, and `docs/ux/`; skip missing dirs, run `Grep -r "{topic-keywords}" <existing-dirs>` only if any remain, and continue without error if none do. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `src/user/codex/agents/ux-designer.toml`: same concept gets the same name across all surfaces).
+1. **Gather prior art**: build the search set from existing directories among `docs/spec/`, `docs/tdd/`, and `docs/ux/`; skip missing dirs, run `Grep -r "{topic-keywords}" <existing-dirs>` only if any remain, and continue without error if none do. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `~/.codex/agents/ux-designer.toml`: same concept gets the same name across all surfaces).
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required Sections). Every section listed MUST appear, in the order shown. Match spec fidelity to problem complexity — sections that do not apply to the surface type (e.g., accessibility for a non-interactive config schema) may contain a single `N/A.` paragraph with a one-line justification, but omitting them is a defect.
 4. **Mermaid diagrams**: satisfy the Mermaid Mandate (see below) — at least one block.
    Structure sketches may supplement Mermaid only when they name rendered effect target and states.
-5. **Propose actual copy**: per `src/user/codex/agents/ux-designer.toml` content design rule, propose
+5. **Propose actual copy**: per `~/.codex/agents/ux-designer.toml` content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
    states, and tooltips. No placeholder strings. **When the calling agent must resolve
    copy or layout variants with the operator before save, prefer `AskUserQuestion`
@@ -139,7 +139,7 @@ malformed frontmatter.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
    overloaded, degraded, and concurrent states.
-7. **Resolve open questions before save**: per `src/user/codex/agents/ux-designer.toml`, no
+7. **Resolve open questions before save**: per `~/.codex/agents/ux-designer.toml`, no
    unresolved questions ship with the spec. There is no dedicated Open Questions
    section — entries belong inside §9 Handoff Notes and must be resolved (or the
    calling agent re-invokes this skill after consulting peers and the operator).
@@ -219,7 +219,7 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `src/user/codex/agents/ux-designer.toml`.
+Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `~/.codex/agents/ux-designer.toml`.
 
 For non-GUI surfaces (CLI flag, API endpoint, config schema, log format), a
 cross-surface journey (e.g., `cli invocation → API call → persisted config`) or

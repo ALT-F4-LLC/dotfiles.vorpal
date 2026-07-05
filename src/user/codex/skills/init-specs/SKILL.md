@@ -27,7 +27,7 @@ Always delegates spec authoring to parent-led Codex staff-engineer subagents. Th
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
-**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `src/user/codex/personas/team-lead.md` (Medium/Large Task patterns).
+**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `~/.codex/personas/team-lead.md` (Medium/Large Task patterns).
 
 ---
 
@@ -69,7 +69,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by src/user/codex/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by ~/.codex/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|

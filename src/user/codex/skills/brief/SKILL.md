@@ -42,7 +42,7 @@ Derive everything the request supports on your own. For fields that remain genui
 Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
 When an option would create or route writes to a `docs/` path, check the local
-lead-agent docs path taxonomy in `src/user/codex/personas/team-lead.md` before marking any option Recommended. Never recommend a
+lead-agent docs path taxonomy in `~/.codex/personas/team-lead.md` before marking any option Recommended. Never recommend a
 route that bypasses the declared owner: reserved `docs/spec/` names are owned by `init-specs`.
 
 ## Output

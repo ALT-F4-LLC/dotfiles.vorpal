@@ -54,11 +54,11 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 - A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
 - The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
-- The team-lead Large Task pattern (`src/user/codex/personas/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
+- The team-lead Large Task pattern (`~/.codex/personas/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.codex/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
@@ -245,7 +245,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by src/user/codex/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by ~/.codex/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

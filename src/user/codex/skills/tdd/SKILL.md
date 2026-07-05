@@ -66,7 +66,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/codex/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.codex/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
 - Architecture Decision Records (single decisions): use `(adr, "<topic>")`.
@@ -212,7 +212,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    `Security Considerations` — enforced by Validation §7. Non-security TDDs
    may omit them. (Mixed-scope routing — when @security-engineer appends
    these to a @staff-engineer TDD via the Threat-Model Annotation pattern
-   — is owned by `src/user/codex/agents/security-engineer.toml`, not this skill.)
+   — is owned by `~/.codex/agents/security-engineer.toml`, not this skill.)
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation

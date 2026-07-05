@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use bat::BatConfig;
 use claude_code::Config as ClaudeCodeConfig;
-use codex::{AgentRole, Codex, Otel, TuiNotifications};
+use codex::{AgentRole, Codex, Otel, SkillConfig, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
 pub use opencode::ModelLimit;
@@ -413,6 +413,10 @@ impl UserEnvironment {
                     &["ux", "designer", "ux-advisor"],
                 ),
             )
+            .with_skill_config(SkillConfig {
+                path: Some("$HOME/.codex/skills".to_string()),
+                enabled: Some(true),
+            })
             .with_allow_login_shell(true)
             .with_analytics_enabled(true)
             .with_approval_policy("on-request")
@@ -938,6 +942,17 @@ impl UserEnvironment {
         .await?;
         let codex_agents_path = get_output_path("library", &codex_agents);
 
+        // Codex personas directory
+        let codex_personas_name = format!("{}-codex-personas", &self.name);
+        let codex_personas = FileSource::new(
+            &codex_personas_name,
+            "src/user/codex/personas",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+        let codex_personas_path = get_output_path("library", &codex_personas);
+
         // Claude skills directory
         let claude_skills_name = format!("{}-claude-skills", &self.name);
         let claude_skills = FileSource::new(
@@ -976,6 +991,7 @@ impl UserEnvironment {
         let claude_agents_path = format!("{claude_agents_path}/src/user/claude-code/agents");
         let claude_skills_path = format!("{claude_skills_path}/src/user/claude-code/skills");
         let codex_agents_path = format!("{codex_agents_path}/src/user/codex/agents");
+        let codex_personas_path = format!("{codex_personas_path}/src/user/codex/personas");
         let codex_skills_path = format!("{codex_skills_path}/src/user/codex/skills");
         let opencode_skills_path = format!("{opencode_skills_path}/src/user/opencode/skills");
 
@@ -1033,6 +1049,7 @@ impl UserEnvironment {
                 claude_teammate_idle_hook,
                 codex_agents,
                 codex_config,
+                codex_personas,
                 codex_team_lead_profile,
                 codex_skills,
                 ghostty_config,
@@ -1065,8 +1082,9 @@ impl UserEnvironment {
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (&codex_agents_path, "$HOME/.codex/agents"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
+                (&codex_personas_path, "$HOME/.codex/personas"),
                 (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
-                (&codex_skills_path, "$HOME/.agents/skills"),
+                (&codex_skills_path, "$HOME/.codex/skills"),
                 (ghostty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),

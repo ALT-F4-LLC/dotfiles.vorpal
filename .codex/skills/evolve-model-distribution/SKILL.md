@@ -18,7 +18,7 @@ You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pip
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `src/user/codex/personas/team-lead.md` (routing edits only), `docs/changelog/model-distribution/team-lead.md` (sole writer of this family).
+- Writes: `src/user/codex/personas/team-lead.md` (routing edits only), `docs/changelog/codex/model-distribution/team-lead.md` (sole writer of this family).
 - Reads: `docs/spec/`, `src/user/codex/personas/team-lead.md` (the routing edit target — build source), `CODEX_HOME` (default `~/.codex`), `$CODEX_HOME/sessions`, `$CODEX_HOME/history.jsonl`, `$CODEX_HOME/memories`, repo `.codex/agent-memory` where needed (LOCAL per-spawn evidence), Mimir after Codex metric discovery (REMOTE aggregate).
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -26,8 +26,8 @@ You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pip
 ## Target Boundaries
 
 - Codex routing edit target: `src/user/codex/personas/team-lead.md` only.
-- Codex changelog target: `docs/changelog/model-distribution/team-lead.md` only.
-- Prohibited update targets: `.claude/**`, `src/user/claude/**`, Claude Code skills, Claude Code scripts, and Claude Code agent-memory. Read Claude Code paths only when the operator explicitly requests comparison context; never update them from this skill.
+- Codex changelog target: `docs/changelog/codex/model-distribution/team-lead.md` only.
+- Prohibited update targets: `.claude/**`, `src/user/claude*`, `src/user/opencode*`, Claude Code skills, Claude Code scripts, Claude Code agent-memory, and OpenCode sources. Read non-Codex paths only when the operator explicitly requests comparison context; never update them from this skill.
 
 ---
 
@@ -77,7 +77,7 @@ Before spawning any workers:
 
 ## Changelog Format
 
-All model-routing changes tracked in `docs/changelog/model-distribution/<target>.md` (the sole current target is `team-lead.md`; create the directory if needed).
+All model-routing changes tracked in `docs/changelog/codex/model-distribution/<target>.md` (the sole current target is `team-lead.md`; create the directory if needed).
 
 **Exact format — no deviations:** `# Changelog: model-distribution/<target>` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order:
 
@@ -276,13 +276,13 @@ Every evidence-confirmed proposal MUST clear an explicit operator approval befor
 
 #### Step 3 — Orchestrator apply workflow (orchestrator edits; workers never do)
 
-For each operator-approved proposal the orchestrator applies routing edits only to the Codex build source, `src/user/codex/personas/team-lead.md`, ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the live tier policy per the Categorization AUTHORITY rule), read `src/user/codex/personas/team-lead.md` in-session before the first edit, and apply exactly one file edit per approved proposal. Claude Code paths (`.claude/**`, `src/user/claude/**`, Claude Code skills, Claude Code scripts, Claude Code agent-memory) may be read only when the operator explicitly requests comparison context; they are never updated by this skill.
+For each operator-approved proposal the orchestrator applies routing edits only to the Codex build source, `src/user/codex/personas/team-lead.md`, ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the live tier policy per the Categorization AUTHORITY rule), read `src/user/codex/personas/team-lead.md` in-session before the first edit, and apply exactly one file edit per approved proposal. Non-Codex paths (`.claude/**`, `src/user/claude*`, `src/user/opencode*`, Claude Code skills, Claude Code scripts, Claude Code agent-memory, OpenCode sources) may be read only when the operator explicitly requests comparison context; they are never updated by this skill.
 
 - **FILE-EDIT (upgrade / tier-policy correction)** — edit the tier-policy bullet or routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a tier-policy correction aligns stale prose to the live GPT-5.x tiers.
 - **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower a category below its live canonical tier.
 - **RUNTIME-DISCIPLINE REPORT** — no file edit; the file is already correct (team-lead deviated at spawn time), so surface the finding to the operator and record it.
 
-After applying the approved batch, prepend ONE new entry to `docs/changelog/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** normal tier comparisons use Mini, Standard, and Top only; Optional preview remains conditional and outside upgrade/downgrade comparisons.
+After applying the approved batch, prepend ONE new entry to `docs/changelog/codex/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** normal tier comparisons use Mini, Standard, and Top only; Optional preview remains conditional and outside upgrade/downgrade comparisons.
 
 ### Phase 3: coherence-verifier (read-only, post-apply)
 

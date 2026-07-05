@@ -133,7 +133,7 @@ malformed frontmatter.
 ## Authoring Procedure
 
 1. **Gather prior art**: derive `{slug_tokens}` once by splitting `{slug}` on `-`; build the search set from existing directories among `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, and `docs/ux/`; skip missing dirs, search `{slug_tokens}` first, broaden only if no candidates appear, and continue without error if none do.
-   Read candidate predecessors so `Context` cites superseded, reinforced, or contradicted decisions; if the new ADR replaces an older ADR, start `Context` with `Supersedes: {old-adr-basename}`.
+   Read candidate predecessors so `Context` cites superseded, reinforced, or contradicted decisions; if the new ADR replaces an older ADR, set `supersedes: "{old-adr-basename}"` in frontmatter and cite that basename in `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
@@ -161,6 +161,7 @@ project: "{project_name}"
 last_updated: "{today_date}"
 updated_by: "{updated_by}"
 status: "proposed"
+# supersedes: "0041-old-decision"  # optional when this ADR replaces an older ADR
 # superseded_by: "0042-new-decision"  # required only when status is "superseded"
 ---
 ```
@@ -173,9 +174,8 @@ Field rules:
 - `status` is one of: `proposed | accepted | superseded`. New ADRs start at
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
   `superseded` is set when a later ADR replaces this one.
-- `superseded_by` is required when `status: superseded` and points to the
-  successor ADR's basename without extension (e.g., `0042-new-decision`).
-  Omit otherwise.
+- `supersedes` is optional for replacement ADRs and points to the predecessor ADR basename without extension. Omit otherwise.
+- `superseded_by` is required when `status: superseded` and points to the successor ADR basename without extension. Omit otherwise.
 
 ### Required Sections
 
@@ -195,9 +195,7 @@ heading in the drafted document.
 
 Before invoking `Write`, verify in the calling agent's context:
 
-1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`,
-   `status` present and non-empty. If `status: superseded`, `superseded_by`
-   must also be present and non-empty.
+1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`, and `status` present and non-empty. If `supersedes` is present, it must be non-empty; if `status: superseded`, `superseded_by` must be present and non-empty.
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed

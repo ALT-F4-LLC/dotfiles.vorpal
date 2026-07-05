@@ -95,7 +95,7 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Resolve context**: `{role}` = the detected role (`staff-engineer` or `security-engineer`).
-4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
+4. **Gather artifact context** per the resolved scope's diff source. Capture and update a review manifest throughout the review: scope type, provenance ID (`gh pr view {n} --json headRefOid` for PRs, `git rev-parse {branch}` for branches, `git diff | shasum` plus `git diff --staged | shasum` when local diffs are included, or `shasum {paths}` for file scopes), file list, stat, GO/completion status, reference docs read, and commands run. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 
    ```
@@ -160,7 +160,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 
 ### Common Discipline (both roles)
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use the calling agent's Codex-native user-input mechanism per its structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Report every finding — do NOT self-filter.** Report each issue you find, including low-severity and uncertain ones, each tagged with the role's severity (classification, not suppression) and a confidence note. Filtering and ranking happen downstream (team-lead step-14 reconciliation / operator), never here — declining to report a found issue because it seems minor is a recall defect. A finding a linter (`cargo clippy` / `cargo audit`) would also catch is reported as a `Suggestion` (general) / `Info` (security), not omitted. The severity ladder ranks; it does not gate what you surface.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use the supported Codex shell background mode with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
@@ -205,10 +205,10 @@ For substantive changes:
 ### Summary
 {1-3 sentence description of what changed and why}
 
-### Scope Reviewed
-- Source: {PR # / branch / uncommitted / staged / files}
-- Diff manifest: {N} files ({git diff --name-status or PR file list}); stat: {git diff --stat one-line summary}
-- Reference docs: {TDDs, specs consulted — or "None applicable"}
+### Review Manifest
+- Scope/provenance: {scope_type: PR|branch|uncommitted|staged|files; source: ...; diff_id: PR head SHA | branch HEAD | local diff shasum | file-content shasum}
+- Files/stat: {N} files ({git diff --name-status or PR file list}); stat: {git diff --stat one-line summary}
+- Readiness/context: {GO/completion signal or standalone snapshot caveat; reference docs read; commands run}
 
 ### Risk Assessment
 - Blast radius: {scope of impact if this regresses}
@@ -285,10 +285,10 @@ For substantive security-relevant changes:
 ### Summary
 {1-3 sentence security framing of what changed}
 
-### Scope Reviewed
-- Source: {PR # / branch / uncommitted / staged / files}
-- Diff manifest: {N} files ({git diff --name-status or PR file list}); security-touched paths called out
-- Reference docs: {security TDD, security ADRs, docs/spec/security.md sections — or "None applicable"}
+### Review Manifest
+- Scope/provenance: {scope_type: PR|branch|uncommitted|staged|files; source: ...; diff_id: PR head SHA | branch HEAD | local diff shasum | file-content shasum}
+- Files/stat: {N} files ({git diff --name-status or PR file list}); security-touched paths called out
+- Readiness/context: {GO/completion signal or standalone snapshot caveat; security reference docs read; commands run}
 
 ### Threat Model (assumed)
 - Adversary: {external attacker / curious insider / supply-chain compromise / prompt injection / ...}
@@ -365,8 +365,8 @@ Before emitting the structured review, verify in the calling agent's context:
 7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
 8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
-10. **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
-11. **Findings JSON validity** — parse the `### Findings JSON` block as JSON (`jq` if available; otherwise explicit count comparison) and verify every severity array exists and its item count matches the corresponding human severity bucket.
+10. **Manifest/citation consistency** — Review Manifest names scope type, provenance ID, file list/stat, docs read, GO/completion status, and commands run; every `file:line` cited in a Finding names a file present in the manifest's file list. A citation to a file absent from the manifest is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
+11. **Findings JSON validity** — parse the `### Findings JSON` block as JSON (`jq` if available; otherwise explicit count comparison). Staff reviews must emit exactly `blockers`, `concerns`, `suggestions`, `questions`, `praise`, and `overrides_recognized` arrays; security reviews must emit exactly `critical`, `high`, `medium`, `low`, and `info` arrays. No schema may include missing or extra keys, and each array count must match the corresponding human severity bucket.
 
 If any check fails, ABORT:
 

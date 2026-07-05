@@ -120,7 +120,7 @@ malformed frontmatter.
    specs are project-level conventions, not PRDs, unless this PRD genuinely depends on
    one. Reference, do not contradict, prior accepted product definitions, and list each
    dependency in frontmatter.
-2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Always surface a compact "Pre-existing Docket issues" table in Risks & Open Questions with columns `Issue`, `Status`, `Overlap`, and `Decision`; if Docket is unavailable, emit one row: `Docket probe unavailable`, `unavailable`, `{raw error}`, `continue`.
+2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Always surface a "Pre-existing Docket issues" table in Risks & Open Questions with columns `Issue`, `Status`, `Overlap`, and `Decision`; `Decision` MUST be one of `continue`, `block`, `merge`, or `defer`; if Docket is unavailable, emit one row: `Docket probe unavailable`, `unavailable`, `{raw error}`, `continue`.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required

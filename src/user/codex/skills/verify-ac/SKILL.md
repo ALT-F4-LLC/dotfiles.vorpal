@@ -55,8 +55,8 @@ Error: Usage: (verify-ac, "<scope>") — name what to verify (Docket issue ID, "
 
 **Ambiguity rules** (apply when multiple forms could match):
 
-- If the `docket` CLI is unavailable for an issue-ID scope, ABORT: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.`
-- A token matching the Docket issue ID pattern (e.g., `DKT-123`, `ISS-45`) always tries Docket-issue resolution first. If `docket issue show` exits non-zero (no such issue), fall through to subsequent forms.
+- A token matching the Docket issue ID pattern (e.g., `DKT-123`, `ISS-45`) always tries Docket-issue resolution first. Before issue lookup, run `docket issue --help` and verify the Available Commands text includes `show`, `comment`, `file`, and `log`; run `docket issue file --help` and verify it includes `list`. If `docket` is unavailable or either help surface is missing a required command, ABORT: `Error: docket CLI with issue show/comment/file list/log support required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.`
+- If `docket issue show` exits non-zero after the help checks pass (no such issue), fall through to subsequent forms.
 - A single token that is BOTH a valid branch name AND an existing file is treated as a branch. To force file-path scope, supply multiple tokens or prefix with `./` (e.g., `./main`).
 
 If `<scope>` matches none of the above, ABORT:
@@ -116,7 +116,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 6a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.
-7. **Acceptance-criteria execution plan.** Before scoring, map each AC to evidence to collect: dispatch `Mandatory verification commands`, issue/TDD-referenced helper output when such a helper exists, or AC-derived commands/reads. If a team-lead dispatch brief lacks `Mandatory verification commands` for non-trivial code, surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed with the AC-derived plan. Do NOT silently substitute text-inspection for empirical execution per `~/.codex/agents/sdet.toml` Epistemic Discipline.
+7. **Acceptance-criteria evidence matrix.** Before scoring, build a scratch JSON array in the calling context: `[{"criterion":"...","evidence_kind":"mandatory-command|helper|literal-command|grep-hit-count|read|runtime-route","command_or_path":"...","expected":"...","status":"planned"}]`. Populate it from dispatch `Mandatory verification commands`, issue/TDD-referenced helper output when such a helper exists, literal AC commands, grep-hit-count criteria, or AC-derived reads. If a team-lead dispatch brief lacks `Mandatory verification commands` for non-trivial code, surface as a Pre-flight finding (`Caller-contract gap: dispatch brief omits Mandatory verification commands subsection`) and proceed with the AC-derived plan. Do NOT silently substitute text-inspection for empirical execution per `~/.codex/agents/sdet.toml` Epistemic Discipline.
 
 ## Verification Procedure
 
@@ -124,7 +124,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ### LIGHT mode
 
-For trivial fixes (typo, formatting, single-line config), docs-only changes, or changes already covered by existing passing tests:
+Use LIGHT only when the resolved scope has no explicit acceptance criteria, or when every criterion is trivial (typo, formatting, single-line config, docs-only) and one command/file citation can cover all criteria:
 
 1. Run the relevant tests / verification command.
 2. Emit the one-line report defined in Output Contract § LIGHT Output (no template).
@@ -135,7 +135,7 @@ If LIGHT cannot be issued (any failed test, any unmet or runtime-only criterion,
 
 Apply the full procedure. Scale evidence to risk.
 
-1. **Verify each acceptance criterion individually** — mark PASS, FAIL, or OUT-OF-SCOPE with specific evidence (test output, file/line reference, observed behavior). **When an AC names a literal command, run THAT command verbatim** — an equivalent or paraphrased command leaves the named path unverified, so a PASS on a substitute is a defect; cite the exact command in evidence. OUT-OF-SCOPE = verifiable only at runtime/render (live app behavior, rendered page/visual output, deployed-environment state). NEVER PASS a runtime-only criterion on a static proxy (file exists, ref present, build exit 0 — a green build can still ship broken renders); mark OUT-OF-SCOPE, name the runtime route (`design-qa` for `docs/ux` surfaces; bundled runtime `verify` otherwise), and leave dispatch to the calling agent.
+1. **Execute the acceptance-criteria evidence matrix row-by-row** — mark each AC PASS, FAIL, or OUT-OF-SCOPE with specific evidence (test output, file/line reference, observed behavior). For `literal-command` rows, run the named command verbatim; for `grep-hit-count` rows, run the exact grep and compare the hit count to the expected file set. OUT-OF-SCOPE = verifiable only at runtime/render (live app behavior, rendered page/visual output, deployed-environment state). NEVER PASS a runtime-only criterion on a static proxy (file exists, ref present, build exit 0 — a green build can still ship broken renders); mark OUT-OF-SCOPE, name the runtime route (`design-qa` for `docs/ux` surfaces; bundled runtime `verify` otherwise), and leave dispatch to the calling agent.
 2. **Layer signals** — run the suite, trace key paths, diff output against baseline, verify generated artifacts are consumed correctly. Never rely on one signal.
 3. **Test beyond stated criteria** — empty/null/large input, invalid/malicious input, unavailable dependencies, boundary conditions. Surface findings under Additional Testing.
 4. **Analyze coverage** — what's tested, where, and which gaps are conscious decisions vs. real risk.
@@ -158,7 +158,7 @@ Apply the full procedure. Scale evidence to risk.
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use the calling agent's Codex-native user-input mechanism per its structural contract. Do NOT ask when the answer is in the code.
 - **Peer `send_input` is the calling agent's job.** This skill emits the report into context; the calling `@sdet` handles all peer messages and Docket comments after the skill returns.
 - **Honest critique.** Do NOT default to APPROVE. A justified BLOCK is more valuable than an unexamined APPROVE.
 - **Evidence over assertion.** Every PASS/FAIL claim cites the exact command run, file:line inspected, or observed behavior — not "tests pass" or "looks correct". Per `~/.codex/agents/sdet.toml` Epistemic Discipline rule: banned framings ("clearly", "obviously", "should work", "100%") are evidence-free assertions and a validation failure for the verdict.
@@ -251,7 +251,7 @@ The calling agent owns (in order):
 - send_input to peers per the `~/.codex/agents/sdet.toml` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
 - Escalating to vote per the vote triggers in `~/.codex/agents/sdet.toml` — standalone: `(vote, ...)`; team mode: NEVER `(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `~/.codex/agents/sdet.toml` §Using `/vote` for Consensus.
 
-**Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's inbox. Before ending the turn, answer: "Did I send_input the structured verdict body (not summarized) to team-lead this same turn?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the send_input IS the deliverable.
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I send_input the structured verification report body (not summarized) this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 On any abort during Pre-flight, Verification Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
 

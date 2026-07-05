@@ -91,7 +91,7 @@ exploration guidance for each — used in the spawning template.
 1. Create a local phase ledger with one row per target file: filename, worker id, status (`planned | spawned | reported | verified | failed`), and output path.
 2. Dispatch one Codex `staff-engineer` subagent per target file. Each `spawn_agent` call MUST set an explicit Codex worker model and effort: default `model="gpt-5.4"` and `reasoning_effort="medium"` unless the verified brief explicitly justifies an upgrade for a specific spec. Record the model/effort in the local ledger. Spawn all independent workers in the SAME turn where the harness permits parallel dispatch.
 3. Each worker brief uses the Spawning Template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}`. Track the returned Codex agent id in the local ledger.
-4. If the current harness cannot spawn workers from this skill context, emit the prepared worker briefs and stop with `Blocked: parent-led Codex staff-engineer subagents are required for spec authoring.` Do not write specs directly.
+4. If the current harness cannot spawn workers from this skill context, write one prompt file per target under `\$TMPDIR/init-specs-worker-prompts/`, print optional `codex exec` instructions that reference those prompt files for operator-run fallback workers, and stop with `Blocked: parent-led Codex staff-engineer subagents are required for spec authoring; fallback prompts emitted.` Do not write `docs/spec/` content directly.
 
 ### Step 2: Wait for Reports
 
@@ -108,7 +108,7 @@ Proceed to Step 3 once every target row is `reported` OR the operator has resolv
 
 ### Step 3: Verify
 
-After all agents complete, run verification **scoped to files generated this run** (`{generated_files}` = the set whose tasks reached `completed` in Step 2; on the "Skip existing" path this excludes pre-existing files this run did not produce):
+After all agents complete, run verification **scoped to files generated this run** (`{generated_files}` = the set whose ledger rows reached `reported` in Step 2; on the "Skip existing" path this excludes pre-existing files this run did not produce):
 
 1. Confirm every file in the expected target set exists on disk (`ls docs/spec/` and intersect with the target set). Flag any missing files.
 2. Run `head -1 {generated_files}` and confirm every file starts with `---` (YAML frontmatter delimiter). Flag any file that does not — it indicates a malformed spec.

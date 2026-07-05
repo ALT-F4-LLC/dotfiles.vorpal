@@ -65,7 +65,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via send_input, no ephemeral spawn — per `~/.codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` via a Codex worker spawn, both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` delivers its verdict, then stops while the calling layer consumes the report and closes the returned worker id; the ephemeral lifecycle is owned by the calling layer per `~/.codex/personas/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `(vote, ...)`; reviewers never address the operator directly) per `~/.codex/personas/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via send_input, no ephemeral spawn — per `~/.codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` via a Codex worker spawn, both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` delivers its verdict, then stops while the calling layer consumes the report and closes the returned worker id; the ephemeral lifecycle is owned by the calling layer per `~/.codex/personas/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions route through the calling layer's Codex-native user-input mechanism or vote delegation; reviewers never address the operator directly) per `~/.codex/personas/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
@@ -80,7 +80,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Read the UX spec**:
-   - Capture spec path, frontmatter `maturity` (and `status` if present), the workflow list, and the spec's §9 Handoff Notes MVP cutline — components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
+   - Capture spec path, frontmatter `maturity` (UX specs do not use `status`; note unexpected `status` as a finding), workflow headings from §1 Overview and §4 Interaction Design, and the spec's §9 Handoff Notes MVP cutline — components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
    - If the spec cannot be located (Docket issue scope with no attached spec, `uncommitted` with no spec in the changed paths), ABORT:
 
      ```
@@ -98,7 +98,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Walk every workflow in the spec.** For each: interactions, states, transitions, error branches, success path, accessibility hooks, copy.
 2. **Test edge cases.** Empty inputs, error states, overloaded inputs, degraded mode, missing dependencies, NO_COLOR / accessibility settings for TUI/CLI, viewport breakpoints for web. For externally-referenced media (images, icons, embeds), confirm the rendered content — not just HTTP 200 or ref presence: a dead payload (broken-image placeholder, "content not available") passes liveness checks but fails the spec.
-   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass. A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport. A missing or broken render is a Blocker.
+   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** MANDATORY: render to image at real delivery resolution, visually READ it before any Pass, and store reviewed artifacts under `$TMPDIR/design-qa/<spec-slug>/` for matrix citations. Broken-image placeholders, dead embeds, or cues that disappear under streamed/screenshared/small-viewport delivery are Blockers.
 3. **Check accessibility implementation** against the spec's accessibility section (WCAG criteria, keyboard reachability, color-not-sole-indicator, etc.).
 4. **Trace cross-surface consistency** — if the spec sets precedent, verify the same concept uses the same name and copy across surfaces.
 5. **Decide verdict** per the ladder:
@@ -120,7 +120,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when spec intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the spec.
+- **Ask clarifying questions first** when spec intent is ambiguous — use the calling agent's Codex-native user-input mechanism per its structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the spec.
 - **Accept reasonable engineering tradeoffs.** Flag deviations that affect usability; document acceptable deviations explicitly under "Acceptable Deviations" so the calling agent can decide how to communicate them.
 - **Honest critique + concrete fix shape.** Do NOT default to Pass. A justified Fail with a concrete fix is more valuable than an unexamined Pass. Every Blocker's Description must name the expected-per-spec target (copy text, state, interaction) so @senior-engineer can act without a follow-up consult. Banned confidence phrases in findings: "clearly", "obviously", "should work", "definitely", "100%", "guaranteed" — use evidence-anchored language instead.
 - **Cite implementation evidence per finding.** Every Blocker and Concern row's Description must name the observed evidence (file:line, command + observed output, generated bytes, or surface state) — not just "diverges from spec". Findings without traceable evidence are validation defects.
@@ -134,7 +134,7 @@ Emit the QA report verbatim to the calling agent's context. Do NOT echo the raw 
 
 ### Spec Reference
 - Path: {docs/ux/...}
-- Maturity / status: {maturity from frontmatter — and status if present}
+- UX maturity: {maturity from UX-spec frontmatter; unexpected `status` is reported under Issues, not as report metadata}
 - Surface(s): {CLI / TUI / Web / API / Config / Docs}
 
 ### Verdict
@@ -183,7 +183,7 @@ Before emitting the report, verify in the calling agent's context:
 5. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Cross-surface precedent findings may use the literal `"Cross-surface"` at any severity; Suggestions and Praise may also use general references.
 6. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
 7. **Required sections present, in order** — Spec Reference, Verdict, Workflow Evidence Matrix, Issues, Findings JSON, What's Implemented Well, Acceptable Deviations, Recommendation.
-8. **Findings JSON validity** — parse the `### Findings JSON` block as JSON and verify every severity array exists and its item count matches the corresponding human severity bucket.
+8. **Findings JSON validity** — parse the `### Findings JSON` block as JSON and verify the object contains exactly `blockers`, `concerns`, `suggestions`, and `praise` arrays, with no missing or extra keys; each array count must match its corresponding emitted human bucket (`Issues` by severity and `What's Implemented Well` for praise).
 9. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
 10. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Issues, What's Implemented Well, Acceptable Deviations, or Recommendation. Use evidence-anchored language. A hit is a defect.
 

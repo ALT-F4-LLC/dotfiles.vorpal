@@ -69,7 +69,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via send_input, no ephemeral spawn — per `~/.codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-review-{N}` via a Codex worker spawn, both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-review-{N}` delivers its verdict, then stops while the calling layer consumes the report and closes the returned worker id; the ephemeral lifecycle is owned by the calling layer per `~/.codex/personas/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `(vote, ...)`; reviewers never address the operator directly) per `~/.codex/personas/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via send_input, no ephemeral spawn — per `~/.codex/personas/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-review-{N}` via a Codex worker spawn, both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-review-{N}` delivers its verdict, then stops while the calling layer consumes the report and closes the returned worker id; the ephemeral lifecycle is owned by the calling layer per `~/.codex/personas/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions route through the calling layer's Codex-native user-input mechanism or vote delegation; reviewers never address the operator directly) per `~/.codex/personas/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
@@ -85,7 +85,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Read the artifact**:
-   - For UX spec / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
+   - For UX spec / draft path: `Read` the file; capture frontmatter `maturity` and `owner` (UX specs do not use `status`; note unexpected `status` as a finding), plus the workflow list.
    - For TDD path: extract headings and linked UX refs first, then read only user-facing sections needed to review CLI/API/config/error-copy workflows.
    - For inline surface description: treat the description as the artifact text.
 4. **Cross-reference precedent**:
@@ -99,7 +99,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 ## Review Procedure
 
-**Simulate the user journey.** Walk through every workflow articulated in the artifact — don't just read. For each workflow, trace: entry point, expected interactions, success path, error branches, accessibility hooks, copy, exit point. Designs that read well but break on simulation are reject-class.
+**Extract review scope before simulation.** Build a stable workflow/surface list from the UX spec workflow list, §4 interaction-state matrix or §9 Handoff Notes when present, TDD user-facing headings, or inline description; reuse those labels in Journey Simulation and Findings JSON before tracing entry point, expected interactions, success path, error branches, accessibility hooks, copy, and exit point.
 
 ### Six UX Dimensions
 
@@ -134,7 +134,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 ### Common Discipline
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
+- **Ask clarifying questions first** when intent is ambiguous — use the calling agent's Codex-native user-input mechanism per its structural contract. Peer send_input is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
 
@@ -151,7 +151,8 @@ Emit the review verbatim to the calling agent's context. Do NOT echo the raw art
 ### Artifact
 - Source: {path or "Inline description"}
 - Type: {UX spec / TDD / draft / inline}
-- Maturity / status: {maturity from frontmatter — and status if present, or "N/A" for inline}
+- UX maturity: {maturity from UX-spec frontmatter, or "N/A" for TDD/inline}
+- TDD status: {status from TDD frontmatter, or "N/A" for UX spec/inline; unexpected UX-spec `status` is reported as a finding}
 
 ### Journey Simulation
 | Workflow / Surface | Result | Evidence |
@@ -218,7 +219,7 @@ Before emitting the report, verify in the calling agent's context:
 5. **Every Blocker has an alternative or required fix** — a Blocker bullet without `—` separator and an alternative/fix fragment is a defect.
 6. **Dimension Checklist covers all six dimensions** — each row present with one of pass/concern/fail/N/A. Off-by-one is a defect.
 7. **Empty severity buckets explicit** — every bucket (Blockers/Concerns/Suggestions/Questions) reads `None` or lists items. Silent omission is a defect.
-8. **Journey Simulation coverage** — the table has one row per workflow/surface identified in the artifact, or a single N/A row only when no concrete workflow/surface is present.
+8. **Journey Simulation coverage** — the table has one row per stable workflow/surface label identified from the artifact's workflow list, interaction-state matrix, Handoff Notes, TDD headings, or inline description; use a single N/A row only when no concrete workflow/surface is present.
 9. **Findings JSON parse/count parity** — JSON parses, carries exactly `blockers`, `concerns`, `suggestions`, `questions`, `praise`, and array lengths match the severity bucket counts plus What's Strong praise bullets.
 10. **Required sections present, in order** — Assessment, Artifact, Journey Simulation, What's Strong, What Needs Work, Findings JSON, Open Questions, Dimension Checklist, Recommendation, Next Steps.
 11. **Placeholder scan** — body contains no literal `{Artifact Title}`, `{dimension}`, `{count}`, `TBD`, or `TODO` text outside of code-fenced examples.

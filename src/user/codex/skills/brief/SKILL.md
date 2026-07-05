@@ -1,12 +1,11 @@
 ---
 name: brief
 description: >
-  Turn a freeform work request into a standardized brief block that team-lead's
-  Pre-flight HARD GATE consumes — collapsing goal verification to a single confirm.
-  Parses the request, derives every brief field it can support, asks ONE batched
-  AskUserQuestion round only for genuinely underdetermined fields, then emits the
-  block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
-  nothing. Trigger: "brief", "create brief", "standardize this request".
+  Intake-only: turn a freeform work request into a standardized brief block for
+  team-lead's Pre-flight HARD GATE; never execute, implement, fix, or edit the
+  requested work. Derives supported fields, asks ONE batched AskUserQuestion round
+  only for routing-relevant unknowns, then emits the block and stops. Trigger:
+  "brief", "create brief", "standardize this request", "intake brief".
 ---
 <!-- CANONICAL:BANNER:BEGIN -->
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `\$ARGUMENTS`.** The request in `\$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
@@ -20,7 +19,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. If the request cites an accepted artifact (TDD/spec/ADR/vote), preserve the source-backed values and list the artifact under `Source context` instead of paraphrasing beyond the request. If the request references only a Docket issue ID (for example, `brief: implement DKT-26`), do NOT attempt shell or `docket` access and do NOT ask a body-paste question solely to enrich the brief; emit the brief with the bare issue ID as a placeholder where needed and put `Docket body unavailable` under `Unavailable context`.
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. If the request cites an accepted artifact (TDD/spec/ADR/vote), preserve the source-backed values and list the artifact under `Source context` instead of paraphrasing beyond the request. If the request references only a Docket issue ID (for example, `brief: implement DKT-26`), run the read-only `docket issue show <DKT-ID> --json` only when `docket issue --help` lists `show` under Available Commands; otherwise emit the bare issue ID as a placeholder and put `Docket body unavailable` under `Unavailable context`. Do not ask a body-paste question solely to enrich the brief.
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
@@ -61,6 +60,7 @@ Constraints: <no new deps, API freezes, etc.>
 Execution authorization: no
 Mandatory verification commands: <operator-provided commands; none specified>
 Source context: <operator-provided text, cited artifact, or none>
+Field confidence: <stated: fields explicit in request; inferred: fields derived; unavailable: fields not fetched>
 Unavailable context: <issue bodies, files, or facts not fetched; none if complete>
 ```
 

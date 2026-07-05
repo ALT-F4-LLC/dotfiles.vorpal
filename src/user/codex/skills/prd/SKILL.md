@@ -120,7 +120,7 @@ malformed frontmatter.
    specs are project-level conventions, not PRDs, unless this PRD genuinely depends on
    one. Reference, do not contradict, prior accepted product definitions, and list each
    dependency in frontmatter.
-2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Surface any intersecting issues as a compact "Pre-existing Docket issues" table in Risks & Open Questions with columns `Issue`, `Status`, `Overlap`, and `Decision`; if Docket is unavailable, note `Docket probe unavailable: {raw error}` and continue.
+2. **Probe Docket** (informational): run `docket issue list --sort priority:asc --json` (high-priority active tickets) and `docket issue list --tree` (existing epics whose decomposition may overlap). Always surface a compact "Pre-existing Docket issues" table in Risks & Open Questions with columns `Issue`, `Status`, `Overlap`, and `Decision`; if Docket is unavailable, emit one row: `Docket probe unavailable`, `unavailable`, `{raw error}`, `continue`.
 3. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `maturity: "draft"` initially.
 4. **Draft each Required Section in order** (see Output Contract → Required
@@ -175,7 +175,7 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
    perspective, with explicit per-story priority (P0/P1/P2 or MVP/polish — pick one
    scheme and apply it consistently). Bare "with priorities" without a named scheme
    is a defect.
-5. **Requirements** — functional and non-functional, prioritized using MoSCoW (Must / Should / Could / Won't). Each requirement MUST be testable: a reviewer must be able to point at a behavior and say "this satisfies / does not satisfy" without a follow-up clarification.
+5. **Requirements** — functional and non-functional, prioritized using MoSCoW and stable IDs: `REQ-MUST-001`, `REQ-SHOULD-001`, `REQ-COULD-001`, or `REQ-WONT-001` (increment within each bucket). Unkeyed requirement bullets are a defect; each requirement MUST be testable: a reviewer must be able to point at a behavior and say "this satisfies / does not satisfy" without a follow-up clarification.
 6. **Success Metrics** — quantitative measures that validate Goals are met. Each
    metric MUST name (a) what is measured, (b) the measurement method, and (c) a
    numeric target or threshold. "Improve UX" is a defect; "p95 first-token latency
@@ -201,7 +201,7 @@ Before invoking `Write`, verify in the calling agent's context:
 5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (for example, `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails because it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
-7. **Success Metrics concreteness** — every bullet/item under the Success Metrics
+7. **Requirements IDs and Success Metrics concreteness** — every bullet/item under Requirements starts with a stable ID matching `REQ-(MUST|SHOULD|COULD|WONT)-[0-9]{3}`; every bullet/item under the Success Metrics
    section contains at least one digit OR a comparison operator (`<`, `>`, `≤`, `≥`,
    `=`). A Success Metrics section with zero numeric targets is a defect.
 

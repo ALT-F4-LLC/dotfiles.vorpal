@@ -207,7 +207,7 @@ For substantive changes:
 
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
-- Files changed: {N} ({git diff --stat one-line summary})
+- Diff manifest: {N} files ({git diff --name-status or PR file list}); stat: {git diff --stat one-line summary}
 - Reference docs: {TDDs, specs consulted — or "None applicable"}
 
 ### Risk Assessment
@@ -287,7 +287,7 @@ For substantive security-relevant changes:
 
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
-- Files changed: {N} (security-touched paths called out)
+- Diff manifest: {N} files ({git diff --name-status or PR file list}); security-touched paths called out
 - Reference docs: {security TDD, security ADRs, docs/spec/security.md sections — or "None applicable"}
 
 ### Threat Model (assumed)
@@ -350,7 +350,7 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 
 ### Round-N Re-Review (compact)
 
-On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
+On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), compact Re-Review format is allowed only when the caller supplies prior finding IDs or the prior verdict excerpt. Without that provenance, emit the full template. Compact format emits `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence, preserving prior IDs when present), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
 
 ## Validation Before Emit
 
@@ -366,7 +366,7 @@ Before emitting the structured review, verify in the calling agent's context:
 8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
 9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
 10. **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
-11. **Findings JSON validity** — parse the `### Findings JSON` block as JSON and verify every severity array exists and its item count matches the corresponding human severity bucket.
+11. **Findings JSON validity** — parse the `### Findings JSON` block as JSON (`jq` if available; otherwise explicit count comparison) and verify every severity array exists and its item count matches the corresponding human severity bucket.
 
 If any check fails, ABORT:
 

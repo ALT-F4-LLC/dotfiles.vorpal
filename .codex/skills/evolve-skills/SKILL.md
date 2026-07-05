@@ -25,7 +25,7 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 ---
 
 <!-- CANONICAL:EVOLUTION-MODEL:BEGIN -->
-**Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, wait/respawn/close-agent stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
+**Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, stalled `wait_agent` results, retry entries in the local phase ledger, close-agent failures, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
 <!-- CANONICAL:EVOLUTION-MODEL:END -->
 
 ## Innovation Mandate
@@ -72,7 +72,8 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via shell and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory skill files and sizes** — Run `find .codex/skills src/user/codex/skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null`; these are the only Codex skill roots — do not add a generic `skills/` fallback (historical abort: `find: skills: No such file or directory`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Materialize target manifest** — Run `find .codex/skills src/user/codex/skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null`; these are the only Codex skill roots — do not add a generic `skills/` fallback (historical abort: `find: skills: No such file or directory`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals).
+   Build `{target_manifest}` rows (`name`, `root`, `skill_path`, `line_count`, `mode`, changelog path) and reuse them for Phase 1 prompts/batching and Phase 2 shared-frontmatter/`CANONICAL` routing.
 5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.codex/skills/<arg>/SKILL.md` or `src/user/codex/skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `request_user_input` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
@@ -133,7 +134,7 @@ Detect failure via: (a) `wait_agent` timeout or `Monitor` stream silence past ex
 
 - **Re-spawn exactly once** with `retry_of=<prior-agent-id>` and an incremented retry count in the local phase ledger, supplying a `Resume context:` block that lists (a) the prior partial report, (b) the local phase ledger row to claim, (c) the target file.
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
-- **Compaction recovery**: re-read verified goal, the local phase ledger, latest changelog entries for completed targets, and the active phase template before any new `send_input`/`spawn_agent` call.
+- **Interruption/compaction recovery**: re-read verified goal, local phase ledger, completed-target changelog entries, and the active phase template; resume the next incomplete ledger row rather than re-running completed agents before any new `send_input`/`spawn_agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
@@ -141,8 +142,8 @@ Spawn FIVE agents in parallel per the templates below: `docs-researcher` (staff-
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer worker per target skill. **Spawn all in the same turn** to maximize parallelism.
-Assign local phase ledger rows to each returned review agent ID with status `in_progress`.
+Spawn one @staff-engineer worker per target skill. Batch Phase 1 when target count is large enough to risk the agent thread limit (known all-skills signal: 19 targets); spawn the next batch only after prior review agents report and close.
+Assign local phase ledger rows from `{target_manifest}` before spawning; mark not-yet-spawned rows `pending` and returned agent IDs `in_progress` so batching cannot drop a target.
 
 Each worker is read-only (no file edits) and follows the Phase 1 spawning template below.
 
@@ -234,10 +235,9 @@ OUTPUT: `- **<capability/change>**: <skill definition relevance>` under New Capa
 ```
 spawn_agent(agent_type="worker", message="docket-auditor prompt (role: senior-engineer)", model="gpt-5.4-mini", reasoning_effort="medium")
 
-Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
-usage in `.codex/skills/` and `src/user/codex/skills/`.
+Audit the docket CLI: run `docket --help`, `docket issue --help`, and `--help` for every docket command actually referenced in `.codex/skills/` or `src/user/codex/skills/`; fingerprint the captured help text so unchanged active usage can be reported without dumping a full tree. Treat `docket init` reporting an existing database as an idempotent success, then continue.
 
-Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
+Output: New, Changed, Deprecated commands (with synopsis), invalid referenced commands/flags, help fingerprint, and `unchanged` when active usage still matches help.
 ```
 
 ### Phase 0: Historical Audit (one block per target skill)

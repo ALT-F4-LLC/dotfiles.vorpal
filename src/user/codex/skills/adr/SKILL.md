@@ -132,8 +132,8 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: build the search set from existing directories among `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, and `docs/ux/`; skip missing dirs, run `Grep -r "{topic-keywords}" <existing-dirs>` only if any remain, and continue without error if none do.
-   Read any candidate predecessors so the new ADR cites superseded, reinforced, or contradicted decisions in `Context`.
+1. **Gather prior art**: derive `{slug_tokens}` once by splitting `{slug}` on `-`; build the search set from existing directories among `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, and `docs/ux/`; skip missing dirs, search `{slug_tokens}` first, broaden only if no candidates appear, and continue without error if none do.
+   Read candidate predecessors so `Context` cites superseded, reinforced, or contradicted decisions; if the new ADR replaces an older ADR, start `Context` with `Supersedes: {old-adr-basename}`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.

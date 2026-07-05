@@ -29,11 +29,11 @@ You are the **Config Evolution Orchestrator**. The target is the **Codex configu
 
 ---
 
-<!-- CANONICAL:EVOLUTION-MODEL:BEGIN -->
+<!-- CANONICAL:EVOLUTION-MODEL-CONFIG:BEGIN -->
 **Evolutionary model (shared vocabulary - evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; ADR 0001 compaction = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator corrections, lifecycle stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness: AMPLIFY (cited gain means propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure means remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval plus vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce**: it is the **reproductive-isolation monitor** that detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
-<!-- CANONICAL:EVOLUTION-MODEL:END -->
+<!-- CANONICAL:EVOLUTION-MODEL-CONFIG:END -->
 
-For this skill the **genome is the Codex config sources** (`src/user/codex.rs` plus the Codex call chain in `src/user.rs`) and the **phenotype** is `$HOME/.codex/config.toml` plus `$HOME/.codex/team-lead.config.toml`. A trait is one Codex config setting: a `with_*` call, model/provider setting, approval/sandbox setting, agent role, skill config, memory/history setting, hook entry, telemetry field, or shell environment rule. Selection acts on settings that demonstrably reduce a failure class or are obsolete/superseded by a platform change.
+For this skill-definition evolution cycle, the **genome is THIS SKILL.md's config-generation workflow**: the instructions that audit, select, edit, and verify Codex config sources. The skill's normal implementation target remains the Codex config sources (`src/user/codex.rs` plus the Codex call chain in `src/user.rs`), whose **phenotype** is `$HOME/.codex/config.toml` plus `$HOME/.codex/team-lead.config.toml`. A trait is one workflow instruction for handling a Codex config setting: a `with_*` call, model/provider setting, approval/sandbox setting, agent role, skill config, memory/history setting, hook entry, telemetry field, or shell environment rule. Selection acts on workflow instructions that demonstrably reduce a failure class or are obsolete/superseded by a platform change.
 
 ## Innovation Mandate
 
@@ -41,7 +41,7 @@ Each cycle sources variation three ways: the **innovation-scanner** (directed ad
 
 ## Scientific Trial Protocol
 
-Every non-neutral adaptive change AND every drift proposal passes this gate: **Hypothesis** (expected improvement plus why) -> **Operator approval (HARD GATE)** - present hypothesis, scope, and blast radius via `request_user_input` BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> -> proposed` or `Drift: ... -> proposed` and NOT implemented -> **Measurement** (reuse the Phase 0 audit; add no new infrastructure) -> **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in `docs/changelog/config/codex.md` under `### Summary`.
+Every non-neutral adaptive change to THIS SKILL.md's config-generation workflow AND every drift proposal passes this gate: **Hypothesis** (expected improvement plus why) -> **Operator approval (HARD GATE)** - present hypothesis, scope, and blast radius via `request_user_input` BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> -> proposed` or `Drift: ... -> proposed` and NOT implemented -> **Measurement** (reuse the Phase 0 audit; add no new infrastructure) -> **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in `docs/changelog/skills/evolve-config.md` under `### Summary`.
 
 ## Genetic-Drift Operator
 
@@ -61,7 +61,7 @@ Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele subs
 - **`days=N`** (optional, e.g. `/evolve-config days=14`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-config drift=2` or `/evolve-config drift=0`): Override the genetic-drift rate. Integer >= 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
-**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS`; any remaining token is ignored with a one-line note.
+**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS`; reject any remaining token with the usage note and abort. There is no config-name token because the target is fixed.
 
 ---
 

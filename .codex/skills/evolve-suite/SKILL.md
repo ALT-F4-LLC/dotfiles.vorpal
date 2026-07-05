@@ -15,7 +15,7 @@ description: >
 
 # Evolve Suite
 
-You are the **Evolution Suite Orchestrator**. One invocation runs the three editing evolution cycles serially in THIS session — `evolve-agents`, then `evolve-skills`, then `evolve-config` — each invoked as a nested skill with its own full Codex subagent lifecycle (`spawn_agent` → `wait_agent`/`send_input` coordination → `close_agent` by agent ID, with a local phase ledger) visible to the operator, then invokes `evolve-coherence` in-session as the verification/routing gate over the evolved tree. Every run edits the main tree directly under its own skill contract; serial execution means no write collisions by construction. Every step is tracked in Docket; nothing is ever committed.
+You are the **Evolution Suite Orchestrator**. One invocation runs the three editing evolution cycles serially in THIS session — `evolve-agents`, then `evolve-skills`, then `evolve-config` — each invoked as a nested skill with its own full Codex subagent lifecycle (`spawn_agent` → `wait_agent`/`send_input` coordination → `close_agent` by agent ID, with a local phase ledger) visible to the operator, then invokes `evolve-coherence` in-session as the verification/routing gate over the evolved agent/persona + skill definition surfaces; config-source coherence remains inside evolve-config Phase 2/3. Every run edits the main tree directly under its own skill contract; serial execution means no write collisions by construction. Every step is tracked in Docket; nothing is ever committed.
 
 **Serial legality.** A session owns at most one active subagent cohort, and spawned subagents cannot start new cohorts. Serial nesting is what makes native Codex orchestration legal here: each evolve skill records its own spawned agent IDs, waits for them to finish, and closes them at wrap-up, so the session has no active child agents between runs precisely when each run completes its wrap-up. The suite itself NEVER starts a worker cohort — `send_input` is in its tool set solely for the leftover-agent recovery guard below.
 
@@ -38,7 +38,7 @@ You are the **Evolution Suite Orchestrator**. One invocation runs the three edit
 
 ## Pre-flight (interactive — the operator is present throughout)
 
-1. **Goal + capacity gate (HARD GATE)** — before asking, compute a read-only capacity plan from the resolved `skip=` set: intended runs, fixed order, checkpoint count, final gate, and `days`/`drift` passthrough values. Then `request_user_input` confirms scope, capacity plan, and the cycle weight: three full multi-agent cycles plus the gate, serially, all in this one session. Gather `{experience_feedback}` once; it is restated in every run's handoff block.
+1. **Goal + capacity gate (HARD GATE)** — before asking, compute a read-only run-cost table from the resolved `skip=` set with columns `run | live target line count | expected worker count | checkpoint`, plus final gate and `days`/`drift` passthrough values. Then `request_user_input` confirms scope, capacity plan, and the cycle weight: three full multi-agent cycles plus the gate, serially, all in this one session. Gather `{experience_feedback}` once; it is restated in every run's handoff block.
 2. **Rate-limit attestation (HARD GATE).** No programmatic rate-limit-% probe exists, so the operator attests their current seven-day utilization from `/usage`. As informational evidence-context (does NOT replace the `/usage` read), perform Codex metric discovery against the Prometheus endpoint the model-routing-auditor uses (`https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query`): discover metric names/labels containing `codex` or `openai`, then prefer cost, token, usage, or rate-limit counters that can support a 7-day `increase(...)` trend. If no Codex-labeled metrics are found, or any discovery/query step is non-200/empty, state exactly `Mimir evidence is unavailable`, skip cost claims, and proceed on the manual read alone (skip/fail-open). Operator `/usage` thresholds:
    - **<70%** — proceed.
    - **70–85%** — warn; recommend a `skip=`-narrowed single-run pass; proceed with the full run only on explicit confirmation.
@@ -85,8 +85,8 @@ docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run 
 **Comment protocol** (plain comments — no `[ROLE→]` tag; the role-tag set is closed at seven):
 
 - Parent, before the first run: `dispatched: STATE_DIR=<path>` — the single crash-recovery anchor.
-- Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap=<pre-snapshot path> ledger=<local phase ledger path>`.
-- Per run child, at end: `outcome: <ok|partial|failed|no-op> — <one-line evidence>` and `delta: <N> paths — changelog=docs/changelog/<area>/{today_date}.md`; close the child on success.
+- Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap_pre=<pre-snapshot path> ledger=<local phase ledger path>`.
+- Per run child, at end: `outcome: status=<ok|partial|failed|no-op> evidence=<one-line> snap_post=<post-snapshot path> delta_count=<N> changelog=docs/changelog/<area>/{today_date}.md`; close the child on success.
 - Failed run: `FAILED: <reason>` — leave the child open.
 - Gate child: `manifest: <Remediation Manifest headline + route counts>`.
 
@@ -152,13 +152,13 @@ Three full multi-agent orchestrations plus the gate share ONE context window —
 
 ## Gate
 
-If ≥1 run completed (no-op counts), invoke the `evolve-coherence` skill in-session over the evolved tree — read-only by its No-Edit Guard, and the session has no active child agents at this point so its `spawn_agent` lifecycle is legal. Input context: the per-run changelog paths and any kept-partial warning from a failed run. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero completed runs → skip the gate; the cycle failed.
+If ≥1 run completed (no-op counts), invoke the `evolve-coherence` skill in-session over the evolved agent/persona + skill definition surfaces; config-source coherence remains inside evolve-config Phase 2/3 — read-only by its No-Edit Guard, and the session has no active child agents at this point so its `spawn_agent` lifecycle is legal. Input context: the per-run changelog paths and any kept-partial warning from a failed run. The Coherence Report + Remediation Manifest land in-context; post the `manifest:` summary on the gate child and close it. Zero completed runs → skip the gate; the cycle failed.
 
 ---
 
 ## Wrap-up
 
-1. `rm -rf "$STATE_DIR"` — snapshots only; nothing else to clean.
+1. Clean all-runs success only: `rm -rf "$STATE_DIR"` after the parent close summary is recorded; partial/failed/kept runs preserve `$STATE_DIR` and cite its path in the summary.
 2. Close the parent with the cycle summary: per-run outcome + delta counts, trials/drift approved vs `proposed`, manifest headline, and the closing line "nothing committed — review with `git diff`".
 
 ---

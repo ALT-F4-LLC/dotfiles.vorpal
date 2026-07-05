@@ -27,7 +27,7 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/docs-paths.md` | Docs-Path Taxonomy (`docs/` output-path ownership) | all 7 agents + `team-lead.md` + 9 docs-path-touching skills (`adr`, `code-review-verdict`, `design-qa`, `design-review`, `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`) |
 | `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | all 7 agents + `team-lead.md` |
 | `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge/critique, shared task list, cross-examination) | all 7 agents + `team-lead.md` |
-| `references/pitfalls.md` | Recurring-pitfalls memory convention (`.claude/agent-memory/{role}/pitfalls.md`) | all 7 agents + `team-lead.md` |
+| `references/pitfalls.md` | Recurring-pitfalls memory convention — content-split across in-repo (`.claude/agent-memory/{role}/pitfalls.md`) and centralized (`~/.claude/agent-memory/{role}/pitfalls.md`) homes | all 7 agents + `team-lead.md` |
 | `references/shutdown-protocol.md` | Shutdown protocol (SP-1 silent-approve, SP-2 teammate-vs-subagent discriminator) | all 7 agents + `team-lead.md` (also retains a compact LOCAL copy — the lead operates the handshake every cycle) |
 | `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` only (self-referential meta-convention; no worker agent cites this master) |
 | `references/laziness-discipline.md` | Laziness Discipline (the lazy-developer ladder, Rules, Output, When NOT to be lazy, Boundaries) | `senior-engineer.md`, `sdet.md` |

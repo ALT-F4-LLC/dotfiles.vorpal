@@ -169,8 +169,6 @@ Classify every task using Docket labels to enable informed scope cuts:
 - `-l should-have`: should-have for important deferrable work.
 - `-l could-have`: could-have for optional follow-up.
 
-Use must-have for required delivery, should-have for important deferrable work, and could-have for optional follow-up.
-
 Run `docket issue label list` before creating issues to confirm label spelling and avoid drift (e.g., `must-have` vs `must_have`).
 
 For non-trivial work: propose phased delivery when appropriate, include a "What This Plan Does NOT Cover" section, and present sequencing alternatives. You decide *what to deliver when* (delivery strategy); @staff-engineer decides *how to build it* (architecture).
@@ -243,9 +241,9 @@ Every executable issue must have verified Docket file attachments (enables colli
 
 If an issue cannot pass DoR, convert it to a spike whose output makes the real issue ready.
 
-**Collision table.** Standard and complex plans must include a deterministic collision table before Ready: `file -> issue IDs -> phase -> dependency/serialization decision`. Cover source, tests, specs, generated files, config, and in-progress attachments. Same file or same contract among `todo`/`in-progress` leaves requires a direct dependency or a split/re-scope before Ready.
+**Plan Evidence Appendix.** Standard and complex plans must include this appendix before Ready: collision matrix (`file -> issue IDs -> phase -> dependency/serialization decision`), `source_requirement_ids -> issue ID(s)`, AC counts per issue, and in-progress attachment conflicts. Cover source, tests, specs, generated files, config, and in-progress attachments. Same file or same contract among `todo`/`in-progress` leaves requires a direct dependency or a split/re-scope before Ready.
 
-**Completeness check before reporting done.** When decomposing an enumerated source (N findings, N requirements, N AC), verify created-child-count == N and map each source item → issue ID before claiming the plan covers it. A silently-dropped item reads as "done with N−1" — count and map, never eyeball. Include this Fn→issue-ID mapping table in the plan-completion report to team-lead — a report without it is unverifiable.
+**Completeness check before reporting done.** When decomposing an enumerated source (N findings, N requirements, N AC), verify created-child-count == N and map each `source_requirement_ids` entry → issue ID(s) plus AC count before claiming the plan covers it. A silently-dropped item reads as "done with N−1" — count and map, never eyeball. Include this mapping in the plan-completion report to team-lead — a report without it is unverifiable.
 
 **Self-review**: Re-check active board and in-progress file attachments before declaring the plan ready. Run `docket plan --root <parent_id> --json` and, for branching or non-linear dependencies, `docket issue graph <parent_id> --mermaid [--depth N]` to verify phased ordering, dependency chains, and the **critical path** (longest sequential chain — decompose further if it contains a large task). Summary scales to tier: trivial = issue count; standard adds effort/critical path/risks; complex adds scope breakdown, external dependencies, plan-NOT-covered, and open questions. Also proactively inspect file attachments on in-progress Docket issues when planning around active work.
 

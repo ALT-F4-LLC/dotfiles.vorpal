@@ -263,7 +263,6 @@ impl UserEnvironment {
                 .with_permission_deny("Edit(~/.opencode/**)")
                 .with_permission_deny("Edit(~/.ssh/**)")
                 .with_permission_deny("Edit(~/.talos/**)")
-                .with_permission_deny("Edit(~/.vorpal/**)")
                 .with_permission_deny("Edit(~/Desktop/**)")
                 .with_permission_deny("Edit(~/Downloads/**)")
                 .with_permission_deny("Read(.env)")
@@ -282,7 +281,6 @@ impl UserEnvironment {
                 .with_permission_deny("Read(~/.opencode/**)")
                 .with_permission_deny("Read(~/.ssh/**)")
                 .with_permission_deny("Read(~/.talos/**)")
-                .with_permission_deny("Read(~/.vorpal/**)")
                 .with_permission_deny("Read(~/Desktop/**)")
                 .with_permission_deny("Read(~/Downloads/**)")
                 .with_permission_deny("Write(/Applications/**)")
@@ -298,7 +296,6 @@ impl UserEnvironment {
                 .with_permission_deny("Write(~/.opencode/**)")
                 .with_permission_deny("Write(~/.ssh/**)")
                 .with_permission_deny("Write(~/.talos/**)")
-                .with_permission_deny("Write(~/.vorpal/**)")
                 .with_permission_deny("Write(~/Desktop/**)")
                 .with_permission_deny("Write(~/Downloads/**)")
                 .with_permission_default_mode("auto")
@@ -578,7 +575,6 @@ impl UserEnvironment {
                     m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.vorpal/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
                     m
@@ -606,7 +602,6 @@ impl UserEnvironment {
                     m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.vorpal/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
                     m

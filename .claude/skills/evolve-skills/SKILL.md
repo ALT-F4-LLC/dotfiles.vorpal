@@ -2,7 +2,7 @@
 name: evolve-skills
 description: >
   Review and improve skill definitions via parallel @staff-engineer agents. Evaluates 8
-  dimensions, enforces Content Gate and 500-line budget. Phase 0 includes a per-skill
+  dimensions, enforces Content Gate and byte budget. Phase 0 includes a per-skill
   historical audit of recent Claude Code transcripts, history, and agent memory.
   Trigger: "evolve skills", "improve skills", "refine skills".
 argument-hint: "[skill-name] [days=N] [drift=N]"
@@ -75,7 +75,7 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory skill files and sizes** — Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when the top-level `skills/` root is absent). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory skill files and sizes** — Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when the top-level `skills/` root is absent). Mode per file is **TRIM** (over 65,000 bytes: consolidation primary, removed bytes must exceed added bytes) or **BALANCED** (under 65,000 bytes: additions allowed but offset by removals). Include byte count and mode in each agent's spawning prompt.
 5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
@@ -84,7 +84,7 @@ Before spawning any agents:
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
    Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-skills-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
-9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total line count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
+9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total byte count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
 10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
@@ -126,7 +126,7 @@ All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory
 | 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
 
-**Self-budget.** This SKILL.md's own size budget is 535 lines, distinct from the review-target 500 the Phase 1 `## Size Budget` template enforces on every audited skill; when this file is later self-reviewed, treat 535 — not the template's review-target 500 — as its cap, so a self-audit does not flag it as over budget.
+**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard skill byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -151,7 +151,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
 3. Writes/normalizes `docs/changelog/skills/<name>.md` per Changelog Format
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
@@ -181,7 +181,7 @@ The Phase 2 teammate:
 **After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `skills/`, `.claude/skills/`, `agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
 and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
 
-**Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
+**Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within the per-skill byte budget (pre-flight step 4) → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: Disambiguation (sequential)
 
@@ -208,8 +208,8 @@ The compactor's report MUST evidence invariant checks 0-5 per ADR 0001 (pure-add
 After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -l {} + 2>/dev/null`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
+2. Run `find .claude/skills skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-skill byte budget (pre-flight step 4).
+3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per ADR 0001), and reminder that NO changes have been committed.
 
 ---
 
@@ -269,14 +269,17 @@ For EACH target skill, mine three read-only sources for signals that the skill i
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
    - `grep -lri '<skill-name>' .claude/agent-memory/ 2>/dev/null` — persistent agent learnings to incorporate into recommendations.
 <!-- CANONICAL:HARVEST:BEGIN -->
-**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` with this EXACT bounded command (substitute nothing — it is literal):
+**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` with this EXACT bounded command (substitute nothing — it is literal):
 
 ```
-find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
-  -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print 2>/dev/null | sort
+{
+  find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
+    -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print
+  find "$HOME/.claude/agent-memory" -maxdepth 2 -type f -name 'pitfalls.md' -print
+} 2>/dev/null | sort -u
 ```
 
-The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` yields an empty result → no-op (`2>/dev/null` swallows the error). The current repo is matched by this glob automatically (it lives under `~/Development`); de-dupe its path so it is not processed twice. This scan is read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths grouped by repo (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment). This manifest is the orchestrator's ingest set for lesson analysis.
+The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op (`2>/dev/null` swallows the error); the trailing `sort -u` also de-dupes any path the two roots both happen to match (they do not overlap under normal `$HOME` layouts, but the pipeline holds even if they did). The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
 <!-- CANONICAL:HARVEST:END -->
    - **Per-file mapping (skills):** for each TARGET skill, `grep -l '<skill-name>' <each discovered pitfalls.md>` (per-file, mirroring the `grep -lri '<skill-name>'` step above) and surface matching excerpts (≤240 chars each) tagged with the source repo path. `pitfalls.md` files mentioning no target skill are listed path-only.
 4. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
@@ -389,19 +392,19 @@ If a category is empty for a skill, write `none` — do not omit the line.
 
 ### Phase 1: @staff-engineer (Review & Improve)
 
-Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{line_count}`,
+Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{byte_count}`,
 `{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each.
 
 ```
 Agent(name="review-<name>", subagent_type="staff-engineer", model="opus", prompt="...")
 
-Target: <skill-path>/SKILL.md | Skill: <name> | Size: {line_count} lines | Mode: {mode}
+Target: <skill-path>/SKILL.md | Skill: <name> | Size: {byte_count} bytes | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change as the physical-newline (`wc -l`) delta — NOT soft-wrapped display lines; removing whole bullet/list lines moves the count, rewording wrapped prose rarely does.
+65,000-byte hard limit. **TRIM**: removed bytes must exceed added bytes. **BALANCED**: additions offset by removals. Report NET_BYTES per change as `len(NEW_STRING) − len(OLD_STRING)` (exact; byte deltas need no soft-wrap caveat); the orchestrator's post-apply `wc -c` remains the only budget truth.
 
 ## Context
 
@@ -448,9 +451,9 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIG
 
 ## Output Format
 ### Summary
-<1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
+<1-2 sentences or "No changes needed"> | Net byte change: <+/- bytes>
 ### Recommended Changes
-For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
+For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_BYTES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
 ### Changelog Entry (under 20 lines, 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
 ### Rename Recommendation
 ### Coherence Issues

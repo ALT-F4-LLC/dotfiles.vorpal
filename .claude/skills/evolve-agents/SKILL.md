@@ -75,10 +75,10 @@ Before spawning any agents:
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
    a consistent date for changelog entries.
-4. **Inventory agent files and sizes** — Run `find agents -maxdepth 1 -name '*.md' -exec wc -l {} + 2>/dev/null` (find tolerates an absent/empty `agents/` root; a zsh `agents/*.md` glob nomatch-aborts even with `2>/dev/null`). Mode per file is **TRIM** (over 500: consolidation primary, removals must exceed additions) or **BALANCED** (under 500: additions allowed but offset by removals). Include line count and mode in each agent's spawning prompt.
+4. **Inventory agent files and sizes** — Run `find agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null` (find tolerates an absent/empty `agents/` root; a zsh `agents/*.md` glob nomatch-aborts even with `2>/dev/null`). Mode per file is **TRIM** (over 80,000 bytes: consolidation primary, removed bytes must exceed added bytes) or **BALANCED** (under 80,000 bytes: additions allowed but offset by removals). Include byte count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, abort. If an agent-name token is present (per Argument Handling parsing) and `agents/<token>.md` does not exist, inform user and abort.
 6. **Check for existing changelogs** — Run `find docs/changelog/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
-7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total line count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
+7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total byte count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
@@ -124,7 +124,7 @@ Join the session's single implicit team on your first `Agent(name=..., ...)` spa
 | 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` | Spawn after Phase 3 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
 
-**Self-budget.** This SKILL.md's own size budget is 535 lines, distinct from the review-target budget the Phase 1 `## Size Budget` template enforces on audited agents; when this file is later self-reviewed, treat 535 — not the template's review-target 500 — as its cap.
+**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by evolve-skills' byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -146,7 +146,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -l` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_LINES estimates; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
 3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
@@ -165,7 +165,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `agents/`, `skills/`, `.claude/skills/`; never changelogs/pitfalls/prose)
 2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
 3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
-4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within 500 lines → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
+4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within the per-agent byte budget (pre-flight step 4) → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: Disambiguation (sequential)
 
@@ -197,8 +197,8 @@ The compactor's report MUST evidence, per file and in order, invariant checks 0-
 
 After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `find agents -maxdepth 1 -name '*.md' -exec wc -l {} + 2>/dev/null`. Consolidate any over 500 lines.
-3. Report: files modified, before/after line counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
+2. Run `find agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-agent byte budget (pre-flight step 4).
+3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
 
 ---
 
@@ -250,14 +250,17 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
 1. **Agent memory (PRIMARY — read fully, it is small)**:
    - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md` (dir may be absent or empty — treat as `none`). Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
 <!-- CANONICAL:HARVEST:BEGIN -->
-**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` with this EXACT bounded command (substitute nothing — it is literal):
+**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` with this EXACT bounded command (substitute nothing — it is literal):
 
 ```
-find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
-  -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print 2>/dev/null | sort
+{
+  find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
+    -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print
+  find "$HOME/.claude/agent-memory" -maxdepth 2 -type f -name 'pitfalls.md' -print
+} 2>/dev/null | sort -u
 ```
 
-The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` yields an empty result → no-op (`2>/dev/null` swallows the error). The current repo is matched by this glob automatically (it lives under `~/Development`); de-dupe its path so it is not processed twice. This scan is read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths grouped by repo (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment). This manifest is the orchestrator's ingest set for lesson analysis.
+The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op (`2>/dev/null` swallows the error); the trailing `sort -u` also de-dupes any path the two roots both happen to match (they do not overlap under normal `$HOME` layouts, but the pipeline holds even if they did). The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
 <!-- CANONICAL:HARVEST:END -->
    - **Per-file mapping (agents):** map each discovered `…/.claude/agent-memory/<role>/pitfalls.md` to agent `<role>` (the path segment). For each TARGET agent in this cycle, read its `pitfalls.md` across ALL scanned repos (each is small — read fully) and surface 1-3 representative recurring lessons per agent (≤240 chars each), tagged with the source repo path. Non-target agents' files are listed path-only (not deep-read).
 2. **Transcripts** (under `~/.claude/projects/`):
@@ -385,20 +388,20 @@ If a category is empty for an agent, write `none` — do not omit the line.
 
 ### Phase 1: Self-Review & Improve
 
-Spawn one teammate per target. Substitute `<name>`, `{line_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}` for each (`subagent_type: "<name>"`).
+Spawn one teammate per target. Substitute `<name>`, `{byte_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}` for each (`subagent_type: "<name>"`).
 
 ```
 Agent(name="review-<name>", subagent_type="<name>", model="opus", prompt="...")
 
 Read agents/<name>.md — this is YOUR definition. You are reviewing yourself to evolve.
 
-Target: agents/<name>.md | Size: {line_count} lines | Mode: {mode}
+Target: agents/<name>.md | Size: {byte_count} bytes | Mode: {mode}
 Verified goal: {verified_goal} (pre-verified — re-verify if your understanding diverges)
 Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-500-line hard limit. **TRIM**: removals must exceed additions. **BALANCED**: additions offset by removals. Report NET_LINES per change as the physical-newline (`wc -l`) delta — NOT soft-wrapped display lines; removing whole bullet/list lines moves the count, rewording wrapped prose rarely does.
+80,000-byte hard limit. **TRIM**: removed bytes must exceed added bytes. **BALANCED**: additions offset by removals. Report NET_BYTES per change as `len(NEW_STRING) − len(OLD_STRING)` (exact; byte deltas need no soft-wrap caveat); the orchestrator's post-apply `wc -c` remains the only budget truth.
 
 ## Context
 
@@ -444,10 +447,10 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 
 ## Output Format
 ### Summary
-<1-2 sentences or "No changes needed"> | Net line change: <+/- lines>
+<1-2 sentences or "No changes needed"> | Net byte change: <+/- bytes>
 ### Recommended Changes
 For each change, emit a fenced block with these fields verbatim:
-`CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_LINES:` / `OLD_STRING:` / `NEW_STRING:`
+`CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_BYTES:` / `OLD_STRING:` / `NEW_STRING:`
 Use `<REMOVE>` for deletions and `<INSERT_AFTER>` (with the line you're inserting after) for pure additions.
 ### Changelog Entry
 4 sections in order, max 20 lines: `### Summary`, `### Changes`, `### Dimensions Evaluated`, `### Rename`.

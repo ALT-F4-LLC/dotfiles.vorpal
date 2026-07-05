@@ -87,7 +87,7 @@ docket issue create -t "evolve-suite: coherence gate {today_date}" -d "Post-run 
 
 - Parent, before the first run: `dispatched: STATE_DIR=<path>` — the single crash-recovery anchor.
 - Per run child, at start: move `in-progress`, then `dispatched: run=<name> args=<args> snap=<pre-snapshot path>`.
-- Per run child, at end: `outcome: <ok|partial|failed|no-op> — <one-line evidence>` and `delta: <N> paths — changelog=docs/changelog/<area>/{today_date}.md`; close the child on success.
+- Per run child, at end: `outcome: <ok|partial|failed|no-op> — <one-line evidence>` and `delta: <N> paths — changelog=docs/changelog/claude-code/<area>/{today_date}.md`; close the child on success.
 - Failed run: `FAILED: <reason>` — leave the child open.
 - Gate child: `manifest: <Remediation Manifest headline + route counts>`.
 
@@ -129,9 +129,9 @@ This table is an attribution/rollback reference, not an enforcement input — th
 
 | Run | Expected surface | Shared (serial-safe) |
 |---|---|---|
-| evolve-agents | `agents/*.md`, `docs/changelog/agents/` | `.claude/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
-| evolve-skills | `skills/`, `.claude/skills/`, `docs/changelog/skills/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
-| evolve-config | `src/user.rs`, `src/user/`, `scripts`, own `SKILL.md` CANONICAL blocks, `docs/changelog/config/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
+| evolve-agents | `agents/*.md`, `docs/changelog/claude-code/agents/` | `.claude/agent-memory/*/pitfalls.md` (appends + sole compaction authority, ADR 0001) |
+| evolve-skills | `skills/`, `.claude/skills/`, `docs/changelog/claude-code/skills/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
+| evolve-config | `src/user.rs`, `src/user/`, `scripts`, own `SKILL.md` CANONICAL blocks, `docs/changelog/claude-code/config/` | `.claude/agent-memory/*/pitfalls.md` (appends) |
 
 Pitfalls appends are serial and therefore race-free; no merge step exists or is needed.
 

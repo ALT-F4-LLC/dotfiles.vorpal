@@ -20,7 +20,7 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/skills/<name>.md`.
+- Writes: `docs/changelog/claude-code/skills/<name>.md`.
 - Reads: `docs/spec/`, `skills/`, `.claude/skills/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -102,7 +102,7 @@ Before spawning any agents:
 
 ## Changelog Format
 
-All changes tracked in `docs/changelog/skills/<skill-name>.md` (create directory if needed).
+All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (create directory if needed).
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
@@ -152,7 +152,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
 2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
-3. Writes/normalizes `docs/changelog/skills/<name>.md` per Changelog Format
+3. Writes/normalizes `docs/changelog/claude-code/skills/<name>.md` per Changelog Format
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
@@ -408,7 +408,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/skills/<name>.md, docs/spec/ selectively, other skill files via ranged Read of the relevant section (both .claude/skills/ and skills/; a blanket 80-line cap can hide a cross-file contract past line 80). Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/claude-code/skills/<name>.md, docs/spec/ selectively, other skill files via ranged Read of the relevant section (both .claude/skills/ and skills/; a blanket 80-line cap can hide a cross-file contract past line 80). Prioritize the operator experience feedback below.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

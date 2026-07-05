@@ -20,7 +20,7 @@ You are the **Agent Evolution Orchestrator**. Spawn each agent as a teammate in 
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
-- Writes: `docs/changelog/agents/<name>.md`.
+- Writes: `docs/changelog/claude-code/agents/<name>.md`.
 - Reads: `docs/spec/`, `agents/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
@@ -101,7 +101,7 @@ Before spawning any agents:
 
 ## Changelog Format
 
-All changes tracked in `docs/changelog/agents/<agent-name>.md` (create directory if needed).
+All changes tracked in `docs/changelog/claude-code/agents/<agent-name>.md` (create directory if needed).
 
 **Exact format — no deviations:** `# Changelog: <agent-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
@@ -147,7 +147,7 @@ Spawn one teammate per target using the Phase 1 template. **Spawn all in the sam
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
 2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
-3. Writes/normalizes `docs/changelog/agents/<name>.md` per Changelog Format
+3. Writes/normalizes `docs/changelog/claude-code/agents/<name>.md` per Changelog Format
 4. Aggregates renames, coherence issues, and cross-cutting patterns — embed into Phase 2 template
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
@@ -164,7 +164,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 **After the Phase 2 teammate completes**, the orchestrator:
 1. Executes any renames (`mv`, frontmatter updates, reference updates scoped to LIVE definition files only — `agents/`, `skills/`, `.claude/skills/`; never changelogs/pitfalls/prose)
 2. Applies coherence fixes using the Edit tool — apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line)
-3. Updates `docs/changelog/agents/<name>.md` for any agent that received coherence fixes
+3. Updates `docs/changelog/claude-code/agents/<name>.md` for any agent that received coherence fixes
 4. **Speciation / extinction gate (highest blast radius).** Speciation (new agent) and extinction (retiring a redundant agent) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one agent's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within the per-agent byte budget (pre-flight step 4) → new agent). **Extinction** fires on redundancy (two agents, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' agents/*.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
 
 ### Phase 3: Disambiguation (sequential)
@@ -405,7 +405,7 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/agents/<name>.md entry, docs/spec/ selectively, and the first ~80 lines only of other agent files.
+Date: {today_date} (for changelog). Prioritize the operator experience feedback below. Read, in order: this agent's latest docs/changelog/claude-code/agents/<name>.md entry, docs/spec/ selectively, and the first ~80 lines only of other agent files.
 
 ## Claude Code Documentation Research
 {docs_research_findings}

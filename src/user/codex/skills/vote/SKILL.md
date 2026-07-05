@@ -169,7 +169,7 @@ Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below �
 
 ### Handling Reviewer Failures
 
-Codex may fail stalled subagents at 10 minutes. Also handle: spawn_agent() spawn errors, reviewers idling without a sent review, and reviews missing required sections (Verdict/Confidence/Domain Relevance/Findings).
+Codex may fail stalled subagents at 10 minutes. Also handle: spawn_agent() spawn errors, reviewers idling without a sent review, and reviews missing required sections or valid `### Findings JSON` (`jq -e` parse with `blockers`, `concerns`, and `suggestions` arrays required).
 
 - **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "NON-VOTE (reviewer failed): {reason}" --confidence 0.0 --domain-relevance 0.0` — `confidence × domain-relevance = 0` zeroes the weighted contribution; the `NON-VOTE` summary prefix preserves audit clarity. Then proceed to Phase 3 only if remaining reviewers can still meet the quorum threshold.
 - **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
@@ -177,7 +177,7 @@ Codex may fail stalled subagents at 10 minutes. Also handle: spawn_agent() spawn
 
 ### Recording Votes
 
-After each reviewer returns, cast their vote using the JSON block from the reviewer's output (see Reviewer Prompt Template `### Findings JSON`) as the primary path. ALWAYS pass findings via the stdin heredoc (`--findings-json -` / `--findings -`) shown below, NEVER inline as a `--findings-json "..."` argument — reviewer prose can contain `!` (zsh history-expansion inside double quotes) or stray backslashes that corrupt the payload and surface as `--findings-json is not valid JSON: invalid character ... in string escape code` (exit 3). The `<<'EOF'` single-quoted delimiter passes the body literally. If a `--findings-json` cast still exits non-zero with a JSON parse error (reviewer emitted malformed JSON), retry the SAME cast with the plaintext `--findings -` heredoc — do not skip recording the vote.
+After each reviewer returns, validate the reviewer's fenced `### Findings JSON` body with `jq -e` before casting; invalid or schema-incomplete JSON follows Handling Reviewer Failures (`NON-VOTE` if quorum remains achievable, otherwise retry/abort), not a normal plaintext vote. For valid JSON, ALWAYS pass findings via the stdin heredoc (`--findings-json -`) shown below, NEVER inline as a `--findings-json "..."` argument — reviewer prose can contain `!` (zsh history-expansion inside double quotes) or stray backslashes that corrupt the payload and surface as `--findings-json is not valid JSON: invalid character ... in string escape code` (exit 3). The `<<'EOF'` single-quoted delimiter passes the body literally. If `docket vote cast --findings-json -` still exits non-zero after `jq -e` validation, preserve the command output and follow the same reviewer-failure path rather than retrying as plaintext.
 
 ```bash
 # Primary: structured JSON (preferred — preserves blocker/concern/suggestion arrays for docket aggregation)
@@ -192,10 +192,6 @@ docket vote cast {vote-id} \
 {"blockers":[...], "concerns":[...], "suggestions":[...]}
 EOF
 
-# Fallback: plaintext heredoc when JSON block is missing or malformed
-docket vote cast {vote-id} ... --findings - <<'EOF'
-{multi-line findings text}
-EOF
 ```
 
 ### Reviewer Prompt Template (Standalone Mode Only)

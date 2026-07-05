@@ -201,8 +201,8 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 
 1. **Problem Statement** — what, why now, who is affected, constraints, acceptance
    criteria, business context.
-2. **Context & Prior Art** — existing patterns in this repo and outside; how this
-   work fits.
+2. **Context & Prior Art** — relevant repo patterns and external precedent only
+   when they affect the design; how this work fits.
 3. **Alternatives Considered** — at least two; shape, strengths, weaknesses,
    verdict per alternative.
 4. **Architecture & System Design** — the chosen approach, with sub-sections as
@@ -228,16 +228,16 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    coverage.
 10. **Observability & Operational Readiness** — signals, 3am diagnosability,
     production readiness, runbooks.
-11. **Implementation Phases** — partitioned phases that the planner consumes
-    directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
-    (paths affected), (c) per-phase acceptance criteria — any grep/regex-based
-    AC must embed the exact command and its expected hit count, and it must be run
-    against the named files with the hit set verified to cover all expected
-    matches (escape markdown, arm for word-order/formatting variants); a single-arm
-    regex that silently under-matches is a defect, (d) effort estimate
-    (S/M/L), (e) blocking dependencies on other phases, (f) explicit
-    out-of-scope flags. Phases must be independently shippable or explicitly
-    chained — no implicit ordering.
+11. **Implementation Phases** — partitioned phases the planner consumes
+    directly. Start with an Implementation Contract Index table: `phase`,
+    `files`, `public contracts`, `AC command`, `expected hit/output`,
+    `verifier route`, and `owner`. Each phase MUST specify: (a) one-line
+    goal, (b) file scope, (c) per-phase acceptance criteria; grep/regex ACs
+    must embed the exact command plus expected hit count/output and be run
+    against named files with the hit set verified (escape markdown, arm for
+    word-order/format variants); single-arm under-match is a defect,
+    (d) effort estimate (S/M/L), (e) blocking dependencies, (f) out-of-scope
+    flags. Phases must be independently shippable or explicitly chained — no implicit ordering.
 
 ## Validation Before Save
 

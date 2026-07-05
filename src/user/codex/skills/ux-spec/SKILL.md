@@ -190,9 +190,10 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
    navigation/discoverability, information hierarchy.
 3. **Layout & Structure** — structure adapted to surface (command tree for CLI,
    schemas for API, file tree for docs) and rendered-effect target for any sketch.
-4. **Interaction Design** — user flows with error branches, input patterns,
-   feedback patterns, perceived performance, keyboard/shortcut map, destructive
-   action confirmation, and a per-component/workflow interaction-state matrix.
+4. **Interaction Design** — user flows with stable workflow IDs, error branches,
+   input patterns, feedback patterns, perceived performance, keyboard/shortcut map,
+   destructive action confirmation, and a per-component/workflow state matrix with
+   columns: normal, loading, empty, error, disabled/unavailable, recovery.
 5. **Visual & Sensory Design** — semantic color palette, typography hierarchy,
    spacing/density, motion (where it aids comprehension), terminal constraints.
    Specify the rendered EFFECT target at real delivery resolution (screenshare,
@@ -206,14 +207,13 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
 8. **Internationalization / Privacy / Measurement** — scale to project: i18n (text
    expansion, RTL, locale), data minimization (inventory, consent, display),
    metrics (instrumentation points, iteration triggers).
-9. **Handoff Notes** — the bridge to @project-manager (decomposition) and
-   @senior-engineer (implementation). MUST include: (a) component / surface
-   breakdown with proposed file or module scoping where known, AND a per-component
-   sequence priority (P0/P1/P2) so @project-manager can order Docket issues without
-   re-deriving; (b) the MVP cutline (v1 components versus deferred polish) — the
-   shared scope boundary @senior-engineer builds to and design-qa QAs against; (c)
-   resolved design decisions with one-line rationale; (d) cross-spec dependencies
-   (TDDs, PRDs, sibling UX specs); (e) recommended follow-on research,
+9. **Handoff Notes** — the bridge to @project-manager (decomposition),
+   @senior-engineer (implementation), design-review, and design-qa. MUST include:
+   (a) component / surface breakdown with proposed file or module scoping where
+   known, workflow IDs from §4, AND a per-component P0/P1/P2 sequence priority;
+   (b) MVP cutline (v1 components versus deferred polish) as the build/QA
+   boundary; (c) resolved decisions with one-line rationale; (d) cross-spec
+   dependencies (TDDs, PRDs, sibling UX specs); (e) follow-on research,
    instrumentation, or usability validation the calling agent cannot run. Vague
    entries ("see TDD", "TBD") are a defect.
 

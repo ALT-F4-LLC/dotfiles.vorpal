@@ -609,6 +609,42 @@ fn user_config_installs_codex_personas_and_skills_under_codex_home() {
 }
 
 #[test]
+fn codex_config_uses_targeted_sandbox_workspace_roots() {
+    let src = fs::read_to_string(repo_root().join("src/user.rs"))
+        .expect("src/user.rs should be readable");
+    let marker = ".with_sandbox_workspace_writable_roots(vec![";
+    let roots = src
+        .split_once(marker)
+        .map(|(_, rest)| rest)
+        .and_then(|rest| rest.split_once("])").map(|(args, _)| args))
+        .expect("Codex config should set sandbox workspace writable roots")
+        .split(',')
+        .map(str::trim)
+        .filter(|root| !root.is_empty())
+        .map(|root| {
+            root.strip_suffix(".to_string()")
+                .and_then(|root| root.strip_prefix('"'))
+                .and_then(|root| root.strip_suffix('"'))
+                .expect("Codex sandbox workspace roots should be string literals")
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        roots,
+        vec!["$HOME/.cache/uv"],
+        "Codex sandbox workspace roots should be exactly the approved uv cache root"
+    );
+    assert!(
+        src.contains(".with_sandbox_workspace_network_access(false)"),
+        "Codex sandbox workspace network access should be explicitly closed"
+    );
+    assert!(
+        !src.contains(".with_sandbox_workspace_network_access(true)"),
+        "Codex sandbox workspace network access should not be enabled"
+    );
+}
+
+#[test]
 fn user_config_routes_codex_metrics_to_mimir_otlp() {
     let src = fs::read_to_string(repo_root().join("src/user.rs"))
         .expect("src/user.rs should be readable");

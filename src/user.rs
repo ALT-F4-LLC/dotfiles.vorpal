@@ -458,6 +458,8 @@ impl UserEnvironment {
             .with_plan_mode_reasoning_effort("xhigh")
             .with_project_doc_max_bytes(32768)
             .with_sandbox_mode("workspace-write")
+            .with_sandbox_workspace_writable_roots(vec!["$HOME/.cache/uv".to_string()])
+            .with_sandbox_workspace_network_access(false)
             .with_shell_environment_exclude(vec![
                 "AWS_*".to_string(),
                 "AZURE_*".to_string(),

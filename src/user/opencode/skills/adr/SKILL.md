@@ -4,10 +4,13 @@ description: >
   Author a single Architecture Decision Record at docs/tdd/adr/{NNNN}-{slug}.md. Loaded
   into the calling agent's context; the agent drafts the ADR per the format authority
   below.
-  Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision"
+  Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
+argument-hint: "<topic>"
+allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
+
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke other skills recursively, call `send_input`, or spawn agents, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
 <!-- CANONICAL:BANNER:END -->
 
 # ADR — Author an Architecture Decision Record
@@ -19,7 +22,7 @@ list, frontmatter contract, output path, ADR numbering, and collision handling a
 live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/tdd/adr/{NNNN}-{slug}.md`.
 - Reads: `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -34,7 +37,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: ({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -64,14 +67,14 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the Codex doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.codex/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/adr/`.
 - Full system designs spanning multiple components or phases: use
-  `(tdd, "<topic>")`.
+  `Skill(tdd, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
-  `(prd, "<topic>")`.
-- UX / design specs: use `(ux-spec, "<topic>")`.
+  `Skill(prd, "<topic>")`.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
@@ -114,8 +117,8 @@ malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
 5. **ADR numbering** (ADR-specific):
-   1. `Glob docs/tdd/adr/*.md`; if the directory is absent or no files match, treat the ADR set as empty.
-   2. For each returned filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
+   1. `Glob docs/tdd/adr/*.md`.
+   2. For each filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
       filenames that do not match in `malformed[]`.
    3. If `malformed` is non-empty, ABORT:
 
@@ -132,8 +135,9 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: derive `{slug_tokens}` once by splitting `{slug}` on `-`; build the search set from existing directories among `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, and `docs/ux/`; skip missing dirs, search `{slug_tokens}` first, broaden only if no candidates appear, and continue without error if none do.
-   Read candidate predecessors so `Context` cites superseded, reinforced, or contradicted decisions; if the new ADR replaces an older ADR, set `supersedes: "{old-adr-basename}"` in frontmatter and cite that basename in `Context`.
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
+   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
+   Read any candidate predecessors so the new ADR cites them in `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
@@ -161,7 +165,6 @@ project: "{project_name}"
 last_updated: "{today_date}"
 updated_by: "{updated_by}"
 status: "proposed"
-# supersedes: "0041-old-decision"  # optional when this ADR replaces an older ADR
 # superseded_by: "0042-new-decision"  # required only when status is "superseded"
 ---
 ```
@@ -174,8 +177,9 @@ Field rules:
 - `status` is one of: `proposed | accepted | superseded`. New ADRs start at
   `proposed`. Promotion to `accepted` happens after the calling agent's review;
   `superseded` is set when a later ADR replaces this one.
-- `supersedes` is optional for replacement ADRs and points to the predecessor ADR basename without extension. Omit otherwise.
-- `superseded_by` is required when `status: superseded` and points to the successor ADR basename without extension. Omit otherwise.
+- `superseded_by` is required when `status: superseded` and points to the
+  successor ADR's basename without extension (e.g., `0042-new-decision`).
+  Omit otherwise.
 
 ### Required Sections
 
@@ -195,7 +199,9 @@ heading in the drafted document.
 
 Before invoking `Write`, verify in the calling agent's context:
 
-1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`, and `status` present and non-empty. If `supersedes` is present, it must be non-empty; if `status: superseded`, `superseded_by` must be present and non-empty.
+1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`,
+   `status` present and non-empty. If `status: superseded`, `superseded_by`
+   must also be present and non-empty.
 2. **Status value** — `status` is one of `proposed | accepted | superseded`.
 3. **Section order** — the body contains all top-level sections enumerated
    in "Required Sections" above, as `##` headings, in the order listed
@@ -241,11 +247,9 @@ On operator Cancel during the collision dialog: emit
 For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
 `docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
-ADR-specific full sequence: `mkdir → renumber re-Glob → Write → race-detection Glob → Emit`.
+ADR-specific full sequence: `mkdir → Write → race-detection Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative; ADR authoring is single-author, so no pre-Write renumber is needed — the post-Write Glob below is the sole race guard.
 
-**Before Write**: Re-run Pre-flight step 5 (numbering Glob + `next_num` + `{output_path}`). If `{NNNN}` changed, update frontmatter / body references before Write.
-
-**After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the chosen `{NNNN}`). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
+**After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
@@ -257,7 +261,7 @@ This catches different-slug concurrent races at the same `{NNNN}`. Same-slug rac
 
 | Trigger | Handling |
 |---|---|
-| `<topic>` missing or empty | Abort: `Error: Usage: (adr, "<topic>") — describe the artifact in 3-10 words.` |
+| `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | Existing ADR filename does not match `^\d{4}-[a-z0-9-]+\.md$` | Abort: `Error: Could not determine next ADR number. Existing ADR filenames must start with NNNN- (4-digit zero-padded). Found malformed: {malformed}.` |
 | Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |

@@ -1294,6 +1294,51 @@ mod tests {
     }
 
     #[test]
+    fn serializes_sandbox_workspace_writable_roots() {
+        let content = toml::to_string_pretty(
+            &Codex::new("codex", Vec::new())
+                .with_sandbox_workspace_writable_roots(vec!["$HOME/.cache/uv".to_string()])
+                .with_sandbox_workspace_network_access(false),
+        )
+        .expect("codex config should serialize sandbox workspace write config");
+        let value: Value =
+            toml::from_str(&content).expect("serialized codex config should parse as TOML");
+        let sandbox = value
+            .get("sandbox_workspace_write")
+            .and_then(Value::as_table)
+            .expect("sandbox workspace write table should exist");
+        let writable_roots = sandbox
+            .get("writable_roots")
+            .and_then(Value::as_array)
+            .expect("sandbox workspace write roots should serialize as an array")
+            .iter()
+            .map(|root| {
+                root.as_str()
+                    .expect("sandbox workspace write roots should be strings")
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(writable_roots, vec!["$HOME/.cache/uv"]);
+        assert_eq!(
+            sandbox.get("network_access").and_then(Value::as_bool),
+            Some(false)
+        );
+        for disallowed_root in [
+            "$HOME",
+            "$HOME/.cache",
+            "$HOME/.codex",
+            "$HOME/.vorpal",
+            "/tmp",
+            ".git",
+        ] {
+            assert!(
+                !writable_roots.contains(&disallowed_root),
+                "sandbox writable roots should not include broad root {disallowed_root:?}"
+            );
+        }
+    }
+
+    #[test]
     fn serializes_otel_metrics_exporter_otlp_http() {
         let content = toml::to_string_pretty(
             &Codex::new("codex", Vec::new()).with_otel(Otel {

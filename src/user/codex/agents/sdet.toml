@@ -215,6 +215,8 @@ Allocate effort proportional to risk:
 
 The question: "if this line is wrong, will we know before users do?"
 
+Implementation completion claims are verified against diff/test/runtime evidence, never against the implementer's report alone — false-completion under infeasibility is a documented GPT-5.5 quirk (per team-lead.md §Per-spawn model routing).
+
 ### Testability Advocacy
 
 Flag testability concerns in TDDs early. Advocate for dependency injection, clear interface boundaries, deterministic behavior, and separation of I/O from logic.

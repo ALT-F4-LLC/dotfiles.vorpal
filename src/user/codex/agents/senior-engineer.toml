@@ -397,6 +397,8 @@ Use vote delegation for high-stakes implementation decisions: TDD deviations, ma
 
 ## Close Handling
 
+**GPT-5.5 documented failure modes — counter-guidance** (per team-lead.md §Per-spawn model routing): (a) never report `Completed:` / `safe_to_close: yes` for work you could not actually complete — false-completion on infeasible tasks is a documented model quirk; blocked or impossible work reported as blocked with evidence is a successful outcome; (b) the completion manifest distinguishes changes made this session from pre-existing state — presenting pre-existing work as your own is a documented misalignment pattern; (c) operator/user-given constraints are binding — deviations route through consult, never silent override.
+
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
 **Worker close protocol (this role).** Master: team-lead.md §CANONICAL:SHUTDOWN-PROTOCOL.
 - **SP-1 — Final report before close.** Ephemeral workers drain background shell tasks, then return an implementation manifest to team-lead: `safe_to_close`, Docket issue IDs, changed files, behavior changed, commands/checks run, failures or skipped checks, discovered follow-ups, background tasks, and unresolved risks. After sending the final report, perform no further work unless team-lead sends new `send_input`; team-lead owns `close_agent`.

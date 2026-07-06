@@ -41,11 +41,12 @@ mod k9s;
 mod opencode;
 mod opencode_tui;
 
-const OTEL_LOGS_ENDPOINT: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
-const OTEL_METRICS_ENDPOINT: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
-const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 const OPENCODE_MODEL: &str = "zai-coding-plan/glm-5.2";
 const OPENCODE_VARIANT: &str = "high";
+const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
+const OTEL_METRICS_ENDPOINT_ALLOY: &str = "https://alloy-otlp.bulbasaur.altf4.domains/v1/metrics";
+const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
+const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
 pub struct UserEnvironment {
     name: String,
@@ -139,7 +140,7 @@ impl UserEnvironment {
                 .with_auto_updates_channel("latest")
                 .with_away_summary_enabled(false)
                 .with_cleanup_period_days(14)
-                .with_effort_level("high")
+                .with_effort_level("xhigh")
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
@@ -151,9 +152,12 @@ impl UserEnvironment {
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
                 .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-8[1m]")
                 .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-                .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT)
+                .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
                 .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", OTEL_METRICS_ENDPOINT)
+                .with_env(
+                    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+                    OTEL_METRICS_ENDPOINT_MIMIR,
+                )
                 .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
                 .with_env(
                     "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
@@ -171,7 +175,7 @@ impl UserEnvironment {
                     "command",
                 )
                 .with_include_git_instructions(false)
-                .with_model("claude-opus-4-8[1m]")
+                .with_model("claude-sonnet-5")
                 .with_output_style("Proactive")
                 .with_permission_allow("Bash(bun run:*)")
                 .with_permission_allow("Bash(bun test:*)")
@@ -450,14 +454,16 @@ impl UserEnvironment {
             .with_otel(Otel {
                 log_user_prompt: Some(false),
                 environment: Some("dev".to_string()),
-                exporter: codex_otlp_exporter(OTEL_LOGS_ENDPOINT),
-                metrics_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT),
-                ..Default::default()
+                exporter: codex_otlp_exporter(OTEL_LOGS_ENDPOINT_LOKI),
+                metrics_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT_ALLOY),
+                trace_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT_ALLOY),
             })
             .with_personality("pragmatic")
             .with_plan_mode_reasoning_effort("xhigh")
             .with_project_doc_max_bytes(32768)
             .with_sandbox_mode("workspace-write")
+            .with_sandbox_workspace_writable_roots(vec!["$HOME/.cache/uv".to_string()])
+            .with_sandbox_workspace_network_access(false)
             .with_shell_environment_exclude(vec![
                 "AWS_*".to_string(),
                 "AZURE_*".to_string(),
@@ -1063,9 +1069,9 @@ impl UserEnvironment {
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),
                 "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
-                format!("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT={OTEL_LOGS_ENDPOINT}"),
+                format!("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT={OTEL_LOGS_ENDPOINT_LOKI}"),
                 format!("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
-                format!("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT={OTEL_METRICS_ENDPOINT}"),
+                format!("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT={OTEL_METRICS_ENDPOINT_MIMIR}"),
                 format!("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
                 "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
                 "OTEL_LOGS_EXPORTER=otlp".to_string(),

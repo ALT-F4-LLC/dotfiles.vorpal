@@ -582,7 +582,6 @@ impl UserEnvironment {
                     m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.netrc".to_string(), PermissionAction::Deny);
-                    m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
@@ -609,7 +608,6 @@ impl UserEnvironment {
                     m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.netrc".to_string(), PermissionAction::Deny);
-                    m.insert("~/.opencode/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
                     m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
                     m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
@@ -1068,14 +1066,16 @@ impl UserEnvironment {
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=$HOME/Development/language/go".to_string(),
+                "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1".to_string(),
+                "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1".to_string(),
+                "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
+                "OTEL_LOGS_EXPORTER=otlp".to_string(),
+                "OTEL_METRICS_EXPORTER=otlp".to_string(),
                 "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
                 format!("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT={OTEL_LOGS_ENDPOINT_LOKI}"),
                 format!("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
                 format!("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT={OTEL_METRICS_ENDPOINT_MIMIR}"),
                 format!("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
-                "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
-                "OTEL_LOGS_EXPORTER=otlp".to_string(),
-                "OTEL_METRICS_EXPORTER=otlp".to_string(),
             ])
             .with_symlinks(vec![
                 ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),

@@ -223,6 +223,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 5. **Self-review** (depth scaled to risk: scan one-liners, line-by-line on cross-cutting refactors):
    - Re-read changed lines for debug code, TODOs without tickets, commented-out code, missing error handling.
    - Run build/lint/tests (see `docs/spec/`) and verify output. If no tests exist, verify manually and note the gap.
+   - For focused cleanup opportunities, I may invoke `(simplify-scout, "<scope>")` on `uncommitted`, an issue ID, or path list; its report is advisory and is not a substitute for formal `code-review-verdict` review.
    - Config-generating code: apply the Configuration-as-Code Safety checklist below.
    - Document TDD deviations, then trigger Before-close handoffs.
 6. **Close, then verify, then comment** — run `docket issue close <id>` (close has no `-m` flag), then IMMEDIATELY verify the transition with `docket issue show <id> --json` and assert `.data.status` is `done` (the JSON nests fields under `.data` — top-level `.status` is absent). ONLY after the state check passes, post `docket issue comment add <id> -m "Completed: ..."`. A "Completed:" comment posted while status is still `in-progress` is a false claim — `docket issue close` can silently no-op (permission gap, sandbox, stale ID); the JSON status is the ground truth, not the comment. If the status check fails, do NOT post the Completed comment — `send_input` team-lead with the show-output and a specific question per "Stop and ask, do not retry". **cwd guard:** docket commands silently NO-OP (print success) when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced on the next `show`. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
@@ -248,7 +249,7 @@ Run `docket init` and `docket version --quiet` once per session before any other
 
 **Before close:**
 - Diff ready → `send_input` @staff-engineer (review) AND @sdet (verification); flag test-infra-adjacent changes so @staff-engineer consults @sdet first
-- Diff ready on user-facing surface with a `docs/ux/` spec → `send_input` @ux-designer for design QA (Pass / Pass-with-Issues / Fail)
+- Diff ready on user-facing surface with a `docs/ux/` spec → `send_input` @ux-designer for design QA (Pass / Pass with Issues / Fail)
 - Discovered follow-up work → `send_input` @project-manager (mirror as `[SE→@project-manager]` Docket comment per visibility contract)
 - High-stakes decision (TDD deviation, security boundary) → `send_input` team-lead to delegate vote
 

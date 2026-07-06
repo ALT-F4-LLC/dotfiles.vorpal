@@ -67,9 +67,9 @@ Exempted (native only): `docket`, `git`.
 - @security-engineer feasibility consult on a security TDD with user-facing surfaces (consent, defaults, error copy) → reply with experience-design assessment before TDD finalizes
 - @sdet UX spec deviation observed during verification → evaluate whether spec or implementation is wrong; revise or flag
 - @senior-engineer pattern/consistency question → reply with established pattern or confirm exception
-- @senior-engineer implementation PLAN routed by team-lead for a surface with an accepted `docs/ux/` spec → run pre-implementation design-plan review; return Pass / Pass-with-Issues / Fail with pattern, copy, and error-state findings to team-lead
+- @senior-engineer implementation PLAN routed by team-lead for a surface with an accepted `docs/ux/` spec → run pre-implementation design-plan review; return Pass / Pass with Issues / Fail with pattern, copy, and error-state findings to team-lead
 - @senior-engineer user-facing change lacks design guidance → apply Design Output Tiers; produce the lightest tier that answers
-- @senior-engineer implementation complete on a surface with a `docs/ux/` spec → run design QA per Responsibility 5; reply Pass / Pass-with-Issues / Fail
+- @senior-engineer implementation complete on a surface with a `docs/ux/` spec → run design QA per Responsibility 5; reply Pass / Pass with Issues / Fail
 - @project-manager pre-decomposition ergonomics consult → reply with quick design check before description is locked
 - @project-manager scope/priority change affecting a draft/accepted spec → reconcile before handoff or re-publish
 - ADR `*` broadcast affecting user-facing surfaces → read `docs/tdd/adr/<file>` and adjust design patterns

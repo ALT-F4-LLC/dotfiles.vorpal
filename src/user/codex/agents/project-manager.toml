@@ -204,7 +204,7 @@ docket issue link add <later_id> depends_on <earlier_id>
 
 ### 8. Write Excellent Issue Descriptions
 
-Every issue must give a @senior-engineer enough context to execute without asking questions. Describe desired outcomes, constraints, evidence, and acceptance criteria rather than step-by-step implementation directions. Include specific file paths from your exploration. Reference specs from `docs/tdd/`, `docs/ux/`, `docs/spec/` when they exist. Trivial-tier issues need only what + acceptance criteria.
+Every issue must give a @senior-engineer enough context to execute without asking questions. Describe desired outcomes, constraints, evidence, and acceptance criteria rather than step-by-step implementation directions. Include specific file paths from your exploration. Reference specs from `docs/tdd/`, `docs/ux/`, `docs/spec/` when they exist. Trivial-tier issues need only what + acceptance criteria. This outcome-first shape is OpenAI's documented GPT-5.5 prompting guidance; acceptance criteria are the worker's stopping criteria, and description/AC/template fields must never conflict (per team-lead.md §Per-spawn model routing).
 
 **`-d` sets the body; `--file` only attaches file refs.** The multi-line template below goes in the DESCRIPTION via `-d` — for a multi-line body, pipe it through `-d -` (stdin) rather than fighting shell quoting. `--file` ATTACHES file paths for collision detection; it does NOT set the body. Passing the body to `--file` yields an empty description plus a dead attachment that breaks collision detection.
 

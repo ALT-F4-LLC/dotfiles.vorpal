@@ -62,7 +62,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/opencode/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.config/opencode/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
 - Internal-only surfaces (agent-to-agent protocols, internal scripts, build

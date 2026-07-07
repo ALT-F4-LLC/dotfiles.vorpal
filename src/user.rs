@@ -68,7 +68,7 @@ const OPENCODE_MODEL_BRONZE: &str = "openai/gpt-5.5"; // Closest to Sonnet 5
 // const OPENCODE_MODEL_VARIANT_LOW: &str = "low";
 // const OPENCODE_MODEL_VARIANT_MEDIUM: &str = "medium";
 const OPENCODE_MODEL_VARIANT_HIGH: &str = "high";
-// const OPENCODE_MODEL_VARIANT_XHIGH: &str = "xhigh";
+const OPENCODE_MODEL_VARIANT_XHIGH: &str = "xhigh";
 // const OPENCODE_MODEL_VARIANT_MAX: &str = "max";
 
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
@@ -675,7 +675,7 @@ impl UserEnvironment {
                 .with_agent(
                     "build",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // Follow `team-lead`
                         variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         ..Default::default()
                     },
@@ -683,7 +683,7 @@ impl UserEnvironment {
                 .with_agent(
                     "plan",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // Follow `team-lead`
                         variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         ..Default::default()
                     },
@@ -691,7 +691,8 @@ impl UserEnvironment {
                 .with_agent(
                     "team-lead",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // Better at nuanced
+                                                                        // directions than BRONZE
                         variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         mode: Some(AgentMode::Primary),
                         color: None,
@@ -718,8 +719,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Senior software engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Handles both routine and deep implementation work. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
                         include_str!("user/opencode/agents/senior-engineer.md"),
-                        OPENCODE_MODEL_SILVER,
-                        Some(OPENCODE_MODEL_VARIANT_HIGH),
+                        OPENCODE_MODEL_BRONZE, // Better at following directions
+                        Some(OPENCODE_MODEL_VARIANT_XHIGH),
                     ),
                 )
                 .with_agent(
@@ -736,7 +737,7 @@ impl UserEnvironment {
                     opencode_agent(
                         "Technical project manager that breaks down problems and tasks into well-structured Docket issues. MUST BE USED PROACTIVELY when the user describes a problem, feature request, project, migration, or any body of work that needs to be planned and decomposed before execution begins. This agent ONLY plans — it creates issues, subtasks, dependencies, and priorities in Docket. It NEVER writes code or edits source files. It uses Read, Grep, and Glob to explore the codebase and surfaces deeper technical investigation needs to the user or team lead. Aware of @staff-engineer (TDDs in `docs/tdd/`), @ux-designer (design specs in `docs/ux/`), @senior-engineer (implementation), and @sdet (testing). The primary agent that creates Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.",
                         include_str!("user/opencode/agents/project-manager.md"),
-                        OPENCODE_MODEL_BRONZE,
+                        OPENCODE_MODEL_SILVER,
                         Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
@@ -753,15 +754,6 @@ impl UserEnvironment {
                     "sdet",
                     opencode_agent(
                         "Software Development Engineer in Test — owns test infrastructure, automation, and quality engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria, performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context. Does not write production code, design documents, or perform production code reviews.",
-                        include_str!("user/opencode/agents/sdet.md"),
-                        OPENCODE_MODEL_SILVER,
-                        Some(OPENCODE_MODEL_VARIANT_HIGH),
-                    ),
-                )
-                .with_agent(
-                    "sdet-architecture",
-                    opencode_agent(
-                        "Software Development Engineer in Test, test-architecture arm (frontier-tier). Same role as @sdet but dispatched for new test architecture, harness scaffolding, and non-routine verification where the routine-tier @sdet is under-powered. Writes test infrastructure code; does not write production code, design documents, or perform production code reviews.",
                         include_str!("user/opencode/agents/sdet.md"),
                         OPENCODE_MODEL_GOLD,
                         Some(OPENCODE_MODEL_VARIANT_HIGH),

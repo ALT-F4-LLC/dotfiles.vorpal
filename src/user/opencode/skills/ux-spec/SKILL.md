@@ -4,12 +4,10 @@ description: >
   Author a single UX design spec at docs/ux/{slug}.md. Loaded into the calling agent's
   context; the agent drafts the spec per the format authority below.
   Trigger: "create UX spec", "draft UX spec", "author design spec", "design spec for the new CLI", "produce a design spec", "create UX design".
-argument-hint: "<topic>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch: the artifact is written to disk and the confirmation emitted into the calling agent's context; the calling agent carries the outcome in its returned summary to team-lead. There is no peer-messaging channel and no `SendMessage`.
 <!-- CANONICAL:BANNER:END -->
 
 # UX Spec — Author a UX Design Spec
@@ -20,7 +18,7 @@ the content; this skill is the format authority — section list, frontmatter co
 output path, and collision handling all live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/ux/{slug}.md`.
 - Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -35,7 +33,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill(ux-spec, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -60,17 +58,17 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
   flows, error states, accessibility — before implementation, and should land at
   `docs/ux/{slug}.md` as the authoritative design record.
 - The calling agent (typically `@ux-designer`) is producing a design spec per
-  Responsibility 1 of the agent prompt (`~/.claude/agents/ux-designer.md` — repo: `src/user/claude-code/agents/ux-designer.md`).
+  Responsibility 1 of the agent prompt (`~/.config/opencode/agents/ux-designer.md` — repo: `src/user/opencode/agents/ux-designer.md`).
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/opencode/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, design review comments, scratch wireframes, or one-off
   copy proposals that are not meant to live at `docs/ux/`.
 - Internal-only surfaces (agent-to-agent protocols, internal scripts, build
   tooling without external users), single-tier design fits (CLI flag rename,
   copy tweak, one-shot error message), or work that fits the calling agent's
-  Design Output Tiers 1–3 (`~/.claude/agents/ux-designer.md` — repo: `src/user/claude-code/agents/ux-designer.md` — Responsibility 1) — use the
+  Design Output Tiers 1–3 (`~/.config/opencode/agents/ux-designer.md` — repo: `src/user/opencode/agents/ux-designer.md` — Responsibility 1) — use the
   appropriate lighter tier instead. Full UX specs are reserved for Tier 4
   (new interaction pattern, multi-surface, core workflow change,
   precedent-setting).
@@ -98,28 +96,30 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
    `{output_path}`, run the COLLISION_DIALOG below.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
+If a file already exists at the target output path, invoke `question`:
 
 ```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
+question({
+  questions: [{
+    header: "File exists",
+    question: "{output_path} already exists. How should I proceed?",
+    options: [
+      {label: "Pick new slug",
+       description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
+      {label: "Overwrite",
+       description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
+      {label: "Cancel",
+       description: "Stop without writing"}
+    ]
+  }]
+})
 ```
 
 - "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+**Dispatched-subagent caveat.** `question` may be unavailable in a dispatched one-shot subagent context (the operator is reached via team-lead relay, not directly) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — surface this in your returned summary for team-lead to relay to the operator.` and end.
 
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
@@ -127,22 +127,22 @@ malformed frontmatter.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/spec/ docs/tdd/ docs/ux/`. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `~/.claude/agents/ux-designer.md`, repo: `src/user/claude-code/agents/ux-designer.md`: same concept gets the same name across all surfaces).
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/spec/ docs/tdd/ docs/ux/`. Read any adjacent specs that touch the same surface or terminology — the new UX spec should reference, not contradict, prior accepted UX specs and design tokens (per `~/.config/opencode/agents/ux-designer.md`, repo: `src/user/opencode/agents/ux-designer.md`: same concept gets the same name across all surfaces).
 2. **Draft the frontmatter** per the Required Frontmatter contract below. UX specs
    use `maturity` (not `status`); new specs start at `maturity: "draft"`.
 3. **Draft each Required Section in order** (see Output Contract → Required Sections). Every section listed MUST appear, in the order shown. Match spec fidelity to problem complexity — sections that do not apply to the surface type (e.g., accessibility for a non-interactive config schema) may contain a single `N/A.` paragraph with a one-line justification, but omitting them is a defect.
 4. **Mermaid diagrams**: satisfy the Mermaid Mandate (see below) — at least one block.
    ASCII wireframes are encouraged alongside Mermaid but do not replace it.
-5. **Propose actual copy**: per `~/.claude/agents/ux-designer.md` (repo: `src/user/claude-code/agents/ux-designer.md`) content design rule, propose
+5. **Propose actual copy**: per `~/.config/opencode/agents/ux-designer.md` (repo: `src/user/opencode/agents/ux-designer.md`) content design rule, propose
    real button labels, error messages (what happened → why → what to do), empty
    states, and tooltips. No placeholder strings. **When the calling agent must resolve
-   copy or layout variants with the operator before save, prefer `AskUserQuestion`
-   with the `preview` field** (CLI mockup, ASCII wireframe, or copy variants) so the
+   copy or layout variants with the operator before save, prefer `question`
+   (offering the alternatives as options — CLI mockup, ASCII wireframe, or copy variants) so the
    operator can compare alternatives visually rather than from prose descriptions.
 6. **Cover error branches**: every workflow in Interaction Design includes its
    error and recovery branches. Edge Cases & Error States enumerates empty,
    overloaded, degraded, and concurrent states.
-7. **Resolve open questions before save**: per `~/.claude/agents/ux-designer.md` (repo: `src/user/claude-code/agents/ux-designer.md`), no
+7. **Resolve open questions before save**: per `~/.config/opencode/agents/ux-designer.md` (repo: `src/user/opencode/agents/ux-designer.md`), no
    unresolved questions ship with the spec. There is no dedicated Open Questions
    section — entries belong inside §9 Handoff Notes and must be resolved (or the
    calling agent re-invokes this skill after consulting peers and the operator).
@@ -222,7 +222,7 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `~/.claude/agents/ux-designer.md` (repo: `src/user/claude-code/agents/ux-designer.md`).
+Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `~/.config/opencode/agents/ux-designer.md` (repo: `src/user/opencode/agents/ux-designer.md`).
 
 For non-GUI surfaces (CLI flag, API endpoint, config schema, log format), a
 cross-surface journey (e.g., `cli invocation → API call → persisted config`) or

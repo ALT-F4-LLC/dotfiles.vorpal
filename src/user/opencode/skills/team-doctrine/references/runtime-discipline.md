@@ -27,6 +27,8 @@ Canonical R-rule bodies for the team. Other agents include rule bodies inline on
 
 ✓ = full body; ▾ = pointer (`see skills/team-doctrine/references/runtime-discipline.md §R{N}`); — = omit; ✓* = canonical body + per-advisor variant trigger.
 
+**Column legend:** `tl` = team-lead, `st` = staff-engineer, `se` = senior-engineer, `pm` = project-manager, `ux` = ux-designer, `sd` = sdet, `sr` = security-engineer.
+
 ### R1 — Tool-Use Parsimony
 
 R1. **Tool-Use Parsimony.** Tool-call results land in your context verbatim — a 2,000-line
@@ -85,18 +87,13 @@ artifact for that AC unless evidence of regression surfaces.
 - Escape hatch: when an explicit blocker says "the prior verification was wrong because X",
   re-verify the specific criterion X impacts. Do NOT re-verify unrelated criteria.
 
-### R5 — Persistent-Advisor Self-Summary (advisors ONLY)
+### R5 — Advisory-Dispatch Saturation (team-lead heuristic)
 
-**[NO OPENCODE EQUIVALENT — deferred]** — R5 assumes persistent/auto-resuming advisors, which Opencode does not have (subagents are one-shot `task`-tool dispatches). It applies only when persistence is ported; the body below is preserved as the maintained master.
+**Obsolete as an advisor-side rule under Opencode.** R5 assumed persistent/auto-resuming advisors that could emit a self-summary turn and await a team-lead ack — impossible for one-shot `task` dispatches (an advisor returns a summary and ends; it cannot "notify team-lead and await ack" mid-run). The body is retained as a historical reference for a future persistent-team port; on Opencode the equivalent discipline is team-lead-side.
 
-R5. **Persistent-Advisor Self-Summary** (applies to `advisor`, `security-advisor`,
-`ux-advisor` ONLY).
+R5. **Advisory-dispatch saturation (team-lead-side).** When an advisory role's returned summaries degrade (shortening, losing track of decisions, going generic), team-lead stops resuming that `task_id` and re-dispatches the role FRESH with a continuity preamble (verified goal + load-bearing decisions so far + the new ask) — letting the stale accumulated context drop. Memory writes (`~/.opencode/agent-memory/{role}/pitfalls.md`) land before the fresh dispatch when a recurring saturation pattern surfaced. Never drop a cross-cycle canonical decision-record; when unsure if content is load-bearing, KEEP it in the continuity preamble.
 
-- On saturation symptoms (replies shortening, losing track of decisions, repeated re-reads), emit a self-summary turn: outline the prior phase's load-bearing decisions to re-anchor against.
-- **BEFORE dropping any transient state**, notify team-lead with the outline and await ack; no ack within one turn → HOLD context and resume from the outline OR escalate the stall. Memory writes (`~/.opencode/agent-memory/{role}/pitfalls.md`) land BEFORE the drop — it is irreversible within-session. When you can no longer self-summarize crisply, ask team-lead to re-dispatch with a continuity preamble.
-- Trigger when context feels heavy AND a new phase starts (not between every turn — that is churn). Escape hatch: never drop a cross-cycle canonical decision-record; when unsure if content is load-bearing, KEEP it and surface to team-lead.
-
-**Per-advisor trigger variants** (appended in each advisor file): `advisor` = 3+ TDD revisions OR after a TDD secondary-review fix-loop completes; `security-advisor` = each security-review verdict OR after critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict that surfaced a spec/implementation mismatch OR 3+ design-review rounds on the same spec.
+**Per-advisor degradation triggers** (team-lead watches for). The advisory spawn names map to agent defs: `advisor` → `@staff-engineer`, `security-advisor` → `@security-engineer`, `ux-advisor` → `@ux-designer` (each resumed via `task_id` until degradation, then re-dispatched fresh). Triggers: `advisor` = 3+ TDD revision rounds OR after a TDD secondary-review fix-loop; `security-advisor` = each security-review verdict OR after a critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict that surfaced a spec/implementation mismatch OR 3+ design-review rounds on the same spec.
 
 ### R6 — Anti-Defensive-Exploration
 

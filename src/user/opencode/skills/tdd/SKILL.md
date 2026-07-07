@@ -4,12 +4,10 @@ description: >
   Author a single Technical Design Document at docs/tdd/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the TDD per the format authority below.
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
-argument-hint: "<topic>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch: the artifact is written to disk and the confirmation emitted into the calling agent's context; the calling agent carries the outcome in its returned summary to team-lead. There is no peer-messaging channel and no `SendMessage`.
 <!-- CANONICAL:BANNER:END -->
 
 # TDD — Author a Technical Design Document
@@ -22,7 +20,7 @@ contract, output path, and collision handling all live here.
 > **Note — "TDD" here means Technical Design Document, NOT Test-Driven Development.**
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/tdd/{slug}.md`.
 - Reads: `docs/spec/`, `docs/ux/`, `docs/tdd/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -37,7 +35,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill(tdd, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -69,7 +67,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/opencode/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
   sketches that are not meant to live at `docs/tdd/`.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
@@ -93,28 +91,30 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 5. **Near-duplicate probe** (advisory, non-blocking): if `len(slug) >= 12`, run `Glob "docs/tdd/{slug[:12]}*.md"` and exclude `{output_path}` itself from the results. If any hits remain, surface them to the calling agent context as a one-line note: `Near-duplicate TDD(s) detected: {paths}. Proceed only if this is intentionally distinct work.` The calling agent decides whether to continue or re-derive a more specific slug; no automatic block. This catches near-identical args (different punctuation, suffix words) that derive to different but adjacent slugs.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
+If a file already exists at the target output path, invoke `question`:
 
 ```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
+question({
+  questions: [{
+    header: "File exists",
+    question: "{output_path} already exists. How should I proceed?",
+    options: [
+      {label: "Pick new slug",
+       description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
+      {label: "Overwrite",
+       description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
+      {label: "Cancel",
+       description: "Stop without writing"}
+    ]
+  }]
+})
 ```
 
 - "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+**Dispatched-subagent caveat.** `question` may be unavailable in a dispatched one-shot subagent context (the operator is reached via team-lead relay, not directly) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — surface this in your returned summary for team-lead to relay to the operator.` and end.
 
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
@@ -214,7 +214,7 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    `Security Considerations` — enforced by Validation §7. Non-security TDDs
    may omit them. (Mixed-scope routing — when @security-engineer appends
    these to a @staff-engineer TDD via the Threat-Model Annotation pattern
-   — is owned by `~/.claude/agents/security-engineer.md` (repo: `src/user/claude-code/agents/security-engineer.md`), not this skill.)
+   — is owned by `~/.config/opencode/agents/security-engineer.md` (repo: `src/user/opencode/agents/security-engineer.md`), not this skill.)
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation

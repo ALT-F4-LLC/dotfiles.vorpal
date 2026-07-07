@@ -3,16 +3,14 @@ name: simplify-scout
 description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
-  ~/.claude/agents/senior-engineer.md (repo: src/user/claude-code/agents/senior-engineer.md) (no new rubric). Idiomatic clarity first — fewer lines is the
+  ~/.config/opencode/agents/senior-engineer.md (repo: src/user/opencode/agents/senior-engineer.md) (no new rubric). Idiomatic clarity first — fewer lines is the
   side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
-argument-hint: "<scope>"
-allowed-tools: ["Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and consensus follow-ups after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch; the findings report emitted into context is the working artifact, and the calling agent carries the outcome in its returned summary to team-lead. There is no peer-messaging channel and no `SendMessage`.
 <!-- CANONICAL:BANNER:END -->
 
 # Simplify Scout — Report-Only Simplification Opportunities
@@ -27,7 +25,7 @@ This is a **self-service implementation-hygiene aid** that `@senior-engineer` ru
 
 | | `simplify-scout` (this skill) | `code-review-verdict` |
 |---|---|---|
-| Caller | `@senior-engineer` / `@distinguished-engineer` (deep-impl) | `@staff-engineer` / `@security-engineer` only |
+| Caller | `@senior-engineer` | `@staff-engineer` / `@security-engineer` only |
 | Purpose | Surface idiomatic-clarity opportunities to the author | Authoritative merge-gating verdict |
 | Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
 | Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
@@ -36,10 +34,10 @@ This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, a
 
 ## Role Detection
 
-This skill is callable by `@senior-engineer` or `@distinguished-engineer` (deep-impl mode only — adopts senior's execution contract by reference, `distinguished-engineer.md:162`). Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
+This skill is callable by `@senior-engineer`. Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
 
 ```
-Error: Skill(simplify-scout) is restricted to @senior-engineer and @distinguished-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
+Error: Skill(simplify-scout) is restricted to @senior-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
 ```
 
 ## Argument Handling
@@ -94,9 +92,9 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
 
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.claude/agents/senior-engineer.md` (repo: `src/user/claude-code/agents/senior-engineer.md`) (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
+This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.config/opencode/agents/senior-engineer.md` (repo: `src/user/opencode/agents/senior-engineer.md`) (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
 
-Quick reference (the authority is `~/.claude/agents/senior-engineer.md` — repo: `src/user/claude-code/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
+Quick reference (the authority is `~/.config/opencode/agents/senior-engineer.md` — repo: `src/user/opencode/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
 
 | # | Principle | Simplification lens |
 |---|---|---|
@@ -171,7 +169,7 @@ When clarity and length point in opposite directions, **clarity wins and you sta
 1. **Detect role** per Role Detection. ABORT if not `@senior-engineer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable. Apply the large-scope guard for directory scopes.
 3. **Empty-scope guard**: if the resolved scope yields no source lines (empty diff, empty file set, directory with no source files), short-circuit to the empty-scope output below — do NOT fabricate findings.
-4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file. Stream long scans (>30s, large directory) via `Monitor` with an until-loop on a completion marker rather than a blocking poll.
+4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file. For long scans (>30s, large directory), run them via `Bash` with an explicit `timeout` (Opencode has no `Monitor` tool and no background/stream primitive) and capture the completion marker from the returned output rather than a blocking poll.
 5. **Scan for opportunities** against the 12-principle rubric, prioritizing #1/#3/#9/#12 and the junior-tells. For each candidate, apply the Calibration rule: keep it ONLY if the idiomatic form is genuinely clearer. Drop anything that trades scannability for line count, and anything that does not map to a principle in `1–12`.
 6. **Assign a confidence rung** (see Output Contract) to each kept finding.
 7. **Validate, then emit** per Validation Before Emit and Output Contract.
@@ -263,4 +261,4 @@ Simplify scout emitted ({count} opportunities, 0 edits applied).
 
 where `{count}` is the number of findings (`0` for an empty/trivial scope).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — surfacing it in its returned summary for team-lead to relay per its own proactive communication triggers (there is no peer-messaging channel on Opencode). This skill never edits, never messages peers, and never gates a merge.

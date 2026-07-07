@@ -5,12 +5,10 @@ description: >
   a structured QA report. Driven by `@ux-designer`; format authority for verdict/severity/sections.
   Invoke after the spec is implemented (not for spec review — that's `design-review`).
   Trigger: "design QA", "run design QA", "verify implementation against UX spec", "QA the shipped UX".
-argument-hint: "<scope>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and Docket comments after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing and Docket comments after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch: this skill emits the structured QA report into the calling agent's context, and the calling agent MUST carry that report body in its returned summary to team-lead (team-lead relays findings to peers). There is no peer-messaging channel and no `SendMessage` — see Save & Return for the silent-completion self-check.
 <!-- CANONICAL:BANNER:END -->
 
 # Design QA — Verify Implementation Against UX Spec
@@ -18,7 +16,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 You are the **Design QA Reviewer**. You walk through every workflow in a `docs/ux/` spec, verify the implementation matches (interactions, states, error handling, copy, layout), and emit a structured QA report back to the calling agent's context. No file is written. The skill is the format authority — verdict ladder, severity ladder, required sections, validation.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
 - Reads: `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -68,11 +66,11 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-qa-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-qa-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `~/.claude/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.claude/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration, design QA defaults to a **single** reviewer — the `ux-advisor` role (`@ux-designer`), dispatched (or resumed via `task_id`), no second dispatch — per `~/.config/opencode/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then issues two `task` calls in ONE message (concurrent dispatch) — `ux-advisor` (resumed via `task_id`) + a fresh one-shot `design-qa-{N}` (`@ux-designer`); each reviewer is a one-shot `task` dispatch that returns its verdict in its summary, then ends. Dispatch mechanics and lifecycle are owned by the calling layer per `~/.config/opencode/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `question` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.config/opencode/agents/team-lead.md` step 14. On double-reviewer failure (re-dispatch twice both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (one-shot reviewer failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/opencode/agents/team-lead.md` Rule 8. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
@@ -83,7 +81,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 1. **Detect role** per Role Detection. ABORT if caller is not `@ux-designer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Read the UX spec**:
-   - Capture spec path, frontmatter `maturity` (and `status` if present), the workflow list, and the spec's §9 Handoff Notes MVP cutline — components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
+   - Capture spec path, frontmatter `maturity` (and `status` if present), the workflow list, and the spec's Handoff Notes MVP cutline (typically a §9 Handoff Notes section — if the spec lacks one, treat the full workflow list as in-scope and note the structural absence under Acceptable Deviations). Components deferred past the cutline are out of QA scope (record them under Acceptable Deviations, not as Blockers). If the spec is `maturity: draft`, surface as a finding but do not abort — the operator may explicitly QA an in-progress spec.
    - If the spec cannot be located (Docket issue scope with no attached spec, `uncommitted` with no spec in the changed paths), ABORT:
 
      ```
@@ -102,7 +100,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Walk every workflow in the spec.** For each: interactions, states, transitions, error branches, success path, accessibility hooks, copy.
 2. **Test edge cases.** Empty inputs, error states, overloaded inputs, degraded mode, missing dependencies, NO_COLOR / accessibility settings for TUI/CLI, viewport breakpoints for web. For externally-referenced media (images, icons, embeds), confirm the rendered content — not just HTTP 200 or ref presence: a dead payload (broken-image placeholder, "content not available") passes liveness checks but fails the spec.
-   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass. A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport. A missing or broken render is a Blocker.
+   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). When a render/export command exists for the surface, MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass (the opencode `Read` tool ingests PNG/PDF attachments). A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport; a missing or broken render is a Blocker. **Render-absent fallback:** if the project ships NO render/export command for the surface (and none can be invoked via `Bash`), do NOT fabricate a Pass — emit a Question finding ("render path unavailable — visual QA could not be performed; operator must capture and visually verify at delivery resolution before this surface binds"), do not issue a Pass on that surface, and surface the missing render path to the operator via the calling agent's returned summary so a render step can be added.
 3. **Check accessibility implementation** against the spec's accessibility section (WCAG criteria, keyboard reachability, color-not-sole-indicator, etc.).
 4. **Trace cross-surface consistency** — if the spec sets precedent, verify the same concept uses the same name and copy across surfaces.
 5. **Decide verdict** per the ladder:
@@ -124,7 +122,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 **Common discipline:**
 
-- **Ask clarifying questions first** when spec intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the spec.
+- **Ask clarifying questions first** when spec intent is ambiguous — use `question` per the calling agent's structural contract. Peer relay is the calling agent's job (it surfaces findings in its returned summary for team-lead to relay), not this skill's. Do NOT ask when the answer is in the spec.
 - **Accept reasonable engineering tradeoffs.** Flag deviations that affect usability; document acceptable deviations explicitly under "Acceptable Deviations" so the calling agent can decide how to communicate them.
 - **Honest critique + concrete fix shape.** Do NOT default to Pass. A justified Fail with a concrete fix is more valuable than an unexamined Pass. Every Blocker's Description must name the expected-per-spec target (copy text, state, interaction) so @senior-engineer can act without a follow-up consult. Banned confidence phrases in findings: "clearly", "obviously", "should work", "definitely", "100%", "guaranteed" — use evidence-anchored language instead.
 - **Cite implementation evidence per finding.** Every Blocker and Concern row's Description must name the observed evidence (file:line, command + observed output, generated bytes, or surface state) — not just "diverges from spec". Findings without traceable evidence are validation defects.
@@ -201,11 +199,11 @@ Design QA report emitted ({verdict}).
 
 where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
-**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
+**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before ending the turn, the calling agent MUST self-check: *Did I include the structured verdict in my returned summary this same turn?* (in team mode, to team-lead; standalone, surfaced for team-lead to relay to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 
-- SendMessage to peers per `~/.claude/agents/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → @senior-engineer + team-lead; spec-revision Concern → @senior-engineer for reconciliation).
+- Surfacing findings in its returned summary to team-lead per the `~/.config/opencode/agents/ux-designer.md` Inter-Agent Communication triggers (e.g., Fail with Blocker → team-lead relays to @senior-engineer; spec-revision Concern → team-lead relays to @senior-engineer for reconciliation); there is no peer-messaging channel.
 - Mirroring the QA outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 - Proposing a spec revision via `Skill(ux-spec, ...)` if QA reveals a spec ambiguity rather than an implementation defect.
 

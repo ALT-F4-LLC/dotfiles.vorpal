@@ -21,10 +21,11 @@ nothing to execute, and doing so would violate R2 Skill Invocation Restraint
 (`references/runtime-discipline.md`).
 
 **Opencode note:** peer-messaging (`SendMessage`), persistent teammates, and the `shutdown`
-handshake referenced throughout these masters have **[NO OPENCODE EQUIVALENT — deferred]** —
-Opencode subagents are one-shot `task`-tool dispatches that run in an isolated child session
-and return a summary. The doctrine prose is preserved verbatim as the maintained master;
-sections describing those mechanisms carry deferred banners.
+handshake referenced throughout these masters are INERT under Opencode — Opencode subagents
+are one-shot `task`-tool dispatches that run in an isolated child session and return a summary
+(no peer messaging, no persistent teammates, no idle, no shutdown handshake). The doctrine
+prose is preserved verbatim as the maintained master; sections describing those mechanisms
+carry banners marking them historical or hub-relayed under the one-shot model.
 
 | Reference file | Master for | Cited by (LOCAL-copy consumers) |
 |---|---|---|
@@ -32,7 +33,9 @@ sections describing those mechanisms carry deferred banners.
 | `references/truth-first-debugging.md` | Truth-First Debugging (TFD-1..5, pre-fix gate) | all 6 agents + `team-lead.md` |
 | `references/docs-paths.md` | Docs-Path Taxonomy (`docs/` output-path ownership) | all 6 agents + `team-lead.md` + 9 docs-path-touching skills (`adr`, `code-review-verdict`, `design-qa`, `design-review`, `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`) |
 | `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | all 6 agents + `team-lead.md` |
-| `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge/critique, shared task list, cross-examination) — **[deferred]** | all 6 agents + `team-lead.md` |
+| `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge/critique, shared task list, cross-examination) — hub-relayed under Opencode (peer-to-peer mechanics retained as historical) | all 6 agents + `team-lead.md` |
 | `references/pitfalls.md` | Recurring-pitfalls memory convention (`~/.opencode/agent-memory/{role}/pitfalls.md`) | all 6 agents + `team-lead.md` |
-| `references/shutdown-protocol.md` | Shutdown protocol (SP-1 silent-approve, SP-2 teammate-vs-subagent discriminator) — **[deferred]** | all 6 agents + `team-lead.md` (also retains a compact LOCAL copy — the lead operates the handshake every cycle) |
+| `references/shutdown-protocol.md` | Shutdown protocol (SP-1 silent-approve, SP-2 teammate-vs-subagent discriminator) — inert under Opencode (retained as historical reference) | all 6 agents + `team-lead.md` (also retains a compact LOCAL copy stating the protocol is inert under the one-shot model) |
 | `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` only (self-referential meta-convention; no worker agent cites this master) |
+| `references/design-gate.md` | Design-Complete Gate (Rule 10) — per-pattern artifact/acceptance table, Design-source grammar, mid-cycle interaction | `team-lead.md` only (Rule 10 cites this master; pointer-only, no LOCAL copy) |
+| `references/laziness-discipline.md` | Laziness Discipline (lazy-senior coding reflex) | `senior-engineer.md` + `sdet.md` (each carries a `CANONICAL:LAZINESS-DISCIPLINE-LOCAL` pointer block) |

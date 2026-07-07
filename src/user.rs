@@ -41,12 +41,36 @@ mod k9s;
 mod opencode;
 mod opencode_tui;
 
-const OPENCODE_MODEL: &str = "zai-coding-plan/glm-5.2";
-const OPENCODE_MODEL_BALANCED: &str = "zai-coding-plan/glm-4.7";
-const OPENCODE_MODEL_FRONTIER: &str = "openai/gpt-5.5";
-const OPENCODE_MODEL_MULTIMODAL: &str = "google-vertex/gemini-3.1-pro-preview";
-const OPENCODE_VARIANT: &str = "high";
-const OPENCODE_VARIANT_FRONTIER: &str = "xhigh";
+//    OPENCODE - MODEL RANKINGS    //
+// Benchmarks @ https://benchlm.ai //
+
+// Gemini 3.1 Pro (89 benchmark): (https://benchlm.ai/models/gemini-3-pro) - Low, Medium, High
+// Provider: Google Vertex (metered, per-token API).
+// Price: ~$2 input / $12 output per 1M tokens (BenchLM fallback 2026-07-07; official
+// https://cloud.google.com/vertex-ai/pricing was obscured by dynamic rendering).
+const OPENCODE_MODEL_GOLD: &str = "google-vertex/gemini-3.1-pro-preview"; // Closest to Fable 5
+                                                                          // in relative comparison
+
+// GLM 5.2 (83 benchmark): (https://benchlm.ai/models/glm-5-2) - High, Max
+// Provider: Z.AI via `zai-coding-plan` key (operator subscription-flat billing form).
+// Price: per-token fallback ~$1.40 input / $4.40 output per 1M tokens (BenchLM fallback
+// 2026-07-07; official https://z.ai/pricing returned HTTP 404).
+const OPENCODE_MODEL_SILVER: &str = "zai-coding-plan/glm-5.2"; // Closest to Opus 4.8
+                                                               // in relative comparison
+
+// GPT 5.5 (80 benchmark): (https://benchlm.ai/models/gpt-5-5) - None, Low, Medium, High, XHigh
+// Provider: OpenAI (metered, per-token API).
+// Price: ~$5 input / $30 output per 1M tokens (BenchLM fallback 2026-07-07; official
+// https://openai.com/api/pricing/ blocked by HTTP 403).
+const OPENCODE_MODEL_BRONZE: &str = "openai/gpt-5.5"; // Closest to Sonnet 5
+                                                      // in relative comparison
+
+// const OPENCODE_MODEL_VARIANT_LOW: &str = "low";
+// const OPENCODE_MODEL_VARIANT_MEDIUM: &str = "medium";
+const OPENCODE_MODEL_VARIANT_HIGH: &str = "high";
+// const OPENCODE_MODEL_VARIANT_XHIGH: &str = "xhigh";
+// const OPENCODE_MODEL_VARIANT_MAX: &str = "max";
+
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
 const OTEL_METRICS_ENDPOINT_ALLOY: &str = "https://alloy-otlp.bulbasaur.altf4.domains/v1/metrics";
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
@@ -497,10 +521,12 @@ impl UserEnvironment {
         let opencode_config =
             OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
                 .with_schema("https://opencode.ai/config.json")
-                .with_model(OPENCODE_MODEL)
-                .with_small_model(OPENCODE_MODEL_BALANCED)
+                .with_agent_variant("team-lead", "high")
                 .with_autoupdate(AutoUpdate::Boolean(false))
+                .with_default_agent("team-lead")
+                // .with_model(OPENCODE_MODEL_BRONZE)
                 .with_skill_path("$HOME/.config/opencode/skills")
+                // .with_small_model(OPENCODE_MODEL_BRONZE)
                 .with_bash_permissions(vec![
                     // Default: ask for anything not explicitly allowed or denied
                     ("*", PermissionAction::Ask),
@@ -649,24 +675,24 @@ impl UserEnvironment {
                 .with_agent(
                     "build",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL.to_string()),
-                        variant: Some(OPENCODE_VARIANT.to_string()),
+                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         ..Default::default()
                     },
                 )
                 .with_agent(
                     "plan",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL.to_string()),
-                        variant: Some(OPENCODE_VARIANT.to_string()),
+                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         ..Default::default()
                     },
                 )
                 .with_agent(
                     "team-lead",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_FRONTIER.to_string()),
-                        variant: Some(OPENCODE_VARIANT_FRONTIER.to_string()),
+                        model: Some(OPENCODE_MODEL_BRONZE.to_string()),
+                        variant: Some(OPENCODE_MODEL_VARIANT_HIGH.to_string()),
                         mode: Some(AgentMode::Primary),
                         color: None,
                         description: Some(
@@ -683,8 +709,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Technical architect and code reviewer. Produces TDDs in `docs/tdd/` and ADRs in `docs/tdd/adr/`. Reviews all @senior-engineer changes. MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design review, dependency evaluation, and code reviews. Never writes implementation code.",
                         include_str!("user/opencode/agents/staff-engineer.md"),
-                        OPENCODE_MODEL_FRONTIER,
-                        Some(OPENCODE_VARIANT_FRONTIER),
+                        OPENCODE_MODEL_GOLD,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -692,8 +718,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Senior software engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Handles both routine and deep implementation work. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
                         include_str!("user/opencode/agents/senior-engineer.md"),
-                        OPENCODE_MODEL,
-                        Some(OPENCODE_VARIANT),
+                        OPENCODE_MODEL_SILVER,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -701,8 +727,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Staff-level Security Engineer — owns security architecture, threat modeling, and risk management. Authors security TDDs in `docs/tdd/` and security ADRs in `docs/tdd/adr/`. Performs security-focused review of code, designs, dependencies, and configurations alongside @staff-engineer's general review. MUST BE USED PROACTIVELY for trust-boundary changes, authn/authz design, secret handling, cryptography, supply-chain decisions, sandbox/permission models, and any change touching security-sensitive surfaces. Aligns security posture with business goals and risk tolerance. Never writes implementation code.",
                         include_str!("user/opencode/agents/security-engineer.md"),
-                        OPENCODE_MODEL_FRONTIER,
-                        Some(OPENCODE_VARIANT_FRONTIER),
+                        OPENCODE_MODEL_GOLD,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -710,8 +736,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Technical project manager that breaks down problems and tasks into well-structured Docket issues. MUST BE USED PROACTIVELY when the user describes a problem, feature request, project, migration, or any body of work that needs to be planned and decomposed before execution begins. This agent ONLY plans — it creates issues, subtasks, dependencies, and priorities in Docket. It NEVER writes code or edits source files. It uses Read, Grep, and Glob to explore the codebase and surfaces deeper technical investigation needs to the user or team lead. Aware of @staff-engineer (TDDs in `docs/tdd/`), @ux-designer (design specs in `docs/ux/`), @senior-engineer (implementation), and @sdet (testing). The primary agent that creates Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.",
                         include_str!("user/opencode/agents/project-manager.md"),
-                        OPENCODE_MODEL,
-                        Some(OPENCODE_VARIANT),
+                        OPENCODE_MODEL_BRONZE,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -719,8 +745,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "UX designer and developer experience specialist. Produces design specs in `docs/ux/` — does NOT write implementation code. Use PROACTIVELY for designing interfaces (web, mobile, CLI, TUI), evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs, SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task decomposition and @senior-engineer for implementation.",
                         include_str!("user/opencode/agents/ux-designer.md"),
-                        OPENCODE_MODEL_MULTIMODAL,
-                        None,
+                        OPENCODE_MODEL_GOLD,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -728,8 +754,8 @@ impl UserEnvironment {
                     opencode_agent(
                         "Software Development Engineer in Test — owns test infrastructure, automation, and quality engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria, performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context. Does not write production code, design documents, or perform production code reviews.",
                         include_str!("user/opencode/agents/sdet.md"),
-                        OPENCODE_MODEL,
-                        Some(OPENCODE_VARIANT),
+                        OPENCODE_MODEL_SILVER,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
                 .with_agent(
@@ -737,15 +763,18 @@ impl UserEnvironment {
                     opencode_agent(
                         "Software Development Engineer in Test, test-architecture arm (frontier-tier). Same role as @sdet but dispatched for new test architecture, harness scaffolding, and non-routine verification where the routine-tier @sdet is under-powered. Writes test infrastructure code; does not write production code, design documents, or perform production code reviews.",
                         include_str!("user/opencode/agents/sdet.md"),
-                        OPENCODE_MODEL_MULTIMODAL,
-                        None,
+                        OPENCODE_MODEL_GOLD,
+                        Some(OPENCODE_MODEL_VARIANT_HIGH),
                     ),
                 )
+                // Provider: Ollama local (self-hosted, OpenAI-compatible). No per-token provider
+                // price; infrastructure compute cost only. Models: devstral-small-2, qwen3.6,
+                // qwen3-coder-next, ornith.
                 .with_provider(
-                    "ollama",
+                    "ollama-local",
                     ProviderConfig {
                         npm: Some("@ai-sdk/openai-compatible".to_string()),
-                        name: Some("Ollama".to_string()),
+                        name: Some("Ollama - Local".to_string()),
                         options: Some(ProviderOptions {
                             base_url: Some("http://localhost:11434/v1".to_string()),
                             ..Default::default()
@@ -792,11 +821,15 @@ impl UserEnvironment {
                         ..Default::default()
                     },
                 )
+                // Provider: Ollama remote (self-hosted, OpenAI-compatible). No per-token provider
+                // price; infrastructure compute cost only. Models: qwen3-embedding, glm-ocr,
+                // phi4-mini-reasoning, deepseek-r1, lfm2.5, granite4.1, ministral-3, qwen3-vl,
+                // ornith, qwen3.5, gemma4.
                 .with_provider(
                     "ollama-remote",
                     ProviderConfig {
                         npm: Some("@ai-sdk/openai-compatible".to_string()),
-                        name: Some("Ollama Remote".to_string()),
+                        name: Some("Ollama - Remote".to_string()),
                         options: Some(ProviderOptions {
                             base_url: Some("http://192.168.0.180:11434/v1".to_string()),
                             ..Default::default()

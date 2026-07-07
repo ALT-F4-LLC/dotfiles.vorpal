@@ -82,7 +82,7 @@ Each verifier (whether the paired `verifier-criteria` + `verifier-integration` u
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/opencode/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `~/.config/opencode/agents/team-lead.md` Rule 8. -->
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Design QA against a `docs/ux/` spec for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.

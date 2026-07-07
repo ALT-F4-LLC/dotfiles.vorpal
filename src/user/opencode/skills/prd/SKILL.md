@@ -59,7 +59,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/opencode/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with ~/.config/opencode/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
@@ -248,7 +248,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by src/user/opencode/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by ~/.config/opencode/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

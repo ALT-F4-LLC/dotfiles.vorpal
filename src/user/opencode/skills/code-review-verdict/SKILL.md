@@ -83,7 +83,7 @@ Dispatch mechanics (concurrent dispatch, verdict reconciliation, degraded-single
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/opencode/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `~/.config/opencode/agents/team-lead.md` Rule 8. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.

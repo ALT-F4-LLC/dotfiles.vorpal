@@ -74,7 +74,7 @@ When invoked under team-lead orchestration, design review defaults to a **single
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/opencode/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `~/.config/opencode/agents/team-lead.md` Rule 8. -->
 - QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
 - Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.

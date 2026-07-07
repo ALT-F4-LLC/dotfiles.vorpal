@@ -7,12 +7,10 @@ description: >
   six dimensions, severity ladder, recommendation ladder, required sections, validation rules.
   No file written; the report is emitted into the agent's context.
   Invoke BEFORE implementation (spec/draft review). For post-implementation verification use Skill(design-qa). Trigger: "design review", "review UX spec", "peer design review", "review this design".
-argument-hint: "<scope>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging and Docket comments after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing and Docket comments after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch: this skill emits the structured review into the calling agent's context, and the calling agent MUST carry that review body in its returned summary to team-lead (team-lead relays findings to peers). There is no peer-messaging channel and no `SendMessage` — see Save & Return for the silent-completion self-check.
 <!-- CANONICAL:BANNER:END -->
 
 # Design Review — Peer Review of a Design Artifact
@@ -20,7 +18,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
 You are the **Design Reviewer**. You conduct a peer design review on the artifact named by `<scope>` (UX spec, draft, design proposal, or inline surface description) and emit a structured report back to the calling agent's context. No file is written. The skill is the format authority — six UX dimensions, severity ladder, recommendation ladder, required sections, validation.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
 - Reads: `docs/ux/`, `docs/tdd/`, `docs/tdd/adr/`, `docs/spec/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -72,11 +70,11 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then spawns `ux-advisor` + one ephemeral `design-review-{N}` (`Agent()`), both dispatched in the SAME turn (eager parallel dispatch). The ephemeral `design-review-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `~/.claude/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.claude/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+When invoked under team-lead orchestration, design review defaults to a **single** reviewer — the `ux-advisor` role (`@ux-designer`), dispatched (or resumed via `task_id`), no second dispatch — per `~/.config/opencode/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then issues two `task` calls in ONE message (concurrent dispatch) — `ux-advisor` (resumed via `task_id`) + a fresh one-shot `design-review-{N}` (`@ux-designer`); each reviewer is a one-shot `task` dispatch that returns its verdict in its summary, then ends. Dispatch mechanics and lifecycle are owned by the calling layer per `~/.config/opencode/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `question` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.config/opencode/agents/team-lead.md` step 14. On double-reviewer failure (re-dispatch twice both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (one-shot reviewer failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/opencode/agents/team-lead.md` Rule 8. -->
 - QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
 - Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
@@ -136,7 +134,7 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 ### Common Discipline
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
+- **Ask clarifying questions first** when intent is ambiguous — use `question` per the calling agent's structural contract. Peer relay is the calling agent's job (it surfaces findings in its returned summary for team-lead to relay), not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
 - **Report every finding — do NOT self-filter.** Report each issue found, including low-severity and uncertain ones, each tagged with its severity (Blocker/Concern/Suggestion/Question/Praise — classification, not suppression). Filtering and ranking happen downstream (calling agent / team-lead reconciliation), never here — declining to report a finding because it seems minor is a recall defect.
@@ -234,10 +232,10 @@ where `{recommendation}` is one of Approve / Approve with follow-up / Block / Re
 
 The calling agent owns (in order):
 
-- SendMessage the verdict per `~/.claude/agents/ux-designer.md` Inter-Agent Communication triggers (under team-lead orchestration, to team-lead — who reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; standalone, to the author directly).
-- Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `~/.claude/agents/ux-designer.md` Design Spec Approval.
+- Carrying the verdict in its returned summary to team-lead per `~/.config/opencode/agents/ux-designer.md` Inter-Agent Communication triggers (under team-lead orchestration, team-lead reconciles both reviewers per the Doubling Rule before routing Blockers/Concerns to the author; there is no peer-messaging channel — team-lead relays findings to peers).
+- Escalating to vote if the review touches cross-surface precedent, conflicts with a TDD, spans 3+ surfaces, or otherwise meets a vote-criticality threshold — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (a dispatched subagent cannot run a vote) — `docket vote create` + include a delegation request in your returned summary for team-lead to execute per `~/.config/opencode/agents/ux-designer.md` Design Spec Approval.
 - Mirroring the review outcome as a Docket comment using `[UX→@agent] {summary}` per the operator-visibility contract.
 
-**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design review emitted (...)` is silent-completion — the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I include the structured verdict body (not summarized) in my returned summary this same turn?" (in team mode, to team-lead; standalone, surfaced for the operator to route to the author). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the returned summary IS the deliverable. A silent turn after `Design review emitted (...)` is silent-completion — the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 On any abort during Pre-flight, Review Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a review.

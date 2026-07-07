@@ -4,12 +4,10 @@ description: >
   Author a single Product Requirements Document at docs/spec/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the PRD per the format authority below.
   Trigger: "create PRD", "draft PRD", "write a product requirements document", "decompose this into a spec under docs/spec/", "write up requirements for", "scope this feature".
-argument-hint: "<topic>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing after this skill returns. (3) Under Opencode the calling agent is a one-shot `task`-tool dispatch: the artifact is written to disk and the confirmation emitted into the calling agent's context; the calling agent carries the outcome in its returned summary to team-lead. There is no peer-messaging channel and no `SendMessage`.
 <!-- CANONICAL:BANNER:END -->
 
 # PRD — Author a Product Requirements Document
@@ -20,7 +18,7 @@ drafts the content; this skill is the format authority — section list, frontma
 contract, output path, reserved-name refusal, and collision handling all live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/spec/{slug}.md` (PRDs only — NOT the 7 reserved names).
 - Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -35,7 +33,7 @@ artifact). No flags, no other args.
 If `<topic>` is missing or empty:
 
 ```
-Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
+Error: Usage: Skill(prd, "<topic>") — describe the artifact in 3-10 words.
 ```
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
@@ -57,11 +55,11 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 - A feature-level Product Requirements Document is needed for a non-trivial product surface (new feature, UX-driven change, scope-defined initiative) and should land at `docs/spec/{slug}.md` as the authoritative product record. Pick PRD over TDD when scope precedes architecture — what and why is uncertain, not how.
 - The calling agent (typically `@project-manager`) is producing a PRD before decomposition into Docket issues so reviewers and implementers share one product definition.
-- The team-lead Large Task pattern (`~/.claude/agents/team-lead.md` — repo: `src/user/claude-code/agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
+- The team-lead Large Task pattern (`~/.config/opencode/agents/team-lead.md` — repo: `src/user/opencode/agents/team-lead.md`) requests a PRD as the entry point for product-defined initiatives — this skill is the canonical path.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/opencode/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas
   that are not meant to live at `docs/spec/`.
 - Technical Design Documents (architecture, system design, multi-step migration):
@@ -87,28 +85,30 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
    `{output_path}`, run the COLLISION_DIALOG below.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
+If a file already exists at the target output path, invoke `question`:
 
 ```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
+question({
+  questions: [{
+    header: "File exists",
+    question: "{output_path} already exists. How should I proceed?",
+    options: [
+      {label: "Pick new slug",
+       description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
+      {label: "Overwrite",
+       description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
+      {label: "Cancel",
+       description: "Stop without writing"}
+    ]
+  }]
+})
 ```
 
 - "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
 - "Overwrite" → proceed to Authoring Procedure; the existing file will be replaced on Write.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+**Dispatched-subagent caveat.** `question` may be unavailable in a dispatched one-shot subagent context (the operator is reached via team-lead relay, not directly) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — surface this in your returned summary for team-lead to relay to the operator.` and end.
 
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
@@ -248,7 +248,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by src/user/claude-code/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by src/user/opencode/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

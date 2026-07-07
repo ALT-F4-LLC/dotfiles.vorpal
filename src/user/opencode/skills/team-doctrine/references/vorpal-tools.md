@@ -11,20 +11,19 @@ never `skill({ name: "team-doctrine" })`.
 ---
 
 <!-- CANONICAL:VORPAL-TOOLS:BEGIN -->
-**Maintained master.** Inventory derives from observed `vorpal run` invocations in session transcripts (`bun:1.3.10` seen 4521×; `bun:1.3.13` seen once — 1.3.10 is canonical). Each agent carries a compact LOCAL copy (`CANONICAL:VORPAL-TOOLS-LOCAL`) maintained from this block; tool-invoking skills are a planned follow-up (not yet covered).
+**Maintained master.** The vorpal-managed inventory for this deployment IS the toolset built by `src/user.rs` → `UserEnvironment::build` (the canonical build manifest). Versions are NOT hardcoded here — they drift on every bump, so per-tool pins in doctrine are a known drift source. Resolve the `<version>` for any tool below via `vorpal inspect <tool>` or the `Vorpal.lock` lockfile at decision time. Each agent carries a compact LOCAL copy (`CANONICAL:VORPAL-TOOLS-LOCAL`) maintained from this block; tool-invoking skills are a planned follow-up (not yet covered).
 
 **Prefer `vorpal run <tool>:<version> <args>` when the tool is in the inventory below; fall back to natively installed tools when no vorpal-managed equivalent exists.**
 
-| Tool | Pinned version | Vorpal invocation |
-|---|---|---|
-| bun | 1.3.10 | `vorpal run bun:1.3.10 <args>` |
-| go | 1.26.0 | `vorpal run go:1.26.0 <args>` |
-| uv | 0.10.11 | `vorpal run uv:0.10.11 <args>` |
-| kind | 0.31.0 | `vorpal run kind:0.31.0 <args>` |
-| eksctl | 0.227.0 | `vorpal run eksctl:0.227.0 <args>` |
-| kubeseal | 0.34.0 | `vorpal run kubeseal:0.34.0 <args>` |
-| talosctl | 1.13.4 | `vorpal run talosctl:1.13.4 <args>` |
-| gofmt | 1.26.0 | `vorpal run gofmt:1.26.0 <args>` |
+| Category | Vorpal-managed tools (`vorpal run <tool>:<version>`) |
+|---|---|
+| CLI / shell | `awscli2`, `bat`, `direnv`, `doppler`, `fd`, `fzf`, `gum`, `herdr`, `hunk`, `jj`, `jq`, `just`, `k9s`, `kubectl`, `lazygit`, `neovim`, `nnn`, `op`, `pi`, `ripgrep`, `sesh`, `starship`, `terraform`, `tmux`, `zoxide`, `abtop` |
+| Runtime | `nodejs` |
+| App platform | `opencode` |
+| Language servers (LSP) | `gopls`, `bash-language-server`, `lua-language-server`, `typescript-language-server`, `vscode-languages-extracted`, `yaml-language-server` |
+| Tooling / formatters | `cue`, `delta`, `tree-sitter`, `typescript` |
 
-**Exempted (use natively, never via vorpal):** `docket` and `git` — direct command conventions are woven throughout all agent files; `vorpal run docket:latest` / `vorpal run git:latest` must NOT appear as guidance.
+**Exempted (use natively, never via vorpal):**
+- `docket` — not vorpal-managed by this deployment (externally installed issue tracker); `vorpal run docket:latest` must NOT appear as guidance.
+- `git` — although `src/user.rs` DOES build `git` as a Vorpal artifact, direct-`git` command conventions are woven throughout all agent files, so prefer native `git`; `vorpal run git:latest` must NOT appear as guidance.
 <!-- CANONICAL:VORPAL-TOOLS:END -->

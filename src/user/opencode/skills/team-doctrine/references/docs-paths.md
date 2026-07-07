@@ -27,6 +27,8 @@ Maintained master and authoritative source for `docs/` output-path conventions. 
 | `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
 | `docs/changelog/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-routing (`team-lead.md`) evolution changelog. |
 
+**Planned Opencode skills note.** The three `evolve-*` writers above (`evolve-agents`, `evolve-skills`, `evolve-model-distribution`) are PLANNED Opencode skills — not yet implemented under `src/user/opencode/skills/`. The `docs/changelog/{agents,skills,model-distribution}/` path families remain canonical (declared writer, healthy whether or not materialized), but no Opencode writer exists for them yet; until the `evolve-*` suite lands, those directories fill only via the claude-code/codex fleets or manual entry.
+
 **On-disk status ≠ orphan.** A path family with a declared writer in the table above is canonical whether or not it currently exists on disk. Skill-owned paths created on first write — currently `docs/spec/`, `docs/ux/`, and `docs/tdd/adr/` are not yet materialized — are NOT orphans; their absence on disk simply means no one has invoked the owning skill yet. A future drift-lint MUST treat "declared writer, absent on disk" as healthy, never as an orphan.
 
 **Known orphan (genuine):** `docs/audit/` exists on disk but is empty and has NO declared writer or reader in any agent or skill — it is the one true orphan. It is out of scope for this taxonomy (definitions-only; touching `docs/` is forbidden here). Follow-up mechanism: it needs an ADR to either wire a writer or `rmdir` it — do NOT wire new writes to it without that ADR.

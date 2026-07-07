@@ -7,13 +7,10 @@ description: >
   skill: the calling agent runs the whole flow end-to-end; it does NOT spawn a team.
   Trigger: "review and comment", "review this PR and post comments", "inline review of a PR",
   "post my review comments on <PR>".
-argument-hint: "<PR — number, full URL, or owner/repo#number>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read"]
-disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or SendMessage, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting.
+> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT dispatch via the `task` tool, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting. (5) Under Opencode the calling agent is a one-shot `task`-tool dispatch; there is no peer-messaging channel and no `SendMessage`. Network access requires a `permission` rule in `opencode.json` (or the operator runs a privileged command via the `!` path) — Opencode has no per-call `dangerouslyDisableSandbox` flag.
 
 # Review-and-Comment — Dual-Lens PR Review → Inline Comments in Your Voice
 
@@ -25,7 +22,7 @@ A single positional `<PR>`: a bare number (`109`), a full URL (`https://github.c
 
 ## Operational preconditions (read once)
 
-- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true`.
+- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Network access for `gh`/`git` requires a `permission` rule in `opencode.json` allowing those calls, or the operator runs them via the `!` operator path — Opencode has no per-call `dangerouslyDisableSandbox` flag.
 - **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip.
 - Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting.
 
@@ -92,14 +89,14 @@ Post each approved comment as a standalone inline review comment (not a formal a
 GH=$(command -v gh); JQ=$(command -v jq)
 COMMIT=<head_sha>; REPO=<owner/repo>; PR=<num>
 post() {  # body path line
-  "$JQ" -n --arg b "\$1" --arg c "$COMMIT" --arg p "\$2" --argjson l "\$3" \
+  "$JQ" -n --arg b "$1" --arg c "$COMMIT" --arg p "$2" --argjson l "$3" \
     '{body:$b,commit_id:$c,path:$p,line:$l,side:"RIGHT"}' \
   | "$GH" api -X POST "repos/$REPO/pulls/$PR/comments" --input - \
       --jq '"OK \(.path):\(.line) -> \(.html_url)"'
 }
 ```
 
-Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal; `jq --arg` handles JSON escaping. Run with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account.
+Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal; `jq --arg` handles JSON escaping. Run via the `permission`-allowed path (or have the operator run the post via `!`) — Opencode has no per-call `dangerouslyDisableSandbox` flag. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account.
 
 ## Step 9 — Clean up & report
 

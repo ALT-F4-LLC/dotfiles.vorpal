@@ -497,6 +497,7 @@ impl UserEnvironment {
                 .with_model(OPENCODE_MODEL)
                 .with_small_model(OPENCODE_MODEL_BALANCED)
                 .with_autoupdate(AutoUpdate::Boolean(false))
+                .with_skill_path("$HOME/.config/opencode/skills")
                 .with_bash_permissions(vec![
                     // Default: ask for anything not explicitly allowed or denied
                     ("*", PermissionAction::Ask),
@@ -653,7 +654,7 @@ impl UserEnvironment {
                 .with_agent(
                     "plan",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BALANCED.to_string()),
+                        model: Some(OPENCODE_MODEL.to_string()),
                         variant: Some(OPENCODE_VARIANT.to_string()),
                         ..Default::default()
                     },
@@ -661,7 +662,7 @@ impl UserEnvironment {
                 .with_agent(
                     "team-lead",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BALANCED.to_string()),
+                        model: Some(OPENCODE_MODEL.to_string()),
                         variant: Some(OPENCODE_VARIANT.to_string()),
                         mode: Some(AgentMode::Primary),
                         color: None,
@@ -685,15 +686,7 @@ impl UserEnvironment {
                 .with_agent(
                     "senior-engineer",
                     opencode_agent(
-                        "Senior software engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
-                        include_str!("user/opencode/agents/senior-engineer.md"),
-                        OPENCODE_MODEL_BALANCED,
-                    ),
-                )
-                .with_agent(
-                    "senior-engineer-deep",
-                    opencode_agent(
-                        "Senior software engineer, deep-implementation arm (opus / GLM-5.2 tier). Same role as @senior-engineer but dispatched for Large implementation (>=3 modules or a new seam), >1-day-horizon deep-impl, and static-Large work where the routine @senior-engineer (GLM-4.7) tier is under-powered for the scope. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing; does not produce design documents or perform code reviews.",
+                        "Senior software engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Handles both routine and deep implementation work. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
                         include_str!("user/opencode/agents/senior-engineer.md"),
                         OPENCODE_MODEL,
                     ),
@@ -719,7 +712,7 @@ impl UserEnvironment {
                     opencode_agent(
                         "UX designer and developer experience specialist. Produces design specs in `docs/ux/` — does NOT write implementation code. Use PROACTIVELY for designing interfaces (web, mobile, CLI, TUI), evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs, SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task decomposition and @senior-engineer for implementation.",
                         include_str!("user/opencode/agents/ux-designer.md"),
-                        OPENCODE_MODEL_BALANCED,
+                        OPENCODE_MODEL,
                     ),
                 )
                 .with_agent(
@@ -727,7 +720,7 @@ impl UserEnvironment {
                     opencode_agent(
                         "Software Development Engineer in Test — owns test infrastructure, automation, and quality engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria, performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context. Does not write production code, design documents, or perform production code reviews.",
                         include_str!("user/opencode/agents/sdet.md"),
-                        OPENCODE_MODEL_BALANCED,
+                        OPENCODE_MODEL,
                     ),
                 )
                 .with_agent(
@@ -780,6 +773,120 @@ impl UserEnvironment {
                                 "ornith:35b".to_string(),
                                 ModelConfig {
                                     name: Some("ornith:35b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        ..Default::default()
+                    },
+                )
+                .with_provider(
+                    "ollama-remote",
+                    ProviderConfig {
+                        npm: Some("@ai-sdk/openai-compatible".to_string()),
+                        name: Some("Ollama Remote".to_string()),
+                        options: Some(ProviderOptions {
+                            base_url: Some("http://192.168.0.180:11434/v1".to_string()),
+                            ..Default::default()
+                        }),
+                        models: [
+                            (
+                                "qwen3-embedding:8b".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3-embedding:8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "glm-ocr:latest".to_string(),
+                                ModelConfig {
+                                    name: Some("glm-ocr:latest".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "phi4-mini-reasoning:3.8b".to_string(),
+                                ModelConfig {
+                                    name: Some("phi4-mini-reasoning:3.8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "deepseek-r1:14b".to_string(),
+                                ModelConfig {
+                                    name: Some("deepseek-r1:14b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "lfm2.5:8b".to_string(),
+                                ModelConfig {
+                                    name: Some("lfm2.5:8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "granite4.1:8b".to_string(),
+                                ModelConfig {
+                                    name: Some("granite4.1:8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "ministral-3:8b".to_string(),
+                                ModelConfig {
+                                    name: Some("ministral-3:8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "qwen3-vl:8b".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3-vl:8b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "ornith:9b".to_string(),
+                                ModelConfig {
+                                    name: Some("ornith:9b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "qwen3.5:9b".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3.5:9b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "gemma4:12b".to_string(),
+                                ModelConfig {
+                                    name: Some("gemma4:12b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "gemma4:e4b".to_string(),
+                                ModelConfig {
+                                    name: Some("gemma4:e4b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "qwen3.5:4b".to_string(),
+                                ModelConfig {
+                                    name: Some("qwen3.5:4b".to_string()),
+                                    ..Default::default()
+                                },
+                            ),
+                            (
+                                "gemma4:latest".to_string(),
+                                ModelConfig {
+                                    name: Some("gemma4:latest".to_string()),
                                     ..Default::default()
                                 },
                             ),

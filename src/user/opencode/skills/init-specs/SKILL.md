@@ -5,12 +5,10 @@ description: >
   project specification files. Re-invocation prompts before overwriting existing specs;
   ongoing maintenance is handled by @staff-engineer during TDD/review work, not by this skill.
   Trigger on: "create specs", "generate specs", "bootstrap project specs", "create project specifications".
-argument-hint: "[file...]"
-allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "AskUserQuestion"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates are leaf agents — MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. SendMessage team-lead if blocked.
+> **CRITICAL — applies to orchestrator AND every dispatched worker:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Workers are leaf agents — MUST NOT spawn sub-agents, invoke `Skill(vote)`, use other `Skill()` calls or the `task` tool, or form/manage a team. Surface blockers in the returned summary for the orchestrator to route. (3) Under Opencode every worker is a one-shot `task`-tool dispatch that returns a summary and ends — no peer messaging, no persistent teammates, no idle, no shutdown handshake. The orchestrator dispatches one `task` per spec via `subagent_type: "staff-engineer"` and consumes each returned summary directly.
 <!-- CANONICAL:BANNER:END -->
 
 ## Argument Handling
@@ -28,12 +26,12 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 
 > **Rigorous honesty over aspirational specs.** Specs must document what actually exists in the codebase, not what should exist. When reviewing agent output, reject any spec content that invents capabilities, softens gaps, or presents aspirational goals as current state. A spec that says "no tests exist" is more valuable than one that hedges.
 
-**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) (Medium/Large Task patterns).
+**Scope boundary:** Initial generation only. Ongoing `docs/spec/` maintenance lives in `~/.config/opencode/agents/team-lead.md` (repo: `src/user/opencode/agents/team-lead.md`) (Medium/Large Task patterns).
 
 ---
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
+**Docs paths (this skill).** Master: `~/.config/opencode/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/opencode/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/spec/` (Seven reserved Spec Files; via spawned agents).
 - Reads: codebase, `docs/tdd/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -41,12 +39,12 @@ You are the **Spec Initializer** — an orchestrator that spawns 7 `@staff-engin
 
 ## Pre-flight
 
-> **Operator prompts:** All operator-facing `AskUserQuestion` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
+> **Operator prompts:** All operator-facing `question` calls in this skill (Scope, Emphasis, conflict resolution, failure handling) MUST use pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiple`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options.
 
 Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Do not proceed to context resolution or file checks until the goal is verified.
-   - **If invoked directly by the operator** (no verified goal in the prompt): Use a single `AskUserQuestion` call with two questions:
+   - **If invoked directly by the operator** (no verified goal in the prompt): Use a single `question` call with two questions:
      1. `header: "Scope"` — "Which spec files should be generated?" Options: `All 7 specs` (default), `Custom subset` (multiSelect — present the 7 filenames so the operator can pick), `Cancel`.
      2. `header: "Emphasis"` — "Any dimension to emphasize during exploration?" Options: `Balanced (no emphasis)` (default), `Security posture`, `Operational readiness`, `Testing maturity`, `Architecture & maintainability`. Single-select.
      If `\$ARGUMENTS` was passed, skip question 1 (the subset is already declared) and only ask question 2.
@@ -57,7 +55,7 @@ Before spawning any agents:
    - `basename $(git rev-parse --git-common-dir) | sed 's/\.git$//'` — capture as `{project_name}` for frontmatter (works in worktree layouts where `--show-toplevel` returns the branch dir, not the repo name)
    - `mkdir -p docs/spec` — ensure output directory exists
 3. **Check for existing spec files** — Run `ls docs/spec/` to check for existing files.
-4. **If any file in the target set already exists**, use AskUserQuestion to present options. The "target set" is all 7 by default, or the `\$ARGUMENTS` subset:
+4. **If any file in the target set already exists**, use `question` to present options. The "target set" is all 7 by default, or the `\$ARGUMENTS` subset:
    - **Overwrite** — delete the conflicting file(s) in the target set and regenerate
    - **Skip existing** — only generate missing files in the target set
    - **Cancel** — abort the operation
@@ -70,7 +68,7 @@ Before spawning any agents:
 Each spec file covers a specific engineering dimension. The table below defines the unique
 exploration guidance for each — used in the spawning template.
 
-<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by src/user/claude-code/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by this skill (Spec File Reference is the authority) and HARD-REFUSED by src/user/opencode/skills/prd because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories so they do not refuse these names. Update init-specs and prd in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 | Spec File | Exploration Guidance |
 |---|---|
@@ -89,24 +87,22 @@ exploration guidance for each — used in the spawning template.
 
 ### Step 1: Spawn Agents
 
-1. **Join the implicit team** — the session's single implicit team is joined on your first `Agent(name=..., ...)` spawn in step 3 (the runtime ignores `team_name`).
-2. **Create tasks** — one `TaskCreate` per spec file (all independent, no dependencies):
-   `TaskCreate(subject="Generate {filename}", activeForm="Generating {filename}", description="Generate docs/spec/{filename} project specification")`
-3. **Spawn all agents in the SAME turn** to maximize parallelism. For each spec file (7 total, or fewer if skipping existing), spawn one `@staff-engineer` teammate using the spawning template below, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `Agent()` call itself):
-   `Agent(name="spec-{filename-without-ext}", subagent_type="staff-engineer", model="sonnet", prompt="...")`
-4. **Assign tasks** — `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")`
+1. **Dispatch workers via the `task` tool** — each `task` dispatch is a one-shot, isolated child session (`subagent_type: "staff-engineer"`); there is no implicit team to join and no peer messaging.
+2. **Create tasks** — one `todowrite` entry per spec file (all independent, no dependencies). Each entry's `content` is `"Generate {filename}"`.
+3. **Spawn all workers in the SAME message** to maximize parallelism (concurrent dispatch). For each spec file (7 total, or fewer if skipping existing), dispatch one `task({ subagent_type: "staff-engineer", description: "Generate {filename}", prompt: ..., task_id? })` with the Spawning Template below as `prompt`, substituting `{filename}`, `{exploration_guidance}`, `{today_date}`, `{project_name}`, and `{verified_goal}` (substitutions are applied to the Spawning Template body in the next section, not to the `task` call itself). The `subagent_type` IS the model pin (the agent def in `opencode.json` binds `model` + `variant`); there is no per-call `model=` and no `name=`.
+4. **Assign tasks** — `todowrite` to set the entry to `in_progress`. Track each dispatch via its returned `task_id` (there is no `owner=` concept — dispatches are one-shot).
 
 ### Step 2: Wait for Completion
 
-Agents send completion messages via SendMessage when done. As each reports, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)". A `TeammateIdle` notification with no completion SendMessage and no spec file on disk is a stall, not a normal completion.
+Each `task` dispatch returns a single summary when the worker ends — there is no peer-messaging completion and no idle notification. As each `task` returns, relay to the operator: "spec-{name} completed docs/spec/{filename} ({N}/{total} done)". A `task` return whose summary indicates failure and leaves no spec file on disk is a failed worker, not a normal completion.
 
-Once all expected SendMessages have arrived (or a stall is declared), run a single `TaskList()` reconciliation pass to confirm task states before proceeding to Step 3. Classify each task:
-- **completed** — agent SendMessaged; verify the spec file exists on disk.
-- **failed** — agent SendMessaged a failure, OR the harness auto-fails the agent (Claude Code reaps stalled subagents at ~10 minutes).
+Once all expected `task` dispatches have returned, run a single `todowrite` reconciliation pass to confirm task states before proceeding to Step 3. Classify each task:
+- **completed** — `task` returned a success summary; verify the spec file exists on disk.
+- **failed** — `task` returned a failure summary, errored at spawn, or exceeded the harness dispatch budget.
 
-**On any spawned-agent failure**, do NOT auto-retry. Use `AskUserQuestion` to ask the operator: (a) **respawn** — spawn a replacement `@staff-engineer` for just that file (reuse the same spawning template and task; reassign the task via `TaskUpdate(taskId=<id>, owner="spec-{filename-without-ext}", status="in_progress")` so completion tracking credits the new agent), (b) **skip** — mark the task completed, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
+**On any spawned-worker failure**, do NOT auto-retry. Use `question` to ask the operator: (a) **respawn** — dispatch a replacement `task` (`subagent_type: "staff-engineer"`) for just that file (reuse the same spawning template; mark the `todowrite` entry back to `in_progress` so completion tracking credits the new dispatch), (b) **skip** — mark the task `completed` in `todowrite`, note the gap in the final report, and proceed, (c) **abort** — cancel remaining work and hand partial state back to the operator.
 
-> Orchestrator crashes (this skill itself) are handled by the Claude Code harness — single auto re-spawn with Resume; second crash falls through to the operator. Do not add manual orchestrator-restart logic here.
+> Orchestrator crashes (this skill itself) are handled by the harness — on Opencode a crash falls through to the operator immediately. Do not add manual orchestrator-restart logic here.
 
 Proceed to Step 3 once every task is `completed` OR the operator has resolved every failure.
 
@@ -147,7 +143,7 @@ Requirements:
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges
-- Do NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team. You are a leaf agent. SendMessage the orchestrator that spawned you (the agent that sent you this prompt — in team mode that is `team-lead`; in standalone mode the orchestrator's name appears in your team roster) if you are blocked or need a decision. The completion SendMessage uses the same recipient (covered below).
+- Do NOT spawn sub-agents, invoke `Skill(vote)`, use other `Skill()` calls or the `task` tool, or form/manage a team. You are a leaf agent. If blocked, return a final summary naming the blocker and stop — your returned summary IS the delivery channel to the orchestrator that spawned you (there is no peer-messaging channel and no `SendMessage`).
 - Include Mermaid diagrams to visualize architecture, component relationships, data flows, and system interactions. Every spec file MUST contain at least one Mermaid diagram where the subject matter involves relationships or flows between components.
 - Structure the body with at least 3 H2 sections appropriate to the spec's domain (e.g. `architecture.md`: Components, Boundaries, Decisions; `security.md`: Trust Boundaries, Controls, Threat Model). Every spec MUST include a final H2 named exactly `## Gaps & Risks` — this is the structural home for the rigorous-honesty directive. If no gaps exist, write "None identified at this time" under it.
 - Save the completed spec to `docs/spec/{filename}`
@@ -164,16 +160,17 @@ Requirements:
   ---
   ```
   - For `maturity`: choose based on your findings. For `dependencies`: list related spec filenames as YAML array items if a logical connection exists; leave as `[]` if none.
-- After saving the file, mark your task as completed via TaskUpdate, send a completion
-  message via SendMessage to the orchestrator that spawned you (same recipient as the blocker instruction above) with body `"Completed docs/spec/{filename}"`, then go idle AWAITING the orchestrator's `shutdown_request` and reply `shutdown_response` (approve) to it when it arrives (lead-initiated per canonical protocol). Do not take on further work.
+- After saving the file, mark your task as completed via `todowrite`, then return a final
+  report summary stating `"Completed docs/spec/{filename}"` and end — your returned summary
+  ends the dispatch (there is no peer-messaging channel, no idle, and no shutdown handshake;
+  do not take on further work past the returned summary).
 ```
 
 ---
 
-## Wrap-up & Team Cleanup
+## Wrap-up
 
-After all agents complete and verification passes:
+After all workers complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
-2. **Shut down each teammate (lead-originated)** — after a `@staff-engineer` delivers its completion message and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). This is the canonical handshake — the lead SENDS the request, teammates AWAIT it and never self-initiate (per `~/.claude/agents/team-lead.md` — repo: `src/user/claude-code/agents/team-lead.md` — §Wrap-up shutdown direction + each teammate's CANONICAL:SHUTDOWN-PROTOCOL-LOCAL). Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
-3. **Clean up the team** — clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end.
+2. **No shutdown/cleanup step.** Every `task` dispatch already ended when its summary returned — there is no persistent team roster, no idle worker to reclaim, no `shutdown_request`/`shutdown_response` handshake, and no team-cleanup tool. Nothing remains to shut down.

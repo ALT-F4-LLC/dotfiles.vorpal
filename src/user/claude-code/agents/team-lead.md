@@ -9,7 +9,7 @@ description: >
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits; read-only on the working tree.
 color: cyan
-model: sonnet
+model: sonnet[1m]
 effort: xhigh
 memory: project
 permissionMode: dontAsk

@@ -4,16 +4,13 @@ description: >
   Turn a freeform work request into a standardized brief block that team-lead's
   Pre-flight HARD GATE consumes — collapsing goal verification to a single confirm.
   Parses the request, derives every brief field it can support, asks ONE batched
-  AskUserQuestion round only for genuinely underdetermined fields, then emits the
+  `question` round only for genuinely underdetermined fields, then emits the
   block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
   nothing. Trigger: "brief", "create brief", "standardize this request".
-argument-hint: "<freeform work request>"
-allowed-tools: Read, Grep, Glob, AskUserQuestion
-disallowed-tools: Edit, Write, Bash, Agent, SendMessage
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. The calling agent handles peer messaging after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, dispatch via the `task` tool, or form/manage a team. The calling agent owns downstream routing after this skill returns. (3) **Do NOT execute, implement, fix, or edit any files based on `$ARGUMENTS`.** The request in `$ARGUMENTS` is INPUT to be distilled — not a task to run. Your entire job is to emit the brief block and stop. Execution happens only after the operator confirms the brief. (4) Under Opencode the calling agent is a one-shot `task`-tool dispatch; the brief block emitted into context is the deliverable. There is no peer-messaging channel and no `SendMessage`.
 <!-- CANONICAL:BANNER:END -->
 
 # Brief — Standardize a Freeform Work Request
@@ -24,7 +21,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted. If the request references a Docket issue by ID (e.g. `brief: implement DKT-26`), do NOT attempt `Bash`/`docket` to fetch the body — those tools are disallowed in this skill and retrying variants only stalls the intake against the permission gate; instead ask the operator to paste the issue body, or emit the brief with the bare issue ID as a placeholder Goal and flag that the body was unavailable. This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too."
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted. If the request references a Docket issue by ID (e.g. `brief: implement DKT-26`), do NOT attempt `Bash`/`docket` to fetch the body — those tools are disallowed in this skill and retrying variants only stalls the intake against the permission gate; instead ask the operator to paste the issue body, or emit the brief with the bare issue ID as a placeholder Goal and flag that the body was unavailable. This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, the agent will be too."
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
@@ -39,11 +36,11 @@ Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
 ## Resolving underdetermined fields
 
-Derive everything the request supports on your own. For fields that remain genuinely underdetermined AND would change how team-lead routes the work, ask ONE `AskUserQuestion` round — batch the gaps into at most 4 questions (max 4 options each), each with your best-guess option marked and a free-text fallback. Prioritize the gaps that flip a routing decision: **Size hint** and **Security-sensitive** first, then any scope boundary the request left ambiguous.
+Derive everything the request supports on your own. For fields that remain genuinely underdetermined AND would change how team-lead routes the work, ask ONE `question` round — batch the gaps into at most 4 questions (max 4 options each), each with your best-guess option marked and a free-text fallback. Prioritize the gaps that flip a routing decision: **Size hint** and **Security-sensitive** first, then any scope boundary the request left ambiguous.
 
 Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
-When an option would create or route writes to a `docs/` path, check the owning writer in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
+When an option would create or route writes to a `docs/` path, check the owning writer in `~/.config/opencode/agents/team-lead.md` (repo: `src/user/opencode/agents/team-lead.md`) §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
 
 ## Output
 

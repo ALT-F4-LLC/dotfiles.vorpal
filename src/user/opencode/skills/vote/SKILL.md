@@ -266,7 +266,7 @@ Return the COMPLETE structured review above as your final-turn summary — on Op
 {Insert the relevant checklist below based on the reviewer's agent type}
 ````
 
-CRITICAL-criticality proposals MAY upgrade reviewers to a higher tier by dispatching an agent definition that pins a higher tier (per the Tiers list / Per-Role Dispatch Table in `~/.config/opencode/agents/team-lead.md` — e.g., a frontier-tier def) rather than a per-call model override — upward-only, mirrors team-lead's escape hatch.
+CRITICAL-criticality proposals MAY upgrade reviewers to a higher tier by dispatching an agent definition that pins a higher tier (per the Tiers list / Per-Role Dispatch Table in `~/.config/opencode/agents/team-lead.md` — e.g., a `gold`-tier def) rather than a per-call model override — upward-only, mirrors team-lead's escape hatch.
 
 | Agent | Checklist Focus |
 |---|---|

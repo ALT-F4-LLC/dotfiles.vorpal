@@ -521,7 +521,6 @@ impl UserEnvironment {
         let opencode_config =
             OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
                 .with_schema("https://opencode.ai/config.json")
-                .with_agent_variant("team-lead", "xhigh")
                 .with_autoupdate(AutoUpdate::Boolean(false))
                 .with_default_agent("team-lead")
                 .with_model(OPENCODE_MODEL_BRONZE)
@@ -674,24 +673,24 @@ impl UserEnvironment {
                 .with_agent(
                     "build",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()), // follows `team-lead`
-                        variant: Some(OPENCODE_MODEL_VARIANT_XHIGH.to_string()),
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // follows `team-lead`
+                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()),
                         ..Default::default()
                     },
                 )
                 .with_agent(
                     "plan",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()), // follows `team-lead`
-                        variant: Some(OPENCODE_MODEL_VARIANT_XHIGH.to_string()),
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // follows `team-lead`
+                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()),
                         ..Default::default()
                     },
                 )
                 .with_agent(
                     "team-lead",
                     AgentConfig {
-                        model: Some(OPENCODE_MODEL_BRONZE.to_string()), // better at directions
-                        variant: Some(OPENCODE_MODEL_VARIANT_XHIGH.to_string()), // meant to think
+                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // better at directions
+                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()), // meant to think
                         mode: Some(AgentMode::Primary),
                         color: None,
                         description: Some(

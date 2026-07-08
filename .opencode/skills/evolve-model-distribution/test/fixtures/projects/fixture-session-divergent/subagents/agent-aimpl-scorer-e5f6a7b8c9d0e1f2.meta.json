@@ -1,0 +1,1 @@
+{"agentType":"impl-scorer","description":"Implement synthetic scoring module (synthetic fixture)","name":"impl-scorer","spawnDepth":0,"taskKind":"in_process_teammate","teamName":"session-fixture-divergent","color":"yellow","planModeRequired":false,"customAgentType":"senior-engineer","model":"sonnet","permissionMode":"auto"}

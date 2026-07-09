@@ -4,9 +4,10 @@
 LOCAL copy: Rule 10 cites this file rather than duplicating it, so a `CANONICAL:DESIGN-GATE-LOCAL`
 marker would register a false drift pair). No worker agent cites this master — the gate binds
 solely the actor holding spawn authority (team-lead is the only agent that spawns
-`@project-manager`/`planner*` or dispatches implementation one-shots). Authored per
-`docs/tdd/design-complete-gate-before-planning.md` (accepted, vote DKT-V5) and
-`docs/tdd/adr/0004-design-complete-gate-as-orchestration-doctrine.md`. Deployed at
+`@project-manager`/`planner*` or dispatches implementation one-shots). Distilled from the TDD
+accepted via vote DKT-V5 (full normative content folded in below);
+`docs/tdd/adr/0004-design-complete-gate-as-orchestration-doctrine.md` remains the standing
+decision record. Deployed at
 `~/.config/opencode/skills/team-doctrine/references/design-gate.md` — repo:
 `src/user/opencode/skills/team-doctrine/references/design-gate.md`. Read on demand only —
 never `Skill(team-doctrine)`.
@@ -22,6 +23,28 @@ implementation-only coding harnesses and models. A dispatch that carries open re
 design questions forces those harnesses to do non-implementation work — un-reviewed, outside
 the team's design/acceptance machinery. The gate guarantees every implementation dispatch is
 design-frozen: zero open research/design questions at handoff.
+
+**Flow.** The gate governs exactly one boundary — Design→Planning/dispatch — reached by every
+pattern that authors changes:
+
+```mermaid
+flowchart TD
+    PF[Pre-flight: verified goal + pattern selection] --> SHAPE{Task shape}
+    SHAPE -- "V/I/SR (authors no changes)" --> VISR[Executor + consult advisor\nreport-only; EXEMPT — never crosses the gate]
+    VISR -- "findings spawn authoring work" --> PF
+    SHAPE -- "authors changes" --> DESIGN[Design Phase\nartifacts authored per pattern]
+    DESIGN --> GATE{Rule 10: every required artifact\nauthored AND accepted?}
+    GATE -- "no — artifact open/unaccepted" --> DESIGN
+    GATE -- "yes (Direct: Design-source bar met)" --> DISPATCH[Direct Task: dispatch @senior-engineer]
+    GATE -- "yes (Small/Medium/Large/UX-Heavy)" --> PLAN[Planning Phase: spawn @project-manager]
+    PLAN --> IMPL[Implementation dispatch]
+    DISPATCH --> WRAP[Review / Verification / Wrap-up]
+    IMPL --> WRAP
+```
+
+**Violation handling.** A gate breach surfaces exactly like a Rule 7 breach — no separate
+enforcement mechanism exists: operator report, Docket mirror (Rule 2), a pitfalls-memory entry,
+and evolve-agents historical-audit pickup.
 
 ## 2. Per-pattern required artifacts and acceptance (normative table)
 

@@ -4,9 +4,8 @@
 LOCAL copy: Rule 10 cites this file rather than duplicating it, so a `CANONICAL:DESIGN-GATE-LOCAL`
 marker would register a false drift pair). No worker agent cites this master — the gate binds
 solely the actor holding spawn authority (team-lead is the only agent that spawns
-`@project-manager`/`planner*` or dispatches implementation ephemerals). Authored per
-`docs/tdd/design-complete-gate-before-planning.md` (accepted, vote DKT-V5) and
-`docs/tdd/adr/0004-design-complete-gate-as-orchestration-doctrine.md`. Deployed at
+`@project-manager`/`planner*` or dispatches implementation ephemerals). Distilled from the TDD
+accepted via vote DKT-V5 (full normative content folded in below). Deployed at
 `~/.claude/skills/team-doctrine/references/design-gate.md` — repo:
 `src/user/claude-code/skills/team-doctrine/references/design-gate.md`. Read on demand only —
 never `Skill(team-doctrine)`.
@@ -23,6 +22,28 @@ carries open research or design questions forces those harnesses to do non-imple
 work — un-reviewed, outside the team's design/acceptance machinery. The gate guarantees every
 implementation dispatch is design-frozen: zero open research/design questions at handoff.
 
+**Flow.** The gate governs exactly one boundary — Design→Planning/dispatch — reached by every
+pattern that authors changes:
+
+```mermaid
+flowchart TD
+    PF[Pre-flight: verified goal + pattern selection] --> SHAPE{Task shape}
+    SHAPE -- "V/I/SR (authors no changes)" --> VISR[Executor + consult advisor\nreport-only; EXEMPT — never crosses the gate]
+    VISR -- "findings spawn authoring work" --> PF
+    SHAPE -- "authors changes" --> DESIGN[Design Phase\nartifacts authored per pattern]
+    DESIGN --> GATE{Rule 10: every required artifact\nauthored AND accepted?}
+    GATE -- "no — artifact open/unaccepted" --> DESIGN
+    GATE -- "yes (Direct: Design-source bar met)" --> DISPATCH[Direct Task: dispatch @senior-engineer]
+    GATE -- "yes (Small/Medium/Large/UX-Heavy)" --> PLAN[Planning Phase: spawn @project-manager]
+    PLAN --> IMPL[Implementation dispatch]
+    DISPATCH --> WRAP[Review / Verification / Wrap-up]
+    IMPL --> WRAP
+```
+
+**Violation handling.** A gate breach surfaces exactly like a Rule 7 breach — no separate
+enforcement mechanism exists: operator report, Docket mirror (Rule 2), a pitfalls-memory entry,
+and evolve-agents historical-audit pickup.
+
 ## 2. Per-pattern required artifacts and acceptance (normative table)
 
 | Pattern | Required before Planning / dispatch | "Accepted" means (existing machinery only) |
@@ -30,7 +51,7 @@ implementation dispatch is design-frozen: zero open research/design questions at
 | Direct | The dispatch brief IS the artifact: fully Closed (exact file, old string, new string, done-state — already mandated) + a `Design-source:` line (§3 grammar) | Operator-verified goal (Pre-flight step 1) + zero Open dimensions + every embodied decision cites its settling source. No review body. Evaluated by team-lead at brief-authoring time as a FORM check (line present, citations resolve) — never a merits judgment; the no-engineering-decisions boundary is unchanged. |
 | Small | Design-source inventory: every decision KNOWN at pre-flight cites its settling source (accepted TDD/ADR, logged advisor consult, verbatim operator instruction) | Citable sources exist for all known decisions; an unsettled known decision → `advisor` consult first (logged as a Docket comment when issues exist, else carried verbatim in the plan brief) or graduate to Medium. |
 | Medium | TDD (plus security TDD / co-authored security sections when flagged) | Secondary review per Rule 8(a) (author recuses, two fresh ephemeral @staff-engineer reviewers) + vote-commit per Consensus Integration criticality; security sections cross-reviewed before vote (existing Security Track text). |
-| Large | ALL TDDs (lead + every parallel `tdd-author-` sibling); PRD first when product-defined | Each TDD as Medium; PRD accepted by operator approval. Planning may not start until EVERY sibling is accepted (strict — see Consequences in ADR 0004). |
+| Large | ALL TDDs (lead + every parallel `tdd-author-` sibling); PRD first when product-defined | Each TDD as Medium; PRD accepted by operator approval. Planning may not start until EVERY sibling is accepted (strict — accepted-but-waiting sibling TDDs idle by design while any sibling is in review; relaxing this is a future operator-approved doctrine change). |
 | UX-Heavy | UX spec + TDD | Spec: `Skill(design-review)` by a non-author reviewer (when `ux-advisor` authored it, the reviewer is a `design-review-{N}` ephemeral — the existing author-recusal principle applied); TDD as Medium. |
 | V/I/SR | EXEMPT | Deliverable IS research (report/verdict); the shape never spawns a PM or an impl ephemeral, so it never crosses the gated boundary. Findings that spawn authoring work start a successor cycle, which re-enters Pre-flight and meets the gate there. |
 

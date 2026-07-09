@@ -77,11 +77,11 @@ All model-routing changes tracked in `docs/changelog/claude-code/model-distribut
 **Exact format — no deviations:** `# Changelog: model-distribution/<target>` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order:
 
 - `### Summary` — 1-2 sentences.
-- `### Routing Changes` — one bullet per applied edit. A conformance/measured-harm edit cites measured distribution + an outcome signal (e.g. `UPGRADE tdd-author* sonnet→opus — 3 spawns measured sonnet, correlated -r2×2 in sess <ref>`). A capability-match quality edit (class-6 under-match/granularity, admitted on reasoning) is prefixed `QUALITY:` and cites its READ role-definition demand anchor instead of a measured count (e.g. `QUALITY: SPLIT sdet test-authoring — routine=sonnet / new-architecture=opus; sdet.md effort: xhigh + owns test-architecture, defect-class: silent-passing tests`). A downgrade is recorded as a `Trial:` bullet (hypothesis + adopt-or-rollback), NEVER a direct permanent edit.
+- `### Routing Changes` — one bullet per applied edit. A conformance/measured-harm edit cites measured distribution + an outcome signal (e.g. `UPGRADE tdd-author* bronze→silver — 3 spawns measured sonnet (bronze), correlated -r2×2 in sess <ref>`). A capability-match quality edit (class-6 under-match/granularity, admitted on reasoning) is prefixed `QUALITY:` and cites its READ role-definition demand anchor instead of a measured count (e.g. `QUALITY: SPLIT sdet test-authoring — routine=bronze / new-architecture=silver; sdet.md effort: xhigh + owns test-architecture, defect-class: silent-passing tests`). A downgrade is recorded as a `Trial:` bullet (hypothesis + adopt-or-rollback), NEVER a direct permanent edit.
 - `### Evidence` — LOCAL session refs the edits were grounded in + Mimir availability (`available` or the `"Mimir metrics unavailable: <reason>"` string).
 - `### Rejected` — every non-applied proposal (evidence-gate mismatch, operator rejection, or speculative/regression-risk), one bullet each, or `None.`
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing entries — always prepend a NEW entry**, even if one already exists for today's date (stacked same-date entries are fine; the topmost is the latest). This is a NEW dedicated changelog family (writer = this skill), deliberately NOT byte-symmetric with the evolve-agents changelog — do NOT copy its `### Changes`/`### Dimensions Evaluated`/`### Rename` shape; use the four sections above. `docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md` is the sole authority for the optional terminal compaction step — cite it, never restate it.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing entries — always prepend a NEW entry**, even if one already exists for today's date (stacked same-date entries are fine; the topmost is the latest). This is a NEW dedicated changelog family (writer = this skill), deliberately NOT byte-symmetric with the evolve-agents changelog — do NOT copy its `### Changes`/`### Dimensions Evaluated`/`### Rename` shape; use the four sections above. `src/user/claude-code/skills/team-doctrine/references/retention-compaction.md` is the sole authority for the optional terminal compaction step — cite it, never restate it.
 
 ---
 
@@ -188,12 +188,12 @@ You are the model-policy researcher. Read-only. No file edits. No commits. No su
 
 ## Task
 Report the CURRENT valid model-alias policy so the proposer can flag any measured/canonical alias that references a suspended or nonexistent tier:
-1. Read the `team-lead.md` per-spawn model-routing prose (grep the `**Per-spawn model routing` paragraph + the `Tiers (default — ` list) for the alias set it names (`sonnet`/`opus`/`opus-security-depth`/`fable`) and any suspension/`best`-alias note (`haiku` is the out-of-vocabulary/suspended alias per team-lead.md — NOT `fable`, which is the routed top tier for the Fable-seat classes).
-2. State, as a short list: valid aliases in force, any SUSPENDED alias (e.g. `haiku`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
+1. Read the `team-lead.md` per-spawn model-routing prose (grep the `**Per-spawn model routing` paragraph + the `Tiers (three named tiers` block) for its three tier bullets (`gold`/`silver`/`bronze`) and each bullet's `resolves to model alias` line — the RESOLVED alias set (`fable`/`opus`/`sonnet`) — and any suspension/`best`-alias note (`haiku` is the out-of-vocabulary/suspended alias per team-lead.md — NOT `fable`, the alias `gold` resolves to — the Gold-seat classes' tier).
+2. State, as a short list: valid tiers in force (`gold`/`silver`/`bronze`) with the alias each resolves to, any SUSPENDED alias (e.g. `haiku`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
 
 ## Output Format
 SendMessage the orchestrator verbatim:
-- Valid aliases (in force): <list>
+- Valid tiers (in force): <gold/silver/bronze, each with its resolved alias>
 - Suspended → replacement: <e.g. `haiku` → `best`/`opus`, or "none">
 - Stale references in team-lead.md: <alias + anchor, or "none">
 
@@ -218,25 +218,25 @@ Phase 0 handed the orchestrator the per-spawn `role → requested → resolved` 
 The live `team-lead.md` Tiers list is the SINGLE SOURCE OF TRUTH for the category → canonical-tier map. The proposer RE-READS it at runtime and builds the map from what it reads — it MUST NOT trust any table embedded in this SKILL.md. Locate + read the block by content string, never a line number (line refs drift):
 
 ```bash
-grep -n 'Tiers (default — ' src/user/claude-code/agents/team-lead.md      # locate the block
-grep -nE '^- .(sonnet|opus). —' src/user/claude-code/agents/team-lead.md  # the canonical-tier bullets
+grep -n 'Tiers (three named tiers' src/user/claude-code/agents/team-lead.md      # locate the block
+grep -nE '^- .(gold|silver|bronze). ' src/user/claude-code/agents/team-lead.md  # the canonical-tier bullets
 ```
 
-Read the `Tiers (default — ` preamble (its escape-hatch prose: "exceed the tier UPWARD … NEVER … BELOW opus") AND every `^- ` bullet beneath it, including the `opus (security depth)` bullet, and build category → canonical-tier from those bullets alone.
+Read the `Tiers (three named tiers` preamble (its escape-hatch prose: "exceed the tier UPWARD … NEVER … below `silver`") AND every `^- ` bullet beneath it — `gold`/`silver`/`bronze`, three bullets total, security-depth folded into the `silver` bullet (no separate security-tier bullet exists) — and build category → canonical-tier from those bullets alone.
 
 The table below is an ILLUSTRATIVE SNAPSHOT for this document only — documentation, NOT the classification input and NOT auto-synced. If it and the live Tiers diverge, `team-lead.md` wins and this snapshot is stale-by-definition. NEVER feed it into a proposal.
 
 | Category (spawn class) — *illustrative; live authority is `team-lead.md`* | Canonical tier |
 |---|---|
-| `impl-{ID}` — Direct / Small / Medium | `sonnet` |
-| `impl-{ID}` — Large / architecture / long-horizon | `opus` |
-| `planner` (project-manager ephemeral) | `sonnet` |
-| general `reviewer-2`, `verifier*` | `opus` |
-| `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, >1-day-horizon deep-impl | `fable` (opus fallback when unavailable) |
-| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors (non-Medium+) | `opus` (security depth) |
+| `impl-{ID}` — Direct / Small / Medium | `bronze` |
+| `impl-{ID}` — Large / architecture / long-horizon | `silver` |
+| `planner` (project-manager ephemeral) | `bronze` |
+| general `reviewer-2`, `verifier*` | `silver` |
+| `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, >1-day-horizon deep-impl | `gold` (silver fallback when unavailable) |
+| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors (non-Medium+) | `silver` (security-pinned) |
 | cheap one-shot report-only subagents | `haiku` (only place permitted) |
 
-**Tier-invariant floor.** `opus` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `verifier*` / `security-*` sit AT `opus`; `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `fable` (falling back to `opus` only when fable is unavailable — never below). None of these roles are ever downgrade candidates — a below-`opus` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`sonnet` ≤ Medium, `opus` at static-Large, `fable` at the >1-day-horizon deep-impl arm).
+**Tier-invariant floor.** `silver` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `verifier*` / `security-*` sit AT `silver`; `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `gold` (falling back to `silver` only when gold is unavailable — never below). None of these roles are ever downgrade candidates — a below-`silver` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`bronze` ≤ Medium, `silver` at static-Large, `gold` at the >1-day-horizon deep-impl arm).
 
 #### Fallback-vs-intentional corroboration (C2b — the `.meta.json` sidecar decides)
 
@@ -248,11 +248,15 @@ A `*.jsonl` records only the RESOLVED model, so it alone cannot separate a silen
 
 A below-floor measurement on a hard-floor role is a DEFECT regardless of the sidecar (the escape hatch never authorizes a downgrade); C2b decides only over-canonical cases.
 
+#### Measured-alias → tier translation (BEFORE comparing against canonical tier)
+
+`.meta.json.model` and the `.jsonl` `"model"` field both record bare ALIASES (`sonnet` / `opus` / `fable`) — the categorization vocabulary is `gold`/`silver`/`bronze` tiers, so alias and canonical tier no longer coincide. Translate BEFORE comparing: look up each measured alias against the live Tiers block's `resolves to model alias` lines (the Categorization AUTHORITY rule) to get its tier (`fable`→`gold`, `opus`→`silver`, `sonnet`→`bronze`), THEN compare that tier to the category's canonical tier. Never compare a bare alias to a tier name directly.
+
 #### Divergence classes → disposition
 
 Each disposition requires an evidence citation — session path + measured per-role count + outcome signal. Disposition is a **FILE-EDIT** (change the Tiers/prose) or a **RUNTIME-DISCIPLINE REPORT** (surface to the operator, NO file edit).
 
-1. **Under-powered defect** — a hard-floor role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) measured BELOW `opus`. The file already mandates `opus`, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the Tiers entry is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
+1. **Under-powered defect** — a hard-floor role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) measured BELOW `silver` (after alias→tier translation). The file already mandates `silver`, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the Tiers entry is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
 2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`TeammateIdle`, `-r2` respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
 3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`.meta.json.model` PRESENT, per C2b) AND non-trivial Mimir cost → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates.
 4. **Fallback-drift (corroborated)** — a role whose `.meta.json.model` is ABSENT (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
@@ -332,7 +336,7 @@ After applying the approved batch, prepend ONE new entry to `docs/changelog/clau
 
 ### Phase 3: coherence-verifier (read-only, post-apply)
 
-After the Phase 2 edits are applied, spawn ONE `coherence-verifier` to confirm the edited `team-lead.md` is INTERNALLY consistent — the Tiers list agrees with the per-spawn routing prose and no authoring/review/verify role sits below `opus`. It is READ-ONLY; the orchestrator applies any fix it surfaces.
+After the Phase 2 edits are applied, spawn ONE `coherence-verifier` to confirm the edited `team-lead.md` is INTERNALLY consistent — the Tiers list agrees with the per-spawn routing prose and no authoring/review/verify role sits below `silver`. It is READ-ONLY; the orchestrator applies any fix it surfaces.
 
 ```
 Agent(name="coherence-verifier", subagent_type="staff-engineer", model="opus", prompt="...")
@@ -341,15 +345,15 @@ You are the coherence verifier. Read-only. You edit NOTHING — the orchestrator
 
 ## Task
 The orchestrator has just applied model-routing edits to src/user/claude-code/agents/team-lead.md. Verify the edited file is INTERNALLY consistent:
-1. Re-read the `Tiers (default — ` list and the `**Per-spawn model routing` prose (grep by content string, never a line number).
+1. Re-read the `Tiers (three named tiers` list and the `**Per-spawn model routing` prose (grep by content string, never a line number).
 2. Confirm the Tiers bullets and the routing prose AGREE — no tier named in one contradicts the other, no dangling reference to a tier that was renamed or removed.
-3. Confirm NO authoring/review/verify role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) is routed BELOW `opus` (the "NEVER … BELOW opus" hard floor).
+3. Confirm NO authoring/review/verify role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) is routed BELOW `silver` (the "NEVER … below `silver`" hard floor).
 4. Confirm no edit introduced a suspended alias (`haiku`) or a nonexistent tier.
 
 ## Output Format
 SendMessage the orchestrator verbatim:
 - Tiers ↔ prose: CONSISTENT, or the exact contradiction (quote both anchors).
-- Hard-floor check: PASS, or the offending role + where it sits below opus.
+- Hard-floor check: PASS, or the offending role + where it sits below silver.
 - Alias check: PASS, or the stale/suspended alias + anchor.
 - Fix needed: the exact string to change + replacement, or "none."
 
@@ -374,4 +378,4 @@ After Phase 3 completes (or no-ops):
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per the shutdown protocol; its `~/.claude/teams/` resources are auto-removed at session end.
 2. Report: files modified (`team-lead.md` + the changelog, or "none"), LOCAL/REMOTE evidence coverage (sessions scanned; Mimir `available` or the `"Mimir metrics unavailable: <reason>"` string), proposals approved vs rejected vs Trial, the Phase-3 coherence outcome, and that NO changes were committed.
 3. **Build-deploy-lag reminder (MANDATORY).** The edit target is the BUILD SOURCE `src/user/claude-code/agents/team-lead.md`; the RUNNING team-lead resolves its definition from the DEPLOYED copy at `~/.claude/agents/team-lead.md`. Applied edits **do not take effect until the config is rebuilt and redeployed** (the vorpal/Rust build), and the next cycle can only MEASURE an applied edit's effect AFTER that redeploy. The Wrap-up report MUST remind the operator to rebuild + redeploy before the edits are live.
-4. **Optional terminal compaction.** `docs/tdd/adr/0001-retention-and-compaction-policy-for-evolution-cycle.md` is the sole authority for the optional changelog-compaction step — cite it, never restate it.
+4. **Optional terminal compaction.** `src/user/claude-code/skills/team-doctrine/references/retention-compaction.md` is the sole authority for the optional changelog-compaction step — cite it, never restate it.

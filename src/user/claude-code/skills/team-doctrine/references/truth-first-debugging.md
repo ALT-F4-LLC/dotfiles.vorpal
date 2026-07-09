@@ -3,7 +3,10 @@
 **LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
 `senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
 `distinguished-engineer.md`) plus `team-lead.md`,
-each carrying a compact `CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL` copy (role-tailored).
+each carrying a compact `CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL` copy (role-tailored). The
+two-variant tailoring is deliberate, not drift: `project-manager.md` and `ux-designer.md`
+LOCALs carry principle + banner + one role line ONLY — re-adding the pre-fix gate or
+TFD-1..5 detail there is over-tailoring, not drift-repair.
 Relocated from `src/user/claude-code/agents/team-lead.md` §Truth-First Debugging (DKT-59/60
 doctrine-home migration). Deployed at
 `~/.claude/skills/team-doctrine/references/truth-first-debugging.md` — repo:

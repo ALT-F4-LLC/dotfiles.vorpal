@@ -1,46 +1,60 @@
 # evolve-model-distribution fixture harness
 
-Synthetic `projects/<sess>/subagents/` tree (all content fabricated — no real
-session transcripts) so the `distribution-auditor` per-spawn join loop and the
-categorization logic can be dry-run against deterministic, re-runnable input
-instead of a hand-simulated one. Point the collection loop's
-`~/.claude/projects` root at `test/fixtures/projects` to exercise it, e.g.:
+## Opencode SQLite fixture
+
+`opencode_fixture.db` is a synthetic SQLite fixture mirroring the live Opencode
+tables used by Phase 3 telemetry validation: `session`, `session_message`,
+`message`, `part`, `event`, `event_sequence`, and `account`. It also includes a
+minimal `project` table because the live `session.project_id` foreign key points
+there.
+
+Rebuild the fixture from this directory:
 
 ```bash
-for meta in .claude/skills/evolve-model-distribution/test/fixtures/projects/*/subagents/agent-a*.meta.json; do
-  ...  # same join loop as SKILL.md § LOCAL per-spawn join
-done
+sqlite3 opencode_fixture.db < build-opencode-fixture.sql
 ```
 
-## `fixture-session-divergent/` — one pair per divergence class
+The build script seeds:
 
-| Pair (`agent-a<role>-<hash>`) | `.meta.json.model` | resolved (`.jsonl`) | Expected classification |
-|---|---|---|---|
-| `reviewer-2-a1b2c3d4e5f6a7b8` | `opus` | `claude-opus-4-8` | **Clean** — pinned opus, canonical for `reviewer-2` is opus, no divergence. |
-| `tdd-author-b2c3d4e5f6a7b8c9` | `sonnet` | `claude-sonnet-4-6` | **Under-powered defect** — `tdd-author*` hard floor is opus (never-below-opus rule); explicitly pinned sonnet, so RUNTIME-DISCIPLINE REPORT, not a file-edit. |
-| `impl-DKT-99-c3d4e5f6a7b8c9d0` | absent (no `model` key) | `claude-opus-4-8` | **Fallback-drift (corroborated)** — `model=` omitted at spawn, resolved landed on opus, over the sonnet canonical for `impl-*` Small/Medium. |
-| `impl-DKT-77-d4e5f6a7b8c9d0e1` | `opus` (present) | `claude-opus-4-8` | **Permitted-upgrade** — explicitly pinned opus on a sonnet-canonical `impl-*` role; over-canonical but intentional, so an over-powered/cost-waste Trial-only candidate, never drift. |
-| `impl-scorer-e5f6a7b8c9d0e1f2` | `sonnet` | `<synthetic>` (x2) + `claude-sonnet-4-6` | **Filter target** — the `<synthetic>` sentinel turns must be dropped by `grep -v '<synthetic>'`; only `claude-sonnet-4-6` counts, matching canonical (clean once filtered). |
-| `impl-DKT-66-f6a7b8c9d0e1f2a3` | n/a — `.meta.json` is truncated/non-JSON | n/a — `.jsonl` is zero-byte | **Malformed-file case** — meta parse failure degrades role/requested to `<unparseable>`; the zero-byte jsonl degrades resolved to `<none>`; the loop emits this pair as an `<unparseable>`/`<none>` row and keeps running rather than aborting the cycle. |
+| Signal | Expected fixture result |
+|---|---:|
+| Tool errors in `part.data` where `$.type = 'tool'` and `$.state.status = 'error'` | 3 |
+| Model switches in `session_message.type = 'model-switched'` | 2 |
+| High-message-count sessions in `message` with `count(*) > 80` | `fixture-stall-session` with 85 messages |
+| Cost/model aggregation rows in `session` where `cost > 0` | 2 grouped rows; total cost 5.5 |
 
-## `fixture-session-noop/` — no-op cycle
+Run the Phase 3 semantic checks against the fixture before using a live operator
+database:
 
-One clean pair (`verifier-1a2b3c4d5e6f7a8b`, pinned opus, canonical opus) in a
-session of its own, so it can be pointed at in isolation to assert "no
-divergences — no changes" when nothing else is in scope.
+```bash
+sqlite3 opencode_fixture.db "SELECT count(*) FROM part WHERE json_extract(data, '$.type') = 'tool' AND json_extract(data, '$.state.status') = 'error';"
+sqlite3 opencode_fixture.db "SELECT count(*) FROM session_message WHERE type = 'model-switched';"
+sqlite3 opencode_fixture.db "SELECT session_id, count(*) as msg_count FROM message GROUP BY session_id HAVING msg_count > 80;"
+sqlite3 opencode_fixture.db "SELECT agent, model, count(*) AS spawn_count, round(sum(cost), 2) AS total_cost, sum(tokens_input) AS tokens_input, sum(tokens_output) AS tokens_output FROM session WHERE cost > 0 GROUP BY agent, model ORDER BY agent, model;"
+```
 
-## `fixture-session-empty/`
+Expected output:
 
-An empty `subagents/` dir (`.gitkeep` only, no `agent-a*` pairs) — asserts the
-empty-LOCAL-window path: SKIP the edit phases and report "no local metrics —
-cannot ground edits".
+```text
+3
+2
+fixture-stall-session|85
+distinguished-engineer|openai/gpt-5.5|2|3.0|3000|500
+staff-engineer|google/gemini-2.5-pro|1|2.5|3000|400
+```
 
-## Mimir mock/absent path
+`opencode stats --models --days 7 --project ""` is a live CLI check and does not
+consume `opencode_fixture.db`; the SQL aggregation above is the deterministic
+fixture equivalent that validates the same `session.agent`/`session.model`/
+`session.cost` shape without depending on the operator's live database.
 
-Mimir is an external HTTP dependency (no local fixture file). Exercise the
-`"Mimir metrics unavailable: <reason>"` fallback deterministically by pointing
-the collection at an address that always fails closed, e.g.
-`MIMIR_BASE=http://127.0.0.1:1` (nothing listens there — connection refused)
-in place of `https://mimir.bulbasaur.altf4.domains`, or by skipping the Mimir
-arm entirely (a `--no-remote` collection run) and asserting LOCAL-only
-proceeds with cost-magnitude claims marked "unquantified".
+## Deprecated project-tree fixture data
+
+The `projects/` tree is retained as an inert historical artifact and is not used
+by Phase 3 validation. Do not point new migration checks at it. The supported
+validation surface is the SQLite fixture and commands above.
+
+Fallback and model-switch checks now use `session_message.type =
+'model-switched'`. Requested-vs-resolved parity is unavailable in the verified
+Opencode schema, so that distinction is an operator-judgment signal rather than
+a deterministic fixture assertion.

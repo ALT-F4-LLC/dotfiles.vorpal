@@ -2,7 +2,7 @@
 
 **LOCAL-copy consumers:** `team-lead.md` only (compact LOCAL copy under its kept `### Monitor
 for Orchestration` header). Relocated from `src/user/claude-code/agents/team-lead.md` lines
-305-312 (DKT-44, design-complete-gate-before-planning); the `### Monitor for Orchestration`
+305-312 (DKT-44, per the accepted Design-Complete Gate doctrine (`references/design-gate.md`)); the `### Monitor for Orchestration`
 header itself stays inline in team-lead.md (step 12's `§Monitor for Orchestration`
 cross-reference must resolve). Deployed at
 `~/.claude/skills/team-doctrine/references/monitor-orchestration.md` — repo:

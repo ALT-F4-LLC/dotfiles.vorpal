@@ -138,7 +138,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn FIVE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (staff-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
+Spawn FIVE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -306,30 +306,32 @@ If a category is empty for an agent, write `none` — do not omit the line. Afte
 ### Phase 0: Innovation Scan
 
 ```
-Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="innovation-scanner", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT ways for agents to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE process simplification/automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read agents/*.md and surface concrete opportunities for improvement beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
+MISSION: Surface CONCRETE, HIGH-IMPACT opportunities to rethink, refactor, reimagine, or automate how agents do their jobs — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Every finding is a candidate CHANGE for THIS cycle's Phase 1/2, not a research pointer to "explore later" — if you can't name the exact target and the concrete change, drop the finding rather than hedge it. **A first-class target is RELIABLE process automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read agents/*.md and surface opportunities beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
 
 Target agents: {target_agents}
 
-## Task — for EACH target agent, identify opportunities in these four areas:
-1. **New Approaches**: Novel techniques, patterns, or tool usages not currently in the agent definition that could improve effectiveness (e.g. new Claude model capabilities, new orchestration patterns, new frontmatter fields, new tool compositions).
-2. **Efficiency Gains & Reliable Automation**: Steps, workflows, or verification loops that could be shortened, parallelized, eliminated, **or made DETERMINISTIC by codifying them as a repeatable script (e.g. under `.claude/scripts/`)** — without sacrificing correctness; **prefer automating any step whose result currently varies by hand-execution.**
-3. **Patterns to Retire**: Agent behaviors or conventions that were once necessary but are now obsolete, superseded by better primitives, or creating unnecessary overhead.
-4. **Cross-Agent Opportunities**: Coordination patterns, shared conventions, or handoff improvements that would make the agent family more effective as a whole (not just individually).
+## Task — for EACH target agent, find opportunities in these four lenses. A lens with no HIGH-IMPACT finding emits "none" — do not pad with a low-value bullet to fill the format.
+1. **Rethink**: A core approach, tool composition, or model capability the agent isn't using that would change HOW it does its job, not just reword what it already does (e.g. an unused Claude Code capability, a coordination primitive that replaces manual back-and-forth).
+2. **Refactor & Automate**: A specific manual, repetitive, or error-prone step that could be shortened, parallelized, eliminated, or made DETERMINISTIC by codifying it as a repeatable script under `.claude/scripts/` — prefer automating any step whose result currently varies by hand-execution.
+3. **Retire**: A named behavior, rule, or convention (cite the exact heading or paragraph) that is now obsolete, superseded by a better primitive, or actively creates overhead.
+4. **Cross-Agent Leverage**: A coordination pattern or shared convention duplicated (or missing) across 2+ named agents that, once fixed, pays off family-wide.
+
+Every finding MUST cite: (a) the exact target (file, heading, or named behavior), (b) the concrete change, (c) the expected impact (what gets faster, safer, more reliable, or what failure class it prevents). A finding missing a target or impact fails the Content Gate.
 
 ## Rules
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only.
-- Focus on WHAT could be better and WHY — not on cataloguing what already works. Each finding must be actionable and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete).
+- Focus on WHAT could be better and WHY, grounded in a named target — not on cataloguing what already works, and not on "worth exploring" hedges. Each finding must be actionable THIS cycle and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete). Zero findings in a lens beats a filler finding.
 
 ## Output Format (per agent)
 Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
 
 ### Agent: <agent-name>
-- New Approaches: <1-3 bullets, or "none">
-- Efficiency Gains & Reliable Automation: <1-3 bullets, or "none">
-- Patterns to Retire: <1-3 bullets, or "none">
-- Cross-Agent Opportunities: <1-3 bullets, or "none">
+- Rethink: <target> — <change> — Impact: <effect>, or "none"
+- Refactor & Automate: <target> — <change> — Impact: <effect>, or "none"
+- Retire: <target> — <change> — Impact: <effect>, or "none"
+- Cross-Agent Leverage: <target> — <change> — Impact: <effect>, or "none"
 ```
 
 ### Phase 0: Model Routing Audit

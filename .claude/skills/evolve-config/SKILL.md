@@ -155,7 +155,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Config-History Audit & Historical Audit
 
-Spawn FIVE agents in parallel per the templates below: `docs-researcher` (staff-engineer), `config-history-auditor` (senior-engineer, needs Bash for read-only `git log` over the config sources), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (staff-engineer), and `model-routing-auditor` (senior-engineer, needs Bash). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 6 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{config_history_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
+Spawn FIVE agents in parallel per the templates below: `docs-researcher` (staff-engineer), `config-history-auditor` (senior-engineer, needs Bash for read-only `git log` over the config sources), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 6 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{config_history_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve
 
@@ -327,32 +327,34 @@ If a category is empty, write `none` — do not omit the line. After the block, 
 ### Phase 0: Innovation Scan
 
 ```
-Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="innovation-scanner", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT config settings for the Claude Code genome — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). **A first-class target is RELIABLE config automation: manual, repetitive, or error-prone setup/verification steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read src/user/claude_code.rs (available setters) and src/user.rs (current call chain) and surface concrete settings opportunities beyond what friction-correction alone would find. Use WebSearch/WebFetch for external discovery (new settings fields, sandbox/hook primitives) and Grep/Read for internal pattern discovery.
+MISSION: Surface CONCRETE, HIGH-IMPACT opportunities to rethink, refactor, reimagine, or automate the Claude Code config genome — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Every finding is a candidate CHANGE for THIS cycle's Phase 1/2, not a research pointer to "explore later" — if you can't name the exact setter/file and the concrete change, drop the finding rather than hedge it. **A first-class target is RELIABLE config automation: manual, repetitive, or error-prone setup/verification steps that could be made DETERMINISTIC and REPEATABLE — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read src/user/claude_code.rs (available setters) and src/user.rs (current call chain) and surface concrete settings opportunities beyond what friction-correction alone would find. Use WebSearch/WebFetch for external discovery (new settings fields, sandbox/hook primitives) and Grep/Read for internal pattern discovery.
 
 Target: the Claude Code config genome.
 
-## Task — identify opportunities in these four areas:
-1. **New Settings**: Available `claude_code.rs` setters NOT yet called in `src/user.rs`, or newly-shipped platform fields with no setter yet, that would improve the dev experience (e.g. a permission/sandbox/hook/env setting the platform now supports).
-2. **Efficiency Gains & Reliable Automation**: Permission/sandbox rules that could be broadened to cut prompt friction without widening blast radius; env or model-routing settings that reduce cost/latency, **or manual setup/verification steps that could be made DETERMINISTIC by codifying them as a repeatable script (e.g. under `.claude/scripts/`)**; **prefer automating any step whose result currently varies by hand-execution.**
-3. **Settings to Retire**: Config values that were once necessary but are now obsolete, superseded by a platform default, or contradicted by a newer setting.
-4. **Cross-Surface Opportunities**: Settings that interact (e.g. a hook + an env var, a sandbox domain + a permission rule) that should be tuned together.
+## Task — identify opportunities in these four lenses. A lens with no HIGH-IMPACT finding emits "none" — do not pad with a low-value bullet to fill the format.
+1. **Rethink**: A core approach or setting composition the config genome isn't using that would change HOW the dev environment behaves, not just add a value alongside what already exists (e.g. an unused Claude Code platform primitive — new settings field, sandbox rule type, hook event — that changes behavior, not merely tunes an existing one).
+2. **Refactor & Automate**: A specific manual, repetitive, or error-prone setup/verification step that could be shortened, parallelized, eliminated, or made DETERMINISTIC by codifying it as a repeatable script under `.claude/scripts/` — prefer automating any step whose result currently varies by hand-execution. Also covers permission/sandbox rules broadenable to cut prompt friction without widening blast radius, and env/model-routing settings that reduce cost/latency.
+3. **Retire**: A named setting, `with_*` call, or script behavior (cite the exact setter or line) that is now obsolete, superseded by a platform default, or contradicted by a newer setting.
+4. **Cross-Surface Leverage**: A setting interaction or convention duplicated (or missing) across 2+ config surfaces (e.g. a hook + an env var, a sandbox domain + a permission rule) that, once fixed, pays off system-wide.
+
+Every finding MUST cite: (a) the exact target (the `claude_code.rs` setter, file, or named behavior), (b) the concrete change, (c) the expected impact (what gets faster, safer, more reliable, or what failure class it prevents). A finding missing a target or impact fails the Content Gate.
 
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
 - No peer-to-peer SendMessage — orchestrator only.
-- Focus on WHAT could be better and WHY — not on cataloguing what already works. Each finding must be actionable, name the `claude_code.rs` setter, and be Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete).
+- Focus on WHAT could be better and WHY, grounded in a named target — not on cataloguing what already works, and not on "worth exploring" hedges. Each finding must be actionable THIS cycle, name the `claude_code.rs` setter (or file), and be Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete). Zero findings in a lens beats a filler finding.
 
 ## Output Format
 Emit one findings block, then SendMessage the orchestrator verbatim:
 
 ### Config Innovation
-- New Settings: <1-3 bullets, each naming the setter, or "none">
-- Efficiency Gains & Reliable Automation: <1-3 bullets, or "none">
-- Settings to Retire: <1-3 bullets, or "none">
-- Cross-Surface Opportunities: <1-3 bullets, or "none">
+- Rethink: <target> — <change> — Impact: <effect>, or "none"
+- Refactor & Automate: <target> — <change> — Impact: <effect>, or "none"
+- Retire: <target> — <change> — Impact: <effect>, or "none"
+- Cross-Surface Leverage: <target> — <change> — Impact: <effect>, or "none"
 ```
 
 ### Phase 0: Model Routing Audit

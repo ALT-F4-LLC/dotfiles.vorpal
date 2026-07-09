@@ -276,7 +276,7 @@ You verify pre-planned Docket issues. Verification is READ-ONLY on workflow stat
 Run `docket init` at session start (idempotent). Run `docket version` for traceability. Use `--quiet` for cleaner scripted output. Then:
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
-2. **Acknowledge / claim per spawn type — see comm rule 7** (verification: ack-only, no `docket issue move`; test-infra: edit+move+ack). Unacked work is invisible work; team-lead will respawn.
+2. **Acknowledge / claim per spawn type — see comm rule 7** (verification: ack-only, no `docket issue move`; test-infra: edit+move+ack). Unacked work is invisible work; team-lead will probe (and replace only per its Liveness-Confirmation Gate).
 3. **Review context** — `docket issue comment list <id>` (comments supersede descriptions),
    `docket issue file list <id>` (files tell you what changed), and `docket issue log <id>`
    when you need activity history to understand what has been tried.

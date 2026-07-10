@@ -22,7 +22,7 @@ You are the **Design Reviewer**. You conduct a peer design review on the artifac
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
-- Reads: `docs/ux/`, `docs/tdd/`, `docs/tdd/adr/`, `docs/spec/`.
+- Reads: `docs/ux/`, `docs/tdd/`, `docs/adr/`, `docs/spec/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
@@ -91,7 +91,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
    - For UX spec / TDD / draft path: `Read` the file; capture frontmatter (maturity, status, owner) and the workflow list.
    - For inline surface description: treat the description as the artifact text.
 4. **Cross-reference precedent**:
-   - `Grep -rl "{key-term}" docs/ux/ docs/tdd/ docs/spec/` to locate related specs, ADRs (under `docs/tdd/adr/`), and project specs.
+   - `Grep -rl "{key-term}" docs/ux/ docs/tdd/ docs/spec/ docs/adr/` to locate related specs, ADRs (under `docs/adr/`), and project specs.
    - Identify any cross-surface precedent already established (CLI flag conventions, API error shapes, error-copy patterns).
 5. **Empty-artifact guard**: if the artifact has no inspectable design content (empty file or description under 10 words), ABORT:
 

@@ -22,8 +22,9 @@ You are the **Verifier**. You verify the artifact named by `<scope>` against its
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
-- Reads: `docs/tdd/` (accepted only), `docs/ux/`, `docs/spec/`.
+- Reads: `docs/ux/`, `docs/spec/`, `docs/adr/`, the Docket issue body + comments (distilled design contracts + ACs per the Distillation Gate — docs-paths.md §Persistence & lifecycle).
 - Always singular docs/spec/ — never docs/specs/.
+- docs/tdd/ is ephemeral — Design/Planning input only; deletable any time after implementation (master: docs-paths.md).
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
 ## Role Detection
@@ -104,17 +105,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
    Error: Resolved scope produced no verifiable content — nothing to verify.
    ```
 6. **Read related design docs** (scope to what the diff touches):
-   - TDDs in `docs/tdd/` that the issue references. **TDD status gate**: only verify against TDDs with `status: accepted`. If the referenced TDD is `draft`, `proposed`, or `in-review`, ABORT:
-
-     ```
-     Error: Referenced TDD '{path}' has status '{status}' — verification requires status: accepted. Escalate to team-lead for vote approval before re-invoking.
-     ```
-
-     If the referenced TDD is missing from `docs/tdd/`, ABORT:
-
-     ```
-     Error: Referenced TDD '{path}' not found in docs/tdd/. Escalate to team-lead before re-invoking.
-     ```
+   - If an acceptance criterion or issue context requires a `docs/tdd/` file to interpret → surface the finding: `Distillation gap: this issue's acceptance criteria or context require a docs/tdd/ file to interpret — a planning defect. Surface to team-lead/@project-manager for re-distillation; do not dereference the TDD.` A criterion that is uninterpretable without the missing context is scored FAIL (underspecified — planning defect) per Verification Procedure step 1, never resolved by locating the TDD.
    - UX specs in `docs/ux/` for user-facing behavior.
    - Project specs in `docs/spec/` matching the changed areas only (e.g., `testing.md` for test changes, `security.md` for auth/crypto/secrets, `performance.md` for hot-path edits — skip the rest).
 6a. **Cross-issue contamination guard** (multi-issue sessions only). When this is the 2nd+ `Skill(verify-ac, ...)` invocation in the same session, identify whether the prior issue's verification produced persistent test artifacts (database rows, generated files outside the diff, env-var mutations, cached fixtures) that could affect the current issue's tests. If yes, the calling agent MUST reset the relevant state (drop test DB, `rm` generated artifacts, unset env vars) BEFORE running the current issue's tests; cite the reset commands in evidence. If reset is impractical (e.g., shared infra), surface a Test Coverage finding: `Cross-issue contamination risk: prior verification of {prior_issue} mutated {artifact}; current verification not isolated`.

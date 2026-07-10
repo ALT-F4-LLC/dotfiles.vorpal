@@ -143,7 +143,7 @@ The operator's goal has been pre-verified. Re-verify alignment if your understan
 Requirements:
 - Explore the codebase thoroughly using Read, Grep, Glob, and Bash
 - {exploration_guidance}
-- Check docs/tdd/ for any existing technical design documents that inform this spec
+- Check `docs/tdd/` only if it exists — TDDs are ephemeral (deletable post-implementation); absence is normal, not a gap
 - Run `docket plan --json 2>/dev/null` to check for active project plans that provide context on ongoing work
 - If other docs/spec/ files already exist, skim them to avoid content overlap
 - Apply rigorous honesty: document only what exists in the codebase. Flag gaps, weaknesses, and missing capabilities explicitly — do not invent aspirational content or soften findings. A spec that honestly says "no tests exist" is more valuable than one that hedges

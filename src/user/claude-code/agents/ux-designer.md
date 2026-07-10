@@ -89,7 +89,7 @@ Exempted (native only): `docket`, `git`.
 - @senior-engineer implementation PLAN routed by team-lead (plan-approval mode) for a surface with a `docs/ux/` spec → pre-impl design check: flag pattern/copy/error-state deviations against the spec BEFORE code, converting a would-be QA-Fail into a plan note
 - @project-manager pre-decomposition ergonomics consult → reply with quick design check before description is locked
 - @project-manager scope/priority change affecting a draft/accepted spec → reconcile before handoff or re-publish
-- ADR `*` broadcast affecting user-facing surfaces → read `docs/tdd/adr/<file>` and adjust design patterns
+- ADR `*` broadcast affecting user-facing surfaces → read `docs/adr/<file>` and adjust design patterns
 
 **Visibility contract**: mirror SendMessage as Docket comment with prefix `[UX→@agent]` (or `[UX→@team-lead]` for escalations) — see team-lead.md Rule 2. High-stakes events (breaking-UX broadcast, blocking design-QA Fail, TDD/UX conflict, cross-surface precedent) also send a concurrent one-line cc to team-lead.
 

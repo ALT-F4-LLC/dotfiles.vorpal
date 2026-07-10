@@ -16,6 +16,8 @@ never `Skill(team-doctrine)`.
 
 > **Design-Complete Gate (Rule 10).** Planning and implementation are LOCKED until every design/research artifact the cycle requires is authored AND accepted via its EXISTING acceptance machinery. Spawning @project-manager/`planner*` or dispatching ANY implementation ephemeral (including the Direct-Task @senior-engineer) before the gate passes is a rule violation of the same class as Rule 7.
 
+The gate boundary is also the TDD consumption boundary: docs/tdd/ artifacts are inputs to Design and Planning only — post-gate phases receive their content via the Distillation Gate (docs-paths.md §Persistence & lifecycle) and never read the files.
+
 **Why now (handoff-readiness motivation).** Work is routinely handed off to
 implementation-only coding harnesses and models (Codex, OpenCode, etc.). A dispatch that
 carries open research or design questions forces those harnesses to do non-implementation
@@ -49,8 +51,8 @@ and evolve-agents historical-audit pickup.
 | Pattern | Required before Planning / dispatch | "Accepted" means (existing machinery only) |
 |---|---|---|
 | Direct | The dispatch brief IS the artifact: fully Closed (exact file, old string, new string, done-state — already mandated) + a `Design-source:` line (§3 grammar) | Operator-verified goal (Pre-flight step 1) + zero Open dimensions + every embodied decision cites its settling source. No review body. Evaluated by team-lead at brief-authoring time as a FORM check (line present, citations resolve) — never a merits judgment; the no-engineering-decisions boundary is unchanged. |
-| Small | Design-source inventory: every decision KNOWN at pre-flight cites its settling source (accepted TDD/ADR, logged advisor consult, verbatim operator instruction) | Citable sources exist for all known decisions; an unsettled known decision → `advisor` consult first (logged as a Docket comment when issues exist, else carried verbatim in the plan brief) or graduate to Medium. |
-| Medium | TDD (plus security TDD / co-authored security sections when flagged) | Secondary review per Rule 8(a) (author recuses, two fresh ephemeral @staff-engineer reviewers) + vote-commit per Consensus Integration criticality; security sections cross-reviewed before vote (existing Security Track text). |
+| Small | Design-source inventory: every decision KNOWN at pre-flight cites its settling source (accepted TDD (distilled per P5)/ADR, logged advisor consult, verbatim operator instruction) | Citable sources exist for all known decisions; an unsettled known decision → `advisor` consult first (logged as a Docket comment when issues exist, else carried verbatim in the plan brief) or graduate to Medium. |
+| Medium | TDD (plus security TDD / co-authored security sections when flagged) | The **merged acceptance panel** (author recuses; `high`=3 general TDD seats @staff-engineer/@senior-engineer/@sdet, `critical`=4 security TDD adds @security-engineer) IS the review-and-acceptance body — vote-commit per Consensus Integration criticality; security sections cross-reviewed before vote (existing Security Track text). |
 | Large | ALL TDDs (lead + every parallel `tdd-author-` sibling); PRD first when product-defined | Each TDD as Medium; PRD accepted by operator approval. Planning may not start until EVERY sibling is accepted (strict — accepted-but-waiting sibling TDDs idle by design while any sibling is in review; relaxing this is a future operator-approved doctrine change). |
 | UX-Heavy | UX spec + TDD | Spec: `Skill(design-review)` by a non-author reviewer (when `ux-advisor` authored it, the reviewer is a `design-review-{N}` ephemeral — the existing author-recusal principle applied); TDD as Medium. |
 | V/I/SR | EXEMPT | Deliverable IS research (report/verdict); the shape never spawns a PM or an impl ephemeral, so it never crosses the gated boundary. Findings that spawn authoring work start a successor cycle, which re-enters Pre-flight and meets the gate there. |
@@ -70,8 +72,11 @@ briefs (and, for Small, per known decision in the planning brief):
 
 ```
 Design-source: <exactly one of>
-  - accepted TDD/ADR citation      e.g. "docs/tdd/foo.md §4 (accepted, vote V-12)"
-  - verbatim operator instruction  e.g. "operator, this cycle: 'rename X to Y everywhere'"
+  - distilled TDD decision     verbatim decision text + inert provenance, e.g.
+                               "phases serialize on file collisions" — provenance:
+                               TDD 'foo' §4 (accepted, vote V-12; provenance-only, not a file reference)
+  - accepted ADR citation      e.g. "docs/adr/0004-bar.md (accepted, vote V-9)" (durable, dereferenceable)
+  - verbatim operator instruction   e.g. "operator, this cycle: 'rename X to Y everywhere'"
   - mechanical — no decision embodied   (typo/dep-bump/log-tweak class)
 ```
 

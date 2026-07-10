@@ -248,7 +248,7 @@ On operator Cancel during the collision dialog: emit
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
 and HARD-REFUSED by this skill. There is no overwrite path.
 
-<!-- COUPLING: the 7 reserved names are owned by src/user/claude-code/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/tdd/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
+<!-- COUPLING: the 7 reserved names are owned by src/user/claude-code/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->
 architecture
 security

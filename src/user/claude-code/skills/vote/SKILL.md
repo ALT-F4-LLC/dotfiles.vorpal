@@ -82,7 +82,9 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 **Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
 
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) are NOT auto-included in vote panels — every vote spawns fresh ephemerals unless team-lead routes a persistent advisor into the panel deliberately (e.g., as the domain-relevance anchor on a `critical` vote).
+**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) hold a panel seat only when eligible under the **C5 vote-seat eligibility test** below; a vote with no eligible advisor spawns fresh ephemerals for every seat as before.
+
+**Persistent-advisor vote-seat eligibility (C5).** A live persistent advisor MAY hold one panel seat via SendMessage (zero fresh spawns) when ALL hold: (a) its role-type is not the proposer's excluded type (Proposer Exclusion below); (b) uniqueness across seats is preserved; (c) it **did not author or materially consult on any section of the artifact** under vote — authorship of ANY section is disqualifying, explicitly including a `security-advisor` that authored a Threat-Model Annotation (Threat Model / Trust Boundaries / Security Considerations) on another agent's TDD, since seating it would put its own sections under its own review. team-lead judges test (c) from the consult log and the artifact's section attribution; a proposer-adjacent advisor is never seated. On Medium+ TDD votes the `advisor` seat is the author and is excluded by construction, so this mostly benefits non-TDD votes, plan/breaking-change votes, and `security-advisor`/`ux-advisor` seats on artifacts they neither authored any section of nor materially consulted on. Independence is preserved by the vote protocol itself — reviewers never see each other's assessments; a seated advisor's cycle context raises `domain_relevance`, which the quorum math already weighs.
 
 ---
 
@@ -92,13 +94,15 @@ Select reviewers based on domain relevance to the proposal. Each `Agent()` call 
 
 | Proposal Domain | Primary Reviewer | Secondary Reviewer(s) |
 |---|---|---|
-| Architecture / System Design | @staff-engineer | @senior-engineer (feasibility); add @security-engineer if security-tagged |
+| Architecture / System Design | @staff-engineer | @senior-engineer (feasibility); add @security-engineer if security-tagged; TDD-acceptance votes instead use the pinned **merged acceptance panel** composition below (see Pinned composition, C1), not this row |
 | Security-sensitive (auth, crypto, secrets, sandbox, trust boundaries, supply chain) | @security-engineer | @staff-engineer (architecture fit) |
 | Code | @staff-engineer | @sdet (coverage); add @security-engineer for security-tagged proposals |
 | Plan / Scope / Prioritization | @staff-engineer (feasibility) | @senior-engineer (effort) |
 | Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
 | UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
 | General / Mixed domain | @staff-engineer | @senior-engineer |
+
+**Pinned composition — TDD-acceptance merged panel (C1).** For a TDD-acceptance vote (the vote panel absorbs the former secondary-review round; the panel IS the review), the domain-lookup above does not apply — composition is pinned explicitly so each former secondary-review lens rides a role-matched seat: `high`=3 (general TDD) seats `@staff-engineer` (**architecture + system-fit** lens), `@senior-engineer` (implementation feasibility, its existing checklist focus), `@sdet` (**completeness + AC-testability** lens, its existing checklist focus); `critical`=4 (security TDD) adds `@security-engineer` as the domain-relevance anchor. This is the **merged acceptance panel** (see `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) step 6) — its Reviewer Prompt Template briefs below carry these lens assignments verbatim per seat.
 
 ---
 
@@ -111,6 +115,7 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 1. Read the proposal's `created_by` value (`docket vote show {vote-id} --json`).
 2. Map `created_by` to an agent type using the table below (comparisons are **case-insensitive**).
 3. Remove the matched agent type from the reviewer pool before selecting reviewers.
+4. **Author-type carve-out (TDD-acceptance votes only).** When the vote is a TDD-acceptance vote AND `created_by` maps to an agent type that holds a pinned seat in the merged acceptance panel's composition for that vote's criticality — concretely: `staff-engineer` (pinned on `high` and `critical`) or `security-engineer` (pinned on `critical`); this inline enumeration is DERIVED from the pinned-composition text that owns it (vote/SKILL.md's pinned-composition paragraph, mirrored from team-lead.md step 6) and is documentation-only — if the composition ever changes, the composition text wins and this enumeration follows it — step 3's type-removal does NOT strip that type from the pool. The exclusion downgrades from type-level removal to **author-instance recusal**: the pinned seat MUST be filled by a fresh same-type ephemeral distinct from the author instance. Every other `created_by` mapping, and every non-TDD-acceptance vote, applies step 3's type-removal exactly as written. **Enforcement home (unchanged from the ratified pattern):** instance-recusal is guaranteed by team-lead's fresh-spawn dispatch discipline (Rule 7) — a newly spawned `Agent()` ephemeral is never the author instance — NOT by the `.role` pre-commit invariant below, which is type-level and cannot express instance identity.
 
 **Mapping table:**
 
@@ -123,11 +128,11 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 | `"sdet"`, or starts with `"verifier-"` | `sdet` |
 | `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
 | `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
-| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md:224` recusal; absent from Agent Selection). Its TDD reviewers are the two `@staff-engineer` ephemerals, which must stay selectable. |
+| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md:224` recusal; absent from Agent Selection). Its TDD-acceptance reviewers include the merged acceptance panel's `@staff-engineer` seat (architecture + system-fit lens; Pinned composition, C1), which must stay selectable. |
 
 > Unmapped `created_by`: apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
 
-**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD reviewers. **Subtle-correctness point:** if a DE-authored proposal were ever created with `created_by="advisor"`/`"tdd-author-*"`, the current table would exclude `staff-engineer` and strip the intended reviewers — the role-identity convention is what prevents this.
+**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD-acceptance seat. **Subtle-correctness point (post-C1 mechanics):** if a DE-authored TDD-acceptance proposal were ever mis-created with `created_by="advisor"`/`"tdd-author-*"`, it would now hit the **author-type carve-out** (Proposer Exclusion step 4) instead of step 3's full type-removal — the carve-out seats a fresh `@staff-engineer` instance rather than stripping the type, so the reviewer count is not lost. But the proposal is still mischaracterized (DE's TDD is not staff-authored, so no exclusion OR carve-out logic should fire at all) — the role-identity convention remains what prevents this mislabeling from occurring in the first place.
 
 ### Uniqueness Constraint
 
@@ -170,7 +175,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). **Shared pre-computed brief (C7).** Per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8, compute the mechanical brief items (changed-file list, relevant `docs/spec/` excerpts, and any keyed `cargo audit` result) ONCE and embed identically into every reviewer's prompt — a Communication-Optimization artifact carrying ZERO engineering authority; it never pre-judges a finding. Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
 
 ### Handling Reviewer Failures
 
@@ -296,7 +301,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
    ```
    **AC-reconciliation check** — if the outcome reverses a prior direction (overturns an earlier vote or ADR), flag to the caller that sub-issues authored before this vote may encode the contradicted direction and MUST have their acceptance criteria reconciled before implementation proceeds. The coordinator surfaces this; acting on it is the caller's responsibility.
 
-   **Post-vote citation** — a committed outcome seals the voted artifact (TDD, ADR, plan) as the canonical authority for its values. Downstream briefs and dispatches that re-state those values MUST cite the committed artifact verbatim (file + line), never paraphrase — paraphrase drifts from what was approved. Surface this to the caller alongside the commit so it propagates into decomposition.
+   **Post-vote citation** — a committed outcome seals the voted artifact (TDD, ADR, plan) as the canonical authority for its values. Downstream briefs and dispatches that re-state those values MUST cite the committed artifact verbatim (file + line), never paraphrase — paraphrase drifts from what was approved. For TDD artifacts the verbatim copy is the load-bearing half and the file+line pointer is provenance-only — TDDs are ephemeral and deletable post-implementation (docs-paths.md §Persistence & lifecycle); ADR pointers stay dereferenceable (durable). Surface this to the caller alongside the commit so it propagates into decomposition.
 
 2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
    reviewer count, and aggregated findings (blockers, concerns, suggestions).
@@ -339,7 +344,7 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.role` for the two pre-commit invariants: no `.role` matches the proposer's mapped agent type, and all `.role` values are unique).
+View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.role` for the two pre-commit invariants: no `.role` matches the proposer's mapped agent type — except on a TDD-acceptance path where the **author-type carve-out** (Proposer Exclusion step 4) applies, where exactly one `.role` match of the author's mapped type is expected and valid — and all `.role` values are unique).
 Full result: `docket vote result {vote-id} --json`
 Committed via: `docket vote commit {vote-id} --outcome "Approved with score {score}"` (echo the executed command for audit replay).
 ```

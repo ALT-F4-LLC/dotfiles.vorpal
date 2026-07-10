@@ -194,7 +194,9 @@ Field rules:
 - `dependencies` is a YAML array of related-file paths (relative to the doc); use
   `[]` if none.
 - `status` is one of: `draft | questions-resolved | in-review | accepted | superseded`.
-  New TDDs start at `draft`.
+  New TDDs start at `draft`. `accepted` is the terminal working state; the file itself
+  is ephemeral — safely deletable at any time after its cycle's implementation
+  completes (docs-paths.md §Persistence & lifecycle).
 
 ### Required Sections
 
@@ -242,8 +244,10 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    must embed the exact command and its expected hit count (run it; the count is
    the evidence) per §9 and staff-engineer.md rule 6, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
-    out-of-scope flags. Phases must be independently shippable or explicitly
-    chained — no implicit ordering.
+    out-of-scope flags, (g) each phase must be interpretable stand-alone when
+    copied verbatim into a Docket issue — restate any load-bearing contract inline
+    rather than pointing at another section ("see §4" is not distillable). Phases
+    must be independently shippable or explicitly chained — no implicit ordering.
 
 ## Validation Before Save
 
@@ -298,9 +302,13 @@ After Validation Before Save passes:
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
 The calling agent owns next steps (vote requests, decomposition, peer notification).
-Downstream agents must cite this TDD verbatim with line refs — never paraphrase its
-values from memory — and any prescribed `Skill(verify-ac)` is an EXPLICIT invocation,
-not a teammate-frontmatter assumption (teammates load only `tools`+`model`).
+Planning-phase consumers (PM decomposition, team-lead briefs) copy this TDD's
+committed values verbatim into issue bodies and briefs, with file+section provenance
+annotations; post-planning phases operate exclusively from those distilled copies.
+This file is ephemeral — safely deletable at any time after its cycle's
+implementation completes (docs-paths.md §Persistence & lifecycle). Any prescribed
+`Skill(verify-ac)` is an EXPLICIT invocation, not a teammate-frontmatter assumption
+(teammates load only `tools`+`model`).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.

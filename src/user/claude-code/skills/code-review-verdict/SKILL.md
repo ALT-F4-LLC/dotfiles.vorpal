@@ -23,8 +23,9 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: none — report into the calling agent's context.
-- Reads: `docs/spec/`, `docs/tdd/`, `docs/tdd/adr/`, `docs/ux/`.
+- Reads: `docs/spec/`, `docs/adr/`, `docs/ux/`, the Docket issue body + comments (distilled design contracts + ACs per the Distillation Gate — docs-paths.md §Persistence & lifecycle).
 - Always singular docs/spec/ — never docs/specs/.
+- `docs/tdd/` is ephemeral — Design/Planning input only; deletable any time after implementation (master: docs-paths.md).
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
 ## Role Detection
@@ -79,7 +80,7 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule (under team-lead orchestration)
 
-When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (TDD secondary review, security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` + `reviewer-2` + `security-advisor` + ephemeral `security-reviewer-2` (4 parallel). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14.
+When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` (general, single) + `security-advisor` + ephemeral `security-reviewer-2` (3 parallel, per Rule 8 C3) — the security flag does NOT force-double the general track; `reviewer-2` joins only when its own doubling trigger independently fires too (4 total). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14. **Fix rounds default to a delta re-review (C4)** by the persistent advisor(s) of the track(s) that raised the surviving Blocker(s) — general Blocker → `advisor` alone (zero fresh ephemerals); security Blocker → the doubled security track (`security-advisor` + a fresh `security-reviewer-2` ephemeral); re-double the general track only on a NEW Blocker-class finding in the delta or an operator flag — in Round-N compact mode (§Round-N Re-Review below).
 
 Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispatch, verdict reconciliation, and degraded-single-reviewer fallback annotation are owned by the calling layer per `~/.claude/agents/team-lead.md` (Rule 8, step 14) — do not duplicate that logic here. Outside team-lead orchestration, doubling is at the calling agent's discretion.
 
@@ -107,8 +108,8 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 
    **Snapshot-tree guard** (`uncommitted`/`staged` scopes only; PR/branch scopes are not snapshot-prone and skip it): a local working-tree diff is a point-in-time snapshot — the skill cannot tell whether all of the cycle's expected edits have landed; do NOT mechanically guess the expected file-set. **Under team-lead orchestration**, do not proceed past Pre-flight unless the calling agent holds an implementation-complete signal — a team-lead GO with no open `blockedBy` on the reviewed work; when the invocation context names Docket issue IDs, confirm each is closed via `docket issue show <id> -q`. Without that signal, ABORT: `Error: moving tree — implementation not signalled complete; re-invoke after team-lead GO.` (Reviews have fired before implementers finished despite agent-level go-signal briefs and blockedBy edges — the skill-level gate is the backstop.) **Standalone (no orchestrator)**, prefix the verdict with one line — `Reviewed local working tree at this point in time — N files present; confirm implementation is signalled-complete before this verdict binds` — so the calling agent reconciles against the cycle's acceptance criteria before routing.
 6. **Read related design docs** — scope reads to what the diff touches; do not read specs outside the changed-file paths:
-   - `staff-engineer`: TDDs in `docs/tdd/`; project specs in `docs/spec/` matching changed areas, where present (`architecture.md`, `performance.md`, `testing.md`).
-   - `security-engineer`: security TDDs in `docs/tdd/`, security ADRs in `docs/tdd/adr/`, `docs/spec/security.md`.
+   - `staff-engineer`: the issue's distilled contracts + `docs/spec/` matching changed areas, where present (`architecture.md`, `performance.md`, `testing.md`).
+   - `security-engineer`: the issue's distilled security contracts + `docs/adr/` security records + `docs/spec/security.md`.
 
 ## Review Procedure
 
@@ -178,7 +179,7 @@ Four narrow, mechanically detectable symptoms gate the merge **regardless of fea
 | **G1 — Swallowed error** | A `catch`/`rescue`/`except` block with no rethrow AND no logged context AND no meaningful handling on a path that touches untrusted input, network, or persistence. Patterns: empty catch `{}`; `catch { /* ignore */ }`; discarded result (`_ = err`, `_, _ := ...` for an `error` return); `.unwrap()` / `.expect()` / `!` on data the function does not control. NOT fired by deliberate panics on programmer-error invariants where a clear stack is the right move. | `// OVERRIDE: code-philosophy/6 — <reason>` on or immediately above the catch/discard site |
 | **G2 — Unguarded shared mutation** | Shared or module-global mutable state accessed without a lock, channel, actor, or single-owner pattern. NOT fired by `Mutex`/`RwLock`/atomic-guarded access, message-passing, single-owner goroutines/tasks, or local mutation inside a function whose result escapes as a new value. | `// OVERRIDE: code-philosophy/4 — <reason>` on the unguarded access |
 | **G3 — Unparsed boundary input** | Untrusted input (HTTP body/query/header, env var, CLI arg, queue payload, DB row, third-party API response, file off disk) consumed without a schema parse into a precise type at first contact. NOT fired by data flowing through internal calls after it has been parsed once at the boundary; NOT fired by parsed-and-typed data simply being accessed deeper in the call stack. | `// OVERRIDE: code-philosophy/5 — <reason>` on the consumption site |
-| **G4 — Surface-not-invariant patch** | Fix that papers over an edge case rather than addressing the underlying contract. Patterns: a `null` check added where the real bug is that upstream data is the wrong shape; a retry loop wrapped around a non-idempotent operation; defensive guards added that mask a real invariant violation instead of fixing it; a snapshot or test updated to make a failing case pass without diagnosing why. Detection requires reading the issue/TDD to understand what the code was supposed to *uphold* — flag when the diff looks like symptom-masking. | `// OVERRIDE: code-philosophy/11 — <reason>` on the affected block |
+| **G4 — Surface-not-invariant patch** | Fix that papers over an edge case rather than addressing the underlying contract. Patterns: a `null` check added where the real bug is that upstream data is the wrong shape; a retry loop wrapped around a non-idempotent operation; defensive guards added that mask a real invariant violation instead of fixing it; a snapshot or test updated to make a failing case pass without diagnosing why. Detection requires reading the issue to understand what the code was supposed to *uphold* — flag when the diff looks like symptom-masking. | `// OVERRIDE: code-philosophy/11 — <reason>` on the affected block |
 | **G5 — Unexecuted AC regex** | TDD/spec/AC diff introduces or modifies a regex (`grep -E`, `\bword\b`, alternation arms) intended to gate verification, with no evidence the regex was executed against the actual target files. Patterns: AC text says "match `Lifecycle:.*persistent name`" but the target file uses `**Lifecycle**:` (markdown-bold inserts `**` between word and colon); AC requires literal adjacency where target uses intervening words; expected hit count in the AC does not match actual `grep -lE` output; under `grep -E` a `\|` is a LITERAL pipe (BRE alternation), so `'a\|b'` matches the string `a|b` and returns 0 on a correct file — a false-negative; the alternation must be bare `|` under `-E`. Detection: when a diff edits regex in `docs/tdd/` or `docs/spec/`, the reviewer MUST run the regex against the named target files and compare hit count to the AC's claimed file-set. A mismatch is a Blocker. | `// OVERRIDE: code-philosophy/5 — <reason>` on the AC block (G5 maps to principle #5, parse-at-the-edge, since AC regex is the verification's parse contract) |
 
 **Override recognition (mandatory).** Before emitting a Blocker for any gate, scan the diff *and* the immediately adjacent lines for an `OVERRIDE: code-philosophy/<id>` comment matching the gate (the language's comment syntax — `//`, `#`, `--`, `;`, etc.). When present:
@@ -284,7 +285,7 @@ For substantive security-relevant changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} (security-touched paths called out)
-- Reference docs: {security TDD, security ADRs, docs/spec/security.md sections — or "None applicable"}
+- Reference docs: {the issue's distilled security contracts, `docs/adr/` security records, docs/spec/security.md sections — or "None applicable"}
 
 ### Threat Model (assumed)
 - Adversary: {external attacker / curious insider / supply-chain compromise / prompt injection / ...}
@@ -335,7 +336,7 @@ For substantive security-relevant changes:
 One of: **Approve (security)** / **Approve with follow-up** / **Block (security)** / **Split required**
 
 ### Next Steps
-{What the calling agent should do — e.g., deliver this verdict to team-lead for step-14 reconciliation (security verdict binds for security findings), surface any security-vs-general track contradiction, escalate to operator if the threat model diverges from the TDD, request a vote for residual-risk acceptance. Standalone (no orchestrator): notify the parallel reviewer for unified handoff and route critical/high to @senior-engineer.}
+{What the calling agent should do — e.g., deliver this verdict to team-lead for step-14 reconciliation (security verdict binds for security findings), surface any security-vs-general track contradiction, escalate to operator if the threat model diverges from the issue's distilled threat contracts, request a vote for residual-risk acceptance. Standalone (no orchestrator): notify the parallel reviewer for unified handoff and route critical/high to @senior-engineer.}
 ```
 
 ### Round-N Re-Review (compact)

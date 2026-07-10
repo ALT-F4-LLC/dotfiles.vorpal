@@ -130,7 +130,7 @@ Incorporate specific file paths and details from exploration into issue descript
 - @senior-engineer scope expansion → tracking subtask or update parent.
 - @sdet missing-criteria / coverage-gap → update issue or schedule remediation.
 - @ux-designer spec-ready / scope-discovery → decompose against `docs/ux/<file>` (re-verify goal on scope-discovery).
-- ADR `*` broadcast affecting planning conventions (testing strategy, dep policy, security boundaries, cross-cutting infrastructure) → read `docs/tdd/adr/<file>`; revise active plans where assumptions changed; surface re-plan needs to team-lead.
+- ADR `*` broadcast affecting planning conventions (testing strategy, dep policy, security boundaries, cross-cutting infrastructure) → read `docs/adr/<file>`; revise active plans where assumptions changed; surface re-plan needs to team-lead.
 
 Never decompose work depending on a TDD that is not `status: accepted` — create the issue blocked and escalate. Report planning start (with tier), scope/risk discoveries, and plan completion (issue count / critical path / effort) to team-lead (operator-visibility contract above handles the Docket mirror).
 
@@ -166,7 +166,7 @@ Before creating a single issue:
 - **Clarify ambiguity.** Do not plan against unclear requirements. Use the questions from goal alignment: scope boundaries, success criteria, what must not change, and priority ordering if scope must be cut.
 - **Explore the codebase.** Use Read/Grep/Glob to understand current state and patterns. Surface deeper technical questions as investigation requests for @staff-engineer.
 - **Check existing state.** Use `docket issue list --json` and `docket issue comment list <id>` to avoid duplicating work. Comments contain the most current context — always read them.
-- **Check specs.** First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos). Look in `docs/tdd/` (TDDs, ADRs in `docs/tdd/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Missing project specs are addressed by invoking the `init-specs` skill ad-hoc (the team-lead/operator can trigger it), not by routing a spec-authoring request to @staff-engineer.
+- **Check specs.** First run `ls -d docs/tdd docs/ux docs/spec 2>/dev/null` — only explore dirs that exist (absent dirs are normal in early-stage repos). Look in `docs/tdd/` (TDDs, ADRs in `docs/adr/`), `docs/ux/` (design specs), and `docs/spec/` (project specs). Missing project specs are addressed by invoking the `init-specs` skill ad-hoc (the team-lead/operator can trigger it), not by routing a spec-authoring request to @staff-engineer.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this role).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md`).
 - Writes: docs/spec/ (PRDs via Skill(prd) — narrowly scoped; rare) — otherwise Docket issues, not docs.
@@ -231,13 +231,29 @@ docket issue link add <later_id> depends_on <earlier_id>
 
 ### 8. Write Excellent Issue Descriptions
 
-Every issue must give a @senior-engineer enough context to execute without asking questions. Describe the **outcome**, not implementation steps. Include specific file paths from your exploration. Reference specs from `docs/tdd/`, `docs/ux/`, `docs/spec/` when they exist. Trivial-tier issues need only what + acceptance criteria.
+Every issue must give a @senior-engineer enough context to execute without asking questions. Describe the **outcome**, not implementation steps. Include specific file paths from your exploration. When citing an accepted TDD, copy the decision text verbatim into the issue (P5 below) — live references are allowed only to durable docs (`docs/ux/`, `docs/spec/`, `docs/adr/`); `docs/tdd/` paths never appear — provenance names the TDD by slug. Trivial-tier issues need only what + acceptance criteria.
+
+<!-- Mirrored from docs-paths.md §Persistence & lifecycle (Distillation Gate) — not a drift-audited LOCAL/master marker pair; the canonical text lives inside docs-paths.md's CANONICAL:DOCS-PATHS block, not a same-named master here. -->
+**Distillation Gate.** At decomposition, @project-manager copies every contract,
+constraint, acceptance criterion, and non-obvious WHY an issue depends on VERBATIM
+into the issue body. TDD provenance annotations surviving in issue bodies or
+dispatch briefs are structurally inert: they name the TDD by slug and section
+(e.g. "TDD 'foo' §4, accepted vote V-12"), never by file path, and must never
+need dereferencing (ADR citations under `docs/adr/` remain path-cited and
+dereferenceable — durable). Self-containment test for every
+issue leaving Planning: "Could this issue be implemented, reviewed, and verified
+correctly if `docs/tdd/` were deleted right now?" An issue that fails is a planning
+defect. No agent may fail, block, or degrade output because a `docs/tdd/` file is
+missing.
+<!-- end mirrored block -->
+
+**P5 (verbatim-distillation rule).** Wherever a planning-time output (issue body, dispatch brief, Design-source line, post-vote citation) cites an accepted TDD: the decision text is copied verbatim into the citing artifact; the provenance annotation is structurally inert — it names the TDD by slug and section (never a `docs/tdd/...` path, so there is nothing to habitually dereference) and must never need dereferencing downstream. ADR citations (`docs/adr/`) remain path-cited and dereferenceable.
 
 **`-d` sets the body; `-f` only attaches file refs.** The multi-line template below goes in the DESCRIPTION via `-d` — for a multi-line body, pipe it through `-d -` (stdin) rather than fighting shell quoting. `-f` ATTACHES file paths for collision detection; it does NOT set the body. Passing the body to `-f` yields an empty description plus a dead attachment that breaks collision detection.
 
 **Never trust the success line after `issue create/edit -d`.** A sandbox-denied scratch-file write can print `✔ Updated` while the body stays stale or empty — stage scratch body files under `$TMPDIR`, the only reliably sandbox-writable temp dir (`/tmp` and `$CLAUDE_JOB_DIR/tmp` denials are the recurring root cause). After any `-d -`/`-d` write, re-run `docket issue show <id> --json` and grep for a marker string from the new body before treating the issue as ready. Same failure from the wrong directory: docket commands silently NO-OP when run from a cwd OUTSIDE the repo tree — `cd` repo-root in the SAME Bash call, then confirm `updated_at` advanced. A stale read is NOT a write-failure: reconcile by timestamp (newer `updated_at` wins), never force-write to "prove" a write landed.
 
-**Do not require code comments in acceptance criteria.** The team-wide minimal-informative-comments policy (senior-engineer.md §CANONICAL:CODE-COMMENTS) leaves comment decisions to the implementer's judgment — an AC must not mandate one. When a phase requires explaining behavior, route the explanation to a Docket comment on the issue or a doc update under `docs/tdd/` — never an acceptance criterion of the form "add a comment explaining X" or "document Y inline." Reviewers treat redundant comments as a non-blocking Suggestion, not a Blocker; an AC requiring a specific comment over-specifies the implementation and invites review churn.
+**Do not require code comments in acceptance criteria.** The team-wide minimal-informative-comments policy (senior-engineer.md §CANONICAL:CODE-COMMENTS) leaves comment decisions to the implementer's judgment — an AC must not mandate one. When a phase requires explaining behavior, route the explanation to a Docket comment on the issue — never an acceptance criterion of the form "add a comment explaining X" or "document Y inline." Durable explanations (ones that must outlive this issue) route to `docs/adr/` or `docs/spec/`, never `docs/tdd/` (ephemeral post-implementation). Reviewers treat redundant comments as a non-blocking Suggestion, not a Blocker; an AC requiring a specific comment over-specifies the implementation and invites review churn.
 
 **Template for standard/complex tier issues:**
 
@@ -249,13 +265,18 @@ Every issue must give a @senior-engineer enough context to execute without askin
 - [ ] [Testable criterion]
 **Estimated Size**: [small / medium / large]
 **Constraints**: [Gotchas, invariants, patterns to follow]
+**Design Contracts** (Distillation Gate — required when an accepted TDD informed this issue):
+- [Verbatim copy of every contract / data shape / seam / non-obvious WHY this issue depends on]
+- Design provenance: TDD '<slug>' §<n> (accepted, vote <id>) — provenance-only, not a file
+  reference; the TDD may be deleted post-implementation and MUST NOT be needed to execute,
+  review, or verify this issue.
 **Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> --issue <issue-id>`]
 **Claim Ritual**: Before starting, claim in ONE Bash call — `docket issue edit <id> -a @<role> && docket issue move <id> in-progress` (assignee FIRST, then status; chaining keeps it a single call and enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
 ### 9. Attach File References
 
-Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites a spec line-ref (`docs/tdd/<x>.md:42`), re-confirm the line against the live file before finalizing — TDD line numbers drift. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
+Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites an accepted TDD decision, copy the decision text verbatim into the issue at authoring time (P5) — the `docs/tdd/<slug>.md` pointer is provenance-only and is never re-confirmed against a live file post-authoring; `docs/adr/<x>.md:42`-style ADR line-refs remain live and should still be re-confirmed since ADRs are durable. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
 
 ### 10. Validate and Finish
 

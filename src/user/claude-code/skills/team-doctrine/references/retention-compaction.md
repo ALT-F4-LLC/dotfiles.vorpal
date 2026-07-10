@@ -1,7 +1,7 @@
 # Retention & Compaction Policy — Maintained Master
 
-**Consumers (cite by path, never restate — this file is the sole normative home per
-constraint 7 of the ADR citation-distillation TDD):** `.claude/skills/evolve-agents/SKILL.md`,
+**Consumers (cite by path, never restate — this file is the sole normative home):**
+`.claude/skills/evolve-agents/SKILL.md`,
 `.claude/skills/evolve-skills/SKILL.md`, `.claude/skills/evolve-config/SKILL.md`,
 `.claude/skills/evolve-model-distribution/SKILL.md` (optional terminal compaction step),
 `src/user/claude-code/agents/team-lead.md`, and the `CANONICAL:PITFALLS` block carried by

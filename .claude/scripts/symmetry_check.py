@@ -31,6 +31,7 @@ PROTECTED_LITERALS = [
     "sub-agents",
     "sub-agent",
     "agent-memory",
+    "Agent memory",
 ]
 
 # Bespoke structural asymmetries: not clean token swaps (different glob count, a verb

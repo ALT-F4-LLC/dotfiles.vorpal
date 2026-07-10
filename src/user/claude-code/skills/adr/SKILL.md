@@ -1,7 +1,7 @@
 ---
 name: adr
 description: >
-  Author a single Architecture Decision Record at docs/tdd/adr/{NNNN}-{slug}.md. Loaded
+  Author a single Architecture Decision Record at docs/adr/{NNNN}-{slug}.md. Loaded
   into the calling agent's context; the agent drafts the ADR per the format authority
   below.
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
@@ -16,15 +16,15 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 # ADR — Author an Architecture Decision Record
 
 You are the **ADR Author**. You produce a single Architecture Decision Record at
-`docs/tdd/adr/{NNNN}-{slug}.md` and return. The calling agent (typically
+`docs/adr/{NNNN}-{slug}.md` and return. The calling agent (typically
 `@staff-engineer`) drafts the content; this skill is the format authority — section
 list, frontmatter contract, output path, ADR numbering, and collision handling all
 live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
-- Writes: `docs/tdd/adr/{NNNN}-{slug}.md`.
-- Reads: `docs/tdd/adr/`, `docs/tdd/`, `docs/spec/`, `docs/ux/`.
+- Writes: `docs/adr/{NNNN}-{slug}.md`.
+- Reads: `docs/adr/`, `docs/tdd/`, `docs/spec/`, `docs/ux/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
@@ -58,18 +58,20 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 ## When to Use
 
 - A single architectural or design decision needs to be recorded as an immutable
-  artifact at `docs/tdd/adr/{NNNN}-{slug}.md` (numbered chronologically) so future
+  artifact at `docs/adr/{NNNN}-{slug}.md` (numbered chronologically) so future
   readers can trace the why.
 - The calling agent (typically `@staff-engineer`) is logging a decision that emerged
   during design, review, or implementation and that future work will need to reference.
 - The decision has long-term consequences (e.g., choice of library, protocol, schema
   shape, naming convention) and a one-line note in a TDD or PR is not enough.
+- ADRs are DURABLE records — exempt from TDD ephemerality (docs-paths.md §Persistence
+  & lifecycle); they are a distillation target at cycle wrap-up.
 
 ## When NOT to Use
 
 <!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
 - Inline advisory replies, review comments, scratch notes, or one-off design
-  sketches that are not meant to live at `docs/tdd/adr/`.
+  sketches that are not meant to live at `docs/adr/`.
 - Full system designs spanning multiple components or phases: use
   `Skill(tdd, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
@@ -81,7 +83,7 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 ## Pre-flight
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_dir}`** as `docs/tdd/adr/`.
+2. **Resolve `{output_dir}`** as `docs/adr/`.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
@@ -117,7 +119,7 @@ malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
 5. **ADR numbering** (ADR-specific):
-   1. `Glob docs/tdd/adr/*.md`.
+   1. `Glob docs/adr/*.md`.
    2. For each filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
       filenames that do not match in `malformed[]`.
    3. If `malformed` is non-empty, ABORT:
@@ -131,11 +133,11 @@ malformed frontmatter.
    4. If there are no matching files, `next_num = 1`. Otherwise `next_num = max(matches) + 1`,
       where `max` is taken over the captured numeric group as integers.
    5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
-   6. `{output_path}` = `docs/tdd/adr/{next_num:04d}-{slug}.md`.
+   6. `{output_path}` = `docs/adr/{next_num:04d}-{slug}.md`.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/tdd/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
+1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
    ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
    Read any candidate predecessors so the new ADR cites them in `Context`.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
@@ -244,12 +246,12 @@ On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
-For this skill, `{output_dir}` is `docs/tdd/adr/` and `{output_path}` is
-`docs/tdd/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
+For this skill, `{output_dir}` is `docs/adr/` and `{output_path}` is
+`docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
 ADR-specific full sequence: `mkdir → Write → race-detection Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative; ADR authoring is single-author, so no pre-Write renumber is needed — the post-Write Glob below is the sole race guard.
 
-**After Write, before Emit**: Re-run `Glob docs/tdd/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
+**After Write, before Emit**: Re-run `Glob docs/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.

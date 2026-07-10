@@ -82,7 +82,7 @@ Before spawning any agents:
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
-   Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted).
+   Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}`, `{model_routing_findings}`, `{repetition_audit_findings}`, and `{bug_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor, model-routing-auditor, repetition-auditor, and bug-auditor spawns in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted for all four).
    Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-agents-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
 9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
@@ -114,11 +114,11 @@ All changes tracked in `docs/changelog/claude-code/agents/<agent-name>.md` (crea
 
 ### Team Setup & Agent Lifecycle
 
-Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
+Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Repetition Audit", "Bug Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
 | 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
@@ -138,7 +138,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn FIVE teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip both `historical-auditor` and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
+Spawn SEVEN teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-agent), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-agent), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -388,6 +388,56 @@ If a category is empty for an agent, write `none` — do not omit the line.
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
 ```
 
+### Phase 0: Repetition Audit
+
+Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target agent (unlike historical-auditor's per-agent grep).
+
+```
+Agent(name="repetition-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
+
+You are the repetition auditor. Read-only. No file edits. No commits. No sub-agents.
+Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
+
+## Task
+Mine for actions UNINTENTIONALLY REPEATED across sessions — the same or near-identical tool call, command, manual step, or lookup performed more than once when it could have been done once, cached, deduped, or automated.
+
+1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for recurring Bash commands, Read paths, or Grep patterns. Identify same/near-identical patterns recurring across DISTINCT `sessionId`s — mirror historical-auditor's "De-dupe before counting" discipline (never count replicated lines within one session).
+2. **`~/.claude/history.jsonl`**: scan operator-typed invocations in the window for repeated manual command sequences recurring across sessions.
+3. **Agent memory (optional, narrow)**: `grep -lri 'repeat\|duplicate\|redundant' .claude/agent-memory/ 2>/dev/null` for already-recorded repetition lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
+4. **Crossed-in-flight benign duplicates**: distinguish a TRUE unintentional repeat (above) from a benign race — two independent messages/actions that CROSSED IN FLIGHT (e.g. a teammate's confirmation or a peer's answer arrives after the same fact was already independently resolved by the recipient) where the SECOND arrival is correctly recognized as stale and produces "no action needed" — this is coordination working as intended, not a repetition defect. Detect via `grep -inE 'stale duplicate|crossed in flight|already (resolved|handled|confirmed)|no action needed' <transcript>` and confirm from surrounding context that the acknowledgment correctly identifies a race, not a genuine repeat that should have been prevented.
+
+## Output Format
+For each finding: `<FIX|PREVENT|BENIGN-RACE> <n>: <what repeated>` / `SESSIONS:` (distinct sessionId count + 1-2 example refs) / `SUGGESTION:` (dedupe/cache/automate action, or "None — correct behavior" for BENIGN-RACE). Tag every finding exactly `FIX` (already-repeated: correct/dedupe/automate now), `PREVENT` (repeat-prone pattern, not yet repeated many times), or `BENIGN-RACE` (a crossed-in-flight duplicate correctly recognized and dismissed as stale — logged for pattern-frequency visibility only). If the SAME race recurs ≥2 times for the same pair of roles, tag it `PREVENT` instead (with a coordination-fix suggestion, e.g. an ack-before-dispatch convention) rather than `BENIGN-RACE`. SendMessage the orchestrator with all findings verbatim, or "No repetition findings."
+
+## Rules
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+```
+
+### Phase 0: Bug Audit
+
+Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target agent (unlike historical-auditor's per-agent grep).
+
+```
+Agent(name="bug-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
+
+You are the bug auditor. Read-only. No file edits. No commits. No sub-agents.
+Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
+
+## Task
+Mine for BUGS surfaced during tool use — failed tool calls, incorrect parameters, and other concrete execution defects (not stylistic/quality concerns; those are the reviewers' job).
+
+1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for `"is_error":true` tool_result blocks. For each hit, read the paired tool_use block (immediately preceding) to capture the tool name + parameters that produced the error, and the error text itself. Mirror historical-auditor's "De-dupe before counting" discipline — count DISTINCT `sessionId` + tool-call occurrences, never replicated lines within one session.
+2. **Incorrect-parameter classification**: within the error-tagged hits from step 1, classify each as one of: `BAD-PARAM` (wrong type/missing required/invalid enum value), `WRONG-PATH` (nonexistent file/dir referenced), `PERMISSION` (sandbox/permission denial), `OTHER` (anything else — API error, timeout, etc). Only `BAD-PARAM` and `WRONG-PATH` are in-scope findings (recurring, definition-fixable classes); `PERMISSION` and `OTHER` are dropped unless the SAME failure recurs ≥3 times across distinct sessions (then report as a pattern regardless of class).
+3. **`~/.claude/history.jsonl`** (optional, narrow): `grep -E '"display":".*(error|fail)' ~/.claude/history.jsonl` for operator-reported bugs in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
+4. **Agent memory (optional, narrow)**: `grep -lri 'bug\|incorrect param\|failed tool\|wrong argument' .claude/agent-memory/ 2>/dev/null` for already-recorded bug lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
+
+## Output Format
+For each finding: `<FIX|PREVENT> <n>: <what failed>` / `CLASS:` (BAD-PARAM | WRONG-PATH | PERMISSION | OTHER) / `SESSIONS:` (distinct sessionId count + 1-2 example refs, incl. tool name + the offending parameter/path) / `SUGGESTION:` (definition fix — e.g. correct an example, tighten a parameter description, add a pre-check). Tag every finding exactly `FIX` (already-recurring: correct the definition now) or `PREVENT` (isolated but definition-fixable, not yet recurring). SendMessage the orchestrator with all findings verbatim, or "No bug findings."
+
+## Rules
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+```
+
 ### Phase 1: Self-Review & Improve
 
 Spawn one teammate per target. Substitute `<name>`, `{byte_count}`, `{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}` for each (`subagent_type: "<name>"`).
@@ -423,6 +473,12 @@ Date: {today_date} (for changelog). Prioritize the operator experience feedback 
 
 ## Model Routing Audit Findings
 {model_routing_findings}
+
+## Bug Audit Findings
+{bug_audit_findings}
+
+## Repetition Audit Findings
+{repetition_audit_findings}
 > **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
 > Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps. Model routing changes MUST be grounded in measured distribution data from Model Routing Audit Findings — do NOT propose routing changes without evidence citations.
 

@@ -9,7 +9,7 @@ description: >
   nothing. Trigger: "brief", "create brief", "standardize this request".
 argument-hint: "<freeform work request>"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
-disallowed-tools: Edit, Write, Bash, Agent, SendMessage
+disallowed-tools: Edit, Write, Agent, SendMessage
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -24,7 +24,7 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted. If the request references a Docket issue by ID (e.g. `brief: implement DKT-26`), do NOT attempt `Bash`/`docket` to fetch the body — those tools are disallowed in this skill and retrying variants only stalls the intake against the permission gate; instead ask the operator to paste the issue body, or emit the brief with the bare issue ID as a placeholder Goal and flag that the body was unavailable. This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too."
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted.This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too."
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 

@@ -1,0 +1,7 @@
+{
+  "agentType": "impl-a",
+  "customAgentType": "senior-engineer",
+  "name": "impl-a",
+  "model": "sonnet",
+  "description": "distinctly-named teammate sharing a parent team sessionId"
+}

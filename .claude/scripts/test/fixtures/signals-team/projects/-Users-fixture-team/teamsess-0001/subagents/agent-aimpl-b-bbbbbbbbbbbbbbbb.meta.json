@@ -1,0 +1,7 @@
+{
+  "agentType": "impl-b",
+  "customAgentType": "staff-engineer",
+  "name": "impl-b",
+  "model": "opus",
+  "description": "distinctly-named teammate sharing the same parent team sessionId as impl-a"
+}

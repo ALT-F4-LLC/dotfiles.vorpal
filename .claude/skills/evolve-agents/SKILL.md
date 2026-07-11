@@ -120,14 +120,14 @@ All changes tracked in `docs/changelog/claude-code/agents/<agent-name>.md` (crea
 
 ### Team Setup & Agent Lifecycle
 
-Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Repetition Audit", "Bug Audit", "Innovation Scan", "Model Routing Audit"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
+Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Repetition Audit", "Bug Audit", "Innovation Scan", "Model Routing Audit", "SDLC Role Research"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor`, `sdlc-role-researcher` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
-| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
-| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
+| 2 | `coherence-reviewer` (`distinguished-engineer`, `gold`) | Spawn after ALL Phase 1 applied → apply fixes → shut down |
+| 3 | `disambiguation-reviewer` (`distinguished-engineer`, `gold`) | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` | Spawn after Phase 3 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
 
 **Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard 65,000-byte skill budget; it is currently over that limit pending a shared-doctrine extraction (tracked in this skill's changelog).
@@ -144,7 +144,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn SEVEN teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-agent), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-agent), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution. From the captured blocks the orchestrator materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — before spawning Phase 1.
+Spawn EIGHT teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-agent), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-agent), `innovation-scanner` (distinguished-engineer), `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), and `sdlc-role-researcher` (distinguished-engineer, needs WebSearch for external SDLC-org-role-taxonomy research — see its own template). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED; `sdlc-role-researcher` is NEVER skipped by that gate (it is WebSearch-driven, not transcript-mining, so an empty transcript window does not degrade it). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, `{model_routing_findings}`, and `{sdlc_research_findings}` for Phase 1 template substitution. From the captured blocks the orchestrator materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — before spawning Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -179,7 +179,7 @@ Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applie
 **Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
 <!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
 
-Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="staff-engineer"`) over the post-coherence agent family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
+Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="distinguished-engineer"`) over the post-coherence agent family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
 
 **Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
 
@@ -394,6 +394,57 @@ If a category is empty for an agent, write `none` — do not omit the line.
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
 ```
 
+### Phase 0: SDLC Role Research
+
+Substitute `{target_agents}` from `\$ARGUMENTS` or all `agents/*.md`. Never gated by pre-flight step 8's SKIPPED flag (WebSearch-driven, not transcript-mining) — always runs.
+
+```
+Agent(name="sdlc-role-researcher", subagent_type="distinguished-engineer", model="fable", prompt="...")
+
+MISSION: Research real-world, enterprise-scale Software Development Lifecycle (SDLC) role structures and taxonomies as practiced at large/mature engineering organizations, and produce a structured, evidence-grounded comparison against BOTH (a) this repo's persistent agent definitions, and (b) the ephemeral spawn-time-only pseudo-roles defined inside team-lead.md's Per-Role Dispatch Table. Ground every claim in ACTUAL RESEARCH via WebSearch (published engineering career ladders, leveling guides, org-design writeups, SRE/DevOps role definitions, SDET/QA role definitions, security engineering role definitions, PM/TPM role definitions, UX/design role definitions) — do NOT answer from stale training memory alone; cite what you found. This is a STANDING recurring check, not a one-off: industry role taxonomies and this repo's roster both drift over time, so re-run the comparison fresh each cycle rather than assuming a prior cycle's verdict still holds — read the target agents' latest changelog entries first to see what a prior cycle already decided and why, and only re-litigate a settled naming/tier question if new evidence contradicts it.
+
+Target agents: {target_agents}
+
+## Research tasks
+1. Enumerate the standard SDLC/engineering-org role ladder via WebSearch (cite sources): IC track (junior/associate → mid → senior → staff → principal → distinguished/fellow), management track (tech lead, engineering manager, director, VP/CTO), and supporting/adjacent roles (SRE/platform/DevOps, QA/SDET, security/AppSec, architect, PM/TPM, UX/design, UX research, technical writer, release manager, data engineer/DBA, accessibility specialist). One-line definition of scope/seniority signal each.
+2. Gap/overlap analysis: for each standard role, assess whether an EXISTING agent (persistent or ephemeral) already covers that function, is a partial/weak fit, or is a genuine gap. Be honest about near-misses.
+3. Higher-level exploration: evaluate at least one candidate higher-level role (e.g. "principal engineer", "fellow", "VP-Eng-adjacent oversight"). Is there a genuine functional gap TODAY this system lacks (per the Content Gate), or does it duplicate an existing gold-tier/orchestrator charter?
+4. Lower-level exploration: evaluate at least one candidate lower-level role (e.g. "junior/associate engineer", a below-SDET tester). Does the existing bronze/ephemeral tiering already serve this niche, or is there a genuinely distinct executable capability gap?
+5. Other commonly-present SDLC functions not covered above (SRE/platform, technical writer, data engineer, release manager, accessibility, etc.) — assess fit/gap the same way. Most human-org roles will NOT translate to a distinct executable agent role; say so explicitly when a "gap" is better served by an existing agent absorbing a skill/behavior than a whole new role.
+6. Model-tier fit recommendation: for every ADD/CHANGE candidate, propose a model tier (gold/silver/bronze) grounded in a genuine seniority-to-capability mapping. Explicitly call out if the CURRENT roster looks under- or over-diversified relative to task complexity — this feeds `model-routing-auditor`'s and a future `evolve-model-distribution` cycle's class-6 quality-mismatch lane.
+
+## Content Gate (apply before recommending)
+1. Executable — can Claude do this in a stateless session? 2. Behavioral — does removing it change output? 3. Non-redundant — already covered elsewhere? 4. Concrete — specific action/check/output, not aspirational fluff.
+
+## Output Format
+```
+## Standard SDLC Role Ladder (cited)
+<bulleted ladder with 1-line definitions + source>
+
+## Gap/Overlap Analysis
+<one bullet per standard role: COVERED-BY <agent/pseudo-role> | PARTIAL-FIT <agent> — <gap> | GAP — <why it matters>>
+
+## Higher-Level Candidate(s)
+CANDIDATE: <name> | RATIONALE: <genuine gap or duplicate-of, cite the Content Gate check(s) it passes/fails> | SUGGESTED TIER: gold|silver|bronze | DISPOSITION: ADD | REJECT-DUPLICATES-<existing-role>
+
+## Lower-Level Candidate(s)
+CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | REJECT-ALREADY-SERVED-BY-<existing-role/tier>
+
+## Other SDLC Functions Evaluated
+<one bullet per function: ADD-CANDIDATE | ABSORB-INTO-<existing-agent> (skill addition, not new role) | NOT-APPLICABLE-TO-AGENT-CONTEXT — with rationale>
+
+## Model-Tier Diversity Assessment
+<is the current roster genuinely diversified across gold/silver/bronze relative to task complexity, or over-concentrated? cite which agents/pseudo-roles you believe are mis-tiered and why, with a suggested tier>
+
+## Summary Recommendations (ranked)
+1. <ADD|CHANGE|REMOVE> <role/tier> — <one-line why> — <evidence/source>
+...
+```
+
+## Rules
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. WebSearch/WebFetch for external research is REQUIRED — do not answer from memory alone; if you cannot verify a claim via search, mark it "unverified — inference only, not measurement" per epistemic discipline. Every finding must cite either a search source or a repo grep/read, not assumption. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+```
+
 ### Phase 0: Repetition Audit
 
 Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target agent (unlike historical-auditor's per-agent grep).
@@ -480,6 +531,9 @@ Date: {today_date} (for changelog). Prioritize the operator experience feedback 
 ## Model Routing Audit Findings
 {model_routing_findings}
 
+## SDLC Role Research Findings
+{sdlc_research_findings}
+
 ## Bug Audit Findings
 {bug_audit_findings}
 
@@ -527,7 +581,7 @@ For each: `ISSUE: <title>` / `AFFECTED_AGENTS: <names>` / `DETAIL: <one-line des
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
 ```
-Agent(name="coherence-reviewer", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="coherence-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
 Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only — do not edit files.** **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 
@@ -562,7 +616,7 @@ Standard format (4 sections, max 20 lines) per affected agent.
 ### Phase 3: @staff-engineer (Disambiguation)
 
 ```
-Agent(name="disambiguation-reviewer", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
 Surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes. Date: {today_date}. **Read-only — do not edit files.** **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 

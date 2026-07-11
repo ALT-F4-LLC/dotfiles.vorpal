@@ -1,5 +1,48 @@
 # Changelog: senior-engineer
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): fixed a confirmed docket CLI drift and added docs-author hosting for the one genuine SDLC gap identified this cycle (end-user documentation). Net +685 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: corrected "-f flag exists only on `create`" — `docket issue edit` also accepts `-f` (replaces attachments rather than appending); internal inconsistency with project-manager.md's own reference block.
+- AMPLIFY[SUBSTANTIVE]: added a "Host for `docs-author`" bullet in What-You-Are-NOT, assigning end-user documentation (README/usage/API docs) ownership to this role — the one genuine gap identified by this cycle's SDLC role research (no existing owner; docs-researcher is retrieval-only). Phrased as "when dispatched to author end-user docs" rather than presupposing a specific team-lead.md dispatch-table row, pending Phase 2 reconciliation.
+
+### Dimensions Evaluated
+Actionability (CLI fix), Completeness / Boundary Clarity (docs-author). Read-before-Edit and build/commit hygiene already strongly stated — no duplication added. Role Realism/Consolidation/Spec Alignment/Capability Growth/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -177,53 +220,6 @@ Coherence pass (cross-file mirrors).
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Fixed the `.data.status` JSON-path bug in close-verify guidance, compressed the Tool-envelope paragraph while replacing its falsified heredoc fallback, and scoped the git-stash rule to shared-tree. Net 0 physical lines (357).
-
-### Changes
-- AMPLIFY: close-verify asserts `.data.status` not top-level `.status` (pitfalls.md 2026-06-09: docket `show --json` nests under `.data` — the prior guard read a non-existent key).
-- CULL: `python3 -c` heredoc fallback in Tool-envelope check (pitfalls.md zsh `!=` corruption + Phase 0 retire-flag); replaced with the verified \$TMPDIR-script approach, paragraph compressed.
-- AMPLIFY: "Never git stash" scoped to shared-tree (Phase 0 efficiency flag; solo isolated worktree has no concurrent reader).
-
-### Dimensions Evaluated
-All 8; Consolidation primary. Completeness RETAIN — the 10 fix-N respawns signal is already covered by self-review step 5 + TDD deep-read gate.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 43 entries (2026-03-19..2026-05-25) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 43 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Fable-5 calibration: added minor-choice autonomy directive and silence-default narration; trimmed redundant Technical Debt and Navigate-Ambiguity bullets to offset (net 0, 357 lines).
-
-### Changes
-- Added "Minor choices — pick, don't ask" to Decision-Making Framework (autonomy calibration; reserve asks for scope/irreversible/TDD-deviation)
-- Added "Silence-default narration" to Communication discipline (text only on finding/direction-change/blocker)
-- Collapsed 4-bullet Technical Debt section to one directive (redundant with code-philosophy #9, Discoveries step, System-Level Awareness)
-- Tightened "When scope is unreasonable" bullet (redundant with Core Principle 1 + scope-expansion trigger)
-
-### Dimensions Evaluated
-Role Realism, Actionability, Consolidation & Trimming (primary), Capability Growth, Spec Alignment
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +281,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 1 reference updated.
 - 2026-06-09: Audit-driven hardening — mv/rename gate, git-add-self-verify prohibition, grep-based edit-site location. Net -2 (360→358).
 - 2026-06-09: Phase 2 shutdown flip — completion-contract step 5 + Monitor-watch replaced with await-lead semantics. Count unchanged (358).
+- 2026-06-09: Fable-5 calibration — minor-choice autonomy + silence-default narration added; Technical Debt/Navigate-Ambiguity trimmed to offset. Net 0.
+- 2026-06-09: Compacted 43 entries (2026-03-19..2026-05-25) into Compacted history per ADR 0001 (DKT-264).
+- 2026-06-10: Fixed `.data.status` JSON-path bug in close-verify; compressed Tool-envelope (\$TMPDIR-script); scoped git-stash to shared-tree. Net 0.

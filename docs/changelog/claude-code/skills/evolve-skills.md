@@ -1,5 +1,19 @@
 # Changelog: evolve-skills
 
+## 2026-07-11
+
+### Summary
+Operator-directed permanent doctrine change (not a self-review cycle): switched Phase 2 `coherence-reviewer` + Phase 3 `disambiguation-reviewer` from `staff-engineer`/opus to `distinguished-engineer`/fable, keeping symmetry with the same change just made in evolve-agents.
+
+### Changes
+- CHANGE: `coherence-reviewer` and `disambiguation-reviewer` subagent_type/model changed from `staff-engineer`/`opus` to `distinguished-engineer`/`fable` (Phase table, both Phase gate descriptions, both spawn templates).
+
+### Dimensions Evaluated
+Operator directive, applied verbatim. Kept symmetric with evolve-agents' identical change per the CANONICAL:EVOLUTION-MODEL shared vocabulary these two skills share.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

@@ -1,5 +1,52 @@
 # Changelog: team-lead
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 3 disambiguation fix: the new `docs-author` dispatch-table row didn't disambiguate against the confusably-named `docs-researcher` bronze role. Net +150 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: added a "NOT doc RETRIEVAL → `docs-researcher`" clause to the `docs-author` Per-Role Dispatch Table row — both are `docs-*`/bronze and share the "documentation" trigger surface, but `docs-researcher` has no table row of its own (lives inline elsewhere), so the author-vs-retrieve discriminator needed to live in-row.
+
+### Dimensions Evaluated
+Boundary Clarity (confusable-name, Phase 3 disambiguation). SP-1/SP-1b adjacency, the 3-site effort-lever correction, and the DE/PM naming-note asymmetry were all checked and cleared as unambiguous.
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): TRIM cycle grounded in SDLC role research + bug/docs audits. Net -39 bytes (8 adds paid by 12 prose consolidations).
+
+### Changes
+- FIX[SUBSTANTIVE]: effort third-lever correction at 3 sites (§Effort intro, TEAMMATE bullet, Per-model brief deltas) — a skill's own `effort:` frontmatter overrides session effort even on a teammate running that skill; the prior text claimed this lever didn't exist.
+- ADD[SUBSTANTIVE] SP-1b: outgoing `shutdown_request` construction rule — omit `reason` (never `null`), no top-level `type`/`recipient` (bug audit, 21 sessions).
+- FIX[SUBSTANTIVE] SP-2 + line-209 Name/background exclusivity: `name=` is the sole teammate/subagent discriminator; subagents run background-by-default since v2.1.198 (docs research).
+- ADD[SUBSTANTIVE]: `docs-author` ephemeral dispatch row (@senior-engineer, bronze) — the one genuine SDLC functional gap identified this cycle (user-facing docs); ephemeral row on an existing agent, not a Speciation event.
+- ADD[SUBSTANTIVE]: report-only subagents cannot invoke AskUserQuestion (UI-dependent) — folded into the Distribution-Mechanism Gate caveat.
+- CULL[COSMETIC] ×12: prose consolidations (anti-staleness rule, Gold-first failure-mode, stale-pair shutdown passage, named-mechanism fidelity, ground-truth consult briefs, dispatch hygiene, Rule-8 cargo-audit tail, git-verification caveats a/b, Durable Fable caveat, promised-gate delivery check, cycle-bloat surfacing, V/I/SR rationale).
+
+### Dimensions Evaluated
+Actionability (effort correction + SP-1b), Spec Alignment (SP-2 v2.1.198), Completeness (docs-author SDLC gap), Boundary Clarity (AskUserQuestion note), Consolidation & Trimming (12 trims, TRIM-mode compliant). Role Realism: SDLC research confirms the coordination/technical-direction Tech-Lead split (team-lead + advisor) is deliberate, not a gap. Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -205,55 +252,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-Fable-5 accuracy correction + word-level consolidations + two encodable gap-fills; net 0 physical lines (still 637 — TRIM goal UNMET, see Changes). Drift: disabled (drift=0).
-
-### Changes
-- AMPLIFY: Fable tier text corrected to SUSPENDED-worldwide (2026-06-12 US export-control directive; do-not-pin, use `opus`/`best`) — overrode the reviewer's "GA-selectable" framing after web research + operator decision confirmed the worldwide suspension; `opus` stays standing default.
-- AMPLIFY: doubled-panel reviewer GO-gate ("dispatch message IS the GO"; cited 3× early-review-before-GO signal) + TFD fix-stall→operator escalation (cited operator-abandonment signal).
-- CULL: condensed step-16 cleanup prose, Distribution-Gate disambiguation tail, Subagent-branch note (word-level density only — no physical-line reduction; file remains 137 over the 500 cap, carried as backlog for CANONICAL-block dedup).
-
-### Dimensions Evaluated
-1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN · 5 Trimming CULL×3 (ineffective on line count) · 6 Capability Growth AMPLIFY×2 · 7 Spec Alignment AMPLIFY×2 (Fable) · 8 Rename RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-TRIM self-review (589→588): merged two adjacent `opus` tier bullets (-1); compacted step-16 cleanup prose (~-81 words, all 12 behavioral rules retained, literal line-anchor replaced with a stable section reference); softened fable wording to "opus is the standing tier" (XC-6 + model-routing: fable-impl reworked 2/2). Drift: skipped (TRIM net-negative mandate — any neutral add violates it).
-
-### Changes
-- CULL: merged `opus` Medium-impl + `opus` tdd-author/Large bullets into one (-1 physical line).
-- CULL: step-16 cleanup density trim — duplicated "report only observed state" clause → stable pointer to the §Stall&Crash shutdown-ack rule (NOT a literal line number); dropped GH issue-number + DKT-20 forensic narration (reap-evidence rule preserved in SP-2).
-- AMPLIFY: tier-preamble fable wording softened to neutral "opus is the standing tier" (no unverified export-control claim).
-
-### Dimensions Evaluated
-Consolidation (CULL — OVERRIDING), Spec Alignment (fable). Others RETAIN. XC-5 (idle-row-30s) deferred — no deletable false-stall branch, net-add into over-budget file rejected. File remains 588 (>500) — needs a structural pass (flagged).
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-TRIM self-review (589→587): docket-CLI drift fix, de-duplicated name/background exclusivity into canonical SP-2, removed a fable/opus restatement, Rule 5 staff-count parity. Drift: neutral reword of the Brief-Authoring "Detector" bullet → adopted.
-
-### Changes
-- CULL: `docket issue graph --direction up` → `<id> --direction up` (L312); `[id]` is the required first positional per `--help`.
-- CULL: collapsed the L166 name/background-exclusivity duplication into a one-line discriminator + pointer to canonical SP-2 (removes a two-site drift hazard).
-- CULL: removed the fable/opus sentence restated by the tier preamble; folded "use opus until fable available" into it.
-- Rule 5 parity: `@staff-engineer 1-9` → `1-10` (reflects staff's new relay-authority rule).
-
-### Dimensions Evaluated
-Actionability (CULL), Consolidation & Trimming (CULL — HIGHEST), Boundary Clarity (RETAIN), others RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +292,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
 - 2026-06-10: R5 advisor trigger (">50 turns") replaced with fix-loop-completion event; ux-advisor R5 variant conditioned on spec/implementation mismatch. | Trial: replace unobservable ">50 turns" advisor R5 trigger with fix-loop-completion event → shipped (operator-approved; next-cycle audit measures).
 - 2026-06-10: Retired two drift-prone historical routing-error tallies (6 wrong-recipient; 11 misroutes) in favor of behavioral-rule causes. Net 0 (491 lines). | Drift: planner lifecycle line re-worded (neutral allele substitution, seed 12471b8f, no-signal index 112/157) → applied. | Drift: ux-advisor lifecycle/review-sizing paragraph re-worded (neutral substitution, index 113/157) → applied.
+- 2026-06-17: TRIM self-review (589→587) — docket-CLI drift fix, name/background exclusivity deduped into SP-2, fable/opus restatement removed, Rule 5 parity. Drift: neutral reword of the Brief-Authoring "Detector" bullet → adopted.
+- 2026-06-19: TRIM self-review (589→588) — merged opus tier bullets, compacted step-16 cleanup prose, softened fable wording to "opus is the standing tier". Drift: skipped (TRIM net-negative mandate — any neutral add violates it).
+- 2026-06-20: Fable-5 accuracy correction (worldwide suspension) + word-level consolidations + two gap-fills; net 0 (637 lines, TRIM goal unmet). Drift: disabled (drift=0).

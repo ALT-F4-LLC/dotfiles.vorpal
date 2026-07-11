@@ -1,5 +1,47 @@
 # Changelog: security-engineer
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): verification-only pass, no content changes. Charter confirmed as near-exact industry AppSec fit; all team-lead.md cross-references, tier claims, and docket command examples verified valid.
+
+### Changes
+(none — RETAIN across the board; see Dimensions Evaluated)
+
+### Dimensions Evaluated
+Role Realism: SDLC research confirms near-exact fit to industry AppSec Engineer (design-time threat modeling, secure code review, cross-SDLC guidance, no feature code); the "AppSec also builds security CI tooling" delta is intentional role-separation here (tooling routes to impl roles), not a gap. Boundary Clarity (cross-refs to team-lead.md L51/L96/L143 all valid), Actionability (all docket examples correct — no hit for the fleet-wide wrong-docket-example bug), Consolidation (no safe trim found; rejected a fabricated Rule-7/team-lead-Rule-6 trim as non-redundant on inspection): RETAIN. Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -218,52 +260,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Rust-only consolidation: purged dead npm/Node/Python idioms (`npm audit` ×4; `process.env`/`os.environ` in the secret grep) and tightened the Model-floor paragraph to lead with team-lead's explicit opus pin. Net 0 physical lines (242).
-
-### Changes
-- CULL: `npm audit` pairings ×4 + Node/Python secret-grep idioms — repo is Rust-only (Cargo.toml present, no package.json; docs/spec/security.md:15); swapped in `env!`/`option_env!` Rust idioms.
-- CULL: Model-floor over-explanation — `model=` is mandatory per spawn (team-lead.md), classifier reroute demoted to defense-in-depth one-liner.
-
-### Dimensions Evaluated
-All 8; Consolidation + Spec Alignment primary. `security-reviewer-fix-{N}` naming verified coherent (Phase 0 flag closed as false positive).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 9 entries (2026-05-09..2026-05-19) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Fable-5/Mythos-class mandate pass. Added WebFetch/WebSearch use-when trigger on the CVE/advisory bullet; added Model-floor note (security content auto-reroutes to Opus 4.8 + team-lead pins opus for security reviewers); trimmed the "Don't overthink" block. Net +2 (242 lines).
-
-### Changes
-- No Guessing: named WebFetch/WebSearch as the advisory-DB/NIST/RFC reach tools with explicit use-when condition (was an untriggered frontmatter tool)
-- Operating context: added Model-floor note (Opus reroute + team-lead opus pin → no Fable-tier reasoning assumption)
-- Trimmed "Don't overthink" paragraph; preserved banned-deliberation list, dropped overlapping preamble/closing
-- [Routed to Phase 2] docket doc edit lost-update lessons are dead guidance here (zero docket doc references); route to doc-writing roles or tracking issue
-
-### Dimensions Evaluated
-Prescriptive Capability Triggers (primary), Fable Classifier Awareness, Consolidation & Trimming, Reasoning-echo (clean), Boundary Clarity, Spec Alignment.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -293,3 +289,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 3 references updated.
 - 2026-06-09: Consolidated verdict→shutdown double-coverage to one pointer; encoded relay-authority rule. Net 0 (241 lines).
 - 2026-06-09: Shutdown flip — verdict→shutdown sequence + Lifecycle reviewer bullet inverted to normal-awaiting. Count unchanged (241).
+- 2026-06-09: Fable-5 mandate pass — WebFetch/WebSearch use-when trigger on CVE bullet; Model-floor note added; "Don't overthink" trimmed. Net +2 (242 lines).
+- 2026-06-09: Compacted 9 entries (2026-05-09..2026-05-19) into Compacted history per ADR 0001 (DKT-264).
+- 2026-06-10: Rust-only consolidation — purged dead npm/Node/Python idioms; tightened Model-floor paragraph. Net 0 (242 lines).

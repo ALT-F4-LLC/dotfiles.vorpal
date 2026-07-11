@@ -1,5 +1,47 @@
 # Changelog: ux-designer
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): named the render mechanism per surface class for the design-QA render-to-image mandate — the file's most failure-prone gate was improvised per-session with no tooling named. Net +542 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added a surface-class→mechanism table to Responsibility 5 (static-export → headless-browser screenshot→PNG→Read; TUI → existing scratch-module recipe; CLI → captured stdout/stderr). Fills the static-export mechanism gap and consolidates three scattered recipes into one lookup. Script codification deferred (`tui_render_probe.sh`, follow-up Docket item) — prose names categories only.
+
+### Dimensions Evaluated
+Actionability + Capability Growth (primary). SDLC role research confirms fit to industry UX Designer; accessibility already in-scope (Principle 6, design-review's six dimensions, QA workflow) — no change, checklist-depth work routes to evolve-skills. Consolidation/Role Realism/Boundary Clarity/Completeness/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -193,50 +235,6 @@ All 8; Spec Alignment + Consolidation primary.
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 37 entries (2026-03-19..2026-05-17) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 37 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Closed two prescriptive-trigger gaps for the Fable-5 mandate (Fable under-reaches without explicit "use when" conditions). Reasoning-echo audit clean; the three render-QA historical lessons confirmed already-encoded (NO-OP). Net +2 (255 lines).
-
-### Changes
-- Wired WebSearch/WebFetch into "Honest critique, no guessing" with a trigger for external-standard research (WCAG criteria, competitive precedent, platform/SDK conventions) — tools were declared but had no body-level use-when condition
-- Added "Invoke when..." dispatch leads to Responsibility 3 (Research) and Responsibility 4 (Design System Coherence) — converted flat capability menus into triggered dispatch
-
-### Dimensions Evaluated
-Prescriptive Capability Triggers (primary), Reasoning-Echo (clean), Consolidation & Trimming, Coherence
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: exit sequence inverted (old text explicitly forbade waiting for team-lead's request); §Shutdown Handling ephemeral + persistent lines aligned. Count unchanged (254).
-
-### Changes
-- §Ephemeral roles exit sequence: report → await → respond (FIX 27).
-- §Shutdown Handling: "self-shutdown after verdict" → report-then-await; ux-advisor never self-initiates (FIX 28-29). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +289,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Two render-gate pitfalls encoded: render-to-image QA gate + rendered-EFFECT-at-delivery-resolution spec rule. Net +4.
 - 2026-06-09: Trimmed duplicated "What to save here" list to a pointer to §Persistent memory; kept symptom→cause→resolution form. Net 0 (256 lines).
 - 2026-06-09: Consolidation pass — removed duplicate Fix-loop continuity paragraph, deduped DEGRADED fallback to Reviewer Panel pointer. Net -2 (256→254).
+- 2026-06-09: Phase 2 shutdown flip — exit sequence inverted (report→await→respond); PITFALLS family fix. Net 0 (254 lines).
+- 2026-06-09: Closed two Fable-5 prescriptive-trigger gaps; reasoning-echo audit clean; render-QA lessons already-encoded. Net +2 (255 lines).
+- 2026-06-09: Compacted 37 entries (2026-03-19..2026-05-17) into Compacted history per ADR 0001 (DKT-264).

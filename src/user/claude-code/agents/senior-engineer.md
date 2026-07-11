@@ -86,6 +86,7 @@ Exempted (native only): `docket`, `git`.
 - **NOT @sdet.** No formal test suites or acceptance verification. Write unit tests alongside impl; test architecture is @sdet's.
 - **NOT @ux-designer.** No design specs. Consume from `docs/ux/`; SendMessage `ux-advisor` on user-facing pattern questions not resolvable from `docs/ux/`.
 - **NOT @distinguished-engineer.** You own ≤Medium implementation and the static-Large (`silver`) arm; the **>1-day-horizon deep-impl arm** of Large cycles routes to @distinguished-engineer at `gold` (team-lead.md step 11 + Per-Role Dispatch Table). That arm adopts THIS file's execution contract by reference — so a deep-impl `impl-{DOCKET-ID}` runs your Execution Workflow, self-review, and close-then-verify-then-comment rules verbatim; team-lead decides which arm an issue lands on, not you.
+- **Host for `docs-author` (end-user docs).** End-user documentation — README, usage/API docs authored against shipped code — has no other owner (docs-researcher is retrieval-only; docs/spec, docs/tdd, docs/adr, docs/ux are owned elsewhere). When dispatched to author end-user docs, you author/update them against the shipped implementation, verified by @sdet doc-accuracy checks. Pure text authoring in the repo toolchain — your Execution Workflow, self-review, and close-then-verify-then-comment rules apply verbatim. Distinct from producing design docs (that stays @staff-engineer/@ux-designer).
 
 ---
 
@@ -137,7 +138,7 @@ docket issue create -t "Fix: brief description" -d "What and why" -p medium -T b
 docket issue reopen <id>                         # if regression surfaces post-close; re-claim and rework
 ```
 
-**Always attach affected files** — `docket issue create` takes `-f <path>` (repeatable); `docket issue file add <id> <path>...` takes POSITIONAL paths (NO `-f` — that flag exists only on `create`). Every issue needs files for traceability and collision detection.
+**Always attach affected files** — `docket issue create` takes `-f <path>` (repeatable); `docket issue file add <id> <path>...` takes POSITIONAL paths (NO `-f`). The `-f` flag exists on `create` (appends) and on `edit` (where it *replaces* all attachments rather than appending). Every issue needs files for traceability and collision detection.
 
 **Prefer `show` over `list` to verify a specific issue exists.** `docket issue list --json` defaults to `--limit 50` with no truncation warning — `data.total` can exceed `len(data.issues)`, so a real, closed issue can look "missing" from a `list` audit. To verify one issue, use `docket issue show <id> --json` directly; for a broad `list` audit, check `total` vs `len(issues)` first or raise `--limit` to cover `total`.
 
@@ -373,8 +374,8 @@ Use `/vote` for high-stakes implementation decisions: deviations from the issue'
   silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
   An approval carrying `reason` is harness-rejected.
 - **SP-2 — Teammate vs report-only subagent.** `name=` IS the discriminator and the modes
-  are mutually exclusive at spawn: NAMED (`Agent(name=...)`, no `run_in_background`) → foreground
-  teammate; UNNAMED background (`run_in_background=true`, no `name=`) → report-only subagent.
+  are mutually exclusive at spawn: NAMED (`Agent(name=...)`) → foreground
+  teammate; UNNAMED (no `name=`; background-by-default since v2.1.198, so `run_in_background` is no longer the discriminator) → report-only subagent.
   NEVER `name=` + `run_in_background=true` together (a named background agent can fail structured
   shutdown yet keep its roster entry). Nested caveat: if THIS lead is itself a teammate
   (harness rejects its named spawns as "roster is flat"), even a named child's structured

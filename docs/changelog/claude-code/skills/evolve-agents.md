@@ -1,5 +1,20 @@
 # Changelog: evolve-agents
 
+## 2026-07-11
+
+### Summary
+Operator-directed permanent doctrine changes (not a self-review cycle): added `sdlc-role-researcher` as a STANDING Phase 0 teammate (was ad-hoc/supplementary in the just-completed SDLC-comparison cycle), and switched Phase 2 `coherence-reviewer` + Phase 3 `disambiguation-reviewer` from `staff-engineer`/opus to `distinguished-engineer`/fable. File grows further over the pre-existing 65,000-byte overage (now ~78,126B; tracked separately, not addressed here).
+
+### Changes
+- ADD: `sdlc-role-researcher` (distinguished-engineer, fable) added to the Phase 0 roster (now EIGHT teammates), its own spawning template, `{sdlc_research_findings}` threaded into the Phase 1 per-agent template, and the TaskCreate/Phase-table entries. Never gated by the historical-audit SKIPPED flag (WebSearch-driven, not transcript-mining) — always runs.
+- CHANGE: `coherence-reviewer` and `disambiguation-reviewer` subagent_type/model changed from `staff-engineer`/`opus` to `distinguished-engineer`/`fable` (Phase table, both Phase gate descriptions, both spawn templates).
+
+### Dimensions Evaluated
+Operator directive, applied verbatim (not a self-review Content-Gate cycle). Byte-budget overage is a known, separately-tracked condition (this changelog's own 2026-07-10 entries); not remediated here.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

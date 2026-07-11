@@ -52,7 +52,7 @@ Team-lead's retained step-8 review and issue-scoped verifiers consume three prod
 
 - **File scoping**: `docket issue create -f <path>` on every issue (see §9 Attach File References) — team-lead's step-8 review and issue-scoped verifiers resolve which files a phase touches from these attachments.
 - **Phase-plan output contract**: report the plan as `Phase N: [issue IDs and titles, files touched]` per phase. This is the producer half of the contract — team-lead's step 8 carries the consumer half (re-checking the reported file sets).
-- **No-collision duty**: VERIFY no two issues in the same phase touch the same files before reporting the plan. Team-lead's step 8 only re-checks this from the consumer side — it does not perform the original check.
+- **No-collision duty**: VERIFY no two issues in the same phase touch the same files before reporting the plan. Run `.claude/scripts/plan_collision_check.py --root <epic>` (walks `docket plan --json` plus each issue's attached files/`depends_on` links; exits non-zero on a same-phase collision, also warns on same-file issues with no `depends_on` link) and resolve any findings before reporting. Team-lead's step 8 only re-checks this from the consumer side — it does not perform the original check.
 
 ---
 
@@ -271,7 +271,7 @@ missing.
   reference; the TDD may be deleted post-implementation and MUST NOT be needed to execute,
   review, or verify this issue.
 **Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> --issue <issue-id>`]
-**Claim Ritual**: Before starting, claim in ONE Bash call — `docket issue edit <id> -a @<role> && docket issue move <id> in-progress` (assignee FIRST, then status; chaining keeps it a single call and enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
+**Claim Ritual**: Before starting, claim by running `.claude/scripts/docket_claim.sh <id> <role>` (assignee FIRST, then status; the script cwd-guards and verifies `updated_at` advanced — this keeps the claim a single call and enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
 ### 9. Attach File References

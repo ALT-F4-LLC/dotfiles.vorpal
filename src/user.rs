@@ -197,6 +197,12 @@ impl UserEnvironment {
                 .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
                 .with_feedback_survey_rate(0.0)
                 .with_hook(
+                    "PreToolUse",
+                    Some("Bash"),
+                    "bash ~/.claude/guard-no-commit-hook.sh",
+                    "command",
+                )
+                .with_hook(
                     "TeammateIdle",
                     None,
                     "bash ~/.claude/teammate-idle-hook.sh",
@@ -228,7 +234,6 @@ impl UserEnvironment {
                 .with_permission_allow("Bash(gh pr diff:*)")
                 .with_permission_allow("Bash(gh pr list:*)")
                 .with_permission_allow("Bash(gh pr view:*)")
-                .with_permission_allow("Bash(git add:*)")
                 .with_permission_allow("Bash(git branch:*)")
                 .with_permission_allow("Bash(git diff:*)")
                 .with_permission_allow("Bash(git log:*)")
@@ -277,6 +282,7 @@ impl UserEnvironment {
                 .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
                 .with_permission_allow("WebSearch")
                 .with_permission_ask("Bash(chown:*)")
+                .with_permission_ask("Bash(git add:*)")
                 .with_permission_ask("Bash(git commit:*)")
                 .with_permission_ask("Bash(git push:*)")
                 .with_permission_ask("Bash(rm:*)")
@@ -1095,6 +1101,22 @@ impl UserEnvironment {
             get_output_path("library", &claude_teammate_idle_hook)
         );
 
+        // Claude Code PreToolUse guard-no-commit hook script
+        let claude_guard_no_commit_hook_name =
+            format!("{}-claude-guard-no-commit-hook", &self.name);
+        let claude_guard_no_commit_hook = FileCreate::new(
+            include_str!("user/guard-no-commit-hook.sh"),
+            claude_guard_no_commit_hook_name.as_str(),
+            self.systems.clone(),
+        )
+        .with_executable(true)
+        .build(context)
+        .await?;
+        let claude_guard_no_commit_hook_path = format!(
+            "{}/{claude_guard_no_commit_hook_name}",
+            get_output_path("library", &claude_guard_no_commit_hook)
+        );
+
         // Claude agents directory
         let claude_agents_name = format!("{}-claude-code-agents", &self.name);
         let claude_agents = FileSource::new(
@@ -1219,6 +1241,7 @@ impl UserEnvironment {
                 bat_theme,
                 claude_agents,
                 claude_code_config,
+                claude_guard_no_commit_hook,
                 claude_skills,
                 claude_statusline,
                 claude_teammate_idle_hook,
@@ -1254,6 +1277,7 @@ impl UserEnvironment {
                 (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
                 (&claude_agents_path, "$HOME/.claude/agents"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
+                (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),

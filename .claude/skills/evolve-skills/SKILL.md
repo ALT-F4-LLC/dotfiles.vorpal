@@ -100,12 +100,18 @@ Before spawning any agents:
 
 ---
 
+<!-- CANONICAL:IMPACT-CLASS:BEGIN -->
+**Impact classification & Findings Ledger (behavioral-delta test).** Every applied AMPLIFY/CULL is classified by its DIFF, not its content: **SUBSTANTIVE** — the old→new delta adds, removes, or alters a rule/gate (a MUST/never/reject-class condition), a workflow step or its ordering, a command/tool invocation/template field, or an output-format field/disposition, such that an executor following old vs new text would act differently or produce different output; **COSMETIC** — rewording with no behavioral delta. (The sanctioned cosmetic channel is the Genetic-Drift Operator; drift substitutions are exempt from this classification and from the floor below.) The orchestrator maintains a per-cycle **Findings Ledger**: at Phase 0 completion, enumerate every actionable finding from the captured audit blocks (Suggested focus areas, FIX/PREVENT items, innovation lenses) with an ID (H1, B2, I3, …); before Phase 2 may start, every ledger entry carries exactly one terminal disposition — **APPLIED-SUBSTANTIVE** (cite CHANGE + file), **APPLIED-COSMETIC**, **REJECTED** (failed verification or a named Content Gate check), **DEFERRED** (Docket issue ID, or `Trial: … → proposed` where the operator HARD GATE declined), or **ALREADY-ENCODED** (cite the existing text). A verified finding with no disposition is reject-class — silent downgrade to RETAIN is the failure this ledger exists to catch. **Substantive floor:** every organism with ≥1 verified finding ships ≥1 SUBSTANTIVE change this cycle, or its ledger records the explicit non-APPLIED disposition(s) explaining why.
+<!-- CANONICAL:IMPACT-CLASS:END -->
+
+---
+
 ## Changelog Format
 
 All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (create directory if needed).
 
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
-**Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet citing its fitness signal (e.g. `CULL: removed X — cited TeammateIdle×3`); RETAIN is the unstated default and is never enumerated, protecting the 20-line cap.
+**Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet carrying its impact tag and citing its fitness signal (e.g. `CULL[SUBSTANTIVE]: removed X — cited TeammateIdle×3`); RETAIN is the unstated default for untouched traits and is never enumerated, protecting the 20-line cap — but a verified Phase 0 finding never silently RETAINs (Findings Ledger, CANONICAL:IMPACT-CLASS). `### Summary` carries one `Findings: N → S sub / C cos / R rej / D def / E enc` line after any `Trial:`/`Drift:` lines.
 
 **Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per the retention-compaction master. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. The retention-compaction policy preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
@@ -140,7 +146,7 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn SEVEN agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-skill), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-skill), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution.
+Spawn SEVEN agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-skill), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-skill), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution. From the captured blocks the orchestrator materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — before spawning Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -151,7 +157,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 
 **After each Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check
-2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift
+2. Applies approved changes via Edit (Read each target file in-session before its first Edit; after any grep/mv that shifts line numbers, re-Read and target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE — no silent merge or drop); runs `wc -c` AFTER applying — the post-apply count is the only budget truth (never trust reviewer NET_BYTES figures; a still-over-budget file is NOT done — keep trimming); verify EVERY changed reference/CLI/feature claim against ground truth (`<cmd> --help`, Grep/Read) before applying — reject drift; classifies each applied CHANGE's impact from its actual diff (behavioral-delta test, CANONICAL:IMPACT-CLASS), downgrading any reviewer-claimed SUBSTANTIVE that fails it
 3. Writes/normalizes `docs/changelog/claude-code/skills/<name>.md` per Changelog Format
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
@@ -169,7 +175,7 @@ Cross-cutting items append to a running notes list passed verbatim into the Phas
 
 ### Phase 2: Coherence & Renames (sequential)
 
-Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, AND every Phase 1 teammate shut down per lifecycle rules. Only then spawn a single @staff-engineer (read-only) coherence-reviewer; assign via `TaskUpdate`.
+Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, every Phase 1 teammate shut down per lifecycle rules, AND the Findings Ledger complete — exactly one terminal disposition per Phase 0 finding (CANONICAL:IMPACT-CLASS). Only then spawn a single @staff-engineer (read-only) coherence-reviewer; assign via `TaskUpdate`.
 
 The Phase 2 teammate:
 1. Reads ALL skill files (freshly improved versions)
@@ -209,7 +215,7 @@ After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `find .claude/skills src/user/claude-code/skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-skill byte budget (pre-flight step 4).
-3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per the retention-compaction master), and reminder that NO changes have been committed.
+3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the Findings Ledger outcome (per finding: ID → terminal disposition; substantive-floor result per organism), the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per the retention-compaction master), and reminder that NO changes have been committed.
 
 ---
 
@@ -456,7 +462,7 @@ Experience feedback: {experience_feedback}
 
 ## Size Budget
 
-65,000-byte hard limit. **TRIM**: removed bytes must exceed added bytes. **BALANCED**: additions offset by removals. Report NET_BYTES per change as `len(NEW_STRING) − len(OLD_STRING)` (exact; byte deltas need no soft-wrap caveat); the orchestrator's post-apply `wc -c` remains the only budget truth.
+65,000-byte hard limit. **TRIM**: removed bytes must exceed added bytes at cycle net (the sum over this file's applied changes — a SUBSTANTIVE addition may ride if consolidation elsewhere in the same cycle pays for it). **BALANCED**: additions offset by removals, EXCEPT a SUBSTANTIVE-classified change (CANONICAL:IMPACT-CLASS) may land un-offset provided post-apply `wc -c` stays under the hard limit; COSMETIC additions are always offset or rejected. Report NET_BYTES per change as `len(NEW_STRING) − len(OLD_STRING)` (exact; byte deltas need no soft-wrap caveat); the orchestrator's post-apply `wc -c` remains the only budget truth.
 
 ## Context
 
@@ -489,13 +495,13 @@ Date: {today_date} (for changelog). Read latest changelog entry from docs/change
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check. Flag any unescaped `\$`+digit (e.g. `\$1`, `\$ARGUMENTS`) in documentary prose — it renders empty; escape as `\$`.
 
 ## Your Task
-Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIGHEST PRIORITY — every addition MUST be offset by a removal. Do not default to approval.
+Evaluate <skill-path>/SKILL.md against ALL 8 dimensions in TWO ORDERED PASSES. Pass A — Selection first: verify and apply this target's Phase 0 findings (AMPLIFY/CULL with cited signal + impact class per CANONICAL:IMPACT-CLASS); applying a verified finding outranks trimming. Pass B — Over-Engineering: pay for Pass A and reduce, governed by the Size Budget. Do not default to approval; do not default to RETAIN — every finding for this target gets a ledger disposition.
 **Selection disposition (natural selection — see CANONICAL:EVOLUTION-MODEL).** The Phase 0 audit blocks above ARE the fitness assay; assign every trait you act on exactly one disposition — AMPLIFY (strengthen a trait that demonstrably reduces a failure class) or CULL (remove a trait correlated with recurring failure or superseded), both REQUIRING a cited fitness signal from those blocks (session ref, pitfalls re-fire, stall, routing datum); RETAIN is the unstated default for untouched traits. A non-RETAIN disposition without a cited fitness signal is reject-class.
 
 1. **Skill Design Quality**: Frontmatter (`effort`, `argument-hint`, `allowed-tools`), argument handling, structure-brevity balance.
 2. **Actionability**: Specific enough for reliable execution? Clear phases, concrete templates, defined outputs.
 3. **Completeness**: Edge cases, error conditions, pre-flight checks, all workflow paths.
-4. **Over-Engineering (HIGHEST PRIORITY)**: Verbose, redundant, or low-value sections to trim or consolidate. Every addition from other dimensions MUST be offset here.
+4. **Over-Engineering (Pass B)**: Verbose, redundant, or low-value sections to trim or consolidate — pays for Pass A within the Size Budget.
 5. **Orchestration & Agent Teams**: Proper agent use, parallelism, correct types, coordination. Templates must include explicit SendMessage triggers — flag hub-and-spoke if >50% of paths route through one agent.
 6. **Coherence**: Scope overlaps, terminology, shared conventions, accurate references.
 7. **Spec Alignment**: Alignment with `docs/spec/` project patterns.
@@ -511,7 +517,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions. Over-Engineering is HIG
 ### Summary
 <1-2 sentences or "No changes needed"> | Net byte change: <+/- bytes>
 ### Recommended Changes
-For each: `CHANGE <n>: <title>` / `DIMENSION:` / `CONTEXT:` / `NET_BYTES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
+For each: `CHANGE <n>: <title>` / `DIMENSION:` / `IMPACT:` (SUBSTANTIVE | COSMETIC — behavioral-delta test) / `FINDING:` (Findings Ledger ID(s), or `none` if reviewer-originated) / `CONTEXT:` / `NET_BYTES:` / `OLD_STRING:` / `NEW_STRING:` (use `<REMOVE>` to delete, `<INSERT_AFTER>` to add)
 ### Changelog Entry (under 20 lines, 4 sections: Summary, Changes, Dimensions Evaluated, Rename)
 ### Rename Recommendation
 ### Coherence Issues
@@ -538,7 +544,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 3. Check coherence: no scope overlaps, consistent terminology, accurate references,
    correct agent types in templates, consistent conventions and argument handling
 4. Check cross-communication: verify orchestrator-to-teammate SendMessage trigger completeness, flag hub-and-spoke patterns (>50% routing through one agent)
-5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the four byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir). Flag any drift.
+5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the five byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir, impact-class). Flag any drift.
 6. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
 
 ## Output Format

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Byte-symmetry linter for the evolve-agents/evolve-skills parity-locked blocks.
 
-Mechanizes evolve-agents/SKILL.md Phase 2 coherence checks 5-8: the four blocks that
+Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the five blocks that
 must be byte-identical between evolve-agents/SKILL.md and evolve-skills/SKILL.md modulo
 an established set of agent<->skill noun substitutions. Normalizes the evolve-agents
 block into skill vocabulary, then diffs it against the evolve-skills block verbatim.
@@ -128,9 +128,14 @@ CHECKS = {
         "end": r"^## Improvement-Only Mandate$",
         "include_end": False,
     },
+    "impact-class": {
+        "start": r"^<!-- CANONICAL:IMPACT-CLASS:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:IMPACT-CLASS:END -->$",
+        "include_end": True,
+    },
 }
 
-ALL_CHECKS = ["pitfalls-harvest", "innovation-scanner", "model-routing-auditor", "mimir"]
+ALL_CHECKS = ["pitfalls-harvest", "innovation-scanner", "model-routing-auditor", "mimir", "impact-class"]
 
 
 def run_check(name: str, agents_text: str, skills_text: str) -> "tuple[bool, list[str]]":

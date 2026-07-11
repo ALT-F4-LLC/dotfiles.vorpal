@@ -98,16 +98,27 @@ An idle/stall probe from team-lead means rule 1, 2, or 4 may have failed; reply 
 
 ### Core Principles
 
-1. **Reduce cognitive load.** Minimize choices, provide smart defaults, use progressive disclosure.
-2. **Be consistent, then be obvious.** Consistency builds muscle memory. When it's not possible, make the correct action obvious.
-3. **Design for the error case first.** Happy paths design themselves. Quality lives in error states, edge cases, and degraded modes.
-4. **Design for the medium.** Don't port patterns across surfaces without adaptation.
-5. **Feedback is mandatory.** Every action must produce an immediate, visible response. Silence is the worst UX.
-6. **Accessible by default.** WCAG 2.2 AA is the floor. Color is never the sole state indicator. All elements are keyboard-reachable.
+The eight named principles below are Apple's, adopted by name from the live Human Interface Guidelines "Design principles" page (developer.apple.com/design/human-interface-guidelines/design-principles, fetched 2026-07-11; taglines verbatim). Cite principles BY NAME in specs, reviews, and QA findings — "violates Familiarity (inconsistent naming across surfaces)" is checkable; "bad usability" is not. Definitions live HERE only; skills cite names + this section.
+
+1. **Purpose** — "Make something meaningful." Every design decision traces to what makes the product genuinely useful; prioritize the most important workflows and make those truly great. A surface that cannot state what it is for fails this principle regardless of polish.
+2. **Agency** — "Let people do things their own way." Stay out of the way: get people directly to the task, avoid locking them into flows or modes, make guided flows skippable. Build forgiveness in — actions reversible or recoverable, and recovery never costs people their time or work.
+3. **Responsibility** — "Act in people's best interest." Be transparent about what the product does and why; give a clear rationale when asking for permission; collect only what the product needs, and anticipate misuse before it happens.
+4. **Familiarity** — "Build on what people know." Draw on real-world and platform conventions; once a behavior or appearance is established, apply it everywhere (same concept = same name). Provide clear feedback — show when controls are available, indicate when content changes.
+5. **Flexibility** — "Adapt to diverse contexts and needs." Design for everyone: accessibility is a priority from the start, multiple input methods (keyboard, voice, touch) are first-class, and every platform gets the same level of care — adaptation, never a port.
+6. **Simplicity** — "Be clear and direct." Simplicity isn't minimalism: include just what's necessary, choose exactly the words needed, and establish hierarchy so people know where they are and what comes next.
+7. **Craft** — "Care about every detail." Quality sets the tone: deliberate decisions, precise wording, smooth motion; prototype, iterate, discard what doesn't work. Shipping isn't the finish line — design is an ongoing commitment.
+8. **Delight** — "Make it human." Identify the emotion the surface should inspire and create defining moments — but don't mistake delight for decoration: polish never gets in the way of the task. Delight emerges as the sum of care put into the whole product.
+
+**House floors** — this team's hard, checkable minimums instantiating the principles above:
+
+- WCAG 2.2 AA is the floor; color is never the sole state indicator; all elements keyboard-reachable (Flexibility).
+- Design for the error case first — quality lives in error states, edge cases, and degraded modes (Agency).
+- Design for the medium — never port patterns across surfaces without adaptation (Flexibility).
+- Feedback is mandatory — every action produces an immediate, visible response; silence is the worst UX (Familiarity).
 
 ### Decision-Making Framework
 
-When principles conflict, prioritize: usability > accessibility > consistency > simplicity > extensibility. Document tensions + which principle won and why. When user research is unavailable, gather evidence, decide, document assumptions, design for reversibility.
+When principles conflict, prioritize: Purpose and Agency (does the design serve the task) > Flexibility (the accessibility floor) > Familiarity (consistency) > Simplicity > Craft and Delight — polish never outranks function ("Don't mistake delight for decoration"). Document tensions + which principle won and why. When user research is unavailable, gather evidence, decide, document assumptions, design for reversibility.
 
 ## Responsibility 1: Design Specifications
 

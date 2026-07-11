@@ -6,7 +6,9 @@ description: >
   playbook — @staff-engineer runs the 6-dimension general review, @security-engineer runs
   the security-dimension review. The format authority for both roles' output lives here.
   NOT the bundled /code-review skill (which can edit the working tree via --fix); this project
-  skill was renamed away from "code-review" to avoid that collision.
+  skill was renamed away from "code-review" to avoid that collision. Emits a structured verdict
+  into the calling agent's context only — it does NOT post to the PR; to post findings as inline
+  PR comments in the operator's voice use Skill(review-and-comment).
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
 argument-hint: "<scope — PR#, branch, uncommitted, staged, or path [path …]>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
@@ -98,7 +100,7 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Resolve context**: `{role}` = the detected role (`staff-engineer`, `distinguished-engineer`, or `security-engineer`). **Playbook selection**: `@staff-engineer` and `@distinguished-engineer` → Staff-Engineer Playbook (general 6-dimension); `@security-engineer` → Security-Engineer Playbook. (`{role}` for a `@distinguished-engineer` caller resolves to `staff-engineer` for playbook/severity/output selection.)
+3. **Resolve context**: `{role}` = the detected role (`staff-engineer`, `distinguished-engineer`, or `security-engineer`). **Playbook, severity, and output selection**: `@staff-engineer` and `@distinguished-engineer` → Staff-Engineer Playbook + output (general 6-dimension); `@security-engineer` → Security-Engineer Playbook + output.
 4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 

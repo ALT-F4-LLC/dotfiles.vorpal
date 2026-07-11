@@ -1,5 +1,35 @@
 # Changelog: evolve-skills
 
+## 2026-07-10
+
+### Summary
+Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference. File remains ~3,352B over the 65,000 hard limit — same shared-doctrine-extraction candidate flagged for evolve-agents applies here too (operator-gated, not applied).
+
+### Changes
+- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
+
+### Dimensions Evaluated
+Cross-reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Removed redundant Phase 2 coherence steps 6-8 (mechanized by symmetry_check.py `--check all`) and fixed the stale top-level `skills/` root that made scope-detection blind to the 15 skills under `src/user/claude-code/skills/` (this cycle's own operator-corrected scope). Net -583 (68,832→68,249; still TRIM, drift-section consolidation pending Phase 2).
+
+### Changes
+- CULL: dropped Phase 2 steps 6-8 (innovation-scanner/model-routing/Mimir byte-symmetry checks), renumbered 9→6 — cited symmetry_check.py docstring "mechanizes checks 5-8" + innovation-scanner Retire finding. Parity-locked with evolve-agents (deferred to Phase 2 lockstep).
+- CULL: fixed 2 `find .claude/skills skills` commands + 7 prose `skills/*/SKILL.md` refs → `src/user/claude-code/skills/*/SKILL.md` — cited this cycle's operator scope correction; the command silently missed all 15 non-evolve skills. Family-wide (evolve-agents, evolve-coherence share the same stale root — routed to Phase 2).
+- DEFERRED (Phase 2, parity-locked with evolve-agents): consolidate the Genetic-Drift Operator prose (~2,352B, no measured usage benefit) — not applied unilaterally.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (net -583, TRIM honored but still over budget). Rejected a CHANGELOG-cache addition as over-engineering (no persistent cache substrate; step already fails open).
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

@@ -1,5 +1,48 @@
 # Changelog: evolve-config
 
+## 2026-07-10
+
+### Summary
+Phase 3 disambiguation: retuned the colliding trigger phrase "refine Claude Code settings" → "refine config sources" and added a clause naming the bundled update-config (/config) skill for live settings.json edits.
+
+### Changes
+- Description: trigger "refine Claude Code settings" → "refine config sources" + added "evolves config SOURCE not live settings.json; use bundled update-config for one-off settings edits" — removes classifier collision with bundled update-config (confusable-name). Achieves parity with sibling skills that name their bundled near-namesakes.
+
+### Dimensions Evaluated
+Disambiguation (confusable-name). Cross-evolve-* trigger set otherwise distinct on primary token.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference.
+
+### Changes
+- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
+
+### Dimensions Evaluated
+Cross-reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Trimmed a redundant self-referential budget line and propagated the mandatory build-deploy-lag reminder from evolve-model-distribution into Wrap-up.
+
+### Changes
+- CULL: removed the "Self-budget." line duplicating Pre-flight step 4 / Wrap-up step 2 — cited innovation-scanner Retire (Non-redundant-gate violation + broke the numbered list).
+- AMPLIFY: added build-deploy-lag reminder to Wrap-up step 3 (config-source edits inert until vorpal rebuild+redeploy) — cited innovation-scanner Cross-Skill Leverage; parity with evolve-model-distribution.
+
+### Dimensions Evaluated
+All 8.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

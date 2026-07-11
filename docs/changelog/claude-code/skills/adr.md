@@ -1,5 +1,33 @@
 # Changelog: adr
 
+## 2026-07-10
+
+### Summary
+Fixed the broken COLLISION_DIALOG "Overwrite" branch — it Wrote over an existing file without a prior Read, which the harness rejects. Cross-cutting: applied byte-identically across adr/prd/tdd/ux-spec (surfaced by the ux-spec reviewer, propagated in lockstep).
+
+### Changes
+- AMPLIFY: Overwrite branch now Reads `{output_path}` before Write to satisfy the harness read-before-overwrite gate. CANONICAL:COLLISION_DIALOG lockstep across the 4 doc-authoring siblings.
+
+### Dimensions Evaluated
+Completeness / Coherence (bug fix). No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+No changes needed. Mature, internally consistent (16+ prior cycles); every candidate CULL/AMPLIFY lacked a cited fitness signal (zero correction/error signals, clean model outcomes on both fable-5 and opus). Shared validate_doc.py proposal declined for this leaf skill on Over-Engineering grounds.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST) — no CULL with a cited signal found.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

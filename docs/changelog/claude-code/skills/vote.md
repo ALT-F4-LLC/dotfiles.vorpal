@@ -1,5 +1,34 @@
 # Changelog: vote
 
+## 2026-07-10
+
+### Summary
+Compacted 2 entries (2026-05-29..2026-05-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+CULL the schema-invalid object-shaped delegation_request SendMessage example (root-caused across 13 sessions + 2 pitfalls.md rediscoveries); replaced with a text-prefixed JSON string, verified against the live SendMessage tool schema. AMPLIFY a live-verified jq recipe for the critical-vote domain floor (`.data.votes[]` envelope, confirmed against a real docket record).
+
+### Changes
+- CULL/FIX: Delegation Protocol steps 3 & 4 no longer pass a bare `{type: "delegation_request"|"delegation_response", ...}` object to SendMessage's `message` param (schema accepts only string | shutdown/plan-approval union shapes). Now a text-prefixed JSON string. Cited: 13-session bug-audit signal + 2 independent pitfalls.md workarounds.
+- AMPLIFY: Phase 3 critical domain-floor now a concrete `jq '[.data.votes[].domain_relevance] | max >= 0.8'` — corrected path verified live against a real docket vote record (`.data` envelope wraps `votes[]`).
+
+### Dimensions Evaluated
+All 8. Over-Engineering: no forced cuts (33KB/65KB, ample headroom). No rename.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary
@@ -220,35 +249,6 @@ Completeness + Coherence (the two guards), Over-Engineering (HIGHEST — banner-
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-NO-CHANGE evolve pass. Re-verified all docket vote CLI flags (create/cast/commit/link/unlink/result/show) against `--help`, the delegation relay contract vs team-lead.md, and exclusion-table agent naming vs canonical agent defs. Zero drift; no edits.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8 (Over-Engineering HIGHEST). No defects warranting an edit; already trimmed by the 2026-05-28 + 2026-05-29 cycles. Reviewer-count table dual-ownership with team-lead.md confirmed deliberate (not drift) — flagged to Phase 2.
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Over-engineering trim on the largest skill: collapsed the doubled reviewer-count table to a count-only annotation (its threshold/constraint columns duplicated the base table verbatim), and reduced the recursive-doubling paragraph to a pointer (the rule is owned by team-lead.md; the coordinator never computes it).
-
-### Changes
-- Doubled table (6 lines) → one-line count annotation: low=4/medium=4/high=6/critical=8; thresholds+constraints inherited from the base table; medium reject-cap delta preserved. Net -5.
-- Recursive-doubling paragraph → one-line pointer to agents/team-lead.md Consensus Integration (also resolves a base-vs-doubled-table wording discrepancy with team-lead.md). Net -3.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — 2 trims), Coherence (doubled-table + recursive-doubling ownership in team-lead.md; CLI zero-drift verified), Skill Design Quality, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
-
-### Rename
-No rename — `vote` matches the `docket vote` CLI subcommand exactly.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -289,3 +289,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-25: Closed team-mode direct-invocation loophole by hoisting delegation gate into the canonical banner (root cause of session 04db218a operator-rejection where ag...
 - 2026-05-28: Phase 2 coherence: repointed two dead `docs/tdd/reviewer-doubling-lifecycle.md` references (the file does not exist) to canonical `agents/team-lead.md`.
 - 2026-05-28: Two coordination fixes at net 0 lines: (1) team-mode delegation finalizes the orphaned `open` proposal on `failed`/timeout; (2) reconciled a crossed shutdown...
+- 2026-05-29: Over-engineering trim on largest skill — collapsed doubled reviewer-count table to a count-only annotation; net -8 lines.
+- 2026-05-30: NO-CHANGE evolve pass — re-verified docket vote CLI flags, delegation relay contract, and exclusion-table agent naming; zero drift.

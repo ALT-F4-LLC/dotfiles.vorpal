@@ -39,8 +39,10 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 
 1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
 2. **Create the proposal** via `docket vote create` (same command as Phase 1). Use `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
-3. **Delegate** — `SendMessage(to="team-lead", message={type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "{your-agent-name}", summary: "{one-line}", artifact?: "{path}"})`. `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for `delegation_response` with matching `request_id`.
-4. **Expected response shape** — `{type: "delegation_response", request_id: "{uuid}", status: "completed|failed|escalated", vote_id: "{vote-id}", reason?: "{string}"}`. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
+3. **Delegate** — the SendMessage `message` param accepts ONLY a plain string or the `shutdown_request`/`shutdown_response`/`plan_approval_response` union shapes; a bare `{type: "delegation_request", ...}` object is REJECTED (`Invalid input: expected string, received object` / `invalid_union` / `No matching discriminator`). Send the delegation as a TEXT-PREFIXED JSON string so it is never parsed as a bare object:
+   `SendMessage(to="team-lead", message="delegation_request (vote) JSON: {\"protocol_version\":\"1\",\"skill\":\"vote\",\"request_id\":\"{uuid}\",\"vote_id\":\"{vote-id}\",\"from\":\"{your-agent-name}\",\"summary\":\"{one-line}\",\"artifact\":\"{path-or-omit}\"}", summary="{one-line}")`
+   The SendMessage `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for the `delegation_response` reply (also a text-prefixed JSON string) with matching `request_id`.
+4. **Expected response shape** — team-lead replies with a text-prefixed JSON string (same string-not-object rule), e.g. `delegation_response (vote) JSON: {"request_id":"{uuid}","status":"completed|failed|escalated","vote_id":"{vote-id}","reason":"{string-or-omit}"}`; parse the JSON out of the text prefix. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
 5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: finalize the orphaned proposal from step 2 (`docket vote commit {vote-id} --outcome "Delegation failed/timed out"`, best-effort if it still resolves) so `docket vote list` stays accurate — mirrors the Phase 3 view-change hygiene — then report error with `vote_id` and abort. On `escalated`: read the vote record and relay findings to caller.
 
 ---
@@ -291,7 +293,7 @@ CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier (pass th
 
 After all votes have been cast, retrieve the consensus result via `docket vote result {vote-id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
 
-**For `critical` proposals, additionally enforce the domain-expertise floor**: parse the cast list from `docket vote show {vote-id} --json` and verify at least one vote has `domain_relevance >= 0.8`. If not, treat as quorum-not-reached regardless of approval score and proceed to View Change.
+**For `critical` proposals, additionally enforce the domain-expertise floor**: run `docket vote show {vote-id} --json | jq '[.data.votes[].domain_relevance] | max >= 0.8'` (note the `.data` envelope — the bare `.votes[]` path returns nothing). `false` means no vote clears the floor — treat as quorum-not-reached regardless of approval score and proceed to View Change.
 
 ### If Quorum Is Reached
 

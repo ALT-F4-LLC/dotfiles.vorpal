@@ -1,5 +1,20 @@
 # Changelog: brief
 
+## 2026-07-10
+
+### Summary
+Escaped two unescaped `$ARGUMENTS` in banner clause (3) so `/brief` renders literal token references instead of inlining the request. Rethink (read-only `docket issue show` Bash grant) evaluated and declined — reverses 2026-06-30 operator resolution, breaks zero-execution invariant. Net +2.
+
+### Changes
+- Coherence/Content-Gate: banner `$ARGUMENTS` → `\$ARGUMENTS` (both occurrences), matching body. Brief-unique banner content; no family parity impact (verified no sibling shares this clause).
+- DECLINED: `Bash(docket issue show:*)` grant — reversal of the deliberate 2026-06-30 paste-workaround; $ARGUMENTS→shell injection surface; prior cycles rejected Bash-injection twice.
+
+### Dimensions Evaluated
+All 8. Over-Engineering primary — no CULL candidate with a cited fitness signal; brief remains lean/healthy.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

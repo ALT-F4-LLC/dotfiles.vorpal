@@ -1,5 +1,19 @@
 # Changelog: simplify-scout
 
+## 2026-07-10
+
+### Summary
+Near NO-OP: 12-principle table re-verified against live senior-engineer.md (exact match), no $-escape hazards. One coherence fix — fragile line-number citation `distinguished-engineer.md:162` (VERIFIED stale — actual heading at line 159) re-anchored to `§Mode 4` to stop drift. Net +5.
+
+### Changes
+- CULL: line-number citation `distinguished-engineer.md:162` → section anchor `§Mode 4` — cited recurring stale-cross-file-reference pitfall class; verified the numeric citation was already wrong (actual line 159).
+
+### Dimensions Evaluated
+All 8; Coherence primary. Over-Engineering (HIGHEST — no trim earns a signal; zero usage in window).
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

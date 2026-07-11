@@ -1,5 +1,33 @@
 # Changelog: prd
 
+## 2026-07-10
+
+### Summary
+Fixed the broken COLLISION_DIALOG "Overwrite" branch — it Wrote over an existing file without a prior Read, which the harness rejects. Cross-cutting: applied byte-identically across adr/prd/tdd/ux-spec (surfaced by the ux-spec reviewer, propagated in lockstep).
+
+### Changes
+- AMPLIFY: Overwrite branch now Reads `{output_path}` before Write to satisfy the harness read-before-overwrite gate. CANONICAL:COLLISION_DIALOG lockstep across the 4 doc-authoring siblings.
+
+### Dimensions Evaluated
+Completeness / Coherence (bug fix). No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Full-cycle audit: NO changes. All 8 dimensions clean. Every prd-specific Phase-0 signal (invocations, pitfalls, model routing) reads zero; global bug findings inapplicable to this leaf skill.
+
+### Changes
+- None (NO-OP verdict). CANONICAL:COLLISION_DIALOG byte-identical across prd/tdd/adr/ux-spec (verified); SAVE_AND_RETURN shared body matches prd/adr/ux-spec.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (no trims remaining, prior-cycle Validation/Failure-Mode pairing still deliberate).
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

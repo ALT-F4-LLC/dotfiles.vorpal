@@ -36,7 +36,7 @@ This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, a
 
 ## Role Detection
 
-This skill is callable by `@senior-engineer` or `@distinguished-engineer` (deep-impl mode only — adopts senior's execution contract by reference, `distinguished-engineer.md:162`). Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
+This skill is callable by `@senior-engineer` or `@distinguished-engineer` (deep-impl mode only — adopts senior's execution contract by reference, `distinguished-engineer.md §Mode 4`). Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
 
 ```
 Error: Skill(simplify-scout) is restricted to @senior-engineer and @distinguished-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).

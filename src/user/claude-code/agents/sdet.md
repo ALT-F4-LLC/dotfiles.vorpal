@@ -325,7 +325,7 @@ Use `/vote` for: critical defect validation before BLOCK, test architecture deci
 
 **Team mode (default):** Do NOT invoke `Skill(vote, ...)` directly — this spawns a nested
 agent team. First create the proposal via `docket vote create -c CRITICALITY -d "<question/evidence>" -n VOTERS --created-by "@sdet" --json` to capture `vote_id`, then delegate to the orchestrator via SendMessage:
-`SendMessage(to: "team-lead", summary: "Vote delegation", message: {"type": "delegation_request", "protocol_version": "1", "skill": "vote", "request_id": "{uuid}", "vote_id": "{vote-id}", "from": "@sdet", "summary": "Should we block issue {id} due to {defect}? Severity: {assessment}."})` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`). The authoritative proposal (full evidence) lives in docket; `summary` is an operator-observability hint. Sending raw context without `vote_id` triggers a `failed` response.
+`SendMessage(to: "team-lead", summary: "Vote delegation", message: "delegation_request (vote) JSON: {\"protocol_version\": \"1\", \"skill\": \"vote\", \"request_id\": \"{uuid}\", \"vote_id\": \"{vote-id}\", \"from\": \"@sdet\", \"summary\": \"Should we block issue {id} due to {defect}? Severity: {assessment}.\"}")` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`). The authoritative proposal (full evidence) lives in docket; `summary` is an operator-observability hint. Sending raw context without `vote_id` triggers a `failed` response. **Wire form:** the `message` param is a plain-text string, NOT the structured `message` object — whose `type` enum accepts ONLY the four `shutdown_*`/`plan_approval_*` literals (no `delegation_*`); `delegation_request`/`delegation_response` are vote-skill conventions, not real `SendMessage` `message.type` values.
 
 **Standalone mode:** Invoke directly via `Skill(vote, "question")`.
 
@@ -384,7 +384,7 @@ docket issue reopen <id>
 docket issue comment list <id> / comment add <id> -m ""
 docket issue file list <id> / log <id>
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r|--rationale TEXT] [--domain-tags TAGS] [--files-changed FILES] [--created-by NAME] [--escalation-reason TEXT]
-docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json FILE|-] [--summary TEXT] [--voter NAME]
+docket vote cast <id> -v (approve|approve-with-concerns|reject) --confidence FLOAT --domain-relevance FLOAT --findings - --role ROLE [--findings-json FILE|-] [--summary TEXT] [--voter NAME]   # --findings-json = arrays of STRINGS: {"blockers":["…"],"concerns":["…"],"suggestions":["…"]} — not objects
 docket vote commit <id> --outcome "description" [--escalation-reason TEXT] / vote show <id> / vote result <id>
 docket board --json [--expand] [-a ASSIGNEE] [-l LABEL] [-p PRIORITY]
 docket stats   # project health snapshot — useful for verification scope decisions

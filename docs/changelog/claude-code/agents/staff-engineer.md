@@ -1,5 +1,63 @@
 # Changelog: staff-engineer
 
+## 2026-07-10
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 3 disambiguation follow-up: qualified a mixed local/foreign rule citation and fixed 2 stale "Rule 8(e)" cross-references (the letter no longer exists after this cycle's team-lead.md Rule 8 relettering).
+
+### Changes
+- DISAMBIG: "rule 9, Rules 3a/3b" qualified to "staff rule 9, team-lead.md step-14 rules 3a/3b" — staff's own rules have no 3a/3b, so the unqualified citation read as internally self-contradictory.
+- FIX: 2 stale "team-lead.md Rule 8(e)" cross-references corrected to "Rule 8(c)" (team-lead.md's Rule 8 opt-up triggers were relettered (c)/(d)/(e)→(a)/(b)/(c) earlier this cycle; this file's own copies were missed in that pass).
+
+### Dimensions Evaluated
+Multi-reading (rule-citation qualifier), Boundary Clarity (stale cross-reference).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
+
+### Changes
+- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Consolidation-only cycle: trimmed a redundant tier-split restatement in §Operating context (already stated in full at §Lifecycle/§What You Are NOT). Net -32 bytes. Highest audit signals (247 errors, 11 idle-failed) attributed to team-lead-side panel capacity/scheduling, not a quality defect — no fix needed here.
+
+### Changes
+- CULL: §Operating context tier-split restatement trimmed to a short cue + AUTHORITY pointer (dup of §Lifecycle/§What You Are NOT).
+- Deferred to Phase 2 (shared/parity-bound, not applied here): FIX-9 vote-delegation JSON clarification (spans ~7 agent files).
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary). Role Realism/Actionability/Boundary Clarity/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -180,54 +238,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Fable-5 mandate slice: encoded the highest-recurrence "already-present check before recommending a change" guard into No-Guessing; added the missing use-when trigger for WebFetch/WebSearch. Offset by deduping rule 6's redundant back-reference. Net +2 (258 lines).
-
-### Changes
-- No-Guessing: added "Already-present check before recommending a change" — grep target file + changelog before proposing any audit/memory-sourced change; already-encoded = NO-OP with citation.
-- TDD step 3 (Study precedent): added WebSearch/WebFetch use-when trigger (current external sources not derivable from codebase; ground citation in fetched content).
-- Comm rule 6: removed redundant "(TDD Workflow step 6; Code Review step 7)" back-reference (steps already point forward to rule 6).
-
-### Dimensions Evaluated
-Capability Growth, Prescriptive Capability Triggers, Consolidation & Trimming, Reasoning-echo audit (no hits), Spec Alignment, Boundary Clarity, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: comm rule 7 ephemeral sentence + §Shutdown Handling Ephemeral paragraph (pre-shutdown checklist step (d) removed; pitfalls ordering kept as (c)). Count unchanged (257).
-
-### Changes
-- Rule 7: ephemerals await team-lead's request, reply shutdown_response (FIX 22).
-- §Shutdown Handling Ephemeral: Pre-idle checklist (a)-(c); idle-awaiting-shutdown normal (FIX 23). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Deduped rule 7's shutdown contract against §Shutdown Handling (roster + await-shutdown_approved now pointers), upgraded the TDD step 6 teammate-envelope clause from inference to the officially documented rule (only `tools`/`model` apply to teammates; body appended — code.claude.com agent-teams doc), encoded the stale-line-citation edit pitfall into Comm rule 5. Net 0 (257 lines).
-
-### Changes
-- Comm rule 7: spawn-form roster → §Lifecycle pointer; duplicated await-shutdown_approved sentence → compact parenthetical pointing at §Shutdown Handling.
-- TDD step 6: "Teammate-mode envelope assumption" → "(documented)" with citation; added "only `tools` and `model` apply; body APPENDED" facts.
-- Comm rule 5: never aim an Edit at a reviewer-cited line number — line numbers drift across revisions; re-Read and target content strings (manifest-flux pitfall).
-- Confirmed NO-OPs: no-op-before-redraft triage, freeze-gate (Moving-tree gate), memory:project/effort frontmatter (present on all 7 agents).
-
-### Dimensions Evaluated
-Consolidation & Trimming (rule 7 dedupe), Spec Alignment (envelope doc citation), Capability Growth (stale-line-citation), Role Realism, Actionability, Boundary Clarity, Completeness, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -283,3 +293,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Sole-editor rule mirrored from security-engineer; within-line. Net 0.
 - 2026-06-09: Moving-tree gate added to Review Workflow Triage; Reviewer-panel Lifecycle paragraph removed. Net 0.
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 4 references updated.
+- 2026-06-09: Added "already-present check" to No-Guessing + WebFetch/WebSearch use-when trigger. Net +2 (258 lines).
+- 2026-06-09: Shutdown flip — rule 7 ephemeral sentence + §Shutdown Handling Ephemeral flipped to await-team-lead. Count unchanged (257).
+- 2026-06-09: Deduped rule 7 shutdown contract; documented TDD step 6 envelope clause; encoded stale-line-citation pitfall. Net 0 (257 lines).

@@ -1,5 +1,48 @@
 # Changelog: sdet
 
+## 2026-07-10
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: fixed vote-delegation `message: {object}` bug and flagged wire form.
+
+### Changes
+- FIX: `message: {"type": "delegation_request", ...}` rewrote to a plain-text string (`message: "delegation_request (vote) JSON: {...}"`) — this was the ONLY instance fleet-wide where a JSON object was literally assigned to SendMessage's `message:` param (bug-audit FIX-9's clearest illustration). Added the same wire-form clarification as the other 6 files.
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep, hard tool-call bug).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Documented the `--findings-json` array-of-STRINGS shape on the vote-cast CLI reference to prevent a recurring BAD-PARAM class. Net +119 bytes. Cleanest-audit agent this cycle (0 stalls, 0 shutdown-rejections) — most sections RETAIN by design.
+
+### Changes
+- AMPLIFY: `docket vote cast --findings-json` reference now shows the exact `{"blockers":[…],"concerns":[…],"suggestions":[…]}` string-array shape, not objects. Signal: bug-audit FIX-7 (4 sessions).
+- Deferred to Phase 2 (shared/parity-bound, not applied here): the `delegation_request` JSON block duplicated near-verbatim across 7+ agent files, differing only by `--created-by`.
+
+### Dimensions Evaluated
+Completeness, Actionability. Consolidation (highest priority) evaluated but RETAIN — the report-only-vs-teammate guard-clause repetition across comm rules correlates with a clean audit, no cited cull signal. Role Realism/Boundary/Capability Growth/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -196,51 +239,6 @@ All 8; Consolidation primary; 7 dimensions RETAIN (0 operator-corrections, 0 sta
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 38 entries (2026-03-19..2026-05-24) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 38 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Fable-5 mandate slice: added autonomy calibration (pick minor choices, note in report) and silence-default narration (text only on finding/direction-change/blocker) to the decisiveness paragraph; trimmed a redundant compaction-re-read clause to offset. Net +2 (341 lines).
-
-### Changes
-- Extended "Don't overthink" paragraph with autonomy-calibration + narrate-by-exception directive; silence-default scoped to between-tool-call narration only, preserving comm rule 8 progress signal and verdict-cites-evidence rule
-- Trimmed duplicate "re-read after compaction" clause from operating-context line (covered by comm rule 9 + R7)
-- [NO-OP, grep-cited] Prescriptive triggers, reasoning-echo absence, historical signals 1-3 all already encoded
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary), Autonomy Calibration, Silence-Default Narration, Prescriptive Triggers, Reasoning-Echo
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: comm rule 6, Lifecycle, Verifier Composition, §Shutdown Handling (Proactive→Await-lead), Monitor-watch paragraph. Rule numbering 1-10 intact; reject-on-unrecoverable-test-results ground preserved. Count unchanged (340).
-
-### Changes
-- Rule 6 retitled "await lead's request, same-turn reply"; self-emit removed (FIX 17).
-- Lifecycle sequence, sister-verifier line, Proactive→Await-lead, drain clause, Monitor-watch paragraph flipped (FIX 16, 18-21). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence, Boundary Clarity.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +294,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Consolidation — §Verification Output closeout recap collapsed to back-reference chain. Net 0.
 - 2026-06-09: Encoded historical-audit focus areas: verbatim commands, marker-derived sweep bounds, Monitor sandbox/no-background provisioning; net -8.
 - 2026-06-09: Added cwd-outside-repo docket no-op guard and `updated_at` reconcile discipline to comm rule 7; count unchanged.
+- 2026-06-09: Compacted 38 entries (2026-03-19..2026-05-24) into Compacted history per ADR 0001.
+- 2026-06-09: Fable-5 slice — added autonomy calibration + silence-default narration; trimmed redundant re-read clause. Net +2 (341 lines).
+- 2026-06-09: Shutdown flip — comm rule 6, Lifecycle, Verifier Composition, §Shutdown Handling → Proactive→Await-lead. Count unchanged (340).

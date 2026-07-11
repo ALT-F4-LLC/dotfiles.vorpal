@@ -1,5 +1,49 @@
 # Changelog: project-manager
 
+## 2026-07-10
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
+
+### Changes
+- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Retired the hand-authored-Mermaid implication (CLI already generates it), fixed a vote `--threshold` fraction-vs-percentage trap, and de-duplicated a TDD-provenance restatement. Net +96 bytes.
+
+### Changes
+- CULL: "Mermaid diagrams are mandatory" reworded to embed `docket issue graph --mermaid` CLI output — hand-authoring was never required (innovation-scan Retire, docket-audit confirmed flag exists).
+- AMPLIFY: vote-creation guidance now states `--threshold` is a FRACTION (0.0–1.0), with a concrete `--threshold 0.75` example (bug-audit FIX-4, 4 sessions).
+- CULL: §9 TDD-provenance restatement trimmed to the ADR-line-ref distinction only (rest duplicated §8 Distillation Gate + P5).
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Boundary Clarity. Role Realism/Completeness/Spec Alignment/Capability Growth/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -193,36 +237,6 @@ Consolidation & Trimming (3 offsets), Capability Growth ($TMPDIR), Spec Alignmen
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Phase 2 fleet decision: extended the §8 `-d`-write success-line-distrust guard with the docket cwd-outside-repo silent-no-op + reconcile-by-`updated_at` discipline (within the existing line; count unchanged at 334). PM is the heaviest issue-mutator — recurring theme A.
-
-### Changes
-- §8: appended cwd guard — docket commands silently NO-OP from a cwd outside the repo tree; `cd` repo-root same Bash call + confirm `updated_at`; a stale read is not a write-failure (reconcile by timestamp, never force-write).
-
-### Dimensions Evaluated
-Capability Growth & Cross-Communication (primary), Actionability, Spec Alignment, Rename
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Encoded two cross-project memory lessons as behavioral guards (trust-no-success-line after `-d` writes; enumerated-list completeness count+map), offset by compressing the triple-stated ephemeral re-spawn prose. Net +4 (330→334).
-
-### Changes
-- §8 Write Descriptions: added "never trust the success line after `issue create/edit -d`" — a sandbox-denied scratch write prints `✔ Updated` with stale/empty body; re-`show --json` + grep a marker before treating ready.
-- §10 Validate and Finish: added enumerated-list completeness guard (created-child-count == N + source→ID map) against the silent-drop "done with N−1" failure class.
-- §Operating Context: compressed the third restatement of the spawn→preamble re-plan lifecycle.
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary), Actionability, Completeness, Boundary Clarity, Role Realism, Capability Growth, Spec Alignment, Rename
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -277,3 +291,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Brief-integrity gap — §9 verify-before-attaching + live line-ref re-confirmation; de-triplicated `edit -f` warning.
 - 2026-05-30: Consolidation — §Strict Ephemeral Lifecycle/§Plan Monitoring/§Shutdown de-duped. Net -2.
 - 2026-06-05: Three historical pitfalls: `depends_on` direct-gate, `-d` sets body vs `-f` attaches refs, §9 resolve-on-disk. Net +2.
+- 2026-06-09: Encoded trust-no-success-line-after-`-d`-write + enumerated-list completeness guards. Net +4 (330→334).
+- 2026-06-09: Extended §8 `-d`-write distrust guard with cwd-outside-repo no-op + `updated_at` reconcile discipline. Count unchanged (334).

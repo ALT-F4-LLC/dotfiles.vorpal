@@ -1,5 +1,54 @@
 # Changelog: team-lead
 
+## 2026-07-10
+
+### Summary
+Compacted 3 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 3 disambiguation follow-up: unified the `V/I/SR` pattern abbreviation (was spelled two ways within the file — prose used "V/I/SR", the dispatch-ledger enum used "VISR" with no gloss linking them).
+
+### Changes
+- DISAMBIG: dispatch-ledger `pattern={...|VISR}` token changed to `pattern={...|V/I/SR}` to match the abbreviation used everywhere else in the file.
+
+### Dimensions Evaluated
+Boundary Clarity (consistent terminology).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+TRIM-mode cycle. Applied Rule-8 lettering/ledger-grammar fix, 3 BAD-PARAM bug fixes (FIX-9 vote-delegation plain-text payload, FIX-13 Agent model= rejects [1m], FIX-4 threshold fraction), a brief-block Pre-flight fast path, and a mechanical pre-respawn liveness check hardening the convergent 3-auditor signal (advisor triple-spawn recurrence). Net +387 this pass; the largest cited trim (-513, acceptance-panel hoist to a shared master) is CONTINGENT on creating that master and is deferred to Phase 2 since it touches 4 files atomically.
+
+### Changes
+- FIX: Rule 8 opt-up triggers renumbered (c)/(d)/(e)→(a)/(b)/(c); dispatch-ledger grammar and cross-refs updated to match (0 net bytes, correctness-only).
+- AMPLIFY: vote-delegation JSON clarified as a plain-text string payload, not the structured SendMessage `message` object (bug-audit FIX-9, 16 sessions — largest SendMessage finding this cycle).
+- AMPLIFY: `Agent()` `model=` clarified to take the bare alias only — `[1m]` suffix is REJECTED by the tool enum (bug-audit FIX-13).
+- AMPLIFY: `--threshold` clarified as a fraction 0.0-1.0, not a percentage (bug-audit FIX-4, 4 sessions).
+- AMPLIFY: Pre-flight step 1 gains a brief-block fast path — consumes the `brief` skill's block instead of re-verifying from scratch (innovation-scan: producer-with-no-consumer gap).
+- AMPLIFY: Liveness-Confirmation Gate decision-ladder step (1) now forces a `TaskList`+`docket -a @<role> -s in-progress` tool call before any respawn — convergent signal from 3 independent Phase-0 auditors (historical: 2 shutdown-rejections this window correctly caught team-lead's own stale state; repetition: advisor/advisor-2/advisor-3 recurred AFTER being memory-logged; model-routing: DE's outlier idle/error density traces to the same duplicate-concurrency pattern) that the prose gate, though comprehensive, was not firing under pressure.
+- CULL: line-235 teammate/subagent fallback explanation consolidated (-290); line-237 duplicate Fable reasoning-echo caveat removed, already stated at line 211 (-123).
+- DEFERRED to Phase 2 (contingent, multi-file): step-6 merged-acceptance-panel composition hoisted to a new CANONICAL:ACCEPTANCE-PANEL-LOCAL pointer once `team-doctrine/references/acceptance-panel.md` exists — same content is duplicated in staff-engineer.md, security-engineer.md, and distinguished-engineer.md.
+
+### Dimensions Evaluated
+Actionability (3 bug fixes + brief fast path), Boundary Clarity (liveness-gate forcing), Consolidation & Trimming (2 applied trims + 1 deferred large trim). Role Realism/Completeness/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -205,49 +254,6 @@ Actionability (CULL), Consolidation & Trimming (CULL — HIGHEST), Boundary Clar
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Trial: replace unobservable ">50 turns" advisor R5 trigger with fix-loop-completion event → shipped (operator-approved; next-cycle audit measures). Phase 2 coherence: ux-advisor R5 variant conditioned on spec/implementation mismatch.
-
-### Changes
-- R5 per-advisor variants: `advisor` ">50 turns" → "after a TDD secondary-review fix-loop completes" (lockstep staff-engineer.md); `ux-advisor` verdict half conditioned on mismatch (lockstep ux-designer.md).
-
-### Dimensions Evaluated
-Coherence pass (cross-file mirrors, byte-parity grep-verified).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Drift: planner lifecycle line re-worded (neutral allele substitution, seed 12471b8f, no-signal index 112/157) → applied. Drift: ux-advisor lifecycle/review-sizing paragraph re-worded (neutral substitution, index 113/157) → applied. Retired two drift-prone historical tallies, replacing frozen counts with behavioral causes. Net 0 physical lines (491).
-
-### Changes
-- CULL: "6 wrong-recipient" and "11 misroutes (4 UUIDs, 7 peer names)" stale tallies (Phase 0 retire signal — frozen counts drift each cycle; behavioral rules stand alone).
-- NO-OP cited: fable alias present (L132); TeamCreate-before-TaskCreate already correct; Monitor sweep + label-discipline example already encoded; EXPERIMENTAL_AGENT_TEAMS env deliberately omitted (family coherence).
-
-### Dimensions Evaluated
-All 8; Consolidation primary; routing-table invariant validated against measured distribution (compliant post-reversion).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +291,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Added per-spawn model routing and canonical 5-field ephemeral brief schema; trimmed over-enumerated guidance. Net +8.
 - 2026-06-09: Flipped ephemeral shutdown to report then await team-lead close; added R6 stale-reader and Rule 1 relayed-authority text. Net +1.
 - 2026-06-09: Corrected teammate-envelope caveat, deduped DEGRADED fallback, and added edit-to-finding traceability. Net -2.
+- 2026-06-10: Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
+- 2026-06-10: R5 advisor trigger (">50 turns") replaced with fix-loop-completion event; ux-advisor R5 variant conditioned on spec/implementation mismatch. | Trial: replace unobservable ">50 turns" advisor R5 trigger with fix-loop-completion event → shipped (operator-approved; next-cycle audit measures).
+- 2026-06-10: Retired two drift-prone historical routing-error tallies (6 wrong-recipient; 11 misroutes) in favor of behavioral-rule causes. Net 0 (491 lines). | Drift: planner lifecycle line re-worded (neutral allele substitution, seed 12471b8f, no-signal index 112/157) → applied. | Drift: ux-advisor lifecycle/review-sizing paragraph re-worded (neutral substitution, index 113/157) → applied.

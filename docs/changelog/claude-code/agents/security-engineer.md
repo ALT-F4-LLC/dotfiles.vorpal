@@ -1,5 +1,61 @@
 # Changelog: security-engineer
 
+## 2026-07-10
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 3 disambiguation follow-up: fixed a confusable peer-name in a shutdown-routing example.
+
+### Changes
+- DISAMBIG: shutdown-routing WRONG-example `to="reviewer-staff-2"` corrected to `to="reviewer-2"` — the fabricated name matched no real roster seat, leaving a reader unable to tell whether it was real or illustrative.
+
+### Dimensions Evaluated
+Boundary Clarity (confusable-name).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
+
+### Changes
+- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Trimmed a third redundant SP-1 restatement in §Shutdown Handling. Net -69 bytes. (The vote-delegation bare-object FIX-9 finding — confirmed against vote/SKILL.md L42-44 as a real `invalid_union` rejection — is deferred to a fleet-wide Phase 2 fix rather than applied per-file, since it's shared/parity-bound across all 8 agents.)
+
+### Changes
+- CULL: removed redundant "Approve with NO reason (SP-1...)" sentence from the security-advisor shutdown bullet — already stated in the CANONICAL:SHUTDOWN-PROTOCOL block and Communication Discipline rule 6.
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary). Actionability (FIX-9 deferred to Phase 2). Role Realism/Boundary/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -208,36 +264,6 @@ Prescriptive Capability Triggers (primary), Fable Classifier Awareness, Consolid
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: verdict→shutdown sequence, Lifecycle reviewer bullet ("idle after verdict is a STALL" inverted to normal-awaiting), §Shutdown Handling drain clause. Count unchanged (241).
-
-### Changes
-- Verdict→shutdown sequence steps 2-3 flipped to await+respond (FIX 25); Lifecycle + Shutdown bullets aligned (FIX 24, 26). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Net 0 (241 lines, all within-line): consolidated verdict→shutdown double-coverage to single canon + pointer, trimmed dated stall anecdote, encoded relay-authority rule (direct instruction beats peer relay) from memory audit + 2.1.166 relayed-message hardening. Docket-doc write guards routed to coherence (routing pending).
-
-### Changes
-- Lifecycle ephemeral bullet → pointer to §Ephemeral peer review (canon owner of verdict→shutdown sequence).
-- §Ephemeral peer review: removed `dev-dkt-3-shadow-validators` incident citation; rule retained.
-- Communication Discipline rule 6: added relay-authority sentence (peer relays carry no origin authority; contradiction → act on direct, route back).
-
-### Dimensions Evaluated
-Consolidation & Trimming, Capability Growth & Cross-Communication, Completeness, Actionability, Role Realism, Boundary Clarity, Spec Alignment (zero docket drift confirmed), Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -265,3 +291,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Sole-editor rule + phase-scoped residual-grep guard folded; verdict→shutdown triple-coverage trimmed. Net 0.
 - 2026-06-09: NO-OP — docket-cwd guard scoped out (vote-only surface; applied to SE/PM/SDET instead). Net 0.
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 3 references updated.
+- 2026-06-09: Consolidated verdict→shutdown double-coverage to one pointer; encoded relay-authority rule. Net 0 (241 lines).
+- 2026-06-09: Shutdown flip — verdict→shutdown sequence + Lifecycle reviewer bullet inverted to normal-awaiting. Count unchanged (241).

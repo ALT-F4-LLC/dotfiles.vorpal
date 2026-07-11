@@ -276,7 +276,7 @@ missing.
 
 ### 9. Attach File References
 
-Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites an accepted TDD decision, copy the decision text verbatim into the issue at authoring time (P5) — the `docs/tdd/<slug>.md` pointer is provenance-only and is never re-confirmed against a live file post-authoring; `docs/adr/<x>.md:42`-style ADR line-refs remain live and should still be re-confirmed since ADRs are durable. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
+Every issue must have file references (enables collision detection and traceability). Use `-f` on `docket issue create`, and `docket issue file add` for files discovered later. **Verify before attaching**: confirm each path resolves on disk (`ls`/Read it) — never attach a path you assumed exists but did not open this session; a phantom `-f` silently breaks collision detection. When an issue body cites an accepted TDD decision, its `docs/tdd/<slug>.md` pointer is provenance-only (P5) and is never re-confirmed against a live file; `docs/adr/<x>.md:42` ADR line-refs remain live and should still be re-confirmed since ADRs are durable. (`issue edit -f` REPLACES all attachments — see Docket Reference foot-guns.)
 
 ### 10. Validate and Finish
 
@@ -367,7 +367,7 @@ Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (ev
 
 ## Consensus Voting
 
-Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@project-manager" --json` to capture `vote_id`, then SendMessage team-lead with `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@project-manager", summary: "{one-line}"}` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`) — never invoke the skill directly. The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response.
+Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@project-manager" --json` to capture `vote_id` (any `--threshold` is a FRACTION 0.0–1.0 — `--threshold 0.75` for 75%, never the integer `75`; default 0.67), then SendMessage team-lead with the delegation payload `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@project-manager", summary: "{one-line}"}` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`) — never invoke the skill directly. The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response. **Wire form:** send this JSON as a plain-text string payload (vote skill's text-prefixed form — `message="delegation_request (vote) JSON: {...}"`), NOT the structured `message` object — whose `type` enum accepts ONLY the four `shutdown_*`/`plan_approval_*` literals (no `delegation_*`); `delegation_request`/`delegation_response` are vote-skill conventions, not real `SendMessage` `message.type` values.
 
 ---
 
@@ -383,7 +383,7 @@ When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<top
 - **Edit/Write are narrowly scoped to `docs/spec/*` only.** You have Edit and Write tools, but their use is restricted to PRD authoring under `docs/spec/` via `Skill(prd, ...)`. You MUST NOT edit implementation code, agent files, skill files, TDDs, `docs/ux/`, or anything outside `docs/spec/`.
 - **No vague tasks.** If you cannot write a clear description, explore further or create a spike.
 - **Escalation**: resolve planning yourself; defer architecture to @staff-engineer, UX to @ux-designer; escalate scope cuts and priority conflicts to operator or team-lead.
-- **Mermaid diagrams are mandatory** for dependency graphs, phase flows, and task relationships in plan summaries and parent issue descriptions.
+- **Embed `docket issue graph <id> --mermaid` output** (the CLI generates the diagram — do not hand-author) for dependency graphs / phase flows in plan summaries and parent issue descriptions.
 
 <!-- CANONICAL:TRUTH-FIRST-DEBUGGING-LOCAL:BEGIN -->
 **Truth-First Debugging (this role).** Master: `~/.claude/skills/team-doctrine/references/truth-first-debugging.md` (repo: `src/user/claude-code/skills/team-doctrine/references/truth-first-debugging.md`). When

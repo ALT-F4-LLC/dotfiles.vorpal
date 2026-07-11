@@ -1,5 +1,49 @@
 # Changelog: ux-designer
 
+## 2026-07-10
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
+
+### Changes
+- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Scoped session-start reads (removed internal R1 contradiction), made the design-QA verdict a terminal artifact only via a durable Docket comment (DKT-76 near-miss), and trimmed redundant prose. Net -72 bytes.
+
+### Changes
+- CULL: session-start blanket whole-tree reads → scoped to dispatched-surface slugs via `ls docs/ux/` first. Signal: innovation-scan Retire (R1 self-contradiction).
+- AMPLIFY: design-QA verdict is not terminal until posted as a durable `[UX→team-lead] Design QA: <verdict>` Docket comment. Signal: historical-audit DKT-76 shutdown-rejection near-miss (team-lead nearly closed an issue with no QA verdict on record).
+- CULL: verbose code-samples paragraph compressed; redundant "What to save here" pitfalls-restatement line removed (dup of §Persistent memory + CANONICAL:PITFALLS block).
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary); Capability Growth & Cross-Communication; Actionability. Role Realism/Boundary Clarity/Completeness/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -193,35 +237,6 @@ Spec Alignment, Coherence.
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Consolidation-only pass (net -2; 256 → 254). Both Phase 0 audit focus areas (render-to-image QA gate; rendered-effect spec rule) confirmed already encoded 2026-06-05 — NO-OPs. Removed R5's Fix-loop continuity paragraph (zero unique facts vs §Ephemeral roles canonical block; R2's counterpart kept for its unique spec-author fact) and deduped the DEGRADED fallback to a §Reviewer Panel pointer, retaining the step-14 rule-6 cite.
-
-### Changes
-- §Responsibility 5 Fix-loop continuity paragraph removed — full duplicate of §Ephemeral `@ux-designer` roles.
-- §Ephemeral roles DEGRADED clause → pointer to §Reviewer Panel; team-lead.md step-14 reconciliation rule-6 cite preserved.
-
-### Dimensions Evaluated
-Consolidation & Trimming (both changes), Completeness + Spec Alignment (focus areas already encoded; cross-refs resolve post-d1eb15e), Role Realism, Actionability, Boundary Clarity, Capability Growth (frontmatter recs already adopted), Rename.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-One within-line consolidation (net 0; 256 lines). §"What to save here" (L244) restated the memory save-category list already enumerated at §Persistent memory; trimmed to a pointer, retaining only the symptom → root cause → resolution form directive. All Phase 0 historical lessons (render-to-image QA gate, color+text fallback, embedded-media render check, AskUserQuestion standalone-gating) confirmed already encoded.
-
-### Changes
-- §What to save here (L244): duplicated save-category list → pointer to §Persistent memory list; retains symptom → root cause → resolution form. Verified outside the CANONICAL:PITFALLS markers (editable, not parity-bound).
-
-### Dimensions Evaluated
-Consolidation & Trimming, Completeness, Spec Alignment, Role Realism, Boundary Clarity, Actionability, Capability Growth, Rename
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -274,3 +289,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Three coherence/consolidation fixes: AskUserQuestion standalone-only gate; reconciliation rule 6 (not 7); R2/R5 Fix-loop → pointers. Net 0.
 - 2026-05-30: Consolidation — §Shutdown Handling ephemeral restatement → 1-line pointer to §Ephemeral roles. Net 0.
 - 2026-06-05: Two render-gate pitfalls encoded: render-to-image QA gate + rendered-EFFECT-at-delivery-resolution spec rule. Net +4.
+- 2026-06-09: Trimmed duplicated "What to save here" list to a pointer to §Persistent memory; kept symptom→cause→resolution form. Net 0 (256 lines).
+- 2026-06-09: Consolidation pass — removed duplicate Fix-loop continuity paragraph, deduped DEGRADED fallback to Reviewer Panel pointer. Net -2 (256→254).

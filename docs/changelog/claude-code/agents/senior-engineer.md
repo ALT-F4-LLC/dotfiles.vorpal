@@ -1,5 +1,50 @@
 # Changelog: senior-engineer
 
+## 2026-07-10
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
+
+### Changes
+- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
+
+### Dimensions Evaluated
+Actionability (cross-agent coherence sweep).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Coordination & tool-correctness fixes offset by redundancy trims. Net +119 bytes. Role & coordination focus this cycle.
+
+### Changes
+- AMPLIFY: Read-before-Edit now names shared/appended files (pitfalls.md, MEMORY.md) needing immediate re-Read — concurrent ephemerals append (historical-audit PREVENT-2, 13 sessions).
+- CORRECTION: disambiguated `docket issue create -f` (flag) vs `docket issue file add` (positional, no -f) (bug-audit FIX-6, 3 sessions).
+- AMPLIFY: premise-check extended from shared-helpers to ANY cited artifact (code/TDD/ADR path) (bug-audit PREVENT-16, 4+ sessions).
+- CULL: redundant compaction re-read sentence, verbose Monitor bullet, and persistent-memory intro trimmed (each duplicated content already stated elsewhere).
+
+### Dimensions Evaluated
+Actionability (2 corrections), Capability Growth & Cross-Communication (2 amplify), Consolidation & Trimming (3 culls). Role Realism/Boundary/Completeness/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-01
 
 ### Summary
@@ -179,39 +224,6 @@ Role Realism, Actionability, Consolidation & Trimming (primary), Capability Grow
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: completion contract step 5 + Monitor-watch paragraph replaced with await-lead semantics; lifecycle/scope/trigger lines aligned. Both rejection grounds and drain doctrine preserved. Count unchanged (358).
-
-### Changes
-- Completion contract intro + step 5: deliver report → idle awaiting `shutdown_request` (FIX 12-13).
-- Auto-shutdown Monitor watch → "Idle after final report" (no self-emit, no ~60s re-emit) (FIX 15).
-- Lifecycle, closed-loop scope, @sdet-APPROVE trigger, rejection-ground-1 tail aligned (FIX 9-11, 14). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence, Role Realism.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Audit-driven hardening: mv/rename added to Read-before-Edit gate (13 gate-trips this window), git-add-to-self-verify prohibition made explicit with failure-mode rationale (recurred in two repos), edit-site location by grep not issue line anchors; removed duplicated shutdown-routing line. Net -2 (360→358).
-
-### Changes
-- Read-before-Edit: after `mv`/rename the NEW path is un-Read — Read before first Edit.
-- Shared-tree diff scoping: self-verify via plain working-tree diff ONLY; never stage-then-inspect (staged changes vanish from plain `git diff`, corrupting spot-check).
-- Execution Workflow step 4: locate edit sites by grep/content match, never issue line anchors (anchors drift after sibling phases).
-- Removed duplicate shutdown-routing line in §Shutdown Handling (stated at Communication-discipline bullet).
-
-### Dimensions Evaluated
-Consolidation & Trimming, Actionability, Completeness, Role Realism, Boundary Clarity, Spec Alignment, Capability Growth & Cross-Communication, Rename. State-divergence rejection ground retained — second positive exemplar (impl-prompts).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -271,3 +283,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Docs-exploration block triplicated → canonical Docs-paths block. Net -6.
 - 2026-06-09: Docket cwd-outside-repo guard added to Execution Workflow step 6. Net 0.
 - 2026-06-09: evolve-skills reference update: code-review → code-review-verdict; 1 reference updated.
+- 2026-06-09: Audit-driven hardening — mv/rename gate, git-add-self-verify prohibition, grep-based edit-site location. Net -2 (360→358).
+- 2026-06-09: Phase 2 shutdown flip — completion-contract step 5 + Monitor-watch replaced with await-lead semantics. Count unchanged (358).

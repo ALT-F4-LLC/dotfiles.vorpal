@@ -8,10 +8,15 @@ the local arm and is always optional. Emits one JSON object to stdout with sorte
 keys AND explicitly-sorted arrays; diagnostics go to stderr.
 
 The de-dupe discipline is the reason this script exists: transcripts replicate
-~10x across resumed/subagent files, so every model/session count is keyed on the
-DISTINCT ``sessionId`` (parsed from each record), and a spawn's resolved
-``"model"`` is read ONCE per spawn, never once per turn. ``"<synthetic>"`` model
-turns are filtered from distribution counts.
+~10x across resumed/subagent files, and one parent TEAM ``sessionId`` is shared by
+every distinctly-named teammate spawned within it, so every model/session count is
+keyed on the DISTINCT ``(sessionId, spawn name)`` pair (sessionId parsed from each
+record, spawn name from the sidecar meta's ``"name"``) — this closes both the
+replication and the multi-teammate-per-session undercount. ``distinct_session_ids``
+specifically still counts distinct ``sessionId`` VALUES alone, unaffected by the
+spawn-name half of the key. A spawn's resolved ``"model"`` is read ONCE per spawn,
+never once per turn. ``"<synthetic>"`` model turns are filtered from distribution
+counts.
 
 Determinism (identical input -> byte-identical stdout) is guaranteed for the LOCAL
 arm under ``--no-remote``: file iteration is path-sorted (never mtime), no
@@ -21,7 +26,7 @@ to the newest record in the data (data-relative, reproducible), not to now().
 
 Follows the ``session_metrics.py`` split pattern (stdlib script emits JSON, agent
 reasons over it) as precedent only; it shares no code and de-dupes by distinct
-``sessionId`` rather than ``message_id``.
+``(sessionId, spawn name)`` rather than ``message_id``.
 """
 
 import argparse
@@ -191,17 +196,26 @@ def resolve_model(models):
 
 
 def build_local(projects_root, cutoff_iso, distribution_only):
-    """Aggregate the LOCAL arm with distinct-``sessionId`` de-dupe."""
+    """Aggregate the LOCAL arm with distinct-``(sessionId, spawn name)`` de-dupe."""
     spawns, sessions_scanned = parse_spawns(projects_root, cutoff_iso)
 
-    # Group replicated/resumed files by distinct sessionId; unparseable files have
-    # no sessionId so each keys on its own path (kept distinct, never merged).
+    # Group replicated/resumed files by (sessionId, spawn name): sessionId alone is
+    # the PARENT TEAM session shared by every distinctly-named teammate spawned
+    # within it, so the spawn name (meta "name", the Agent(name=...) instance) closes
+    # the key. Unparseable files have no sessionId so each keys on its own path
+    # (kept distinct, never merged).
     groups = {}
     for spawn in spawns:
-        key = spawn["session_id"] or f"{UNPARSEABLE}:{spawn['path'].name}"
+        if spawn["session_id"]:
+            key = (spawn["session_id"], spawn["meta"].get("name", ""))
+        else:
+            key = (UNPARSEABLE, spawn["path"].name)
         groups.setdefault(key, []).append(spawn)
 
-    distinct_session_ids = sum(1 for grp in groups.values() if grp[0]["session_id"])
+    # Distinct underlying sessionId VALUES, not distinct groups: multiple groups can
+    # now share one sessionId (one per distinctly-named teammate), so counting groups
+    # would overcount sessions.
+    distinct_session_ids = len({spawn["session_id"] for spawn in spawns if spawn["session_id"]})
 
     distribution = {}
     per_spawn = []
@@ -214,7 +228,7 @@ def build_local(projects_root, cutoff_iso, distribution_only):
 
     for key in sorted(groups):
         group = sorted(groups[key], key=lambda s: str(s["path"]))
-        rep = group[0]  # path-first file represents the session (de-dupes replication)
+        rep = group[0]  # path-first file represents the spawn (de-dupes replication)
         meta = rep["meta"]
         role = role_of(meta)
         all_models = [m for spawn in group for m in spawn["models"]]

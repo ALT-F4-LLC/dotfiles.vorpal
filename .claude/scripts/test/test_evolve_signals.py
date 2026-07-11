@@ -16,6 +16,7 @@ SIGNALS = HERE / "fixtures" / "signals"
 ROOT = SIGNALS / "projects"
 PITFALLS = SIGNALS / "pitfalls-root"
 MIMIR = SIGNALS / "mimir.json"
+TEAM_ROOT = HERE / "fixtures" / "signals-team" / "projects"
 
 
 def run(*args):
@@ -44,6 +45,22 @@ def test_dedupe_core():
                     "claude-opus-4-7": 1, "claude-haiku-4-5": 1}, dist
     # The per-turn-repeated-model spawn contributes 1, not N.
     assert dist["claude-sonnet-4-6"] == 1
+
+
+def test_distinct_names_share_session():
+    # Two distinctly-named teammates spawned within one parent TEAM sessionId must
+    # be counted separately (the ~7.8x undercount this fix closes), while
+    # distinct_session_ids must still count the underlying sessionId once, not once
+    # per teammate.
+    code, out, err = run("--distribution", "--projects-root", str(TEAM_ROOT), "--no-remote")
+    assert code == 0, f"exit {code}: {err}"
+    local = json.loads(out)["local"]
+    assert local["sessions_scanned"] == 2, local["sessions_scanned"]
+    assert local["distinct_session_ids"] == 1, local["distinct_session_ids"]
+    assert len(local["per_spawn"]) == 2, local["per_spawn"]
+    roles = sorted(e["role"] for e in local["per_spawn"])
+    assert roles == ["senior-engineer", "staff-engineer"], roles
+    assert local["distribution"] == {"claude-opus-4-8": 1, "claude-sonnet-4-6": 1}, local["distribution"]
 
 
 def test_synthetic_and_unparseable_filtered():

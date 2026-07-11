@@ -1,5 +1,33 @@
 # Changelog: code-review-verdict
 
+## 2026-07-10
+
+### Summary
+Phase 3 disambiguation: added a description clause distinguishing code-review-verdict (in-context verdict) from review-and-comment (posts inline PR comments), restoring reciprocity with review-and-comment's existing back-reference.
+
+### Changes
+- Description: appended "emits a verdict into context only; to post inline PR comments use Skill(review-and-comment)" — resolves shared "review this PR" trigger overlap (overlapping-ownership). Placed in description, not the family-lockstepped When-NOT-to-Use list, to preserve report-emission-family parity.
+
+### Dimensions Evaluated
+Disambiguation (overlapping-ownership). Confusable-name and multi-reading: none found.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Folded the redundant @distinguished-engineer playbook-mapping parenthetical in Pre-flight step 3 into the selection sentence's label — the parenthetical restated the preceding sentence; its unique content (severity/output extension) preserved inline. Net -79.
+
+### Changes
+- CULL: collapsed the distinguished→staff restatement parenthetical into the Playbook-selection label — cited Over-Engineering-HIGHEST + self-evident intra-step restatement.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST) primary. Cross-cutting validate_report.py proposal (spans 5 report-emission skills) routed to Phase 2.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

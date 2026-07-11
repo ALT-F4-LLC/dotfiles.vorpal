@@ -1,5 +1,19 @@
 # Changelog: design-review
 
+## 2026-07-10
+
+### Summary
+Full 8-dimension audit: NO-OP. "Possibly bypassed" historical finding investigated and cleared — ux-designer.md routes to Skill(design-review) correctly; zero invocations = demand-side, not a routing gap.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering primary (no trim after 16+ cycles); Coherence (routing verified). Cross-cutting family self-check CANONICAL-tag proposal flagged and deferred.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

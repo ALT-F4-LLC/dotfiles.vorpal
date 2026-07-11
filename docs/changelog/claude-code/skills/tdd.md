@@ -1,5 +1,47 @@
 # Changelog: tdd
 
+## 2026-07-10
+
+### Summary
+Compacted 3 entries (2026-06-05..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Fixed the broken COLLISION_DIALOG "Overwrite" branch — it Wrote over an existing file without a prior Read, which the harness rejects. Cross-cutting: applied byte-identically across adr/prd/tdd/ux-spec (surfaced by the ux-spec reviewer, propagated in lockstep).
+
+### Changes
+- AMPLIFY: Overwrite branch now Reads `{output_path}` before Write to satisfy the harness read-before-overwrite gate. CANONICAL:COLLISION_DIALOG lockstep across the 4 doc-authoring siblings.
+
+### Dimensions Evaluated
+Completeness / Coherence (bug fix). No model/routing/drift change.
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+Full-cycle audit: NO-OP. Zero error/correction signals in window (19 clean invocations). §11-YAML AMPLIFY rejected: goal already served by existing stand-alone-distillation clause. validate_doc.py deferred to Phase-2 family-wide reconciliation.
+
+### Changes
+- None.
+
+### Dimensions Evaluated
+All 8. Over-Engineering HIGHEST — no trim slack without breaking format-authority determinism.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary
@@ -219,49 +261,6 @@ Completeness (PRIMARY — pitfall (a)), Coherence (adr↔tdd authoring-step pari
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Over-engineering trim: collapsed redundant Authoring Procedure steps 5/6/7 (Alternatives/Risks/Phases — restatements of Required Sections §3/§8/§11) into step 3, matching prd's leaner pattern; preserved the chosen-alternative-matches-§4 constraint. Net -6.
-
-### Changes
-- Authoring Procedure: removed steps 5/6/7 as redundant with Required Sections; folded the N/A rule + §3↔§4 coherence constraint into step 3; renumbered.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST), Coherence (Authoring shape toward prd), Actionability. Status-authority confirmed canonical (no edit); maturity confirmed live-consumer field (no edit).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: added a fenced-code-block carve-out to the §3 Section-order and §4 Alternatives-count validations so example headings embedded in ``` fences are not mis-counted (aligns with the §6 placeholder-scan exclusion). Applied in lockstep with adr/prd/ux-spec.
-
-### Changes
-- §3 Section order: count only `##` headings at column 0 outside ``` code fences.
-- §4 Alternatives count: count only `###` headings outside ``` code fences.
-
-### Dimensions Evaluated
-Coherence (doc-authoring family validation symmetry).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Added a robustness bar for grep/regex-based per-phase acceptance criteria in §11 (Implementation Phases), tracing to a recorded incident where a brittle single-arm regex AC silently under-matched. Net +3.
-
-### Changes
-- §11 (c): grep/regex-based ACs must be executable against the named files and cover all expected matches (escape markdown, arm for word-order/formatting variants); a single-arm regex that silently under-matches is a defect.
-
-### Dimensions Evaluated
-Completeness (PRIMARY — AC robustness), Actionability, Over-Engineering (HIGHEST — single clause, no trim slack at 275/500), Coherence. The §3/§4 fenced-heading-exclusion fix is family-wide (tdd/adr/prd/ux-spec) and deferred to Phase 2 for lockstep.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +285,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-29: Corrected the same factually-incorrect `allowed-tools`-excludes-Edit rationale found in prd/ux-spec (per Claude Code docs, allowed-tools does not restrict th...
 - 2026-05-30: Added the reciprocal PRD-vs-TDD routing boundary to "When to Use" so the tdd↔prd split is symmetric — prd already states "pick PRD when scope precedes archit...
 - 2026-06-04: Dropped vestigial `Glob`/`Grep` from `allowed-tools`; added a status-authority rule clarifying Docket's `.data.status` is the single source of truth for the...
+- 2026-06-05: Over-engineering trim collapsing redundant Authoring Procedure steps 5/6/7 into step 3, matching prd's leaner pattern; net -6.
+- 2026-06-05: Added fenced-code-block carve-out to §3 Section-order and §4 Alternatives-count validations, lockstep with adr/prd/ux-spec.
+- 2026-06-05: Added robustness bar for grep/regex-based §11 acceptance criteria (must be executable, cover all matches); net +3.

@@ -1,5 +1,19 @@
 # Changelog: review-and-comment
 
+## 2026-07-10
+
+### Summary
+NO-OP (8th no-change-class verdict). 111 lines, all load-bearing; n=1 usage this window, zero failure signals. rc_pr.sh companion-script refactor declined on Over-Engineering grounds.
+
+### Changes
+- None. Considered+declined: codifying `.claude/scripts/rc_pr.sh` to wrap documented-fragile recipes — net-additive, fixes an unobserved failure mode (zero errors), introduces prose/script drift hazard.
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — declined the only substantive addition); Coherence (escalation pointer + disallowed-tools intact).
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

@@ -1,5 +1,37 @@
 # Changelog: evolve-agents
 
+## 2026-07-10
+
+### Summary
+Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference; culled redundant Phase 2 template steps 6-8 (now mechanized by symmetry_check.py) to restore parity with evolve-skills. File remains ~3,683B over the 65,000 hard limit — flagged (FLAG A/B below, not applied) as an operator-gated Scientific Trial candidate.
+
+### Changes
+- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
+- Phase 2 template: removed steps 6-8 (innovation-scanner/model-routing/Mimir byte-symmetry, mechanized by step 5's `symmetry_check.py --check all`); renumbered historical-auditor-note check 9→6.
+- FLAGGED (not applied, operator-gated): root-path convention is half-migrated (bare `agents/*.md`/`skills/*/SKILL.md` vs repo `src/user/claude-code/{agents,skills}/`) — evolve-agents' own pre-flight inventory (`find agents -maxdepth 1`) would find zero agents in this repo layout. Needs a deliberate family-wide sweep, not a coherence quick-fix.
+- FLAGGED (not applied, operator-gated): shared evolutionary-doctrine extraction (EVOLUTION-MODEL/Innovation Mandate/Scientific Trial/Genetic-Drift, ~3.1-4KB near-identical across 4 carriers) to a new team-doctrine reference file — required to bring both evolve-agents AND evolve-skills under the 65,000-byte hard limit; the byte-identical CANONICAL sub-block alone (1,930B) is insufficient.
+
+### Dimensions Evaluated
+Cross-reference accuracy; template parity; mechanization coherence (symmetry_check.py `--check all` now exits 0).
+
+### Rename
+No rename.
+
+## 2026-07-10
+
+### Summary
+File confirmed 4,334-4,373 B OVER the 65,000 hard limit (`wc -c`=69,373). Corrected a false "byte budget accommodates this file" self-budget claim. PRIMARY remedy — extracting the ~5,443 B shared evolutionary-doctrine block (EVOLUTION-MODEL/Innovation Mandate/Scientific Trial/Genetic-Drift, lines 30-50) to `team-doctrine/references/evolution-model.md`, cite-not-restate — is deferred to Phase 2 + operator Scientific-Trial-Protocol approval (new shared file + touches 4 skills: evolve-agents, evolve-skills, evolve-config, evolve-coherence).
+
+### Changes
+- CULL: corrected the false self-budget claim (line 127) that asserted the byte budget "accommodates this file" while the file was 4,334 B over — cited measured `wc -c` violation.
+- DEFERRED (Phase 2, operator-gated): extract shared evolutionary-doctrine blocks (lines 30-50) to a team-doctrine reference — cited over-hard-limit + confirmed near-byte-identical duplication across 4 carriers.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST) — primary open item is the budget violation, remedy pending Phase 2. Agent()-`description` param family-wide gap (45/46 examples) flagged, not fixed unilaterally.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

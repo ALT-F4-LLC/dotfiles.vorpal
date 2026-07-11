@@ -1,5 +1,19 @@
 # Changelog: verify-ac
 
+## 2026-07-10
+
+### Summary
+Fixed a check 5 / check 6 contradiction in Validation Before Emit: an Additional-Testing-gap-only ACCEPT WITH CAVEATS passed check 6 but aborted under check 5. Net -28.
+
+### Changes
+- CULL: removed the non-mechanical "an Additional Testing gap" satisfier from check 6's ACCEPT WITH CAVEATS clause. Edge-case gaps now route through the Issue Found bucket (severity ladder already supports this), aligning check 6 with check 5 and making the clause fully mechanically checkable.
+
+### Dimensions Evaluated
+All 8. Coherence (PRIMARY — check 5/6 contradiction), Over-Engineering (net removal). Clean routing/execution signals; no padding findings.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

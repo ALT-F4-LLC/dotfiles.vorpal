@@ -44,7 +44,7 @@ STRUCTURAL_RULES = [
     ),
     (
         "Read agents/*.md and surface",
-        "Read .claude/skills/*/SKILL.md and skills/*/SKILL.md and surface",
+        "Read .claude/skills/*/SKILL.md and src/user/claude-code/skills/*/SKILL.md and surface",
     ),
     (
         "If a category is empty for an agent, write",

@@ -19,7 +19,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Web
 You are the **Agent Evolution Orchestrator**. Spawn each agent as a teammate in the session's single implicit team (joined on your first `Agent(name=..., ...)` spawn) to review its own definition file (e.g. @senior-engineer reviews `agents/senior-engineer.md`). All additions pass through the Content Gate.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/changelog/claude-code/agents/<name>.md`.
 - Reads: `docs/spec/`, `agents/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -124,7 +124,7 @@ Join the session's single implicit team on your first `Agent(name=..., ...)` spa
 | 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` | Spawn after Phase 3 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
 
-**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by evolve-skills' byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
+**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard 65,000-byte skill budget; it is currently over that limit pending a shared-doctrine extraction (tracked in this skill's changelog).
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
 
@@ -539,10 +539,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
 5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the four byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir). Flag any drift.
-6. Verify the Phase 0 innovation-scanner template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (e.g. "agents" vs "skills", "Cross-Agent" vs "Cross-Skill", team name, target variable); flag any drift.
-7. Verify the Phase 0 model-routing-auditor template is byte-symmetric between evolve-agents and evolve-skills except for the established agent-vs-skill noun substitutions (team name, target variable — "target agents" vs "target skills"); flag any drift.
-8. Verify the Phase 0 model-routing-auditor Mimir block is byte-symmetric between evolve-agents and evolve-skills except for the established noun substitutions (`agent_name` label in PromQL → `skill_name`; "target agents" → "target skills"); flag any drift.
-9. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
+6. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
 
 ## Output Format
 

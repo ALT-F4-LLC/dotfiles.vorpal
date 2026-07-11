@@ -4,8 +4,10 @@ description: >
   Review and improve the Claude Code configuration defined in the repo's Rust builders
   (src/user.rs, src/user/claude_code.rs) and related scripts via multi-agent self-review.
   Phase 0 includes a historical audit of recent Claude Code transcripts, history, and
-  agent memory plus a git-history audit of the config sources.
-  Trigger: "evolve config", "improve config", "review config", "refine Claude Code settings".
+  agent memory plus a git-history audit of the config sources. Evolves the config SOURCE
+  (Rust builders), NOT live settings.json — for a one-off settings.json/permission/env edit
+  use the bundled update-config skill (/config).
+  Trigger: "evolve config", "improve config", "review config", "refine config sources".
 argument-hint: "[days=N] [drift=N]"
 effort: xhigh
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "WebFetch", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "AskUserQuestion"]
@@ -24,7 +26,7 @@ You are the **Config Evolution Orchestrator**. The target is the **Claude Code c
 <!-- CANONICAL:SOURCE-OF-TRUTH:END -->
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/changelog/claude-code/config/<artifact-name>.md` (artifact name = the config name minus the project prefix, e.g. `claude-code`).
 - Reads: `docs/spec/`, `src/user.rs`, `src/user/`.
 - Always singular docs/spec/ — never docs/specs/.
@@ -80,7 +82,6 @@ Before spawning any agents:
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` (`multiSelect: true`, ≤4 options): `Permission prompts / sandbox friction`, `Model, effort or env-var settings`, `Hooks, statusline or UI behavior`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
 3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store as `{today_date}`. This value MUST be substituted into every spawning template so agents use a consistent date for changelog entries.
 4. **Inventory config sources and the artifact name** — Run `wc -l src/user.rs src/user/claude_code.rs src/user/statusline.sh src/user/teammate-idle-hook.sh 2>/dev/null`. Resolve the artifact name from the builder: `grep -n 'format!("{}-claude-code"' src/user.rs` confirms the config name suffix; the changelog artifact name is that suffix (`claude-code`). These sources have NO size budget (they are Rust/shell, not skill prose); the skill-population byte budget (evolve-skills pre-flight step 4 is authoritative) governs THIS SKILL.md only. Mode for SKILL.md is **TRIM** (over budget) or **BALANCED** (under budget) per its own `wc -c`.
-**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by evolve-skills' byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
 5. **Check for existing changelog** — Run `ls docs/changelog/claude-code/config/*.md 2>/dev/null`. The directory may not exist yet (first cycle) — note that so Phase 1 creates it.
 6. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
@@ -219,7 +220,7 @@ After Phase 4 (or its no-op gate check) completes:
 
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `wc -c .claude/skills/evolve-config/SKILL.md`. Consolidate if over the skill-population byte budget (evolve-skills pre-flight step 4 is authoritative).
-3. Report: config sources modified, settings before/after (which `with_*` calls / env / rules changed), the generated-output verification result, the Disambiguation outcome (findings applied / "No disambiguation findings"), the cross-project pitfalls harvest outcome (lessons applied as config edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (compacted or no-op, plus invariant-check results per the retention-compaction master), and reminder that NO changes have been committed and NO deployed `~/.claude/` file was touched.
+3. Report: config sources modified, settings before/after (which `with_*` calls / env / rules changed), the generated-output verification result, the Disambiguation outcome (findings applied / "No disambiguation findings"), the cross-project pitfalls harvest outcome (lessons applied as config edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (compacted or no-op, plus invariant-check results per the retention-compaction master), and reminder that NO changes have been committed, NO deployed `~/.claude/` file was touched, and that applied config-source edits stay INERT until the vorpal/Rust build rebuilds + redeploys `settings.json` — the next cycle can only measure a change AFTER that redeploy.
 
 ---
 

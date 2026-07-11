@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-07-10
+
+### Summary
+Fixed the broken COLLISION_DIALOG "Overwrite" branch — it Wrote over an existing file without a prior Read, which the harness rejects (FIX6, largest error class in the bug audit). Cross-cutting: applied byte-identically across adr/prd/tdd/ux-spec.
+
+### Changes
+- AMPLIFY: Overwrite branch now Reads `{output_path}` before Write to satisfy the harness read-before-overwrite gate. Grounded in FIX6 (largest error class). CANONICAL:COLLISION_DIALOG lockstep across the 4 doc-authoring siblings.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (HIGHEST): no removable waste — file settled after ~15 cycles. Correctness: closed the latent Overwrite-abort. No model/routing/drift change (n=1, no signal).
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

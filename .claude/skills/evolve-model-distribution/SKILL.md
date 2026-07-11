@@ -19,7 +19,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Web
 You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pipeline — collect (Phase 0) → propose (Phase 1) → operator-gated apply (Phase 2) → verify (Phase 3) — that measures the ACTUAL per-spawn model distribution across recent Claude Code sessions and applies evidence-grounded routing edits to the `team-lead.md` model-routing prose + Tiers list. Every spawned teammate is READ-ONLY; the orchestrator applies every edit itself. No edit lands without an explicit operator approval (the Phase 2 HARD GATE), and every edit MUST cite measured distribution + outcome signals (the Improvement-Only Mandate) — speculative or regression-risk edits are rejected and recorded. Commits nothing.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
-**Docs paths (this skill).** Master: team-lead.md §Docs-Path Taxonomy (maintained copy).
+**Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/changelog/claude-code/model-distribution/team-lead.md` (sole writer of this family).
 - Reads: `docs/spec/`, `src/user/claude-code/agents/team-lead.md` (the routing edit target — build source), `~/.claude/projects/**/subagents/` (LOCAL per-spawn metrics), Mimir (REMOTE aggregate).
 - Always singular docs/spec/ — never docs/specs/.
@@ -223,18 +223,6 @@ grep -nE '^- .(gold|silver|bronze). ' src/user/claude-code/agents/team-lead.md  
 ```
 
 Read the `Tiers (three named tiers` preamble (its escape-hatch prose: "exceed the tier UPWARD … NEVER … below `silver`") AND every `^- ` bullet beneath it — `gold`/`silver`/`bronze`, three bullets total, security-depth folded into the `silver` bullet (no separate security-tier bullet exists) — and build category → canonical-tier from those bullets alone.
-
-The table below is an ILLUSTRATIVE SNAPSHOT for this document only — documentation, NOT the classification input and NOT auto-synced. If it and the live Tiers diverge, `team-lead.md` wins and this snapshot is stale-by-definition. NEVER feed it into a proposal.
-
-| Category (spawn class) — *illustrative; live authority is `team-lead.md`* | Canonical tier |
-|---|---|
-| `impl-{ID}` — Direct / Small / Medium | `bronze` |
-| `impl-{ID}` — Large / architecture / long-horizon | `silver` |
-| `planner` (project-manager ephemeral) | `bronze` |
-| general `reviewer-2`, `verifier*` | `silver` |
-| `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, >1-day-horizon deep-impl | `gold` (silver fallback when unavailable) |
-| `security-reviewer-2`, security-dominated `tdd-author*`, persistent advisors (non-Medium+) | `silver` (security-pinned) |
-| cheap one-shot report-only subagents | `haiku` (only place permitted) |
 
 **Tier-invariant floor.** `silver` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `verifier*` / `security-*` sit AT `silver`; `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `gold` (falling back to `silver` only when gold is unavailable — never below). None of these roles are ever downgrade candidates — a below-`silver` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`bronze` ≤ Medium, `silver` at static-Large, `gold` at the >1-day-horizon deep-impl arm).
 

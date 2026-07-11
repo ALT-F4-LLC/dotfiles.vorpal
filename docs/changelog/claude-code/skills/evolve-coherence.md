@@ -1,5 +1,20 @@
 # Changelog: evolve-coherence
 
+## 2026-07-10
+
+### Summary
+Redundancy + roster-drift trim on a zero-invocation organism. Two CULLs, no additions; net -165 bytes. Report-and-route boundary unchanged.
+
+### Changes
+- CULL: dropped the stale hardcoded "(7 agents + 13+ skills)" parenthetical in the Scope-confirmation HARD GATE — ground-truth is 8 agents now (distinguished-engineer added); a hardcoded roster count is the exact drift class D3 polices, so removed rather than re-pinned.
+- CULL: removed the redundant "Canonical excluded instance: Skill(verify-ac)…" restatement in the D2 detection seed — fully subsumed by the general frontmatter-cross-check heuristic on the same bullet; guard stays double-covered via invariant #4 + Phase 1 whitelist (Content Gate Non-redundant).
+
+### Dimensions Evaluated
+All 8. Over-Engineering (primary): one redundant restatement culled. Coherence: stale roster count culled. Report-and-route invariant preserved; no model/routing change.
+
+### Rename
+No rename.
+
 ## 2026-06-30
 
 ### Summary

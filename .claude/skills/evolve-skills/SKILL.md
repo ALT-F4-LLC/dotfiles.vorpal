@@ -128,8 +128,8 @@ All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (crea
 |---|---|---|
 | 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
-| 2 | `coherence-reviewer` | Spawn after ALL Phase 1 applied → apply fixes → shut down |
-| 3 | `disambiguation-reviewer` | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
+| 2 | `coherence-reviewer` (`distinguished-engineer`, `gold`) | Spawn after ALL Phase 1 applied → apply fixes → shut down |
+| 3 | `disambiguation-reviewer` (`distinguished-engineer`, `gold`) | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
 
 **Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard skill byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
@@ -175,7 +175,7 @@ Cross-cutting items append to a running notes list passed verbatim into the Phas
 
 ### Phase 2: Coherence & Renames (sequential)
 
-Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, every Phase 1 teammate shut down per lifecycle rules, AND the Findings Ledger complete — exactly one terminal disposition per Phase 0 finding (CANONICAL:IMPACT-CLASS). Only then spawn a single @staff-engineer (read-only) coherence-reviewer; assign via `TaskUpdate`.
+Gate: `TaskList()` shows all Phase 1 tasks `completed`, all Phase 1 edits applied, every Phase 1 teammate shut down per lifecycle rules, AND the Findings Ledger complete — exactly one terminal disposition per Phase 0 finding (CANONICAL:IMPACT-CLASS). Only then spawn a single @distinguished-engineer (read-only) coherence-reviewer; assign via `TaskUpdate`.
 
 The Phase 2 teammate:
 1. Reads ALL skill files (freshly improved versions)
@@ -195,7 +195,7 @@ and updates changelogs for affected skills. Apply each parity-bound fix flagged 
 **Phase 3 Disambiguation charter.** Surface and resolve residual ambiguity Phase 2 Coherence does NOT address: (1) confusable names/triggers/terms, (2) wording with multiple readings, (3) overlapping ownership between organisms. Coherence asks "do the pieces agree?"; disambiguation asks "can a reader tell the pieces apart and know who owns what?"
 <!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->
 
-Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="staff-engineer"`) over the post-coherence skill family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
+Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="distinguished-engineer"`) over the post-coherence skill family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
 
 **Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
 
@@ -526,7 +526,7 @@ For each: `CHANGE <n>: <title>` / `DIMENSION:` / `IMPACT:` (SUBSTANTIVE | COSMET
 ### Phase 2: @staff-engineer (Coherence & Renames)
 
 ```
-Agent(name="coherence-reviewer", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="coherence-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
 Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
@@ -561,7 +561,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 ### Phase 3: @staff-engineer (Disambiguation)
 
 ```
-Agent(name="disambiguation-reviewer", subagent_type="staff-engineer", model="opus", prompt="...")
+Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
 Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.

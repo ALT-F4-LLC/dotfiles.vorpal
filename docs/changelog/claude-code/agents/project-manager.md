@@ -1,5 +1,48 @@
 # Changelog: project-manager
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net -2 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): documented the industry-TPM scope boundary and trimmed a triple-stated TDD-provenance restatement. Net +91 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: opener now states this role maps to industry Technical Program Manager scope, explicitly excluding product vision/strategy/roadmap and pure schedule/budget logistics (SDLC role research, document-only, no rename).
+- CULL[COSMETIC]: §8 TDD-citation clause trimmed to the actionable directive + P5 pointer — the durable-docs list and provenance rule are stated verbatim in P5/Distillation Gate two lines below (triple restatement).
+
+### Dimensions Evaluated
+Boundary Clarity / Role Realism (primary), Consolidation & Trimming. Inverted-fix-direction lesson confirmed landed (line 252); Docket CLI Reference confirmed accurate against live binary. Actionability/Completeness/Spec Alignment/Capability Growth: RETAIN.
+
+### Rename
+No rename — "project-manager" ≈ industry TPM, but a rename is pure churn (Content Gate Behavioral check fails); boundary now documented inline instead.
+
 ## 2026-07-10
 
 ### Summary
@@ -190,53 +233,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Fable-mandate pass: added prescriptive "use when" triggers for the two capability families granted in frontmatter but absent from the body (WebFetch/WebSearch, Monitor). Reasoning-echo audit clean; docket foot-guns already encoded (NO-OP). Net +1 (334 lines).
-
-### Changes
-- Added WebSearch/WebFetch usage trigger to the "No guessing" rule (external-fact verification only; never to rediscover repo facts)
-- Added a Monitor start-trigger reminder to Runtime Discipline (long external jobs gating a planning decision; TaskStop before idle)
-- [NO-OP, grep-cited] `-f` ≠ description body and never-trust-✔-Updated already encoded; `docket next` adoption declined (overlaps existing plan-derived ordering — Content Gate)
-
-### Dimensions Evaluated
-Prescriptive Capability Triggers (primary), Reasoning-Echo Audit (clean), Consolidation & Trimming (no cuts available)
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 lead-initiated shutdown flip: planner lifecycle (final-tool-call emit → await on approval) and Monitor-watch paragraph replaced with await-lead semantics. Count unchanged (334).
-
-### Changes
-- §Operating Context planner lifecycle flipped (FIX 30); Auto-shutdown → "Idle after plan delivery" (FIX 31). PITFALLS family fix (FIX 32).
-
-### Dimensions Evaluated
-Spec Alignment, Coherence.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Encoded $TMPDIR scratch-file discipline into the §8 body-write guard; corrected CLI-default drift verified against `issue create --help` (priority default `none`, create status `backlog` — §7 now mandates explicit `-s todo`); offset by three redundancy trims. Net 0 (334→334).
-
-### Changes
-- §8: stage scratch body files under `$TMPDIR` only — sandbox-denied `/tmp`/`$CLAUDE_JOB_DIR/tmp` writes are the root cause of the stale-body "✔ Updated" failure (fem-kubernetes pitfall).
-- Docket Reference: defaults corrected — status `backlog`, priority `none`, type `task` (file wrongly marked `medium` as priority default).
-- §7: explicit `-s todo` on create + bash example updated — backlog-default issues are invisible to executor `-s todo` queries.
-- Three within-line trims: duplicate CLOSED-set enumeration (§Operating Context), third planner-ephemerality restatement (§Shutdown), Docket-only restatement (§Rules).
-
-### Dimensions Evaluated
-Consolidation & Trimming (3 offsets), Capability Growth ($TMPDIR), Spec Alignment (CLI defaults), Actionability (-s todo); Role Realism, Boundary Clarity, Completeness, Rename — sound.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -293,3 +289,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Three historical pitfalls: `depends_on` direct-gate, `-d` sets body vs `-f` attaches refs, §9 resolve-on-disk. Net +2.
 - 2026-06-09: Encoded trust-no-success-line-after-`-d`-write + enumerated-list completeness guards. Net +4 (330→334).
 - 2026-06-09: Extended §8 `-d`-write distrust guard with cwd-outside-repo no-op + `updated_at` reconcile discipline. Count unchanged (334).
+- 2026-06-09: Fable-mandate pass — added use-when triggers for WebFetch/WebSearch + Monitor; reasoning-echo audit clean. Net +1 (334 lines).
+- 2026-06-09: Phase 2 lead-initiated shutdown flip — planner lifecycle + Monitor-watch replaced with await-lead semantics. Count unchanged (334).
+- 2026-06-09: Encoded \$TMPDIR scratch-file discipline into §8; corrected CLI-default drift (priority `none`, status `backlog`, §7 mandates `-s todo`). Net 0.

@@ -1,5 +1,47 @@
 # Changelog: sdet
 
+## 2026-07-11
+
+### Summary
+Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): verification-only pass, no content changes. All three memory-excerpt fixes confirmed wired into workflow text; charter confirmed matching industry SDET; model-tier retained (already the roster's best-diversified role, 54.8%/45.2%).
+
+### Changes
+(none — RETAIN across the board; see Dimensions Evaluated)
+
+### Dimensions Evaluated
+Role Realism: SDLC research confirms modern consolidated industry SDET fit (test infra + automation + AC verification, manual-QA-below-SDET correctly not adopted, matching the industry trend). Confirmed present: "read the ENTIRE issue body" false-BLOCK fix, background exit-code/$TMPDIR-loss guard, nested `claude -p` config-leak warning. Actionability/Boundary Clarity/Completeness/Consolidation/Spec Alignment: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -194,51 +236,6 @@ Consolidation & Trimming (CULL). Role Realism / Actionability / Boundary Clarity
 ### Rename
 No rename.
 
-## 2026-06-17
-
-### Summary
-Added sandbox-interaction patterns, a never-trust-0-failures set-diff procedure, and a shared-worktree baseline hazard. Trial: sandbox-patterns / set-diff / worktree-baseline → adopted. Drift: neutral reword of the @ux-designer testability-trigger bullet → adopted.
-
-### Changes
-- AMPLIFY: sandbox-interaction patterns (Monitor+kubectl → dangerouslyDisableSandbox kubectl wait; gh/curl TLS retry; `$TMPDIR` vs /tmp).
-- AMPLIFY: never trust an implementer's "0 new failures" — full-suite set-diff of before/after failing sets.
-- AMPLIFY: shared-worktree baseline hazard — use file-copy / dedicated worktree, not git stash.
-
-### Dimensions Evaluated
-Actionability (AMPLIFY), Completeness (AMPLIFY), Consolidation (RETAIN), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 2 entries (2026-05-25..2026-05-25) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Culled the redundant "Idle after verdict (await-lead semantics)" paragraph — a 4-way restatement of comm rule 6, Lifecycle, §Await-lead, and §Drain — folding its one unique verb (`TaskStop`) into Drain-before-shutdown. Net -2 (341→339).
-
-### Changes
-- CULL: §Shutdown Handling "Idle after verdict" paragraph — every clause already owned elsewhere (grep-verified, no inbound references; Phase 0 retire signal).
-- AMPLIFY: §Drain-before-shutdown gains explicit `TaskStop outstanding watches` verb.
-
-### Dimensions Evaluated
-All 8; Consolidation primary; 7 dimensions RETAIN (0 operator-corrections, 0 stalls, 0 shutdown-rejections in window).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -297,3 +294,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Compacted 38 entries (2026-03-19..2026-05-24) into Compacted history per ADR 0001.
 - 2026-06-09: Fable-5 slice — added autonomy calibration + silence-default narration; trimmed redundant re-read clause. Net +2 (341 lines).
 - 2026-06-09: Shutdown flip — comm rule 6, Lifecycle, Verifier Composition, §Shutdown Handling → Proactive→Await-lead. Count unchanged (340).
+- 2026-06-10: Culled redundant "Idle after verdict" paragraph (4-way restatement); folded TaskStop verb into Drain-before-shutdown. Net -2 (339 lines).
+- 2026-06-10: Compacted 2 entries (2026-05-25..2026-05-25) into Compacted history per ADR 0001.
+- 2026-06-17: Added sandbox-interaction patterns, never-trust-0-failures set-diff procedure, shared-worktree baseline hazard. Trial: sandbox-patterns / set-diff / worktree-baseline → adopted. Drift: neutral reword of the @ux-designer testability-trigger bullet → adopted.

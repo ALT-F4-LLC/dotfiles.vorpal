@@ -1,5 +1,47 @@
 # Changelog: staff-engineer
 
+## 2026-07-11
+
+### Summary
+Compacted 4 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net -36 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
+
+### Dimensions Evaluated
+Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
+
+### Rename
+No rename.
+
+## 2026-07-11
+
+### Summary
+evolve-agents cycle (SDLC role-comparison mandate): removed a dangling self-contradiction in Responsibility 2. Findings: 4 → 1 sub / 0 cos / 0 rej / 2 def / 1 enc.
+
+### Changes
+- CULL[SUBSTANTIVE]: removed "Update impacted specs per Responsibility 4 after the skill returns." from §Responsibility 2 Review output — Responsibility 4 explicitly disowns spec maintenance as a standing responsibility, making this directive a live self-contradiction on every review pass. Residual signal (spec-invalidating findings) already covered by System-Level Thinking + the scope-delta SendMessage trigger — cited by innovation-scanner RETIRE finding.
+
+### Dimensions Evaluated
+Boundary Clarity, Consolidation & Trimming. SDLC role research confirms strong fit to industry "Staff Engineer" (cross-team design docs, review floor, no implementation) — no charter change. Role Realism/Actionability/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -181,63 +223,6 @@ Completeness (AMPLIFY), Capability Growth (AMPLIFY), Consolidation (CULL), other
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Compacted 3 entries (2026-05-24..2026-05-25) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Trial: R5 advisor trigger ">50 assistant turns" → "after a TDD secondary-review fix-loop completes" → shipped (lockstep with team-lead.md). Phase 2 coherence: sole-editor rule reduced to a pointer at the security-engineer.md AUTHORITY copy.
-
-### Changes
-- Sole-editor rule: duplicated serialization wording replaced with pointer to security-engineer.md §Responsibility 1 (AUTHORITY); staff-specific auth/crypto caveat retained.
-- R5 advisor trigger: observable fix-loop-completion event replaces the turn-count proxy.
-
-### Dimensions Evaluated
-Coherence pass (cross-file mirrors).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Review cycle 2026-06-10: all Phase 0 signals verified NO-OP (already encoded) or routed as coherence flags. No edits; 258 lines unchanged.
-
-### Changes
-- None. NO-OPs cited: already-present check (L76); AC-grep-from-live-file + budget gates (TDD step 6 / rule 6); docs/ux existence guard (L70). \$N-escaping routed to evolve-skills scope. Three coherence flags routed to Phase 2 (sole-editor duplication, R5 turn-count proxy, Light-TDD vs Rule 8(a)).
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 39 entries (2026-03-19..2026-05-19) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 39 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +281,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Added "already-present check" to No-Guessing + WebFetch/WebSearch use-when trigger. Net +2 (258 lines).
 - 2026-06-09: Shutdown flip — rule 7 ephemeral sentence + §Shutdown Handling Ephemeral flipped to await-team-lead. Count unchanged (257).
 - 2026-06-09: Deduped rule 7 shutdown contract; documented TDD step 6 envelope clause; encoded stale-line-citation pitfall. Net 0 (257 lines).
+- 2026-06-09: Compacted 39 entries (2026-03-19..2026-05-19) into Compacted history per ADR 0001 (DKT-264).
+- 2026-06-10: Review cycle — all Phase 0 signals verified NO-OP or routed as coherence flags; no edits (258 lines).
+- 2026-06-10: Sole-editor rule reduced to pointer at security-engineer.md AUTHORITY copy. Trial: R5 advisor trigger ">50 assistant turns" → "after a TDD secondary-review fix-loop completes" → shipped (lockstep with team-lead.md).
+- 2026-06-10: Compacted 3 entries (2026-05-24..2026-05-25) into Compacted history per ADR 0001.

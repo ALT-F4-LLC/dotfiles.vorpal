@@ -186,7 +186,7 @@ Exempted (native only): `docket`, `git`.
 
 Before decomposing, identify what could go wrong across **Technical** (invalid assumptions about the codebase, fragile/poorly understood areas), **Dependency** (external APIs, libraries, infrastructure, cross-team coordination — document in the parent issue), **Scope** (insufficient clarity → spike first), and **Integration** (conflicts with active workstreams — check `docket board --json`).
 
-For non-trivial work, include a Risks section in the parent issue: known risks with likelihood/impact, mitigation strategies, and assumptions that could invalidate the plan. When uncertainty is high, recommend a spike as the first task; notify @staff-engineer via SendMessage when a spike involves architectural or feasibility questions. Spike acceptance criteria: a Docket comment documenting findings, a recommendation (proceed / adjust scope / abandon), and enough detail for the PM to create the real issues without re-exploration.
+For non-trivial work, include a Risks section in the parent issue: known risks with likelihood/impact, mitigation strategies, and assumptions that could invalidate the plan. **Run a premortem** (Klein 2007, prospective hindsight): before finalizing, assume the plan has ALREADY failed and enumerate why — this surfaces failure modes a forward-looking risk list misses (silent dependency, a wrong assumption, a phase that can't actually run parallel). Fold the concrete ones back into the Risks section and dependency graph. When uncertainty is high, recommend a spike as the first task; notify @staff-engineer via SendMessage when a spike involves architectural or feasibility questions. Spike acceptance criteria: a Docket comment documenting findings, a recommendation (proceed / adjust scope / abandon), and enough detail for the PM to create the real issues without re-exploration.
 
 ### 3. Manage Scope
 
@@ -355,14 +355,14 @@ docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
 docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
 docket issue log <id> [--limit N]
 docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
-docket doc create -t TITLE [-d DESC|@path|-] [-T TYPE] [-s STATUS] / doc show <id> --json / doc list --json / doc link add <doc-id> --issue <issue-id> / doc link remove <doc-id> --issue <issue-id> / doc comment add <id> -m "text"   # durable spec/PRD→issue traceability
+docket doc create -t TITLE [-d DESC|@path|-] [-T TYPE] [-s STATUS] / doc show <id> --json / doc list --json / doc edit <id> [-t] [-d] [-s] [-T] / doc delete <id> [--cascade] [-f] / doc link add <doc-id> --issue <issue-id> / doc link remove <doc-id> --issue <issue-id> / doc comment add <id> -m "text" / doc comment list <id>   # durable spec/PRD→issue traceability
 docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r|--rationale TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
 docket vote show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]   # list defaults to open only; --all includes committed/rejected
 docket vote link <proposal-id> --issue <id> / unlink <proposal-id> --issue <id>   # bind votes to issues for operator traceability
 ```
 
-Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (everywhere). Aliases: `docket i`/`issue ls`, `docket v`/`vote ls`.
-**Status:** backlog (create default) | todo | in-progress | review | done | **Priorities:** critical | high | medium | low | none (create default) | **Types:** bug | feature | task (default) | epic | chore
+Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (everywhere). Aliases: `docket i`/`issue ls`, `docket d`/`doc ls`, `docket v`/`vote ls`.
+**Status:** backlog (create default) | todo | in-progress | review (schema-valid but intentionally unused — review happens via SendMessage/comments, not a status transition) | done | **Priorities:** critical | high | medium | low | none (create default) | **Types:** bug | feature | task (default) | epic | chore
 **Grooming foot-gun:** `issue delete <id> --orphan` promotes sub-issues to roots — preserve work when removing a wrong parent (the `edit -f` replace-warning lives on the edit line above).
 
 ---

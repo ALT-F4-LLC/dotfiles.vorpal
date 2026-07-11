@@ -146,6 +146,7 @@ malformed frontmatter.
    unresolved questions ship with the spec. There is no dedicated Open Questions
    section — entries belong inside §9 Handoff Notes and must be resolved (or the
    calling agent re-invokes this skill after consulting peers and the operator).
+8. **Principle alignment self-check**: before save, walk the draft against the eight HIG principles (definitions: `~/.claude/agents/ux-designer.md` §Core Principles — repo: `src/user/claude-code/agents/ux-designer.md`): Purpose grounds §1 success criteria; Familiarity grounds consistency with prior art (step 1); Agency and the error-case-first house floor ground error/recovery branches (step 6); Simplicity grounds copy and hierarchy (steps 3, 5); Flexibility grounds §7 Accessibility; Craft grounds the actual-copy/no-placeholder rule (step 5); Delight is checked last and never at the cost of the task. Record in §9 Handoff Notes which principle won any documented tension.
 
 ## Output Contract
 

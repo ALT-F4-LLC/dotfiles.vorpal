@@ -6,6 +6,7 @@ description: >
   Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
 argument-hint: "<topic>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -83,7 +84,11 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
 2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory is
-   `docs/tdd/`.
+   `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
+   filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
+   `.claude/scripts/next_doc_number.sh` (the shared {NNNN} allocation +
+   citation-hijack script) is `adr/SKILL.md`'s numbering step, not this skill's —
+   do not invoke it here.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.

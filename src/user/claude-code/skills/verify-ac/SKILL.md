@@ -9,6 +9,7 @@ description: >
   Trigger: "verify acceptance criteria", "verify Docket issue", "produce verification report" — NOT app/PR runtime checks (that is the bundled runtime `verify` skill, the name this skill was renamed away from to avoid collision).
 argument-hint: "<scope>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

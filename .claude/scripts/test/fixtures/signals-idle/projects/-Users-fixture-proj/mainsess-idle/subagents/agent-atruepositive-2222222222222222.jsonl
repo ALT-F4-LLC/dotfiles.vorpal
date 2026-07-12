@@ -1,0 +1,3 @@
+{"type": "user", "sessionId": "sess-idle-tp", "timestamp": "2026-07-01T11:00:00.000Z", "message": {"content": [{"type": "text", "text": "go"}]}}
+{"type": "system", "sessionId": "sess-idle-tp", "timestamp": "2026-07-01T11:00:01.000Z", "hookEvent": "TeammateIdle", "message": {"systemMessage": "Teammate idle: shutdown is lead-initiated"}}
+{"type": "assistant", "sessionId": "sess-idle-tp", "timestamp": "2026-07-01T11:00:02.000Z", "message": {"model": "claude-sonnet-5", "id": "msg-tp-1", "content": [{"type": "text", "text": "ack"}]}}

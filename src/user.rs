@@ -203,6 +203,12 @@ impl UserEnvironment {
                     "command",
                 )
                 .with_hook(
+                    "TaskCompleted",
+                    None,
+                    "bash ~/.claude/task-completed-hook.sh",
+                    "command",
+                )
+                .with_hook(
                     "TeammateIdle",
                     None,
                     "bash ~/.claude/teammate-idle-hook.sh",
@@ -1101,6 +1107,22 @@ impl UserEnvironment {
             get_output_path("library", &claude_teammate_idle_hook)
         );
 
+        // Claude Code TaskCompleted hook script
+        let claude_task_completed_hook_name =
+            format!("{}-claude-task-completed-hook", &self.name);
+        let claude_task_completed_hook = FileCreate::new(
+            include_str!("user/task-completed-hook.sh"),
+            claude_task_completed_hook_name.as_str(),
+            self.systems.clone(),
+        )
+        .with_executable(true)
+        .build(context)
+        .await?;
+        let claude_task_completed_hook_path = format!(
+            "{}/{claude_task_completed_hook_name}",
+            get_output_path("library", &claude_task_completed_hook)
+        );
+
         // Claude Code PreToolUse guard-no-commit hook script
         let claude_guard_no_commit_hook_name =
             format!("{}-claude-guard-no-commit-hook", &self.name);
@@ -1244,6 +1266,7 @@ impl UserEnvironment {
                 claude_guard_no_commit_hook,
                 claude_skills,
                 claude_statusline,
+                claude_task_completed_hook,
                 claude_teammate_idle_hook,
                 codex_agents,
                 codex_config,
@@ -1280,6 +1303,7 @@ impl UserEnvironment {
                 (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
+                (claude_task_completed_hook_path.as_str(), "$HOME/.claude/task-completed-hook.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (&codex_agents_path, "$HOME/.codex/agents"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),

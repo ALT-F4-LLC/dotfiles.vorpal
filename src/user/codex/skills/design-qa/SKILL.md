@@ -99,7 +99,10 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 1. **Walk every workflow in the spec.** For each: interactions, states, transitions, error branches, success path, accessibility hooks, copy.
 2. **Test edge cases.** Empty inputs, error states, overloaded inputs, degraded mode, missing dependencies, NO_COLOR / accessibility settings for TUI/CLI, viewport breakpoints for web. For externally-referenced media (images, icons, embeds), confirm the rendered content — not just HTTP 200 or ref presence: a dead payload (broken-image placeholder, "content not available") passes liveness checks but fails the spec.
    - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** MANDATORY: render to image at real delivery resolution, visually READ it before any Pass, and store reviewed artifacts under `$TMPDIR/design-qa/<spec-slug>/` for matrix citations. Broken-image placeholders, dead embeds, or cues that disappear under streamed/screenshared/small-viewport delivery are Blockers.
-3. **Check accessibility implementation** against the spec's accessibility section (WCAG criteria, keyboard reachability, color-not-sole-indicator, etc.).
+3. **Check accessibility implementation** against the spec's accessibility section. Verify against this checklist (minimum bar; expand for the surface):
+   - **Color contrast** — measure actual rendered contrast ratios (not just token values) against WCAG 2.2 AA (4.5:1 normal text, 3:1 large text/UI components); confirm color is not the sole indicator.
+   - **Keyboard navigability** — drive every interactive element via keyboard alone; confirm focus order matches visual/reading order, focus is visibly indicated, and no keyboard traps exist.
+   - **Semantic / ARIA correctness** — inspect rendered markup/accessibility tree for correct semantic elements/roles, accurate ARIA attributes, and screen-reader announcement of state changes.
 4. **Trace cross-surface consistency** — if the spec sets precedent, verify the same concept uses the same name and copy across surfaces.
 5. **Decide verdict** per the ladder:
 
@@ -113,8 +116,8 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 | Severity | Meaning |
 |---|---|
-| Blocker | Must fix before sign-off: broken workflow, missing critical error state, accessibility regression, cross-surface precedent violation, missing/broken render on a static-export or visual surface (build-green is not a render pass) |
-| Concern | Should fix or explicitly justify: spec deviation that affects usability, missing edge case, inconsistent copy |
+| Blocker | Must fix before sign-off: broken workflow, missing critical error state, accessibility regression (contrast failure, keyboard trap, or missing/incorrect ARIA semantics), cross-surface precedent violation, missing/broken render on a static-export or visual surface (build-green is not a render pass) |
+| Concern | Should fix or explicitly justify: spec deviation that affects usability, missing edge case, inconsistent copy, accessibility gap on non-critical path |
 | Suggestion | Consider for this or future iteration: polish, minor improvement |
 | Praise | Pattern worth highlighting and replicating — routes to `What's Implemented Well`, not `Issues` |
 

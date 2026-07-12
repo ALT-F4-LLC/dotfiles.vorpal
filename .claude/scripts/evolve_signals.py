@@ -151,7 +151,11 @@ def error_count(records):
     return count
 
 
-_IDLE_RE = re.compile(r"TeammateIdle")
+# Anchored on the JSON key-value shape (not a loose substring) so prose mentioning
+# "TeammateIdle" (e.g. injected skill-description text) never self-matches a real
+# hook event. Records are re-dumped via json.dumps() before matching, whose default
+# separators put a space after ':' -- \s* also tolerates a raw, space-free line.
+_IDLE_RE = re.compile(r'"hookEvent"\s*:\s*"TeammateIdle"')
 _SHUTDOWN_REJECT_RE = re.compile(r"shutdown[_-]?reject", re.IGNORECASE)
 _RESPAWN_RE = re.compile(r"-r([2-9]|\d{2,})$")
 

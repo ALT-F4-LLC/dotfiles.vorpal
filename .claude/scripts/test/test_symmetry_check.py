@@ -15,6 +15,9 @@ FIXTURES = HERE / "fixtures" / "symmetry"
 AGENTS_SYMMETRIC = FIXTURES / "agents_symmetric.md"
 SKILLS_SYMMETRIC = FIXTURES / "skills_symmetric.md"
 SKILLS_DRIFTED = FIXTURES / "skills_drifted.md"
+AGENTS_IMPACT_CLASS = FIXTURES / "agents_impact_class.md"
+SKILLS_IMPACT_CLASS_SYMMETRIC = FIXTURES / "skills_impact_class_symmetric.md"
+SKILLS_IMPACT_CLASS_DRIFTED = FIXTURES / "skills_impact_class_drifted.md"
 
 
 def run(*args):
@@ -48,6 +51,22 @@ def test_drifted_single_check_exits_nonzero():
     assert code != 0, f"expected non-zero exit, got {code}"
     diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
     assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
+
+
+def test_impact_class_symmetric_pair_exits_zero():
+    code, out, err = run("--check", "impact-class", "--agents-file", str(AGENTS_IMPACT_CLASS),
+                         "--skills-file", str(SKILLS_IMPACT_CLASS_SYMMETRIC))
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert "DRIFT" not in out, out
+
+
+def test_impact_class_drifted_exits_nonzero_with_diff():
+    code, out, err = run("--check", "impact-class", "--agents-file", str(AGENTS_IMPACT_CLASS),
+                         "--skills-file", str(SKILLS_IMPACT_CLASS_DRIFTED))
+    assert code != 0, f"expected non-zero exit, got {code}"
+    diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
+    assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
+    assert "impact-class: DRIFT" in out, out
 
 
 def test_missing_file_exits_two():

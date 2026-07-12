@@ -1,0 +1,2 @@
+{"type": "user", "sessionId": "sess-idle-fp", "timestamp": "2026-07-01T10:00:00.000Z", "message": {"content": [{"type": "text", "text": "Available skills:\n- evolve-agents: Phase 0 includes stall signals (TeammateIdle, -r2 respawns, shutdown-rejection)."}]}}
+{"type": "assistant", "sessionId": "sess-idle-fp", "timestamp": "2026-07-01T10:00:01.000Z", "message": {"model": "claude-sonnet-5", "id": "msg-fp-1", "content": [{"type": "text", "text": "ok"}]}}

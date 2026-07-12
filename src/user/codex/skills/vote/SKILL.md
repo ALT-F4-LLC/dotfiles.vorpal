@@ -319,7 +319,7 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.role` for the two pre-commit invariants: no `.role` matches the proposer's mapped agent type, and all `.role` values are unique).
+View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.voter_role` for the two pre-commit invariants: no `.voter_role` matches the proposer's mapped agent type, and all `.voter_role` values are unique).
 Full result: `docket vote result {vote-id} --json`
 Committed via: `docket vote commit {vote-id} --outcome "Approved with score {score}"` (echo the executed command for audit replay).
 ```

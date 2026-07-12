@@ -1,5 +1,66 @@
 # Changelog: evolve-agents
 
+## 2026-07-12 (Phase 4 history compaction)
+
+### Summary
+Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Pinned single ownership of team-lead.md's model-routing surface (overlapping-ownership with /evolve-model-distribution); aligned the `day=N` alias documentation with evolve-skills' convention. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 1 template now defers Tiers-list/routing-prose edits on team-lead.md to /evolve-model-distribution (DEFERRED disposition) — resolves overlapping-ownership with the routing-dedicated skill's heavier gates (Trial-only downgrades, per-proposal operator gate)
+- AMPLIFY[SUBSTANTIVE]: Argument Handling — documented `day=N` as an accepted alias for `days=N`, matching evolve-skills
+
+### Dimensions Evaluated
+Disambiguation (overlapping-ownership, argument-parsing family consistency). Flagged for a FUTURE dedicated pass (too large/risky for this cycle's wrap-up): 29 occurrences of a stale `agents/*.md` path literal (real location is `src/user/claude-code/agents/`) — confirmed live via `ls`; the same class of bug this cycle already fixed twice elsewhere (evolve-skills' changelog path, this file's own changelog path). Recommend the next /evolve-agents cycle's own Phase 1 self-review fix this, or a dedicated targeted pass.
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 2 coherence pass)
+
+### Summary
+Repaired two silently-dead `find` paths (the sibling of the fix evolve-skills received earlier this cycle) and adopted cache-first changelog fetch in lockstep with evolve-skills/evolve-config. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- FIX[SUBSTANTIVE]: pre-flight step 6 + Phase-4 gate — `docs/changelog/agents` → `docs/changelog/claude-code/agents` (old dir nonexistent; `2>/dev/null` masked it, deadening the compaction gate permanently)
+- AMPLIFY[SUBSTANTIVE]: pre-flight step 9 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback (repetition-auditor confirmed repeated re-fetch of an unchanged ~400KB file)
+
+### Dimensions Evaluated
+Coherence (sibling path-fix parity), Efficiency. Still over the 65,000B budget (79,481B) — the only real close is the deferred shared-doctrine/Phase-0-template extraction (recorded as a Trial proposal below).
+
+### Rename
+No rename.
+
+Trial: extract shared Phase-0 auditor templates (historical/repetition/bug/model-routing + CANONICAL:HARVEST) to team-doctrine/references → proposed
+
+## 2026-07-12
+
+### Summary
+Fixed stale @staff-engineer→@distinguished-engineer headings (Phase 2/3, same bug class as evolve-skills); added a mirrored-doctrine divergence check to the coherence-reviewer. Reverted an initial TRIM attempt on the Genetic-Drift Operator prose after confirming it is byte-identical parity-bound across evolve-agents/evolve-skills/evolve-config — deferred to Phase 2 lockstep instead. File remains over the 65,000B budget (79,229B); the only real budget-closing lever is the deferred shared Phase-0/doctrine template extraction. Findings: 6 → 1 sub / 1 cos / 1 rej / 4 def / 0 enc
+
+### Changes
+- CULL[COSMETIC]: corrected Phase 2/3 headings to @distinguished-engineer — cited innovation-scanner Retire + lifecycle-table/body cross-check (matches evolve-skills' identical fix)
+- AMPLIFY[SUBSTANTIVE]: coherence-reviewer now greps agents/*.md for diverged mirrored doctrine beyond symmetry_check.py's 5 skill-vs-skill blocks — cited distinguished-engineer pitfalls 2026-07-11 (recurring gap)
+
+### Dimensions Evaluated
+All 8. Over-Engineering primary: file is 14.2KB over budget; only the DEFERRED shared-doctrine extraction closes it (this file is the primary beneficiary per its own §Self-budget line). Rejected the sdlc-role-researcher staleness gate (unproven safety, cost-optimization belongs in evolve-model-distribution). Deferred: drift_target.py codification, WebFetch docs-cache adoption (both cross-cutting w/ evolve-skills/evolve-config).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -165,80 +226,6 @@ All 8; Over-Engineering primary (drift-operator rationale load-bearing, no failu
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block (genome/trait/fitness-signal vocabulary), natural-selection dispositions (AMPLIFY/CULL/RETAIN), Genetic-Drift Operator (fitness-independent neutral substitution, `drift=N` parameter, structural no-signal-set construction), Scientific Trial Protocol (hypothesis → operator-approval HARD GATE → measure → adopt-or-rollback), biodiversity invariant, and speciation gate. CANONICAL:EVOLUTION-MODEL byte-identical across evolve-agents/evolve-skills/evolve-coherence (hash e9ef8d09).
-
-### Changes
-- CANONICAL:EVOLUTION-MODEL block added (Phase A); byte-identical across all three evolve-* carriers.
-- Innovation Mandate updated to cite three variation sources: innovation-scanner, historical-auditor, genetic-drift operator.
-- Genetic-Drift Operator section added: structural no-signal-set construction (grep-then-subtract), `{drift_seed} mod len(set)` target selection, S2 reproducibility caveat.
-- Scientific Trial Protocol added: Hypothesis → operator approval → measurement → adopt-or-rollback; `Trial:`/`Drift:` changelog recording.
-- Selection disposition rule added to Phase 1 template (AMPLIFY/CULL require cited fitness signal; RETAIN is default).
-
-### Dimensions Evaluated
-Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers); Completeness (selection dispositions, drift operator, trial protocol coverage); Skill Design Quality (structural target selection, determinism caveat).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 8 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit (1-day window): NO changes. File clean at 487 lines; all `\$ARGUMENTS` escaped, no docket drift, self-referential Phase 0 focus areas (de-dup L241, FP-filter L242) verified already-encoded.
-
-### Changes
-- None (NO-OP verdict). audit-profile gate, transcript-index builder, model-grep collapse, and `-r2` centralization all routed to Phase 2 as cross-skill/parity-bound, not Phase 1 edits.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no bloat at 487/500); Coherence (CANONICAL:BANNER + frontmatter byte-parity confirmed with evolve-skills).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 34 entries (2026-03-19..2026-05-18) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 34 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 parity fix: escaped 5 documentary `\$ARGUMENTS` occurrences (L48/54/64/73/198), lockstep with evolve-skills sister. Backtick spans do not prevent substitution (empirically confirmed this cycle). Net 0 (368 lines).
-
-### Changes
-- L48/54/64/73/198: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose; L293 meta-rule already escaped, untouched.
-
-### Dimensions Evaluated
-Skill Design Quality (arg-escape); Coherence (byte-parity with evolve-skills on shared prose + HARVEST block verified PASS).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +279,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Added an absent/empty-dir guard to the Phase 0 historical-auditor's agent-memory read step (parity with evolve-skills), preventing undefined read behavior on...
 - 2026-05-29: Normalized the Content Gate intro line to byte-identical with the sibling evolve-skills (Phase 2 coherence).
 - 2026-05-30: Two changes: closed a sibling-asymmetric "Second failure" recovery gap (Phase 0 auditor fallback), and added the Phase-0-findings-are-signals-not-facts rule...
+- 2026-06-09: Phase 2 parity fix — escaped 5 documentary `\$ARGUMENTS` occurrences, lockstep with evolve-skills; net 0 (368 lines).
+- 2026-06-09: Compacted 34 entries (2026-03-19..2026-05-18) into Compacted history per ADR 0001.
+- 2026-06-10: Full-cycle audit NO-OP (487 lines) — $ARGUMENTS escaping + docket drift + Phase-0 focus-area dedup verified already-encoded.
+- 2026-06-10: Compacted 8 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
+- 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL, selection dispositions, Genetic-Drift Operator, Scientific Trial Protocol.

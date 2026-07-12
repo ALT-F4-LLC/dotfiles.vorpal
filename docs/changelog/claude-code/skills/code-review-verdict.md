@@ -1,5 +1,20 @@
 # Changelog: code-review-verdict
 
+## 2026-07-12
+
+### Summary
+Root-cause fix for the ~32% skill-load failure class reported by 3 independent Phase 0 auditors: the literal `<command>`-placeholder instance was already fixed at commit ca3f70f (2026-07-11), but the whole `!`command`` auto-injection mechanism remained a live residual risk (cannot degrade gracefully — harness aborts the WHOLE skill load on any failure) and was redundant with Pre-flight step 4 + team-lead's shared brief. Removed it; folded an agent-run, gracefully-degrading census into step 4. Also closed the uncommitted-scope untracked-files gap. Findings: 3 → 2 sub / 0 cos / 0 rej / 1 def / 2 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: removed `## Pre-Injected Diff-Scope Context` (3 `!`command`` lines aborted the whole load on any failure; census was redundant with Pre-flight step 4 + Rule-8 shared brief) — cited historical-auditor (5+ live-reproduced sessions), bug-auditor (PREVENT 6), model-routing-auditor (32% error rate, proportional across model tiers)
+- AMPLIFY[SUBSTANTIVE]: Pre-flight step 4 now runs the census as agent Bash (missing `audit_snapshot.sh` = N/A, not fatal) + `uncommitted`/`staged` scope-resolution row adds `git status --short` for untracked `??` files
+
+### Dimensions Evaluated
+Operations/Coherence/Over-Engineering (primary — root-cause removal of a load-failure class). Already-encoded (no action): the `<command>` literal-placeholder instance (ca3f70f) and the `audit_snapshot.sh` repo-relative path (c2c09f4) were both already fixed. Deferred cross-cutting: `report_lint.py` shared Validation-Before-Emit validator (4 skills: code-review-verdict, verify-ac, design-review, design-qa). Flagged (config-owned, out of scope): SubagentStop-hook silent-completion enforcement → route to evolve-config.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

@@ -78,14 +78,14 @@ Before spawning any agents:
 4. **Inventory skill files and sizes** — Run `find .claude/skills src/user/claude-code/skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when the top-level `skills/` root is absent). Mode per file is **TRIM** (over 65,000 bytes: consolidation primary, removed bytes must exceed added bytes) or **BALANCED** (under 65,000 bytes: additions allowed but offset by removals). Include byte count and mode in each agent's spawning prompt.
 5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
-7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
+7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/claude-code/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/claude-code/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}`, `{model_routing_findings}`, `{repetition_audit_findings}`, and `{bug_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor, model-routing-auditor, repetition-auditor, and bug-auditor spawns in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted for all four). The audit is always-on otherwise.
    Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-skills-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
 9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total byte count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
-10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
+10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then obtain the changelog cache-first: if `~/.claude/cache/changelog.md` has mtime under 24h, read it and skip the network; else fetch the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via Bash `curl -fsSL` (best-effort `-o ~/.claude/cache/changelog.md` refresh — a sandbox write-denial is non-fatal, proceed with the fetched content) or WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent). Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -203,7 +203,7 @@ Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied
 
 ### Phase 4: History Compaction (terminal, gated)
 
-Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `find docs/changelog/skills -name '*.md' -exec wc -l {} + 2>/dev/null` pass against the 300-line per-file budget. All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
+Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touches any `pitfalls.md`. Gate: after Phase 3 fixes are applied and the disambiguation-reviewer is shut down, the orchestrator runs one `find docs/changelog/claude-code/skills -name '*.md' -exec wc -l {} + 2>/dev/null` pass against the 300-line per-file budget. All files under budget → no compactor spawned; record a no-op line in the final report. Otherwise spawn ephemeral `history-compactor` (senior-engineer, Bash + Edit) for the over-budget files.
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect, counted in the master's parity formula. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
@@ -523,12 +523,12 @@ For each: `CHANGE <n>: <title>` / `DIMENSION:` / `IMPACT:` (SUBSTANTIVE | COSMET
 ### Coherence Issues
 ```
 
-### Phase 2: @staff-engineer (Coherence & Renames)
+### Phase 2: @distinguished-engineer (Coherence & Renames)
 
 ```
 Agent(name="coherence-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
-Use the @staff-engineer agent to check cross-skill coherence and recommend fixes.
+Check cross-skill coherence and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
 **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 
@@ -558,12 +558,12 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 <Unresolvable issues, or "None">
 ```
 
-### Phase 3: @staff-engineer (Disambiguation)
+### Phase 3: @distinguished-engineer (Disambiguation)
 
 ```
 Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
-Use the @staff-engineer agent to surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
+Surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
 **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 

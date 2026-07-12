@@ -1,5 +1,48 @@
 # Changelog: vote
 
+## 2026-07-12 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-04..2026-06-08) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Banner entry-point clause reconciled with the blessed team-lead vote_id relay. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: banner clause 3 now names BOTH direct entries (operator /vote AND team-lead's vote_id relay per Argument Handling) — the old "operator is the only direct entry" wording was readable as forbidding the canonical relay path the Delegation Protocol mandates
+
+### Dimensions Evaluated
+Disambiguation (multi-reading). vote's banner is the documented singleton family — no lockstep needed with sibling skills.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Fixed a reviewer-independence hole: the Proposer Exclusion mapping keyed on bare agent names but agent-authored proposals set `created_by` to `@role` — an `@`-prefixed proposer silently escaped exclusion. Pointed Delegation step 2 at `vote_delegate.sh` (verified exists, correct) as the preferred create+payload path. The three historical-audit "defects" (--threshold default, SendMessage wire-form, created_by attribution) were already fixed in the file text — verified, no change needed. `vote_cast.sh` does NOT exist — rejected that innovation-scan claim. Findings: 5 → 2 sub / 0 cos / 1 rej / 0 def / 3 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: Proposer Exclusion mapping now strips a leading `@` before matching — closes the reviewer-independence hole for agent-authored (`@role`) proposals
+- AMPLIFY[SUBSTANTIVE]: Delegation step 2 now points at `vote_delegate.sh` as the preferred create+payload path (maps criticality→threshold, sets --created-by, emits the text-prefixed delegation payload), manual `docket vote create` path retained
+
+### Dimensions Evaluated
+Coherence/Orchestration (independence enforcement — primary), Actionability. Rejected: `vote_cast.sh` adoption (script does not exist). Already-encoded (no action): --threshold explicit pass (line ~158), SendMessage wire-form documentation (lines 42-44), --created-by requirement (line 41/155).
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -206,49 +249,6 @@ All 8; Orchestration (PRIMARY — teammate envelope vs Agent()-return), Over-Eng
 ### Rename
 No rename.
 
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (335 lines). Re-verified docket vote CLI live (cast/result/commit/show/create signatures exact; no `-t/--title`); delegation relay contract vs team-lead.md:279; voter-count table dual-ownership (low=2/medium=2/high=3/critical=4 base; 4/4/6/8 doubled; cap 8) matches Consensus Integration verbatim. Both Phase 0 focus items NO-OP: silent-idle verdict capture already enforced (coordinator parses Agent()-returns → casts to docket → reads `vote result --json`, lines 173/185-204/276); delegation path already coherent (lines 40-43).
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no removable redundancy after prior trim cycles), Orchestration (coordinator-casts architecture, not reviewer self-cast), Coherence (CLI zero-drift + delegation contract + voter-table parity).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Closed a proposer-exclusion gap: the staff row matched `created_by` by exact `"tdd-author"`, missing the real variants `tdd-author-{slug}` / `tdd-author-fix-{N}` (per staff-engineer.md) — a re-spawned author could be selected to review its own TDD. Switched to the prefix idiom already used by the impl-/verifier- rows; dropped the fictional `security-tdd-author` token (exists nowhere in agents/). Net 0.
-
-### Changes
-- Exclusion table: staff row → `starts with "tdd-author"` (covers `tdd-author-{slug}`, `tdd-author-fix-{N}`); security row dropped the nonexistent `security-tdd-author`.
-
-### Dimensions Evaluated
-Coherence + Completeness (PRIMARY — self-review exclusion gap), Over-Engineering (HIGHEST — both Phase 0 memory lessons already covered, NO-OP; no further removable redundancy). CLI zero-drift re-verified.
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Closed two Phase 0 memory failure modes directly in the invocation bar: vote-not-recorded-in-docket and altitude-mismatch-escalated-to-vote. Verified CLI zero-drift; confirmed the prior "adoption gap" signal is stale (all flags already used). Net 0.
-
-### Changes
-- "When to invoke" bar: clause (b) now requires a factual altitude/phase read before voting on reviewer disagreement; added the explicit invariant that a vote is not "done" until recorded in docket (`docket vote list` must show it).
-- Execution Mode Detection: removed a banner-redundant frontmatter parenthetical (offsets the clause-(b) expansion).
-
-### Dimensions Evaluated
-Completeness + Coherence (the two guards), Over-Engineering (HIGHEST — banner-redundant trim offsets the in-place expansion; rejected stale CLI/frontmatter additions). Spec Alignment N/A (no docs/spec/).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +291,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Two coordination fixes at net 0 lines: (1) team-mode delegation finalizes the orphaned `open` proposal on `failed`/timeout; (2) reconciled a crossed shutdown...
 - 2026-05-29: Over-engineering trim on largest skill — collapsed doubled reviewer-count table to a count-only annotation; net -8 lines.
 - 2026-05-30: NO-CHANGE evolve pass — re-verified docket vote CLI flags, delegation relay contract, and exclusion-table agent naming; zero drift.
+- 2026-06-04: Closed two Phase 0 memory failure modes in the invocation bar (vote-not-recorded-in-docket, altitude-mismatch-escalated-to-vote); net 0.
+- 2026-06-05: Closed a proposer-exclusion gap — staff row now matches `tdd-author*` prefix (was exact match, missed re-spawned variants); dropped fictional `security-tdd-author`.
+- 2026-06-08: Phase 1 no-change verdict (335 lines) — re-verified docket vote CLI + delegation relay contract + voter-count table all zero-drift.

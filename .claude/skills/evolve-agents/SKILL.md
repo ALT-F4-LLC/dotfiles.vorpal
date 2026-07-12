@@ -57,10 +57,10 @@ Target agent(s) and historical-audit window are determined by `\$ARGUMENTS`:
 
 - **No argument** (`/evolve-agents`): Improve ALL agents in `agents/*.md`. Historical audit window defaults to 7 days.
 - **Agent name only** (`/evolve-agents staff-engineer`): Improve only the named agent. Pre-flight step 5 validates the name.
-- **`days=N`** (optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents days=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
+- **`days=N`** (`day=N` accepted as alias, optional, e.g. `/evolve-agents staff-engineer days=14` or `/evolve-agents day=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-agents drift=2` or `/evolve-agents staff-engineer drift=0`): Override the genetic-drift rate — number of neutral drift proposals per cycle (see the genetic-drift operator). Integer ≥ 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
-**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS` FIRST; the remaining token (if any) is the agent name. An "agent-name token" means a non-`days=`/non-`drift=` token remains after stripping — `/evolve-agents days=7 drift=0` has NO agent-name token (all-agents mode).
+**Parsing:** strip the `days=N` (or `day=N`) and `drift=N` tokens from `\$ARGUMENTS` FIRST; the remaining token (if any) is the agent name. An "agent-name token" means a non-`days=`/non-`day=`/non-`drift=` token remains after stripping — `/evolve-agents days=7 drift=0` has NO agent-name token (all-agents mode).
 
 ---
 
@@ -77,14 +77,14 @@ Before spawning any agents:
    a consistent date for changelog entries.
 4. **Inventory agent files and sizes** — Run `find agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null` (find tolerates an absent/empty `agents/` root; a zsh `agents/*.md` glob nomatch-aborts even with `2>/dev/null`). Mode per file is **TRIM** (over 80,000 bytes: consolidation primary, removed bytes must exceed added bytes) or **BALANCED** (under 80,000 bytes: additions allowed but offset by removals). Include byte count and mode in each agent's spawning prompt.
 5. **Validate inventory** — If no agent files found, abort. If an agent-name token is present (per Argument Handling parsing) and `agents/<token>.md` does not exist, inform user and abort.
-6. **Check for existing changelogs** — Run `find docs/changelog/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
+6. **Check for existing changelogs** — Run `find docs/changelog/claude-code/agents -name '*.md' 2>/dev/null` to see which changelogs already exist. Spawned agents will need this information.
 7. **Scope-confirmation gate (HARD GATE)** — If no agent-name token is present (all-agents mode, per Argument Handling parsing) AND inventory from step 4 contains >3 agents, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> agents", "Pick specific agent (free-text follow-up)", "Limit to <≤4 named agents>" (multiSelect follow-up from inventory list, max 4), "Abort". List agent names + total byte count in the question body so operator sees est. cycle weight before commit. Skip silently in single-agent mode. Team mode: skip — orchestrator already verified scope.
 8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
    - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}`, `{model_routing_findings}`, `{repetition_audit_findings}`, and `{bug_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor, model-routing-auditor, repetition-auditor, and bug-auditor spawns in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted for all four).
    Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-agents-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
-9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
+9. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then obtain the changelog cache-first: if `~/.claude/cache/changelog.md` has mtime under 24h, read it and skip the network; else fetch the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via Bash `curl -fsSL` (best-effort `-o ~/.claude/cache/changelog.md` refresh — a sandbox write-denial is non-fatal, proceed with the fetched content) or WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent). Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -189,7 +189,7 @@ Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied
 
 `src/user/claude-code/skills/team-doctrine/references/retention-compaction.md` is the sole authority for gate formulas, ledger formats, and invariant checks — cite it, never restate it. After Phase 3 fixes are applied, the orchestrator runs two independent gate checks (read-only):
 
-1. **Changelog arm** — one `find docs/changelog/agents -name '*.md' -exec wc -l {} + 2>/dev/null` pass; any file over the 300-line budget is compactable.
+1. **Changelog arm** — one `find docs/changelog/claude-code/agents -name '*.md' -exec wc -l {} + 2>/dev/null` pass; any file over the 300-line budget is compactable.
 2. **Pitfalls arm** — any entry in THIS repo's `.claude/agent-memory/*/pitfalls.md` that is un-ledgered yet dispositioned (applied / already-encoded / Docket-tracked) per this cycle's or a prior cycle's Phase 1 harvest-outcome report, committed at HEAD, and predating this cycle (full compactability criteria in the retention-compaction master).
 
 If neither arm fires, no compactor is spawned and the Wrap-up report carries a single no-op line. Otherwise spawn ephemeral `history-compactor` (`subagent_type="senior-engineer"`, tools Bash + Edit) with the over-budget file list and the dispositioned-entry list. Compaction is summarize-then-remove, never silent deletion — only content reachable in `git show HEAD:<file>` may be compacted; uncommitted entries are never touched. Per file:
@@ -540,7 +540,7 @@ Date: {today_date} (for changelog). Prioritize the operator experience feedback 
 ## Repetition Audit Findings
 {repetition_audit_findings}
 > **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
-> Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps. Model routing changes MUST be grounded in measured distribution data from Model Routing Audit Findings — do NOT propose routing changes without evidence citations.
+> Prioritize the Suggested focus areas from your agent's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Stall signals (TeammateIdle, -r2 respawns, shutdown-rejection) are the strongest evidence of agent-definition gaps. Model routing changes MUST be grounded in measured distribution data from Model Routing Audit Findings — do NOT propose routing changes without evidence citations. Routing edits to team-lead.md's model-routing surface (the Tiers list + per-spawn routing prose) are OWNED by /evolve-model-distribution — record such a finding as DEFERRED (route: /evolve-model-distribution) instead of applying it in this cycle.
 
 ## Content Gate
 Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject additions failing ANY check. Flag any unescaped `\$`+digit (e.g. `\$1`, `\$ARGUMENTS`) in documentary prose — it renders empty; escape as `\$`.
@@ -578,7 +578,7 @@ Single line with reasoning, or "No rename."
 For each: `ISSUE: <title>` / `AFFECTED_AGENTS: <names>` / `DETAIL: <one-line description + suggested action>`. Or: "None."
 ```
 
-### Phase 2: @staff-engineer (Coherence & Renames)
+### Phase 2: @distinguished-engineer (Coherence & Renames)
 
 ```
 Agent(name="coherence-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
@@ -600,6 +600,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
 5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the five byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir, impact-class). Flag any drift.
 6. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
+7. **Mirrored-doctrine divergence (beyond symmetry_check.py's 5 skill-vs-skill blocks):** for any doctrine block appearing verbatim in 2+ agent files (seat lenses, shared rule paragraphs), `grep -F` a distinctive phrase across all agents/*.md — an odd-one-out carrier means a Phase-1 edit diverged a mirror the checker doesn't cover. Flag for family-wide reconciliation.
 
 ## Output Format
 
@@ -613,7 +614,7 @@ Standard format (4 sections, max 20 lines) per affected agent.
 <Unresolvable issues, or "None">
 ```
 
-### Phase 3: @staff-engineer (Disambiguation)
+### Phase 3: @distinguished-engineer (Disambiguation)
 
 ```
 Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")

@@ -3,7 +3,7 @@ name: tdd
 description: >
   Author a single Technical Design Document at docs/tdd/{slug}.md. Loaded into the
   calling agent's context; the agent drafts the TDD per the format authority below.
-  Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the design for {feature}".
+  Trigger: "create TDD", "draft TDD", "produce a technical design document", "write the technical design for {feature}".
 argument-hint: "<topic>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 effort: xhigh
@@ -165,6 +165,16 @@ malformed frontmatter.
      vs. the workflow's pin, a diagram count vs. the assets actually referenced.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
      target exists and its signature matches before writing it as settled.
+   - **Path citations**: every inline-backtick path the TDD cites must resolve on
+     disk — verify with `Grep`/`Read` while drafting. The acceptance panel
+     mechanizes this post-Write via `~/.claude/scripts/tdd_preflight.sh
+     {output_path} [companion.md]` (repo: `src/user/claude-code/scripts/tdd_preflight.sh`),
+     which chains `check_citations.py` (path existence) with numbered-cross-reference
+     reconciliation against a companion ADR/TDD. **Migration/relocation caveat** —
+     the checker resolves against the CURRENT tree, so a TDD that cites TARGET-STATE
+     (post-move) paths reports them `MISSING`; that is expected. Classify each MISSING
+     hit as target-state, glob-literal, or genuinely-broken before treating it as a
+     failure.
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).
@@ -274,6 +284,10 @@ Before invoking `Write`, verify in the calling agent's context:
 5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (e.g. `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails — it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
 6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
    `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
+   **Meta-TDD caveat** — a TDD that *documents a doc-authoring skill* must show
+   path templates; only ``` fenced blocks are exempt, so put such templates
+   inside a fenced block or use angle-bracket phrasing (`<slug>`, `<NNNN>-<slug>`).
+   Inline-backtick `{slug}`/`{topic}` literals trip this scan.
 7. **Security-track subsections** — if `updated_by` is `@security-engineer`,
    verify §4 (Architecture & System Design) contains three `###`-level
    subsections named exactly `Threat Model`, `Trust Boundaries`, and

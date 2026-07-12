@@ -6,7 +6,7 @@ description: >
   Parses the request, derives every brief field it can support, asks ONE batched
   AskUserQuestion round only for genuinely underdetermined fields, then emits the
   block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
-  nothing. Trigger: "brief", "create brief", "standardize this request".
+  nothing. Trigger: "create brief", "brief this request", "standardize this request".
 argument-hint: "<freeform work request>"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
 disallowed-tools: Edit, Write, Agent, SendMessage
@@ -24,13 +24,13 @@ The deliverable is the block itself, emitted into context. **No file is written.
 
 ## What a good brief is
 
-A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim rather than paraphrasing it — a paraphrased value can silently diverge from what was voted and accepted.This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too."
+A faithful, checkable distillation of the request — not an expansion of it. Derive each field from what the operator actually said; never invent scope, acceptance criteria, or constraints the request does not support. An honest "Out-of-scope: not specified" beats a fabricated boundary. The brief's value is that team-lead can trust every line, so guessing defeats the purpose. Use your read-only tools only to SCOPE the brief (confirm a path exists, size a surface) — never to perform the investigation, verification, or fix the request describes; producing that answer is the dispatched agent's job, not the brief's. When the request points to an accepted artifact (a TDD, spec, ADR, or vote outcome) that fixes a field's value, cite that source line verbatim — with its source locator (file/§/line, or vote ID) — rather than paraphrasing it, so team-lead can re-verify instead of trusting the brief's word; a paraphrased value can silently diverge from what was voted and accepted. This is the brief-quality test: "Show your prompt to a colleague with minimal context on the task and ask them to follow it. If they'd be confused, Claude will be too."
 
 Field semantics (mirror team-lead's Pre-flight + Pattern Decision Tree):
 
 - **Goal** — one sentence naming what to optimize and the done-state. The single most load-bearing line.
 - **Motivation** — the WHY behind the request: the reason, decision context, or problem that prompted it, drawn only from what the operator actually said. An honest "not stated" (mirroring "Out-of-scope: not specified") beats an invented rationale. Context only — never gates or reshapes the brief.
-- **Scope** — files/dirs/surfaces in play, as concretely as the request allows.
+- **Scope** — files/dirs/surfaces in play, as concretely as the request allows. For a cross-cutting "find every reference/usage of X" request, do NOT enumerate a fixed site list as the Scope (it will be incomplete) — frame Scope and Acceptance criteria as an independent repo-root re-derivation (grep from repo root with explicit exemptions) so downstream re-sweeps rather than inheriting a partial list.
 - **Out-of-scope** — surfaces the operator signaled NOT to touch (or "not specified").
 - **Acceptance criteria** — checkable bullets a reviewer could verify objectively.
 - **Size hint** — `trivial` (single edit, ≤3 files, one turn) | `bounded` (1-4 phases, no architecture) | `needs-design` (new architecture, data-model, or cross-cutting concern). Maps to team-lead's Direct/Small vs Medium+ split.
@@ -43,7 +43,7 @@ Derive everything the request supports on your own. For fields that remain genui
 
 Do not ask about fields the request already answers, and do not ask cosmetic questions — a single tightly-scoped round, or none at all when the request is clear, is the target.
 
-When an option would create or route writes to a `docs/` path, check the owning writer in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) §Docs-Path Taxonomy before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
+When an option would create or route writes to a `docs/` path, check the owning writer in the Docs-Path Taxonomy master `~/.claude/skills/team-doctrine/references/docs-paths.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md`) before marking any option Recommended — never recommend a route that bypasses the declared owner (e.g. the seven reserved `docs/spec/` names belong to `init-specs`).
 
 ## Output
 

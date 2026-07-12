@@ -1,5 +1,33 @@
 # Changelog: evolve-coherence
 
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Removed a dead reference to a nonexistent "evolve-suite" skill from the description (confirmed via repo-wide grep — no such skill exists). Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: description no longer claims "(evolve-suite runs it automatically)" — no `evolve-suite` skill exists anywhere in the repo
+
+### Dimensions Evaluated
+Coherence (dead reference). Flagged for a future cycle (shared with evolve-agents' 29-occurrence issue): this file's own description also carries the stale `agents/*.md` / bare `skills/*` path literals — not touched this pass, kept narrowly scoped to the confirmed dead reference.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Collapsed the duplicated intentional-variants whitelist to one canonical source — the Phase 1 spawn template now points to the rubric's inline `(D<n> #<m>)` carve-outs instead of re-enumerating all 9, removing a self-inflicted parity-drift hazard in a skill whose purpose is detecting parity drift. Rejected a Rethink to replace the LLM xref-builder with a deterministic script (embeds fuzzy prose-judgment it cannot safely mechanize). Findings: 2 → 1 sub / 0 cos / 1 rej / 0 def / 0 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: Phase 1 spawn template §Task + rubric line-137 note — replaced the 9-item re-enumerated whitelist with a pointer to the rubric's own inline carve-outs, applied in lockstep across both locations to avoid a stale cross-reference
+
+### Dimensions Evaluated
+Coherence (6), Over-Engineering (4) — primary. Orchestration verified clean (REPORT-AND-ROUTE-ONLY charter enforced at 4 layers: description, banner, No-Edit Guard, `disallowed-tools`). Rejected: xref-builder → deterministic script (D1 prose-skill-name resolution and D2 claimed-agent extraction are fuzzy judgment calls that a script cannot reliably replace; XREF is already signals-to-verify, re-confirmed downstream).
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

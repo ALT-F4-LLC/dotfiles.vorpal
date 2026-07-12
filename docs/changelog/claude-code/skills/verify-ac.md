@@ -1,5 +1,19 @@
 # Changelog: verify-ac
 
+## 2026-07-12
+
+### Summary
+Adopted `ac_check.sh` (verified exists, 5942 bytes) to mechanize FULL-mode step 1's verbatim-command mandate for Docket-issue scope — removes model-paraphrase risk on the exact defect class the mandate warns against. `scope_resolve.sh`/`report_lint.py` confirmed nonexistent — deferred as 3-4-skill cross-cutting extractions. Findings: 3 → 1 sub / 0 cos / 0 rej / 2 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: FULL-mode step 1 — added a Docket-issue-scope clause pointing to `~/.claude/scripts/ac_check.sh` as the mechanized verbatim-command runner, with the known differently-named-heading extraction gap called out
+
+### Dimensions Evaluated
+Actionability (primary — machine-executed AC evidence), Completeness (closes model-paraphrase gap), Over-Engineering (single scoped addition, no bloat). No load-time-eval bug found (scanned for the code-review-verdict-class defect as a precaution — clean). Deferred: `ac_check.sh` is a duplicate adoption opportunity shared with code-review-verdict (batch together); `scope_resolve.sh` 3-skill extraction (verify-ac/code-review-verdict/simplify-scout) and `report_lint.py` — both confirmed nonexistent, routed to Phase 2.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

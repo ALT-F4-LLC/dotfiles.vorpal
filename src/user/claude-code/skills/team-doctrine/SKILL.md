@@ -22,6 +22,8 @@ that file only when a LOCAL-copy pointer sends you here (TDD conformance check, 
 drift audit, or an evolve-* cycle). Never invoke this skill; there is nothing to execute, and
 doing so would violate R2 Skill Invocation Restraint (`references/runtime-discipline.md`).
 
+**Index maintenance:** when adding/removing a `references/*.md` file, update the table below in the same change — `ls references/*.md | wc -l` MUST equal the table's data-row count.
+
 | Reference file | Master for | Cited by (LOCAL-copy consumers) |
 |---|---|---|
 | `references/runtime-discipline.md` | R1-R7 canonical bodies + per-agent applicability matrix | all 7 agents (full bodies where applicable) + `team-lead.md` (LOCAL bodies for R1/R3/R4/R6, pointer for R2/R5/R7) |
@@ -37,3 +39,6 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/design-gate.md` | Design-Complete Gate (per-pattern artifact/acceptance table, Design-source grammar, mid-cycle interaction) | `team-lead.md` only (Rule 10 + choke-point hooks — pointer-only, no LOCAL copy) |
 | `references/fable-completeness-heuristics.md` | Fable-distilled completeness heuristics (provenance, honest scope, full bullet bodies) | `team-lead.md` (compact LOCAL copy) |
 | `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` (compact LOCAL copy) |
+| `references/authoring-verification-gates.md` | Authoring verification gates for TDD/review authors (executable-claim, negative-claim re-grep, insertion-anchor, byte-budget) | `staff-engineer.md`, `distinguished-engineer.md` |
+| `references/docket-cli.md` | Docket CLI command reference (byte-exact vs live `docket --help`, version b59dd2f) | `project-manager.md`, `sdet.md`, `senior-engineer.md` |
+| `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md` |

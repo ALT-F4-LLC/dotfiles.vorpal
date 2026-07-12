@@ -1,5 +1,48 @@
 # Changelog: tdd
 
+## 2026-07-12 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-08..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Trigger phrase made disjoint from ux-spec's design-spec triggers. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: trigger "write the design for {feature}" → "write the technical design for {feature}" — the old phrase co-fired with ux-spec's "design spec for the new CLI"/"produce a design spec" on user-facing features; a routing classifier could not pick a single owner
+
+### Dimensions Evaluated
+Disambiguation (confusable-name).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Added a meta-TDD caveat to Validation §6's placeholder scan (docs documenting a doc-authoring skill need fenced/angle-bracket path templates, not inline-backtick literals) and a Path-citations bullet to Authoring §5, adopting `tdd_preflight.sh` (verified exists) with a migration/relocation caveat so target-state citations aren't flat-failed. Findings: 2 → 2 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Validation §6 placeholder scan — added a meta-TDD caveat (fenced blocks or `<slug>`/`<NNNN>-<slug>` phrasing for docs about doc-authoring skills; inline `{slug}` literals still trip the scan)
+- AMPLIFY[SUBSTANTIVE]: Authoring §5 — added a Path-citations bullet: verify inline-backtick citations resolve while drafting; the acceptance panel mechanizes this post-Write via `tdd_preflight.sh`, with a migration/relocation caveat (target-state paths report MISSING against the current tree — classify before treating as failure)
+
+### Dimensions Evaluated
+Actionability/Completeness (primary — both target documented recurring pitfalls). Deferred: `doc_validate.py`/`slug.sh` cross-skill extraction (anchored at adr, shared with prd/ux-spec). Follow-up flagged (script-logic, out of prose scope): `check_citations.py`/`tdd_preflight.sh` should classify MISSING-citation causes rather than flat-fail migration TDDs — the SKILL.md caveat is the prose mitigation, not the root-cause fix.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary
@@ -217,50 +260,6 @@ All 8; Over-Engineering primary (no trim slack at 302/500); Coherence (COUPLING 
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. All 3 cross-repo historical signals verified already encoded against the LIVE file (regex-AC run-and-verify §11(c) L224-227 + §5; scope-bounded "verified" claims §5 L146-148; named-source-vs-live-artifact §5 L143-145). Reasoning-echo clean; $-escape clean; no over-prescription trims available without breaking deterministic format authority.
-
-### Changes
-- None (NO-OP verdict, grep-cited against live file per the already-present check).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Closed residual halves of the cross-project verified-claim pitfalls: Authoring §5 now bars scope-overreach on "verified" claims (scope must match what was checked, artifact named); §11(c) tightened from "executable" to run-with-hit-set-verified. Offset by removing two security Failure-Mode rows redundant with Validation §7/§8 + generic abort row. Net +0 (303/500).
-
-### Changes
-- Authoring §5: "verified" label must not claim broader scope than checked; name the artifact/command behind it.
-- §11(c): grep/regex AC must be run with hit set verified, not merely "executable" (staff-engineer.md Executable-claim-gate alignment).
-- Failure Modes: dropped two security rows (restate Validation §7/§8; generic row carries the abort template).
-
-### Dimensions Evaluated
-Completeness (PRIMARY — verified-claim pitfalls), Actionability, Over-Engineering (HIGHEST — net 0), Coherence (paths/when_to_use rejected/parity-bound; docket co-authoring N/A — zero docket refs since c10195b), Skill Design, Orchestration, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Doc-family parity + closure of cross-project pitfall (a) (TDD asserts a "verified" fact the committed artifact contradicts): added Authoring §5 requiring embedded technical assertions (code/config/SQL snippets, cross-platform/engine claims, Implementation-Phase grep ACs, module/API/test-infra references) to be verified against their actual target before being written as settled — mirrors adr:148 ("State unverified claims as assumptions, not facts"), which tdd lacked despite carrying more such claims. Partially offset by trimming §4 Mermaid restatement and §1 tail. Net +5 (303/500).
-
-### Changes
-- Authoring Procedure: new §5 verify-embedded-claims step (adr parity); §4 Mermaid compressed (dropped Failure-Modes ADR-routing restatement, kept Validation §5 gate); §1 tail tightened; prior §5 → §6.
-
-### Dimensions Evaluated
-Completeness (PRIMARY — pitfall (a)), Coherence (adr↔tdd authoring-step parity), Over-Engineering (HIGHEST — addition partly offset). Priority item 2 (under-matching grep AC) NO-OP — already at §11(c). Priority item 3 (concurrent-authorship) NO-OP — Sole-editor rule owned by security-engineer.md + staff-engineer.md.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +287,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Over-engineering trim collapsing redundant Authoring Procedure steps 5/6/7 into step 3, matching prd's leaner pattern; net -6.
 - 2026-06-05: Added fenced-code-block carve-out to §3 Section-order and §4 Alternatives-count validations, lockstep with adr/prd/ux-spec.
 - 2026-06-05: Added robustness bar for grep/regex-based §11 acceptance criteria (must be executable, cover all matches); net +3.
+- 2026-06-08: Added Authoring §5 verify-embedded-claims step (adr parity); trimmed §4 Mermaid restatement + §1 tail; net +5 (303/500).
+- 2026-06-09: Closed cross-project verified-claim pitfalls in Authoring §5 + §11(c); trimmed 2 redundant security Failure-Mode rows; net +0 (303/500).
+- 2026-06-09: Mythos/Fable-5 cycle audit — NO-OP; 3 cross-repo signals already encoded (regex-AC, scope-bounded verified claims, named-source-vs-live-artifact).

@@ -5,7 +5,7 @@ description: >
   across four dimensions, emit a Coherence Report + Remediation Manifest, and ROUTE fixes to
   evolve-agents/evolve-skills. REPORT-AND-ROUTE ONLY: despite the evolve- prefix it NEVER edits
   any agent/skill file and NEVER self-invokes the evolve-* skills.
-  Run as a post-edit gate after standalone evolve-agents/evolve-skills edits (evolve-suite runs it automatically).
+  Run as a post-edit gate after standalone evolve-agents/evolve-skills edits.
   Trigger: "evolve coherence", "audit coherence", "check agent/skill coherence", "cross-reference audit".
 argument-hint: "[dimension(s) d1..d4]"
 effort: xhigh
@@ -134,7 +134,7 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 - Rule-numbering: extract the highest top-level rule number per agent (`grep -noE '^[0-9]+\.'` in the rules section) vs expected count — **SKIP this numeric parse for `@senior-engineer`** (unnumbered bullets); confirm its 10 rules by cross-tag prose match.
 - Doubling/panel: compare `skills/vote/SKILL.md` panel numbers and `skills/code-review-verdict/SKILL.md` single-default/opt-up language against team-lead Rule 8.
 
-> **Intentional variants (do NOT mis-flag)** are enumerated inline per dimension (each carries a `(D<n> #<m>)` carve-out) and re-listed in the Phase 1 spawn template's `## Task` — reviewers honor them from those two sources.
+> **Intentional variants (do NOT mis-flag)** are enumerated inline per dimension (each carries a `(D<n> #<m>)` carve-out) — this is the single canonical list; the Phase 1 spawn template points here rather than re-listing them, so there is one source and no whitelist drift.
 
 ---
 
@@ -284,7 +284,7 @@ Verified goal: {verified_goal} (pre-verified — re-verify if your understanding
 > Before emitting ANY finding, confirm it against ground truth. To CONFIRM a pinned XREF signal, a ranged `Read` of the cited `file:line` suffices (cheaper than a fresh whole-file grep); re-grep only for ABSENCE/coverage checks (a stale name anywhere, a missing carrier) where no line anchor exists. XREF is a signal; a finding built on an unconfirmed signal is reject-class.
 
 ## Task
-Read `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric (it is NOT in this prompt), then apply the D<n> invariants + detection seeds. HONOR the whitelist of intentional variants — do NOT mis-flag design-qa's "no Question" ladder, the byte-identical HARVEST blocks, the `Skill(name)` placeholder, the meta-instruction `Skill(verify-ac)` rule-body example in staff-engineer.md, bundled-runtime `verify`, agent-banner semantic parity, the 3 BANNER families (incl. init-specs's shorter body + vote's singleton + leaf trailing clauses), review-and-comment's intentionally non-CANONICAL skill-specific banner, or the one-directional COUPLING bridges (simplify-scout, ux-spec).
+Read `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric (it is NOT in this prompt), then apply the D<n> invariants + detection seeds. HONOR every intentional-variant carve-out — each inline `(D<n> #<m>)` carve-out in the rubric plus the "Intentional variants (do NOT mis-flag)" note — do NOT flag any whitelisted variant as drift.
 
 ## Output (per finding)
 FINDING <n>: <title> / DIMENSION: D<n> / LOCATIONS: <file:line both sides> / SEVERITY: <ladder> / DESCRIPTION: <...> / FIX-OWNER: evolve-agents|evolve-skills|both (CANONICAL: <side>). Or "No findings." SendMessage the orchestrator verbatim, then mark your task completed.

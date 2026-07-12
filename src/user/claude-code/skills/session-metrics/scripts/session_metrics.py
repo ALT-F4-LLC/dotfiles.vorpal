@@ -2,8 +2,9 @@
 """Aggregate current-session Claude Code metrics from the local transcript.
 
 Stdlib only — no third-party deps. Source of truth is the session JSONL
-transcript under ~/.claude/projects/<cwd-slug>/; OTEL is never consulted
-(it is a remote push-only sink with no local read path). Emits a JSON
+transcript under ~/.claude/projects/<cwd-slug>/; aggregate metrics (e.g. OTEL)
+are never consulted — they cannot attribute tokens/cost to THIS specific
+session or reconstruct per-session tool/file/timeline detail. Emits a JSON
 summary to stdout followed by the absolute path to a self-contained HTML
 report.
 """
@@ -315,7 +316,8 @@ def build_summary(cwd, project_dir, session_path, resolution_method):
     return {
         "note": (
             "Metrics are derived entirely from the local session transcript; "
-            "OTEL was not consulted (OTEL is a remote push-only sink with no local read path)."
+            "aggregate metrics (e.g. OTEL) can't attribute to this specific session "
+            "or reconstruct per-session detail, so they are not consulted."
         ),
         "session": {
             "id": session_id,

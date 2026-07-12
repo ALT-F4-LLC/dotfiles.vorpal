@@ -1,5 +1,33 @@
 # Changelog: simplify-scout
 
+## 2026-07-12 (Phase 2 coherence pass)
+
+### Summary
+Description aligned with this cycle's Role Detection expansion. Findings: 1 → 1 cos / 0 sub / 0 rej / 0 def / 0 enc
+
+### Changes
+- CULL[COSMETIC]: frontmatter description now names @distinguished-engineer (deep-impl) alongside @senior-engineer, matching Role Detection/table/error-text edited in Phase 1
+
+### Dimensions Evaluated
+Coherence (frontmatter-vs-body caller set — the description is the routing-visible surface in the system skill list).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+One coherence fix: Scan Procedure step 1's role-gate shorthand "ABORT if not @senior-engineer" dropped @distinguished-engineer, contradicting Role Detection and the Positioning table which both authorize the deep-impl caller (confirmed via distinguished-engineer.md's own explicit Skill(simplify-scout) invocation guidance). Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- CULL/FIX[SUBSTANTIVE]: role-gate "ABORT if not @senior-engineer" → "ABORT if the caller is neither @senior-engineer nor @distinguished-engineer" — aligns the procedural gate with Role Detection/Positioning; prevents incorrect abort of a valid deep-impl invocation
+
+### Dimensions Evaluated
+All 8; Coherence primary. Over-Engineering: no trim candidates (well under budget). 12-principle table re-verified exact-match against senior-engineer.md; no cross-file drift found elsewhere.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

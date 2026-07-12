@@ -3,7 +3,7 @@ name: evolve-model-distribution
 description: >
   Full team-spawning evolve-* orchestrator that collects LOCAL per-spawn + REMOTE aggregate
   Claude Code model metrics, categorizes every spawn into a task-tier → model-tier taxonomy,
-  and applies evidence-grounded, operator-gated model-routing edits to team-lead.md.
+  and applies evidence-grounded, operator-gated model-routing edits to the team-lead.md build source (src/user/claude-code/agents/).
   Trigger: "evolve model distribution", "improve model routing", "model distribution", "audit model tiers".
 argument-hint: "[days=N]"
 effort: xhigh
@@ -72,7 +72,7 @@ Before spawning any teammates:
 
 ## Changelog Format
 
-All model-routing changes tracked in `docs/changelog/claude-code/model-distribution/<target>.md` (the sole current target is `team-lead.md`; create the directory if needed).
+All model-routing changes tracked in `docs/changelog/claude-code/model-distribution/<target>.md` (the sole current `<target>` is `team-lead` — the changelog file is `team-lead.md`, named for the routing edit target; create the directory if needed).
 
 **Exact format — no deviations:** `# Changelog: model-distribution/<target>` > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order:
 
@@ -224,7 +224,7 @@ grep -nE '^- .(gold|silver|bronze). ' src/user/claude-code/agents/team-lead.md  
 
 Read the `Tiers (three named tiers` preamble (its escape-hatch prose: "exceed the tier UPWARD … NEVER … below `silver`") AND every `^- ` bullet beneath it — `gold`/`silver`/`bronze`, three bullets total, security-depth folded into the `silver` bullet (no separate security-tier bullet exists) — and build category → canonical-tier from those bullets alone.
 
-**Tier-invariant floor.** `silver` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `verifier*` / `security-*` sit AT `silver`; `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `gold` (falling back to `silver` only when gold is unavailable — never below). None of these roles are ever downgrade candidates — a below-`silver` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`bronze` ≤ Medium, `silver` at static-Large, `gold` at the >1-day-horizon deep-impl arm).
+**Tier-invariant floor.** `silver` is the standing authoring/review/verify FLOOR, not a ceiling: `reviewer*` / `security-*` / `ux-*` and the new-test-architecture `verifier-criteria`/`verifier-integration` sit AT `silver` (routine single `verifier` runs `bronze` — NOT a floor role); `tdd-author*`, Medium+ `advisor`, `investigator`/`innovation-scanner`, and the >1-day-horizon deep-impl arm route ABOVE it to `gold` (falling back to `silver` only when gold is unavailable — never below). None of these roles are ever downgrade candidates — a below-`silver` measurement for any of them is a routing DEFECT (class 1/2 below), never an acceptable downgrade. The task-tier axis (Direct / Small / Medium / Large) changes the model at exactly ONE seam: `impl-*` (`bronze` ≤ Medium, `silver` at static-Large, `gold` at the >1-day-horizon deep-impl arm).
 
 #### Fallback-vs-intentional corroboration (C2b — the `.meta.json` sidecar decides)
 
@@ -244,7 +244,7 @@ A below-floor measurement on a hard-floor role is a DEFECT regardless of the sid
 
 Each disposition requires an evidence citation — session path + measured per-role count + outcome signal. Disposition is a **FILE-EDIT** (change the Tiers/prose) or a **RUNTIME-DISCIPLINE REPORT** (surface to the operator, NO file edit).
 
-1. **Under-powered defect** — a hard-floor role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) measured BELOW `silver` (after alias→tier translation). The file already mandates `silver`, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the Tiers entry is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
+1. **Under-powered defect** — a hard-floor role (`tdd-author*` / `reviewer*` / `security-*` / `ux-*`, plus new-test-architecture `verifier-criteria`/`verifier-integration` — but NOT routine single `verifier`, a legitimate `bronze`) measured BELOW `silver` (after alias→tier translation). The file already mandates `silver`, so team-lead deviated at spawn time → **RUNTIME-DISCIPLINE REPORT** with the offending session refs; NO file edit unless the Tiers entry is genuinely ambiguous, in which case → **FILE-EDIT** to sharpen the prose.
 2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`TeammateIdle`, `-r2` respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
 3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`.meta.json.model` PRESENT, per C2b) AND non-trivial Mimir cost → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates.
 4. **Fallback-drift (corroborated)** — a role whose `.meta.json.model` is ABSENT (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
@@ -317,7 +317,7 @@ Every evidence-confirmed proposal MUST clear an explicit operator approval befor
 For each operator-approved proposal the orchestrator applies the edit to `src/user/claude-code/agents/team-lead.md` ITSELF. Re-locate the edit site by content string (never a line number — line refs drift; grep the Tiers/prose per the Categorization AUTHORITY rule), Read `team-lead.md` in-session before the first Edit, and apply exactly one Edit per approved proposal:
 
 - **FILE-EDIT (upgrade / policy-stale)** — edit the Tiers-list bullet or the routing-prose string the proposal named. These two co-located structures are the ONLY editable surface; there is NO per-role `model=` literal in any §Spawning Template (that surface is PHANTOM — do not invent one). An UPGRADE raises a category's canonical tier; a policy-stale fix corrects a suspended alias (`haiku`) to a live one (`opus` / `best`).
-- **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower the Tiers entry. The hard-floor authoring/review/verify roles (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) are NEVER downgrade candidates.
+- **Downgrade → TRIAL-ONLY, never a direct permanent edit.** "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL, so a downgrade is always speculative. Record it as a mandatory `Trial:` bullet under `### Routing Changes` (Hypothesis → applied → MEASURE in the next cycle's audit → adopt-or-rollback); do NOT permanently lower the Tiers entry. The hard-floor authoring/review/verify roles (`tdd-author*` / `reviewer*` / `security-*` / `ux-*`, plus new-test-architecture `verifier-criteria`/`verifier-integration`) are NEVER downgrade candidates.
 - **RUNTIME-DISCIPLINE REPORT** — no file edit; the file is already correct (team-lead deviated at spawn time), so surface the finding to the operator and record it.
 
 After applying the approved batch, prepend ONE new entry to `docs/changelog/claude-code/model-distribution/team-lead.md` per the Changelog Format (four H3 sections; never edit a prior entry). Every non-applied proposal — evidence-gate mismatch, operator rejection, or speculative/regression-risk — appears under `### Rejected`; every downgrade appears as a `Trial:` line under `### Routing Changes`. **Effort guardrail:** never route a role that needs an `effort` level to `haiku` (which supports no effort levels).
@@ -335,7 +335,7 @@ You are the coherence verifier. Read-only. You edit NOTHING — the orchestrator
 The orchestrator has just applied model-routing edits to src/user/claude-code/agents/team-lead.md. Verify the edited file is INTERNALLY consistent:
 1. Re-read the `Tiers (three named tiers` list and the `**Per-spawn model routing` prose (grep by content string, never a line number).
 2. Confirm the Tiers bullets and the routing prose AGREE — no tier named in one contradicts the other, no dangling reference to a tier that was renamed or removed.
-3. Confirm NO authoring/review/verify role (`tdd-author*` / `reviewer*` / `verifier*` / `security-*`) is routed BELOW `silver` (the "NEVER … below `silver`" hard floor).
+3. Confirm NO authoring/review/verify role is routed BELOW `silver` — re-read the live escape-hatch prose for the exact floor set (currently `tdd-author*` / `reviewer*` / `security-*` / `ux-*` + new-test-architecture `verifier-criteria`/`verifier-integration`; routine single `verifier` legitimately runs `bronze`), never a static list, since the set drifts.
 4. Confirm no edit introduced a suspended alias (`haiku`) or a nonexistent tier.
 
 ## Output Format

@@ -1,5 +1,48 @@
 # Changelog: evolve-skills
 
+## 2026-07-12 (Phase 4 history compaction)
+
+### Summary
+Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 2 coherence pass)
+
+### Summary
+Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-config. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: pre-flight step 10 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback
+
+### Dimensions Evaluated
+Efficiency (repetition-auditor: repeated re-fetch of an unchanged ~400KB changelog). Still over the 65,000B budget (72,670B) — see the deferred shared-doctrine extraction Trial recorded in this cycle's earlier entry.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Self-review: fixed the never-existent `docs/changelog/skills` path (3 sites, silently zeroed changelog discovery + the Phase 4 compaction gate) and the stale `@staff-engineer` labels on the Phase 2/3 templates that actually spawn `distinguished-engineer` (confirmed contradicting the 2026-07-11 entry below). Findings: 9 → 1 sub / 1 cos / 0 rej / 5 def / 2 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: `find docs/changelog/skills` → `.../claude-code/skills` at pre-flight step 7 (2×) + Phase 4 gate — dir never existed, `2>/dev/null` hid the error so compaction could never trigger (bug-auditor confirmed, live-verified)
+- CULL[SUBSTANTIVE]: dropped contradictory "Use the @staff-engineer agent" directive from Phase 2/3 prompt bodies; relabeled headings @staff-engineer → @distinguished-engineer to match pinned spawn params (innovation-scanner Retire, confirmed)
+
+### Dimensions Evaluated
+Coherence (routing labels), Actionability (broken find command), Over-Engineering (net −13 B; sustainable TRIM = deferred Phase-0-template extraction, cross-cutting with evolve-agents/evolve-config). Deferred: docs-cache WebFetch adoption, Findings-Ledger validator script, changelog_normalize.py, shared Phase-0 template extraction, path-normalization mismatch vs evolve-agents (all cross-cutting, routed to Phase 2 / future Trial).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -183,80 +226,6 @@ All 8; Over-Engineering primary (no CULL earns a cited signal; drift/trial trait
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block (genome/trait/fitness-signal vocabulary), natural-selection dispositions (AMPLIFY/CULL/RETAIN), Genetic-Drift Operator (fitness-independent neutral substitution, skill-path grep for no-signal-set, `drift=N` parameter), Scientific Trial Protocol (hypothesis → operator-approval HARD GATE → measure → adopt-or-rollback), biodiversity invariant, and speciation gate. CANONICAL:EVOLUTION-MODEL byte-identical across evolve-agents/evolve-skills/evolve-coherence (hash e9ef8d09).
-
-### Changes
-- CANONICAL:EVOLUTION-MODEL block added (Phase A); byte-identical across all three evolve-* carriers.
-- Innovation Mandate updated to cite three variation sources: innovation-scanner, historical-auditor, genetic-drift operator.
-- Genetic-Drift Operator section added: structural no-signal-set via `grep` over `<skill-path>/SKILL.md`, `{drift_seed} mod len(set)` target selection, S2 reproducibility caveat.
-- Scientific Trial Protocol added: Hypothesis → operator approval → measurement → adopt-or-rollback; `Trial:`/`Drift:` changelog recording.
-- Selection disposition rule added to Phase 1 template (AMPLIFY/CULL require cited fitness signal; RETAIN is default).
-
-### Dimensions Evaluated
-Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers); Completeness (selection dispositions, drift operator, trial protocol coverage); Skill Design Quality (structural target selection, determinism caveat).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 8 entries (2026-05-17..2026-05-30) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-No edits (491 lines, net 0). All Phase 0 signals verified to no-change: `days=` plumbing complete (L8/55-57/77-79, incl. all-skills `days=`-only path); three innovation suggestions rejected (audit-profile gate = over-engineering near cap; shared enumeration = breaks parallelism; Phase-3 scoped wc = correctness regression vs ADR 0001 standing budget).
-
-### Changes
-- None applied. Innovation-scanner template confirmed byte-symmetric with evolve-agents (modulo established noun substitutions).
-
-### Dimensions Evaluated
-All 8. Over-Engineering primary (rejected all 3 additions on a 491-line near-cap file). Coherence: innovation-scanner sister parity verified PASS; $-escape clean.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 35 entries (2026-03-19..2026-05-17) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 35 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 parity fix: escaped 5 documentary `\$ARGUMENTS` occurrences (L51/57/67/77/217) in Argument Handling + Pre-flight prose. Backtick code spans do NOT exempt substitution (empirically confirmed: `days=1` substituted inside backticks this cycle) — bare occurrences rendered empty/wrong at invocation. Net 0 (378 lines).
-
-### Changes
-- L51/57/67/77/217: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose; L307 meta-rule already escaped, untouched. Lockstep with evolve-agents.
-
-### Dimensions Evaluated
-Skill Design Quality (arg-escape correctness); Coherence (sister parity; CANONICAL:HARVEST byte-symmetry verified PASS).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -311,3 +280,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Closed coordination/handoff gaps: de-dup transcript counts in the historical-auditor (raw grep hits ~10x inflated by replication), made the re-invocation sig...
 - 2026-05-29: Added a scope-confirmation HARD GATE to Pre-flight (new step 9), achieving parity with evolve-agents step 7 (Phase 2 coherence).
 - 2026-05-30: Added a Phase-0-findings-are-signals-not-facts rule to the Phase 1 template, governing both the Docket CLI and Historical audit blocks — closes the recurring...
+- 2026-06-09: Phase 2 parity fix — escaped 5 documentary `\$ARGUMENTS` occurrences, lockstep with evolve-agents; net 0 (378 lines).
+- 2026-06-09: Compacted 35 entries (2026-03-19..2026-05-17) into Compacted history per ADR 0001.
+- 2026-06-10: No edits (491 lines) — days= plumbing complete; 3 innovation suggestions rejected as over-engineering/regression.
+- 2026-06-10: Compacted 8 entries (2026-05-17..2026-05-30) into Compacted history per ADR 0001.
+- 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL, selection dispositions, Genetic-Drift Operator, Scientific Trial Protocol.

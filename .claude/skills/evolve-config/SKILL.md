@@ -7,7 +7,7 @@ description: >
   agent memory plus a git-history audit of the config sources. Evolves the config SOURCE
   (Rust builders), NOT live settings.json — for a one-off settings.json/permission/env edit
   use the bundled update-config skill (/config).
-  Trigger: "evolve config", "improve config", "review config", "refine config sources".
+  Trigger: "evolve config", "improve config", "review config sources", "refine config sources".
 argument-hint: "[days=N] [drift=N]"
 effort: xhigh
 allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "WebFetch", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "Agent", "AskUserQuestion"]
@@ -65,10 +65,10 @@ Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele-subs
 `\$ARGUMENTS` supplies only the historical-audit window and the drift rate — with a single config target, no name token exists:
 
 - **No argument** (`/evolve-config`): Full review of the Claude Code config genome; the historical-audit window falls back to its 7-day default.
-- **`days=N`** (optional, e.g. `/evolve-config days=14`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
+- **`days=N`** (`day=N` accepted as alias, optional, e.g. `/evolve-config days=14` or `/evolve-config day=7`): Override the historical-audit window. Default `7`. Reject values outside `1..90` and abort with a usage note.
 - **`drift=N`** (optional, e.g. `/evolve-config drift=2` or `/evolve-config drift=0`): Override the genetic-drift rate — number of neutral drift proposals per cycle (see the genetic-drift operator). Integer ≥ 0; default `1`; `drift=0` disables drift for the cycle. Reject negatives with the same usage-note-and-abort idiom as `days=N`.
 
-**Parsing:** strip the `days=N` and `drift=N` tokens from `\$ARGUMENTS`; any remaining token is ignored with a one-line note (this skill takes no target-name argument).
+**Parsing:** strip the `days=N` (or `day=N`) and `drift=N` tokens from `\$ARGUMENTS`; any remaining token is ignored with a one-line note (this skill takes no target-name argument).
 
 ---
 
@@ -88,7 +88,7 @@ Before spawning any agents:
    - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
    Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor spawn in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted). The audit is always-on otherwise.
    Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-config-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
-7. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then fetch the changelog, preferring the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent) or Bash `curl -fsSL`. Distil a concise digest — the installed version plus the most recent releases' headline entries focused on SETTINGS, PERMISSIONS, SANDBOX, HOOKS, and ENV-VAR changes (≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails, set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` so the docs-researcher template stays valid and the cycle still runs.
+7. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then obtain the changelog cache-first: if `~/.claude/cache/changelog.md` has mtime under 24h, read it and skip the network; else fetch the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via Bash `curl -fsSL` (best-effort `-o ~/.claude/cache/changelog.md` refresh — a sandbox write-denial is non-fatal, proceed with the fetched content) or WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent). Distil a concise digest — the installed version plus the most recent releases' headline entries focused on SETTINGS, PERMISSIONS, SANDBOX, HOOKS, and ENV-VAR changes (≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails, set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -165,7 +165,7 @@ Spawn ONE @staff-engineer teammate (read-only) over the config genome per the Ph
 **After the Phase 1 teammate completes**, the orchestrator:
 1. Reviews recommendations against the **Content Gate** — reject any failing check.
 2. Applies approved changes via Edit to the config SOURCES (Read each of `src/user.rs` / `src/user/claude_code.rs` / the scripts in-session before its first Edit; target content strings, never stale line numbers; apply exactly one Edit per approved CHANGE). NEVER edit any deployed `~/.claude/` file (per CANONICAL:SOURCE-OF-TRUTH).
-3. **Verify the generated output.** A config change is not done until the build output is checked. Confirm the changed setter produces the intended `settings.json` field (re-read the `claude_code.rs` `#[serde(...)]` attribute for the field to confirm rename/skip semantics; a `skip_serializing_if` field set to its default produces NO output diff and fails the Content Gate Behavioral check). For script edits, confirm the script still parses (`bash -n src/user/<script>.sh`).
+3. **Verify the generated output.** A config change is not done until it compiles AND the build output is checked. For any Rust-source edit, run `cargo check` first (note a skip if the toolchain is unavailable) — it catches a call to a non-existent setter or a type error that the serde-attribute read below (which assumes the code compiles) cannot. Then confirm the changed setter produces the intended `settings.json` field (re-read the `claude_code.rs` `#[serde(...)]` attribute for the field to confirm rename/skip semantics; a `skip_serializing_if` field set to its default produces NO output diff and fails the Content Gate Behavioral check). For script edits, confirm the script still parses (`bash -n src/user/<script>.sh`).
 4. Writes/normalizes `docs/changelog/claude-code/config/<artifact-name>.md` per Changelog Format.
 5. **Self-correct**: if a change worsens the config without behavioral gain, revert and retry.
 
@@ -187,7 +187,7 @@ Gate: `TaskList()` shows the Phase 1 task `completed`, all Phase 1 edits applied
 The Phase 2 teammate:
 1. Reads the freshly-improved config sources (`src/user.rs`, `src/user/claude_code.rs`, the two scripts) and THIS SKILL.md.
 2. Verifies internal coherence: every `with_*` call in `src/user.rs` resolves to a setter in `claude_code.rs`; the `status_line`/hook wired command paths match the deployed script names; no contradictory permission/sandbox rules (an `allow` rule shadowed by a `deny`, a `deny_read` path the work needs).
-3. Verifies the four CANONICAL blocks in THIS SKILL.md are byte-identical to the evolve-agents/evolve-skills siblings where shared (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL structure); flags any drift.
+3. Verifies the six CANONICAL blocks in THIS SKILL.md are byte-identical to the evolve-agents/evolve-skills siblings where shared (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL structure, HARVEST, DISAMBIGUATION-CHARTER; SOURCE-OF-TRUTH is config-only); flags any drift.
 4. Marks task completed and reports structured recommendations.
 
 **After completion**, the orchestrator applies coherence fixes via Edit (config sources OR this SKILL.md's CANONICAL blocks), applying each parity-bound fix as the identical OLD→NEW to ALL family members in one turn, then verifies byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line). Updates the changelog for any affected fix.
@@ -490,7 +490,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 ## Task
 1. Read the freshly-improved config sources: src/user.rs, src/user/claude_code.rs, src/user/statusline.sh, src/user/teammate-idle-hook.sh — and THIS SKILL.md.
 2. Verify config coherence: every `with_*` call in src/user.rs resolves to a setter in claude_code.rs; the status_line and TeammateIdle-hook wired command paths match the deployed script names; no contradictory permission/sandbox rules (allow shadowed by deny, deny_read path the work needs); no dead setter (defined, never called) introduced this cycle.
-3. Verify the four CANONICAL blocks in THIS SKILL.md (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL, SOURCE-OF-TRUTH) are byte-identical to the evolve-agents/evolve-skills siblings where shared (BANNER and EVOLUTION-MODEL are family-wide shared; DOCS-PATHS-LOCAL shares structure with config-specific paths; SOURCE-OF-TRUTH is config-only). Flag any drift in the shared blocks.
+3. Verify the six CANONICAL blocks in THIS SKILL.md (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL, SOURCE-OF-TRUTH, HARVEST, DISAMBIGUATION-CHARTER) are byte-identical to the evolve-agents/evolve-skills siblings where shared (BANNER, EVOLUTION-MODEL, HARVEST, and DISAMBIGUATION-CHARTER are family-wide shared; DOCS-PATHS-LOCAL shares structure with config-specific paths; SOURCE-OF-TRUTH is config-only). Flag any drift in the shared blocks.
 4. Mark task completed and report structured recommendations.
 
 ## Output Format

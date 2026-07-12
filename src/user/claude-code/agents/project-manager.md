@@ -341,29 +341,9 @@ On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo 
 
 ## Docket CLI Reference
 
-```
-docket init / version / board --json [--expand] [-a ASSIGNEE] [-l] [-p] / next --json [--limit N] [-l] [-p] [-T] [-s] / stats
-docket plan --json [--root ID] [--label LABEL] [-s STATUS]
-docket issue create -t TITLE [-d DESC] [-p PRIORITY] [-T TYPE] [-l LABEL] [--parent ID] [-f FILE ...] [-a ASSIGNEE] [-s STATUS]
-docket issue list --json [-a ASSIGNEE] [-s STATUS] [-p PRIORITY] [-l LABEL] [-T TYPE] [--parent ID] [--tree] [--roots] [--sort FIELD:DIR] [--limit N] [--all]
-docket issue show <id> --json / edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f FILE ...] [--parent ["none"|"0"]] / delete <id> [-f] [--orphan]   # edit -f REPLACES all file attachments — prefer issue file add/remove
-docket issue move <id> <status> / close <id> / reopen <id>
-docket issue comment list <id> / comment add <id> -m "text"
-docket issue link add <id> blocks|depends_on|relates_to|duplicates <target> / link list <id> / link remove <id> <relation> <target_id>
-docket issue file add <id> <paths> / file list <id> / file remove <id> <paths>
-docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]
-docket issue label add <id> <labels> [--color HEX] / label rm <id> <labels> / label list / label delete <label> [-f]
-docket issue log <id> [--limit N]
-docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS] / import [--merge] [--replace]
-docket doc create -t TITLE [-d DESC|@path|-] [-T TYPE] [-s STATUS] / doc show <id> --json / doc list --json / doc edit <id> [-t] [-d] [-s] [-T] / doc delete <id> [--cascade] [-f] / doc link add <doc-id> --issue <issue-id> / doc link remove <doc-id> --issue <issue-id> / doc comment add <id> -m "text" / doc comment list <id>   # durable spec/PRD→issue traceability
-docket vote create -c CRITICALITY -d DESC -n VOTERS [--threshold FLOAT] [-r|--rationale TEXT] [--created-by NAME] [--domain-tags TAGS] [--files-changed FILES] [--escalation-reason TEXT]
-docket vote show <id> / result <id> / list [-s STATUS] [-c CRITICALITY] [-d DOMAIN-TAG] [--limit N] [--all]   # list defaults to open only; --all includes committed/rejected
-docket vote link <proposal-id> --issue <id> / unlink <proposal-id> --issue <id>   # bind votes to issues for operator traceability
-```
-
-Global: `--quiet` (structured-only), `--watch`/`--interval` (live), `--json` (everywhere). Aliases: `docket i`/`issue ls`, `docket d`/`doc ls`, `docket v`/`vote ls`.
-**Status:** backlog (create default) | todo | in-progress | review (schema-valid but intentionally unused — review happens via SendMessage/comments, not a status transition) | done | **Priorities:** critical | high | medium | low | none (create default) | **Types:** bug | feature | task (default) | epic | chore
-**Grooming foot-gun:** `issue delete <id> --orphan` promotes sub-issues to roots — preserve work when removing a wrong parent (the `edit -f` replace-warning lives on the edit line above).
+<!-- CANONICAL:DOCKET-CLI-LOCAL:BEGIN -->
+**Docket CLI (this role).** Master: `~/.claude/skills/team-doctrine/references/docket-cli.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docket-cli.md`) — this role's original table is the master's source of truth, byte-exact verified against live `docket --help` (version b59dd2f). Most-used: `docket issue create -t TITLE [-d DESC] [-p PRIORITY] [-T TYPE] [-l LABEL] [--parent ID] [-f FILE ...] [-a ASSIGNEE] [-s STATUS]` / `docket issue list --json [-a] [-s] [-p] [-l] [-T] [--parent] [--tree] [--roots] [--sort FIELD:DIR] [--limit N] [--all]` / `docket issue edit <id> [-t] [-d] [-s] [-p] [-T] [-a] [-f FILE ...]` (edit `-f` REPLACES all attachments — prefer `issue file add`) / `docket issue graph <id> [--mermaid] [--depth N] [--direction up|down|both]` / `docket plan --json [--root ID] [--label LABEL] [-s STATUS]` / `docket export [-f FILE] [-o json|csv|markdown] [-l LABEL] [-s STATUS]`. Status: backlog (create default) | todo | in-progress | review (unused) | done. See master for the full command table, vote/doc subcommands, and the `--orphan` grooming foot-gun.
+<!-- CANONICAL:DOCKET-CLI-LOCAL:END -->
 
 ---
 

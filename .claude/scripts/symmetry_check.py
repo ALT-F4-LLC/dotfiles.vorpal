@@ -120,7 +120,7 @@ CHECKS = {
     },
     "model-routing-auditor": {
         "start": r"^### Phase 0: Model Routing Audit$",
-        "end": r"^### Phase 1:",
+        "end": r"^### Phase",
         "include_end": False,
     },
     "mimir": {

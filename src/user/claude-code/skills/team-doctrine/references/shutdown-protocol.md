@@ -14,7 +14,7 @@ only — never `Skill(team-doctrine)`.
 ---
 
 <!-- CANONICAL:SHUTDOWN-PROTOCOL:BEGIN -->
-**Shutdown protocol (maintained master).** Two rules bind every spawned agent; each
+**Shutdown protocol (maintained master).** These rules bind every spawned agent; each
 worker carries a compact `CANONICAL:SHUTDOWN-PROTOCOL-LOCAL` copy maintained from this
 block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-lead`. **Precondition:** this entire handshake — and all `SendMessage` routing — exists ONLY when agent teams are enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; without that var there is no `SendMessage` tool and no team to shut down.
 
@@ -22,6 +22,21 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   SILENT confirmation — it MUST NOT carry `reason` text. `reason` (+ETA) is delivered
   ONLY on a rejection (`approve: false`). Grant shutdown → `approve: true`, omit `reason`.
   Decline → `approve: false` with `reason`. An approval carrying `reason` is harness-rejected.
+- **SP-1b — Nest `type` inside `message`; never duplicate it at the top level.** Valid
+  top-level `SendMessage` params are ONLY `to`/`message`/`summary` — `type` and `recipient`
+  belong exclusively inside the `message` object, never duplicated alongside it. WRONG (top-level
+  `type`/`recipient` alongside `message`):
+  ```json
+  {"to": "team-lead", "type": "shutdown_response", "recipient": "team-lead",
+   "message": {"type": "shutdown_response", "request_id": "abc-123", "approve": true}}
+  ```
+  RIGHT (only `to`/`message`/`summary` at the top level, `type` nested inside `message`):
+  ```json
+  {"to": "team-lead",
+   "message": {"type": "shutdown_response", "request_id": "abc-123", "approve": true}}
+  ```
+  Recurred across 18 distinct sessions this cycle (Bug-Audit B1). This is the canonical worked
+  example — `team-lead.md`'s LOCAL copy cites this convention as SP-1b without restating it.
 - **SP-2 — Foreground teammate vs background/report-only subagent.** `name=` IS the discriminator, and the two modes are mutually exclusive at spawn (enforced at spawn time per the **Name/background exclusivity (mandatory)** rule under §Spawning Templates): a NAMED spawn (`Agent(name=...)`) is a FOREGROUND TEAMMATE; an UNNAMED spawn (no `name=`, background-by-default since v2.1.198, so `run_in_background` is no longer the discriminator) is a REPORT-ONLY SUBAGENT. NEVER `name=` + `run_in_background=true` together — a named background agent can fail structured shutdown yet keep its roster entry, so de-listing remains unconfirmed until the lead observes termination/reap evidence. **Nested-context caveat:** when THIS lead is itself a teammate/subagent (the harness rejects its named spawns with "teammates cannot spawn other teammates — roster is flat"), every child it spawns may be treated as harness-"background" for session-protocol regardless of `name=`, so even a named teammate's structured `shutdown_response` may be rejected and require plain-text fallback; active cleanup is also unavailable to a nested lead, so SESSION-END may be the only de-list path. If you are a foreground teammate (named): await `shutdown_request` and reply with a structured `shutdown_response` to `team-lead` (SP-1 shape). If you are a report-only subagent (unnamed, background): you have NO structured shutdown/plan protocol — structured `shutdown_response`/`shutdown_request`/plan-protocol messages are acts of the session itself and CANNOT be sent by a background subagent — deliver the result as a PLAIN-TEXT message and END. Cross-check with the brief's Done-state (Canonical ephemeral-brief schema item 4): await-`shutdown_request` ⇒ foreground; return-a-summary-and-end ⇒ report-only; default to teammate when the brief is silent (role spawns default to named teammate mode per §Spawning Templates Common scaffolding). Fallback: if a structured `shutdown_response` is ever harness-rejected as a background-subagent act, resend the result as a PLAIN-TEXT message and END. Ack type is not termination evidence: DKT-20 showed persisted-vs-reaped behavior did not map cleanly to structured `shutdown_response` vs plain-text ack type, so the lead must rely on `teammate_terminated` or cleanup/reap output before reporting shutdown complete.
 - **SP-3 — Positive death evidence & the Liveness-Confirmation Gate.** Exactly three forms of
   evidence prove a teammate name is dead/free. **D1** (a `teammate_terminated` system event for
@@ -39,4 +54,9 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   delivered + reply at any latency → name OCCUPIED; (iii) delivered + no reply → INDETERMINATE,
   never death. The Liveness-Confirmation Gate that operates on this vocabulary lives in
   `team-lead.md` §Teammate Stall & Crash Recovery — its operational home, not this master.
+- **SP-4 — Crossed-in-flight duplicate.** A SendMessage that contradicts or duplicates your own
+  already-in-flight action is a stale crossed-in-flight duplicate — state that, take no action,
+  continue. This pattern recurred and was correctly self-handled in 3 consecutive evolve-agents
+  cycles with no doctrine fix landing (per the 2026-07-11 repetition-auditor finding); codifying
+  it here stops the repeat flag.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL:END -->

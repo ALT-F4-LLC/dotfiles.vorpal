@@ -1,0 +1,12 @@
+2026-07-01 | cycle=c1 | pattern=standard | fix_rounds=1 | review_spawns_total=1
+2026-07-02 | cycle=c2 | pattern=standard | fix_rounds=1 | review_spawns_total=1
+2026-07-03 | cycle=c3 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-04 | cycle=c4 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-05 | cycle=c5 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-06 | cycle=c6 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-07 | cycle=c7 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-08 | cycle=c8 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-09 | cycle=c9 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-10 | cycle=c10 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-11 | cycle=c11 | pattern=standard | fix_rounds=0 | review_spawns_total=1
+2026-07-12 | cycle=c12 | pattern=standard | fix_rounds=0 | review_spawns_total=1

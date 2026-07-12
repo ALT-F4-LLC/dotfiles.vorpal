@@ -1,5 +1,19 @@
 # Changelog: init-specs
 
+## 2026-07-12
+
+### Summary
+Fixed a stale/circular Wrap-up step ("clean up the team — clean up the team") that referenced the removed `TeamDelete` tool. Confirmed the `model="sonnet"` spec-author pin agrees with team-lead.md's live bronze-tier routing (no change — changing it would CREATE an inconsistency, not fix one). `spec_verify.sh` deferred, confirmed nonexistent. Findings: 1 → 1 sub / 0 cos / 0 rej / 1 def / 1 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: Wrap-up step 3 — replaced the tautological "clean up the team" imperative (leftover from the removed `TeamDelete` tool) with an accurate no-manual-teardown note; per-teammate shutdown (step 2) is the only explicit cleanup
+
+### Dimensions Evaluated
+Orchestration & Agent Teams / Coherence (primary). Already-encoded (no action, agree-and-hold): `model="sonnet"` spec-author pin — verified against live team-lead.md:244 (`init-specs` spec-gen explicitly bronze-tier); the scanner's silver-floor argument is a legitimate routing-policy debate but team-lead.md's table has already made the call. Deferred: `spec_verify.sh` codification (confirmed nonexistent; proposed interface noted for a future cycle).
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

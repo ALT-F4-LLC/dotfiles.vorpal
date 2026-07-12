@@ -1,5 +1,36 @@
 # Changelog: brief
 
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Bare-word trigger replaced with a self-scoping phrase. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: trigger "brief" → "brief this request" — the bare token fires on summary requests ("brief me on X") unrelated to intake standardization; misfires are costly given the skill's do-not-execute-$ARGUMENTS contract
+
+### Dimensions Evaluated
+Disambiguation (confusable-name).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Hardened three corroborated intake gaps (from heavy 104-invocation usage this window) and repointed the docs-path citation to the maintained master. Fixed a run-together typo along the way. Findings: 4 → 4 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: verbatim-citation directive now carries a source locator (file/§/line or vote ID) so team-lead/PM can re-verify rather than trust the brief's word (project-manager pitfalls); fixed run-together typo "accepted.This"
+- AMPLIFY[SUBSTANTIVE]: added the light-scoping-vs-performing-the-investigation boundary for read-only tools (team-lead pitfalls; preventive — the documented incident was team-lead itself, not brief, but this is the first place the temptation arises)
+- AMPLIFY[SUBSTANTIVE]: cross-cutting "find all references" briefs must frame Scope/AC as an independent repo-root re-sweep, not a fixed site list (recurred twice in one cycle — team-lead + project-manager pitfalls)
+- AMPLIFY[SUBSTANTIVE]: docs-path citation repointed from team-lead.md's relocated LOCAL pointer to the maintained master `team-doctrine/references/docs-paths.md` (verified)
+
+### Dimensions Evaluated
+Actionability (primary — 3 corroborated intake gaps), Coherence (docs-path master), Skill Design Quality. Over-Engineering: kept each addition to one compact sentence; lean high-usage skill, ample headroom remains.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

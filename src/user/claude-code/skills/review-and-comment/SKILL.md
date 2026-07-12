@@ -60,7 +60,7 @@ Distinguish real defects from intentional design. If the change is large or high
 
 ## Step 4 — Anchor each finding
 
-For each finding, record: `path` (repo-relative), `line` (line number in the PR's NEW file version), and `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment. Verify line numbers against the clone (`grep -n`).
+For each finding, record: `path` (repo-relative), `line` (line number in the PR's NEW file version), and `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment. Verify line numbers against the clone (`grep -n`). If a finding's true location is OUTSIDE the diff (e.g. a caller in an unchanged file surfaced by the Step 2 clone), you cannot post it inline — anchor it to the nearest changed line that motivates it with an explicit `(re: <path>:<line>)` pointer, or carry it to the Step 9 report as an out-of-diff note; never silently drop it.
 
 ## Step 5 — Match the operator's voice
 

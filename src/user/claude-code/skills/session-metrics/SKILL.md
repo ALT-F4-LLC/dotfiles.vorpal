@@ -14,7 +14,7 @@ disallowed-tools: ["Agent", "SendMessage", "Task"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`/`Task`, do NOT form or manage a team, do NOT invoke other skills recursively. (2) Do NOT commit any changes. (3) Transcript-only: every metric is derived from the local session JSONL under `~/.claude/projects/`. OTEL is deliberately NOT consulted — OTEL is a remote push-only sink with no local read path, so it cannot answer "what happened in this session."
+> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`/`Task`, do NOT form or manage a team, do NOT invoke other skills recursively. (2) Do NOT commit any changes. (3) Transcript-only: every metric is derived from the local session JSONL under `~/.claude/projects/`. OTEL/aggregate metrics are deliberately NOT consulted — the aggregate sink cannot attribute tokens/cost to THIS specific session (its `skill_name` label is populated only for top-level orchestrator-dispatched skills, not subagent-invoked ones) nor reconstruct per-session tool/file/timeline detail.
 
 # Session Metrics — Transcript-Derived Token, Cost, Tool, and Subagent Report
 
@@ -23,10 +23,10 @@ You report on the **current** Claude Code session by parsing its local transcrip
 ## Step 1 — Run the script
 
 ```bash
-python3 ~/.claude/skills/session-metrics/scripts/session_metrics.py
+python3 "${CLAUDE_SKILL_DIR}/scripts/session_metrics.py"
 ```
 
-If you're running from source inside this repo (e.g. testing an unreleased change) instead of the installed copy, use the repo-relative path: `python3 "$(pwd)"/user/claude-code/skills/session-metrics/scripts/session_metrics.py`. Resolve whichever copy is actually on disk; don't assume. The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
+`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.196+; this environment is 2.1.207). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
 
 **Output shape:** all stdout except the final line is a single pretty-printed JSON object (the summary); the final line repeats the absolute path to the generated HTML file. Split on the last newline and parse everything before it as one JSON blob — don't attempt to `json.loads()` line-by-line as JSONL.
 
@@ -36,7 +36,7 @@ If you're running from source inside this repo (e.g. testing an unreleased chang
 
 From the JSON summary, build a concise chat reply covering:
 
-1. **The OTEL note** (`summary.note`) — one line, verbatim or near-verbatim. This must appear; it's the one place the user learns the data source.
+1. **The data-source note** (`summary.note`) — one line, verbatim or near-verbatim. This must appear; it's the one place the user learns the data source.
 2. **Headline KPIs**: total tokens, total est. cost (`summary.totals.cost_est_usd`, labeled "est."), cache hit ratio, wall-clock duration, files touched count.
 3. **Subagent roster** (`summary.subagents`) as a table: name, role, model, effort (always the literal string from the JSON — never paraphrase or infer a number), tokens, est. cost (`cost_est` is `null` when the subagent used a model absent from the price table — render as "n/a", never as $0), tool calls, errors, files touched. If empty, say "no subagents in this session."
 4. **Session-level effort** (`summary.session_effort`, from `$CLAUDE_EFFORT`) called out separately from the roster — it describes the orchestrating session, not any one subagent.

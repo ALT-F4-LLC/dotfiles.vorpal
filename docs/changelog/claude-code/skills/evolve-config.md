@@ -1,5 +1,49 @@
 # Changelog: evolve-config
 
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Trigger scoped to the skill's actual target; corrected a stale CANONICAL-block count (said four, file carries six); aligned the `day=N` alias with evolve-skills/evolve-agents. Findings: 3 → 3 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: trigger "review config" → "review config sources" — the bare phrase was indistinguishable from a lightweight read request or a bundled update-config errand, yet launches a full xhigh multi-agent cycle
+- AMPLIFY[SUBSTANTIVE]: Phase 1/2 coherence-verifier tasks now correctly enumerate all six CANONICAL blocks (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL, SOURCE-OF-TRUTH, HARVEST, DISAMBIGUATION-CHARTER) instead of four — HARVEST and DISAMBIGUATION-CHARTER were silently escaping the parity-verification list
+- AMPLIFY[SUBSTANTIVE]: Argument Handling — documented `day=N` as an accepted alias for `days=N`, matching evolve-skills
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, internal count mismatch, argument-parsing family consistency).
+
+### Rename
+No rename.
+
+## 2026-07-12 (Phase 2 coherence pass)
+
+### Summary
+Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-skills. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: pre-flight step 7 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback
+
+### Dimensions Evaluated
+Efficiency (family-wide lockstep with evolve-agents/evolve-skills).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Added a `cargo check` compile-gate to Phase 1 step-3 verification — closes the Rust-compile-failure class the serde-attribute read cannot catch. No config-source changes this cycle. Findings: 6 → 1 sub / 0 cos / 0 rej / 3 def / 2 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 1 step-3 now runs `cargo check` before the serde-attribute read — catches calls to non-existent setters / type errors an applied Edit could introduce (innovation-scan Rethink, executable arm verified feasible; snapshot-test arm declined — no cited fitness signal, new test infra out of scope)
+
+### Dimensions Evaluated
+Actionability / Completeness (AMPLIFY). Deferred cross-cutting: shared Phase-0 template extraction + `mimir_query.sh` (shared with evolve-agents/evolve-skills), changelog-cache adoption (Repetition FIX 2), family-shared drift/S2 verbosity trim — all routed to Phase 2. Confirmed no-ops: `display-name`/`default-enabled`/`fallback` absent (correct); `disableBundledSkills` follow-up already Declined 2026-06-12, not re-proposed.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

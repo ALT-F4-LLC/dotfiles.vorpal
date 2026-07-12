@@ -24,13 +24,16 @@ Maintained master and authoritative source for `docs/` output-path conventions. 
 | `docs/tdd/{slug}.md` | `tdd` skill | staff/security/pm/ux/distinguished | `tdd` | Technical design records — EPHEMERAL: Design/Planning input only; safely deletable any time after the cycle's implementation completes. |
 | `docs/adr/{NNNN}-{slug}.md` | `adr` skill | staff/security/senior/sdet/pm/ux/distinguished | `adr` | Numbered ADRs — durable decision records (relocated out of the ephemeral TDD directory). |
 | `docs/ux/{slug}.md` | `ux-spec` skill | ux/senior/sdet/pm; staff + distinguished consume | `ux-spec` | User-facing design specs. |
-| `docs/changelog/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
-| `docs/changelog/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
-| `docs/changelog/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-routing (`team-lead.md`) evolution changelog. |
+| `docs/changelog/claude-code/agents/*.md` | `evolve-agents` skill | evolve cycles | `evolve-agents` | Agent-evolution changelog. |
+| `docs/changelog/claude-code/skills/*.md` | `evolve-skills` skill | evolve cycles | `evolve-skills` | Skill-evolution changelog. |
+| `docs/changelog/claude-code/config/*.md` | `evolve-config` skill | evolve cycles | `evolve-config` | Config-source evolution changelog. |
+| `docs/changelog/claude-code/model-distribution/*.md` | `evolve-model-distribution` skill | evolve cycles | `evolve-model-distribution` | Model-routing (`team-lead.md`) evolution changelog. |
 
 **On-disk status ≠ orphan.** A path family with a declared writer in the table above is canonical whether or not it currently exists on disk. Skill-owned paths created on first write — currently `docs/spec/`, `docs/ux/`, and `docs/adr/` are not yet materialized — are NOT orphans; their absence on disk simply means no one has invoked the owning skill yet. A future drift-lint MUST treat "declared writer, absent on disk" as healthy, never as an orphan.
 
 **Known orphan (genuine):** `docs/audit/` exists on disk but is empty and has NO declared writer or reader in any agent or skill — it is the one true orphan. It is out of scope for this taxonomy (definitions-only; touching `docs/` is forbidden here). Follow-up mechanism: it needs an ADR to either wire a writer or `rmdir` it — do NOT wire new writes to it without that ADR.
+
+**Skill-file locations (adjacent "where does it live" rule, NOT a `docs/` path).** `evolve-*` skills live ONLY under `.claude/skills/<name>/SKILL.md` (project-scoped; NEVER deployed to `~/.claude/`). Every OTHER skill lives ONLY under `~/.claude/skills/<name>/SKILL.md` (deployed) or `src/user/claude-code/skills/<name>/SKILL.md` (repo source) — this repo's `.claude/skills/` holds ONLY the 5 evolve-* dirs. Reading `.claude/skills/vote/SKILL.md` or `~/.claude/skills/evolve-skills/SKILL.md` is the recurring wrong-tree miss.
 
 **Ephemerality doctrine.** The following two rules — Persistence & lifecycle and the Distillation Gate — are the canonical source for `docs/tdd/` and Docket-issue ephemerality; every LOCAL copy elsewhere cites this section instead of restating it.
 

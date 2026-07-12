@@ -4,7 +4,7 @@ description: >
   Scan code at a flexible <scope> and emit a REPORT-ONLY set of simplification / refactor
   opportunities, each grounded in one of the 12 code-philosophy principles in
   ~/.claude/agents/senior-engineer.md (repo: src/user/claude-code/agents/senior-engineer.md) (no new rubric). Idiomatic clarity first — fewer lines is the
-  side effect, never the goal. Self-service scout for @senior-engineer; writes no files and
+  side effect, never the goal. Self-service scout for @senior-engineer (also callable by @distinguished-engineer in deep-impl mode); writes no files and
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
 argument-hint: "<scope>"
@@ -168,7 +168,7 @@ When clarity and length point in opposite directions, **clarity wins and you sta
 
 ## Scan Procedure
 
-1. **Detect role** per Role Detection. ABORT if not `@senior-engineer`.
+1. **Detect role** per Role Detection. ABORT if the caller is neither `@senior-engineer` nor `@distinguished-engineer`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable. Apply the large-scope guard for directory scopes.
 3. **Empty-scope guard**: if the resolved scope yields no source lines (empty diff, empty file set, directory with no source files), short-circuit to the empty-scope output below — do NOT fabricate findings.
 4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file. Stream long scans (>30s, large directory) via `Monitor` with an until-loop on a completion marker rather than a blocking poll.

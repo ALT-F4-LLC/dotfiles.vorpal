@@ -1,5 +1,33 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-12 (Phase 3 disambiguation pass)
+
+### Summary
+Two multi-reading/confusable-name fixes, no behavioral change to the pipeline.
+
+### Routing Changes
+None (prose disambiguation only): Changelog Format parenthetical now pins `<target>` = `team-lead` (was readable as `team-lead.md` → `team-lead.md.md`); description now names the edit target as the BUILD SOURCE (src/user/claude-code/agents/), matching the body's build-deploy-lag reminder.
+
+### Evidence
+Phase 3 disambiguation review 2026-07-12; DOCS-PATHS-LOCAL block is the path authority both fixes align to.
+
+### Rejected
+None.
+
+## 2026-07-12
+
+### Summary
+Corrected the embedded hard-floor role set (4 sites) to match live team-lead.md: added `ux-*`, dropped blanket `verifier*` (routine verifier is legitimately bronze; only new-arch verifier-criteria/verifier-integration are silver), and made the coherence-verifier check re-read the live floor prose instead of a static list. Findings: 3 → 1 sub / 0 cos / 1 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: hard-floor set `tdd-author*/reviewer*/verifier*/security-*` → `tdd-author*/reviewer*/security-*/ux-*` + new-arch verifier only, at 4 sites — cited drift vs live team-lead.md floor (escape-hatch prose + Tiers `silver` bullet), verified live via grep
+
+### Dimensions Evaluated
+Spec Alignment, Coherence (primary). Rejected the evolve_signals.py `--distribution` swap (verified categorization regression — script's role field drops instance name, would collapse tdd-author*/reviewer-2 into one row). Declined self-logging suggestion (scope creep — changelog already the durable record). Flagged `mimir_query.sh` cross-skill leverage (shared with evolve-agents/evolve-skills/evolve-config) as DEFERRED.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

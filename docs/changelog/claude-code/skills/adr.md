@@ -1,5 +1,20 @@
 # Changelog: adr
 
+## 2026-07-12
+
+### Summary
+Added a pre-Write race Glob so a parallel-author collision aborts cleanly before writing (no orphan file, no cryptic harness unread-overwrite error) — closes a documented incident and a coherence defect (the "single-author, no pre-Write renumber needed" claim was contradicted by that same incident). The citation-hijack numbering defect was already fully handled by next_doc_number.sh + Pre-flight step 5.1 — verified, no change. Findings: 2 → 1 sub / 1 cos / 0 rej / 1 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Save & Return sequence now brackets Write with pre- and post-Write race Globs; corrected the inaccurate "single-author" rationale
+- AMPLIFY[COSMETIC]: added a Failure Modes table row for the new pre-Write abort, keeping the table a complete lookup
+
+### Dimensions Evaluated
+Actionability/Completeness (operational robustness — primary), Coherence (removed the single-author claim contradicted by the documented parallel-author incident). Deferred: doc_validate.py + slug.sh cross-skill extraction (shared with prd/tdd/ux-spec — this file's numbering-script precedent, next_doc_number.sh, is the natural analog). Already-encoded: citation-hijack collision handling (next_doc_number.sh:65-75 + Pre-flight step 5.1).
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

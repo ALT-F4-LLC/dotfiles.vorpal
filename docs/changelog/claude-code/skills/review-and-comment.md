@@ -1,5 +1,19 @@
 # Changelog: review-and-comment
 
+## 2026-07-12
+
+### Summary
+Closed a cross-file completeness gap: findings anchored outside the PR diff (callers in unchanged files surfaced by the Step 2 clone) now have an explicit post/report path instead of being silently un-postable. Deferred gh_inline_comment.sh (verified nonexistent) as a future Docket tracking issue. Findings: 2 → 1 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Step 4 — out-of-diff findings must be anchored to the nearest motivating changed line with a `(re: <path>:<line>)` pointer, or carried to the Step 9 report — never dropped. Previously the skill cloned for cross-file context (Step 2) it had no way to surface (GitHub rejects out-of-diff anchors)
+
+### Dimensions Evaluated
+Completeness (the gap), Over-Engineering (file already lean — no trims warranted). Deferred: gh_inline_comment.sh codification (verified nonexistent; recommend as a future Docket tracking issue, not authored this cycle). Confirmed: gh api sandbox failure still real, do not retire the sandbox-off mandate.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

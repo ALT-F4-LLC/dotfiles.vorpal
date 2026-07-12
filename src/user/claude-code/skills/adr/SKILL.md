@@ -250,15 +250,21 @@ On operator Cancel during the collision dialog: emit
 For this skill, `{output_dir}` is `docs/adr/` and `{output_path}` is
 `docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
-ADR-specific full sequence: `mkdir → Write → race-detection Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative; ADR authoring is single-author, so no pre-Write renumber is needed — the post-Write Glob below is the sole race guard.
+ADR-specific full sequence: `mkdir → pre-Write race Glob → Write → post-Write race Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative. ADR authoring is *usually* single-author, but simultaneous invocations do occur (a peer can claim your `{NNNN}` while you draft), so two Globs bracket the Write: the pre-Write Glob is a clean early-out that avoids creating a colliding file, and the post-Write Glob is the residual backstop for the microsecond race between it and the Write.
 
-**After Write, before Emit**: Re-run `Glob docs/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If more than one file is returned, ABORT loudly instead of emitting the confirmation:
+**Before Write**: Re-run `Glob docs/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If it returns any file, a peer claimed your number while you drafted — ABORT cleanly WITHOUT writing (no orphan file, no cryptic harness unread-overwrite error):
+
+```
+Error: ADR number {NNNN} was claimed by another author during drafting — re-invoke to get a fresh number.
+```
+
+**After Write, before Emit**: Re-run `Glob docs/adr/{NNNN}-*.md` again. If more than one file is returned, a race slipped through the pre-Write check — ABORT loudly instead of emitting the confirmation:
 
 ```
 Error: ADR number collision detected — another author may have raced you. Manual resolution required.
 ```
 
-This catches different-slug concurrent races at the same `{NNNN}`. Same-slug races (two authors picking identical topics simultaneously) are undetectable — both writes target the same path. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
+The post-Write Glob catches different-slug races at the same `{NNNN}`. Same-slug same-number races do not reach a silent clobber: the pre-Write Glob catches the common case, and the harness blocks an overwrite Write of a file this author never Read. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
 
@@ -269,6 +275,7 @@ This catches different-slug concurrent races at the same `{NNNN}`. Same-slug rac
 | `next_doc_number.sh docs/adr` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
 | Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
+| Pre-write Glob finds an existing file at the chosen `{NNNN}` (peer claimed it during drafting) | Abort cleanly WITHOUT writing: `Error: ADR number {NNNN} was claimed by another author during drafting — re-invoke to get a fresh number.` |
 | Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

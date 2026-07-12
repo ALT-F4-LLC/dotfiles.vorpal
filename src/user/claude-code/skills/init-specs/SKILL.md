@@ -176,4 +176,4 @@ After all agents complete and verification passes:
 
 1. List all spec files that were created (or skipped). Flag any that failed or have malformed output.
 2. **Shut down each teammate (lead-originated)** — after a `@staff-engineer` delivers its completion message and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). This is the canonical handshake — the lead SENDS the request, teammates AWAIT it and never self-initiate (per `~/.claude/agents/team-lead.md` — repo: `src/user/claude-code/agents/team-lead.md` — §Wrap-up shutdown direction + each teammate's CANONICAL:SHUTDOWN-PROTOCOL-LOCAL). Skip `failed`/stalled agents — the team cleanup (next step) reaps any remaining processes.
-3. **Clean up the team** — clean up the team (the session's single implicit team — no name needed); its `~/.claude/teams/` resources are auto-removed at session end.
+3. **Team resources** — no manual teardown; the session's single implicit team and its `~/.claude/teams/` resources are auto-removed at session end. Per-teammate shutdown (step 2) is the only explicit cleanup — there is no `TeamDelete` tool.

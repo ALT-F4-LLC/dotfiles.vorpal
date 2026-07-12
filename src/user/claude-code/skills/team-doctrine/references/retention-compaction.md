@@ -92,7 +92,7 @@ Per file, the compactor's report to the orchestrator MUST evidence, in order:
 - **(1) Full-entry HEAD containment** — every entry selected for compaction is
   byte-present in `git show HEAD:<file>` as its FULL text (every line from heading/bullet
   through entry end). Never a date-string spot-check: date headings are non-unique
-  (`docs/changelog/agents/senior-engineer.md` carries six `## 2026-06-09` entries), so a
+  (`docs/changelog/claude-code/agents/senior-engineer.md` carries three `## 2026-07-10` entries), so a
   date match cannot prove that an uncommitted same-date entry is safe to remove.
 - **(2) Diff-shape proof** — after compaction, `git diff HEAD -- <file>` consists SOLELY
   of four hunk shapes: (i) the pre-existing same-cycle pure additions from check 0; (ii)

@@ -1,5 +1,19 @@
 # Changelog: design-review
 
+## 2026-07-12
+
+### Summary
+Coherence: extended Validation check #4 to enforce spec-section/workflow citation on Blockers, not just Concerns — matches Common Discipline (L145) and restores parity with design-qa's sibling check. The 10-arm Validation-Before-Emit checklist was assessed for Over-Engineering and found NOT redundant — each arm maps to a distinct format-authority guarantee; no trim applied. Findings: 2 → 1 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Validation check #4 "Every Concern names..." → "Every Blocker and Concern names..." — closed an enforcement gap where the highest-stakes findings were exempt from the grounding rule Common Discipline already mandates
+
+### Dimensions Evaluated
+Over-Engineering PRIMARY (10-arm checklist assessed — NO trim, size is format-driven, not bloat); Coherence (design-qa parity + own-discipline alignment). Deferred: `report_lint.py` shared validator (4 skills: code-review-verdict, verify-ac, design-qa, design-review) — mechanization/DRY win, not a correctness fix, no urgency.
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

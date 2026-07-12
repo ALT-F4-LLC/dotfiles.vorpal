@@ -31,14 +31,6 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 - `docs/tdd/` is ephemeral — Design/Planning input only; deletable any time after implementation (master: docs-paths.md).
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
-## Pre-Injected Diff-Scope Context
-
-The harness's dynamic-context-injection mechanism (an exclamation mark immediately followed by a backtick-delimited shell command, no space between them — see the three injected lines directly below for the literal syntax) runs these commands once, at skill-load time, before this content reaches the calling agent — a deterministic working-tree census supplementing (never replacing) the scope-resolved diff from Argument Handling below. Treat this as ground truth for what the working tree looked like the moment the skill loaded, not a substitute for `git diff --stat main...{scope}` or `gh pr diff` on PR/branch scopes.
-
-- Working tree status: !`git status --short`
-- Diff stat (uncommitted): !`git diff --stat`
-- Dependency audit snapshot: !`~/.claude/scripts/audit_snapshot.sh`
-
 ## Role Detection
 
 This skill is callable ONLY by `@staff-engineer`, `@distinguished-engineer`, or `@security-engineer`; `{role}` is the calling agent's identifier (from prompt context) minus the `@`. Any other caller ABORTS:
@@ -64,7 +56,7 @@ Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR 
 | GitHub PR number | matches `^\d+$` | `gh pr view {n}` (description) + `gh pr diff {n}` (diff) |
 | GitHub PR URL | contains `/pull/` | extract `n`; same as PR number |
 | Branch name | `git rev-parse --verify {scope}` exits 0 | `git diff main...{scope}` + `git log main...{scope} --oneline` + `git diff --stat main...{scope}` |
-| Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD` |
+| Literal `uncommitted` | exact match | `git status --short` (surfaces untracked `??`) + `git diff` + `git diff --staged` + `git diff --stat HEAD` |
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 
@@ -110,7 +102,7 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
 3. **Resolve context**: `{role}` = the detected role (`staff-engineer`, `distinguished-engineer`, or `security-engineer`). **Playbook, severity, and output selection**: `@staff-engineer` and `@distinguished-engineer` → Staff-Engineer Playbook + output (general 6-dimension); `@security-engineer` → Security-Engineer Playbook + output.
-4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
+4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. Run this census yourself (`git diff --stat`, plus `git status --short` on `uncommitted`/`staged` scopes to surface untracked `??` files); if `~/.claude/scripts/audit_snapshot.sh` is present, run it for a dependency snapshot, else skip — a missing script is N/A, not fatal. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 
    ```

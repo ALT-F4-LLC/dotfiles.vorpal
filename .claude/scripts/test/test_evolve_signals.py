@@ -17,6 +17,7 @@ ROOT = SIGNALS / "projects"
 PITFALLS = SIGNALS / "pitfalls-root"
 MIMIR = SIGNALS / "mimir.json"
 TEAM_ROOT = HERE / "fixtures" / "signals-team" / "projects"
+IDLE_ROOT = HERE / "fixtures" / "signals-idle" / "projects"
 
 
 def run(*args):
@@ -135,6 +136,18 @@ def test_failure_modes_and_exit_codes():
     assert run("--projects-root", str(ROOT), "--no-remote")[0] == 2            # no mode
     assert run("--all", "--since", "2026-01-01", "--days", "3", "--no-remote")[0] == 2  # both windows
     assert run("--all", "--no-remote", "--mimir-base", "x")[0] == 2            # both remote
+
+
+def test_idle_regex_anchors_on_hook_event():
+    # A transcript line where "TeammateIdle" appears only as a substring of
+    # injected skill-description prose (no hookEvent JSON key) must NOT count as a
+    # stall (the false-positive self-match this fix closes); a genuine
+    # {"hookEvent": "TeammateIdle", ...} record must still count.
+    code, out, err = run("--all", "--projects-root", str(IDLE_ROOT), "--no-remote")
+    assert code == 0, f"exit {code}: {err}"
+    idle = json.loads(out)["local"]["stalls"]["TeammateIdle"]
+    assert "fp-role" not in idle, idle
+    assert idle == {"tp-role": 1}, idle
 
 
 def test_jdn_helpers():

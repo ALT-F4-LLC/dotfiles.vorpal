@@ -109,7 +109,10 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
 
 1. **Usability** — task efficiency, cognitive load, discoverability, mental-model fit, learnability. (HIG: Purpose, Simplicity)
 2. **Consistency** — alignment with existing `docs/ux/` patterns, cross-surface naming, terminology, flag/copy conventions, same-concept-same-name. (HIG: Familiarity)
-3. **Accessibility** — WCAG 2.2 AA floor, keyboard reachability, NO_COLOR support, color-not-sole-indicator, screen-reader semantics, contrast. On visual surfaces, the design must specify the rendered EFFECT at real delivery resolution (screenshare, streamed video, small viewport), not just the CSS/token value — a cue that meets the contract may fail to read once compressed. Every color/visual cue must be paired with a text fallback so a degraded render still carries meaning. (HIG: Flexibility)
+3. **Accessibility** — WCAG 2.2 AA floor, keyboard reachability, NO_COLOR support, color-not-sole-indicator, screen-reader semantics, contrast. On visual surfaces, the design must specify the rendered EFFECT at real delivery resolution (screenshare, streamed video, small viewport), not just the CSS/token value — a cue that meets the contract may fail to read once compressed. Every color/visual cue must be paired with a text fallback so a degraded render still carries meaning. (HIG: Flexibility) Evaluate against this checklist (minimum bar; expand for the artifact's surface):
+   - **Color contrast** — text and interactive-control contrast ratios meet WCAG 2.2 AA (4.5:1 normal text, 3:1 large text/UI components); color is never the sole indicator.
+   - **Keyboard navigability** — every interactive element is reachable and operable via keyboard alone; focus order matches visual/reading order and is visibly indicated; no keyboard traps.
+   - **Semantic / ARIA correctness** — native semantic elements/roles specified before ARIA; ARIA roles/labels/live-regions are correct and announce state changes; heading/landmark structure supports screen-reader navigation.
 4. **Information Hierarchy** — what's primary, what's secondary, progressive disclosure, scan-ability, signal-to-noise. (HIG: Simplicity)
 5. **Error Handling** — every workflow has error branches; messages follow "what happened → why → what to do now"; specific values/paths in errors; degraded modes covered. (HIG: Agency, Responsibility)
 6. **Performance Perception** — feedback latency, loading states, perceived progress, silence-is-the-worst-UX violations, animation timing. (HIG: Familiarity, Craft)
@@ -120,8 +123,8 @@ Each dimension is anchored to named Apple HIG design principles — definitions 
 
 | Severity | Meaning |
 |---|---|
-| Blocker | Must fix before approval: broken workflow, inaccessible interaction, missing critical error state, cross-surface precedent violation, WCAG AA failure |
-| Concern | Should fix or explicitly justify: pattern divergence, missing edge case, weak error copy, accessibility gap on non-critical path |
+| Blocker | Must fix before approval: broken workflow, inaccessible interaction, missing critical error state, cross-surface precedent violation, WCAG AA failure (contrast ratio, keyboard trap, or missing/incorrect ARIA semantics) |
+| Concern | Should fix or explicitly justify: pattern divergence, missing edge case, weak error copy, accessibility gap on non-critical path (e.g., suboptimal focus order, redundant ARIA labeling) |
 | Suggestion | Consider for this or future iteration: polish, minor improvement, alternative phrasing |
 | Question | Need clarification to complete the review |
 | Praise | Pattern worth highlighting and replicating across surfaces — routes to `What's Strong`, not `What Needs Work` (HIG: Craft, Delight) |

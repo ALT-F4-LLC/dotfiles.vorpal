@@ -18,7 +18,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune are mandatory — do 
 ```
 Agent(name="innovation-scanner", subagent_type="staff-engineer", model="opus", prompt="...")
 
-MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read .claude/skills/*/SKILL.md and skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find.
+MISSION: Discover NEW and MORE-EFFICIENT ways for skills to accomplish their tasks — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Read .claude/skills/*/SKILL.md and src/user/claude-code/skills/*/SKILL.md and surface concrete opportunities for improvement beyond what error-correction alone would find.
 
 Target skills: {target_skills}
 
@@ -65,3 +65,7 @@ If a category is empty for a skill, write `none` — do not omit the line.
 ```
 
 ### Phase 1: @staff-engineer (Review & Improve)
+
+<!-- CANONICAL:IMPACT-CLASS:BEGIN -->
+**Impact classification.** Every applied change is classified by its DIFF: SUBSTANTIVE alters a rule or gate; COSMETIC is a rewording with no behavioral delta.
+<!-- CANONICAL:IMPACT-CLASS:END -->

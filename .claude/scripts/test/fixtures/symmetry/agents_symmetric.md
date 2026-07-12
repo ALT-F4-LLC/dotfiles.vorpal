@@ -65,3 +65,7 @@ If a category is empty for an agent, write `none` — do not omit the line.
 ```
 
 ### Phase 1: Self-Review & Improve
+
+<!-- CANONICAL:IMPACT-CLASS:BEGIN -->
+**Impact classification.** Every applied change is classified by its DIFF: SUBSTANTIVE alters a rule or gate; COSMETIC is a rewording with no behavioral delta.
+<!-- CANONICAL:IMPACT-CLASS:END -->

@@ -118,22 +118,23 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **ADR numbering** (ADR-specific):
-   1. `Glob docs/adr/*.md`.
-   2. For each filename, match `^(\d{4})-[a-z0-9-]+\.md$` (basename only). Track
-      filenames that do not match in `malformed[]`.
-   3. If `malformed` is non-empty, ABORT:
+5. **ADR numbering** (ADR-specific): `Bash .claude/scripts/next_doc_number.sh docs/adr`
+   — the shared doc-number allocation + citation-hijack script (also used by
+   `agents/distinguished-engineer.md`, `agents/staff-engineer.md`, and
+   `agents/security-engineer.md` when hand-authoring ADRs outside this skill).
+   1. On success (exit 0), stdout is `{next_num}` (4-digit zero-padded) — the next
+      available number. The script has already skipped any candidate already cited
+      elsewhere in the repo under a different slug (citation-hijack) even though no
+      file with that number exists yet; skipped candidates are reported on stderr —
+      surface them to the calling agent as an informational note, not an abort.
+   2. On failure (non-zero exit — existing filenames in `docs/adr/` don't match
+      `^\d{4}-[a-z0-9-]+\.md$`), ABORT using the script's stderr as `{detail}`:
 
       ```
-      Error: Could not determine next ADR number.
-             Existing ADR filenames must start with NNNN- (4-digit zero-padded).
-             Found malformed: {malformed}.
+      Error: Could not determine next ADR number. {detail}
       ```
 
-   4. If there are no matching files, `next_num = 1`. Otherwise `next_num = max(matches) + 1`,
-      where `max` is taken over the captured numeric group as integers.
-   5. Format as `f"{next_num:04d}"` (4-digit zero-padded).
-   6. `{output_path}` = `docs/adr/{next_num:04d}-{slug}.md`.
+   3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`.
 
 ## Authoring Procedure
 
@@ -265,7 +266,7 @@ This catches different-slug concurrent races at the same `{NNNN}`. Same-slug rac
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| Existing ADR filename does not match `^\d{4}-[a-z0-9-]+\.md$` | Abort: `Error: Could not determine next ADR number. Existing ADR filenames must start with NNNN- (4-digit zero-padded). Found malformed: {malformed}.` |
+| `next_doc_number.sh docs/adr` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
 | Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |

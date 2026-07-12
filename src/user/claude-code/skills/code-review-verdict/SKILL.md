@@ -12,6 +12,7 @@ description: >
   Trigger: "code review", "review this PR", "review the diff", "security review of changes".
 argument-hint: "<scope — PR#, branch, uncommitted, staged, or path [path …]>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -29,6 +30,14 @@ You are the **Reviewer**. You conduct a code review on the artifact named by `<s
 - Always singular docs/spec/ — never docs/specs/.
 - `docs/tdd/` is ephemeral — Design/Planning input only; deletable any time after implementation (master: docs-paths.md).
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
+
+## Pre-Injected Diff-Scope Context
+
+The harness's `` !`<command>` `` dynamic-context-injection mechanism runs these commands once, at skill-load time, before this content reaches the calling agent — a deterministic working-tree census supplementing (never replacing) the scope-resolved diff from Argument Handling below. Treat this as ground truth for what the working tree looked like the moment the skill loaded, not a substitute for `git diff --stat main...{scope}` or `gh pr diff` on PR/branch scopes.
+
+- Working tree status: !`git status --short`
+- Diff stat (uncommitted): !`git diff --stat`
+- Dependency audit snapshot: !`${CLAUDE_PROJECT_DIR}/.claude/scripts/audit_snapshot.sh`
 
 ## Role Detection
 

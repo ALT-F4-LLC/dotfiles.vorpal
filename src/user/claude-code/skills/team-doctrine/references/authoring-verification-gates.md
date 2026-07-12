@@ -61,10 +61,10 @@ or unexecuted assumptions becomes implementation rework that costs more than the
 - **Inverted-scope grep on namespace expansion.** When a fix cycle expands a namespace
   (renames, new field type, alias), pre-verification grep MUST cover all historical stale
   states (inverted-scope), not just the prior reviewer's specific complaint token — run
-  `.claude/scripts/ref_census.sh -p <stale-state-regex> -e <exempt>...` from REPO-ROOT and
+  `~/.claude/scripts/ref_census.sh -p <stale-state-regex> -e <exempt>...` (repo: `src/user/claude-code/scripts/ref_census.sh`) from REPO-ROOT and
   require its `actionable_count` to close against the change's own claimed edit count.
 - **Remove/rename-all-references inventories** run
-  `.claude/scripts/ref_census.sh -p <pattern> -e <frozen-history/memory-dir>...` from
+  `~/.claude/scripts/ref_census.sh -p <pattern> -e <frozen-history/memory-dir>...` from
   REPO-ROOT (`.git` always exempt; pass explicit `-e` exemptions — never an allowlist of trees,
   however long) and read its `total`/`exempt_count`/`actionable_count` closed arithmetic;
   brief-supplied counts are verification targets, not facts, and the closure AC re-runs the

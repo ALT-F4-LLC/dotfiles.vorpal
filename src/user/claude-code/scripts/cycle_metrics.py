@@ -4,7 +4,7 @@ step 16 instrumentation) into fix_rounds rate, review_spawns_total
 distribution, DEGRADED-fallback count, and pattern mix — with named
 thresholds that mandate an evolve-* review when blown.
 
-Ledger line schema (write side: .claude/scripts/dispatch_ledger.sh):
+Ledger line schema (write side: src/user/claude-code/scripts/dispatch_ledger.sh):
   {YYYY-MM-DD} | cycle={slug} | pattern={value} | review={value} |
   verify={value} | votes={value} | fix_rounds={value} |
   review_spawns_total={value} [| note={value}]

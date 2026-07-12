@@ -12,7 +12,7 @@ script also probes hardcoded /Applications bundle paths that a PATH stub
 cannot suppress, so the result would depend on what's actually installed
 on the machine running this suite).
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_render_verify.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_render_verify.py``.
 Exit 0 = all asserts pass. Drives the real CLI via subprocess.
 """
 import shutil

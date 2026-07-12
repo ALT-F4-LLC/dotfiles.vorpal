@@ -37,7 +37,7 @@ The harness's dynamic-context-injection mechanism (an exclamation mark immediate
 
 - Working tree status: !`git status --short`
 - Diff stat (uncommitted): !`git diff --stat`
-- Dependency audit snapshot: !`${CLAUDE_PROJECT_DIR}/.claude/scripts/audit_snapshot.sh`
+- Dependency audit snapshot: !`~/.claude/scripts/audit_snapshot.sh`
 
 ## Role Detection
 

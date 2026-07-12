@@ -86,9 +86,9 @@ If extra positional args are passed beyond `<topic>`, ignore them silently.
 2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory is
    `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
    filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
-   `.claude/scripts/next_doc_number.sh` (the shared {NNNN} allocation +
-   citation-hijack script) is `adr/SKILL.md`'s numbering step, not this skill's —
-   do not invoke it here.
+   `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`;
+   the shared {NNNN} allocation + citation-hijack script) is `adr/SKILL.md`'s numbering
+   step, not this skill's — do not invoke it here.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.

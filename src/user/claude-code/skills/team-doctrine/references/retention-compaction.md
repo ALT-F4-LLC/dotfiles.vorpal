@@ -1,9 +1,9 @@
 # Retention & Compaction Policy — Maintained Master
 
 **Consumers (cite by path, never restate — this file is the sole normative home):**
-`.claude/skills/evolve-agents/SKILL.md`,
-`.claude/skills/evolve-skills/SKILL.md`, `.claude/skills/evolve-config/SKILL.md`,
-`.claude/skills/evolve-model-distribution/SKILL.md` (optional terminal compaction step),
+the evolve-agents, evolve-skills, and evolve-config skills (project-local at the dotfiles
+repo's skills home), the evolve-model-distribution skill (same home; optional terminal
+compaction step),
 `src/user/claude-code/agents/team-lead.md`, and the `CANONICAL:PITFALLS` block carried by
 `references/pitfalls.md` + its 7 claude-code agent carriers. Adopted 2026-06-09; relocated
 from the retired decision record 2026-07-09 — that record now carries a demotion banner

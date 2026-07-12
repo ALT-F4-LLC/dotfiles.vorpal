@@ -280,7 +280,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) a
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
    - `-r2` respawn convention (canonical from `agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
    - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
+   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
 5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
@@ -314,13 +314,13 @@ If a category is empty for an agent, write `none` — do not omit the line. Afte
 ```
 Agent(name="innovation-scanner", subagent_type="distinguished-engineer", model="fable", prompt="...")
 
-MISSION: Surface CONCRETE, HIGH-IMPACT opportunities to rethink, refactor, reimagine, or automate how agents do their jobs — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Every finding is a candidate CHANGE for THIS cycle's Phase 1/2, not a research pointer to "explore later" — if you can't name the exact target and the concrete change, drop the finding rather than hedge it. **A first-class target is RELIABLE process automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC — including any worth codifying as a shared script under `.claude/scripts/` that a later cycle then consumes.** Read agents/*.md and surface opportunities beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
+MISSION: Surface CONCRETE, HIGH-IMPACT opportunities to rethink, refactor, reimagine, or automate how agents do their jobs — evolutionary variation and exploration, NOT auditing past failures (that is historical-auditor's job). Every finding is a candidate CHANGE for THIS cycle's Phase 1/2, not a research pointer to "explore later" — if you can't name the exact target and the concrete change, drop the finding rather than hedge it. **A first-class target is RELIABLE process automation: manual, repetitive, or error-prone steps that could be made DETERMINISTIC — including any worth codifying as a shared script under `src/user/claude-code/scripts/` that a later cycle then consumes.** Read agents/*.md and surface opportunities beyond what error-correction alone would find. Use WebSearch/WebFetch for external discovery (new model capabilities, emerging orchestration patterns) and Grep/Read for internal pattern discovery.
 
 Target agents: {target_agents}
 
 ## Task — for EACH target agent, find opportunities in these four lenses. A lens with no HIGH-IMPACT finding emits "none" — do not pad with a low-value bullet to fill the format.
 1. **Rethink**: A core approach, tool composition, or model capability the agent isn't using that would change HOW it does its job, not just reword what it already does (e.g. an unused Claude Code capability, a coordination primitive that replaces manual back-and-forth).
-2. **Refactor & Automate**: A specific manual, repetitive, or error-prone step that could be shortened, parallelized, eliminated, or made DETERMINISTIC by codifying it as a repeatable script under `.claude/scripts/` — prefer automating any step whose result currently varies by hand-execution.
+2. **Refactor & Automate**: A specific manual, repetitive, or error-prone step that could be shortened, parallelized, eliminated, or made DETERMINISTIC by codifying it as a repeatable script under `src/user/claude-code/scripts/` — prefer automating any step whose result currently varies by hand-execution.
 3. **Retire**: A named behavior, rule, or convention (cite the exact heading or paragraph) that is now obsolete, superseded by a better primitive, or actively creates overhead.
 4. **Cross-Agent Leverage**: A coordination pattern or shared convention duplicated (or missing) across 2+ named agents that, once fixed, pays off family-wide.
 
@@ -355,7 +355,7 @@ Target agents: {target_agents}
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
 
 1. **Per-spawn model distribution** — across the audit window, run:
-   `python3 .claude/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
+   `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
    Report DISTINCT counts per model per agent role. This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — for each agent/model pair observed, correlate with:
@@ -598,7 +598,7 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    consistent terminology, handoff patterns work both ways
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
-5. Run `python3 .claude/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the five byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir, impact-class). Flag any drift.
+5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the five byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir, impact-class). Flag any drift.
 6. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
 
 ## Output Format

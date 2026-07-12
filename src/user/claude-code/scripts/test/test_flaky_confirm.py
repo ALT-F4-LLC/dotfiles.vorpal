@@ -2,7 +2,7 @@
 """Fixture-driven checks for flaky_confirm.sh — the pass/fail tally and
 verdict classification (STABLE/FLAKY/DETERMINISTICALLY BROKEN) core.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_flaky_confirm.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_flaky_confirm.py``.
 Exit 0 = all asserts pass. No external dependencies; synthesizes flaky
 behavior via a counter file bumped by the test command itself. Drives the
 real CLI via subprocess.

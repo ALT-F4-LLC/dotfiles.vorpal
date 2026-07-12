@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deterministic secret-pattern battery for the Rule-8 shared review brief,
-# folded in exactly as .claude/scripts/audit_snapshot.sh is: takes a diff
+# folded in exactly as src/user/claude-code/scripts/audit_snapshot.sh is: takes a diff
 # scope, emits a structured report-only JSON result, cheap to re-run.
 #
 # Design constraints from the security-advisor consult (DKT-187):
@@ -10,7 +10,7 @@
 #   - NEVER emits the raw matched secret value. Findings carry a fixed,
 #     non-secret label plus match length only (e.g. "AKIA...(len=20)"),
 #     never the actual bytes.
-#   - Self-exclusion: this script's own path and .claude/scripts/test/ are
+#   - Self-exclusion: this script's own path and src/user/claude-code/scripts/test/ are
 #     skipped (they contain the patterns themselves as literals), plus an
 #     inline `pragma: allowlist secret` opt-out per line (detect-secrets
 #     convention) for legitimate fixtures elsewhere.
@@ -51,8 +51,8 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 cd "$REPO_ROOT"
 
-SELF_PATH=".claude/scripts/secret_scan.sh"
-FIXTURES_PREFIX=".claude/scripts/test/"
+SELF_PATH="src/user/claude-code/scripts/secret_scan.sh"
+FIXTURES_PREFIX="src/user/claude-code/scripts/test/"
 
 MANIFEST_FILE=$(mktemp "${TMPDIR:-/tmp}/secret_scan_manifest.XXXXXX")
 FINDINGS_FILE=$(mktemp "${TMPDIR:-/tmp}/secret_scan_findings.XXXXXX")

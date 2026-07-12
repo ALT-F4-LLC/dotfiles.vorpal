@@ -3,7 +3,7 @@
 (fenced-block PRIMARY path, section-scoped inline-backtick SECONDARY path)
 and its --pre inversion.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_ac_check.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_ac_check.py``.
 Exit 0 = all asserts pass. Stubs the `docket` binary per test (a temp dir
 prepended to PATH) so it never touches the real Docket board; runs with cwd
 inside this repo, which satisfies ac_check.sh's own git-repo check. Drives

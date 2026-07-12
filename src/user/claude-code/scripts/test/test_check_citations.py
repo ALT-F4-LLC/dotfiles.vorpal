@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fixture-driven checks for check_citations.py — extraction and existence core.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_check_citations.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_check_citations.py``.
 Exit 0 = all asserts pass. Scoped entirely to fixtures/citations/ so it never
 touches the peer symmetry/signals fixtures. Drives the real CLI via subprocess.
 """

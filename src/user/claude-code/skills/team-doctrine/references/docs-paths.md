@@ -16,7 +16,7 @@ never `Skill(team-doctrine)`.
 ## Docs-Path Taxonomy
 
 <!-- CANONICAL:DOCS-PATHS:BEGIN -->
-Maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`src/user/claude-code/skills/*` and `.claude/skills/*`) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear.
+Maintained master and authoritative source for `docs/` output-path conventions. Each path family has exactly ONE writer and the skill that authors that path is the authority for its shape; every other agent READS. Each agent — and each docs-path-touching skill (`src/user/claude-code/skills/*` and `.claude/skills/*`, repo-local) — carries a compact, role-scoped copy (CANONICAL:DOCS-PATHS-LOCAL) in its own file because both agents and skills load into a calling agent's context in isolation; this block is the master those copies are maintained from. The canonical directory name is singular `docs/spec/` — plural `docs/specs/` is the antipattern and must never appear.
 
 | Path | Writer | Readers | Owning skill/agent | Notes |
 |---|---|---|---|---|

@@ -2,7 +2,7 @@
 """Fixture-driven checks for dor_check.py — the Definition-of-Ready heuristic
 checklist and tree-completeness check.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_dor_check.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_dor_check.py``.
 Exit 0 = all asserts pass. Stubs the `docket` binary per test with a small
 routing-table dispatcher (env-var-driven) so it never touches the real
 Docket board. Drives the real CLI via subprocess.

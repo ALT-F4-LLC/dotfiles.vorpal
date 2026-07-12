@@ -118,7 +118,7 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **ADR numbering** (ADR-specific): `Bash .claude/scripts/next_doc_number.sh docs/adr`
+5. **ADR numbering** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh docs/adr` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
    — the shared doc-number allocation + citation-hijack script (also used by
    `agents/distinguished-engineer.md`, `agents/staff-engineer.md`, and
    `agents/security-engineer.md` when hand-authoring ADRs outside this skill).

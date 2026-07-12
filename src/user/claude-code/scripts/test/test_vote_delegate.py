@@ -2,7 +2,7 @@
 """Fixture-driven checks for vote_delegate.sh — the criticality-to-threshold
 mapping and delegation_request payload construction.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_vote_delegate.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_vote_delegate.py``.
 Exit 0 = all asserts pass. Stubs the `docket` binary per test (a temp dir
 prepended to PATH) so it never creates a real Docket vote. Drives the real
 CLI via subprocess.

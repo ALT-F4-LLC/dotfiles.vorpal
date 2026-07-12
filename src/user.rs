@@ -1183,6 +1183,17 @@ impl UserEnvironment {
         .await?;
         let claude_skills_path = get_output_path("library", &claude_skills);
 
+        // Claude scripts directory
+        let claude_scripts_name = format!("{}-claude-code-scripts", &self.name);
+        let claude_scripts = FileSource::new(
+            &claude_scripts_name,
+            "src/user/claude-code/scripts",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+        let claude_scripts_path = get_output_path("library", &claude_scripts);
+
         // Codex skills directory
         let codex_skills_name = format!("{}-codex-skills", &self.name);
         let codex_skills = FileSource::new(
@@ -1208,6 +1219,7 @@ impl UserEnvironment {
         // User environment
 
         let claude_agents_path = format!("{claude_agents_path}/src/user/claude-code/agents");
+        let claude_scripts_path = format!("{claude_scripts_path}/src/user/claude-code/scripts");
         let claude_skills_path = format!("{claude_skills_path}/src/user/claude-code/skills");
         let codex_agents_path = format!("{codex_agents_path}/src/user/codex/agents");
         let codex_personas_path = format!("{codex_personas_path}/src/user/codex/personas");
@@ -1264,6 +1276,7 @@ impl UserEnvironment {
                 claude_agents,
                 claude_code_config,
                 claude_guard_no_commit_hook,
+                claude_scripts,
                 claude_skills,
                 claude_statusline,
                 claude_task_completed_hook,
@@ -1301,6 +1314,7 @@ impl UserEnvironment {
                 (&claude_agents_path, "$HOME/.claude/agents"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
+                (&claude_scripts_path, "$HOME/.claude/scripts"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_task_completed_hook_path.as_str(), "$HOME/.claude/task-completed-hook.sh"),

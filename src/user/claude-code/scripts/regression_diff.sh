@@ -7,7 +7,7 @@
 # id, at the finest granularity each surface's own output actually supports:
 #   cargo:<target>:<test>       from `cargo test` (per-test; not fail-fast)
 #   bash:<script>:<assertion>   from tests/*.test.sh (PASS:/FAIL: lines; not fail-fast)
-#   python:<script>             from .claude/scripts/test/test_*.py (file-level:
+#   python:<script>             from src/user/claude-code/scripts/test/test_*.py (file-level:
 #                                these harnesses fail-fast on the first assertion,
 #                                so which later tests would have failed is unknowable)
 set -euo pipefail
@@ -17,7 +17,7 @@ usage() {
     echo "       regression_diff.sh compare <before_key> <after_key>" >&2
     echo "" >&2
     echo "  capture   runs cargo test, tests/*.test.sh, and" >&2
-    echo "            .claude/scripts/test/test_*.py, then snapshots the" >&2
+    echo "            src/user/claude-code/scripts/test/test_*.py, then snapshots the" >&2
     echo "            failing-test set to \$REGRESSION_DIFF_DIR/<key>.json" >&2
     echo "            (default \$REGRESSION_DIFF_DIR: \${TMPDIR:-/tmp}/regression_diff)." >&2
     echo "  compare   diffs two snapshots and reports newly-failing," >&2
@@ -75,7 +75,7 @@ capture_bash() {
 }
 
 capture_python() {
-    local dir=".claude/scripts/test" f base
+    local dir="src/user/claude-code/scripts/test" f base
     [ -d "$dir" ] || return 0
     for f in "$dir"/test_*.py; do
         [ -f "$f" ] || continue

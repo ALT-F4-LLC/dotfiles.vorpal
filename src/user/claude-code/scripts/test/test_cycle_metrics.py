@@ -2,7 +2,7 @@
 """Fixture-driven checks for cycle_metrics.py — the rolling-window threshold
 math over the dispatch ledger.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_cycle_metrics.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_cycle_metrics.py``.
 Exit 0 = all asserts pass. Scoped entirely to fixtures/cycle_metrics/ so it
 never touches the real dispatch ledger. Drives the real CLI via subprocess.
 """

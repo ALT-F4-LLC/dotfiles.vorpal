@@ -2,7 +2,7 @@
 """Fixture-driven checks for secret_scan.sh — the 16-pattern regex battery,
 redaction, and entropy/placeholder guards.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_secret_scan.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_secret_scan.py``.
 Exit 0 = all asserts pass. Builds a throwaway git repo under $TMPDIR per test
 using plumbing commands only (write-tree/commit-tree/update-ref) — never
 `git add`/`git commit`, which this repo's commit-guard hook blocks in
@@ -105,7 +105,7 @@ def test_pragma_allowlist_line_excluded_from_scan_and_count():
 def test_fixtures_prefix_self_excluded():
     repo = make_repo()
     try:
-        result = scan(repo, {".claude/scripts/test/dummy.sh": "export KEY = AKIAABCDEFGHIJKLMNOP\n"})
+        result = scan(repo, {"src/user/claude-code/scripts/test/dummy.sh": "export KEY = AKIAABCDEFGHIJKLMNOP\n"})
         assert result["added_lines_scanned"] == 0, result
         assert result["findings"] == [], result
     finally:
@@ -184,7 +184,7 @@ def test_self_path_excluded_from_scan():
     FIXTURES_PREFIX branch — this covers the separate exact-match SELF_PATH branch."""
     repo = make_repo()
     try:
-        result = scan(repo, {".claude/scripts/secret_scan.sh": "export KEY = AKIAABCDEFGHIJKLMNOP\n"})
+        result = scan(repo, {"src/user/claude-code/scripts/secret_scan.sh": "export KEY = AKIAABCDEFGHIJKLMNOP\n"})
         assert result["added_lines_scanned"] == 0, result
         assert result["findings"] == [], result
     finally:

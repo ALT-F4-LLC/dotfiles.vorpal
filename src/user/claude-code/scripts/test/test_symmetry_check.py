@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fixture-driven checks for symmetry_check.py — the drift-detection core.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_symmetry_check.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_symmetry_check.py``.
 Exit 0 = all asserts pass. Scoped entirely to fixtures/symmetry/ so it never
 touches the peer signals fixtures. Drives the real CLI via subprocess.
 """

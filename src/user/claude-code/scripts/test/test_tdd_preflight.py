@@ -3,7 +3,7 @@
 plus the numbered cross-reference reconciliation between a TDD and its
 companion doc.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_tdd_preflight.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_tdd_preflight.py``.
 Exit 0 = all asserts pass. Scoped entirely to fixtures/tdd_preflight/ so it
 never touches real docs/tdd content. Runs with cwd inside this repo (needed
 for tdd_preflight.sh's own git-repo check) and passes repo-relative fixture
@@ -15,8 +15,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SCRIPT = HERE.parent / "tdd_preflight.sh"
-REPO_ROOT = HERE.parent.parent.parent
-FIXTURES_REL = ".claude/scripts/test/fixtures/tdd_preflight"
+REPO_ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
+FIXTURES_REL = "src/user/claude-code/scripts/test/fixtures/tdd_preflight"
 
 
 def run(*args):

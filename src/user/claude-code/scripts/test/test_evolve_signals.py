@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fixture-driven checks for evolve_signals.py — the de-dupe / determinism core.
 
-Standalone (no pytest): ``python3 .claude/scripts/test/test_evolve_signals.py``.
+Standalone (no pytest): ``python3 src/user/claude-code/scripts/test/test_evolve_signals.py``.
 Exit 0 = all asserts pass. Scoped entirely to fixtures/signals/ so it never
 touches the peer symmetry fixtures. Drives the real CLI via subprocess.
 """

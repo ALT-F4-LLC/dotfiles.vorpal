@@ -1108,8 +1108,7 @@ impl UserEnvironment {
         );
 
         // Claude Code TaskCompleted hook script
-        let claude_task_completed_hook_name =
-            format!("{}-claude-task-completed-hook", &self.name);
+        let claude_task_completed_hook_name = format!("{}-claude-task-completed-hook", &self.name);
         let claude_task_completed_hook = FileCreate::new(
             include_str!("user/task-completed-hook.sh"),
             claude_task_completed_hook_name.as_str(),
@@ -1295,40 +1294,32 @@ impl UserEnvironment {
             ])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
-                "GOPATH=$HOME/Development/language/go".to_string(),
+                "GOPATH=${HOME}/Development/language/go".to_string(),
                 "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1".to_string(),
                 "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1".to_string(),
-                "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative".to_string(),
-                "OTEL_LOGS_EXPORTER=otlp".to_string(),
-                "OTEL_METRICS_EXPORTER=otlp".to_string(),
-                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:$GOPATH/bin:$HOME/.opencode/bin:$HOME/.vorpal/bin:$HOME/.local/bin:$PATH".to_string(),
-                format!("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT={OTEL_LOGS_ENDPOINT_LOKI}"),
-                format!("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
-                format!("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT={OTEL_METRICS_ENDPOINT_MIMIR}"),
-                format!("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL={OTEL_OTLP_PROTOCOL}"),
+                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.opencode/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
             ])
             .with_symlinks(vec![
-                ("$HOME/Development/repository/github.com/ALT-F4-LLC/vorpal.git/main/target/debug/vorpal", "$HOME/.vorpal/bin/vorpal"),
-                (bat_config_path.as_str(), "$HOME/.config/bat/config"),
-                (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
                 (&claude_agents_path, "$HOME/.claude/agents"),
-                (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
-                (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (&claude_scripts_path, "$HOME/.claude/scripts"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
+                (&codex_agents_path, "$HOME/.codex/agents"),
+                (&codex_personas_path, "$HOME/.codex/personas"),
+                (&codex_skills_path, "$HOME/.codex/skills"),
+                (&opencode_skills_path, "$HOME/.config/opencode/skills"),
+                (bat_config_path.as_str(), "$HOME/.config/bat/config"),
+                (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
+                (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
+                (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
                 (claude_task_completed_hook_path.as_str(), "$HOME/.claude/task-completed-hook.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
-                (&codex_agents_path, "$HOME/.codex/agents"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
-                (&codex_personas_path, "$HOME/.codex/personas"),
                 (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
-                (&codex_skills_path, "$HOME/.codex/skills"),
                 (ghostty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
                 (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
-                (&opencode_skills_path, "$HOME/.config/opencode/skills"),
                 (opencode_tui_config_path.as_str(), "$HOME/.config/opencode/tui.json"),
             ])
             .build(context)

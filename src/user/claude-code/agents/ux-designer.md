@@ -233,13 +233,13 @@ Perform after @senior-engineer completes implementation, when @sdet reports disc
 
 **For static-export / slide / visual surfaces, "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass — a subtle cue (thin color accent) that meets the CSS contract can fail to read once compressed into streamed/screenshared video. Flag a missing/broken render as a Blocker.
 
-**Render mechanism by surface class** (the gate above names the requirement; this names the tool — no shared script exists yet, so choose per-session and consult team-lead before codifying one):
+**Render mechanism by surface class** (the gate above names the requirement; this names the tool — the shared script `src/user/claude-code/scripts/render_verify.sh` is the canonical mechanism, dispatched by surface class below):
 
 | Surface class | Render mechanism |
 |---|---|
-| Static-export / HTML / slide | Headless-browser screenshot → PNG, then `Read` the image at real delivery resolution |
-| TUI | Scratch-module recipe above (forced `SetColorProfile`) or captured terminal output |
-| CLI | Captured `stdout`/`stderr` from the real invocation (`cmd 2>&1 | tee`) |
+| Static-export / HTML / slide | `render_verify.sh html <url-or-file> [out.png]` (headless-browser screenshot → PNG), then `Read` the image at real delivery resolution |
+| TUI | Scratch-module recipe above (forced `SetColorProfile`) for deterministic color, or `render_verify.sh tui <command-string>` for captured terminal output |
+| CLI | `render_verify.sh cli <command-string>` — captures `stdout`/`stderr` from the real invocation (`cmd 2>&1 | tee`) |
 
 Invoke `Skill(design-qa, "<scope>")` — scope = UX spec path, Docket issue ID, or `uncommitted`. Format authority: `~/.claude/skills/design-qa/SKILL.md` (repo: `src/user/claude-code/skills/design-qa/SKILL.md`). Emits Pass / Pass with Issues / Fail with severity (Blocker / Concern / Suggestion / Praise). **Not a terminal artifact until the verdict lands as a durable `[UX→team-lead] Design QA: <verdict>` Docket comment** — a SendMessage-only verdict leaves a caller scanning the thread unable to confirm sign-off. You own that comment plus the peer SendMessage handoff.
 

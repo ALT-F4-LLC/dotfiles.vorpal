@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Byte-symmetry linter for the evolve-agents/evolve-skills parity-locked blocks.
 
-Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the five blocks that
+Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the two blocks that
 must be byte-identical between evolve-agents/SKILL.md and evolve-skills/SKILL.md modulo
-an established set of agent<->skill noun substitutions. Normalizes the evolve-agents
-block into skill vocabulary, then diffs it against the evolve-skills block verbatim.
+an established set of agent<->skill noun substitutions (innovation-scanner, impact-class).
+Normalizes the evolve-agents block into skill vocabulary, then diffs it against the
+evolve-skills block verbatim. The historical/repetition/bug/model-routing auditor
+templates and the HARVEST block are single-homed in evolve-phase0-templates.md and so
+are symmetric by construction — no longer compared here.
 
 Read-only. Never edits, never commits. Stdlib only.
 """
@@ -104,28 +107,10 @@ def extract_block(text: str, start_pattern: str, end_pattern: str, include_end: 
     return "\n".join(lines[start_idx:end_idx]).strip("\n")
 
 
-# NOTE: "mimir"'s range is fully contained within "model-routing-auditor"'s range,
-# so a drift inside the Mimir lines is reported twice under `--check all` — intentional
-# and harmless (mimir exists as a narrower, independently-runnable check).
 CHECKS = {
-    "pitfalls-harvest": {
-        "start": r"^<!-- CANONICAL:HARVEST:BEGIN -->$",
-        "end": r"^<!-- CANONICAL:HARVEST:END -->$",
-        "include_end": True,
-    },
     "innovation-scanner": {
         "start": r"^### Phase 0: Innovation Scan$",
         "end": r"^### Phase 0: Model Routing Audit$",
-        "include_end": False,
-    },
-    "model-routing-auditor": {
-        "start": r"^### Phase 0: Model Routing Audit$",
-        "end": r"^### Phase",
-        "include_end": False,
-    },
-    "mimir": {
-        "start": r"^\d+\. \*\*Mimir metrics \(primary factual arm",
-        "end": r"^## Improvement-Only Mandate$",
         "include_end": False,
     },
     "impact-class": {
@@ -135,7 +120,7 @@ CHECKS = {
     },
 }
 
-ALL_CHECKS = ["pitfalls-harvest", "innovation-scanner", "model-routing-auditor", "mimir", "impact-class"]
+ALL_CHECKS = ["innovation-scanner", "impact-class"]
 
 
 def run_check(name: str, agents_text: str, skills_text: str) -> "tuple[bool, list[str]]":

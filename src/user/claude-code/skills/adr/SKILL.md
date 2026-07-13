@@ -42,17 +42,12 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Slug derivation** (deterministic):
-
-1. `lower      = lowercase(topic)`
-2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
-3. `trimmed    = cleaned.strip('-')`
-4. `truncated  = trimmed[:60]`
-5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
-   `boundary != -1`, set `truncated = truncated[:boundary]`.
-6. `truncated  = truncated.strip('-')` (re-trim after step 5).
-7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-8. Use `truncated` as `{slug}`.
+**Slug derivation** (deterministic): `Bash ~/.claude/scripts/slug.sh "<topic>"`
+(repo: `src/user/claude-code/scripts/slug.sh`) — the shared 8-step algorithm
+(lowercase → non-alphanumeric runs to `-` → strip → 60-char cut → prefer a word
+boundary in [40, 60) → re-strip → empty check). On exit 0, stdout is `{slug}`. On
+exit 1 (no alphanumeric survivors) the script emits `Error: Topic must contain at
+least one alphanumeric character.` on stderr — surface it and ABORT.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
@@ -200,29 +195,34 @@ heading in the drafted document.
 
 ## Validation Before Save
 
-Before invoking `Write`, verify in the calling agent's context:
+The full checklist — the frontmatter contract (including the `superseded_by`
+conditional), the `status` allow-list, section order, the Alternatives-Considered
+minimum, and the placeholder scan — is mechanized by the shared `doc_validate.py`,
+the single source of truth for what a valid ADR must satisfy. Validate the drafted
+document before the final Write:
 
-1. **Frontmatter fields** — all of `project`, `last_updated`, `updated_by`,
-   `status` present and non-empty. If `status: superseded`, `superseded_by`
-   must also be present and non-empty.
-2. **Status value** — `status` is one of `proposed | accepted | superseded`.
-3. **Section order** — the body contains all top-level sections enumerated
-   in "Required Sections" above, as `##` headings, in the order listed
-   (currently 4 sections; count only `##` headings at column 0 *outside*
-   ``` code fences — an ADR that documents another doc/skill may embed
-   `##`/`###` example headings inside fences; those are content, not
-   structure). Off-by-one against the count is a defect.
-4. **Alternatives count** — Section 4 (Alternatives Considered) names at
-   least one alternative.
-5. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
-   `{project_name}`, `{NNNN}`, `TBD`, or `TODO` text outside of code-fenced
-   examples.
+1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
+   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
+2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type adr "$TMPDIR/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+3. **Act on the exit code:**
+   - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
+     `docs/adr/...`).
+   - **exit 1** — validation failure. ABORT, quoting the script's stderr (no
+     fix-and-retry — the skill validates then writes in a single pass; repair is the
+     calling agent's responsibility, and it re-invokes `Skill(adr, "<topic>")`):
 
-If any check fails, ABORT with:
+     ```
+     Error: validation failed: {field/section} — {detail}.
+     ```
 
-```
-Error: validation failed: {field/section} — {detail}.
-```
+   - **exit 2** — infrastructure/usage failure (validator missing or staging file
+     unreadable). ABORT with a distinct message so the caller escalates the
+     infrastructure problem instead of re-drafting:
+
+     ```
+     Error: validator unavailable: {stderr}
+     ```
 
 ## Save & Return
 

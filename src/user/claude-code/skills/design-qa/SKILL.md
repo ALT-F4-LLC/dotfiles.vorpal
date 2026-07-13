@@ -174,26 +174,22 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 
 ## Validation Before Emit
 
-Before emitting the report, verify in the calling agent's context:
-
-1. **Verdict is on the ladder** — exactly one of Pass / Pass with Issues / Fail.
-2. **Verdict matches severity counts** —
-   - Any Blocker finding → Verdict MUST be Fail.
-   - Any Concern finding (no Blockers) → Verdict MUST be Pass with Issues.
-   - No Blockers and no Concerns → Verdict MUST be Pass.
-3. **Every Concern and Blocker cites a Spec Section** — issues table column "Spec Section" is non-empty for those rows. Cross-surface precedent findings may use the literal `"Cross-surface"` at any severity; Suggestions and Praise may also use general references.
-4. **Every Concern and Blocker cites implementation evidence** — Description column contains a file:line reference, observed command output, generated artifact, or surface state. Bare "diverges from spec" without traceable evidence is a defect.
-5. **Required sections present, in order** — Spec Reference, Verdict, Issues, What's Implemented Well, Acceptable Deviations, Recommendation. Off-by-one omissions are defects.
-6. **Placeholder scan** — body contains no literal `{Spec Title}`, `{spec heading}`, `TBD`, or `TODO` text outside of code-fenced examples.
-7. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Issues, What's Implemented Well, Acceptable Deviations, or Recommendation. Use evidence-anchored language. A hit is a defect.
-
-If any check fails, ABORT:
+Mechanically validate the drafted QA report before emitting it. Write the report verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-Error: validation failed: {section/field} — {detail}.
+report_lint.py --skill design-qa "$TMPDIR/report.md"
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(design-qa, "<scope>")`.
+Handle the exit code DISTINCTLY:
+
+- **exit 0** — emit the report in the calling agent's context.
+- **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-qa, "<scope>")`:
+  ```
+  Error: validation failed: {section/field} — {detail}.
+  ```
+- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+
+Every check in this QA report's checklist is text-decidable and lives in the validator — nothing stays in-skill. The validator enforces: verdict on the ladder; verdict matches severity counts (any Blocker ⇒ Fail; any Concern with no Blockers ⇒ Pass with Issues; none ⇒ Pass); every Concern/Blocker row cites a non-empty Spec Section (the literal `"Cross-surface"` is accepted); every Concern/Blocker row cites non-empty implementation evidence in Description; required sections present in order; placeholder scan; banned-confidence-phrase scan (scoped to Issues, What's Implemented Well, Acceptable Deviations, Recommendation).
 
 ## Save & Return
 

@@ -39,14 +39,13 @@ def test_drifted_fixture_exits_nonzero_with_diff():
     assert code != 0, f"expected non-zero exit, got {code}"
     diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
     assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
-    # Only one line drifts (skill_name -> skill_id); the mimir range is a subset of
-    # model-routing-auditor's, so `--check all` reports it under both check names.
-    assert "model-routing-auditor: DRIFT" in out, out
-    assert "mimir: DRIFT" in out, out
+    # Only the innovation-scanner MISSION line drifts (improvements -> refinements);
+    # impact-class stays symmetric, so `--check all` reports exactly one drift.
+    assert "innovation-scanner: DRIFT" in out, out
 
 
 def test_drifted_single_check_exits_nonzero():
-    code, out, err = run("--check", "model-routing-auditor", "--agents-file", str(AGENTS_SYMMETRIC),
+    code, out, err = run("--check", "innovation-scanner", "--agents-file", str(AGENTS_SYMMETRIC),
                          "--skills-file", str(SKILLS_DRIFTED))
     assert code != 0, f"expected non-zero exit, got {code}"
     diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]

@@ -51,6 +51,7 @@ Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR 
 
 **Scope resolution** (apply rules in order; first match wins):
 
+<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `verify-ac/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet in the Ambiguity rules below is near-identical (differs only by "on such a name"). Keep all four in sync across both files when either changes — decision record: TDD `docs/tdd/coordinated-shared-extraction-of-duplicated-skill.md` §4.4 (extraction rejected; coupling documented instead, per DKT-250). -->
 | Form | Detection | Diff source |
 |---|---|---|
 | GitHub PR number | matches `^\d+$` | `gh pr view {n}` (description) + `gh pr diff {n}` (diff) |
@@ -350,26 +351,27 @@ On re-invocation against a fixed diff (the dominant call pattern — fix→re-re
 
 ## Validation Before Emit
 
-Before emitting the structured review, verify in the calling agent's context:
-
-1. **Heading matches the role's banner** per the Output Contract.
-2. **Every section in the role's template is present, in order** — see Output Contract for the full list. For `staff-engineer`, this includes the `Overrides Recognized` section and the `Hard Gates Triggered` section (each gate G1..G5 listed individually, even if "None"). **Round-N exception:** a compact Re-Review emission validates against its three-section template (Prior Findings Disposition, New Findings, Recommendation) instead.
-3. **Severity ladder matches role** — `staff-engineer` uses Blocker / Concern / Suggestion / Question / Praise; `security-engineer` uses Critical / High / Medium / Low / Info. Cross-mixing is a defect.
-4. **Hard gate consistency** — if a Blocker is emitted citing G1..G5, the same gate MUST appear in the `Hard Gates Triggered` section with the file:line and required mitigation. If an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect.
-5. **Empty severity buckets explicit** — every bucket reads `None` or lists items. Silent omission is a defect.
-6. **Recommendation is on the role's allow-list** — staff: Approve / Approve with follow-up / Request changes / Block / Split required; security: Approve (security) / Approve with follow-up / Block (security) / Split required.
-7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `TBD`, or `TODO` text outside of code-fenced examples.
-8. **Trailing confirmation line present** — emission ends with `Code review emitted ({recommendation}).` where `{recommendation}` is on the role's allow-list.
-9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Findings, Praise, or Recommendation. Use evidence-anchored language instead. A hit is a defect.
-10. **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
-
-If any check fails, ABORT:
+Mechanically validate the drafted review before emitting it. Write the review verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-Error: validation failed: {section/field} — {detail}.
+report_lint.py --skill code-review-verdict [--mode round-n] "$TMPDIR/review.md"
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(code-review-verdict, "<scope>")`.
+Omit `--mode` (default `full`) for the full general/security template; pass `--mode round-n` for a compact Re-Review emission. Handle the exit code DISTINCTLY:
+
+- **exit 0** — emit the review in the calling agent's context.
+- **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(code-review-verdict, "<scope>")`:
+  ```
+  Error: validation failed: {section/field} — {detail}.
+  ```
+- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+
+The validator mechanizes the shared, text-decidable checks: heading matches the role's banner, required sections present in order (Round-N compact template under `--mode round-n`), severity ladder matches role, empty severity buckets explicit (general role includes the `Overrides Recognized` bucket in this check), recommendation on the role's allow-list, trailing confirmation line present, placeholder scan, banned-confidence-phrase scan (scoped to Findings/Praise/Recommendation), the report-internal hard-gate arm (a Blocker citing G1..G5 must cross-list that gate under `Hard Gates Triggered`), and `Hard Gates Triggered` enumeration (all five gates G1..G5 listed individually, even when None).
+
+Two checks stay the calling agent's responsibility — they need Pre-flight diff state the review text does not carry:
+
+- **Override recognition (verbatim-match arm)** — if an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect. (The bucket's mere presence — empty vs itemized — is validator-mechanized above; only the diff-cross-referenced verbatim match stays here.)
+- **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
 
 ## Save & Return
 

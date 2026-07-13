@@ -14,7 +14,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Web
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `src/user/claude-code/skills/vote/` Delegation Protocol).
 <!-- CANONICAL:BANNER:END -->
 
 # Evolve Config
@@ -226,6 +226,8 @@ After Phase 4 (or its no-op gate check) completes:
 
 ## Spawning Templates
 
+**Template sourcing.** The two per-cycle Phase-0 auditor prompts below (Historical Audit, Model Routing Audit) are single-homed as paste-ready evolve-config variants in `src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md`. Read that file ONCE at Phase-0 spawn time and paste the referenced section. The only spawn-time token is `{HARVEST_BLOCK}`=the reference's §2 HARVEST block (substituted into the §3c historical variant); the model-routing §6b variant carries no spawn-time tokens. Runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`) pass through unchanged. If the file or a named section is missing, ABORT the cycle loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt.
+
 ### Phase 0: @staff-engineer (Documentation Research)
 
 Substitute `{latest_features_digest}` with the version-anchored changelog digest pinned in pre-flight step 7.
@@ -265,65 +267,7 @@ OUTPUT: a `### Config History` block — Recent churn, Dead setters (defined-but
 
 Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
 
-```
-Agent(name="historical-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the historical auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-Target: the Claude Code config genome (permissions, sandbox, hooks, env, model routing).
-
-## Task
-Mine three read-only sources for signals that a CONFIG SETTING is causing friction or is missing:
-
-1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
-   - **Permission-prompt friction (PRIMARY config signal):** grep for repeated permission requests on the SAME command pattern — a command the operator approves repeatedly is a candidate `allow` rule. Surface the top recurring command patterns with counts.
-   - **Sandbox friction:** `"Operation not permitted"`, `dangerouslyDisableSandbox`, sandbox denial strings tied to a command/path/domain — each is a candidate sandbox-rule change. De-dupe by distinct command/path + session.
-   - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals.
-   - Operator-correction phrases after a config-related turn: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Extract ≤240-char excerpts.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — ground truth. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`. Non-pinned spawns run `claude-opus-4-8` via classifier fallback. Report distribution; any model/effort env recommendation MUST be grounded in these measured models.
-2. **`~/.claude/history.jsonl`** (`display` field carries operator input, `timestamp` epoch-ms): `grep -E '"display":"/evolve-config' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`).
-3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `*/*.md`, relative to repo; dir may not exist — treat absence as `none`): `grep -lri 'permission\|sandbox\|allow rule\|settings\|config' .claude/agent-memory/ 2>/dev/null` — durable lessons about config friction.
-<!-- CANONICAL:HARVEST:BEGIN -->
-**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` with this EXACT bounded command (substitute nothing — it is literal):
-
-```
-{
-  find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
-    -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print
-  find "$HOME/.claude/agent-memory" -maxdepth 2 -type f -name 'pitfalls.md' -print
-} 2>/dev/null | sort -u
-```
-
-The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op (`2>/dev/null` swallows the error); the trailing `sort -u` also de-dupes any path the two roots both happen to match (they do not overlap under normal `$HOME` layouts, but the pipeline holds even if they did). The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
-<!-- CANONICAL:HARVEST:END -->
-   - **Config-relevance mapping:** for each discovered `pitfalls.md`, `grep -lE 'permission|sandbox|allow rule|settings|hook|env var'` and surface matching excerpts (≤240 chars each) tagged with the source repo path. Files mentioning no config concern are listed path-only.
-4. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the window:
-   - `sum(increase(claude_code_session_count[{history_days}d]))`
-   - `sum(increase(claude_code_cost_usage[{history_days}d]))`
-   Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
-
-## Output Format
-Emit ONE findings block, then SendMessage the orchestrator verbatim:
-
-```
-### Config Historical Audit
-- Invocations (window): N (transcripts) + M (history.jsonl)
-- Recurring permission prompts: <command pattern → count, top 3, or "none">
-- Sandbox friction: <command/path/domain → count, or "none">
-- Operator-correction signals: <count>, plus 1-2 example excerpts (≤240 chars each, with the session-ref path)
-- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned)"; or `none` when no subagent sessions exist>
-- Memory references: <list of .claude/agent-memory paths, or "none">
-- Mimir metrics: <summary, or "metrics unavailable: <reason>">
-- Suggested focus areas: <1-3 bullets mapped to a named config-surface dimension, Content-Gate-passing>
-```
-If a category is empty, write `none` — do not omit the line. After the block, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** (the ingest set). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
-
-## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§3c Historical Audit — evolve-config variant** in `evolve-phase0-templates.md`. Substitute `{HARVEST_BLOCK}` (reference §2); runtime tokens pass through. Spawns `Agent(name="historical-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: Innovation Scan
 
@@ -362,55 +306,7 @@ Emit one findings block, then SendMessage the orchestrator verbatim:
 
 Skip if pre-flight step 6 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
 
-```
-Agent(name="model-routing-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the model-routing auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-Target: the Claude Code config genome — specifically `model`, `effort_level`, `ANTHROPIC_DEFAULT_*_MODEL` env aliases, and the auto-mode env flag in src/user.rs.
-
-## Task
-Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes, to inform the config's model/effort env settings. Report only factual, evidence-cited findings.
-
-1. **Per-spawn model distribution** — across the audit window:
-   `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
-   Report DISTINCT counts per model. This is ground truth — do NOT assume inherit semantics.
-
-2. **Outcome signals per model** — correlate each model with:
-   - Stall signals: `grep -nE '"TeammateIdle"' <transcript>`; count distinct events by `name`+`sessionId`.
-   - Fix-loop respawns (`-r2`): `grep -hE '"name":"[^"]*-r2"'`; count DISTINCT events by `name`+`sessionId`.
-   - Error/abort: `"is_error":true` tool results; count per model.
-   - Operator-correction phrases in the next user turn: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — skip turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Count by model.
-
-3. **`~/.claude/history.jsonl`** — count operator-typed `/evolve-config` invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
-
-4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|effort\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for durable routing lessons.
-5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
-   - `sum by (model) (increase(claude_code_token_usage[{history_days}d]))`
-   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
-   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
-   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep — cite discrepancies.
-
-## Improvement-Only Mandate
-Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
-
-## Output Format
-Emit one findings block, then SendMessage the orchestrator verbatim:
-
-### Config Model Routing
-- Model distribution (window): <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
-- Stall signals by model: <model → TeammateIdle count, or "none">
-- Fix-loop respawns by model: <model → -r2 count, or "none">
-- Error/abort by model: <model → count, or "none">
-- Operator-correction by model: <model → count, or "none">
-- Mimir metrics: <summary of labeled token/cost totals by model, or "metrics unavailable: <reason>">
-- Routing recommendations: <1-3 bullets, each naming the env/setter to change, with evidence citations, or "none — no improvement opportunity grounded in data">
-
-If a category is empty, write `none` — do not omit the line.
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§6b Model Routing Audit — evolve-config variant** in `evolve-phase0-templates.md` (paste-ready, no spawn-time tokens; runtime tokens pass through). Spawns `Agent(name="model-routing-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 1: @staff-engineer (Review & Improve)
 

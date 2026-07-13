@@ -206,26 +206,22 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 
 ## Validation Before Emit
 
-Before emitting the report, verify in the calling agent's context:
-
-1. **Recommendation is on the ladder** — exactly one of Approve / Approve with follow-up / Block / Redesign / Incremental Improvement.
-2. **Recommendation matches severity counts** — any Blocker ⇒ Block / Redesign / Incremental Improvement; any Concern with no Blockers ⇒ Approve with follow-up / Redesign / Incremental Improvement (plain Approve forbidden); zero Blockers and zero Concerns ⇒ Approve permitted (Redesign / Incremental Improvement still allowed when the body argues a rethink or bounded improvement path).
-3. **Every Blocker cites a dimension** — the `[dimension]` tag at the start of each Blocker bullet must name one of the six dimensions.
-4. **Every Blocker and Concern names a spec section or workflow** — the bullet body must reference the artifact section, workflow, or surface it affects.
-5. **Every Blocker has an alternative or required fix** — a Blocker bullet without `—` separator and an alternative/fix fragment is a defect.
-6. **Dimension Checklist covers all six dimensions** — each row present with one of pass/concern/fail/N/A. Off-by-one is a defect.
-7. **Empty severity buckets explicit** — every bucket (Blockers/Concerns/Suggestions/Questions) reads `None` or lists items. Silent omission is a defect.
-8. **Required sections present, in order** — Assessment, Artifact, What's Strong, What Needs Work, Open Questions, Dimension Checklist, Recommendation, Next Steps.
-9. **Placeholder scan** — body contains no literal `{Artifact Title}`, `{dimension}`, `{count}`, `TBD`, or `TODO` text outside of code-fenced examples.
-10. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in What's Strong, What Needs Work, Open Questions, or Next Steps. Use evidence-anchored language ("verified at {section}," "the workflow at {path} shows …," "assumption: …"). A hit is a defect.
-
-If any check fails, ABORT:
+Mechanically validate the drafted review before emitting it. Write the review verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-Error: validation failed: {section/field} — {detail}.
+report_lint.py --skill design-review "$TMPDIR/review.md"
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(design-review, "<scope>")`.
+Handle the exit code DISTINCTLY:
+
+- **exit 0** — emit the review in the calling agent's context.
+- **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-review, "<scope>")`:
+  ```
+  Error: validation failed: {section/field} — {detail}.
+  ```
+- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+
+Every check in this review's checklist is text-decidable and lives in the validator — nothing stays in-skill. The validator enforces: recommendation on the ladder; recommendation matches severity counts (any Blocker ⇒ Block/Redesign/Incremental Improvement; any Concern with no Blockers forbids plain Approve); every Blocker cites one of the six dimensions via its `[dimension]` tag; every Blocker/Concern bullet carries a non-empty finding naming the section/workflow it affects; every Blocker has a `—` alternative/fix fragment; Dimension Checklist covers all six dimensions with a status; empty severity buckets explicit; required sections present in order; placeholder scan; banned-confidence-phrase scan (scoped to What's Strong, What Needs Work, Open Questions, Next Steps).
 
 ## Save & Return
 

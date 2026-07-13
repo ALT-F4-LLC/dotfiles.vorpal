@@ -43,17 +43,12 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Slug derivation** (deterministic):
-
-1. `lower      = lowercase(topic)`
-2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
-3. `trimmed    = cleaned.strip('-')`
-4. `truncated  = trimmed[:60]`
-5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
-   `boundary != -1`, set `truncated = truncated[:boundary]`.
-6. `truncated  = truncated.strip('-')` (re-trim after step 5).
-7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-8. Use `truncated` as `{slug}`.
+**Slug derivation** (deterministic): `Bash ~/.claude/scripts/slug.sh "<topic>"`
+(repo: `src/user/claude-code/scripts/slug.sh`) — the shared 8-step algorithm
+(lowercase → non-alphanumeric runs to `-` → strip → 60-char cut → prefer a word
+boundary in [40, 60) → re-strip → empty check). On exit 0, stdout is `{slug}`. On
+exit 1 (no alphanumeric survivors) the script emits `Error: Topic must contain at
+least one alphanumeric character.` on stderr — surface it and ABORT.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
@@ -266,45 +261,41 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
 
 ## Validation Before Save
 
-Before invoking `Write`, verify in the calling agent's context:
+The full checklist — the frontmatter contract, the `status` allow-list, section
+order, the Alternatives-Considered minimum (≥2 `###` subsections), Mermaid presence
+& shape, the placeholder scan, and the `updated_by`-conditional security-track
+subsections (`Threat Model` / `Trust Boundaries` / `Security Considerations` in §4
+and `Abuse Cases` in §9) — is mechanized by the shared `doc_validate.py`, the single
+source of truth for what a valid TDD must satisfy. Validate the drafted document
+before the final Write:
 
-1. **Frontmatter fields** — all of `project`, `maturity`, `last_updated`,
-   `updated_by`, `scope`, `owner`, `dependencies`, `status` present and
-   non-empty (`dependencies` may be the empty list `[]`).
-2. **Status value** — `status` is one of `draft | questions-resolved |
-   in-review | accepted | superseded`.
-3. **Section order** — the body contains all top-level sections enumerated
-   in "Required Sections" above, as `##` headings, in the order listed.
-   Count only `##` headings at column 0 *outside* ``` code fences — a TDD that
-   documents another doc/skill may embed `##`/`###` example headings inside
-   fences; those are content, not structure. Off-by-one against the listed
-   sections is a defect.
-4. **Alternatives count** — Section 3 (Alternatives Considered) carries no fewer than two `###`-level subsections (counting only `###` headings outside
-   ``` code fences).
-5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (e.g. `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails — it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
-6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
-   `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
-   **Meta-TDD caveat** — a TDD that *documents a doc-authoring skill* must show
-   path templates; only ``` fenced blocks are exempt, so put such templates
-   inside a fenced block or use angle-bracket phrasing (`<slug>`, `<NNNN>-<slug>`).
-   Inline-backtick `{slug}`/`{topic}` literals trip this scan.
-7. **Security-track subsections** — if `updated_by` is `@security-engineer`,
-   verify §4 (Architecture & System Design) contains three `###`-level
-   subsections named exactly `Threat Model`, `Trust Boundaries`, and
-   `Security Considerations`. Non-security TDDs skip this check.
-8. **Security-track abuse cases** — if `updated_by` is `@security-engineer`,
-   verify §9 (Testing Strategy) contains a `###`-level subsection named
-   `Abuse Cases`. Non-security TDDs skip this check.
+1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
+   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
+2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type tdd "$TMPDIR/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+3. **Act on the exit code:**
+   - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
+     `docs/tdd/...`).
+   - **exit 1** — validation failure. ABORT, quoting the script's stderr (no
+     fix-and-retry — the skill validates then writes in a single pass; repair is the
+     calling agent's responsibility, and it re-invokes `Skill(tdd, "<topic>")`):
 
-If any check fails, ABORT (no fix-and-retry — the skill validates then writes
-in a single pass; repair is the calling agent's responsibility):
+     ```
+     Error: validation failed: {field/section} — {detail}.
+     ```
 
-```
-Error: validation failed: {field/section} — {detail}.
-```
+   - **exit 2** — infrastructure/usage failure (validator missing or staging file
+     unreadable). ABORT with a distinct message so the caller escalates the
+     infrastructure problem instead of re-drafting:
 
-The calling agent fixes the issue in its own context and re-invokes
-`Skill(tdd, "<topic>")`.
+     ```
+     Error: validator unavailable: {stderr}
+     ```
+
+**Meta-TDD caveat** — the placeholder scan treats only ``` fenced blocks as exempt,
+so a TDD that *documents a doc-authoring skill* and must show path templates should
+put them inside a fenced block or use angle-bracket phrasing (`<slug>`,
+`<NNNN>-<slug>`). Inline-backtick `{slug}`/`{topic}` literals trip the scan.
 
 ## Save & Return
 

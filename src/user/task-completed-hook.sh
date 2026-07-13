@@ -2,6 +2,12 @@
 
 set -uo pipefail
 
+# TaskCompleted premature-completion block (DKT-227). Fires when a teammate
+# marks a task completed; BLOCKS if the resolved teammate transcript shows no
+# report SendMessage after the task claim. BOUNDARY vs subagent-report-hook.sh
+# (SubagentStop): that sibling only NUDGES at turn-end on an unsent
+# report-EMISSION line -- this hook is the hard block at task-marking time.
+
 BLOCK_REASON='PREMATURE-COMPLETION-BLOCKED: no completion report to team-lead found in your transcript for this task. Send your completion report via SendMessage to team-lead (mirror durable evidence to Docket where your role doctrine requires it) BEFORE marking this task completed, then retry TaskUpdate. If this task genuinely carries no report obligation, send team-lead a one-line status note instead.'
 
 # --- Row-attribution debug channel (DKT-227 Phase 1d) ------------------------

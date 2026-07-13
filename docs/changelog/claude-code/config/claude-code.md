@@ -1,5 +1,19 @@
 # Changelog: claude-code
 
+## 2026-07-12
+
+### Summary
+AMPLIFY: adopt the SubagentStop hook (DKT-253) — nudges the report-emission skill family's #1 defect (verdict emitted in-context, never SendMessage'd). Kept DKT-253's literal "emitted-line" framing; rejected the generalized "any silent SubagentStop" framing (unsound — fires every turn-end).
+
+### Changes
+- AMPLIFY: `with_hook("SubagentStop", None, "bash ~/.claude/subagent-report-hook.sh", "command")` + new src/user/subagent-report-hook.sh (FileCreate + symlink). Gates on the four skills' `... emitted (...)` confirmation line in last_assistant_message, then transcript index-scan for a same-turn SendMessage; additionalContext nudge; fail-open. Behavioral: `hooks` map gains a `SubagentStop` key. No new setter (with_hook is additive).
+
+### Dimensions Evaluated
+Hooks&scripts (AMPLIFY); Core&model-routing / Permissions / Sandbox / Skills&auto-mode / Plugins-UI-governance (RETAIN). Deferred → tracking issues: read-only Bash allowlist, TMPDIR/build-cache sandbox, hook-packaging refactor, transcript_scan.sh extraction, auto-mode env retire, sensitive-path deny-list drift.
+
+### Rename
+No rename.
+
 ## 2026-06-17
 
 ### Summary

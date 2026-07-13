@@ -214,6 +214,12 @@ impl UserEnvironment {
                     "bash ~/.claude/teammate-idle-hook.sh",
                     "command",
                 )
+                .with_hook(
+                    "SubagentStop",
+                    None,
+                    "bash ~/.claude/subagent-report-hook.sh",
+                    "command",
+                )
                 .with_include_git_instructions(false)
                 .with_model("claude-sonnet-5")
                 .with_output_style("Proactive")
@@ -1138,6 +1144,22 @@ impl UserEnvironment {
             get_output_path("library", &claude_guard_no_commit_hook)
         );
 
+        // Claude Code SubagentStop report-emission silent-completion hook script
+        let claude_subagent_report_hook_name =
+            format!("{}-claude-subagent-report-hook", &self.name);
+        let claude_subagent_report_hook = FileCreate::new(
+            include_str!("user/subagent-report-hook.sh"),
+            claude_subagent_report_hook_name.as_str(),
+            self.systems.clone(),
+        )
+        .with_executable(true)
+        .build(context)
+        .await?;
+        let claude_subagent_report_hook_path = format!(
+            "{}/{claude_subagent_report_hook_name}",
+            get_output_path("library", &claude_subagent_report_hook)
+        );
+
         // Claude agents directory
         let claude_agents_name = format!("{}-claude-code-agents", &self.name);
         let claude_agents = FileSource::new(
@@ -1278,6 +1300,7 @@ impl UserEnvironment {
                 claude_scripts,
                 claude_skills,
                 claude_statusline,
+                claude_subagent_report_hook,
                 claude_task_completed_hook,
                 claude_teammate_idle_hook,
                 codex_agents,
@@ -1312,6 +1335,7 @@ impl UserEnvironment {
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
+                (claude_subagent_report_hook_path.as_str(), "$HOME/.claude/subagent-report-hook.sh"),
                 (claude_task_completed_hook_path.as_str(), "$HOME/.claude/task-completed-hook.sh"),
                 (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),

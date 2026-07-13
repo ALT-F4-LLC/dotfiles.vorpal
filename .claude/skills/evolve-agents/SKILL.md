@@ -210,6 +210,8 @@ After Phase 4 completes or no-ops:
 
 ## Spawning Templates
 
+**Template sourcing.** The four Phase-0 auditor prompts below (Historical Audit, Repetition Audit, Bug Audit, Model Routing Audit) are single-homed in `src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md`. Read that file ONCE at Phase-0 spawn time; for each auditor, paste the referenced section and substitute this cycle's spawn-time token VALUES: `{TARGET_NOUN}`=`agent`, `{TARGET_NOUN_CAP}`=`Agent`, `{A_TARGET_NOUN}`=`an agent`, `{TARGETS_LINE}`=`Target agents: {target_agents}`, `{MENTION_COUNT_LINE}`=the `@<agent>` mention-count line (reference §1a literal, evolve-agents form), `{PROMQL_LABEL}`=`agent_name`, `{HARVEST_BLOCK}`=the reference's §2 HARVEST block. Runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{target_agents}`) pass through unchanged. If the file or a named section is missing, ABORT the cycle loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt.
+
 ### Phase 0: @staff-engineer (Documentation Research)
 
 Substitute `{latest_features_digest}` from pre-flight step 9.
@@ -243,71 +245,7 @@ Output: New, Changed, Deprecated commands (with synopsis) plus full CLI referenc
 
 Substitute `{target_agents}` from `\$ARGUMENTS` or all `src/user/claude-code/agents/*.md`.
 
-```
-Agent(name="historical-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the historical auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-Target agents: {target_agents}
-
-## Task
-For EACH target agent, mine read-only sources for signals the agent is failing, stalling, or misused.
-
-1. **Agent memory (PRIMARY — read fully, it is small)**:
-   - `.claude/agent-memory/<agent-name>/MEMORY.md` and `.claude/agent-memory/<agent-name>/*.md` (dir may be absent or empty — treat as `none`). Read each file in full and surface 1-3 representative recurring lessons (≤240 chars each). These are persistent learnings that should be reflected in the agent definition.
-<!-- CANONICAL:HARVEST:BEGIN -->
-**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` with this EXACT bounded command (substitute nothing — it is literal):
-
-```
-{
-  find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
-    -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print
-  find "$HOME/.claude/agent-memory" -maxdepth 2 -type f -name 'pitfalls.md' -print
-} 2>/dev/null | sort -u
-```
-
-The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op (`2>/dev/null` swallows the error); the trailing `sort -u` also de-dupes any path the two roots both happen to match (they do not overlap under normal `$HOME` layouts, but the pipeline holds even if they did). The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
-<!-- CANONICAL:HARVEST:END -->
-   - **Per-file mapping (agents):** map each discovered `…/.claude/agent-memory/<role>/pitfalls.md` to agent `<role>` (the path segment). For each TARGET agent in this cycle, read its `pitfalls.md` across ALL scanned repos (each is small — read fully) and surface 1-3 representative recurring lessons per agent (≤240 chars each), tagged with the source repo path. Non-target agents' files are listed path-only (not deep-read).
-2. **Transcripts** (under `~/.claude/projects/`):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
-   - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
-   - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
-   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
-   - Error/abort signals tied to the agent: `"is_error":true` tool results in turns invoking the agent.
-   - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by subagent-spawn UUID/timestamp, not replicated lines); ≥2 distinct spawns of the same agent in one session is a failure signal.
-3. **Agent-specific stall signals (NEW vs evolve-skills — strongest evidence of agent-definition gaps):**
-   - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
-   - `-r2` respawn convention (canonical from `src/user/claude-code/agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
-   - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
-4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
-   - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
-5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
-   - `sum(increase(claude_code_session_count[{history_days}d]))`
-   - `sum(increase(claude_code_cost_usage[{history_days}d]))`
-   Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
-
-## Output Format (per agent)
-Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
-
-```
-### Agent: <agent-name>
-- Invocations (window): N (transcripts) + M (history.jsonl)
-- Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
-- Error/abort signals: <count> with example
-- Re-invocation signals: <count of sessions with ≥2 spawns of this agent>
-- Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
-- Model distribution: <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
-- Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
-- Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
-- Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
-```
-If a category is empty for an agent, write `none` — do not omit the line. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§3a Historical Audit — evolve-agents variant** in `evolve-phase0-templates.md`. Substitute `{HARVEST_BLOCK}` (reference §2); runtime tokens pass through. Spawns `Agent(name="historical-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: Innovation Scan
 
@@ -344,55 +282,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 
 Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{target_agents}`, `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
 
-```
-Agent(name="model-routing-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the model-routing auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-Target agents: {target_agents}
-
-## Task
-Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
-
-1. **Per-spawn model distribution** — across the audit window, run:
-   `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
-   Report DISTINCT counts per model per agent role. This is ground truth — do NOT assume inherit semantics.
-
-2. **Outcome signals per model** — for each agent/model pair observed, correlate with:
-   - Stall signals: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name; count distinct events by `name`+`sessionId`.
-   - Fix-loop respawns (`-r2`): `grep -hE '"name":"[^"]*-r2"'` across in-window transcripts; count DISTINCT respawn events by `name`+`sessionId` (not replicated lines).
-   - Error/abort: `"is_error":true` tool results in turns invoking the agent; count per model.
-   - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — skip turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Count distinct corrections by model.
-
-3. **`~/.claude/history.jsonl`** — count operator-typed `@<agent>` mentions in the window per target agent (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
-
-4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
-5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
-   - `sum by (model, agent_name) (increase(claude_code_token_usage[{history_days}d]))`
-   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
-   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
-   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
-
-## Improvement-Only Mandate
-Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
-
-## Output Format
-Emit one block per target agent, then SendMessage the orchestrator with all blocks verbatim:
-
-### Agent: <agent-name>
-- Model distribution (window): <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
-- Stall signals by model: <model → TeammateIdle count, or "none">
-- Fix-loop respawns by model: <model → -r2 count, or "none">
-- Error/abort by model: <model → count, or "none">
-- Operator-correction by model: <model → count, or "none">
-- Mimir metrics: <summary of labeled token/cost totals by model and agent_name, or "metrics unavailable: <reason>">
-- Routing recommendations: <1-3 bullets with evidence citations, or "none — no improvement opportunity grounded in data">
-
-If a category is empty for an agent, write `none` — do not omit the line.
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-agent grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§6a Model Routing Audit — tokenized template** in `evolve-phase0-templates.md`. Substitute the spawn-time tokens with the Template-sourcing VALUES above; runtime tokens pass through. Spawns `Agent(name="model-routing-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: SDLC Role Research
 
@@ -449,51 +339,13 @@ CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | RE
 
 Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target agent (unlike historical-auditor's per-agent grep).
 
-```
-Agent(name="repetition-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the repetition auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-
-## Task
-Mine for actions UNINTENTIONALLY REPEATED across sessions — the same or near-identical tool call, command, manual step, or lookup performed more than once when it could have been done once, cached, deduped, or automated.
-
-1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for recurring Bash commands, Read paths, or Grep patterns. Identify same/near-identical patterns recurring across DISTINCT `sessionId`s — mirror historical-auditor's "De-dupe before counting" discipline (never count replicated lines within one session).
-2. **`~/.claude/history.jsonl`**: scan operator-typed invocations in the window for repeated manual command sequences recurring across sessions.
-3. **Agent memory (optional, narrow)**: `grep -lri 'repeat\|duplicate\|redundant' .claude/agent-memory/ 2>/dev/null` for already-recorded repetition lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
-4. **Crossed-in-flight benign duplicates**: distinguish a TRUE unintentional repeat (above) from a benign race — two independent messages/actions that CROSSED IN FLIGHT (e.g. a teammate's confirmation or a peer's answer arrives after the same fact was already independently resolved by the recipient) where the SECOND arrival is correctly recognized as stale and produces "no action needed" — this is coordination working as intended, not a repetition defect. Detect via `grep -inE 'stale duplicate|crossed in flight|already (resolved|handled|confirmed)|no action needed' <transcript>` and confirm from surrounding context that the acknowledgment correctly identifies a race, not a genuine repeat that should have been prevented.
-
-## Output Format
-For each finding: `<FIX|PREVENT|BENIGN-RACE> <n>: <what repeated>` / `SESSIONS:` (distinct sessionId count + 1-2 example refs) / `SUGGESTION:` (dedupe/cache/automate action, or "None — correct behavior" for BENIGN-RACE). Tag every finding exactly `FIX` (already-repeated: correct/dedupe/automate now), `PREVENT` (repeat-prone pattern, not yet repeated many times), or `BENIGN-RACE` (a crossed-in-flight duplicate correctly recognized and dismissed as stale — logged for pattern-frequency visibility only). If the SAME race recurs ≥2 times for the same pair of roles, tag it `PREVENT` instead (with a coordination-fix suggestion, e.g. an ack-before-dispatch convention) rather than `BENIGN-RACE`. SendMessage the orchestrator with all findings verbatim, or "No repetition findings."
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§4 Repetition Audit — shared template** in `evolve-phase0-templates.md` (no spawn-time tokens; runtime tokens pass through). Spawns `Agent(name="repetition-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: Bug Audit
 
 Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target agent (unlike historical-auditor's per-agent grep).
 
-```
-Agent(name="bug-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the bug auditor. Read-only. No file edits. No commits. No sub-agents.
-Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history_cutoff_epoch_ms}).
-
-## Task
-Mine for BUGS surfaced during tool use — failed tool calls, incorrect parameters, and other concrete execution defects (not stylistic/quality concerns; those are the reviewers' job).
-
-1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for `"is_error":true` tool_result blocks. For each hit, read the paired tool_use block (immediately preceding) to capture the tool name + parameters that produced the error, and the error text itself. Mirror historical-auditor's "De-dupe before counting" discipline — count DISTINCT `sessionId` + tool-call occurrences, never replicated lines within one session.
-2. **Incorrect-parameter classification**: within the error-tagged hits from step 1, classify each as one of: `BAD-PARAM` (wrong type/missing required/invalid enum value), `WRONG-PATH` (nonexistent file/dir referenced), `PERMISSION` (sandbox/permission denial), `OTHER` (anything else — API error, timeout, etc). Only `BAD-PARAM` and `WRONG-PATH` are in-scope findings (recurring, definition-fixable classes); `PERMISSION` and `OTHER` are dropped unless the SAME failure recurs ≥3 times across distinct sessions (then report as a pattern regardless of class).
-3. **`~/.claude/history.jsonl`** (optional, narrow): `grep -E '"display":".*(error|fail)' ~/.claude/history.jsonl` for operator-reported bugs in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
-4. **Agent memory (optional, narrow)**: `grep -lri 'bug\|incorrect param\|failed tool\|wrong argument' .claude/agent-memory/ 2>/dev/null` for already-recorded bug lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
-
-## Output Format
-For each finding: `<FIX|PREVENT> <n>: <what failed>` / `CLASS:` (BAD-PARAM | WRONG-PATH | PERMISSION | OTHER) / `SESSIONS:` (distinct sessionId count + 1-2 example refs, incl. tool name + the offending parameter/path) / `SUGGESTION:` (definition fix — e.g. correct an example, tighten a parameter description, add a pre-check). Tag every finding exactly `FIX` (already-recurring: correct the definition now) or `PREVENT` (isolated but definition-fixable, not yet recurring). SendMessage the orchestrator with all findings verbatim, or "No bug findings."
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§5 Bug Audit — shared template** in `evolve-phase0-templates.md` (no spawn-time tokens; runtime tokens pass through). Spawns `Agent(name="bug-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 1: Self-Review & Improve
 
@@ -598,9 +450,9 @@ Check cross-agent coherence and recommend fixes. Date: {today_date}. **Read-only
    consistent terminology, handoff patterns work both ways
 4. Check cross-communication: enumerate SendMessage trigger pairs, identify missing triggers between
    dependent agents, flag hub-and-spoke patterns (>50% through one agent), verify bidirectionality
-5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the five byte-symmetric blocks — cross-project pitfalls harvest, innovation-scanner, model-routing-auditor, Mimir, impact-class). Flag any drift.
-6. Verify the historical-auditor Mimir note is present in both evolve-agents and evolve-skills — do NOT flag structural differences as drift (the two historical-auditor templates are intentionally asymmetric; presence of the note is the only check).
-7. **Mirrored-doctrine divergence (beyond symmetry_check.py's 5 skill-vs-skill blocks):** for any doctrine block appearing verbatim in 2+ agent files (seat lenses, shared rule paragraphs), `grep -F` a distinctive phrase across all src/user/claude-code/agents/*.md — an odd-one-out carrier means a Phase-1 edit diverged a mirror the checker doesn't cover. Flag for family-wide reconciliation.
+5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the two byte-symmetric blocks — innovation-scanner, impact-class). Flag any drift.
+6. Verify the historical-auditor Mimir note is present in the §3a and §3b historical variants in `evolve-phase0-templates.md` — do NOT flag structural differences as drift (the historical-auditor variants are intentionally asymmetric; presence of the note is the only check).
+7. **Mirrored-doctrine divergence (beyond symmetry_check.py's 2 skill-vs-skill blocks):** for any doctrine block appearing verbatim in 2+ agent files (seat lenses, shared rule paragraphs), `grep -F` a distinctive phrase across all src/user/claude-code/agents/*.md — an odd-one-out carrier means a Phase-1 edit diverged a mirror the checker doesn't cover. Flag for family-wide reconciliation.
 
 ## Output Format
 

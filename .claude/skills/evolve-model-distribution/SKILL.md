@@ -11,7 +11,7 @@ allowed-tools: ["Edit", "Bash", "Read", "Write", "Glob", "Grep", "Monitor", "Web
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `skills/vote/` Delegation Protocol).
+> **CRITICAL — applies to orchestrator AND every spawned teammate:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Teammates MUST NOT spawn sub-agents, invoke `/vote`, use `Skill()` or `Agent()`, or form/manage a team — delegate to the orchestrator (see `src/user/claude-code/skills/vote/` Delegation Protocol).
 <!-- CANONICAL:BANNER:END -->
 
 # Evolve Model Distribution

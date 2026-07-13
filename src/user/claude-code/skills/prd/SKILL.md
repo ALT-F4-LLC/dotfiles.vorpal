@@ -40,17 +40,12 @@ Error: Usage: Skill({TYPE}, "<topic>") — describe the artifact in 3-10 words.
 
 If extra positional args are passed beyond `<topic>`, ignore them silently.
 
-**Slug derivation** (deterministic):
-
-1. `lower      = lowercase(topic)`
-2. `cleaned    = re.sub(r'[^a-z0-9]+', '-', lower)`
-3. `trimmed    = cleaned.strip('-')`
-4. `truncated  = trimmed[:60]`
-5. Prefer a word boundary in [40, 60): `boundary = truncated.rfind('-', 40, 60)`. If
-   `boundary != -1`, set `truncated = truncated[:boundary]`.
-6. `truncated  = truncated.strip('-')` (re-trim after step 5).
-7. If `truncated == ""`, ABORT: `Error: Topic must contain at least one alphanumeric character.`
-8. Use `truncated` as `{slug}`.
+**Slug derivation** (deterministic): `Bash ~/.claude/scripts/slug.sh "<topic>"`
+(repo: `src/user/claude-code/scripts/slug.sh`) — the shared 8-step algorithm
+(lowercase → non-alphanumeric runs to `-` → strip → 60-char cut → prefer a word
+boundary in [40, 60) → re-strip → empty check). On exit 0, stdout is `{slug}`. On
+exit 1 (no alphanumeric survivors) the script emits `Error: Topic must contain at
+least one alphanumeric character.` on stderr — surface it and ABORT.
 <!-- CANONICAL:ARGUMENT_HANDLING:END -->
 
 ## When to Use
@@ -192,31 +187,34 @@ PRDs require at least one ` ```mermaid ` (lowercase, no space) fenced block — 
 
 ## Validation Before Save
 
-Before invoking `Write`, verify in the calling agent's context:
+The full checklist — the frontmatter contract (including the no-`status` rule),
+the `maturity` allow-list, section order, Mermaid presence & shape, the placeholder
+scan, and Success-Metrics concreteness — is mechanized by the shared
+`doc_validate.py`, the single source of truth for what a valid PRD must satisfy.
+Validate the drafted document before the final Write:
 
-1. **Frontmatter fields** — all of `project`, `maturity`, `last_updated`,
-   `updated_by`, `scope`, `owner`, `dependencies` present and non-empty
-   (`dependencies` may be the empty list `[]`).
-2. **No `status` field** — PRDs use `maturity`, not `status`. Presence of `status`
-   in frontmatter is a defect.
-3. **`maturity` value** — within the allowed set defined under Field rules above.
-4. **Section order** — the body contains all top-level sections enumerated in "Required Sections" above, as `##` headings, in the order listed. Count only `##` headings at column 0 *outside* ``` code fences — a PRD that documents another doc/skill may embed `##`/`###` example headings inside fences; those are content, not structure.
-5. **Mermaid presence & shape** — at least one ` ```mermaid ` fenced block in the body, and the block's first non-blank line declares a Mermaid diagram-type keyword (e.g. `graph`/`flowchart`, `sequenceDiagram`, `stateDiagram`, `erDiagram`, `journey`, `classDiagram`, `gantt`). An empty or typeless block fails — it renders broken yet passes a presence-only check. Renderer-based syntax validation is out of scope (no mermaid CLI in-repo).
-6. **Placeholder scan** — body contains no literal `{slug}`, `{topic}`,
-   `{project_name}`, `TBD`, or `TODO` text outside of code-fenced examples.
-7. **Success Metrics concreteness** — every bullet/item under the Success Metrics
-   section contains at least one digit OR a comparison operator (`<`, `>`, `≤`, `≥`,
-   `=`). A Success Metrics section with zero numeric targets is a defect.
+1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
+   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
+2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type prd "$TMPDIR/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+3. **Act on the exit code:**
+   - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
+     `docs/spec/...`).
+   - **exit 1** — validation failure. ABORT, quoting the script's stderr (no
+     fix-and-retry — the skill validates then writes in a single pass; repair is the
+     calling agent's responsibility, and it re-invokes `Skill(prd, "<topic>")`):
 
-If any check fails, ABORT (no fix-and-retry — the skill validates then writes
-in a single pass; repair is the calling agent's responsibility):
+     ```
+     Error: validation failed: {field/section} — {detail}.
+     ```
 
-```
-Error: validation failed: {field/section} — {detail}.
-```
+   - **exit 2** — infrastructure/usage failure (validator missing or staging file
+     unreadable). ABORT with a distinct message so the caller escalates the
+     infrastructure problem instead of re-drafting:
 
-The calling agent fixes the issue in its own context and re-invokes
-`Skill(prd, "<topic>")`.
+     ```
+     Error: validator unavailable: {stderr}
+     ```
 
 ## Save & Return
 

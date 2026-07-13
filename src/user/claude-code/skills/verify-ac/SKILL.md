@@ -50,6 +50,7 @@ Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue 
 
 **Scope resolution** (apply rules in order; first match wins):
 
+<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `code-review-verdict/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet in the Ambiguity rules below is near-identical (differs only by "on such a name"). Keep all four in sync across both files when either changes — decision record: TDD `docs/tdd/coordinated-shared-extraction-of-duplicated-skill.md` §4.4 (extraction rejected; coupling documented instead, per DKT-250). -->
 | Form | Detection | Sources |
 |---|---|---|
 | Docket issue ID | `docket issue show {scope} --json` exits 0 (abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` if CLI unavailable) | Pull issue + acceptance criteria + comments + file attachments via `docket issue show`, `docket issue comment list`, `docket issue file list`, `docket issue log` |
@@ -207,25 +208,27 @@ One of: **APPROVE** / **ACCEPT WITH CAVEATS** / **BLOCK** — {rationale tying v
 
 ## Validation Before Emit
 
-Before emitting the report, verify in the calling agent's context:
-
-1. **Mode selection is consistent** — LIGHT emits exactly one line in the LIGHT format; FULL emits the FULL template.
-2. **FULL: every acceptance criterion has PASS, FAIL, or OUT-OF-SCOPE** — silent omission or "TBD" markers are defects; OUT-OF-SCOPE without a named runtime route is a defect.
-3. **FULL: every PASS/FAIL has evidence** — `criterion met` without a test command, file/line, or observed-behavior fragment is a defect.
-4. **FULL: every severity bucket is explicit** — every bucket reads `None` or lists items.
-5. **FULL: BLOCK and ACCEPT WITH CAVEATS each have at least one Issue Found** — a BLOCK or ACCEPT verdict with empty Issues Found across all severities is a defect (the rationale must point at concrete findings); an OUT-OF-SCOPE criterion satisfies this for ACCEPT WITH CAVEATS.
-6. **FULL: verdict consistency** — BLOCK requires at least one Critical or High issue OR at least one FAIL on a criterion; ACCEPT WITH CAVEATS requires at least one Medium/Low issue or an OUT-OF-SCOPE criterion; APPROVE has no Critical/High, no FAIL, and no OUT-OF-SCOPE (any OUT-OF-SCOPE caps the verdict at ACCEPT WITH CAVEATS).
-7. **Recommendation is on the verdict ladder** — exactly one of APPROVE / ACCEPT WITH CAVEATS / BLOCK.
-8. **Placeholder scan** — body contains no literal `{Issue ID}`, `{count}`, `{evidence}`, `TBD`, or `TODO` text outside of code-fenced examples.
-9. **Epistemic discipline scan** — no banned confidence phrases ("clearly," "obviously," "should work," "definitely," "100%," "guaranteed") in Acceptance Criteria evidence, Additional Testing, Issues Found, or Recommendation. Use evidence-anchored language ("ran X — saw Y," "verified at {file:line}," "unverified — assumption"). A hit is a defect.
-
-If any check fails, ABORT:
+Mechanically validate the drafted report before emitting it. In LIGHT mode the emission is a single line — nothing to lint. In FULL mode, write the report verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-Error: validation failed: {section/field} — {detail}.
+report_lint.py --skill verify-ac [--mode light] "$TMPDIR/report.md"
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(verify-ac, "<scope>")`.
+Pass `--mode light` for the LIGHT single-line emission (the validator short-circuits to exit 0 by contract — LIGHT has nothing to lint); omit `--mode` (default `full`) for the FULL template. Handle the exit code DISTINCTLY:
+
+- **exit 0** — emit the report in the calling agent's context.
+- **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(verify-ac, "<scope>")`:
+  ```
+  Error: validation failed: {section/field} — {detail}.
+  ```
+- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+
+The validator mechanizes the shared, text-decidable checks: mode consistency (FULL template present), required sections in order, empty severity buckets explicit, verdict ↔ severity-count consistency (BLOCK / ACCEPT WITH CAVEATS / APPROVE ladder logic), recommendation on the verdict ladder, placeholder scan, and banned-confidence-phrase scan (scoped to Acceptance Criteria evidence, Additional Testing, Issues Found, Recommendation).
+
+Two checks stay the calling agent's responsibility — they need the Docket issue's AC list and semantic judgement the report text does not carry:
+
+- **FULL: every acceptance criterion has PASS, FAIL, or OUT-OF-SCOPE** — silent omission or "TBD" markers are defects; OUT-OF-SCOPE without a named runtime route is a defect.
+- **FULL: every PASS/FAIL has evidence** — `criterion met` without a test command, file/line, or observed-behavior fragment is a defect.
 
 ## Save & Return
 

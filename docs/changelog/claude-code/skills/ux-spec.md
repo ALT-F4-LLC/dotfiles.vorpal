@@ -1,5 +1,19 @@
 # Changelog: ux-spec
 
+## 2026-07-12
+
+### Summary
+Correction: the 2026-06-04 entry below claims `Glob`/`Grep` were dropped from `allowed-tools`, but the live SKILL.md retains and actively uses both (prior-art discovery; confirmed present and used at the 2026-06-10, 2026-06-17, and 2026-07-10 full-cycle audits). The removal claim was never accurate for this file. Noted as historical artifact — entry left immutable per changelog policy. Family lockstep: adr/prd/tdd already carry an equivalent correction note (2026-06-09); this closes the gap for ux-spec.
+
+### Changes
+- None (changelog-hygiene only; no SKILL.md change).
+
+### Dimensions Evaluated
+None (changelog correction, not a review cycle).
+
+### Rename
+No rename.
+
 ## 2026-07-10
 
 ### Summary

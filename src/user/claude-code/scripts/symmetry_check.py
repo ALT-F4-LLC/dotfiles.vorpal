@@ -43,7 +43,7 @@ STRUCTURAL_RULES = [
         "count operator-typed `/<skill>` invocations in the window per target skill",
     ),
     (
-        "Read agents/*.md and surface",
+        "Read src/user/claude-code/agents/*.md and surface",
         "Read .claude/skills/*/SKILL.md and src/user/claude-code/skills/*/SKILL.md and surface",
     ),
     (

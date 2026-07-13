@@ -64,12 +64,11 @@ For each finding, record: `path` (repo-relative), `line` (line number in the PR'
 
 ## Step 5 — Match the operator's voice
 
-Sample the operator's real comment style so drafts read like them:
+Sample the operator's real comment style so drafts read like them, using `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`):
 
 ```
 LOGIN=$(gh api user --jq .login)
-gh api "repos/<owner>/<repo>/pulls/comments?per_page=100" --jq "[.[]|select(.user.login==\"$LOGIN\")][0:15]|.[].body"
-gh api "users/$LOGIN/events?per_page=100" --jq '.[]|select(.type=="IssueCommentEvent" or .type=="PullRequestReviewCommentEvent")|.payload.comment.body // empty'
+~/.claude/scripts/gh_inline_comment.sh --sample-voice "$LOGIN" <owner/repo>
 ```
 
 If no samples surface, draft in a concise first-person engineer voice (short, direct, suggests a concrete fix) and tell the operator you had no samples — let them calibrate tone on the first 1–2 comments, then match the rest.
@@ -86,20 +85,17 @@ Present ALL drafts to the operator as a numbered list, each showing `file:line �
 
 ## Step 8 — Post approved comments
 
-Post each approved comment as a standalone inline review comment (not a formal approve/request-changes verdict unless asked). Validated recipe:
+Post each approved comment as a standalone inline review comment (not a formal approve/request-changes verdict unless asked). Use the shared script `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`) — one call per approved finding:
 
 ```
-GH=$(command -v gh); JQ=$(command -v jq)
-COMMIT=<head_sha>; REPO=<owner/repo>; PR=<num>
-post() {  # body path line
-  "$JQ" -n --arg b "\$1" --arg c "$COMMIT" --arg p "\$2" --argjson l "\$3" \
-    '{body:$b,commit_id:$c,path:$p,line:$l,side:"RIGHT"}' \
-  | "$GH" api -X POST "repos/$REPO/pulls/$PR/comments" --input - \
-      --jq '"OK \(.path):\(.line) -> \(.html_url)"'
-}
+B=$(cat <<'EOF'
+<comment body>
+EOF
+)
+echo "$B" | ~/.claude/scripts/gh_inline_comment.sh <owner/repo> <num> <head_sha> <path> <line>
 ```
 
-Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal; `jq --arg` handles JSON escaping. Run with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account.
+Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal — the script pipes it into `jq --arg`, which handles JSON escaping. Run with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account. On success the script prints `OK <path>:<line> -> <html_url>`.
 
 ## Step 9 — Clean up & report
 

@@ -76,6 +76,57 @@ const OTEL_METRICS_ENDPOINT_ALLOY: &str = "https://alloy-otlp.bulbasaur.altf4.do
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
+// Sensitive filesystem paths denied across every deny-list site: CC's Edit/Read/Write tool
+// permissions, the OS-level sandbox (`with_sandbox_filesystem_deny_read`), and opencode's
+// Edit/Read permission maps. Paths use CC's glob-suffixed form (`/**`); the sandbox's bare-path
+// form is derived by stripping that suffix.
+const SENSITIVE_PATHS: &[&str] = &[
+    "/Applications/**",
+    "/Library/**",
+    "/System/**",
+    "~/.claude.json",
+    "~/.codex/**",
+    "~/.doppler/**",
+    "~/.gemini/**",
+    "~/.gnupg/**",
+    "~/.kube/**",
+    "~/.netrc",
+    "~/.opencode/**",
+    "~/.ssh/**",
+    "~/.talos/**",
+    "~/Desktop/**",
+    "~/Downloads/**",
+];
+
+// Additional paths denied for Read only: an agent may still Edit/Write these via other flows,
+// but must never view their contents directly.
+const SENSITIVE_PATHS_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
+
+// opencode's own config directory is excluded from opencode's permission maps (denying opencode
+// access to its own config path within its own map is a no-op) but remains denied for CC.
+const OPENCODE_CONFIG_PATH: &str = "~/.opencode/**";
+
+// Excluded from the OS-level sandbox's deny-read list: that list is a confidentiality control
+// for secrets read via shell (~/.ssh, ~/.aws, .env, etc.). These 3 are world-readable system
+// dirs holding no secrets, and toolchains (compilers, xcrun, frameworks) legitimately read them
+// — denying reads there breaks builds for zero confidentiality gain. The tool-level Edit/Read/
+// Write deny on them serves a different purpose (integrity + steering the Read tool off giant
+// system trees) that doesn't translate to the sandbox layer.
+const SANDBOX_DENY_READ_EXCLUDED: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
+
+// Interpreter/toolchain cache directories outside the sandbox's default write scope (cwd + session
+// tmpdir), scoped to the dedicated cache subpath per tool (not the tool's home/config dir, which
+// may hold credentials or build-hijack-capable config — e.g. `~/.cargo/credentials.toml`,
+// `~/.cargo/config.toml`). xcrun's own cache (`xcrun_db`) lives under the macOS-login-session-
+// randomized Darwin temp dir and can't be expressed as a literal prefix here; it's exempted via
+// `excluded_commands` instead (DKT-257).
+const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
+    "~/.cache/uv",
+    "~/.cargo/git",
+    "~/.cargo/registry",
+    "~/Library/Caches/pip",
+];
+
 pub struct UserEnvironment {
     name: String,
     systems: Vec<ArtifactSystem>,
@@ -172,7 +223,6 @@ impl UserEnvironment {
                 .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
-                .with_env("CLAUDE_CODE_ENABLE_AUTO_MODE", "1")
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
                 .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0")
@@ -199,25 +249,25 @@ impl UserEnvironment {
                 .with_hook(
                     "PreToolUse",
                     Some("Bash"),
-                    "bash ~/.claude/guard-no-commit-hook.sh",
+                    "bash ~/.claude/hooks/guard-no-commit-hook.sh",
                     "command",
                 )
                 .with_hook(
                     "TaskCompleted",
                     None,
-                    "bash ~/.claude/task-completed-hook.sh",
+                    "bash ~/.claude/hooks/task-completed-hook.sh",
                     "command",
                 )
                 .with_hook(
                     "TeammateIdle",
                     None,
-                    "bash ~/.claude/teammate-idle-hook.sh",
+                    "bash ~/.claude/hooks/teammate-idle-hook.sh",
                     "command",
                 )
                 .with_hook(
                     "SubagentStop",
                     None,
-                    "bash ~/.claude/subagent-report-hook.sh",
+                    "bash ~/.claude/hooks/subagent-report-hook.sh",
                     "command",
                 )
                 .with_include_git_instructions(false)
@@ -299,100 +349,66 @@ impl UserEnvironment {
                 .with_permission_ask("Bash(git push:*)")
                 .with_permission_ask("Bash(rm:*)")
                 .with_permission_deny("Bash(git checkout:*)")
-                .with_permission_deny("Bash(git reset:*)")
-                .with_permission_deny("Edit(/Applications/**)")
-                .with_permission_deny("Edit(/Library/**)")
-                .with_permission_deny("Edit(/System/**)")
-                .with_permission_deny("Edit(~/.claude.json)")
-                .with_permission_deny("Edit(~/.codex/**)")
-                .with_permission_deny("Edit(~/.doppler/**)")
-                .with_permission_deny("Edit(~/.gemini/**)")
-                .with_permission_deny("Edit(~/.gnupg/**)")
-                .with_permission_deny("Edit(~/.kube/**)")
-                .with_permission_deny("Edit(~/.netrc)")
-                .with_permission_deny("Edit(~/.opencode/**)")
-                .with_permission_deny("Edit(~/.ssh/**)")
-                .with_permission_deny("Edit(~/.talos/**)")
-                .with_permission_deny("Edit(~/Desktop/**)")
-                .with_permission_deny("Edit(~/Downloads/**)")
-                .with_permission_deny("Read(.env)")
-                .with_permission_deny("Read(.env.*)")
-                .with_permission_deny("Read(/Applications/**)")
-                .with_permission_deny("Read(/Library/**)")
-                .with_permission_deny("Read(/System/**)")
-                .with_permission_deny("Read(~/.aws/**)")
-                .with_permission_deny("Read(~/.claude.json)")
-                .with_permission_deny("Read(~/.codex/**)")
-                .with_permission_deny("Read(~/.doppler/**)")
-                .with_permission_deny("Read(~/.gemini/**)")
-                .with_permission_deny("Read(~/.gnupg/**)")
-                .with_permission_deny("Read(~/.kube/**)")
-                .with_permission_deny("Read(~/.netrc)")
-                .with_permission_deny("Read(~/.opencode/**)")
-                .with_permission_deny("Read(~/.ssh/**)")
-                .with_permission_deny("Read(~/.talos/**)")
-                .with_permission_deny("Read(~/Desktop/**)")
-                .with_permission_deny("Read(~/Downloads/**)")
-                .with_permission_deny("Write(/Applications/**)")
-                .with_permission_deny("Write(/Library/**)")
-                .with_permission_deny("Write(/System/**)")
-                .with_permission_deny("Write(~/.claude.json)")
-                .with_permission_deny("Write(~/.codex/**)")
-                .with_permission_deny("Write(~/.doppler/**)")
-                .with_permission_deny("Write(~/.gemini/**)")
-                .with_permission_deny("Write(~/.gnupg/**)")
-                .with_permission_deny("Write(~/.kube/**)")
-                .with_permission_deny("Write(~/.netrc)")
-                .with_permission_deny("Write(~/.opencode/**)")
-                .with_permission_deny("Write(~/.ssh/**)")
-                .with_permission_deny("Write(~/.talos/**)")
-                .with_permission_deny("Write(~/Desktop/**)")
-                .with_permission_deny("Write(~/Downloads/**)")
-                .with_permission_default_mode("auto")
-                .with_permission_disable_bypass_permissions_mode("disable")
-                .with_preferred_notif_channel("ghostty")
-                .with_show_thinking_summaries(true)
-                .with_skill_listing_budget_fraction(0.02)
-                .with_spinner_tips_enabled(false)
-                .with_status_line("bash ~/.claude/statusline.sh")
-                .with_status_line_padding(0)
-                .with_sandbox_enabled(true)
-                .with_sandbox_fail_if_unavailable(true)
-                .with_sandbox_auto_allow_bash(true)
-                .with_sandbox_allow_unsandboxed_commands(true)
-                .with_sandbox_excluded_commands(vec![
-                    "aws".to_string(),
-                    "docker".to_string(),
-                    "gh".to_string(),
-                    "git".to_string(),
-                    "kubectl".to_string(),
-                    "uv".to_string(),
-                    "vorpal".to_string(),
-                ])
-                .with_sandbox_filesystem_deny_read(vec![
-                    "~/.ssh".to_string(),
-                    "~/.gnupg".to_string(),
-                    "~/.aws".to_string(),
-                    "~/.netrc".to_string(),
-                    "~/.talos".to_string(),
-                    "~/.claude.json".to_string(),
-                    "~/.codex".to_string(),
-                    "~/.gemini".to_string(),
-                    "~/.opencode".to_string(),
-                    ".env".to_string(),
-                    ".env.*".to_string(),
-                ])
-                .with_sandbox_network_allowed_domains(vec![
-                    "crates.io".to_string(),
-                    "static.crates.io".to_string(),
-                    "github.com".to_string(),
-                    "api.github.com".to_string(),
-                ])
-                .with_sandbox_network_allow_local_binding(false)
-                .with_teammate_mode("in-process")
-                .with_tui("fullscreen")
-                .build(context)
-                .await?;
+                .with_permission_deny("Bash(git reset:*)");
+        let claude_code_config = deny_sensitive_paths(
+            claude_code_config,
+            |p| format!("Edit({p})"),
+            SENSITIVE_PATHS.iter().copied(),
+        );
+        let claude_code_config = deny_sensitive_paths(
+            claude_code_config,
+            |p| format!("Read({p})"),
+            SENSITIVE_PATHS
+                .iter()
+                .chain(SENSITIVE_PATHS_READ_ONLY)
+                .copied(),
+        );
+        let claude_code_config = deny_sensitive_paths(
+            claude_code_config,
+            |p| format!("Write({p})"),
+            SENSITIVE_PATHS.iter().copied(),
+        );
+        let claude_code_config = claude_code_config
+            .with_permission_default_mode("auto")
+            .with_permission_disable_bypass_permissions_mode("disable")
+            .with_preferred_notif_channel("ghostty")
+            .with_show_thinking_summaries(true)
+            .with_skill_listing_budget_fraction(0.02)
+            .with_spinner_tips_enabled(false)
+            .with_status_line("bash ~/.claude/statusline.sh")
+            .with_status_line_padding(0)
+            .with_sandbox_enabled(true)
+            .with_sandbox_fail_if_unavailable(true)
+            .with_sandbox_auto_allow_bash(true)
+            .with_sandbox_allow_unsandboxed_commands(true)
+            .with_sandbox_excluded_commands(vec![
+                "aws".to_string(),
+                "docker".to_string(),
+                "gh".to_string(),
+                "git".to_string(),
+                "kubectl".to_string(),
+                "uv".to_string(),
+                "vorpal".to_string(),
+                "xcrun".to_string(),
+            ])
+            .with_sandbox_filesystem_allow_write(
+                SANDBOX_TOOLCHAIN_CACHE_PATHS
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect(),
+            )
+            .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
+            .with_sandbox_network_allowed_domains(vec![
+                "crates.io".to_string(),
+                "static.crates.io".to_string(),
+                "github.com".to_string(),
+                "api.github.com".to_string(),
+            ])
+            .with_sandbox_network_allow_local_binding(false)
+            .with_teammate_mode("in-process")
+            .with_tui("fullscreen")
+            .build(context)
+            .await?;
         let claude_code_config_path = format!(
             "{}/{claude_code_config_name}",
             get_output_path("library", &claude_code_config)
@@ -615,52 +631,17 @@ impl UserEnvironment {
                     ("git checkout*", PermissionAction::Deny),
                     ("git reset*", PermissionAction::Deny),
                 ])
-                .with_permission_edit(PermissionRule::Object({
-                    let mut m = BTreeMap::new();
-                    m.insert("*".to_string(), PermissionAction::Ask);
-                    // CC Edit deny rules approximated (src/user.rs:247-263)
-                    m.insert("/Applications/**".to_string(), PermissionAction::Deny);
-                    m.insert("/Library/**".to_string(), PermissionAction::Deny);
-                    m.insert("/System/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.claude.json".to_string(), PermissionAction::Deny);
-                    m.insert("~/.codex/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.doppler/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.gemini/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.netrc".to_string(), PermissionAction::Deny);
-                    m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
-                    m
-                }))
+                .with_permission_edit(opencode_permission_denies(
+                    PermissionAction::Ask,
+                    SENSITIVE_PATHS.iter().copied(),
+                ))
                 .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_read(PermissionRule::Object({
-                    let mut m = BTreeMap::new();
-                    m.insert("*".to_string(), PermissionAction::Allow);
-                    // CC Read deny rules approximated (src/user.rs:264-283)
-                    m.insert(".env".to_string(), PermissionAction::Deny);
-                    m.insert(".env.*".to_string(), PermissionAction::Deny);
-                    m.insert("/Applications/**".to_string(), PermissionAction::Deny);
-                    m.insert("/Library/**".to_string(), PermissionAction::Deny);
-                    m.insert("/System/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.aws/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.claude.json".to_string(), PermissionAction::Deny);
-                    m.insert("~/.codex/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.doppler/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.gemini/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.gnupg/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.kube/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.netrc".to_string(), PermissionAction::Deny);
-                    m.insert("~/.ssh/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/.talos/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/Desktop/**".to_string(), PermissionAction::Deny);
-                    m.insert("~/Downloads/**".to_string(), PermissionAction::Deny);
-                    m
-                }))
+                .with_permission_read(opencode_permission_denies(
+                    PermissionAction::Allow,
+                    SENSITIVE_PATHS.iter().chain(SENSITIVE_PATHS_READ_ONLY).copied(),
+                ))
                 .with_permission_webfetch(PermissionAction::Ask)
                 .with_permission_websearch(PermissionAction::Allow)
                 .with_lsp(
@@ -1098,67 +1079,16 @@ impl UserEnvironment {
             get_output_path("library", &claude_statusline)
         );
 
-        // Claude Code TeammateIdle hook script
-        let claude_teammate_idle_hook_name = format!("{}-claude-teammate-idle-hook", &self.name);
-        let claude_teammate_idle_hook = FileCreate::new(
-            include_str!("user/teammate-idle-hook.sh"),
-            claude_teammate_idle_hook_name.as_str(),
+        // Claude hooks directory
+        let claude_hooks_name = format!("{}-claude-code-hooks", &self.name);
+        let claude_hooks = FileSource::new(
+            &claude_hooks_name,
+            "src/user/claude-code/hooks",
             self.systems.clone(),
         )
-        .with_executable(true)
         .build(context)
         .await?;
-        let claude_teammate_idle_hook_path = format!(
-            "{}/{claude_teammate_idle_hook_name}",
-            get_output_path("library", &claude_teammate_idle_hook)
-        );
-
-        // Claude Code TaskCompleted hook script
-        let claude_task_completed_hook_name = format!("{}-claude-task-completed-hook", &self.name);
-        let claude_task_completed_hook = FileCreate::new(
-            include_str!("user/task-completed-hook.sh"),
-            claude_task_completed_hook_name.as_str(),
-            self.systems.clone(),
-        )
-        .with_executable(true)
-        .build(context)
-        .await?;
-        let claude_task_completed_hook_path = format!(
-            "{}/{claude_task_completed_hook_name}",
-            get_output_path("library", &claude_task_completed_hook)
-        );
-
-        // Claude Code PreToolUse guard-no-commit hook script
-        let claude_guard_no_commit_hook_name =
-            format!("{}-claude-guard-no-commit-hook", &self.name);
-        let claude_guard_no_commit_hook = FileCreate::new(
-            include_str!("user/guard-no-commit-hook.sh"),
-            claude_guard_no_commit_hook_name.as_str(),
-            self.systems.clone(),
-        )
-        .with_executable(true)
-        .build(context)
-        .await?;
-        let claude_guard_no_commit_hook_path = format!(
-            "{}/{claude_guard_no_commit_hook_name}",
-            get_output_path("library", &claude_guard_no_commit_hook)
-        );
-
-        // Claude Code SubagentStop report-emission silent-completion hook script
-        let claude_subagent_report_hook_name =
-            format!("{}-claude-subagent-report-hook", &self.name);
-        let claude_subagent_report_hook = FileCreate::new(
-            include_str!("user/subagent-report-hook.sh"),
-            claude_subagent_report_hook_name.as_str(),
-            self.systems.clone(),
-        )
-        .with_executable(true)
-        .build(context)
-        .await?;
-        let claude_subagent_report_hook_path = format!(
-            "{}/{claude_subagent_report_hook_name}",
-            get_output_path("library", &claude_subagent_report_hook)
-        );
+        let claude_hooks_path = get_output_path("library", &claude_hooks);
 
         // Claude agents directory
         let claude_agents_name = format!("{}-claude-code-agents", &self.name);
@@ -1240,6 +1170,7 @@ impl UserEnvironment {
         // User environment
 
         let claude_agents_path = format!("{claude_agents_path}/src/user/claude-code/agents");
+        let claude_hooks_path = format!("{claude_hooks_path}/src/user/claude-code/hooks");
         let claude_scripts_path = format!("{claude_scripts_path}/src/user/claude-code/scripts");
         let claude_skills_path = format!("{claude_skills_path}/src/user/claude-code/skills");
         let codex_agents_path = format!("{codex_agents_path}/src/user/codex/agents");
@@ -1296,13 +1227,10 @@ impl UserEnvironment {
                 bat_theme,
                 claude_agents,
                 claude_code_config,
-                claude_guard_no_commit_hook,
+                claude_hooks,
                 claude_scripts,
                 claude_skills,
                 claude_statusline,
-                claude_subagent_report_hook,
-                claude_task_completed_hook,
-                claude_teammate_idle_hook,
                 codex_agents,
                 codex_config,
                 codex_personas,
@@ -1324,6 +1252,7 @@ impl UserEnvironment {
             ])
             .with_symlinks(vec![
                 (&claude_agents_path, "$HOME/.claude/agents"),
+                (&claude_hooks_path, "$HOME/.claude/hooks"),
                 (&claude_scripts_path, "$HOME/.claude/scripts"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
                 (&codex_agents_path, "$HOME/.codex/agents"),
@@ -1333,11 +1262,7 @@ impl UserEnvironment {
                 (bat_config_path.as_str(), "$HOME/.config/bat/config"),
                 (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
-                (claude_guard_no_commit_hook_path.as_str(), "$HOME/.claude/guard-no-commit-hook.sh"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
-                (claude_subagent_report_hook_path.as_str(), "$HOME/.claude/subagent-report-hook.sh"),
-                (claude_task_completed_hook_path.as_str(), "$HOME/.claude/task-completed-hook.sh"),
-                (claude_teammate_idle_hook_path.as_str(), "$HOME/.claude/teammate-idle-hook.sh"),
                 (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
                 (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
                 (ghostty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
@@ -1349,6 +1274,52 @@ impl UserEnvironment {
             .build(context)
             .await
     }
+}
+
+// Applies a `deny` permission rule for each sensitive path, formatted via `wrap` (e.g.
+// `Edit({path})`), in sorted order to match the existing deny-list convention.
+fn deny_sensitive_paths(
+    builder: ClaudeCodeConfig,
+    wrap: impl Fn(&str) -> String,
+    paths: impl IntoIterator<Item = &'static str>,
+) -> ClaudeCodeConfig {
+    let mut paths: Vec<&str> = paths.into_iter().collect();
+    paths.sort_unstable();
+    paths
+        .into_iter()
+        .fold(builder, |b, p| b.with_permission_deny(&wrap(p)))
+}
+
+// Bare-path form (no `Edit(...)`/`Read(...)` wrapper, no `/**` suffix) of every path denied for
+// Read, minus `SANDBOX_DENY_READ_EXCLUDED`, for the OS-level sandbox's confidentiality-only
+// `with_sandbox_filesystem_deny_read`.
+fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
+    let mut paths: Vec<String> = SENSITIVE_PATHS
+        .iter()
+        .chain(SENSITIVE_PATHS_READ_ONLY)
+        .filter(|p| !SANDBOX_DENY_READ_EXCLUDED.contains(p))
+        .map(|p| p.strip_suffix("/**").unwrap_or(p).to_string())
+        .collect();
+    paths.sort_unstable();
+    paths
+}
+
+// Deny-list entries for opencode's own permission maps: every sensitive path except opencode's
+// own config directory (denying opencode access to its own config within its own map is a
+// no-op).
+fn opencode_permission_denies(
+    default: PermissionAction,
+    paths: impl IntoIterator<Item = &'static str>,
+) -> PermissionRule {
+    let mut m = BTreeMap::new();
+    m.insert("*".to_string(), default);
+    for path in paths {
+        if path == OPENCODE_CONFIG_PATH {
+            continue;
+        }
+        m.insert(path.to_string(), PermissionAction::Deny);
+    }
+    PermissionRule::Object(m)
 }
 
 fn codex_otlp_exporter(endpoint: &str) -> Option<toml::Value> {

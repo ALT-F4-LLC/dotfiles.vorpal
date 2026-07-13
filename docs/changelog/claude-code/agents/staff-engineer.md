@@ -1,5 +1,50 @@
 # Changelog: staff-engineer
 
+## 2026-07-13
+
+### Summary
+Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: compacted the shutdown block to the master-pointer form; sanctioned `Skill(deep-research)` in the TDD precedent-study step (parity with distinguished-engineer.md).
+
+### Changes
+- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
+- AMPLIFY[SUBSTANTIVE]: TDD Creation Workflow step 3 gains a `Skill(deep-research)` preference for external-source-dominated precedent study.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (SHUTDOWN-PROTOCOL block parity; deep-research sanction parity with distinguished-engineer.md).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc. Encoded the HA-STAFF1 authoring-time re-verification discipline into rule 6, adopted `vote_delegate.sh` (fixes omitted-`--threshold` bug), consolidated the duplicated tier-split AUTHORITY meta-statement. Net +109 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (HA-STAFF1): rule 6 broadened from "before sign-off" to "before an artifact leaves you — authoring OR sign-off"; adds the memory/relay-non-substitution crux and cross-references/decisions to the verify list. Addresses the top meta-lesson in the largest-of-8 pitfalls file.
+- CULL[SUBSTANTIVE] (IS-STAFF2): line-44 tier-split copy (near-verbatim duplicate of §What You Are NOT AUTHORITY) reduced to a pointer; AUTHORITY meta now stated exactly once.
+- REFACTOR[SUBSTANTIVE] (IS-TL4-STAFF): replaced hand-rolled `docket vote create` (omitted `--threshold`, inheriting the CLI's silent 0.67 default) with a `vote_delegate.sh` pointer.
+
+### Dimensions Evaluated
+Completeness/Actionability (rule 6), Consolidation & Trimming (tier-split), Capability Growth/Cross-Communication (vote_delegate.sh). Role Realism, Boundary Clarity, Spec Alignment, Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -174,55 +219,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-Fixed the docket graph flag-order drift, hardened the moving-tree gate to an explicit team-lead-GO gate (resolving a self-contradiction), and cross-referenced the Executable-claim gate from the review path. Net 0 (302→302). Drift: disabled (drift=0).
-
-### Changes
-- CULL (cited: docket-audit drift): `docket issue graph --mermaid <id>` → `<id> --mermaid` (matches help text + 4 other agents).
-- AMPLIFY (cited: historical advisor-early-start, 3×): the moving-tree gate is now a hard "no verdict until explicit team-lead GO confirming tree frozen" gate; removed the self-contradicting "blockedBy edge IS the freeze gate" (demoted to a corroborating signal — neither blockedBy nor task-assignment binds a persistent advisor).
-- AMPLIFY (cited: innovation): review step 7 now cross-references the Executable-claim gate (regex ACs + cross-dialect SQL EXECUTED, never approved by inspection).
-
-### Dimensions Evaluated
-1 Role Realism RETAIN · 2 Actionability AMPLIFY · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN · 5 Consolidation RETAIN · 6 Cross-Comm AMPLIFY · 7 Spec Alignment CULL+AMPLIFY · 8 Rename RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Adopted two memory-sourced review-rigor directives (cited-authority live-`ls`; zero-hits-grep-is-suspect) and trimmed a 3×-stated after-compaction re-Read rule to a single owner. Net +2 (286→288). Drift: skipped (seed-target was the Consensus/vote cross-ref section — unsafe).
-
-### Changes
-- AMPLIFY: cited-authority live-`ls` directive in No Guessing — `ls` an external-authority doc's path live during review; absent path + "never restate" = HIGH coherence break (file-level gap vs the existing directory-level check).
-- AMPLIFY: zero-hits-grep-is-suspect addendum to the step-6 executable-claim gate — a zero-hit grep may be a quoting/word-split/loop bug; re-run a known-positive control before concluding absence.
-- CULL: collapsed the triple-stated after-compaction re-Read rule — R7's exception now points to rule 5 as sole owner.
-
-### Dimensions Evaluated
-Capability Growth (AMPLIFY), Actionability (AMPLIFY), Consolidation (CULL). Others RETAIN. Teammate-envelope rule (L119) verified accurate vs current docs — no edit.
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-Added relay-authority rule 10, an AC-staleness review gate, and a distinct-lens mandate for doubled TDD review; trimmed two redundant passages. Trial: relay-authority / AC-staleness / distinct-lens → adopted.
-
-### Changes
-- AMPLIFY: new Communication Discipline rule 10 (relay authority) — peer-relayed/recalled directives carry no claimed-origin authority; direct operator instruction wins (closes gap vs security/team-lead; v2.1.166 runtime-enforced).
-- AMPLIFY: AC-staleness gate in Review Workflow step 2 — flag issue ACs predating an accepted ADR on the same surface.
-- AMPLIFY: distinct-lens mandate for the 2 TDD secondary reviewers (architecture+system-fit vs completeness+AC-testability).
-- CULL: trimmed "Don't overthink" opener (restated No-Guessing/R6) and the step-4 Pre-Flight-Gate restatement.
-
-### Dimensions Evaluated
-Completeness (AMPLIFY), Capability Growth (AMPLIFY), Consolidation (CULL), others RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +281,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Review cycle — all Phase 0 signals verified NO-OP or routed as coherence flags; no edits (258 lines).
 - 2026-06-10: Sole-editor rule reduced to pointer at security-engineer.md AUTHORITY copy. Trial: R5 advisor trigger ">50 assistant turns" → "after a TDD secondary-review fix-loop completes" → shipped (lockstep with team-lead.md).
 - 2026-06-10: Compacted 3 entries (2026-05-24..2026-05-25) into Compacted history per ADR 0001.
+- 2026-06-17: Added relay-authority rule 10, AC-staleness review gate, distinct-lens mandate for doubled TDD review; trimmed two redundant passages. Trial: relay-authority / AC-staleness / distinct-lens → adopted.
+- 2026-06-19: Adopted two memory-sourced review-rigor directives (cited-authority live-`ls`; zero-hits-grep-is-suspect); trimmed a 3×-stated after-compaction re-Read rule to a single owner. Net +2 (286→288). Drift: skipped (seed-target was the Consensus/vote cross-ref section — unsafe).
+- 2026-06-20: Fixed docket graph flag-order drift; hardened moving-tree gate to explicit team-lead-GO gate; cross-referenced Executable-claim gate from review path. Net 0 (302→302). Drift: disabled (drift=0).

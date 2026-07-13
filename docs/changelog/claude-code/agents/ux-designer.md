@@ -1,5 +1,52 @@
 # Changelog: ux-designer
 
+## 2026-07-13
+
+### Summary
+Compacted 4 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: fixed the threshold-less vote proposal (real bug); compacted the shutdown block; gained the CANONICAL:SANDBOX-RECOVERY-LOCAL block (only render-executing role that lacked it) and a deep-research sanction on competitive/standards research.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: §Design Spec Approval vote proposal migrated to `vote_delegate.sh` — fixes omitted `--threshold`; Wire form preserved.
+- CULL[SUBSTANTIVE]: §Shutdown Handling block compacted to the master-pointer form.
+- AMPLIFY[SUBSTANTIVE]: Responsibility 5 gains a byte-parity `CANONICAL:SANDBOX-RECOVERY-LOCAL` block (copied from sdet.md) at the render-mechanism table — prevents sandboxed headless-chrome/bind failures being misread as a render Fail.
+- AMPLIFY[SUBSTANTIVE]: Responsibility 3 gains a `Skill(deep-research)` preference for competitive/standards scans.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (vote plumbing, shutdown block, sandbox-recovery, deep-research parity across the fleet).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc. Surfaced post-implementation design QA in the frontmatter description (HA-UX1 promised-but-never-sent gate), noted `skills:` frontmatter is inert in teammate mode (DR1), and trimmed the ~12-line Go scratch-module recipe to a pointer into centralized pitfalls.md (IS-UX3). Net -120 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (HA-UX1): frontmatter description now names design QA on an implementation diff for any `docs/ux/`-spec'd surface — makes the gate discoverable at dispatch time.
+- CULL[SUBSTANTIVE] (IS-UX3): Go internal-package render-verification recipe trimmed to trigger+approach + pointer; full recipe retained verbatim in centralized pitfalls.md.
+- AMPLIFY[SUBSTANTIVE] (DR1): R2 states frontmatter skills don't auto-load in teammate mode; invoke each explicitly.
+
+### Dimensions Evaluated
+Completeness/Actionability, Consolidation & Trimming, Spec Alignment. Role Realism/Boundary Clarity/Capability Growth/Rename: RETAIN (SDLC research confirms fit; UX Researcher + Accessibility already absorbed).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -175,66 +222,6 @@ All 8 RETAIN. Consolidation examined closest (render-verification authoring→va
 ### Rename
 No rename.
 
-## 2026-06-17
-
-### Summary
-Added a rendered-EFFECT obligation to spec self-validation and a relay-authority clause. Trial: rendered-EFFECT / relay-authority → adopted.
-
-### Changes
-- AMPLIFY: self-validate step 4 now requires naming the rendered-EFFECT target at real delivery resolution (not just the CSS/token value) for visual/static-export surfaces.
-- AMPLIFY: relay-authority clause in Inter-Agent Communication (relay treated as direct inbound; a relayed directive yields to a contradicting direct operator instruction).
-- Verified NO-OP: visual-render gate already encoded (lines 35/151/214).
-
-### Dimensions Evaluated
-Completeness (AMPLIFY), Spec Alignment (AMPLIFY), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 3 entries (2026-05-17..2026-05-24) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 coherence: R5 ux-advisor self-summary trigger now fires only on a design-QA verdict that surfaced a spec/implementation mismatch — lockstep with team-lead.md R5 per-advisor variant.
-
-### Changes
-- R5 trigger conditioned on mismatch, aligning with the existing memory-save trigger; clean Pass verdicts no longer fire a self-summary turn (deferred Phase 1 CHANGE 3, applied lockstep).
-
-### Dimensions Evaluated
-Coherence pass (cross-file mirrors).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Fixed undocumented frontmatter `color: magenta` → `purple` and retired the "Text-only medium" framing that contradicted the mandatory render-to-image design-QA gate. R5-trigger alignment deferred to Phase 2 (parity-bound with team-lead.md R5 variant). Net 0 physical lines (255).
-
-### Changes
-- AMPLIFY: frontmatter `color: purple` — magenta absent from the documented accepted list (silent-no-op risk; sole family outlier).
-- CULL: "Text-only medium" framing — superseded by the render-to-image QA gate (fem-kubernetes Marp/embed pitfalls); now "Text-primary medium, render-verified"; prototyping clarified out-of-scope.
-- Deferred: R5 trigger mismatch-only condition → Phase 2 lockstep with team-lead.md.
-
-### Dimensions Evaluated
-All 8; Spec Alignment + Consolidation primary.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +279,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Phase 2 shutdown flip — exit sequence inverted (report→await→respond); PITFALLS family fix. Net 0 (254 lines).
 - 2026-06-09: Closed two Fable-5 prescriptive-trigger gaps; reasoning-echo audit clean; render-QA lessons already-encoded. Net +2 (255 lines).
 - 2026-06-09: Compacted 37 entries (2026-03-19..2026-05-17) into Compacted history per ADR 0001 (DKT-264).
+- 2026-06-10: Fixed undocumented frontmatter `color: magenta` → `purple`; retired "Text-only medium" framing (superseded by render-to-image QA gate). Net 0 (255 lines).
+- 2026-06-10: Phase 2 coherence — R5 ux-advisor self-summary trigger fires only on a design-QA verdict surfacing spec/implementation mismatch (lockstep with team-lead.md R5).
+- 2026-06-10: Compacted 3 entries (2026-05-17..2026-05-24) into Compacted history per ADR 0001.
+- 2026-06-17: Added rendered-EFFECT obligation to spec self-validation + relay-authority clause. Trial: rendered-EFFECT / relay-authority → adopted.

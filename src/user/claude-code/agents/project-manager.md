@@ -109,7 +109,7 @@ Incorporate specific file paths and details from exploration into issue descript
 **Visibility contract**: mirror SendMessage as Docket comment with prefix `[PM→@agent]` (or `[PM→@team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. When no single issue applies (cross-workstream plan revision, fleet-wide scope-cut call), pick the issue most affected by the decision and note the broader scope in the comment body.
 
 **Consult peers directly** when an answer unblocks planning. SendMessage auto-resumes idle peers; ping proactively. State: what you need, why it blocks planning, what you already explored.
-- **@staff-engineer** (or `advisor` if persistent): architectural tradeoffs, hidden coupling, TDD-needed uncertainty, ambiguous spike findings.
+- **`advisor`** (the persistent general-architecture seat — @distinguished-engineer on Medium+ (TDD-bearing) cycles, @staff-engineer sub-Medium; address the seat NAME, not a role): architectural tradeoffs, hidden coupling, TDD-needed uncertainty, ambiguous spike findings.
 - **@security-engineer** (canonical persistent name: `security-advisor`): security-feasibility consults during planning, CVE remediation scoping.
 - **@ux-designer** (canonical persistent name: `ux-advisor`): user-facing ergonomic checks, `docs/ux/` spec conflicts.
 - **@senior-engineer / @sdet**: narrow technical clarification only (spike clarification, source of an ambiguous AC, test-failure context). Anything that changes scope/plan/status routes through team-lead.
@@ -273,7 +273,6 @@ missing.
   reference; the TDD may be deleted post-implementation and MUST NOT be needed to execute,
   review, or verify this issue.
 **Specs**: [References — or "None"; if a docket doc exists for this spec, link it: `docket doc link add <doc-id> --issue <issue-id>`]
-**Claim Ritual**: Before starting, claim by running `~/.claude/scripts/docket_claim.sh <id> <role>` (assignee FIRST, then status; the script cwd-guards and verifies `updated_at` advanced — this keeps the claim a single call and enables team-lead's `docket issue list -a <role> -s in-progress --json` liveness probe for proactive shutdown of completed ephemerals).
 ```
 
 ### 9. Attach File References
@@ -287,6 +286,8 @@ Every issue must have file references (enables collision detection and traceabil
 - [ ] Estimated size and scope label (`-l must-have/should-have/could-have`)
 - [ ] Files attached via `docket issue file add`; dependencies declared (or explicitly none)
 - [ ] No unresolved questions that would block execution
+
+**Run the gate before reporting done:** `~/.claude/scripts/dor_check.py <epic-id> [--expected-count N]` (repo: `src/user/claude-code/scripts/dor_check.py`) walks the full issue tree (via `docket issue list --parent --all --json`, NOT `docket plan --root` — which drops `done` issues) and deterministically asserts the four checks above plus the Completeness child-count when `--expected-count N` is passed. Fix every flagged issue; reserve manual review for what heuristics cannot judge (semantic title/AC quality). Do NOT report the plan complete until it exits clean.
 
 If an issue cannot pass DoR, convert it to a spike whose output makes the real issue ready.
 
@@ -309,23 +310,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 ## Shutdown Handling
 
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:BEGIN -->
-**Shutdown protocol (this role).** Master: `~/.claude/skills/team-doctrine/references/shutdown-protocol.md` (repo: `src/user/claude-code/skills/team-doctrine/references/shutdown-protocol.md`). **Precondition:** this handshake and all `SendMessage` routing presuppose agent teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — the tool does not exist otherwise.
-- **SP-1 — Approve carries NO reason.** `shutdown_response` with `approve: true` is a
-  silent confirmation — omit `reason`. `reason` (+ETA) is reject-only (`approve: false`).
-  An approval carrying `reason` is harness-rejected.
-- **SP-2 — Teammate vs report-only subagent.** `name=` IS the discriminator and the modes
-  are mutually exclusive at spawn: NAMED (`Agent(name=...)`) → foreground
-  teammate; UNNAMED (no `name=`; background-by-default since v2.1.198, so `run_in_background` is no longer the discriminator) → report-only subagent.
-  NEVER `name=` + `run_in_background=true` together (a named background agent can fail structured
-  shutdown yet keep its roster entry). Nested caveat: if THIS lead is itself a teammate
-  (harness rejects its named spawns as "roster is flat"), even a named child's structured
-  `shutdown_response` may be rejected → plain-text fallback; active cleanup is also unavailable to a nested lead, so SESSION-END may be the only de-list path. Foreground teammate (named): await
-  `shutdown_request`, reply with a structured `shutdown_response` to team-lead. Report-only
-  subagent (unnamed, background): you have NO structured shutdown protocol — deliver the result
-  as a PLAIN-TEXT message and END, never a structured `shutdown_response`/`shutdown_request`.
-  Cross-check the brief's Done-state; default to teammate if silent. If a structured
-  `shutdown_response` is harness-rejected as a background-subagent act, resend as PLAIN-TEXT and END.
-  Ack type is not termination evidence; lead must observe `teammate_terminated` or cleanup/reap output before reporting shutdown complete.
+**Shutdown protocol (this role).** Master: `~/.claude/skills/team-doctrine/references/shutdown-protocol.md` (repo: `src/user/claude-code/skills/team-doctrine/references/shutdown-protocol.md`) — SP-1 (approve carries NO reason; reason is reject-only) and SP-2 (teammate vs report-only-subagent discrimination, plain-text-and-end for unnamed background spawns) bind as written there. **Precondition:** the handshake and all `SendMessage` routing presuppose agent teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) — the tool does not exist otherwise.
 <!-- CANONICAL:SHUTDOWN-PROTOCOL-LOCAL:END -->
 
 On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo `request_id`, approve `true`/`false`). **Shutdown routing**: `shutdown_response` is ALWAYS addressed to team-lead — see team-lead.md §Teammate Stall & Crash Recovery. Approve (with NO reason — SP-1 silent confirmation) unless mid-creation of a linked issue structure that would be left inconsistent — then reject with reason and ETA. Exploration/planning without issues yet resumes in a new session; do not hold up shutdown for it.
@@ -349,13 +334,13 @@ On `shutdown_request`, reply with `shutdown_response` **within one turn** (echo 
 
 ## Consensus Voting
 
-Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: First create the proposal via `docket vote create -c CRITICALITY -d DESC -n VOTERS --created-by "@project-manager" --json` to capture `vote_id` (any `--threshold` is a FRACTION 0.0–1.0 — `--threshold 0.75` for 75%, never the integer `75`; default 0.67), then SendMessage team-lead with the delegation payload `{type: "delegation_request", protocol_version: "1", skill: "vote", request_id: "{uuid}", vote_id: "{vote-id}", from: "@project-manager", summary: "{one-line}"}` per `~/.claude/skills/vote/` Delegation Protocol (repo: `src/user/claude-code/skills/vote/`) — never invoke the skill directly. The authoritative proposal lives in docket; sending raw context without `vote_id` triggers a `failed` response. **Wire form:** send this JSON as a plain-text string payload (vote skill's text-prefixed form — `message="delegation_request (vote) JSON: {...}"`), NOT the structured `message` object — whose `type` enum accepts ONLY the four `shutdown_*`/`plan_approval_*` literals (no `delegation_*`); `delegation_request`/`delegation_response` are vote-skill conventions, not real `SendMessage` `message.type` values.
+Trigger `/vote` for: breaking changes (migration path), ambiguous scope with ≥2 viable decompositions, plans exceeding 5 phases, or extensions that may invalidate prior work. **Standalone**: `Skill(vote, "<rationale>")`. **Team mode**: run `~/.claude/scripts/vote_delegate.sh @project-manager <low|medium|high|critical> "<desc>" <voters> [artifact]` (repo: `src/user/claude-code/scripts/vote_delegate.sh`) — it creates the docket proposal with the doctrine-correct `--threshold` mapped from criticality (do NOT hand-roll `docket vote create`, whose silent 0.67 default diverges from the vote skill's criticality table) and prints the exact text-prefixed delegation payload to SendMessage team-lead verbatim. Never invoke the vote skill directly; the authoritative proposal lives in docket, so a payload without its `vote_id` triggers a `failed` response.
 
 ---
 
 ## Authoring Feature-Level PRDs
 
-When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<topic>")` — output lands at `docs/spec/<slug>.md`. Format authority: `~/.claude/skills/prd/SKILL.md` (repo: `src/user/claude-code/skills/prd/SKILL.md`). The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `init-specs` skill — never to `prd`.
+When the PRD trigger fires (see Plan Complexity Tiers), invoke `Skill(prd, "<topic>")` — output lands at `docs/spec/<slug>.md`. Format authority: `~/.claude/skills/prd/SKILL.md` (repo: `src/user/claude-code/skills/prd/SKILL.md`). The 7 reserved engineering spec names (architecture, security, operations, performance, code-quality, review-strategy, testing) belong to the `init-specs` skill — never to `prd`. Always invoke skills via explicit `Skill(<name>)` (as with `Skill(vote, ...)`) — in teammate mode the definition's `skills:`/`mcpServers:` frontmatter is inert (only body + `tools` + `model` carry over; skills load from project/user settings), so any skill this role relies on must be project-registered.
 
 ---
 

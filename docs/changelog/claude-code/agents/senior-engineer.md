@@ -1,5 +1,50 @@
 # Changelog: senior-engineer
 
+## 2026-07-13
+
+### Summary
+Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: migrated the hand-rolled team-mode vote proposal to `vote_delegate.sh` (fixes silent 0.67 threshold default — a real bug); compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: §Using `/vote` for Consensus now runs `vote_delegate.sh @senior-engineer` — fixes omitted `--threshold` bug; Wire-form warning preserved.
+- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition — content fully covered by the shutdown-protocol master.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (vote plumbing parity with 4 already-fixed files; SHUTDOWN-PROTOCOL block parity across the fleet).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 3 → 3 sub / 0 cos / 0 rej / 3 def / 2 enc. Applied 3 verified bug-audit/docs-research findings to the highest-volume role's Read-before-Edit and tool-envelope rules. Net +811 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (BA-FIX2, DR1): widened Tool-envelope-check note — before calling ANY tool confirm it's in the actual system-prompt list (Grep/Glob/AskUserQuestion/TaskStop/MCP fall back to Bash equivalents); noted `skills:`/`mcpServers:` frontmatter is inert in teammate mode.
+- AMPLIFY[SUBSTANTIVE] (BA-PREVENT4): extended Shared/appended-files rule to name `docs/tdd/*.md` & `docs/adr/*.md` as the dominant stale-read hotspot (109 occ/12 sessions) and promoted the `stat -f '%Sm %z'` mtime-stability check into canonical text.
+- AMPLIFY[SUBSTANTIVE] (BA-PREVENT7): extended the `ls -d` doc-dir probe to also cover docs/tdd & docs/adr.
+
+### Dimensions Evaluated
+Actionability (all 3), Completeness/Boundary Clarity (DR1). BA-PREVENT5 (highest-volume bug): no new reminder added per its own guidance — dispatch-time fix owned by team-lead.md. Role Realism/Consolidation/Spec Alignment/Capability Growth/Rename: RETAIN.
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -177,49 +222,6 @@ Consolidation (CULL ×2), Spec Alignment (correction). Others RETAIN (fix-2 rate
 ### Rename
 No rename.
 
-## 2026-06-17
-
-### Summary
-Repaired the dead "see Runtime Discipline" cross-reference (L38) by adding a non-numbered Shell-hygiene (zsh) reminder. Drift: neutral reword of the grep-call-sites bullet → adopted.
-
-### Changes
-- AMPLIFY: added a non-numbered "Shell hygiene (zsh)" bullet to Runtime Discipline (`!=` mangling, `$TMPDIR` edit-scripts) — the real target for L38's dangling pointer; R1-R7 canon preserved (NOT a new R8).
-- Verified NO-OP: git-add overreach, locate-by-grep-not-line-number, out-of-order supersession already encoded.
-
-### Dimensions Evaluated
-Completeness / Actionability (AMPLIFY — xref repair), Consolidation (RETAIN), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 coherence: gray-zone resolution gains an SE→staff cross-reference to the TDD-vs-direct rubric (staff-engineer.md §Responsibility 1).
-
-### Changes
-- One-clause cross-ref linking the escalate-or-implement test to staff's TDD-decision rubric — the two halves of one decision now reference each other.
-
-### Dimensions Evaluated
-Coherence pass (cross-file mirrors).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -284,3 +286,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Fable-5 calibration — minor-choice autonomy + silence-default narration added; Technical Debt/Navigate-Ambiguity trimmed to offset. Net 0.
 - 2026-06-09: Compacted 43 entries (2026-03-19..2026-05-25) into Compacted history per ADR 0001 (DKT-264).
 - 2026-06-10: Fixed `.data.status` JSON-path bug in close-verify; compressed Tool-envelope (\$TMPDIR-script); scoped git-stash to shared-tree. Net 0.
+- 2026-06-10: Phase 2 coherence — SE→staff cross-reference added linking escalate-or-implement test to staff's TDD-decision rubric.
+- 2026-06-10: Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
+- 2026-06-17: Repaired dead "see Runtime Discipline" cross-reference (L38) via non-numbered Shell-hygiene (zsh) bullet. Drift: neutral reword of the grep-call-sites bullet → adopted.

@@ -1,5 +1,67 @@
 # Changelog: sdet
 
+## 2026-07-13
+
+### Summary
+Compacted 5 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 5 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 3 disambiguation: 3 fixes — named the `sdet-{ID}` test-infrastructure spawn class (previously only in team-lead.md, causing a plausible wrongful refusal under the "only three verifier names allowed" rule), and closed a vote Fallback path that instructed exactly the bare `docket vote create` the same section warns diverges from doctrine.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: verifier-name refusal rule scoped explicitly to VERIFICATION dispatches; `sdet-{ID}` test-infrastructure dispatches are named as a distinct, non-refusable class.
+- AMPLIFY[SUBSTANTIVE]: Lifecycle's spawn-name enumeration now names the `sdet-{ID}` class alongside the three verifier names, closing the same ambiguity at its second occurrence.
+- FIX[SUBSTANTIVE]: vote Fallback now routes through `vote_delegate.sh` (or an explicit `--threshold`) instead of instructing a bare `docket vote create` two sentences after warning it silently defaults to 0.67.
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading) — two findings share one root cause (an unmarked narrow reading of "canonical spawn names").
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form (parity with the fleet-wide compaction).
+
+### Changes
+- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (SHUTDOWN-PROTOCOL block byte-parity across all 7 non-team-lead agents).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+evolve-agents self-review: wired two verified-existing unreferenced scripts into workflow, retired single-investigation depth, added teammate-frontmatter-inert note. Net −1067 bytes.
+
+### Changes
+- WIRE[SUBSTANTIVE]: §Test Failure Diagnosis step 3 flaky-classification now points to `flaky_confirm.sh` (VERIFIED exists, cited sdet but referenced by zero agents) instead of manual "run 3-5x". [IS-SDET2]
+- WIRE[SUBSTANTIVE]: §Using /vote team-mode now calls `vote_delegate.sh` (VERIFIED exists) — fixes the omitted `--threshold` bug (bare `docket vote create` silently defaults 0.67, diverging from the vote skill's Criticality table). [IS-TL4-SDET]
+- RETIRE[SUBSTANTIVE]: removed the ~1330-byte "Verifying nested `claude -p` / subprocess-containment claims" paragraph — single-investigation depth bloating every verifier spawn. [IS-SDET3]
+- ADD[SUBSTANTIVE]: R2 note that teammate mode does not auto-load `skills:`/`mcpServers:` frontmatter — invoke via explicit `Skill(<name>)`. [DR1]
+- ADD[SUBSTANTIVE]: sandbox-recovery LOCAL block gains a verdict gate — rerun with `dangerouslyDisableSandbox` before raising a BLOCK on a possibly-sandbox-induced tool failure. [HA-SDET1]
+
+### Dimensions Evaluated
+Completeness/Actionability (script wire-ins), Consolidation (retire single-investigation depth), Spec Alignment (teammate frontmatter envelope), Capability Growth (sandbox verdict gate).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -159,83 +221,6 @@ Phase 3 disambiguation.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase 2 coherence: reconciled the DEFAULT lone `verifier` to run as a report-only subagent (mirrors team-lead step 15) across Lifecycle / comm rule 6 / Verifier Composition / Shutdown + 5 scope-notes (comm rules 2, 7, 8, Inter-Agent matrix, step 5 closeout) so the no-SendMessage path is coherent; added the incoming abuse-case consult trigger; chained the test-infra claim. Net +1 (476→477).
-
-### Changes
-- AMPLIFY: DEFAULT single `verifier` = report-only subagent (plain-text verdict to team-lead, no shutdown handshake); paired-panel verifiers stay ephemeral teammates. Signal: team-lead step 15 (Distribution-Mechanism Gate).
-- AMPLIFY: 5 scope-notes clarifying the SendMessage-based rules (ack, progress, matrix routing, closeout) apply to teammate/paired paths; the report-only default returns its verdict to team-lead, who routes. Signal: coherence (report-only has no SendMessage).
-- AMPLIFY: incoming trigger — @security-engineer plan-phase abuse-case consult on a no-TDD security change → reply with abuse cases before the diff (FIX 5, mirrors security outgoing).
-- Aligned test-infra claim to the chained one-call (FIX 7).
-
-### Dimensions Evaluated
-6 (Capability Growth) AMPLIFY + coherence reconciliation. 1/2/3/4/5/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Folded one new cross-project pitfall (GitOps selfHeal signal-timing) and one path-handling guard (EISDIR) into existing lines, offset by deduping the TFD FIX-verdict restatement. Net 0 (476→476). Two live-cluster Phase 0 items (kind-reaping, Monitor/~/.kube/config) already covered — not re-added. verifier-as-report-only-subagent flagged to Phase 2 (team-lead-owned).
-
-### Changes
-- CULL: line 322 FIX-verdict ladder restated the TFD-LOCAL block (lines 269-275); collapsed to a terse cross-ref, both verdict poles preserved. Signal: Consolidation HIGHEST.
-- AMPLIFY: GitOps selfHeal:true reverts hand-applied resources — capture real-system signal AFTER sync, folded into verification discipline (c). Signal: cross-project pitfall ×2 repos.
-- AMPLIFY: EISDIR directory-path guard folded into Verification Workflow step 2. Signal: the one real is_error in the historical audit.
-
-### Dimensions Evaluated
-All 8. 2 (Actionability) AMPLIFY (EISDIR). 4 (Completeness) AMPLIFY (selfHeal). 5 (Consolidation) AMPLIFY (TFD dedup). 1/3/6/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Folded two uncovered sandbox/verification lessons into existing blocks + deduped the kubectl/credential restatement. Net 0 physical lines (472→472; additions appended to existing lines). Drift: disabled (drift=0).
-
-### Changes
-- AMPLIFY (cited: historical memory-lesson c + focus 1): the sandbox-interaction block now covers `!`-negation/process-substitution misfires + a 3-bucket OPENED/FAILED/INDETERMINATE connectivity classifier; deduped the Monitor+kubectl credential restatement already present at line 252.
-- AMPLIFY (cited: focus 2): added verification discipline (d) "exact consumer command path" (reproduce the literal consumer call, never an equivalent); bumped the list intro "Three→Four disciplines" for numbering coherence.
-
-### Dimensions Evaluated
-1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness AMPLIFY · 5 Consolidation AMPLIFY (kubectl dedup) · 6 Cross-Comm AMPLIFY · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Trimmed verify-ac-skill-owned duplication from §Verification Workflow (verbatim-command, layer-signals, edge-case battery, verdict ladder — all owned by the skill, verified at SKILL.md), preserving the 3 sdet-unique disciplines; removed a duplicate authority-path citation. Net -1 (369→368). Drift: skipped (seed-target was a CRITICAL section — unsafe).
-
-### Changes
-- CULL: §Verification Workflow steps 3-5 restated the verify-ac FULL procedure; collapsed to one skill-citing step + one step holding the 3 unique disciplines (grep-sweep marker, before/after set-diff, real-system+operator-confirm).
-- CULL: §Execution Workflow step 4 duplicate format-authority path citation (already owned by §Verification Output).
-
-### Dimensions Evaluated
-Consolidation & Trimming (CULL). Role Realism / Actionability / Boundary Clarity / Completeness / Capability Growth / Spec Alignment / Rename — RETAIN (health high).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -297,3 +282,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Culled redundant "Idle after verdict" paragraph (4-way restatement); folded TaskStop verb into Drain-before-shutdown. Net -2 (339 lines).
 - 2026-06-10: Compacted 2 entries (2026-05-25..2026-05-25) into Compacted history per ADR 0001.
 - 2026-06-17: Added sandbox-interaction patterns, never-trust-0-failures set-diff procedure, shared-worktree baseline hazard. Trial: sandbox-patterns / set-diff / worktree-baseline → adopted. Drift: neutral reword of the @ux-designer testability-trigger bullet → adopted.
+- 2026-06-19: Trimmed verify-ac-skill-owned duplication from §Verification Workflow (verbatim-command, layer-signals, edge-case battery, verdict ladder). Net -1 (369→368). Drift: skipped (seed-target was a CRITICAL section — unsafe).
+- 2026-06-20: Folded two uncovered sandbox/verification lessons into existing blocks + deduped the kubectl/credential restatement. Net 0 (472→472). Drift: disabled (drift=0).
+- 2026-06-21: Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-30: Reconciled DEFAULT lone `verifier` to run as a report-only subagent (mirrors team-lead step 15); added abuse-case consult trigger; chained test-infra claim. Net +1 (476→477).
+- 2026-06-30: Folded GitOps selfHeal signal-timing pitfall + EISDIR path-handling guard; deduped TFD FIX-verdict restatement. Net 0 (476→476).

@@ -1,5 +1,54 @@
 # Changelog: team-lead
 
+## 2026-07-13
+
+### Summary
+Compacted 4 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 3 disambiguation: 3 fixes resolving multi-reading/ownership ambiguity introduced or exposed by this cycle's edits — the V/I/SR consult-advisor conditional, the "deep research" work-shape vs `Skill(deep-research)` sub-step naming collision, and a missing explicit-`--threshold` mandate on team-lead's own direct vote-create path.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: V/I/SR pattern's consult-advisor pinned to `@staff-engineer`/`silver` with a table citation — the prior Medium+/otherwise conditional could be misread as sanctioning a `gold` DE advisor beside the `gold` DE investigator (double gold spend).
+- AMPLIFY[SUBSTANTIVE]: Gold-first routing reflex now distinguishes the "deep research" gold-routed work-SHAPE from `Skill(deep-research)`, the silver-tier sub-step tool this cycle sanctioned in 3 files.
+- AMPLIFY[SUBSTANTIVE]: Consensus Integration's direct `docket vote create` path gains the explicit `--threshold` mandate every teammate file already carries — closes the silent-0.67-default trap for team-lead's own uncovered proposer path.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading, overlapping-ownership) — post-Phase-2 genome re-read fresh; two-arm test applied to all candidates.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 11 → 5 sub / 10 cos / 0 rej / 6 def / 3 enc. TRIM cycle: applied 6 Phase-0 findings (docket-cli pointer, cycle_metrics wiring, Monitor-driven sweep, fresh-context Read, repo-root-sweep rule, no-report-file) funded by 10 prose consolidations. Net -1,325 bytes (113,686→112,361). File remains ~32KB over the 80KB budget — bulk reduction needs a coordinated relocation of full-text sections to team-doctrine masters, out of this cycle's single-pass scope.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (RA-FIX1): added CANONICAL:DOCKET-CLI-LOCAL pointer — team-lead was the sole high-volume docket-CLI-rediscovery role without it (53/62 re-probe sessions this week).
+- AMPLIFY[SUBSTANTIVE] (IS-TL2): wired `cycle_metrics.py` into step-16 wrap-up (blown threshold → operator-facing line).
+- FIX[SUBSTANTIVE] (IS-TL3): step-13 shutdown sweep is now Monitor-driven with a once-per-phase manual fallback — resolves a live contradiction with the monitor-orchestration master.
+- AMPLIFY[SUBSTANTIVE] (BA-PREVENT5, HA-TL1): dispatch hygiene now states fresh spawns have Read no file yet, and mandates repo-root-grep-with-exemptions over directory enumeration for sweeps.
+- AMPLIFY[SUBSTANTIVE] (BA-PREVENT6): report-only subagent briefs must forbid Write of report/summary files.
+- CULL[COSMETIC] ×10: shutdown paragraph, Rule-8 script schemas, model-routing intro + resolution-order, git-verification caveats, transition/experimental caveat, effort teammate bullet, alignment orthogonality, named-mechanism fidelity, agent-blocked-diagnostic, ground-truth brief — all reworded for brevity with no behavioral loss.
+
+### Dimensions Evaluated
+Actionability (findings), Spec Alignment (IS-TL3 contradiction resolved), Consolidation & Trimming (10 cuts). Role Realism/Boundary Clarity/Rename: RETAIN (SDLC split reconfirmed). BA-FIX1/HA-TL2/HA-UX1/IS-TL4-relay/DR2 verified — no gap found, no change (already-encoded or correctly declined).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -188,70 +237,6 @@ Phase 3 disambiguation (confusable-name, term-overload, overlapping-ownership).
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase 2 cross-cutting (operator-approved). Adopted the PA plan-approval overlay for risky dispatches; defaulted the lone step-15 verifier to a report-only subagent; added a shared pre-computed reviewer brief (Rule 8) + parallel `planner-{slug}` Large-Task decomposition; aligned the senior-template claim wording to the chained one-call. Net +2 (661→663). Trial: PA plan-approval overlay adopted family-wide → applied (measure next cycle).
-
-### Changes
-- AMPLIFY: step 11 Plan-approval (PA) overlay — dispatch @senior-engineer `mode="plan"`, team-lead emits `plan_approval_response`, route security/spec'd plans to security-advisor/ux-advisor. Signal: Phase 0 innovation (PA = top unused lever).
-- AMPLIFY: step 15 lone verifier → report-only subagent per Distribution-Mechanism Gate. Signal: Phase 0 innovation + internal incoherence.
-- AMPLIFY: Rule 8 shared pre-computed brief (`git diff --stat` + spec excerpts + `cargo audit` keyed to Cargo.lock hash). Signal: Phase 0 efficiency (redundant re-runs across panels).
-- AMPLIFY: Large-Task parallel `planner-{slug}` decomposition counterpart to PM's surfaced option.
-
-### Dimensions Evaluated
-6 (Capability Growth) AMPLIFY×3 + coherence alignment (claim wording). 1/2/3/4/5/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-TRIM cycle, within-file safe whole-line trims (-6) + EI effort correction (net 0). Net -6 (667→661). PA overlay + verifier-as-report-only deferred to Phase 2 (operator-gated, cross-cutting). PRIMARY budget lever — relocating the Truth-First-Debugging MASTER out of the debugging-forbidden orchestrator — deferred to an evolve-coherence/ADR follow-up (deleting the master with no replacement is unsafe within one agents cycle); file stays >500 this cycle.
-
-### Changes
-- CULL: removed restating "The tell" line (dup of FORBIDDEN bullet + Per-turn self-audit). Signal: Consolidation; low historical violation rate (1 correction/72 sessions).
-- CULL: collapsed two Alignment example bullets into their blockquote (kept the "question exists" nuance). Signal: Consolidation (restated the preceding blockquote).
-- CULL: folded "Subagent-branch availability" paragraph into the Distribution-Mechanism Gate item 2. Signal: Consolidation.
-- AMPLIFY (Spec Alignment, EI): corrected stale effort claim — teammates DO inherit the lead's SESSION effort (v2.1.186); only the definition's `effort:` FRONTMATTER is unhonored on the teammate path.
-- Deferred: PA plan-approval overlay + lone-verifier→report-only-subagent → Phase 2 (operator-gated). TFD-MASTER relocation → evolve-coherence/ADR.
-
-### Dimensions Evaluated
-All 8. 5 (Consolidation) CULL×3 (structural relocation deferred). 7 (Spec Alignment) AMPLIFY (EI). 6 (Capability) → PA + verifier deferred to Phase 2. 1/2/3/4/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Phase-2 coherence: closed a GO-gate producer/consumer deadlock + a within-file shutdown-sweep de-restatement. Net 0 lines (still 637 — budget overage routed to a structural-refactor ADR). Drift: disabled (drift=0).
-
-### Changes
-- AMPLIFY (coherence): the routine single-reviewer dispatch (step 14) now MUST carry the `GO — review NOW` trigger — closes a deadlock where staff-engineer.md's Moving-tree gate hard-gates EVERY verdict on a GO the default path never sent.
-- CULL (redundancy): step-13 line 314 de-duplicated against the step-13 Shutdown-sweep bullet (316), which owns the still-alive sweep in full.
-
-### Dimensions Evaluated
-Producer/consumer gate consistency (FIX) · within-file redundancy (FIX) · CANONICAL dedup (measured — none net-reduce, NONE applied) · line budget (remains 137 over — structural-refactor ADR recommended).
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 11 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 11 oldest committed date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +280,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-17: TRIM self-review (589→587) — docket-CLI drift fix, name/background exclusivity deduped into SP-2, fable/opus restatement removed, Rule 5 parity. Drift: neutral reword of the Brief-Authoring "Detector" bullet → adopted.
 - 2026-06-19: TRIM self-review (589→588) — merged opus tier bullets, compacted step-16 cleanup prose, softened fable wording to "opus is the standing tier". Drift: skipped (TRIM net-negative mandate — any neutral add violates it).
 - 2026-06-20: Fable-5 accuracy correction (worldwide suspension) + word-level consolidations + two gap-fills; net 0 (637 lines, TRIM goal unmet). Drift: disabled (drift=0).
+- 2026-06-21: Compacted 11 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-20: Phase-2 coherence — closed a GO-gate producer/consumer deadlock (step-14 dispatch now carries the `GO — review NOW` trigger) + within-file shutdown-sweep de-restatement. Drift: disabled (drift=0).
+- 2026-06-30: TRIM cycle, within-file safe whole-line trims (-6) + EI effort correction (teammates DO inherit session effort per v2.1.186; only frontmatter `effort:` is unhonored). Net -6 (667→661).
+- 2026-06-30: Phase 2 cross-cutting (operator-approved) — adopted PA plan-approval overlay; defaulted lone step-15 verifier to report-only subagent; added Rule 8 shared pre-computed reviewer brief; parallel `planner-{slug}` Large-Task decomposition. Net +2 (661→663). Trial: PA plan-approval overlay adopted family-wide → applied (measure next cycle).

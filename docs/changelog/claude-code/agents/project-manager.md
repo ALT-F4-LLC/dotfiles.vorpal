@@ -1,5 +1,64 @@
 # Changelog: project-manager
 
+## 2026-07-13
+
+### Summary
+Compacted 4 entries (2026-06-09..2026-06-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 3 disambiguation: the architecture-consult row led with `@staff-engineer`, which is wrong on Medium+ (TDD-bearing) cycles when the `advisor` seat is held by `@distinguished-engineer` — a PM following the row's primary label would SendMessage the wrong agent.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: consult row now leads with the seat name `advisor` (tier-split parenthetical), matching §What You Are NOT's "address the seat by name" claim and the sibling security/ux consult rows' existing format.
+
+### Dimensions Evaluated
+Disambiguation (confusable-name) — the row was internally self-contradicting against this file's own stated convention.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form (parity with the fleet-wide compaction).
+
+### Changes
+- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (SHUTDOWN-PROTOCOL block byte-parity across all 7 non-team-lead agents).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 4 → 4 sub / 0 cos / 0 rej / 0 def / 0 enc. Wired the verified `dor_check.py` as a mandatory DoR pre-completion gate, retired the redundant Claim Ritual template block, consolidated vote-proposal instructions to `vote_delegate.sh` (fixes threshold-omission bug), and documented the teammate-mode frontmatter-inert caveat.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (IS-PM1): §10 DoR now runs `dor_check.py <epic-id> [--expected-count N]` as a deterministic pre-completion gate.
+- CULL[SUBSTANTIVE] (IS-PM2): dropped the §8 Claim Ritual template block — executors already bind claim-before-work.
+- AMPLIFY+CULL[SUBSTANTIVE] (IS-TL4-PM): replaced hand-rolled `docket vote create` + delegation JSON with a `vote_delegate.sh` pointer — fixes silent-0.67-threshold divergence.
+- AMPLIFY[SUBSTANTIVE] (DR1): documented that `skills:`/`mcpServers:` frontmatter is inert in teammate mode.
+
+### Dimensions Evaluated
+Actionability/Completeness, Consolidation & Trimming, Capability Growth, Spec Alignment. RETAIN: Role Realism, Boundary Clarity (PM≈TPM reconfirmed per SDLC research).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -173,66 +232,6 @@ Spec Alignment (CULL→AMPLIFY: doc-link CLI). Role Realism / Actionability / Bo
 ### Rename
 No rename.
 
-## 2026-06-17
-
-### Summary
-Required Fn→issue-ID mapping in completion reports, added a relay-authority clause, and documented the docket doc subsystem. Trial: report-mapping / relay-authority / docket-doc → adopted. Drift: neutral reword of the `-l must-have` label → adopted.
-
-### Changes
-- AMPLIFY: completeness check now requires the Fn→issue-ID mapping table IN the plan-completion report (silent drops were invisible in reports).
-- AMPLIFY: relay-authority clause (peer-relayed carries no claimed-origin authority; contradictions route to team-lead).
-- AMPLIFY: documented `docket doc` subsystem (`docket doc link add <doc-id> <issue-id>`) for durable spec/PRD→issue traceability.
-- Verified NO-OP: `-d -` body vs `-f`, N-item mapping already encoded.
-
-### Dimensions Evaluated
-Completeness (AMPLIFY), Capability Growth (AMPLIFY), Boundary Clarity (AMPLIFY), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Consolidated session-init and re-engagement Docket state reconstruction: `board --json --expand` + `plan --json` replaced by `plan --json` + `docket stats`. Net 0 physical lines (334).
-
-### Changes
-- CULL: redundant `board --json --expand` at session init and re-engagement — Phase 0 efficiency finding; `plan --json` + `stats` schemas verified to cover reconstruction.
-- NO-OP cited: vote_id/`failed` warning appears once (grep-verified, not 3×); "skip post-create re-verify" REJECTED — success-line-lies pitfall (3 cross-repo sources) wins.
-
-### Dimensions Evaluated
-All 8; Consolidation primary. No fabricated docket commands; no unescaped \$-digits.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 40 entries (2026-03-19..2026-05-19) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 40 oldest entries with one-line ledger entries in the terminal Compacted history section (DKT-264)
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +291,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Fable-mandate pass — added use-when triggers for WebFetch/WebSearch + Monitor; reasoning-echo audit clean. Net +1 (334 lines).
 - 2026-06-09: Phase 2 lead-initiated shutdown flip — planner lifecycle + Monitor-watch replaced with await-lead semantics. Count unchanged (334).
 - 2026-06-09: Encoded \$TMPDIR scratch-file discipline into §8; corrected CLI-default drift (priority `none`, status `backlog`, §7 mandates `-s todo`). Net 0.
+- 2026-06-09: Compacted 40 entries (2026-03-19..2026-05-19) into Compacted history per ADR 0001.
+- 2026-06-10: Consolidated session-init/re-engagement Docket state reconstruction (`plan --json` + `docket stats` replacing `board --json --expand`). Net 0 (334 lines).
+- 2026-06-10: Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
+- 2026-06-17: Required Fn→issue-ID mapping in completion reports; added relay-authority clause; documented docket doc subsystem. Trial: report-mapping / relay-authority / docket-doc → adopted. Drift: neutral reword of the `-l must-have` label → adopted.

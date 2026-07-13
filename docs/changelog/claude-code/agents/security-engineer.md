@@ -1,5 +1,51 @@
 # Changelog: security-engineer
 
+## 2026-07-13
+
+### Summary
+Compacted 4 entries (2026-06-10..2026-06-19) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form (parity with the fleet-wide compaction).
+
+### Changes
+- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (SHUTDOWN-PROTOCOL block byte-parity across all 7 non-team-lead agents).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Findings: 6 → 5 sub / 0 cos / 0 rej / 1 def / 0 enc. Applied 5 SUBSTANTIVE fixes: corrected DA1 fabricated vote-schema fields, migrated vote-creation to vote_delegate.sh (fixes silent 0.67 threshold divergence — critical for security votes), added DR1 frontmatter-inert note, trimmed single-investigation Provider bullet, added a pre-authoring OBSERVE-live-state gate. Net +132 bytes (51,312→51,444).
+
+### Changes
+- FIX[SUBSTANTIVE] (DA1): vote-commit race guard cited nonexistent `state`/`tallied`/`committed_at`; corrected to `status == "approved"` per live docket schema (enum `open|approved|rejected|committed`, `updated_at` sole timestamp).
+- AMPLIFY[SUBSTANTIVE] (IS-TL4-SEC): replaced hand-rolled `docket vote create`+delegation JSON with `vote_delegate.sh` pointer (maps criticality→threshold; security votes typically `critical`).
+- AMPLIFY[SUBSTANTIVE] (DR1): documented `skills:` frontmatter does not auto-load in teammate mode.
+- CULL[SUBSTANTIVE]: compressed Provider bullet; transferable access-path/train-toggle lesson preserved inline.
+- AMPLIFY[SUBSTANTIVE] (HA-SEC1): pre-authoring OBSERVE-live-state gate for the recurring inferred-premise pattern.
+
+### Dimensions Evaluated
+Actionability, Spec Alignment (live docket re-verified), Consolidation & Trimming, Capability Growth, Completeness. Role Realism/Boundary Clarity/Rename: RETAIN (security≈AppSec reconfirmed).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary
@@ -201,65 +247,6 @@ Encoded the `api.github.com` sandbox-TLS retry cue on the supply-chain CVE/advis
 ### Rename
 No rename.
 
-## 2026-06-19
-
-### Summary
-Closed a version-resolution verification gap (lockfile/`cargo tree` authority) surfaced by the cross-project hermes pitfall; trimmed a duplicated stall-clause. Net 0 (269→269). Drift: neutral reorder of the System-Level watch-item list → adopted.
-
-### Changes
-- AMPLIFY: dependency-verification bullet now requires version-resolution facts checked against `Cargo.lock`/`cargo tree` BEFORE asserting OR correcting — a confident correction that inverts a settled fact without querying the lockfile is the same defect as the original guess (Cargo.lock confirmed present; distinct from `cargo audit` CVE-status).
-- CULL: removed restated "WORKING past verdict is the stall" (canonical owner is §Ephemeral peer review).
-
-### Dimensions Evaluated
-Capability Growth (AMPLIFY), Consolidation (CULL). Role Realism / Actionability / Boundary Clarity / Completeness / Spec Alignment / Rename — RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-Fixed docket graph arg-order and added a persist-ordering gate to the secret-handling review dimension. Trial: persist-ordering gate → adopted.
-
-### Changes
-- CULL: `docket issue graph --direction up <id>` → `<id> --direction up` (L136), canonical positional form.
-- AMPLIFY: secret-handling dimension now verifies PERSIST ORDERING for strip/redact controls (a request-view transform can satisfy replay yet skip the at-rest path) — check framework source, not the app diff.
-- Verified NO-OP: phantom-deletion guard (L68) and relay-authority clause (L213) already encoded.
-
-### Dimensions Evaluated
-Spec Alignment (CULL), Capability Growth (AMPLIFY), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Post-cycle operator-directed fix: encoded the phantom-deletion guard into the secret-handling audit bullet — a Phase 0 suggested focus area the Phase 1 reviewer had not acted on.
-
-### Changes
-- AMPLIFY: secret-handling bullet gains "Phantom-deletion guard" — sandboxed `git diff` renders deny-listed `.env*` as DELETED; verify via `git log -- <path>` before raising a deletion/exposure finding (cross-repo pitfall, agentic-services).
-
-### Dimensions Evaluated
-Completeness (single audit-cited gap).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +279,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Fable-5 mandate pass — WebFetch/WebSearch use-when trigger on CVE bullet; Model-floor note added; "Don't overthink" trimmed. Net +2 (242 lines).
 - 2026-06-09: Compacted 9 entries (2026-05-09..2026-05-19) into Compacted history per ADR 0001 (DKT-264).
 - 2026-06-10: Rust-only consolidation — purged dead npm/Node/Python idioms; tightened Model-floor paragraph. Net 0 (242 lines).
+- 2026-06-10: Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
+- 2026-06-10: Encoded phantom-deletion guard into the secret-handling audit bullet (sandboxed `git diff` renders deny-listed `.env*` as DELETED; verify via `git log -- <path>` before flagging).
+- 2026-06-17: Fixed docket graph arg-order; added persist-ordering gate to secret-handling review dimension. Trial: persist-ordering gate → adopted.
+- 2026-06-19: Closed version-resolution verification gap (lockfile/`cargo tree` authority); trimmed duplicated stall-clause. Net 0 (269→269). Drift: neutral reorder of the System-Level watch-item list → adopted.

@@ -1,5 +1,50 @@
 # Changelog: distinguished-engineer
 
+## 2026-07-12
+
+### Summary
+Phase 3 disambiguation: fixed a garden-path sentence in the vote-proposal instructions that this cycle's `vote_delegate.sh` migration introduced — "you do not run votes yourself: run vote_delegate.sh" read two ways since the script does perform a vote-create.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Consensus Voting now explicitly names the banned surfaces (`/vote`/`Skill(vote)` run the whole flow) before instructing `vote_delegate.sh` (creates the proposal only) — matches the phrasing pattern already used in the other 6 migrated files.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading) — this file was the only vote_delegate.sh migration this cycle that didn't name the forbidden surface explicitly.
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+Phase 2 coherence: aligned the shutdown block to the shared 7-way byte-identical compact form (role-specific bullets relocated verbatim below the fences); consolidated the vote proposal onto `vote_delegate.sh` for consistency with the rest of the fleet.
+
+### Changes
+- AMPLIFY[COSMETIC]: §Shutdown Handling block gains the env-var Precondition sentence; role-specific "Applied to this role's spawn forms" bullets moved verbatim outside the CANONICAL fences to enable fleet-wide byte-identity.
+- CULL[SUBSTANTIVE]: §Consensus Voting's hand-rolled `docket vote create` replaced with a `vote_delegate.sh` pointer — not a bug fix (this file already documented `--threshold` correctly), but closes the last hand-rolled proposer path fleet-wide; mis-create-supersede note and Wire form preserved.
+
+### Dimensions Evaluated
+Cross-Agent Coherence (SHUTDOWN-PROTOCOL block byte-parity across all 7 non-team-lead agents; vote plumbing consistency).
+
+### Rename
+No rename.
+
+## 2026-07-12
+
+### Summary
+evolve-agents cycle: sanctioned `Skill(deep-research)` for external-source-dominated Mode 3 work, replaced the manual ADR-numbering paragraph with a `next_doc_number.sh` pointer (also correcting the false implication that TDDs are numbered), and named the auto-suffix respawn-collision hazard in crash/resume hygiene. Findings: 6 → 2 amp / 1 cull-to-pointer / 0 rej / 1 def / 2 enc. Net +383 bytes.
+
+### Changes
+- AMPLIFY (IS-DE1): Mode 3 now prefers `Skill(deep-research, "<question>")` (registered bundled skill, invocable in teammate mode though absent from frontmatter) over hand-rolled WebSearch/WebFetch fan-out for external-source-dominated scans/investigations — built-in adversarial verification + cited report subsumes the per-fetch verbatim-quote choreography; manual path reserved for targeted single-source lookups.
+- CULL→POINTER (IS-DE3): replaced Mode 1 step 3's manual numbering-collision procedure with a one-line pointer to `next_doc_number.sh` (invoked by `Skill(adr)`); corrected the scope error that TDDs are numbered — they are never number-prefixed (tdd/SKILL.md).
+- AMPLIFY (HA-DE2): named the concrete auto-suffix respawn-collision hazard (`advisor-2` vs a self-resuming original) in Crash/resume hygiene — the resolution was present but the under-encoded WHY was flagged as not sticking across consecutive-date pitfall entries.
+
+### Dimensions Evaluated
+Completeness/Capability Growth (deep-research sanction), Consolidation & Trimming + Actionability (numbering pointer + scope fix), Boundary Clarity (crash-hygiene WHY). Sandbox-bind (line 159) and vorpal-gofmt-fallback (line 49) lessons verified ALREADY-ENCODED. Role Realism/Rename/Spec Alignment: RETAIN (SDLC research reconfirmed Principal-Engineer fit).
+
+### Rename
+No rename.
+
 ## 2026-07-11
 
 ### Summary

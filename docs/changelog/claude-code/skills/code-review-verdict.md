@@ -1,5 +1,20 @@
 # Changelog: code-review-verdict
 
+## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
+
+### Summary
+Phase 3 disambiguation (evolve-skills cycle): pinned the general-track banner literal for @distinguished-engineer callers; corrected a stale line-number citation.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Pre-flight step 3 — the `## Review (general — @staff-engineer)` heading is a fixed TRACK literal emitted VERBATIM by @distinguished-engineer (report_lint.py's CRV_GENERAL banner regex accepts only that banner); author identity rides the delivering SendMessage.
+- FIX: replaced stale `distinguished-engineer.md:140` line citation with a content anchor (`§Mode 2 — Code review`) — line 140 had drifted to an unrelated bullet.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading); Coherence (reference accuracy).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary

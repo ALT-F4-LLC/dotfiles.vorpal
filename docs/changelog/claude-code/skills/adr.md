@@ -1,5 +1,33 @@
 # Changelog: adr
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-05..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+
+### Summary
+Phase 2 coherence: next_doc_number.sh consumer list now cites `src/user/claude-code/agents/...` instead of the dead bare `agents/...` root.
+
+### Changes
+- Three agent-file references corrected to the repo-path convention the same sentence already uses for the script itself.
+
+### Dimensions Evaluated
+Coherence (reference accuracy).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary
@@ -230,48 +258,6 @@ All 8; Over-Engineering (HIGHEST — no removable redundancy), Coherence (family
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Phase 1 no-change verdict (mature skill). Phase 2: added a body-`status:` authority caveat (doc-family parity with tdd) adapted to adr's proposed→accepted→superseded ladder, naming Docket `.data.status` as source of truth; kept the by-design ladder-divergence guardrail.
-
-### Changes
-- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4 lines).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — nothing removable), Coherence (family status-authority parity restored).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: added a fenced-code-block carve-out to the §3 Section-order validation (count only `##` headings outside ``` fences), aligning with the §5 placeholder-scan exclusion and the doc-authoring family (lockstep with tdd/prd/ux-spec).
-
-### Changes
-- §3 Section order: count only `##` headings at column 0 outside ``` code fences.
-
-### Dimensions Evaluated
-Coherence (doc-authoring family lockstep).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Added Authoring Procedure step 4 prompting authors to verify embedded technical assertions (snippets, cross-engine/platform portability claims, relied-on test infra) against their actual target before writing them as settled fact — closing the failure class behind two Phase 0 LESSONs (an ADR codified unverified dual-dialect SQL; cited unrunnable test infra). Kept generic; prior step 4 renumbered to 5. Net +6.
-
-### Changes
-- Authoring Procedure: new step 4 (embedded-claim verification — state unverified claims as assumptions, not facts); prior "Proceed to Validation Before Save" renumbered 4→5.
-
-### Dimensions Evaluated
-Completeness (PRIMARY — embedded-claim gap), Actionability, Over-Engineering (HIGHEST — single generic step, no migration-specific bloat), Coherence. Family-symmetry of this guidance for tdd/prd/ux-spec routed to Phase 2.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -297,3 +283,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: No-change verdict. Skill remains mature, lean, and family-aligned (prd/tdd/ux-spec/specs) after 14+ cycles. Operator coordination/handoff priority already se...
 - 2026-05-30: No-change verdict (15th+ cycle). Re-read the full SKILL.md and verified family parity (frontmatter byte-identical with tdd/prd/ux-spec), tdd scope-boundary r...
 - 2026-06-04: Dropped vestigial `Glob`/`Grep` from `allowed-tools` — the skill discovers prior art via `docket doc list`/`show` (Bash) and `Read`, never the Glob/Grep tool...
+- 2026-06-05: Added Authoring Procedure step 4 (verify embedded technical assertions before writing as settled fact); prior step 4 renumbered to 5. Net +6.
+- 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §3 Section-order validation (count `##` headings outside fences), lockstep with tdd/prd/ux-spec.
+- 2026-06-05: Phase 1 no-change verdict; Phase 2 added body-`status:` authority caveat naming Docket `.data.status` as source of truth (adr's proposed→accepted→superseded ladder).

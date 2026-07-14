@@ -100,7 +100,7 @@ const SENSITIVE_PATHS: &[&str] = &[
 
 // Additional paths denied for Read only: an agent may still Edit/Write these via other flows,
 // but must never view their contents directly.
-const SENSITIVE_PATHS_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
+const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 
 // opencode's own config directory is excluded from opencode's permission maps (denying opencode
 // access to its own config path within its own map is a no-op) but remains denied for CC.
@@ -126,6 +126,12 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cargo/registry",
     "~/Library/Caches/pip",
 ];
+
+// Centralized cross-repo agent-memory root. Doctrine (CANONICAL:PITFALLS) mandates agents append
+// recurring-pitfalls lessons to ~/.claude/agent-memory/<role>/pitfalls.md, but this path is outside
+// the sandbox's default write scope (cwd + session tmpdir); 35 sessions/week bypassed the sandbox to
+// write here. Granting write closes self-inflicted friction on a non-secret path.
+const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 
 pub struct UserEnvironment {
     name: String,
@@ -225,6 +231,12 @@ impl UserEnvironment {
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+                // ENV_SCRUB=0 lets sandboxed subprocesses inherit the full parent env.
+                // Introduced as hardening (=1, 92f7ef0); flipped to 0 in the "enabled auto
+                // mode" commit (44f5cb0) with no recorded rationale and no code dependency on
+                // auto-mode — bundling appears accidental. Restoring =1 is gated behind an
+                // empirical A/B trial (agent-teams/OTEL/vorpal-run/excluded-commands regression
+                // check); do not flip without it. See DKT-282 trial + sandbox.credentials coupling.
                 .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0")
                 .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
@@ -250,6 +262,12 @@ impl UserEnvironment {
                     "PreToolUse",
                     Some("Bash"),
                     "bash ~/.claude/hooks/guard-no-commit-hook.sh",
+                    "command",
+                )
+                .with_hook(
+                    "PreToolUse",
+                    Some("Bash"),
+                    "bash ~/.claude/hooks/guard-tmp-write-hook.sh",
                     "command",
                 )
                 .with_hook(
@@ -360,7 +378,7 @@ impl UserEnvironment {
             |p| format!("Read({p})"),
             SENSITIVE_PATHS
                 .iter()
-                .chain(SENSITIVE_PATHS_READ_ONLY)
+                .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
                 .copied(),
         );
         let claude_code_config = deny_sensitive_paths(
@@ -394,6 +412,7 @@ impl UserEnvironment {
             .with_sandbox_filesystem_allow_write(
                 SANDBOX_TOOLCHAIN_CACHE_PATHS
                     .iter()
+                    .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
                     .map(|p| p.to_string())
                     .collect(),
             )
@@ -562,7 +581,7 @@ impl UserEnvironment {
                 .with_bash_permissions(vec![
                     // Default: ask for anything not explicitly allowed or denied
                     ("*", PermissionAction::Ask),
-                    // Allow — CC full bash allowlist parity (src/user.rs:170-231)
+                    // Allow — CC full bash allowlist parity (CC with_permission_allow Bash rules above)
                     ("bun run*", PermissionAction::Allow),
                     ("bun test*", PermissionAction::Allow),
                     ("cargo build*", PermissionAction::Allow),
@@ -588,7 +607,6 @@ impl UserEnvironment {
                     ("gh pr diff*", PermissionAction::Allow),
                     ("gh pr list*", PermissionAction::Allow),
                     ("gh pr view*", PermissionAction::Allow),
-                    ("git add*", PermissionAction::Allow),
                     ("git branch*", PermissionAction::Allow),
                     ("git diff*", PermissionAction::Allow),
                     ("git log*", PermissionAction::Allow),
@@ -627,7 +645,7 @@ impl UserEnvironment {
                     ("yarn build*", PermissionAction::Allow),
                     ("yarn lint*", PermissionAction::Allow),
                     ("yarn test*", PermissionAction::Allow),
-                    // Deny — CC bash deny rules (src/user.rs:245-246)
+                    // Deny — CC bash deny rules (CC with_permission_deny Bash rules above)
                     ("git checkout*", PermissionAction::Deny),
                     ("git reset*", PermissionAction::Deny),
                 ])
@@ -640,7 +658,7 @@ impl UserEnvironment {
                 .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
                 .with_permission_read(opencode_permission_denies(
                     PermissionAction::Allow,
-                    SENSITIVE_PATHS.iter().chain(SENSITIVE_PATHS_READ_ONLY).copied(),
+                    SENSITIVE_PATHS.iter().chain(SENSITIVE_PATHS_DENY_READ_ONLY).copied(),
                 ))
                 .with_permission_webfetch(PermissionAction::Ask)
                 .with_permission_websearch(PermissionAction::Allow)
@@ -1296,7 +1314,7 @@ fn deny_sensitive_paths(
 fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     let mut paths: Vec<String> = SENSITIVE_PATHS
         .iter()
-        .chain(SENSITIVE_PATHS_READ_ONLY)
+        .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
         .filter(|p| !SANDBOX_DENY_READ_EXCLUDED.contains(p))
         .map(|p| p.strip_suffix("/**").unwrap_or(p).to_string())
         .collect();

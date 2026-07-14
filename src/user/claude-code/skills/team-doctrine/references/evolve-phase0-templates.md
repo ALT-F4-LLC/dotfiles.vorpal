@@ -45,17 +45,13 @@ Consumers: evolve-agents, evolve-skills, evolve-config (embedded via the `{HARVE
 
 ````
 <!-- CANONICAL:HARVEST:BEGIN -->
-**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` with this EXACT bounded command (substitute nothing — it is literal):
+**Cross-project pitfalls scan (read-only).** In addition to the current-repo `.claude/agent-memory/` scan above, enumerate pitfalls files across all projects under `~/Development` AND the centralized per-user home at `~/.claude/agent-memory` by running this EXACT command (substitute nothing — it is literal):
 
 ```
-{
-  find "$HOME/Development" -maxdepth 12 \( -name node_modules -o -name '.git' \) -prune \
-    -o -type f -path '*/.claude/agent-memory/*/pitfalls.md' -print
-  find "$HOME/.claude/agent-memory" -maxdepth 2 -type f -name 'pitfalls.md' -print
-} 2>/dev/null | sort -u
+bash src/user/claude-code/scripts/find_pitfalls.sh
 ```
 
-The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) are mandatory — do NOT remove them and do NOT add `-L` (symlinked dirs are not followed by design). An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op (`2>/dev/null` swallows the error); the trailing `sort -u` also de-dupes any path the two roots both happen to match (they do not overlap under normal `$HOME` layouts, but the pipeline holds even if they did). The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
+This wraps the bounded two-`find` pipeline documented and pinned in the script's own header/usage comment (`$HOME/Development` half with a depth cap and a `node_modules`/`.git` prune, matched against `*/.claude/agent-memory/*/pitfalls.md`; `$HOME/.claude/agent-memory` half at a shallower depth cap matched against `pitfalls.md`; both halves de-duped). The depth cap and prune list are mandatory invariants and do NOT add `-L` (symlinked dirs are not followed by design) — do not hand-retype the pipeline; call the script, and if the cap or prune list ever needs to change, edit it in the script only. An absent `~/Development` or `~/.claude/agent-memory` yields an empty result from that half → no-op. The current repo is matched by the `~/Development` half automatically (it lives under `~/Development`). Both halves are read-only ingest only — no pitfalls file is ever deleted: do NOT Edit/Write/`rm` any discovered file, in either root. The cross-project scan is per-file grep/read of each `pitfalls.md` — never bulk-cat all of `~/Development` or `~/.claude`. Emit, as part of your findings block, a verbatim **CROSS-PROJECT PITFALLS MANIFEST**: the full sorted list of discovered `pitfalls.md` paths, grouped by repo for the `~/Development` half (derive the repo root as the path prefix up to and including the `*.git/<branch>` segment) and under a single **Centralized (`~/.claude`)** heading for the second half. This manifest is the orchestrator's ingest set for lesson analysis.
 <!-- CANONICAL:HARVEST:END -->
 ````
 

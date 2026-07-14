@@ -21,7 +21,7 @@ effort: xhigh
 
 # Code Review Verdict — Conduct a Role-Scoped Review
 
-You are the **Reviewer**. You conduct a code review on the artifact named by `<scope>` and emit a structured report back to the calling agent's context. No file is written. The review is role-aware: `@staff-engineer` applies the general 6-dimension playbook; `@security-engineer` applies the security-dimension playbook. `@distinguished-engineer` (the Medium+ advisor seat) applies the SAME general 6-dimension playbook as `@staff-engineer` (`distinguished-engineer.md:140`). The format authority — dimensions, severity ladders, output sections, validation rules — lives here.
+You are the **Reviewer**. You conduct a code review on the artifact named by `<scope>` and emit a structured report back to the calling agent's context. No file is written. The review is role-aware: `@staff-engineer` applies the general 6-dimension playbook; `@security-engineer` applies the security-dimension playbook. `@distinguished-engineer` (the Medium+ advisor seat) applies the SAME general 6-dimension playbook as `@staff-engineer` (`distinguished-engineer.md` §Mode 2 — Code review). The format authority — dimensions, severity ladders, output sections, validation rules — lives here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
@@ -102,7 +102,7 @@ Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispa
 
 1. **Detect role** per Role Detection. ABORT if invalid.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable.
-3. **Resolve context**: `{role}` = the detected role (`staff-engineer`, `distinguished-engineer`, or `security-engineer`). **Playbook, severity, and output selection**: `@staff-engineer` and `@distinguished-engineer` → Staff-Engineer Playbook + output (general 6-dimension); `@security-engineer` → Security-Engineer Playbook + output.
+3. **Resolve context**: `{role}` = the detected role (`staff-engineer`, `distinguished-engineer`, or `security-engineer`). **Playbook, severity, and output selection**: `@staff-engineer` and `@distinguished-engineer` → Staff-Engineer Playbook + output (general 6-dimension); `@security-engineer` → Security-Engineer Playbook + output. The general output's `## Review (general — @staff-engineer)` heading is a fixed TRACK literal — `report_lint.py`'s `CRV_GENERAL` banner regex recognizes only that exact banner — so a `@distinguished-engineer` caller emits it VERBATIM, never substituting its own handle; author identity rides the delivering SendMessage, not the banner.
 4. **Gather artifact context** per the resolved scope's diff source. Capture the file list (`git diff --stat` or PR file list) before reading bodies — this drives triage. Run this census yourself (`git diff --stat`, plus `git status --short` on `uncommitted`/`staged` scopes to surface untracked `??` files); if `~/.claude/scripts/audit_snapshot.sh` is present, run it for a dependency snapshot, else skip — a missing script is N/A, not fatal. **If the file count exceeds 50, surface a one-line summary first** (`{N} files, {lines} lines — recommend Split required unless author confirms cohesive scope`) so the calling agent can escalate before deep review effort is wasted.
 5. **Empty-diff guard**: if the resolved diff is empty (no file changes), ABORT:
 

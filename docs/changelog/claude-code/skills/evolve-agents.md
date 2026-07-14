@@ -1,5 +1,66 @@
 # Changelog: evolve-agents
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 8 entries (2026-06-10..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
+
+### Summary
+Phase 3 disambiguation (evolve-skills cycle): charter pointer made self-resolving; scratchpad computation now mandates `$TMPDIR` expansion. Findings: 2 → 2 sub
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 3 template charter citation names `.claude/skills/evolve-agents/SKILL.md` §Phase 3 (was a dangling "section above" unresolvable from the delivered prompt)
+- AMPLIFY[SUBSTANTIVE]: pre-flight step 3 — `{scratchpad}` computed by EXPANDING `$TMPDIR` to a literal absolute path before template substitution (an unexpanded string is un-Read-able by teammates; the sandbox remaps `$TMPDIR` per context)
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass)
+
+### Summary
+Phase 2 coherence: EVOLUTION-MODEL vocabulary line corrected in 4-carrier lockstep; docket-auditor template gains explicit report-back line.
+
+### Changes
+- Fixed CANONICAL:EVOLUTION-MODEL header to name all 4 carriers (added evolve-config) — lockstep with siblings; doctrine_check.sh arm (c) re-verified.
+- Added "SendMessage the orchestrator the report verbatim." to the docket-auditor spawn template — only Phase-0 template lacking the explicit report-back line.
+
+### Dimensions Evaluated
+Coherence (CANONICAL parity, cross-communication trigger completeness).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 0 findings materialization)
+
+### Summary
+Materialized Phase 0 audit blocks + Findings Ledger to a shared scratchpad path instead of inline-pasting into Phase 1 spawn templates (DKT-275). Findings: 12 → 1 sub / 0 cos / 0 rej / 8 def / 1 enc.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 0 completion Writes each audit block → `{scratchpad}/phase0/<auditor>.md` and the ledger → `{scratchpad}/findings-ledger.md`, where `{scratchpad}` = `$TMPDIR/evolve-agents-{today_date}` (shared, non-session-scoped path — cross-teammate Read access empirically verified 2026-07-13) — DKT-275 (large token cut; ledger survives compaction).
+- AMPLIFY[SUBSTANTIVE]: Phase 1 template flips 8 `{..._findings}` inline pastes → a Read-these-paths list — DKT-275.
+- AMPLIFY[SUBSTANTIVE]: SKIPPED (pre-flight step 8) + UNAVAILABLE (Crash & Stall Recovery) sentinels now written as file content so Read-by-path never hits a missing file — DKT-275.
+- AMPLIFY[SUBSTANTIVE]: Phase 2 gate + Phase-1-spawn substitution list point at `{scratchpad}/findings-ledger.md` / add `{scratchpad}` — DKT-275.
+
+### Dimensions Evaluated
+Capability Growth, Actionability, Boundary Clarity (all 8 dimensions assessed; Pass B no-op — the DKT-275 SUBSTANTIVE changes ride un-offset, well under the 65,000-byte budget: 55,510 → 57,726 bytes).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass)
 
 ### Summary
@@ -156,124 +217,6 @@ All 8. Over-Engineering (HIGHEST) — primary open item is the budget violation,
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Trimmed evolve-agents from 522 to estimated 498 lines while adding Phase 0 coordination/lifecycle heatmap output and replacing fixed line-window reads with relevant-section reads.
-
-### Changes
-- AMPLIFY: historical-auditor output now includes a compact coordination/lifecycle heatmap — cited recurring lifecycle-signal correlation needs.
-- AMPLIFY: Phase 2 coherence now reuses evolve-coherence XREF rubric/detection seeds — cited cross-family drift detection reuse.
-- CULL: collapsed the verbose 8-dimension list and ADR 0001 compaction restatement — cited over-budget prose duplication.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase-2 coherence: propagated the glob-abort find-form (same bug class fixed in evolve-skills this cycle) to all 4 single-root inventory/changelog globs. Inline, net 0 (stays 533). Phase 1 was RETAIN (no-signal organism).
-
-### Changes
-- CULL: replaced `wc -l agents/*.md`/`ls docs/changelog/agents/*.md` globs (pre-flight steps 4 & 6, Phase 4 gate, wrap-up step 2) with `find <root> -maxdepth N -name … -exec wc -l {} + 2>/dev/null` — zsh nomatch aborts a bare glob even with `2>/dev/null` when the root is empty/absent (real risk: fresh-repo changelog dir). Family-consistency with the evolve-skills fix. All find-forms verified under zsh.
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0 (533/535 self-budget). No model/routing/drift change. Cross-organism items routed to evolve-agents cycle (clean-up-team reword; adr stale-state guidance; $ARGUMENTS-banner escaping).
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Phase 2: pinned model= (aliases) on all 8 Agent() spawns + added a $TMPDIR scratch guard to the shell-heavy auditor Rules. In-line edits, no line growth (stays 533).
-
-### Changes
-- AMPLIFY: pinned `model=` on every Agent() spawn — sonnet (docket/historical/model-routing auditors) / opus (docs-researcher, innovation-scanner, review-<name>, coherence-reviewer, disambiguation-reviewer). Cited team-lead.md "an Agent() call without model= is a dispatch defect"; operator-approved per-tier pinning.
-- AMPLIFY: appended a `$TMPDIR`-not-`/tmp` scratch guard to the historical-auditor + model-routing-auditor Rules lines — cited the config-history-auditor run ERROR `operation not permitted: /tmp/...`.
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Compacted 7 entries (2026-06-04..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 7 oldest committed entries (entries 11-17) with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Phase 2 coherence pass: concrete stall threshold + `TeammateIdle` backtick on stall-detect line, biodiversity CANONICAL-tag correctness cull (lockstep with evolve-skills), re-invocation failure signal added to historical-auditor. Parity checks 5-9 all CLEAN.
-
-### Changes
-- AMPLIFY: backticked `TeammateIdle` + added "≥2 turns with no new tool call is stall evidence" to stall-detect line — concretizes abstract trigger.
-- CULL: removed "CANONICAL tag" from biodiversity niche-token filter — matches every family carrier, defeats monoculture guard (correctness defect; lockstep with evolve-skills).
-- AMPLIFY: added re-invocation failure signal to historical-auditor (source bullet + output line) — closes measurement gap vs evolve-skills. Net +2 lines (498/500).
-
-### Dimensions Evaluated
-Coherence (parity fixes, TeammateIdle backtick); Correctness (CANONICAL-tag defect); Completeness (re-invocation signal).
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Drift: FOCUS-AREAS reorder → applied. Drift: Phase-1 Context read-order → applied. All 4 prioritized adaptive changes deferred or rejected: 3 parity-bound with evolve-skills (stall threshold, biodiversity CANONICAL-tag cull, shutdown parenthetical) routed to Phase 2 lockstep; Wrap-up pitfall-write rejected (Content Gate: Executable fail — no orchestrator pitfalls contract).
-
-### Changes
-- DRIFT: Phase 0 docs-researcher FOCUS AREAS reordered (coordination-primitives first, Changelog last) — neutral allele substitution, seed 6f0ab504 pick 1, net 0, non-parity-bound.
-- DRIFT: Phase 1 ## Context read-order reformulated (feedback-priority stated first) — neutral allele substitution, seed 6f0ab504 pick 2, net 0, non-parity-bound.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no agents-local additions survived gate). Parity: CANONICAL blocks intact; 3 deferred changes are byte-identical with evolve-skills and require Phase 2 lockstep.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 coherence (lockstep with evolve-skills): Phase 1 apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, and 1:1 Edit↔CHANGE apply-discipline. Line-neutral (496 lines); post-apply byte-identity with evolve-skills verified (sort -u = 1 line).
-
-### Changes
-- AMPLIFY: apply step 2 — in-session Read-before-Edit, re-Read after grep/mv targeting content strings, one Edit per approved CHANGE — cited signal: two re-fired team-lead pitfalls (Read-before-Edit failures ×2; stray-token batch defect).
-
-### Dimensions Evaluated
-Coherence (lockstep pair byte-identical), Completeness (apply-discipline gaps closed), budget (496/500 unchanged).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit (1-day window): NO changes. File clean at 496 lines; NET_LINES physical-vs-display (L392/L146) and researcher repo-state ADOPTION caveat (L199/L412) verified already-encoded; spawn templates correctly carry subagent_type-only (cost-tier model routing lives in team-lead.md / agent defs, not skill templates).
-
-### Changes
-- None (NO-OP verdict). Phase-0 spawning-templates extraction (~180 lines, lockstep with evolve-skills) routed to Phase 2 as parity-bound; apply-discipline gaps (Read-before-Edit, 1:1 Edit↔CHANGE) shared with evolve-skills also routed to Phase 2.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (drift-operator rationale load-bearing, no failure signal — RETAIN); Coherence (CANONICAL byte-parity with evolve-skills confirmed).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -332,3 +275,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Full-cycle audit NO-OP (487 lines) — $ARGUMENTS escaping + docket drift + Phase-0 focus-area dedup verified already-encoded.
 - 2026-06-10: Compacted 8 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
 - 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL, selection dispositions, Genetic-Drift Operator, Scientific Trial Protocol.
+- 2026-06-10: Full-cycle audit (1-day window) — NO changes; NET_LINES physical-vs-display and researcher ADOPTION caveat verified already-encoded.
+- 2026-06-10: Phase 2 coherence (lockstep evolve-skills) — apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, 1:1 Edit↔CHANGE discipline; line-neutral (496 lines).
+- 2026-06-19: Drift FOCUS-AREAS + Context read-order rewords; all 4 prioritized changes deferred/rejected. | Drift: FOCUS-AREAS reorder → applied. | Drift: Phase-1 Context read-order → applied. | DRIFT: Phase 0 docs-researcher FOCUS AREAS reordered (coordination-primitives first, Changelog last) — neutral allele substitution, seed 6f0ab504 pick 1, net 0, non-parity-bound. | DRIFT: Phase 1 ## Context read-order reformulated (feedback-priority stated first) — neutral allele substitution, seed 6f0ab504 pick 2, net 0, non-parity-bound.
+- 2026-06-19: Phase 2 coherence — concrete stall threshold + TeammateIdle backtick, biodiversity CANONICAL-tag cull (lockstep evolve-skills), re-invocation signal added.
+- 2026-06-20: Compacted 7 entries (2026-06-04..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-20: Phase 2 — pinned model= on all 8 Agent() spawns; added $TMPDIR scratch guard to shell-heavy auditor Rules.
+- 2026-06-30: Phase-2 coherence — propagated glob-abort find-form fix (zsh nomatch) to all 4 single-root inventory/changelog globs; inline, net 0.
+- 2026-06-30: Trimmed evolve-agents 522→498 lines; added Phase 0 coordination/lifecycle heatmap output; replaced fixed line-window reads with relevant-section reads.

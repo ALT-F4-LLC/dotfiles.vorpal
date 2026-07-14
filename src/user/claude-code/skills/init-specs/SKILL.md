@@ -127,7 +127,7 @@ Use this template for each spec file, substituting `{filename}`, `{exploration_g
 `{today_date}`, `{project_name}`, and `{verified_goal}` (from the pre-flight steps).
 
 ```
-Use the @staff-engineer agent to generate a project specification:
+You are a @staff-engineer teammate generating a project specification:
 
 Generate the `docs/spec/{filename}` project specification file.
 

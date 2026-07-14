@@ -1,5 +1,19 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+
+### Summary
+Phase 2 coherence: fixed the dead `agents/team-lead.md` citation in the shutdown protocol to `src/user/claude-code/agents/team-lead.md`.
+
+### Changes
+- Stale pre-migration root replaced with the resolvable repo path (matches evolve-agents' form).
+
+### Dimensions Evaluated
+Coherence (reference accuracy).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 3 disambiguation pass)
 
 ### Summary

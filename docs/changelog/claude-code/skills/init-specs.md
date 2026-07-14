@@ -1,5 +1,33 @@
 # Changelog: init-specs
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-05-28..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
+
+### Summary
+Phase 3 disambiguation (evolve-skills cycle): spawning-template opener no longer reads as a delegation instruction.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: template opener "Use the @staff-engineer agent to generate…" → "You are a @staff-engineer teammate generating…" — the prompt recipient could read the old opener as an instruction to spawn an agent, contradicting the leaf-agent rule in the same template
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary
@@ -215,49 +243,6 @@ All 8; Over-Engineering (HIGHEST — no trim headroom without losing safety rail
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Corrected a factually wrong COUPLING comment: prd does NOT write to docs/spec/ (it creates a Docket doc), and the doc-authoring siblings refuse reserved names by doc-type, not output directory. Rewrote to match prd's accurate ownership/name-collision rationale. Surfaced cross-cutting from the prd review; operator-approved out-of-scope fix.
-
-### Changes
-- Line 67 COUPLING comment: replaced the false "shares docs/spec/ output directory" / "write to different directories" rationale with the correct name-collision framing (0 net).
-
-### Dimensions Evaluated
-Coherence (cross-skill coupling accuracy), Correctness. Caught during the adr/prd/ux-spec/tdd Phase 2 coherence pass.
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-No-change verdict this cycle. Changelog file renamed specs.md → init-specs.md to match the skill rename applied in a prior cycle (skill dir is skills/init-specs/; the changelog filename was the last specs residue). SKILL.md body unchanged.
-
-### Changes
-- Rename only: docs/changelog/skills/specs.md → init-specs.md; H1 updated to `# Changelog: init-specs`. No SKILL.md edits.
-
-### Dimensions Evaluated
-Coherence (filename/skill-name parity — last residue cleared), Over-Engineering (HIGHEST — no trim candidates), Rename (executed).
-
-### Rename
-Changelog file specs.md → init-specs.md to align with the skills/init-specs/ directory. Skill itself was renamed in a prior cycle.
-
-## 2026-05-28
-
-### Summary
-Fixed a crossed shutdown handshake in the parallel-spawn flow: orchestrator now APPROVES each spawned agent's self-initiated `shutdown_request` (per @staff-engineer agent def + ephemeral lifecycle) instead of originating competing requests, and the Spawning Template now instructs self-shutdown explicitly. Removes idle/stuck-ephemeral risk. Net 0 (inline; reviewer estimated +2).
-
-### Changes
-- Spawning Template: spawned `@staff-engineer` now emits `shutdown_request` to the orchestrator as its final tool call after the completion message, awaiting `shutdown_approved`. Aligns with sister skills (code-review, design-qa, design-review, vote).
-- Wrap-up step 2: reframed from orchestrator-originated shutdown to "approve each self-initiated request; originate only as fallback; `TeamDelete` reaps failed/stalled."
-
-### Dimensions Evaluated
-Orchestration & Agent Teams (operator priority — crossed handshake), Completeness (idle-ephemeral), Over-Engineering (HIGHEST — no trim candidates), Coherence (shutdown idiom aligned with family).
-
-### Rename
-No rename. Family-aligned with prd/tdd/adr/ux-spec.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -298,3 +283,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-17: Respawn arm now explicitly reassigns task ownership and re-records spawn time so polling credits the replacement agent; description tightened to signal one-t...
 - 2026-05-18: Closed verification-scope bug (false-flagging pre-existing specs on "Skip existing" path) and trimmed two layers of redundant leaf-agent prohibition + an inf...
 - 2026-05-25: No-change verdict. Smallest skill in the doc-authoring family (177 lines) and thoroughly trimmed across prior cycles. Phase 0 focus areas resolve as structur...
+- 2026-05-28: Fixed crossed shutdown handshake in parallel-spawn flow — orchestrator now approves self-initiated shutdown_request instead of originating competing requests. Net 0.
+- 2026-05-30: No-change verdict; changelog file renamed specs.md → init-specs.md to match the skill rename applied in a prior cycle.
+- 2026-06-05: Corrected factually wrong COUPLING comment (prd does not write to docs/spec/; siblings refuse reserved names by doc-type, not directory).

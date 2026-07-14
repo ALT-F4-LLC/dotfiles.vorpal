@@ -312,13 +312,6 @@ After Validation Before Save passes:
 
 End. Do NOT echo the file body, do NOT send peer messages, do NOT invoke other skills.
 The calling agent owns next steps (vote requests, decomposition, peer notification).
-Planning-phase consumers (PM decomposition, team-lead briefs) copy this TDD's
-committed values verbatim into issue bodies and briefs, with file+section provenance
-annotations; post-planning phases operate exclusively from those distilled copies.
-This file is ephemeral — safely deletable at any time after its cycle's
-implementation completes (docs-paths.md §Persistence & lifecycle). Any prescribed
-`Skill(verify-ac)` is an EXPLICIT invocation, not a teammate-frontmatter assumption
-(teammates load only `tools`+`model`).
 
 On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: emit
 `Error: {one-line cause}` and end without writing.
@@ -326,6 +319,14 @@ On any abort during Authoring Procedure, Pre-flight, or Validation Before Save: 
 On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
+
+Planning-phase consumers (PM decomposition, team-lead briefs) copy this TDD's
+committed values verbatim into issue bodies and briefs, with file+section provenance
+annotations; post-planning phases operate exclusively from those distilled copies.
+This file is ephemeral — safely deletable at any time after its cycle's
+implementation completes (docs-paths.md §Persistence & lifecycle). Any prescribed
+`Skill(verify-ac)` is an EXPLICIT invocation, not a teammate-frontmatter assumption
+(teammates load only `tools`+`model`).
 
 ## Failure Modes
 

@@ -3,7 +3,7 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-HOOK="${SCRIPT_DIR}/../src/user/task-completed-hook.sh"
+HOOK="${SCRIPT_DIR}/../src/user/claude-code/hooks/task-completed-hook.sh"
 
 PASS=0
 FAIL=0

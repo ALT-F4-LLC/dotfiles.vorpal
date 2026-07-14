@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Byte-symmetry linter for the evolve-agents/evolve-skills parity-locked blocks.
+"""Byte-symmetry linter for the evolve-agents/evolve-skills parity-locked block.
 
-Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the two blocks that
-must be byte-identical between evolve-agents/SKILL.md and evolve-skills/SKILL.md modulo
-an established set of agent<->skill noun substitutions (innovation-scanner, impact-class).
-Normalizes the evolve-agents block into skill vocabulary, then diffs it against the
-evolve-skills block verbatim. The historical/repetition/bug/model-routing auditor
-templates and the HARVEST block are single-homed in evolve-phase0-templates.md and so
-are symmetric by construction — no longer compared here.
+Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the CANONICAL:IMPACT-CLASS
+block that must be byte-identical between evolve-agents/SKILL.md and evolve-skills/SKILL.md
+modulo an established set of agent<->skill noun substitutions. Normalizes the evolve-agents
+block into skill vocabulary, then diffs it against the evolve-skills block verbatim. The
+historical/repetition/bug/model-routing auditor templates, the Innovation Scan and Docs
+Research Phase-0 templates, and the HARVEST block are all single-homed in
+evolve-phase0-templates.md and so are symmetric by construction — no longer compared here.
+The calibrated normalizer below is retained as the reference inventory of known
+agent<->skill divergences (evolve-phase0-templates.md §1), though the sole remaining
+CANONICAL:IMPACT-CLASS block carries no agent/skill vocabulary and so needs no substitution.
 
 Read-only. Never edits, never commits. Stdlib only.
 """
@@ -108,11 +111,6 @@ def extract_block(text: str, start_pattern: str, end_pattern: str, include_end: 
 
 
 CHECKS = {
-    "innovation-scanner": {
-        "start": r"^### Phase 0: Innovation Scan$",
-        "end": r"^### Phase 0: Model Routing Audit$",
-        "include_end": False,
-    },
     "impact-class": {
         "start": r"^<!-- CANONICAL:IMPACT-CLASS:BEGIN -->$",
         "end": r"^<!-- CANONICAL:IMPACT-CLASS:END -->$",
@@ -120,7 +118,7 @@ CHECKS = {
     },
 }
 
-ALL_CHECKS = ["innovation-scanner", "impact-class"]
+ALL_CHECKS = ["impact-class"]
 
 
 def run_check(name: str, agents_text: str, skills_text: str) -> "tuple[bool, list[str]]":

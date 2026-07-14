@@ -14,6 +14,10 @@ jobs:
 
       - run: bash tests/teammate-idle-hook.test.sh
 
+      - run: bash tests/task-completed-hook.test.sh
+
+      - run: bash tests/doctrine_check.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

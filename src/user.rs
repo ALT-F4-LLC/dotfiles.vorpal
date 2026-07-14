@@ -76,10 +76,6 @@ const OTEL_METRICS_ENDPOINT_ALLOY: &str = "https://alloy-otlp.bulbasaur.altf4.do
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
-// Sensitive filesystem paths denied across every deny-list site: CC's Edit/Read/Write tool
-// permissions, the OS-level sandbox (`with_sandbox_filesystem_deny_read`), and opencode's
-// Edit/Read permission maps. Paths use CC's glob-suffixed form (`/**`); the sandbox's bare-path
-// form is derived by stripping that suffix.
 const SENSITIVE_PATHS: &[&str] = &[
     "/Applications/**",
     "/Library/**",
@@ -98,40 +94,16 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Downloads/**",
 ];
 
-// Additional paths denied for Read only: an agent may still Edit/Write these via other flows,
-// but must never view their contents directly.
-const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
-
-// opencode's own config directory is excluded from opencode's permission maps (denying opencode
-// access to its own config path within its own map is a no-op) but remains denied for CC.
 const OPENCODE_CONFIG_PATH: &str = "~/.opencode/**";
-
-// Excluded from the OS-level sandbox's deny-read list: that list is a confidentiality control
-// for secrets read via shell (~/.ssh, ~/.aws, .env, etc.). These 3 are world-readable system
-// dirs holding no secrets, and toolchains (compilers, xcrun, frameworks) legitimately read them
-// — denying reads there breaks builds for zero confidentiality gain. The tool-level Edit/Read/
-// Write deny on them serves a different purpose (integrity + steering the Read tool off giant
-// system trees) that doesn't translate to the sandbox layer.
+const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_DENY_READ_EXCLUDED: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
-
-// Interpreter/toolchain cache directories outside the sandbox's default write scope (cwd + session
-// tmpdir), scoped to the dedicated cache subpath per tool (not the tool's home/config dir, which
-// may hold credentials or build-hijack-capable config — e.g. `~/.cargo/credentials.toml`,
-// `~/.cargo/config.toml`). xcrun's own cache (`xcrun_db`) lives under the macOS-login-session-
-// randomized Darwin temp dir and can't be expressed as a literal prefix here; it's exempted via
-// `excluded_commands` instead (DKT-257).
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
     "~/.cargo/registry",
     "~/Library/Caches/pip",
 ];
-
-// Centralized cross-repo agent-memory root. Doctrine (CANONICAL:PITFALLS) mandates agents append
-// recurring-pitfalls lessons to ~/.claude/agent-memory/<role>/pitfalls.md, but this path is outside
-// the sandbox's default write scope (cwd + session tmpdir); 35 sessions/week bypassed the sandbox to
-// write here. Granting write closes self-inflicted friction on a non-secret path.
-const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
+const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 
 pub struct UserEnvironment {
     name: String,
@@ -176,8 +148,8 @@ impl UserEnvironment {
         let nnn = Nnn::new().build(context).await?;
         let nodejs = NodeJS::new().build(context).await?;
         let op = Op::new().build(context).await?;
-        let pi = Pi::new().build(context).await?;
         let opencode = Opencode::new().build(context).await?;
+        let pi = Pi::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
         let starship = Starship::new().build(context).await?;
@@ -231,13 +203,7 @@ impl UserEnvironment {
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-                // ENV_SCRUB=0 lets sandboxed subprocesses inherit the full parent env.
-                // Introduced as hardening (=1, 92f7ef0); flipped to 0 in the "enabled auto
-                // mode" commit (44f5cb0) with no recorded rationale and no code dependency on
-                // auto-mode — bundling appears accidental. Restoring =1 is gated behind an
-                // empirical A/B trial (agent-teams/OTEL/vorpal-run/excluded-commands regression
-                // check); do not flip without it. See DKT-282 trial + sandbox.credentials coupling.
-                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0")
+                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "1")
                 .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
                 .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-8[1m]")

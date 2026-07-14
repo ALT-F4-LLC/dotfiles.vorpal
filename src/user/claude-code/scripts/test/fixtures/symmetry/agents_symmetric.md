@@ -1,7 +1,9 @@
 # Fixture: evolve-agents SKILL.md excerpt (symmetric pair, agents side)
-# Covers the two surviving symmetry_check.py checks: innovation-scanner and impact-class.
-# The `### Phase 0: Model Routing Audit` header is retained as the innovation-scanner
-# end-anchor only (its body is single-homed in evolve-phase0-templates.md).
+# Covers the sole surviving parity-checked-against-skills block: impact-class.
+# The Innovation Scan section (and its `### Phase 0: Model Routing Audit` end-anchor
+# header) is retained verbatim but is no longer checked here — the Innovation Scan
+# template is single-homed in evolve-phase0-templates.md, so there is no duplicated
+# copy for symmetry_check.py to compare.
 
 ### Phase 0: Innovation Scan
 

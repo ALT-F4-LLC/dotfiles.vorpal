@@ -1,5 +1,33 @@
 # Changelog: team-lead
 
+## 2026-07-13 (DKT-270 Phase 3 disambiguation)
+
+### Summary
+Disambiguated the Gold-first routing reflex's `Skill(vote)` restriction-class pointer, aligning with the same gloss applied to the 3 sanctioned-role files. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: glossed "same restriction class as `Skill(vote)`" with the shared class itself (swarm-spawning entry points are main-session-only) — "here" (team-lead's own routing target) ruled already clear, no split needed
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (DKT-270 Phase 2 coherence)
+
+### Summary
+Phase 2 coherence (DKT-270): corrected the stale `Skill(deep-research)` parenthetical in the Gold-first routing reflex — deep-research is a bundled Workflow, not a teammate-invokable Skill. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: the work-SHAPE vs sub-step disambiguation now states the corrected mechanics — no `Workflow` tool for teammates (same restriction class as `Skill(vote)`); sanctioned roles hand-roll the fan-out at their own tier or route to team-lead for a main-session `/deep-research` run. Aligns with the DKT-270 correction landed in distinguished-engineer.md, staff-engineer.md, ux-designer.md.
+
+### Dimensions Evaluated
+Coherence (4th-file sweep caught this reference; team-lead.md itself consumes the sentence for routing decisions).
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary

@@ -2,7 +2,7 @@
 
 Read-on-demand home for the Phase-0 auditor spawn prompts shared by the `evolve-agents`, `evolve-skills`, and `evolve-config` cycles. References carry no byte budget; this file is the single authoritative home for the templates below, extracted from the three `SKILL.md` files to eliminate hand-maintained duplication (the drift class that produced `symmetry_check.py`).
 
-**How consumers use this file.** At Phase-0 spawn time the orchestrator Reads this file ONCE, then for each auditor it spawns: locates the named section below, substitutes the uppercase spawn-time tokens with the VALUES from its own `SKILL.md` stub table, and passes runtime tokens through unchanged. If this file is missing or a named section is absent, the cycle ABORTS loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt. The section bodies are wrapped in four-backtick fences purely so their nested triple-backtick blocks render verbatim; paste the fence CONTENTS (not the outer four-backtick fence) into the auditor prompt.
+**How consumers use this file.** At Phase-0 spawn time the orchestrator Reads this file ONCE, then for each auditor it spawns: locates the named section below, substitutes the uppercase spawn-time tokens with the VALUES from its own `SKILL.md` stub table, and passes runtime tokens through unchanged. If this file is missing or a named section is absent, the cycle ABORTS loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt. The section bodies are wrapped in four-backtick fences purely so their nested triple-backtick blocks render verbatim; paste the fence CONTENTS (not the outer four-backtick fence) into the auditor prompt. Section numbers are stable identifiers cited verbatim by the consumer `SKILL.md` files' Template sourcing prose (e.g. §3a, §6a, §9) — no editor of this file (human or evolve-* cycle) may renumber an existing section, since a renumber silently breaks every consumer citation. §7-§8 are reserved for the evolve-skills Innovation Scan and Docs Research templates (DKT-273, not yet relocated) — only that relocation may fill them; any other new section takes §10 or higher. The §6→§9 jump is intentional.
 
 ## 1. Token contract
 
@@ -59,7 +59,7 @@ The `-maxdepth 12` cap and the `node_modules`/`.git` prune (in-repo half only) a
 
 ## 3. Historical Audit — paste-ready variants
 
-Three structurally-divergent variants (only ~30/70 lines shared; evolve-agents Phase 2 step 6 documents this asymmetry as intentional). Each is a byte-exact relocation of that consumer's pre-move body, with the embedded HARVEST text replaced by the single slot line `{HARVEST_BLOCK}` (substitute §2 verbatim). No other tokens.
+Three structurally-divergent variants (only ~30/70 lines shared; evolve-agents Phase 2 step 6 documents this asymmetry as intentional). Each is a byte-exact relocation of that consumer's pre-move body, with the embedded HARVEST text replaced by the single slot line `{HARVEST_BLOCK}` (substitute §2 verbatim). No other tokens. One intentional post-relocation divergence: each variant's `## Output Format` section carries an identical quantified-finding-must-cite-command sentence (DKT-262 hardening, 2026-07-13) not present in the pre-move body — this is the sole exception to byte-exactness.
 
 ### 3a. Historical Audit — evolve-agents variant
 
@@ -80,7 +80,7 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
 {HARVEST_BLOCK}
    - **Per-file mapping (agents):** map each discovered `…/.claude/agent-memory/<role>/pitfalls.md` to agent `<role>` (the path segment). For each TARGET agent in this cycle, read its `pitfalls.md` across ALL scanned repos (each is small — read fully) and surface 1-3 representative recurring lessons per agent (≤240 chars each), tagged with the source repo path. Non-target agents' files are listed path-only (not deep-read).
 2. **Transcripts** (under `~/.claude/projects/`):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
+   - Enumerate in-window files: `bash src/user/claude-code/scripts/recent_transcripts.sh {history_days} -0`.
    - Invocation contexts: `xargs -0 grep -lE '"subagent_type":"<agent-name>"|"agentSetting":"<agent-name>"'`.
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
    - Operator-correction phrases in the next user turn after an invocation: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts (mirror evolve-skills regex for cross-pipeline symmetry).
@@ -94,7 +94,7 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
 5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
-   - `sum(increase(claude_code_session_count[{history_days}d]))`
+   - `count(max_over_time(claude_code_session_count[{history_days}d]))` (NOT `sum(increase(...))` — this metric fires once per session with a unique `session_id` label, so `increase()` always evaluates to 0; `count()` of `max_over_time()` counts distinct sessions instead)
    - `sum(increase(claude_code_cost_usage[{history_days}d]))`
    Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
 
@@ -113,7 +113,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-If a category is empty for an agent, write `none` — do not omit the line. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty for an agent, write `none` — do not omit the line. Any quantified claim (a specific number, ratio, or count) in a finding — including inside `Suggested focus areas` bullets — MUST be accompanied by the exact grep/jq/count command that produced it, inline in the finding's own text; a bare number with no reproducible command is unverifiable and must be treated as an estimate, explicitly labeled as such. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
@@ -134,7 +134,7 @@ Target skills: {target_skills}
 For EACH target skill, mine three read-only sources for signals that the skill is failing or misused:
 
 1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
+   - Enumerate in-window files: `bash src/user/claude-code/scripts/recent_transcripts.sh {history_days} -0`. Pipe to `xargs -0 grep -lE '"name":"Skill"'` then filter lines containing the skill name (also check `"<command-name>"`, `"<skill-format>"`, and skill-listing attachment markers for the skill).
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs across resumed/subagent `.jsonl` files), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals; de-dupe correction excerpts by distinct text + session.
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
@@ -147,7 +147,7 @@ For EACH target skill, mine three read-only sources for signals that the skill i
 {HARVEST_BLOCK}
    - **Per-file mapping (skills):** for each TARGET skill, `grep -l '<skill-name>' <each discovered pitfalls.md>` (per-file, mirroring the `grep -lri '<skill-name>'` step above) and surface matching excerpts (≤240 chars each) tagged with the source repo path. `pitfalls.md` files mentioning no target skill are listed path-only.
 4. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
-   - `sum(increase(claude_code_session_count[{history_days}d]))`
+   - `count(max_over_time(claude_code_session_count[{history_days}d]))` (NOT `sum(increase(...))` — this metric fires once per session with a unique `session_id` label, so `increase()` always evaluates to 0; `count()` of `max_over_time()` counts distinct sessions instead)
    - `sum(increase(claude_code_cost_usage[{history_days}d]))`
    Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
 
@@ -165,7 +165,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
 ```
-If a category is empty for a skill, write `none` — do not omit the line. After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty for a skill, write `none` — do not omit the line. Any quantified claim (a specific number, ratio, or count) in a finding — including inside `Suggested focus areas` bullets — MUST be accompanied by the exact grep/jq/count command that produced it, inline in the finding's own text; a bare number with no reproducible command is unverifiable and must be treated as an estimate, explicitly labeled as such. After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
@@ -186,7 +186,7 @@ Target: the Claude Code config genome (permissions, sandbox, hooks, env, model r
 Mine three read-only sources for signals that a CONFIG SETTING is causing friction or is missing:
 
 1. **Transcripts** (under `~/.claude/projects/`, including subagent transcripts):
-   - Enumerate in-window files: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`.
+   - Enumerate in-window files: `bash src/user/claude-code/scripts/recent_transcripts.sh {history_days} -0`.
    - **Permission-prompt friction (PRIMARY config signal):** grep for repeated permission requests on the SAME command pattern — a command the operator approves repeatedly is a candidate `allow` rule. Surface the top recurring command patterns with counts.
    - **Sandbox friction:** `"Operation not permitted"`, `dangerouslyDisableSandbox`, sandbox denial strings tied to a command/path/domain — each is a candidate sandbox-rule change. De-dupe by distinct command/path + session.
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals.
@@ -197,7 +197,7 @@ Mine three read-only sources for signals that a CONFIG SETTING is causing fricti
 {HARVEST_BLOCK}
    - **Config-relevance mapping:** for each discovered `pitfalls.md`, `grep -lE 'permission|sandbox|allow rule|settings|hook|env var'` and surface matching excerpts (≤240 chars each) tagged with the source repo path. Files mentioning no config concern are listed path-only.
 4. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the window:
-   - `sum(increase(claude_code_session_count[{history_days}d]))`
+   - `count(max_over_time(claude_code_session_count[{history_days}d]))` (NOT `sum(increase(...))` — this metric fires once per session with a unique `session_id` label, so `increase()` always evaluates to 0; `count()` of `max_over_time()` counts distinct sessions instead)
    - `sum(increase(claude_code_cost_usage[{history_days}d]))`
    Use `{history_days}` from pre-flight — do NOT compute the window yourself. On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed.
 
@@ -215,7 +215,7 @@ Emit ONE findings block, then SendMessage the orchestrator verbatim:
 - Mimir metrics: <summary, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets mapped to a named config-surface dimension, Content-Gate-passing>
 ```
-If a category is empty, write `none` — do not omit the line. After the block, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** (the ingest set). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
+If a category is empty, write `none` — do not omit the line. Any quantified claim (a specific number, ratio, or count) in a finding — including inside `Suggested focus areas` bullets — MUST be accompanied by the exact grep/jq/count command that produced it, inline in the finding's own text; a bare number with no reproducible command is unverifiable and must be treated as an estimate, explicitly labeled as such. After the block, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** (the ingest set). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
@@ -236,7 +236,7 @@ Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history
 ## Task
 Mine for actions UNINTENTIONALLY REPEATED across sessions — the same or near-identical tool call, command, manual step, or lookup performed more than once when it could have been done once, cached, deduped, or automated.
 
-1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for recurring Bash commands, Read paths, or Grep patterns. Identify same/near-identical patterns recurring across DISTINCT `sessionId`s — mirror historical-auditor's "De-dupe before counting" discipline (never count replicated lines within one session).
+1. **Transcripts**: `bash src/user/claude-code/scripts/recent_transcripts.sh {history_days} -0`, per-file grep for recurring Bash commands, Read paths, or Grep patterns. Identify same/near-identical patterns recurring across DISTINCT `sessionId`s — mirror historical-auditor's "De-dupe before counting" discipline (never count replicated lines within one session).
 2. **`~/.claude/history.jsonl`**: scan operator-typed invocations in the window for repeated manual command sequences recurring across sessions.
 3. **Agent memory (optional, narrow)**: `grep -lri 'repeat\|duplicate\|redundant' .claude/agent-memory/ 2>/dev/null` for already-recorded repetition lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
 4. **Crossed-in-flight benign duplicates**: distinguish a TRUE unintentional repeat (above) from a benign race — two independent messages/actions that CROSSED IN FLIGHT (e.g. a teammate's confirmation or a peer's answer arrives after the same fact was already independently resolved by the recipient) where the SECOND arrival is correctly recognized as stale and produces "no action needed" — this is coordination working as intended, not a repetition defect. Detect via `grep -inE 'stale duplicate|crossed in flight|already (resolved|handled|confirmed)|no action needed' <transcript>` and confirm from surrounding context that the acknowledgment correctly identifies a race, not a genuine repeat that should have been prevented.
@@ -261,7 +261,7 @@ Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history
 ## Task
 Mine for BUGS surfaced during tool use — failed tool calls, incorrect parameters, and other concrete execution defects (not stylistic/quality concerns; those are the reviewers' job).
 
-1. **Transcripts**: `find ~/.claude/projects -name '*.jsonl' -mtime -{history_days} -print0`, per-file grep for `"is_error":true` tool_result blocks. For each hit, read the paired tool_use block (immediately preceding) to capture the tool name + parameters that produced the error, and the error text itself. Mirror historical-auditor's "De-dupe before counting" discipline — count DISTINCT `sessionId` + tool-call occurrences, never replicated lines within one session.
+1. **Transcripts**: `bash src/user/claude-code/scripts/recent_transcripts.sh {history_days} -0`, per-file grep for `"is_error":true` tool_result blocks. For each hit, read the paired tool_use block (immediately preceding) to capture the tool name + parameters that produced the error, and the error text itself. Mirror historical-auditor's "De-dupe before counting" discipline — count DISTINCT `sessionId` + tool-call occurrences, never replicated lines within one session.
 2. **Incorrect-parameter classification**: within the error-tagged hits from step 1, classify each as one of: `BAD-PARAM` (wrong type/missing required/invalid enum value), `WRONG-PATH` (nonexistent file/dir referenced), `PERMISSION` (sandbox/permission denial), `OTHER` (anything else — API error, timeout, etc). Only `BAD-PARAM` and `WRONG-PATH` are in-scope findings (recurring, definition-fixable classes); `PERMISSION` and `OTHER` are dropped unless the SAME failure recurs ≥3 times across distinct sessions (then report as a pattern regardless of class).
 3. **`~/.claude/history.jsonl`** (optional, narrow): `grep -E '"display":".*(error|fail)' ~/.claude/history.jsonl` for operator-reported bugs in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 4. **Agent memory (optional, narrow)**: `grep -lri 'bug\|incorrect param\|failed tool\|wrong argument' .claude/agent-memory/ 2>/dev/null` for already-recorded bug lessons — do NOT re-run historical-auditor's CROSS-PROJECT PITFALLS MANIFEST harvest.
@@ -381,4 +381,55 @@ If a category is empty, write `none` — do not omit the line.
 
 ## Rules
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+````
+
+## 9. SDLC Role Research — evolve-agents-only template
+
+Consumer: evolve-agents ONLY (evolve-skills has no SDLC-role research phase — verified). No spawn-time tokens; runtime token `{target_agents}` passes through. Never gated by pre-flight step 8's SKIPPED flag (WebSearch-driven).
+
+````
+Agent(name="sdlc-role-researcher", subagent_type="distinguished-engineer", model="fable", prompt="...")
+
+MISSION: Research real-world, enterprise-scale Software Development Lifecycle (SDLC) role structures and taxonomies as practiced at large/mature engineering organizations, and produce a structured, evidence-grounded comparison against BOTH (a) this repo's persistent agent definitions, and (b) the ephemeral spawn-time-only pseudo-roles defined inside team-lead.md's Per-Role Dispatch Table. Ground every claim in ACTUAL RESEARCH via WebSearch (published engineering career ladders, leveling guides, org-design writeups, SRE/DevOps role definitions, SDET/QA role definitions, security engineering role definitions, PM/TPM role definitions, UX/design role definitions) — do NOT answer from stale training memory alone; cite what you found. This is a STANDING recurring check, not a one-off: industry role taxonomies and this repo's roster both drift over time, so re-run the comparison fresh each cycle rather than assuming a prior cycle's verdict still holds — read the target agents' latest changelog entries first to see what a prior cycle already decided and why, and only re-litigate a settled naming/tier question if new evidence contradicts it.
+
+Target agents: {target_agents}
+
+## Research tasks
+1. Enumerate the standard SDLC/engineering-org role ladder via WebSearch (cite sources): IC track (junior/associate → mid → senior → staff → principal → distinguished/fellow), management track (tech lead, engineering manager, director, VP/CTO), and supporting/adjacent roles (SRE/platform/DevOps, QA/SDET, security/AppSec, architect, PM/TPM, UX/design, UX research, technical writer, release manager, data engineer/DBA, accessibility specialist). One-line definition of scope/seniority signal each.
+2. Gap/overlap analysis: for each standard role, assess whether an EXISTING agent (persistent or ephemeral) already covers that function, is a partial/weak fit, or is a genuine gap. Be honest about near-misses.
+3. Higher-level exploration: evaluate at least one candidate higher-level role (e.g. "principal engineer", "fellow", "VP-Eng-adjacent oversight"). Is there a genuine functional gap TODAY this system lacks (per the Content Gate), or does it duplicate an existing gold-tier/orchestrator charter?
+4. Lower-level exploration: evaluate at least one candidate lower-level role (e.g. "junior/associate engineer", a below-SDET tester). Does the existing bronze/ephemeral tiering already serve this niche, or is there a genuinely distinct executable capability gap?
+5. Other commonly-present SDLC functions not covered above (SRE/platform, technical writer, data engineer, release manager, accessibility, etc.) — assess fit/gap the same way. Most human-org roles will NOT translate to a distinct executable agent role; say so explicitly when a "gap" is better served by an existing agent absorbing a skill/behavior than a whole new role.
+6. Model-tier fit recommendation: for every ADD/CHANGE candidate, propose a model tier (gold/silver/bronze) grounded in a genuine seniority-to-capability mapping. Explicitly call out if the CURRENT roster looks under- or over-diversified relative to task complexity — this feeds `model-routing-auditor`'s and a future `evolve-model-distribution` cycle's class-6 quality-mismatch lane.
+
+## Content Gate (apply before recommending)
+1. Executable — can Claude do this in a stateless session? 2. Behavioral — does removing it change output? 3. Non-redundant — already covered elsewhere? 4. Concrete — specific action/check/output, not aspirational fluff.
+
+## Output Format
+```
+## Standard SDLC Role Ladder (cited)
+<bulleted ladder with 1-line definitions + source>
+
+## Gap/Overlap Analysis
+<one bullet per standard role: COVERED-BY <agent/pseudo-role> | PARTIAL-FIT <agent> — <gap> | GAP — <why it matters>>
+
+## Higher-Level Candidate(s)
+CANDIDATE: <name> | RATIONALE: <genuine gap or duplicate-of, cite the Content Gate check(s) it passes/fails> | SUGGESTED TIER: gold|silver|bronze | DISPOSITION: ADD | REJECT-DUPLICATES-<existing-role>
+
+## Lower-Level Candidate(s)
+CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | REJECT-ALREADY-SERVED-BY-<existing-role/tier>
+
+## Other SDLC Functions Evaluated
+<one bullet per function: ADD-CANDIDATE | ABSORB-INTO-<existing-agent> (skill addition, not new role) | NOT-APPLICABLE-TO-AGENT-CONTEXT — with rationale>
+
+## Model-Tier Diversity Assessment
+<is the current roster genuinely diversified across gold/silver/bronze relative to task complexity, or over-concentrated? cite which agents/pseudo-roles you believe are mis-tiered and why, with a suggested tier>
+
+## Summary Recommendations (ranked)
+1. <ADD|CHANGE|REMOVE> <role/tier> — <one-line why> — <evidence/source>
+...
+```
+
+## Rules
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. WebSearch/WebFetch for external research is REQUIRED — do not answer from memory alone; if you cannot verify a claim via search, mark it "unverified — inference only, not measurement" per epistemic discipline. Every finding must cite either a search source or a repo grep/read, not assumption. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
 ````

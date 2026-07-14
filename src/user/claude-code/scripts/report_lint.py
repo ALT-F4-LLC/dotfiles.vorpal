@@ -8,7 +8,7 @@ added, dropped, or widened; checks needing external state (a resolved diff's
 file list, a Docket issue's AC list, semantic evidence quality, the
 override-vs-diff arm) stay in the skill as prose and are NOT mechanized here.
 
-Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|design-qa}
+Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|design-qa|investigator}
                       [--mode full|round-n|light] <file>
 
   stdout: OK: <skill> report (<mode>)                exit 0
@@ -18,6 +18,14 @@ Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|desig
   --mode default: full. round-n is valid only with code-review-verdict.
   light is valid only with verify-ac and short-circuits to exit 0 by contract
   (verify-ac LIGHT mode is a single line — nothing to lint).
+
+  The ``investigator`` profile is not a report-emission skill but the
+  distinguished-engineer.md Mode 3 output contract for an investigator-class
+  report. It checks exactly three text-decidable items and nothing else (no
+  section-order/bucket machinery applies): a COVERAGE statement is present,
+  the OBSERVED/REPRODUCED/INFERRED label vocabulary is used, and any expressed
+  uncertainty is paired with a next-probe. No check is added, dropped, or
+  widened beyond those three.
 
 Stdlib-only (repo script convention). Fence-aware: the placeholder and
 banned-phrase scans skip ``` fenced blocks.
@@ -109,7 +117,19 @@ SKILLS = {
         "verdict_rule": "design-qa",
         "issues_table": True,
     },
+    "investigator": {
+        # distinguished-engineer.md Mode 3 output contract — not a report skill.
+        "investigator_profile": True,
+    },
 }
+
+# Investigator-profile vocabularies (distinguished-engineer.md Mode 3).
+_EVIDENCE_LABELS = ["OBSERVED", "REPRODUCED", "INFERRED"]
+_UNCERTAINTY_CUES = re.compile(
+    r"\b(inconclusive|low[- ]confidence|uncertain|unresolved|indeterminate|unclear|cannot determine)\b",
+    re.IGNORECASE,
+)
+_NEXT_PROBE_CUE = re.compile(r"next[- ]probe|next probe", re.IGNORECASE)
 
 
 def tokenize(text):
@@ -592,6 +612,30 @@ def validate_round_n(cfg, records, text):
     return failures
 
 
+def validate_investigator(records, text):
+    """distinguished-engineer.md Mode 3 output contract — three text-decidable
+    checks, fence-aware, nothing else:
+      1. a COVERAGE statement is present;
+      2. the OBSERVED/REPRODUCED/INFERRED label vocabulary is used;
+      3. any expressed uncertainty is paired with a next-probe."""
+    failures = []
+    content = "\n".join(raw for _, raw, in_fence in records if not in_fence)
+
+    if not re.search(r"\bcoverage\b", content, re.IGNORECASE):
+        failures.append(("coverage-statement",
+                         "no COVERAGE statement (what case-space was examined vs not)"))
+
+    if not any(re.search(r"\b" + lbl + r"\b", content) for lbl in _EVIDENCE_LABELS):
+        failures.append(("evidence-labels",
+                         "none of OBSERVED/REPRODUCED/INFERRED present — findings must be labeled"))
+
+    if _UNCERTAINTY_CUES.search(content) and not _NEXT_PROBE_CUE.search(content):
+        failures.append(("next-probe",
+                         "report expresses uncertainty but names no next-probe to resolve it"))
+
+    return failures
+
+
 def main():
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--skill", required=True, choices=sorted(SKILLS.keys()))
@@ -631,7 +675,9 @@ def main():
         print(f"OK: {args.skill} report ({args.mode})")
         raise SystemExit(0)
 
-    if args.mode == "round-n":
+    if cfg.get("investigator_profile"):
+        failures = validate_investigator(records, text)
+    elif args.mode == "round-n":
         failures = validate_round_n(cfg, records, text)
     else:
         failures = validate_full(args.skill, cfg, records, text)

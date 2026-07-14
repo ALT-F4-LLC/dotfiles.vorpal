@@ -14,12 +14,21 @@ set -euo pipefail
 
 usage() {
     echo "Usage: regression_diff.sh capture <key>" >&2
+    echo "       regression_diff.sh baseline <key> [<ref>]" >&2
     echo "       regression_diff.sh compare <before_key> <after_key>" >&2
     echo "" >&2
     echo "  capture   runs cargo test, tests/*.test.sh, and" >&2
     echo "            src/user/claude-code/scripts/test/test_*.py, then snapshots the" >&2
     echo "            failing-test set to \$REGRESSION_DIFF_DIR/<key>.json" >&2
     echo "            (default \$REGRESSION_DIFF_DIR: \${TMPDIR:-/tmp}/regression_diff)." >&2
+    echo "  baseline  materializes the pre-implementation tree at <ref>" >&2
+    echo "            (default HEAD) via 'git worktree add' and runs the same" >&2
+    echo "            capture there, snapshotting to <key>.json. Closes the" >&2
+    echo "            'never trust 0 new failures' hole: no role owns the" >&2
+    echo "            pre-impl capture in the ephemeral lifecycle, and a shared" >&2
+    echo "            worktree forbids 'git stash'. The worktree is removed" >&2
+    echo "            after capture. Uncommitted working-tree changes are NOT" >&2
+    echo "            included (that is the point — <ref> is the clean baseline)." >&2
     echo "  compare   diffs two snapshots and reports newly-failing," >&2
     echo "            newly-passing, and unchanged (still-failing) sets." >&2
     echo "            Exits 1 if newly-failing is non-empty." >&2
@@ -106,6 +115,39 @@ cmd_capture() {
     echo "Captured '${key}': $(printf '%s' "$failing_json" | jq 'length') failing test(s) -> ${SNAPSHOT_DIR}/${key}.json" >&2
 }
 
+WORKTREE_DIR=""
+cleanup_worktree() {
+    [ -n "$WORKTREE_DIR" ] || return 0
+    cd "$REPO_ROOT" 2>/dev/null || true
+    git worktree remove --force "$WORKTREE_DIR" >/dev/null 2>&1 || true
+    WORKTREE_DIR=""
+}
+
+cmd_baseline() {
+    local key="$1" ref="${2:-HEAD}"
+
+    git rev-parse --verify --quiet "$ref^{commit}" >/dev/null 2>&1 || {
+        echo "regression_diff.sh: '$ref' is not a valid git ref" >&2
+        exit 2
+    }
+
+    WORKTREE_DIR="${SNAPSHOT_DIR}/worktree.$$"
+    rm -rf "$WORKTREE_DIR"
+    trap cleanup_worktree EXIT INT TERM
+
+    if ! git worktree add --detach "$WORKTREE_DIR" "$ref" >&2; then
+        echo "regression_diff.sh: 'git worktree add' failed for ref '$ref'" >&2
+        exit 1
+    fi
+
+    echo "Baseline: captured pre-impl tree at '$ref' in $WORKTREE_DIR" >&2
+    cd "$WORKTREE_DIR"
+    cmd_capture "$key"
+    cd "$REPO_ROOT"
+    cleanup_worktree
+    trap - EXIT INT TERM
+}
+
 cmd_compare() {
     local before_key="$1" after_key="$2"
     local before_file="${SNAPSHOT_DIR}/${before_key}.json"
@@ -150,6 +192,10 @@ case "$MODE" in
     capture)
         [ "$#" -eq 1 ] || usage
         cmd_capture "$1"
+        ;;
+    baseline)
+        [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage
+        cmd_baseline "$@"
         ;;
     compare)
         [ "$#" -eq 2 ] || usage

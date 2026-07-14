@@ -184,6 +184,9 @@ pub struct AutoMode {
     pub environment: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub allow: Vec<String>,
+    // LANDMINE (latent — with_auto_mode is never called): struct-level camelCase renames these
+    // two keys to `softDeny`/`hardDeny`. Before wiring auto_mode, verify the live settings schema's
+    // casing; if it requires snake_case add `#[serde(rename = "soft_deny")]` / `"hard_deny"` here.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub soft_deny: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]

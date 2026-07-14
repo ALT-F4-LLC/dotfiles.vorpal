@@ -21,14 +21,14 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/changelog/claude-code/skills/<name>.md`.
-- Reads: `docs/spec/`, `skills/`, `.claude/skills/`.
+- Reads: `docs/spec/`, `src/user/claude-code/skills/`, `.claude/skills/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
 ---
 
 <!-- CANONICAL:EVOLUTION-MODEL:BEGIN -->
-**Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; History-Compaction ledgering = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, `TeammateIdle`/`-r2`/shutdown-rejection stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
+**Evolutionary model (shared vocabulary — evolve-agents, evolve-skills, evolve-config, evolve-coherence).** One cycle = one **generation**: the current definition file is the **parent genome**, the post-cycle file the **offspring**, the changelog entry the birth record (changelogs are the **phylogenetic record**; History-Compaction ledgering = fossil consolidation). A **trait** is one Content-Gate-passing behavioral unit; an **allele** is an alternative formulation of a trait; the file is the heritable **genome**, the population is the agents/skills under this cycle. **Fitness signals** are the Phase 0 audit measurements (pitfalls re-fires, operator-corrections, `TeammateIdle`/`-r2`/shutdown-rejection stalls, error/abort, model-routing, prior `Trial:`/`Drift:` outcomes). **Natural selection** assigns each evaluated trait a disposition from CITED fitness — AMPLIFY (cited gain → propagate family-wide in Phase 2 = positive selection) or CULL (cited recurring failure → remove = purifying/background selection); unlisted traits default to RETAIN. The **Content Gate is purifying selection** on every introduced allele. **Genetic drift** is bounded, fitness-INDEPENDENT neutral allele-substitution on a no-signal trait (see the drift operator). **Speciation/extinction** (new/retired organism) is a Phase 2 event gated by operator approval + vote, floored by the **biodiversity invariant** (never cull the last carrier of a live niche). Adaptive change and drift alike pass the operator-approval HARD GATE, are measured by the next cycle's Phase 0 audit, and adopt-or-rollback via the Phase 1 self-correct step. **evolve-coherence does not reproduce** — it is the **reproductive-isolation monitor**: it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits.
 <!-- CANONICAL:EVOLUTION-MODEL:END -->
 
 ## Innovation Mandate
@@ -38,18 +38,20 @@ Each cycle sources variation three ways (see CANONICAL:EVOLUTION-MODEL): the **i
 ## Scientific Trial Protocol
 
 <!-- CANONICAL:SCIENTIFIC-TRIAL-PROTOCOL:BEGIN -->
-Every non-neutral adaptive change AND every drift proposal passes this gate: **Hypothesis** (expected improvement + why) → **Operator approval (HARD GATE)** — present hypothesis, scope, and blast radius via AskUserQuestion BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> → proposed` (or `Drift: … → proposed`) and NOT implemented → **Measurement** (reuse the Phase 0 audit; add no new infrastructure) → **Adopt or rollback** (adopt if the next-cycle audit improves against criteria, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in the changelog `### Summary`.
+Every non-neutral adaptive change AND every drift proposal passes this gate: **Hypothesis** (expected improvement + why) → **Baseline metric** — record one named metric from `evolve_signals.py`'s fitness panel (e.g. `TeammateIdle(role)=N @7d`) as of proposal time → **Operator approval (HARD GATE)** — present hypothesis, scope, blast radius, and the baseline metric via AskUserQuestion BEFORE any edit; an unapproved item is recorded as `Trial: <hypothesis> → proposed` (or `Drift: … → proposed`) and NOT implemented → **Measurement** (reuse the Phase 0 audit; add no new infrastructure) → **Adopt or rollback** (adopt if the next cycle's Phase 0 audit shows the same named metric improved against the recorded baseline, else the Phase 1 self-correct/revert step). Record the outcome as a `Trial:`/`Drift:` line in the changelog `### Summary`, including the baseline and comparison metric values.
 <!-- CANONICAL:SCIENTIFIC-TRIAL-PROTOCOL:END -->
 
 ## Genetic-Drift Operator
 
 Drift introduces `{drift_rate}` bounded, fitness-INDEPENDENT neutral allele-substitutions per cycle (default 1; `drift=0` skips this operator entirely). It is the standing-variation arm that counters the documented `fable-monoculture` local-optimum collapse (`1ea590c`) — pure fitness-driven selection in a small population converges to monoculture, so drift maintains alternative formulations that may become advantageous when the platform shifts.
 
-**Target selection is structural, NOT auditor-derived (MC2).** The no-signal trait set is materialized by the orchestrator from file STRUCTURE, never from the Phase 0 auditor's narrative output: (1) enumerate the target file's candidate traits as its headings and top-level list items — `grep -nE '^#{2,4} |^- |^[0-9]+\. ' <skill-path>/SKILL.md`; (2) subtract any candidate whose heading/bullet text the historical-auditor cited in a finding for that file — the remainder is the **no-signal set**; (3) index the sorted no-signal set with `{drift_seed} mod len(set)` to pick `{drift_rate}` traits. Fitness-independent by construction: the candidate list is structural and only auditor-flagged traits are excluded, so the pick can never land on a trait selection is acting on. **Empty no-signal set (every candidate was cited) → drift is a no-op for that organism this cycle.**
+**Target selection is structural, NOT auditor-derived (MC2).** The no-signal trait set is materialized by the orchestrator from file STRUCTURE, never from the Phase 0 auditor's narrative output — call `src/user/claude-code/scripts/drift_target.sh <skill-path>/SKILL.md {drift_seed} {drift_rate} <cited-findings-file>` to compute it (the script enumerates the target file's candidate traits as its headings and top-level list items, subtracts any candidate the historical-auditor cited in a finding for that file — the remainder is the **no-signal set** — and indexes it with `{drift_seed} mod len(set)` to pick `{drift_rate}` traits). Fitness-independent by construction: the candidate list is structural and only auditor-flagged traits are excluded, so the pick can never land on a trait that the historical-auditor's selection is acting on. **Empty no-signal set (every candidate was cited) → drift is a no-op for that organism this cycle** (the script exits 0 with no output in this case).
 
+<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:BEGIN -->
 **The variation is a neutral allele substitution** — replace the selected trait's current formulation with a semantically-equivalent alternative (re-word, reorder a checklist, merge/split adjacent bullets, swap an illustrative example). It is a substitution of an existing functional trait, so it is net-line-neutral and passes the Content Gate's Behavioral check (the trait still changes output; only its expression drifts).
 
 **Gate + caveat.** Every drift proposal routes through the **same operator-approval HARD GATE** as adaptive trials (Scientific Trial Protocol) and is recorded as a `Drift:` line. **(S2 — reproducibility caveat:)** because `{drift_seed}` is the cycle identity, two runs *on the same date* reproduce the *same* drift target — they are not independent draws; across-generation stochastic variation comes from the date advancing. This is intentional (reproducibility/auditability over per-run randomness), so an operator re-running a cycle on the same date is not surprised.
+<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:END -->
 
 ---
 
@@ -68,26 +70,28 @@ Target skill(s) and historical-audit window are determined by `\$ARGUMENTS`:
 
 ## Pre-flight
 
+<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:BEGIN -->
 > **Operator prompts:** All operator-facing questions in Pre-flight MUST use `AskUserQuestion` with pre-generated selectable options (1-4 questions per call; **max 4 options per question regardless of `multiSelect`** — the API rejects >4); max 12-char `header`. If the operator needs to pick more than 4, ask a routing question first ("which category?") then a second narrow question. Free-text is permitted ONLY when the operator must paste material that doesn't fit options (logs, reproductions, large diffs, verbatim quotes) AFTER a structured option-led question routes them there.
+<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:END -->
 
 Before spawning any agents:
 
 1. **Verify evolution goal (HARD GATE)** — Team mode: adopt the verified goal from orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All skills", "Specific skill" (pair with `\$ARGUMENTS` or free-text follow-up for the skill name), "Specific dimension(s)" (follow-up multiSelect over the 8 dimensions), "Address operator-reported pain (skip to step 2)". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Gather experience feedback** — Skip if orchestrator prompt already includes `experience_feedback`. Otherwise call `AskUserQuestion` with `multiSelect: true` and 4 options: `Coordination, handoff & orchestration gaps`, `Operator-prompt or output quality`, `Scope, budget or file-size mismatch`, `Other (free-text follow-up)`. If `Other`, follow up free-text. Store as `{experience_feedback}`.
-3. **Resolve today's date** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
+3. **Resolve today's date and the shared scratchpad** — Run `date +%Y-%m-%d` via Bash and capture the result. Store this
    as `{today_date}`. This value MUST be substituted into every spawning template so agents use
-   a consistent date for changelog entries.
+   a consistent date for changelog entries. Also compute `{scratchpad}` via Bash `echo "$TMPDIR/evolve-skills-{today_date}"`, capturing the EXPANDED literal absolute path — substitute THAT into every template, never the unexpanded `$TMPDIR/...` string (teammate `Read` takes absolute paths only, and the sandbox remaps `$TMPDIR` per context)
+   — a SHARED, non-session-scoped path under the harness `$TMPDIR` (verified empirically 2026-07-13: a spawned
+   teammate CAN Read an absolute path here; do NOT use a per-session scratchpad convention, which is
+   session-isolated and unreachable by sibling teammates) — and `mkdir -p {scratchpad}/phase0`. Phase 0
+   completion writes the audit blocks there for Phase 1 reviewers to Read by path.
 4. **Inventory skill files and sizes** — Run `find .claude/skills src/user/claude-code/skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null` (zsh aborts a no-match `*/SKILL.md` glob even with `2>/dev/null` when the top-level `skills/` root is absent). Mode per file is **TRIM** (over 65,000 bytes: consolidation primary, removed bytes must exceed added bytes) or **BALANCED** (under 65,000 bytes: additions allowed but offset by removals). Include byte count and mode in each agent's spawning prompt.
-5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.claude/skills/<arg>/SKILL.md` or `skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
+5. **If a skill-name token is present** (per Argument Handling parsing) — Verify it matches exactly one of `.claude/skills/<arg>/SKILL.md` or `src/user/claude-code/skills/<arg>/SKILL.md`. If neither exists, inform user and abort. If both exist (name collision), inform user, list both paths, and ask which to target via `AskUserQuestion` (options: each path; header `Path`).
 6. **If no skill files found at all** — Inform user and abort.
 7. **Check existing changelogs + surface last-run preamble** — Run `find docs/changelog/claude-code/skills -name '*.md' 2>/dev/null` (spawned agents need this list; a bare `*.md` glob aborts under zsh nomatch on a fresh repo). Then surface the latest prior run via `find docs/changelog/claude-code/skills -name '*.md' -exec grep -h '^## 20' {} + 2>/dev/null | sort -r | head -1`, reported as `Last evolve-skills changelog entry: <date>` (or "no prior runs") so a re-run isn't the only way to confirm prior completion.
-8. **Resolve historical-audit window** — Parse `days=N` from `\$ARGUMENTS` (default `7`; reject outside `1..90` per Argument Handling). Store as `{history_days}`. Compute BOTH cutoff representations in pre-flight to prevent downstream conversion errors:
-   - `{history_cutoff_iso}` via Bash: `date -u -v-${history_days}d +%Y-%m-%dT%H:%M:%SZ` on macOS, `date -u -d "${history_days} days ago" +%Y-%m-%dT%H:%M:%SZ` on Linux (detect via `uname`).
-   - `{history_cutoff_epoch_ms}` via Bash: `echo $(( $(date -u -v-${history_days}d +%s) * 1000 ))` on macOS, `echo $(( $(date -u -d "${history_days} days ago" +%s) * 1000 ))` on Linux. The historical-auditor template substitutes this directly into the `history.jsonl` timestamp filter — never let the auditor compute it.
-   Probe transcript availability: `find ~/.claude/projects -name "*.jsonl" -mtime -${history_days} 2>/dev/null | head -1`. If empty, set `{historical_audit_findings}`, `{model_routing_findings}`, `{repetition_audit_findings}`, and `{bug_audit_findings}` = `"SKIPPED: no transcripts in last ${history_days} days"` and skip the historical-auditor, model-routing-auditor, repetition-auditor, and bug-auditor spawns in Phase 0 (Phase 1 still runs with the literal SKIPPED string substituted for all four). The audit is always-on otherwise.
-   Resolve the genetic-drift parameters here too: parse `drift=N` from `\$ARGUMENTS` (default `1`; `drift=0` disables; reject negatives per Argument Handling) and store as `{drift_rate}`. Compute the reproducible, fitness-independent `{drift_seed}` via Bash: `printf '%s' "evolve-skills-{today_date}" | shasum | cut -c1-8`. The seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
+8. **Resolve historical-audit window and drift parameters** — Parse `days=N` (default `7`; reject outside `1..90`) and `drift=N` (default `1`; `drift=0` disables; reject negatives) from `\$ARGUMENTS` per Argument Handling, storing as `{history_days}` and `{drift_rate}`. Run `src/user/claude-code/scripts/evolve_preflight.sh --cycle evolve-skills --days {history_days} --drift {drift_rate}` via Bash (DKT-292; single-homes the macOS/Linux `date`-branched cutoff computation, the transcript-availability probe, and the drift-seed derivation) and capture `history_cutoff_iso`/`history_cutoff_epoch_ms` (the historical-auditor template substitutes these directly into the `history.jsonl` timestamp filter — never let the auditor compute them), `transcript_probe`, `drift_rate`, and `drift_seed`. If `transcript_probe` starts with `SKIPPED:`, set `{historical_audit_findings}`, `{model_routing_findings}`, `{repetition_audit_findings}`, and `{bug_audit_findings}` to that literal string and skip the historical-auditor, model-routing-auditor, repetition-auditor, and bug-auditor spawns in Phase 0 (Phase 1 still runs; the SKIPPED string is written to each of the four `{scratchpad}/phase0/<auditor>.md` files at Phase 0 completion and Read by path like any other block). The audit is always-on otherwise. Store `{drift_rate}` and `{drift_seed}` for the genetic-drift operator — the seed is keyed to cycle identity (date), uncorrelated with which traits are failing — that uncorrelatedness IS its fitness-independence; the determinism makes the cycle's drift reproducible and reviewable.
 9. **Scope-confirmation gate (HARD GATE)** — If no skill-name token is present (all-skills mode, per Argument Handling parsing) AND the step-4 inventory contains >3 skills, surface the planned scope via `AskUserQuestion` with options: "Proceed with all <N> skills", "Pick specific skill (free-text follow-up)", "Limit to <≤4 named skills>" (multiSelect follow-up from the inventory, max 4 — the AskUserQuestion option cap), "Abort". List skill names + total byte count in the question body so the operator sees estimated cycle weight before commit. Step 1 cannot show this (it runs before inventory). Skip silently in single-skill mode. Team mode: skip — the orchestrator already verified scope.
-10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. Run `claude --version` via Bash to capture the installed version. Then obtain the changelog cache-first: if `~/.claude/cache/changelog.md` has mtime under 24h, read it and skip the network; else fetch the GitHub raw source `https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md` via Bash `curl -fsSL` (best-effort `-o ~/.claude/cache/changelog.md` refresh — a sandbox write-denial is non-fatal, proceed with the fetched content) or WebFetch (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent). Distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}`. If the version probe OR the fetch fails (offline / network-blocked), set `{latest_features_digest}` = `"SKIPPED: claude --version or changelog fetch unavailable — researcher uses its own WebSearch/WebFetch as primary"` (mirroring the step-8 transcript-SKIPPED idiom) so the docs-researcher template stays valid and the cycle still runs.
+10. **Pin latest Claude Code features** — Anchor the docs-researcher against the installed CLI rather than stale training knowledge. The same step-8 `evolve_preflight.sh` invocation (run with `--drift`) also emits `claude_version` and `changelog_source` — reuse them, do not re-run the script. If `claude_version` starts with `SKIPPED:`, set `{latest_features_digest}` to that literal string (mirroring the step-8 transcript-SKIPPED idiom) and skip the rest of this step. Otherwise: if `changelog_source` is a filesystem path, Read it directly; if it starts with `CURL_FAILED:`, attempt the WebFetch it names (requires a local WebFetch grant for `raw.githubusercontent.com` + `code.claude.com` + `mimir.bulbasaur.altf4.domains` in the gitignored per-user settings.local.json — add each if absent), falling back to the `SKIPPED:` sentinel it also names if WebFetch also fails. Once you have the raw changelog content, distil a concise digest — the installed version plus the most recent releases' headline entries (new/changed/deprecated, ≤30 lines) — and store it as `{latest_features_digest}` so the docs-researcher template stays valid and the cycle still runs.
 
 ---
 
@@ -115,7 +119,7 @@ All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (crea
 **Exact format — no deviations:** `# Changelog: <skill-name>` (kebab-case) > `## YYYY-MM-DD` (no suffixes) > exactly 4 H3 sections in order: `### Summary` (1-2 sentences), `### Changes` (bulleted with reasoning), `### Dimensions Evaluated`, `### Rename` (details or "No rename.").
 **Selection recording (S1):** `### Changes` records only AMPLIFY and CULL dispositions, each as one bullet carrying its impact tag and citing its fitness signal (e.g. `CULL[SUBSTANTIVE]: removed X — cited TeammateIdle×3`); RETAIN is the unstated default for untouched traits and is never enumerated, protecting the 20-line cap — but a verified Phase 0 finding never silently RETAINs (Findings Ledger, CANONICAL:IMPACT-CLASS). `### Summary` carries one `Findings: N → S sub / C cos / R rej / D def / E enc` line after any `Trial:`/`Drift:` lines.
 
-**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per the retention-compaction master. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** orchestrator fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines — applied ONLY to the new entry just prepended; never touch prior entries. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. The retention-compaction policy preserves both `Trial:` and `Drift:` lines verbatim through compaction.
+**Rules:** Max 20 lines per entry. **NEVER modify, edit, or replace existing changelog entries — always prepend a NEW entry below H1, even if one already exists for today's date** (stacked same-date entries are fine; the topmost is the latest). Sole scoped exception: the Phase 4 History Compaction phase may replace committed older entries with ledger lines per the retention-compaction master. Never read full history — consult only the most recent `## <date>` entry. Report honestly if no improvements found. **Normalization:** after prepending, run `python3 src/user/claude-code/scripts/changelog_normalize.py docs/changelog/claude-code/skills/<skill-name>.md --artifact-name <skill-name>` — it fixes H1, strips H2 suffixes, renames non-standard H3s, deletes extras, truncates over 20 lines, applied ONLY to the new entry just prepended, and refuses to write (nonzero exit) if the change would touch any prior entry. **Trial / Drift convention:** if a cycle included a scientific trial, prepend `Trial: <hypothesis> → <outcome>` as the first line inside `### Summary`; if a cycle applied a genetic-drift substitution (per the Genetic-Drift Operator), prepend a parallel `Drift: <neutral variation applied> → <outcome>` line in the same `### Summary`. The retention-compaction policy preserves both `Trial:` and `Drift:` lines verbatim through compaction.
 
 ---
 
@@ -136,19 +140,21 @@ All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (crea
 
 **Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard skill byte budget (legacy line-based carve-out retired; the byte budget accommodates this file).
 
-**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `agents/team-lead.md` Rule 7.)
+**Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, address the `reason` and re-request. No response → see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `src/user/claude-code/agents/team-lead.md` Rule 7.)
 
 ### Crash & Stall Recovery
 
 Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
 
 - **Re-spawn exactly once** with the `-r2` suffix, supplying a `Resume context:` block that lists (a) the prior partial report, (b) the task ID to claim, (c) the target file.
-- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
+<!-- CANONICAL:SECOND-FAILURE-RECOVERY:BEGIN -->
+- **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → write `"UNAVAILABLE: <name> failed twice"` as the entire content of that auditor's `{scratchpad}/phase0/<name>.md` (its findings-token value) so the Phase 1 Read-by-path stays valid.
+<!-- CANONICAL:SECOND-FAILURE-RECOVERY:END -->
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
 ### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
 
-Spawn SEVEN agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-skill), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-skill), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution. From the captured blocks the orchestrator materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — before spawning Phase 1.
+Spawn SEVEN agents in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-skill), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-skill), `innovation-scanner` (distinguished-engineer), and `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED. Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, and `{model_routing_findings}` for Phase 1 template substitution. **At Phase 0 completion the orchestrator Writes each captured block to its own file** `{scratchpad}/phase0/<auditor>.md` — one per auditor: `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor` — so Phase 1 reviewers Read them by path instead of receiving ~7 full reports inline-pasted (a large token cut on multi-agent runs). **A SKIPPED (pre-flight step 8) or UNAVAILABLE (Crash & Stall Recovery) auditor still gets its file — write the literal sentinel string as the file's entire content** — so all 7 paths always exist and Phase 1 never special-cases a missing file. From the captured blocks the orchestrator also materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — before spawning Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -186,7 +192,7 @@ The Phase 2 teammate:
    accurate references, correct agent types in templates, consistent argument handling
 4. Marks task completed and reports structured recommendations
 
-**After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `skills/`, `.claude/skills/`, `agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
+**After completion**, the orchestrator executes renames (reference updates scoped to LIVE definition files only — `src/user/claude-code/skills/`, `.claude/skills/`, `src/user/claude-code/agents/`; never changelogs/pitfalls/prose), applies coherence fixes via Edit,
 and updates changelogs for affected skills. Apply each parity-bound fix flagged in Phase 1 as the identical OLD→NEW to ALL family members in one turn, then verify byte-identity (`grep -h '^<shared-line>' <files> | sort -u` returns a single line).
 
 **Speciation / extinction gate (highest blast radius).** Speciation (new skill) and extinction (retiring a redundant skill) are gated Phase 2 events requiring an EVIDENCED trigger — never arbitrary. **Speciation** fires on *cladogenesis* (one skill's traits serve two divergent phenotypes producing role-confusion stalls — `TeammateIdle` clustering, scope-citing shutdown-rejections → split) or *niche colonization* (a recurring fitness gap no genome absorbs within the per-skill byte budget (pre-flight step 4) → new skill). **Extinction** fires on redundancy (two skills, highly overlapping genomes, low combined fitness → retire one). Both are architectural decisions requiring BOTH the Scientific Trial Protocol **operator HARD GATE** AND **vote** consensus before any create/retire. **Biodiversity invariant (S3):** before any CULL or extinction, identify the niche's defining behavior keyword (a capability keyword or rule name, NOT a CANONICAL tag — that matches every family carrier) and `grep -lE '<niche-token>' .claude/skills/*/SKILL.md src/user/claude-code/skills/*/SKILL.md` excluding the culled organism; the carrier-count is the remaining provider-file count — if it would reach 0 (monoculture), the CULL is BLOCKED pending a docs-researcher confirmation that the platform made the niche obsolete. Do NOT create or retire any organism in this skill — that is a future cycle's gated action.
@@ -199,7 +205,9 @@ and updates changelogs for affected skills. Apply each parity-bound fix flagged 
 
 Gate: `TaskList()` shows the Phase 2 task `completed`, ALL Phase 2 fixes applied by the orchestrator, AND the `coherence-reviewer` shut down per lifecycle rules. Only then spawn a single read-only `disambiguation-reviewer` (`subagent_type="distinguished-engineer"`) over the post-coherence skill family and assign the Phase 3 task — disambiguation reasons over the *post-coherence* genome so it never re-litigates a fix coherence is still applying.
 
+<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:BEGIN -->
 **Boundary (the load-bearing distinction — every finding must satisfy both arms or it routes to Phase 2 instead):** a Phase 3 finding's targets each independently PASS every Phase 2 coherence invariant (references resolve, CANONICAL bytes match within family, role claims map to a real owner, ladders/names spelled consistently) yet still FAIL clarity (a competent reader or routing classifier could confuse two concepts, read one instruction two ways, or be unable to name the single owner of a responsibility). A target that FAILS a coherence invariant is a Phase 2 finding, not Phase 3.
+<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:END -->
 
 **Mechanism (read-only-reviewer → orchestrator-applies, same shape as Phase 2 — teammates never edit):** the reviewer Reads the freshly-coherent skill files (`.claude/skills/*/SKILL.md`, `src/user/claude-code/skills/*/SKILL.md`), emits structured disambiguation findings, and the orchestrator applies every edit (Read each target in-session before its first Edit; one Edit per finding; any finding touching a CANONICAL block or shared frontmatter applied family-wide in lockstep with byte-identity verification). The reviewer reports `No disambiguation findings.` when the family is clean — the stage always spawns its reviewer and no-ops cleanly. Shut down the `disambiguation-reviewer` per the orchestrator-driven `shutdown_request` protocol before the next phase.
 
@@ -237,9 +245,9 @@ Source: **§8 Docs Research — tokenized template** in `evolve-phase0-templates
 Agent(name="docket-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
 
 Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
-usage in `.claude/skills/` and `skills/`.
+usage in `.claude/skills/` and `src/user/claude-code/skills/`.
 
-Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree.
+Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree. SendMessage the orchestrator the report verbatim.
 ```
 
 ### Phase 0: Historical Audit (one block per target skill)
@@ -273,7 +281,7 @@ Source: **§5 Bug Audit — shared template** in `evolve-phase0-templates.md` (n
 ### Phase 1: @staff-engineer (Review & Improve)
 
 Spawn one teammate per target skill. Substitute `<name>`, `<skill-path>`, `{byte_count}`,
-`{mode}`, `{today_date}`, `{verified_goal}`, and `{experience_feedback}` for each.
+`{mode}`, `{today_date}`, `{verified_goal}`, `{experience_feedback}`, and `{scratchpad}` for each.
 
 ```
 Agent(name="review-<name>", subagent_type="staff-engineer", model="opus", prompt="...")
@@ -288,28 +296,18 @@ Experience feedback: {experience_feedback}
 
 ## Context
 
-Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/claude-code/skills/<name>.md, docs/spec/ selectively, other skill files via ranged Read of the relevant section (both .claude/skills/ and skills/; a blanket 80-line cap can hide a cross-file contract past line 80). Prioritize the operator experience feedback below.
+Date: {today_date} (for changelog). Read latest changelog entry from docs/changelog/claude-code/skills/<name>.md, docs/spec/ selectively, other skill files via ranged Read of the relevant section (both .claude/skills/ and src/user/claude-code/skills/; a blanket 80-line cap can hide a cross-file contract past line 80). Prioritize the operator experience feedback below.
 
-## Claude Code Documentation Research
-{docs_research_findings}
-
-## Docket CLI Audit Findings
-{docket_audit_findings}
-
-## Historical Audit Findings
-{historical_audit_findings}
-
-## Innovation Suggestions
-{innovation_findings}
-
-## Model Routing Audit Findings
-{model_routing_findings}
-
-## Bug Audit Findings
-{bug_audit_findings}
-
-## Repetition Audit Findings
-{repetition_audit_findings}
+## Phase 0 Audit Findings — READ THESE PATHS (not pasted inline)
+Your Phase 0 inputs are materialized on disk, one file per auditor. Read each before your task:
+- `{scratchpad}/phase0/docs-researcher.md` — Claude Code Documentation Research
+- `{scratchpad}/phase0/docket-auditor.md` — Docket CLI Audit
+- `{scratchpad}/phase0/historical-auditor.md` — Historical Audit (find your own skill's block — strongest signal)
+- `{scratchpad}/phase0/innovation-scanner.md` — Innovation Suggestions
+- `{scratchpad}/phase0/model-routing-auditor.md` — Model Routing Audit
+- `{scratchpad}/phase0/bug-auditor.md` — Bug Audit (GLOBAL scope)
+- `{scratchpad}/phase0/repetition-auditor.md` — Repetition Audit (GLOBAL scope)
+A file whose entire content is `SKIPPED: …` or `UNAVAILABLE: …` (or a missing/empty file) means that auditor produced no usable findings — treat it as an empty block, nothing to verify from it.
 > **Phase 0 findings are SIGNALS-TO-VERIFY, never accepted facts.** Before any CHANGE relies on a Docket CLI command, frontmatter field, or feature claim from the audit blocks above, re-confirm it against ground truth (`<cmd> --help` for Docket; Grep/Read the codebase for a feature/pattern). A change built on a fabricated "verified" finding is reject-class — the #1 recurring cross-skill failure (e.g. a prior audit claimed `docket issue state`/`stuck` and a close `-r/--reason` flag that do not exist).
 > Prioritize the Suggested focus areas from your skill's block; cite example session refs in the `CONTEXT:` field of any CHANGE driven by historical signals. Model routing changes MUST be grounded in measured distribution data from Model Routing Audit Findings — do NOT propose routing changes without evidence citations.
 
@@ -333,7 +331,7 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions in TWO ORDERED PASSES. P
 - **Read-only** — analyze and recommend only; orchestrator applies all edits.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 - **No peer-to-peer SendMessage** — orchestrator is the only relay.
-- **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name AND which root: `.claude/skills/` or `skills/`), (b) scope expansion beyond target, or (c) blocker.
+- **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name AND which root: `.claude/skills/` or `src/user/claude-code/skills/`), (b) scope expansion beyond target, or (c) blocker.
 
 ## Output Format
 ### Summary
@@ -367,7 +365,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
    correct agent types in templates, consistent conventions and argument handling
 4. Check cross-communication: verify orchestrator-to-teammate SendMessage trigger completeness, flag hub-and-spoke patterns (>50% routing through one agent)
 5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the byte-symmetric CANONICAL:IMPACT-CLASS block — innovation-scanner is now single-homed in evolve-phase0-templates.md §7 and no longer compared). Flag any drift.
-6. Verify the historical-auditor Mimir note is present in the §3a and §3b historical variants in `evolve-phase0-templates.md` — do NOT flag structural differences as drift (the historical-auditor variants are intentionally asymmetric; presence of the note is the only check).
+6. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check mimir-note` (non-zero exit = the historical-auditor Mimir note is missing from one or more of the §3a/§3b/§3c historical variants in `evolve-phase0-templates.md`; mechanizes the manual eyeball — do NOT flag structural differences as drift, the historical-auditor variants are intentionally asymmetric, presence of the note is the only check). Flag any MISSING result.
 
 ## Output Format
 ### Renames
@@ -389,7 +387,7 @@ Surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recomm
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
 **No sub-agents** — do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation. When your review is complete, SendMessage the orchestrator with the complete Output Format block verbatim.
 
-**Charter & boundary (do not restate — apply as defined):** your charter is the **Phase 3 Disambiguation charter** CANONICAL block in the Phase 3: Disambiguation workflow section above (the three dimensions + the coherence-vs-disambiguation framing). The **two-arm boundary test** is the **Boundary** paragraph there: a kept finding PASSES every Phase 2 coherence invariant (Arm 1) yet still FAILS clarity (Arm 2); a finding failing Arm 1 is coherence-class — report it under "Coherence-Class (route to Phase 2)", not as a DISAMBIG.
+**Charter & boundary (do not restate — apply as defined):** your charter is the **Phase 3 Disambiguation charter** CANONICAL block in `.claude/skills/evolve-skills/SKILL.md` §Phase 3: Disambiguation — Read it there; it is NOT in this prompt (the three dimensions + the coherence-vs-disambiguation framing). The **two-arm boundary test** is the **Boundary** paragraph there: a kept finding PASSES every Phase 2 coherence invariant (Arm 1) yet still FAILS clarity (Arm 2); a finding failing Arm 1 is coherence-class — report it under "Coherence-Class (route to Phase 2)", not as a DISAMBIG.
 
 ## Task
 1. Read ALL skill files in .claude/skills/*/SKILL.md and src/user/claude-code/skills/*/SKILL.md (the freshly-coherent, post-Phase-2 genome).

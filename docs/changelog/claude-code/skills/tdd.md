@@ -1,5 +1,33 @@
 # Changelog: tdd
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+
+### Summary
+Phase 2 coherence: relocated the 7-line TDD-specific insert (planning-consumer provenance, ephemerality, explicit Skill(verify-ac) note) from inside CANONICAL:SAVE_AND_RETURN to immediately below its END marker — content verbatim-preserved, block restored to byte-parity with adr/prd/ux-spec.
+
+### Changes
+- SAVE_AND_RETURN block now hashes identical across the 4 doc skills, matching evolve-coherence D4's "byte-identical within each set" invariant and enabling future manifest registration.
+
+### Dimensions Evaluated
+Coherence (CANONICAL parity).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 4 history compaction)
 
 ### Summary
@@ -232,34 +260,6 @@ All 8; Over-Engineering HIGHEST (no trim slack without breaking format-authority
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO-OP verdict. allowed-tools (Glob+Grep) verified consistent with doc-authoring siblings and used in body; cross-references correct; no unescaped $-digit; description 269 chars. Stale 2026-06-04 entry (claimed Glob/Grep removal not reflected in live file or siblings) noted as historical artifact — entries immutable, live state correct.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no trim slack at 302/500); Coherence (COUPLING → 5 skills verified).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +290,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-08: Added Authoring §5 verify-embedded-claims step (adr parity); trimmed §4 Mermaid restatement + §1 tail; net +5 (303/500).
 - 2026-06-09: Closed cross-project verified-claim pitfalls in Authoring §5 + §11(c); trimmed 2 redundant security Failure-Mode rows; net +0 (303/500).
 - 2026-06-09: Mythos/Fable-5 cycle audit — NO-OP; 3 cross-repo signals already encoded (regex-AC, scope-bounded verified claims, named-source-vs-live-artifact).
+- 2026-06-09: Full-cycle audit NO-OP — allowed-tools/cross-refs/description verified consistent with siblings; stale 2026-06-04 entry noted as historical artifact (entries immutable).
+- 2026-06-09: Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.

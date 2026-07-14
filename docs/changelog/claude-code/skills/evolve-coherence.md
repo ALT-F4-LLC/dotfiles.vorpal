@@ -1,5 +1,21 @@
 # Changelog: evolve-coherence
 
+## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+
+### Summary
+Phase 2 coherence: D4 rubric re-grounded against the live CANONICAL carrier map — HARVEST single-homing, BANNER-outsider whitelist, orchestrator-family enumeration; EVOLUTION-MODEL lockstep.
+
+### Changes
+- D4 #2: HARVEST claim corrected to single-homed in evolve-phase0-templates.md §2 (was: 3 skill carriers — false, would emit 3 phantom missing-carrier findings).
+- D4 #2: BANNER outsiders now review-and-comment + session-metrics (+ team-doctrine no-banner-by-design); orchestrator family enumerates all identical carriers.
+- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
+
+### Dimensions Evaluated
+Coherence (carrier-set accuracy, CANONICAL parity).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 3 disambiguation pass)
 
 ### Summary

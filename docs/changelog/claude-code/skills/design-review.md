@@ -1,5 +1,33 @@
 # Changelog: design-review
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-05-29..2026-05-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
+
+### Summary
+Phase 3 disambiguation (evolve-skills cycle): doubled-panel dispatch verb no longer implies re-spawning the persistent ux-advisor (lockstep with design-qa).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Doubling Rule — "spawns `ux-advisor` + one ephemeral" → "dispatches … persistent `ux-advisor` via SendMessage (CLOSED-set name, never re-spawned) + one ephemeral via `Agent()`" — same two-reading failure as design-qa; applied in the same turn per the family's Doubling-Rule shape-sync note
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary
@@ -244,34 +272,6 @@ Coherence (report-emission family COUPLING placement + text parity).
 ### Rename
 No rename.
 
-## 2026-05-30
-
-### Summary
-Aligned the Doubling Rule with team-lead.md Rule 8: design review defaults to a single ux-advisor (opt up to doubled per Rule 8 triggers) rather than ≥2-by-default. Canonical ephemeral name design-review-{N}. Net 0.
-
-### Changes
-- Doubling Rule: default-doubled framing → default-single/opt-up-doubled per team-lead.md Rule 8; ephemeral `design-review-2` → `design-review-{N}`. Applied in lockstep with design-qa and code-review (shared inversion).
-
-### Dimensions Evaluated
-Coherence (HIGHEST — Rule 8 default + canonical naming), Over-Engineering (no trim; net 0), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Harmonized the silent-completion self-check framing with the report-emission skill family (Phase 2 coherence).
-
-### Changes
-- Self-check reframed to "the calling agent MUST self-check," dropping the self-referential "to the calling agent" destination (now peer/team-lead per trigger). Matches code-review/verify; resolves the deferred Phase-1 "leaf skill can't SendMessage" objection without deleting the load-bearing reminder. [Phase 2 coherence item 3]
-
-### Dimensions Evaluated
-Cross-skill coherence; instruction accuracy.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +286,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Handoff — verdict-routing unified across self-check/Save & Return/Next Steps; hub-and-spoke violation fixed; non-existent @ux-designer-author removed. Net 0.
 - 2026-05-28: Coherence — dead `docs/tdd/reviewer-doubling-lifecycle.md` refs → `agents/team-lead.md` Rule 8 + step 14. Net 0.
 - 2026-05-29: OE — Validation check #2: 3 sub-bullets → 1 enforceable line. Net -3.
+- 2026-05-29: Harmonized silent-completion self-check framing with report-emission family — "MUST self-check" (peer/team-lead), resolved Phase-1 SendMessage objection.
+- 2026-05-30: Aligned Doubling Rule with team-lead.md Rule 8 (default-single, opt-up-doubled); ephemeral name design-review-2 → design-review-{N}.

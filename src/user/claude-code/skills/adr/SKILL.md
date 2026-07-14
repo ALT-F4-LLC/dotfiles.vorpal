@@ -115,8 +115,8 @@ malformed frontmatter.
 
 5. **ADR numbering** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh docs/adr` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
    — the shared doc-number allocation + citation-hijack script (also used by
-   `agents/distinguished-engineer.md`, `agents/staff-engineer.md`, and
-   `agents/security-engineer.md` when hand-authoring ADRs outside this skill).
+   `src/user/claude-code/agents/distinguished-engineer.md`, `src/user/claude-code/agents/staff-engineer.md`,
+   and `src/user/claude-code/agents/security-engineer.md` when hand-authoring ADRs outside this skill).
    1. On success (exit 0), stdout is `{next_num}` (4-digit zero-padded) — the next
       available number. The script has already skipped any candidate already cited
       elsewhere in the repo under a different slug (citation-hijack) even though no

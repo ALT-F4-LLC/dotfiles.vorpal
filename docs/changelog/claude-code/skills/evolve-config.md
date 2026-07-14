@@ -1,5 +1,36 @@
 # Changelog: evolve-config
 
+## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
+
+### Summary
+Phase 3 disambiguation (evolve-skills cycle): charter pointer made self-resolving; two spawn-prompt openers no longer read as delegation instructions. Findings: 3 → 3 sub
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 3 template charter citation names `.claude/skills/evolve-config/SKILL.md` §Phase 3 (was a dangling "section above")
+- AMPLIFY[SUBSTANTIVE]: Phase 2/3 spawn-prompt openers "Use the @staff-engineer agent to X" → direct imperative "X" — the old form reads as a delegation instruction to the recipient, contradicting the template's own no-sub-agents rule; siblings already use the imperative
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+
+### Summary
+Phase 2 coherence: corrected the six→five CANONICAL-block self-description (HARVEST is single-homed in evolve-phase0-templates.md §2, not carried here); fixed two dead `agents/` root references; EVOLUTION-MODEL lockstep.
+
+### Changes
+- Phase-2 workflow prose + spawn template no longer instruct reviewers to find a nonexistent in-file HARVEST block (phantom-drift hazard).
+- Shutdown-protocol team-lead.md citation and biodiversity-invariant grep scope now use `src/user/claude-code/agents/`.
+- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
+
+### Dimensions Evaluated
+Coherence (carrier-set accuracy, reference accuracy, CANONICAL parity).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 3 disambiguation pass)
 
 ### Summary

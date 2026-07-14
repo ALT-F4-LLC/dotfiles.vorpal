@@ -1,13 +1,31 @@
 #!/usr/bin/env python3
-"""Byte-symmetry linter for the evolve-agents/evolve-skills parity-locked block.
+"""Byte-symmetry linter for parity-locked CANONICAL blocks shared across the
+evolve-agents / evolve-skills / evolve-config skill family.
 
-Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: the CANONICAL:IMPACT-CLASS
-block that must be byte-identical between evolve-agents/SKILL.md and evolve-skills/SKILL.md
-modulo an established set of agent<->skill noun substitutions. Normalizes the evolve-agents
-block into skill vocabulary, then diffs it against the evolve-skills block verbatim. The
-historical/repetition/bug/model-routing auditor templates, the Innovation Scan and Docs
-Research Phase-0 templates, and the HARVEST block are all single-homed in
-evolve-phase0-templates.md and so are symmetric by construction — no longer compared here.
+Mechanizes evolve-agents/SKILL.md Phase 2 coherence check 5: each CANONICAL block that
+must be byte-identical across its declared carrier files, modulo an established set of
+agent<->skill noun substitutions where applicable. Each carrier's block is normalized
+(default: identity) and diffed against a single reference carrier's block verbatim.
+
+- ``impact-class``: CANONICAL:IMPACT-CLASS, carriers evolve-agents + evolve-skills,
+  reference evolve-skills, evolve-agents normalized into skill vocabulary. The
+  historical/repetition/bug/model-routing auditor templates, the Innovation Scan and
+  Docs Research Phase-0 templates, and the HARVEST block are all single-homed in
+  evolve-phase0-templates.md and so are symmetric by construction — no longer compared
+  here.
+- ``trial-protocol``: CANONICAL:SCIENTIFIC-TRIAL-PROTOCOL, carriers evolve-agents +
+  evolve-skills + evolve-config, reference evolve-agents, pure byte-identity (no
+  vocabulary substitution — the block carries no agent/skill/config-specific vocab).
+- ``disambiguation-charter``, ``phase3-boundary``, ``genetic-drift``,
+  ``second-failure-recovery``, ``operator-prompts``: five more real-bug-risk spines
+  (DKT-288) shared verbatim across evolve-agents + evolve-skills + evolve-config, all
+  pure byte-identity (no agent/skill/config-specific vocab in any of the five blocks).
+- ``mimir-note`` (mode ``presence``, DKT-287): mechanizes the Phase 2 coherence-reviewer's
+  manual eyeball check that the historical-auditor Mimir note is present in each of the
+  §3a/§3b/§3c historical-audit variants in evolve-phase0-templates.md. Unlike the
+  byte-identity checks above, this only verifies pattern presence per section — the
+  historical-auditor variants are intentionally structurally asymmetric.
+
 The calibrated normalizer below is retained as the reference inventory of known
 agent<->skill divergences (evolve-phase0-templates.md §1), though the sole remaining
 CANONICAL:IMPACT-CLASS block carries no agent/skill vocabulary and so needs no substitution.
@@ -21,8 +39,12 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULT_AGENTS_FILE = ".claude/skills/evolve-agents/SKILL.md"
-DEFAULT_SKILLS_FILE = ".claude/skills/evolve-skills/SKILL.md"
+FILES = {
+    "agents": ".claude/skills/evolve-agents/SKILL.md",
+    "skills": ".claude/skills/evolve-skills/SKILL.md",
+    "config": ".claude/skills/evolve-config/SKILL.md",
+    "phase0-templates": "src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md",
+}
 
 # Tokens that CONTAIN "agent"/"skill" but must never be rewritten by the generic
 # word-level substitution below (identifiers, tool-call syntax, role names shared
@@ -115,29 +137,147 @@ CHECKS = {
         "start": r"^<!-- CANONICAL:IMPACT-CLASS:BEGIN -->$",
         "end": r"^<!-- CANONICAL:IMPACT-CLASS:END -->$",
         "include_end": True,
+        "files": ["agents", "skills"],
+        "reference": "skills",
+        "normalize": {"agents": normalize},
+    },
+    "trial-protocol": {
+        "start": r"^<!-- CANONICAL:SCIENTIFIC-TRIAL-PROTOCOL:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:SCIENTIFIC-TRIAL-PROTOCOL:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "disambiguation-charter": {
+        "start": r"^<!-- CANONICAL:DISAMBIGUATION-CHARTER:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "phase3-boundary": {
+        "start": r"^<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "genetic-drift": {
+        "start": r"^<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "second-failure-recovery": {
+        "start": r"^<!-- CANONICAL:SECOND-FAILURE-RECOVERY:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:SECOND-FAILURE-RECOVERY:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "operator-prompts": {
+        "start": r"^<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:BEGIN -->$",
+        "end": r"^<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:END -->$",
+        "include_end": True,
+        "files": ["agents", "skills", "config"],
+        "reference": "agents",
+        "normalize": {},
+    },
+    "mimir-note": {
+        "mode": "presence",
+        "file": "phase0-templates",
+        "sections": [
+            ("3a", r"^### 3a\. Historical Audit", r"^### 3b\. Historical Audit"),
+            ("3b", r"^### 3b\. Historical Audit", r"^### 3c\. Historical Audit"),
+            ("3c", r"^### 3c\. Historical Audit", r"^## 4\. Repetition Audit"),
+        ],
+        "presence_pattern": r"Mimir metrics \(supplementary context",
     },
 }
 
-ALL_CHECKS = ["impact-class"]
+ALL_CHECKS = [
+    "impact-class",
+    "trial-protocol",
+    "disambiguation-charter",
+    "phase3-boundary",
+    "genetic-drift",
+    "second-failure-recovery",
+    "operator-prompts",
+    "mimir-note",
+]
 
 
-def run_check(name: str, agents_text: str, skills_text: str) -> "tuple[bool, list[str]]":
-    """Returns (symmetric, unified_diff_lines) for one named check."""
-    spec = CHECKS[name]
-    agents_block = extract_block(agents_text, spec["start"], spec["end"], spec["include_end"])
-    skills_block = extract_block(skills_text, spec["start"], spec["end"], spec["include_end"])
-    normalized_agents = normalize(agents_block)
-    if normalized_agents == skills_block:
-        return True, []
-    diff = list(
-        difflib.unified_diff(
-            normalized_agents.splitlines(keepends=True),
-            skills_block.splitlines(keepends=True),
-            fromfile=f"{name} (evolve-agents, normalized)",
-            tofile=f"{name} (evolve-skills)",
+def _check_labels(spec: dict) -> "list[str]":
+    """FILES labels a check's spec requires loaded, regardless of mode."""
+    if spec.get("mode", "parity") == "presence":
+        return [spec["file"]]
+    return spec["files"]
+
+
+def _run_parity_check(name: str, spec: dict, file_texts: "dict[str, str]") -> "tuple[bool, list[str]]":
+    """Returns (symmetric, unified_diff_lines) for one parity-mode check.
+
+    ``file_texts`` maps each file label declared in the check's ``files`` list to
+    that file's full text. Every non-reference block is diffed against the
+    reference block (each-vs-reference, not all-pairs) after applying that file's
+    normalizer (default: identity)."""
+    reference_label = spec["reference"]
+    normalizers = spec["normalize"]
+    blocks = {
+        label: extract_block(file_texts[label], spec["start"], spec["end"], spec["include_end"])
+        for label in spec["files"]
+    }
+    reference_block = blocks[reference_label]
+    diff = []
+    symmetric = True
+    for label in spec["files"]:
+        if label == reference_label:
+            continue
+        normalized = normalizers.get(label, lambda text: text)(blocks[label])
+        if normalized == reference_block:
+            continue
+        symmetric = False
+        diff.extend(
+            difflib.unified_diff(
+                normalized.splitlines(keepends=True),
+                reference_block.splitlines(keepends=True),
+                fromfile=f"{name} ({label}, normalized)",
+                tofile=f"{name} ({reference_label})",
+            )
         )
-    )
-    return False, diff
+    return symmetric, diff
+
+
+def _run_presence_check(spec: dict, file_texts: "dict[str, str]") -> "tuple[bool, list[str]]":
+    """Returns (present, report_lines) for one presence-mode check.
+
+    Each declared section is extracted (header to next header) and checked for a
+    match against ``presence_pattern``. Structural differences between sections
+    are never flagged — only absence of the pattern."""
+    text = file_texts[spec["file"]]
+    pattern = re.compile(spec["presence_pattern"])
+    missing = [
+        label
+        for label, start, end in spec["sections"]
+        if not pattern.search(extract_block(text, start, end, include_end=False))
+    ]
+    return not missing, [f"missing: {label}\n" for label in missing]
+
+
+def run_check(name: str, file_texts: "dict[str, str]") -> "tuple[bool, list[str]]":
+    """Returns (ok, report_lines) for one named check, dispatching on the check's
+    ``mode`` (default: ``parity``, mechanized as unified-diff-vs-reference; the
+    new ``presence`` mode verifies a pattern is present in each declared section)."""
+    spec = CHECKS[name]
+    if spec.get("mode", "parity") == "presence":
+        return _run_presence_check(spec, file_texts)
+    return _run_parity_check(name, spec, file_texts)
 
 
 def main(argv=None) -> int:
@@ -146,37 +286,49 @@ def main(argv=None) -> int:
         "--check",
         choices=ALL_CHECKS + ["all"],
         default="all",
-        help="which parity-locked block to verify (default: all)",
+        help="which parity-locked block(s) to verify (default: all)",
     )
-    parser.add_argument("--agents-file", default=DEFAULT_AGENTS_FILE, help="path to evolve-agents/SKILL.md")
-    parser.add_argument("--skills-file", default=DEFAULT_SKILLS_FILE, help="path to evolve-skills/SKILL.md")
+    parser.add_argument("--agents-file", default=FILES["agents"], help="path to evolve-agents/SKILL.md")
+    parser.add_argument("--skills-file", default=FILES["skills"], help="path to evolve-skills/SKILL.md")
+    parser.add_argument("--config-file", default=FILES["config"], help="path to evolve-config/SKILL.md")
+    parser.add_argument(
+        "--phase0-templates-file",
+        default=FILES["phase0-templates"],
+        help="path to evolve-phase0-templates.md",
+    )
     args = parser.parse_args(argv)
 
-    agents_path = Path(args.agents_file)
-    skills_path = Path(args.skills_file)
-    for path in (agents_path, skills_path):
-        if not path.is_file():
-            print(f"error: file not found: {path}", file=sys.stderr)
-            return 2
-
-    agents_text = agents_path.read_text()
-    skills_text = skills_path.read_text()
+    paths = {
+        "agents": Path(args.agents_file),
+        "skills": Path(args.skills_file),
+        "config": Path(args.config_file),
+        "phase0-templates": Path(args.phase0_templates_file),
+    }
 
     checks = ALL_CHECKS if args.check == "all" else [args.check]
+    needed_labels = sorted({label for name in checks for label in _check_labels(CHECKS[name])})
+
+    for label in needed_labels:
+        if not paths[label].is_file():
+            print(f"error: file not found: {paths[label]}", file=sys.stderr)
+            return 2
+
+    file_texts = {label: paths[label].read_text() for label in needed_labels}
 
     any_drift = False
     for name in checks:
         try:
-            symmetric, diff = run_check(name, agents_text, skills_text)
+            ok, report = run_check(name, file_texts)
         except ValueError as exc:
             print(f"error: {name}: {exc}", file=sys.stderr)
             return 2
-        if symmetric:
-            print(f"{name}: OK (symmetric)")
+        presence_mode = CHECKS[name].get("mode", "parity") == "presence"
+        if ok:
+            print(f"{name}: OK ({'present' if presence_mode else 'symmetric'})")
         else:
             any_drift = True
-            print(f"{name}: DRIFT")
-            sys.stdout.writelines(diff)
+            print(f"{name}: {'MISSING' if presence_mode else 'DRIFT'}")
+            sys.stdout.writelines(report)
 
     return 1 if any_drift else 0
 

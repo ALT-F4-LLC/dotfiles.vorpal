@@ -1,5 +1,49 @@
 # Changelog: evolve-skills
 
+## 2026-07-13 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-10..2026-06-19) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 3 disambiguation pass)
+
+### Summary
+Phase 3 disambiguation: the Phase 3 spawn template's charter pointer is now self-resolving for the spawned reviewer. Findings: 1 → 1 sub
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 3 template — charter citation "in the workflow section above" → explicit `.claude/skills/evolve-skills/SKILL.md` §Phase 3 file+section pointer; "above" is a dangling deictic in the delivered prompt (this cycle's spawn needed an ad-hoc brief repair)
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass)
+
+### Summary
+Phase 2 coherence: retired six stale pre-`src/`-migration `skills/`/`agents/` root references (one behavioral: single-skill arg validation aborted on src-only skills); EVOLUTION-MODEL lockstep; docket-auditor report-back line.
+
+### Changes
+- Replaced dead `skills/`/`agents/` roots with `src/user/claude-code/...` in pre-flight step 5 (behavioral fix), DOCS-PATHS-LOCAL, shutdown protocol, Phase-2 rename scope, docket-auditor template, Phase-1 template, SendMessage trigger.
+- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
+- docket-auditor template: explicit SendMessage report-back line.
+
+### Dimensions Evaluated
+Coherence (reference accuracy, CANONICAL parity, cross-communication).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 4 history compaction)
 
 ### Summary
@@ -177,55 +221,6 @@ Coherence (stall threshold, biodiversity correctness defect).
 ### Rename
 No rename.
 
-## 2026-06-19
-
-### Summary
-Drift: Changelog-Format read-latest clause reworded (seed 6f0ab504, pick 5) → applied. Drift: Crash & Stall "Re-spawn ONCE" bullet reworded (pick 6) → applied. BUG fix (docket-auditor scope), 2 wording AMPLIFYs, day= alias folded net-zero. File stays 498/500.
-
-### Changes
-- CULL: docket-auditor cross-reference `agents/` → `.claude/skills/` and `skills/` — copy-paste artifact from evolve-agents; evolve-skills never audits agents/ (confirmed via DOCS-PATHS-LOCAL).
-- AMPLIFY: Phase 1 template "first ~80 lines only" → explicit `Read(limit=80)` — machine-followable constraint.
-- AMPLIFY: Phase 2 task 4 "SendMessage trigger gaps between dependent skills" → "orchestrator-to-teammate SendMessage trigger completeness" — skills don't message each other.
-- AMPLIFY: accept `day=N` as alias for `days=N` in Argument Handling and Parsing (this session's `/evolve-skills day=7` would abort under prior parsing).
-- DRIFT: Changelog-Format read-latest clause reworded — neutral, pick 5, net 0.
-- DRIFT: Crash & Stall "Re-spawn ONCE" → "Re-spawn exactly once" — neutral, pick 6, net 0.
-
-### Dimensions Evaluated
-All 8; Coherence (BUG fix, Phase 2 task-4 accuracy); Actionability (Read(limit=80), day= alias); Over-Engineering (net 0). Parity: docket-auditor template is NOT byte-symmetry-bound with evolve-agents (scope correctly differs).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 coherence (lockstep with evolve-agents): Phase 1 apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, and 1:1 Edit↔CHANGE apply-discipline. Line-neutral (498 lines, appended to the existing step-2 line); post-apply byte-identity verified (sort -u = 1 line across both files).
-
-### Changes
-- AMPLIFY: apply step 2 — in-session Read-before-Edit, re-Read after grep/mv targeting content strings, one Edit per approved CHANGE — cited signal: two re-fired team-lead pitfalls ("File has not been read yet" ×2 in 2026-06-09 cycle; stray [MARKER-KEEP] token).
-
-### Dimensions Evaluated
-Coherence (lockstep pair byte-identical), Completeness (apply-discipline gaps closed), budget (498/500 unchanged). Checks 5-9 all PASS (HARVEST/innovation/model-routing/Mimir parity; drift heading exempt as approved).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Drift: heading "Phase 0: Historical Audit (per-skill)" → "(one block per target skill)" (seed 124bf552, i=229) → applied, net 0.
-Drift: DOCS-PATHS-LOCAL Reads-list reorder (seed 124bf552, i=230) → proposed (operator declined — CANONICAL-maintained block).
-No reviewer edits (498 lines, net 0). Clean audit (0 corrections/errors/stalls). Dimension-5 cost-tier routing NO-OP: no skill pins model= in templates (grep-confirmed); routing is team-lead.md's authority; fable-monoculture already fixed at routing layer (90a3694).
-
-### Changes
-- None applied beyond drift. Parity-bound apply-discipline gaps (Read-before-Edit after grep/mv, 1:1 Edit↔CHANGE guard, $N live-command exemption) routed to Phase 2 lockstep with evolve-agents, gated on family-wide offset (498/500).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no CULL earns a cited signal; drift/trial traits unmeasured → RETAIN); Orchestration (Dimension 5 verified NO-OP); Coherence (3 parity-bound gaps → Phase 2).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +280,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: No edits (491 lines) — days= plumbing complete; 3 innovation suggestions rejected as over-engineering/regression.
 - 2026-06-10: Compacted 8 entries (2026-05-17..2026-05-30) into Compacted history per ADR 0001.
 - 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL, selection dispositions, Genetic-Drift Operator, Scientific Trial Protocol.
+- 2026-06-10: Drift-only cycle — heading & DOCS-PATHS-LOCAL reorder trials, no reviewer edits (498 lines). | Drift: heading "Phase 0: Historical Audit (per-skill)" → "(one block per target skill)" (seed 124bf552, i=229) → applied, net 0. | Drift: DOCS-PATHS-LOCAL Reads-list reorder (seed 124bf552, i=230) → proposed (operator declined — CANONICAL-maintained block).
+- 2026-06-10: Phase 2 coherence (lockstep evolve-agents) — apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, 1:1 Edit↔CHANGE discipline; line-neutral.
+- 2026-06-19: BUG fix (docket-auditor scope) + day= alias + Read(limit=80) AMPLIFYs, drift rewords, net-zero. | Drift: Changelog-Format read-latest clause reworded (seed 6f0ab504, pick 5) → applied. | Drift: Crash & Stall "Re-spawn ONCE" bullet reworded (pick 6) → applied. | DRIFT: Changelog-Format read-latest clause reworded — neutral, pick 5, net 0. | DRIFT: Crash & Stall "Re-spawn ONCE" → "Re-spawn exactly once" — neutral, pick 6, net 0.

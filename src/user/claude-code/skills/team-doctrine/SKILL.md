@@ -23,7 +23,7 @@ that file only when a LOCAL-copy pointer sends you here (TDD conformance check, 
 drift audit, or an evolve-* cycle). A second class is the spawn-TEMPLATE store (`evolve-phase0-templates.md`): paste-at-spawn-time, token-contracted bodies with NO `CANONICAL:*-LOCAL` copies, Read once by an evolve-* orchestrator at Phase-0 spawn and token-substituted — never mirrored into an agent file. Never invoke this skill; there is nothing to execute, and
 doing so would violate R2 Skill Invocation Restraint (`references/runtime-discipline.md`). Frontmatter `disable-model-invocation: true` enforces exactly that — it blocks model-initiated `Skill()` calls only, not operator invocation: an operator-typed `/team-doctrine` still resolves and harmlessly renders this index.
 
-**Index maintenance:** when adding/removing a `references/*.md` file, update the table below in the same change — `ls references/*.md | wc -l` MUST equal the table's data-row count.
+**Index maintenance:** when adding/removing a `references/*.md` file, update the table below in the same change — `ls references/*.md | wc -l` MUST equal the table's data-row count. Run `bash src/user/claude-code/scripts/doctrine_check.sh` (repo: `src/user/claude-code/scripts/doctrine_check.sh`) to verify this mechanically — it also checks (b) every `CANONICAL:*-LOCAL` `Master:` pointer resolves to an existing file and (c) `CANONICAL:<TAG>` blocks stay byte-identical across the carriers listed in `src/user/claude-code/scripts/doctrine_check_manifest.tsv` (append new tag/carrier rows there, e.g. for a newly parity-locked block). Read-only; exits 1 if any arm fails.
 
 | Reference file | Master for | Cited by (LOCAL-copy consumers) |
 |---|---|---|

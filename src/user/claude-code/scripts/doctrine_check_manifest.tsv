@@ -1,0 +1,26 @@
+# doctrine_check.sh manifest — parity-locked CANONICAL:<TAG> blocks that must
+# stay byte-identical across every carrier file listed for that tag.
+# Format: TAG<TAB>path/to/carrier.md   (paths are repo-root relative)
+# Append new tags/carriers as new lines; comments (#) and blank lines are
+# ignored. A tag needs at least 2 carrier lines to be checkable.
+PITFALLS	src/user/claude-code/agents/ux-designer.md
+PITFALLS	src/user/claude-code/agents/project-manager.md
+PITFALLS	src/user/claude-code/agents/senior-engineer.md
+PITFALLS	src/user/claude-code/agents/security-engineer.md
+PITFALLS	src/user/claude-code/agents/sdet.md
+PITFALLS	src/user/claude-code/agents/distinguished-engineer.md
+PITFALLS	src/user/claude-code/agents/staff-engineer.md
+PITFALLS	src/user/claude-code/skills/team-doctrine/references/pitfalls.md
+EVOLUTION-MODEL	.claude/skills/evolve-agents/SKILL.md
+EVOLUTION-MODEL	.claude/skills/evolve-skills/SKILL.md
+EVOLUTION-MODEL	.claude/skills/evolve-coherence/SKILL.md
+EVOLUTION-MODEL	.claude/skills/evolve-config/SKILL.md
+DISAMBIGUATION-CHARTER	.claude/skills/evolve-agents/SKILL.md
+DISAMBIGUATION-CHARTER	.claude/skills/evolve-config/SKILL.md
+DISAMBIGUATION-CHARTER	.claude/skills/evolve-skills/SKILL.md
+# .claude/skills/evolve-config/SKILL.md:49 carries a deliberately-specialized
+# (non-identical — appends a config-blast-radius sentence) variant of the
+# Scientific Trial Protocol paragraph. Intentionally NOT a registered carrier
+# below — omission is by design, not an oversight.
+SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-agents/SKILL.md
+SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-skills/SKILL.md

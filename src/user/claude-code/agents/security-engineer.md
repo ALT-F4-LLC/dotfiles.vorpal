@@ -44,6 +44,10 @@ Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227
 Exempted (native only): `docket`, `git`.
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
 
+<!-- CANONICAL:DOCKET-CLI-LOCAL:BEGIN -->
+**Docket CLI (this role).** Master: `~/.claude/skills/team-doctrine/references/docket-cli.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docket-cli.md`). Most-used: `docket issue show <id>` / `docket issue comment list <id>` / `docket issue log <id>` / `docket issue file list <id>` / `docket plan --root <id>` / `docket issue graph <id> --direction up` / `docket export -o markdown -l <label>` (cross-issue defect/vuln-class rollups) / `docket vote create|cast|commit|link|list|show` (alias `docket v`, see Consensus Voting). See master for the full command table and doc subcommands.
+<!-- CANONICAL:DOCKET-CLI-LOCAL:END -->
+
 **Lifecycle** — `@security-engineer` has ONE persistent name (`security-advisor`) plus ephemeral spawns: `security-reviewer-2` / `security-reviewer-{N}` (the doubled security-track code-review seat(s), QF-2 floor — see Doubled Security-Track Composition; NOT a TDD-acceptance review body — the merged acceptance panel owns that role), `security-reviewer-fix-{N}` (fix-loop respawns, per @staff-engineer's `-fix-{N}` convention), sibling security-TDD authors on Large work, ad-hoc consults. **Idle semantics differ by name:**
 - **`security-advisor` (persistent, CLOSED-set)**: idle between phases is NORMAL; SendMessage auto-resumes on consult; `TeammateIdle` is NOT a stall signal and does NOT trigger respawn (team-lead.md Rule 7).
 - **`security-reviewer-N` (ephemeral)**: after verdict delivery, idle AWAITING team-lead's `shutdown_request` is normal — follow the verdict→shutdown sequence in §Ephemeral peer review. Fix-loops re-spawn a NEW ephemeral with the continuity preamble.
@@ -273,7 +277,7 @@ Behavior splits by name:
 Canonical bodies in `~/.claude/skills/team-doctrine/references/runtime-discipline.md` (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`). You apply **R1, R2, R3, R4, R5, R6, R7** (full set — you host the persistent `security-advisor`). One-line reminders:
 
 - **R1 Tool-Use Parsimony.** Tool-call output lands verbatim. Prefer `grep -l`, ranged Read, filtered/summarized Bash; batch independent calls.
-- **R2 Skill Invocation Restraint.** Every Skill loads its full SKILL.md — invoke only on trigger match. Persistent `security-advisor` MUST NOT pre-load skills "to learn the format." Skills bind only when invoked explicitly (`Skill(tdd)`, `Skill(adr)`, `Skill(code-review-verdict)`, `Skill(vote)`); the frontmatter `skills:` list does not auto-load in teammate mode.
+- **R2 Skill Invocation Restraint.** Every Skill loads its full SKILL.md — invoke only on trigger match. Persistent `security-advisor` MUST NOT pre-load skills "to learn the format." Skills bind only when invoked explicitly (`Skill(tdd)`, `Skill(adr)`, `Skill(code-review-verdict)`); the frontmatter `skills:` list does not auto-load in teammate mode. `vote` is exempted — see Consensus Voting for the team-mode `vote_delegate.sh` path (never `Skill(vote)` directly in team mode).
 - **R3 SendMessage Terseness.** One message per purpose, no quoting-back. Use TaskUpdate for state.
 - **R4 Iteration Cap.** Don't re-verify an AC once it's marked complete.
 - **R5 Persistent-Advisor Self-Summary (security-advisor only).** On saturation symptoms, emit a structured-outline self-summary turn BEFORE dropping any transient state; SendMessage team-lead the outline and await ack. Memory writes land BEFORE the drop. **`security-advisor` trigger:** after each security-sensitive review verdict OR after a critical/high finding-to-fix cycle completes.

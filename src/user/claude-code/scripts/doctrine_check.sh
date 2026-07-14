@@ -1,0 +1,219 @@
+#!/bin/bash
+# Deterministic doctrine-consistency checks for team-doctrine, mechanizing 3
+# manual checks found violated/unverified this cycle: (a) team-doctrine/
+# SKILL.md's reference-file index parity, (b) every CANONICAL:*-LOCAL
+# "Master:" pointer resolves to an existing file (both the ~/.claude and
+# repo: forms), (c) CANONICAL:<TAG> blocks stay byte-identical across the
+# carriers listed in doctrine_check_manifest.tsv. Read-only; exits 1 if any
+# arm fails.
+set -uo pipefail
+
+usage() {
+    echo "Usage: doctrine_check.sh" >&2
+    echo "  Runs 3 check arms (index parity, pointer resolution, CANONICAL" >&2
+    echo "  tag byte-parity) against the current repo state. Emits a PASS/FAIL" >&2
+    echo "  line per arm (failure reasons indented above it) and exits 0 if" >&2
+    echo "  every arm passes, 1 if any arm fails." >&2
+    exit 1
+}
+
+if [ "$#" -ne 0 ]; then
+    usage
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "doctrine_check.sh: not inside a git repository" >&2
+    exit 1
+}
+cd "$REPO_ROOT"
+
+# Overridable via env for test fixtures (tests/doctrine_check.test.sh); unset
+# in normal use so real-repo defaults below apply.
+: "${SKILL_MD:=src/user/claude-code/skills/team-doctrine/SKILL.md}"
+: "${REFERENCES_DIR:=src/user/claude-code/skills/team-doctrine/references}"
+: "${MANIFEST:=src/user/claude-code/scripts/doctrine_check_manifest.tsv}"
+: "${POINTER_SEARCH_DIRS:=src/user/claude-code .claude/skills}"
+
+for required in "$SKILL_MD" "$REFERENCES_DIR" "$MANIFEST"; do
+    if [ ! -e "$required" ]; then
+        echo "doctrine_check.sh: required path missing: ${required}" >&2
+        exit 1
+    fi
+done
+
+overall_status=0
+
+# ---------------------------------------------------------------------------
+echo "== Arm (a): team-doctrine/SKILL.md index parity =="
+
+disk_count=$(ls -1 "$REFERENCES_DIR"/*.md 2>/dev/null | wc -l | tr -d ' ')
+row_count=$(grep -cE '^\| `references/' "$SKILL_MD")
+arm_a_ok=1
+
+for f in "$REFERENCES_DIR"/*.md; do
+    base=$(basename "$f")
+    if ! grep -qF "references/${base}\`" "$SKILL_MD"; then
+        echo "  - ${base} is on disk but not cited as a table row in ${SKILL_MD}"
+        arm_a_ok=0
+    fi
+done
+
+for base in $(grep -oE '`references/[A-Za-z0-9_.-]+\.md`' "$SKILL_MD" | tr -d '`' | sed 's#references/##' | sort -u); do
+    if [ ! -f "${REFERENCES_DIR}/${base}" ]; then
+        echo "  - ${base} is cited in the SKILL.md table but missing from ${REFERENCES_DIR}/"
+        arm_a_ok=0
+    fi
+done
+
+if [ "$disk_count" -ne "$row_count" ]; then
+    echo "  - ${disk_count} reference file(s) on disk != ${row_count} table row(s) in ${SKILL_MD}"
+    arm_a_ok=0
+fi
+
+if [ "$arm_a_ok" -eq 1 ]; then
+    echo "PASS: ${disk_count} reference files == ${row_count} table rows, all cross-referenced"
+else
+    echo "FAIL: index parity violated (see above)"
+    overall_status=1
+fi
+
+# ---------------------------------------------------------------------------
+echo
+echo "== Arm (b): CANONICAL Master: pointer resolution =="
+
+home_root="$HOME/.claude"
+home_checkable=1
+if [ ! -d "$home_root" ]; then
+    echo "  - NOTE: ${home_root} not found on this machine — skipping ~/.claude existence checks (repo: paths still checked)"
+    home_checkable=0
+fi
+
+master_re='Master: `([^`]+)`'
+repo_re='repo: `([^`]+)`'
+
+pointer_total=0
+pointer_fail=0
+
+hits=$(grep -rn "Master: \`" $POINTER_SEARCH_DIRS --include="*.md" 2>/dev/null || true)
+if [ -n "$hits" ]; then
+    while IFS= read -r LINE; do
+        [ -z "$LINE" ] && continue
+        pointer_total=$((pointer_total + 1))
+
+        FILEPATH="${LINE%%:*}"
+        REST="${LINE#*:}"
+        LINE_NO="${REST%%:*}"
+        CONTENT="${REST#*:}"
+
+        home_path=""
+        repo_path=""
+        [[ "$CONTENT" =~ $master_re ]] && home_path="${BASH_REMATCH[1]}"
+        [[ "$CONTENT" =~ $repo_re ]] && repo_path="${BASH_REMATCH[1]}"
+
+        line_ok=1
+        if [ -z "$repo_path" ]; then
+            echo "  - ${FILEPATH}:${LINE_NO} — no repo: path found on this Master: line"
+            line_ok=0
+        elif [ ! -f "$repo_path" ]; then
+            echo "  - ${FILEPATH}:${LINE_NO} — repo path does not exist: ${repo_path}"
+            line_ok=0
+        fi
+
+        if [ "$home_checkable" -eq 1 ] && [ -n "$home_path" ]; then
+            expanded="${home_path/#\~/$HOME}"
+            if [ ! -f "$expanded" ]; then
+                echo "  - ${FILEPATH}:${LINE_NO} — home path does not exist: ${home_path}"
+                line_ok=0
+            fi
+        fi
+
+        [ "$line_ok" -eq 0 ] && pointer_fail=$((pointer_fail + 1))
+    done <<< "$hits"
+fi
+
+if [ "$pointer_total" -eq 0 ]; then
+    echo "FAIL: 0 Master: pointer(s) found under ${POINTER_SEARCH_DIRS} — a drift-guard that checks nothing is not a pass"
+    overall_status=1
+elif [ "$pointer_fail" -eq 0 ]; then
+    echo "PASS: ${pointer_total} Master: pointer(s) resolved"
+else
+    echo "FAIL: ${pointer_fail} of ${pointer_total} Master: pointer(s) failed to resolve"
+    overall_status=1
+fi
+
+# ---------------------------------------------------------------------------
+echo
+echo "== Arm (c): CANONICAL tag byte-parity (${MANIFEST}) =="
+
+hash_of() {
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 | awk '{print $1}'
+    else
+        sha256sum | awk '{print $1}'
+    fi
+}
+
+tags=$(grep -vE '^[[:space:]]*#' "$MANIFEST" | grep -vE '^[[:space:]]*$' | awk -F'\t' '{print $1}' | sort -u)
+
+for tag in $tags; do
+    files=$(awk -F'\t' -v t="$tag" '$1==t {print $2}' "$MANIFEST")
+
+    manifest_line_count=0
+    while IFS= read -r f; do
+        [ -n "$f" ] && manifest_line_count=$((manifest_line_count + 1))
+    done <<< "$files"
+
+    if [ "$manifest_line_count" -eq 0 ]; then
+        echo "FAIL: ${tag} has 0 carrier line(s) with a path in ${MANIFEST} — cannot be checked"
+        overall_status=1
+        continue
+    fi
+
+    if [ "$manifest_line_count" -lt 2 ]; then
+        echo "WARN: ${tag} has only ${manifest_line_count} carrier(s) in ${MANIFEST} — parity requires >=2 to compare anything, skipping"
+        continue
+    fi
+
+    ref_hash=""
+    ref_file=""
+    tag_ok=1
+    carrier_count=0
+    for f in $files; do
+        [ -z "$f" ] && continue
+        carrier_count=$((carrier_count + 1))
+        if [ ! -f "$f" ]; then
+            echo "  - ${tag} carrier missing from disk: ${f}"
+            tag_ok=0
+            continue
+        fi
+        block=$(sed -n "/CANONICAL:${tag}:BEGIN/,/CANONICAL:${tag}:END/p" "$f")
+        if [ -z "$block" ]; then
+            echo "  - ${tag} block not found in ${f}"
+            tag_ok=0
+            continue
+        fi
+        h=$(printf '%s' "$block" | hash_of)
+        if [ -z "$ref_hash" ]; then
+            ref_hash="$h"
+            ref_file="$f"
+        elif [ "$h" != "$ref_hash" ]; then
+            echo "  - ${tag} block in ${f} differs from ${ref_file}"
+            tag_ok=0
+        fi
+    done
+    if [ "$tag_ok" -eq 1 ]; then
+        echo "PASS: ${tag} byte-identical across ${carrier_count} carrier(s)"
+    else
+        echo "FAIL: ${tag} parity violated (see above)"
+        overall_status=1
+    fi
+done
+
+# ---------------------------------------------------------------------------
+echo
+if [ "$overall_status" -eq 0 ]; then
+    echo "doctrine_check.sh: all arms PASS"
+else
+    echo "doctrine_check.sh: one or more arms FAILED"
+fi
+exit "$overall_status"

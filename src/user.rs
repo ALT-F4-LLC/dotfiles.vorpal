@@ -349,7 +349,7 @@ impl UserEnvironment {
         );
         let claude_code_config = deny_sensitive_paths(
             claude_code_config,
-            |p| format!("Write({p})"),
+            |p| format!("Edit({p})"),
             SENSITIVE_PATHS.iter().copied(),
         );
         let claude_code_config = claude_code_config

@@ -49,8 +49,10 @@ per this policy.
 
 ## Pitfalls policy (harvest-then-compact)
 
-The agent-facing authoring contract stays append-only: agents never edit or remove prior
-entries. Boundedness moves to the evolve-agents History Compaction phase. Trigger:
+The agent-facing authoring contract stays append-only for hand edits: agents never
+hand-edit or remove prior entries; the sole sanctioned agent-side mutation is
+distill-time ledgering (see that section below). Boundedness moves to the evolve-agents
+History Compaction phase. Trigger:
 decoupled from file size — pitfalls compaction runs in any evolve-agents cycle whose
 Phase 1 harvest-outcome report exists, against every entry that qualifies below.
 (Rationale: the documented 3-cycle signal re-fire came from a 21-line file, so a
@@ -60,10 +62,27 @@ the cycle's final report as undispositioned backlog.) An entry is compactable on
 ALL hold: (a) it received a Phase 1 triage disposition (applied / already-encoded /
 Docket-tracked) in this or a previous cycle, per the cycle's harvest-outcome report; (b)
 its FULL text is byte-present in `git show HEAD:<file>` (full-entry containment per
-invariant check 1); (c) it predates the current cycle. **Entry boundary** (for selection
-and parity counting): a new entry begins at any column-0 line matching `^## ` or `^- `
-outside the ledger section; it extends to the line before the next such line or EOF; the
-H1, any intro line, the ledger heading, and ledger lines are structural, not entries.
+invariant check 1); (c) it predates the current cycle. **Entry boundary and
+ledger-section grammar** (for selection and parity counting; this is the one grammar
+shared by the harvest-then-compact compactor above and the distill-time ledgering script
+below): the ledger section is the column-0 heading line `## Harvested ledger
+(compacted)`, followed by at most one blank line, followed by a contiguous run of ledger
+lines — column-0 lines matching `^- \[[0-9]{4}-[0-9]{2}-[0-9]{2}\] `. The section ends at
+the first line after the heading that is neither that single leading blank nor a ledger
+line; at most one such section per file. Writer layout invariant (both paths): no blank
+lines between ledger lines; exactly one blank line before the heading, one between the
+heading and the first ledger line, one after the last ledger line. A new entry begins at
+any column-0 line matching `^## ` or `^- ` that is OUTSIDE the ledger section and is not
+the H1; it extends to the line before the next entry start, the ledger heading, or EOF;
+trailing blank lines belong to the entry; the H1, any intro line, the ledger heading, and
+ledger lines are structural, not entries. A `^- [YYYY-MM-DD]` line outside the ledger
+section is an ordinary entry start — grammar alone never classifies a line as a ledger
+line; only section membership does (this is load-bearing: the centralized
+distinguished-engineer file has live entries whose first line matches the ledger-line
+date-bracket grammar). Section placement on first creation: immediately after the H1 line
+(or at the very top of a no-H1 file). Seam-blank normalization: pre-existing blank
+line(s) at the insertion seam are consumed and the layout invariant re-emits exactly one
+at each seam position; all original non-blank content stays byte-unchanged.
 Each compacted entry becomes one ledger line under a `## Harvested ledger (compacted)`
 section placed immediately below the H1:
 
@@ -76,6 +95,51 @@ section placed immediately below the H1:
 Undispositioned entries are never touched. Cross-project pitfalls files (other repos
 discovered by the Phase 0 scan) remain read-only ingest — this repo's cycles never edit
 them. The ledger doubles as the already-harvested marker, ending the re-fire loop.
+
+## Distill-time ledgering (edit-time path)
+
+Trigger: the same change that encodes an existing pitfalls entry's resolution into a
+git-tracked definition — the fix lands in code, and the pitfalls entry that named the gap
+is superseded in the same edit. Distill-time ledgering is the sanctioned mechanism for
+retiring that entry immediately, rather than waiting for the next evolve-agents Phase 4
+compaction cycle.
+
+The script (`pitfalls_distill.sh`) is the sole mechanism for this path — no hand edits.
+It removes the selected entry's narrative text and replaces it with one ledger line under
+the `## Harvested ledger (compacted)` section (created on first use per the placement
+rule above), mirroring the batch-path ledger format. The script reports the removed
+entry's full text on stdout; the caller MUST mirror it into the change's durable record
+(commit message, Docket comment, or equivalent) so the narrative is never silently lost.
+
+Both homes are in scope: in-repo `.claude/agent-memory/<role>/pitfalls.md` and
+centralized `~/.claude/agent-memory/<role>/pitfalls.md`. The centralized home carries one
+additional guard: a centralized entry's `--encoded-in` target must sit under
+`src/user/claude-code/` (the deploying tree) — otherwise the script exits 8 rather than
+ledgering an entry whose "encoded" definition lives outside the tree that actually ships.
+
+Docket-tracked exclusion: entries disposed as Docket-tracked are NOT distillations — the
+fix is tracked but not yet landed, so the entry stays live for the Phase 4 safety net
+until the tracked work merges. Distill-time ledgering only ever applies to entries whose
+resolution is already a git-tracked definition on disk.
+
+Invariants E0–E4 (edit-time path), mapped against the batch-path checks in the
+Lossy-safety invariant section below:
+
+| Compactor check (batch path) | Edit-time equivalent (this path) |
+|---|---|
+| (0) pure-addition precondition | Not needed: single atomic run on one entry; unrelated content is carried over byte-unchanged by construction (E0) and the write is crash-atomic |
+| (1) full-entry HEAD containment | **E1 full-text preservation** — removed entry emitted verbatim on stdout; caller MUST mirror it into the change's durable record; `RECOVERY-CHANNEL: git-history` reported when HEAD containment additionally holds. HEAD containment cannot be a *precondition* here — the files are untracked today and fresh entries are legitimately uncommitted; making it a hard gate would recreate the exact dead-mechanism failure this design fixes |
+| — (new) | **E2 encoded-resolution precondition** — the lesson's operative content verifiably persists in a git-*tracked* definition (`--encoded-in` tracked + `--evidence` hit; centralized home additionally requires the deploying tree, exit 8) before the narrative may be removed; the tracked definition becomes the durable carrier, the ledger line the tombstone |
+| (2) diff-shape proof | **E0 reconstruction-equivalence** — new file = old file with exactly (i) the selected entry span removed, (ii) the ledger line (+ section heading on first use) inserted per the layout, and (iii) the insertion-seam blank normalized to exactly one; all other bytes identical |
+| (3) parity formula | **E3** — entries −1, ledger lines +1, both per the shared grammar (section-terminated, not position-guessed) |
+| (4) Trial/Drift preservation | **E4** — identical rule, verbatim in the ledger line, precedence over the 160-char cap |
+| (5) budget | Not needed — removal strictly shrinks the file |
+
+Safety-net relationship: the evolve-agents Phase 4 compaction cycle is UNCHANGED by this
+section — it selects only un-ledgered entries, remains in-repo-only, and stays inert
+until the operator commits the memory tree. Distill-time ledgering and Phase 4
+compaction share one ledger format and one entry-boundary grammar (above) but run on
+independent triggers.
 
 ## Lossy-safety invariant (mechanically proven per run)
 

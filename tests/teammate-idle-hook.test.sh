@@ -3,7 +3,7 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-HOOK="${SCRIPT_DIR}/../src/user/teammate-idle-hook.sh"
+HOOK="${SCRIPT_DIR}/../src/user/claude-code/hooks/teammate-idle-hook.sh"
 
 PASS=0
 FAIL=0
@@ -115,6 +115,63 @@ case_empty_stdin() {
     assert_system_message_nonempty "$out" "empty stdin: non-empty generic systemMessage"
 }
 
+case_agent_id_resolves_real_teammate_name() {
+    local fixture_dir out rc
+    fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/idlehook.XXXXXX") || {
+        printf 'FATAL: could not create scratch dir for agent_id resolution test\n' >&2
+        exit 2
+    }
+    mkdir -p "${fixture_dir}/session/subagents"
+    : > "${fixture_dir}/session.jsonl"
+    : > "${fixture_dir}/session/subagents/agent-asenior-engineer-1234567890abcdef.jsonl"
+
+    out=$(jq -n --arg tp "${fixture_dir}/session.jsonl" \
+        '{agent_id:"asenior-engineer-1234567890abcdef",agent_type:"team-lead",transcript_path:$tp}' \
+        | bash "$HOOK"); rc=$?
+    assert_exit_zero "$rc" "agent_id resolves real teammate: exit 0"
+    assert_valid_json "$out" "agent_id resolves real teammate: valid JSON"
+    assert_system_message_contains "$out" "senior-engineer" "agent_id resolution overrides ambient agent_type='team-lead' (DKT-262)"
+
+    rm -rf "$fixture_dir"
+}
+
+case_agent_id_unresolvable_falls_back_to_agent_type() {
+    local fixture_dir out rc
+    fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/idlehook.XXXXXX") || {
+        printf 'FATAL: could not create scratch dir for agent_id fallback test\n' >&2
+        exit 2
+    }
+    mkdir -p "${fixture_dir}/session/subagents"
+    : > "${fixture_dir}/session.jsonl"
+
+    out=$(jq -n --arg tp "${fixture_dir}/session.jsonl" \
+        '{agent_id:"anonexistent-9999999999999999",agent_type:"security-engineer",transcript_path:$tp}' \
+        | bash "$HOOK"); rc=$?
+    assert_exit_zero "$rc" "agent_id unresolvable: exit 0"
+    assert_system_message_contains "$out" "security-engineer" "agent_id unresolvable falls back to agent_type"
+
+    rm -rf "$fixture_dir"
+}
+
+case_transcript_already_subagent_shaped() {
+    local fixture_dir out rc
+    fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/idlehook.XXXXXX") || {
+        printf 'FATAL: could not create scratch dir for passthrough test\n' >&2
+        exit 2
+    }
+    mkdir -p "${fixture_dir}/subagents"
+    local own_jsonl="${fixture_dir}/subagents/agent-astaff-engineer-abcdef1234567890.jsonl"
+    : > "$own_jsonl"
+
+    out=$(jq -n --arg tp "$own_jsonl" \
+        '{agent_id:"astaff-engineer-abcdef1234567890",agent_type:"team-lead",transcript_path:$tp}' \
+        | bash "$HOOK"); rc=$?
+    assert_exit_zero "$rc" "already subagent-shaped transcript_path: exit 0"
+    assert_system_message_contains "$out" "staff-engineer" "passthrough resolution from an already subagent-shaped transcript_path"
+
+    rm -rf "$fixture_dir"
+}
+
 case_injection_safety() {
     local sentinel_dir sentinel out rc
     sentinel_dir=$(mktemp -d "${TMPDIR:-/tmp}/idlehook.XXXXXX") || {
@@ -149,6 +206,9 @@ case_agent_type_present
 case_no_agent_type
 case_malformed_stdin
 case_empty_stdin
+case_agent_id_resolves_real_teammate_name
+case_agent_id_unresolvable_falls_back_to_agent_type
+case_transcript_already_subagent_shaped
 case_injection_safety
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

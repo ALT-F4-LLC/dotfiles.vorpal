@@ -12,15 +12,16 @@ description: >
   pointer in an agent file cites; there is no trigger phrase that should load this into
   context speculatively.
 allowed-tools: ["Read"]
+disable-model-invocation: true
 ---
 
 # Team Doctrine
 
-A reference home, not a workflow. Every agent file carries a compact `CANONICAL:<NAME>-LOCAL`
+A reference home, not a workflow. Most files here are doctrine masters: each agent file carries a compact `CANONICAL:<NAME>-LOCAL`
 copy of the doctrine below and cites the matching file here as its maintained master — Read
 that file only when a LOCAL-copy pointer sends you here (TDD conformance check, master-vs-copy
-drift audit, or an evolve-* cycle). Never invoke this skill; there is nothing to execute, and
-doing so would violate R2 Skill Invocation Restraint (`references/runtime-discipline.md`).
+drift audit, or an evolve-* cycle). A second class is the spawn-TEMPLATE store (`evolve-phase0-templates.md`): paste-at-spawn-time, token-contracted bodies with NO `CANONICAL:*-LOCAL` copies, Read once by an evolve-* orchestrator at Phase-0 spawn and token-substituted — never mirrored into an agent file. Never invoke this skill; there is nothing to execute, and
+doing so would violate R2 Skill Invocation Restraint (`references/runtime-discipline.md`). Frontmatter `disable-model-invocation: true` enforces exactly that — it blocks model-initiated `Skill()` calls only, not operator invocation: an operator-typed `/team-doctrine` still resolves and harmlessly renders this index.
 
 **Index maintenance:** when adding/removing a `references/*.md` file, update the table below in the same change — `ls references/*.md | wc -l` MUST equal the table's data-row count.
 
@@ -42,3 +43,4 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/authoring-verification-gates.md` | Authoring verification gates for TDD/review authors (executable-claim, negative-claim re-grep, insertion-anchor, byte-budget) | `staff-engineer.md`, `distinguished-engineer.md` |
 | `references/docket-cli.md` | Docket CLI command reference (byte-exact vs live `docket --help`, version b59dd2f) | `project-manager.md`, `sdet.md`, `senior-engineer.md` |
 | `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md` |
+| `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates — auditors plus evolve-agents' SDLC Role Research (§9) (spawn-TEMPLATE store: paste-at-spawn-time, token-contracted; NOT a doctrine master with LOCAL copies) | `evolve-agents`, `evolve-skills`, `evolve-config` skills (Read-once at Phase-0 spawn) |

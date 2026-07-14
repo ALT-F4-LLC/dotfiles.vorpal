@@ -1,5 +1,53 @@
 # Changelog: evolve-agents
 
+## 2026-07-13 (Phase 3 disambiguation pass)
+
+### Summary
+Phase 3 disambiguation: Rules §2's read-only invariant now names its sole exception.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Rules §2 — "Teammates are read-only" read as exceptionless, contradicting Phase 4's `history-compactor` (spawned with Edit; applies/reverts its own compaction edits) — now names the compactor as sole exception
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass)
+
+### Summary
+Phase 2 coherence: extended the Template-sourcing Read-once/ABORT convention to explicitly cover the relocated §9 SDLC Role Research template.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Template-sourcing paragraph now names §9 as single-homed under the same Read-once and ABORT rules — closes the gap where only the four auditor templates were enumerated after today's relocation
+
+### Dimensions Evaluated
+Coherence, Orchestration & Agent Teams, Completeness
+
+### Rename
+No rename.
+
+## 2026-07-13
+
+### Summary
+Applied 1 accepted Docket finding (DKT-266a, folded into §8's future content, not applied here) + 5 verified Phase-0 findings from a scoped evolve-skills cycle. Relocated the SDLC Role Research template to team-doctrine's new §9 (clean, ~5.4KB relief, file now 58,666/65,000 bytes). Deferred the Innovation Scan/Docs Research relocation (§7/§8) — blocked by `symmetry_check.py` + tokenization coupling with evolve-skills' own inline copies. Findings: 6 → 6 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: SDLC Role Research inline template (49 lines) → 2-line pointer to `evolve-phase0-templates.md` §9 (I3c; verbatim relocation, evolve-agents-only, no symmetry-gate conflict)
+- AMPLIFY[SUBSTANTIVE]: Wrap-up step 2 — fixed dead-path `find agents` → `find src/user/claude-code/agents` (I5; the over-budget consolidation gate was silently no-oping every cycle)
+- CULL[SUBSTANTIVE]: cut false "currently over 65,000-byte limit" self-budget clause (I6; file was 63,444B, under budget even before this cycle)
+- AMPLIFY[SUBSTANTIVE]: Phase-1 spawn-prompt `## Rules` — added explicit READ-ONLY rule citing the recurring self-edit + fabricated-"applied" failure (H1+H2; 5 Read-before-Edit violations in one session + 3 pitfalls.md entries across team-lead/ux-designer/staff-engineer memories)
+- AMPLIFY[SUBSTANTIVE]: Crash & Stall Recovery — added signal (d) API-error self-report as a faster crash signal (DR1; changelog 2.1.198, verified)
+- AMPLIFY[SUBSTANTIVE]: Crash & Stall Recovery — added nudge-before-respawn step for stuck (not dead) teammates (DR1; same 2.1.198 fix)
+- DEFER: I3 §7 (Innovation Scan) + §8 (Docs Research) relocation — §7 is blocked by `symmetry_check.py`'s hardcoded byte-compare between evolve-agents/evolve-skills inline copies; §8 needs new tokenization ({TARGET_GLOB}, divergent FOCUS AREAS) and only partially completes (evolve-skills still duplicates docs-researcher). Both routed to a dedicated future cycle that can touch evolve-skills/SKILL.md + `symmetry_check.py` atomically.
+
+### Dimensions Evaluated
+Actionability (dead-path bug, stale claim), Orchestration & Agent Teams (crash detection, self-review discipline), Over-Engineering (template consolidation via single-homing).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 4 history compaction)
 
 ### Summary

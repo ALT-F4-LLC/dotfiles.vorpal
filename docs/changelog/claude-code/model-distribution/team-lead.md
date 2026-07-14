@@ -1,5 +1,19 @@
 # Changelog: model-distribution/team-lead
 
+## 2026-07-13
+
+### Summary
+DKT-268 measurement cycle: justified planner's bronze exemption from team-lead.md's silver authoring floor with data. No routing-table edit — operator approved JUSTIFY-RETAIN.
+
+### Routing Changes
+- JUSTIFY-RETAIN: `planner` stays bronze — 29/29 spawns measured sonnet→claude-sonnet-5 (zero drift), 0/21 sessions with a genuine failure-driven respawn (the 19% naming-convention "multiple spawn" rate traced to sequential new planning rounds, not rework), 0 operator corrections, 0 shutdown-rejections. Class-6 quality-mismatch check found no upgrade case: project-manager.md's own frontmatter self-pins sonnet, and its charter routes hard architectural reasoning OUT via the TDD-required gate. No file edit.
+
+### Evidence
+LOCAL: 21 dotfiles-vorpal-git-main sessions, 29 planner spawns (orchestrator-spot-checked: 31 .meta.json files independently found, sample confirmed sonnet). Mimir: available (200), but `claude_code_token_usage` has no per-ephemeral-role `agent_name` granularity — planner's specific cost unisolable; 7d aggregate cost across all agents $5,137.32 (not planner-attributable).
+
+### Rejected
+- Class-6 upgrade (planner → silver): rejected — no demand-anchor support in project-manager.md's own charter; would contradict the role's self-pinned sonnet frontmatter and anti-deliberation doctrine.
+
 ## 2026-07-11
 
 ### Summary

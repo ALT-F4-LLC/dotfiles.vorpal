@@ -1,5 +1,58 @@
 # Changelog: team-doctrine
 
+## 2026-07-13 (Phase 3 disambiguation pass)
+
+### Summary
+Phase 3 disambiguation: scoped the invocation ban, the section-number stability rule, the issue enums, and the byte-exactness claim to their single intended readings.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: SKILL.md — `disable-model-invocation: true` clarified as blocking model-initiated `Skill()` calls only; operator `/team-doctrine` still renders the index
+- AMPLIFY[SUBSTANTIVE]: `evolve-phase0-templates.md` — stable-identifier rule now names who it binds (any editor), why (consumer §-citations break on renumber), and how new sections number (§10+; §7-§8 fillable only by DKT-273)
+- AMPLIFY[SUBSTANTIVE]: `docket-cli.md` — Status/Priorities/Types enums prefixed "Issue" — three status vocabularies (issue enum, doc freeform, vote open/committed/rejected) shared one unlabeled line
+- AMPLIFY[SUBSTANTIVE]: `docket-cli.md` — "byte-exact vs `--help`" scoped to command synopses; `#` annotations and enum/foot-gun lines are editorial, excluded from synopsis-vs-help drift checks
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (Phase 2 coherence pass)
+
+### Summary
+Phase 2 coherence: documented the deliberate §7/§8 reservation (DKT-273) in evolve-phase0-templates.md and corrected the SKILL.md index cell to cover §9.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: `evolve-phase0-templates.md` intro — added never-renumber note: §7-§8 reserved for DKT-273, §6→§9 jump intentional — prevents a future renumber breaking evolve-agents' §9 pointer
+- AMPLIFY[COSMETIC]: SKILL.md index "Master for" cell for `evolve-phase0-templates.md` now names the §9 SDLC Role Research template alongside the auditors
+
+### Dimensions Evaluated
+Coherence, Completeness, Actionability
+
+### Rename
+No rename.
+
+## 2026-07-13
+
+### Summary
+Applied 2 accepted Docket findings (DKT-264, DKT-266b) + 6 verified Phase-0 findings from a scoped evolve-skills cycle; added §9 sdlc-role-researcher template. Deferred I3 §7/§8 (symmetry_check.py + tokenization coupling — needs a dedicated cycle touching evolve-skills/SKILL.md too). Findings: 11 → 9 sub / 0 cos / 0 rej / 2 def / 0 enc
+
+### Changes
+- FIX[SUBSTANTIVE]: `monitor-orchestration.md` — named `docket --watch`/`-w`+`--interval` as explicit Monitor poll primitive (DKT-264; live --help verified)
+- FIX[SUBSTANTIVE]: `evolve-phase0-templates.md` — 5× inline transcript-`find` → `recent_transcripts.sh` (DKT-266b); repo-relative path (undeployed `~/.claude/scripts/` corrected)
+- FIX[SUBSTANTIVE]: `docket-cli.md` — added `vote commit` (D1) + doc `-s/-T` freeform note (D2); live `--help` verified
+- FIX[SUBSTANTIVE]: SKILL.md — `disable-model-invocation: true` (C1); widened charter for spawn-TEMPLATE class + added `evolve-phase0-templates.md` index row (I1; restored 17=17 index-parity, previously violated 17-vs-16)
+- FIX[SUBSTANTIVE]: `shutdown-protocol.md` SP-1b — flattened-shape WRONG variant + request_id-required note (Bug-Audit FIX1; 41 occ/26 sessions)
+- FIX[SUBSTANTIVE]: `docs-paths.md` — repo-root vs `src/user/claude-code/` source-tree clarification (Bug-Audit PREVENT7; 8 sessions)
+- FIX[SUBSTANTIVE]: `evolve-phase0-templates.md` — added §9 sdlc-role-researcher (I3; verbatim relocation from evolve-agents/SKILL.md, enabling a ~5.4KB relief there)
+- DEFER: I3 §7 innovation-scanner (blocked by `symmetry_check.py`'s hardcoded byte-compare) + §8 docs-researcher (tokenization + partial-completion) — both need a dedicated cycle touching evolve-skills/SKILL.md + the script atomically
+
+### Dimensions Evaluated
+Completeness/Actionability (primary), Coherence (index-parity restoration, path convention), Over-Engineering (deferred §7/§8 to avoid a half-applied refactor that breaks the symmetry gate).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 2 coherence pass)
 
 ### Summary

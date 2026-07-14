@@ -35,7 +35,7 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   {"to": "team-lead",
    "message": {"type": "shutdown_response", "request_id": "abc-123", "approve": true}}
   ```
-  Recurred across 18 distinct sessions this cycle (Bug-Audit B1). This is the canonical worked
+  A second recurring variant DROPS the `message` wrapper entirely — e.g. `{"to": "team-lead", "type": "shutdown_response", "approve": true}` (or with `reason`) — equally WRONG for the same reason: `type`/`request_id`/`approve`/`reason` live ONLY inside `message`, never at the top level. `request_id` is REQUIRED inside `message` for BOTH `shutdown_response` and `plan_approval_response` — a reply omitting it cannot be matched to its request (41 occurrences / 26 sessions, Bug-Audit FIX1). Recurred across 18 distinct sessions this cycle (Bug-Audit B1). This is the canonical worked
   example — `team-lead.md`'s LOCAL copy cites this convention as SP-1b without restating it.
   **String-message `summary` is REQUIRED:** when `message` is a plain STRING (not an object), the
   top-level `summary` field is mandatory — a string `message` with no `summary` is harness-rejected

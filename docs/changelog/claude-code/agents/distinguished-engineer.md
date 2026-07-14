@@ -1,5 +1,34 @@
 # Changelog: distinguished-engineer
 
+## 2026-07-13 (DKT-270 Phase 3 disambiguation)
+
+### Summary
+Disambiguated the deep-research sanction: the unexplained `Skill(vote)` restriction-class pointer and the fused "team-lead/operator" routing target. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: glossed "same restriction class as `Skill(vote)`" with the shared class itself (swarm-spawning entry points are main-session-only) — the trailing "no `Workflow` tool" primed a false mechanical reading
+- AMPLIFY[SUBSTANTIVE]: split "team-lead/operator" into "team-lead (team mode) or the operator (standalone)" — the slash-compound hid which target applies when
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-13 (DKT-270 correction)
+
+### Summary
+Corrected the deep-research sanction in the Innovation scanning paragraph — deep-research is a bundled Workflow, not a Skill, and is not directly teammate-invokable. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: replaced the "prefer `Skill(deep-research, ...)` — a registered bundled skill" clause with the Workflow-vs-Skill distinction, the dozens-to-~97 background-subagent fan-out, the no-`Workflow`-tool teammate restriction (same class as `Skill(vote)`), and the route-to-team-lead-or-hand-roll fallback under this role's per-fetch verbatim-quote gates — cited DKT-270 investigation, independently corroborated via code.claude.com/docs/en/workflows
+
+### Dimensions Evaluated
+Actionability.
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary

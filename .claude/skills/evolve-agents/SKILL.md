@@ -130,14 +130,15 @@ Join the session's single implicit team on your first `Agent(name=..., ...)` spa
 | 3 | `disambiguation-reviewer` (`distinguished-engineer`, `gold`) | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` | Spawn after Phase 3 only if a History Compaction gate fires → compact → shut down the compactor (if spawned) before team cleanup |
 
-**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard 65,000-byte skill budget; it is currently over that limit pending a shared-doctrine extraction (tracked in this skill's changelog).
+**Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard 65,000-byte skill budget.
 
 **Shutdown protocol:** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. Teammate replies with `shutdown_response` **addressed to the orchestrator** (never to a peer). If rejected, read the `reason`, address it, then re-request. If no response, see Crash & Stall Recovery. (Orchestrator-originated shutdown is intentional: evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills where ephemeral reviewers AWAIT the orchestrator's `shutdown_request` per `src/user/claude-code/agents/team-lead.md` Rule 7.)
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error; (d) a teammate that dies on an API error self-reports `failed` to the lead — a faster, cleaner crash signal than Monitor-silence heuristics.
 
+- **Nudge before re-spawn (stall only).** For a stuck/idle teammate, one `SendMessage` nudge wakes it to retry immediately — cheaper than a fresh spawn; escalate to `-r2` only if the nudge draws no new tool call within one turn.
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → substitute `"UNAVAILABLE: <name> failed twice"` for its findings token (e.g. `{docs_research_findings}`) so Phase 1 templates stay valid.
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
@@ -203,14 +204,14 @@ The compactor's report MUST evidence, per file and in order, invariant checks 0-
 
 After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
-2. Run `find agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-agent byte budget (pre-flight step 4).
+2. Run `find src/user/claude-code/agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-agent byte budget (pre-flight step 4).
 3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the Findings Ledger outcome (per finding: ID → terminal disposition; substantive-floor result per organism), the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
 
 ---
 
 ## Spawning Templates
 
-**Template sourcing.** The four Phase-0 auditor prompts below (Historical Audit, Repetition Audit, Bug Audit, Model Routing Audit) are single-homed in `src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md`. Read that file ONCE at Phase-0 spawn time; for each auditor, paste the referenced section and substitute this cycle's spawn-time token VALUES: `{TARGET_NOUN}`=`agent`, `{TARGET_NOUN_CAP}`=`Agent`, `{A_TARGET_NOUN}`=`an agent`, `{TARGETS_LINE}`=`Target agents: {target_agents}`, `{MENTION_COUNT_LINE}`=the `@<agent>` mention-count line (reference §1a literal, evolve-agents form), `{PROMQL_LABEL}`=`agent_name`, `{HARVEST_BLOCK}`=the reference's §2 HARVEST block. Runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{target_agents}`) pass through unchanged. If the file or a named section is missing, ABORT the cycle loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt.
+**Template sourcing.** The four Phase-0 auditor prompts below (Historical Audit, Repetition Audit, Bug Audit, Model Routing Audit) are single-homed in `src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md`. Read that file ONCE at Phase-0 spawn time; for each auditor, paste the referenced section and substitute this cycle's spawn-time token VALUES: `{TARGET_NOUN}`=`agent`, `{TARGET_NOUN_CAP}`=`Agent`, `{A_TARGET_NOUN}`=`an agent`, `{TARGETS_LINE}`=`Target agents: {target_agents}`, `{MENTION_COUNT_LINE}`=the `@<agent>` mention-count line (reference §1a literal, evolve-agents form), `{PROMQL_LABEL}`=`agent_name`, `{HARVEST_BLOCK}`=the reference's §2 HARVEST block. Runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{target_agents}`) pass through unchanged. If the file or a named section is missing, ABORT the cycle loudly (`Error: shared Phase-0 template missing: {section}`) — never spawn an auditor with a hand-reconstructed prompt. The SDLC Role Research prompt (§9) is single-homed in the same file — evolve-agents-only, no spawn-time tokens (runtime token `{target_agents}` passes through) — under the same Read-once and ABORT rules.
 
 ### Phase 0: @staff-engineer (Documentation Research)
 
@@ -286,54 +287,7 @@ Source: **§6a Model Routing Audit — tokenized template** in `evolve-phase0-te
 
 ### Phase 0: SDLC Role Research
 
-Substitute `{target_agents}` from `\$ARGUMENTS` or all `src/user/claude-code/agents/*.md`. Never gated by pre-flight step 8's SKIPPED flag (WebSearch-driven, not transcript-mining) — always runs.
-
-```
-Agent(name="sdlc-role-researcher", subagent_type="distinguished-engineer", model="fable", prompt="...")
-
-MISSION: Research real-world, enterprise-scale Software Development Lifecycle (SDLC) role structures and taxonomies as practiced at large/mature engineering organizations, and produce a structured, evidence-grounded comparison against BOTH (a) this repo's persistent agent definitions, and (b) the ephemeral spawn-time-only pseudo-roles defined inside team-lead.md's Per-Role Dispatch Table. Ground every claim in ACTUAL RESEARCH via WebSearch (published engineering career ladders, leveling guides, org-design writeups, SRE/DevOps role definitions, SDET/QA role definitions, security engineering role definitions, PM/TPM role definitions, UX/design role definitions) — do NOT answer from stale training memory alone; cite what you found. This is a STANDING recurring check, not a one-off: industry role taxonomies and this repo's roster both drift over time, so re-run the comparison fresh each cycle rather than assuming a prior cycle's verdict still holds — read the target agents' latest changelog entries first to see what a prior cycle already decided and why, and only re-litigate a settled naming/tier question if new evidence contradicts it.
-
-Target agents: {target_agents}
-
-## Research tasks
-1. Enumerate the standard SDLC/engineering-org role ladder via WebSearch (cite sources): IC track (junior/associate → mid → senior → staff → principal → distinguished/fellow), management track (tech lead, engineering manager, director, VP/CTO), and supporting/adjacent roles (SRE/platform/DevOps, QA/SDET, security/AppSec, architect, PM/TPM, UX/design, UX research, technical writer, release manager, data engineer/DBA, accessibility specialist). One-line definition of scope/seniority signal each.
-2. Gap/overlap analysis: for each standard role, assess whether an EXISTING agent (persistent or ephemeral) already covers that function, is a partial/weak fit, or is a genuine gap. Be honest about near-misses.
-3. Higher-level exploration: evaluate at least one candidate higher-level role (e.g. "principal engineer", "fellow", "VP-Eng-adjacent oversight"). Is there a genuine functional gap TODAY this system lacks (per the Content Gate), or does it duplicate an existing gold-tier/orchestrator charter?
-4. Lower-level exploration: evaluate at least one candidate lower-level role (e.g. "junior/associate engineer", a below-SDET tester). Does the existing bronze/ephemeral tiering already serve this niche, or is there a genuinely distinct executable capability gap?
-5. Other commonly-present SDLC functions not covered above (SRE/platform, technical writer, data engineer, release manager, accessibility, etc.) — assess fit/gap the same way. Most human-org roles will NOT translate to a distinct executable agent role; say so explicitly when a "gap" is better served by an existing agent absorbing a skill/behavior than a whole new role.
-6. Model-tier fit recommendation: for every ADD/CHANGE candidate, propose a model tier (gold/silver/bronze) grounded in a genuine seniority-to-capability mapping. Explicitly call out if the CURRENT roster looks under- or over-diversified relative to task complexity — this feeds `model-routing-auditor`'s and a future `evolve-model-distribution` cycle's class-6 quality-mismatch lane.
-
-## Content Gate (apply before recommending)
-1. Executable — can Claude do this in a stateless session? 2. Behavioral — does removing it change output? 3. Non-redundant — already covered elsewhere? 4. Concrete — specific action/check/output, not aspirational fluff.
-
-## Output Format
-```
-## Standard SDLC Role Ladder (cited)
-<bulleted ladder with 1-line definitions + source>
-
-## Gap/Overlap Analysis
-<one bullet per standard role: COVERED-BY <agent/pseudo-role> | PARTIAL-FIT <agent> — <gap> | GAP — <why it matters>>
-
-## Higher-Level Candidate(s)
-CANDIDATE: <name> | RATIONALE: <genuine gap or duplicate-of, cite the Content Gate check(s) it passes/fails> | SUGGESTED TIER: gold|silver|bronze | DISPOSITION: ADD | REJECT-DUPLICATES-<existing-role>
-
-## Lower-Level Candidate(s)
-CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | REJECT-ALREADY-SERVED-BY-<existing-role/tier>
-
-## Other SDLC Functions Evaluated
-<one bullet per function: ADD-CANDIDATE | ABSORB-INTO-<existing-agent> (skill addition, not new role) | NOT-APPLICABLE-TO-AGENT-CONTEXT — with rationale>
-
-## Model-Tier Diversity Assessment
-<is the current roster genuinely diversified across gold/silver/bronze relative to task complexity, or over-concentrated? cite which agents/pseudo-roles you believe are mis-tiered and why, with a suggested tier>
-
-## Summary Recommendations (ranked)
-1. <ADD|CHANGE|REMOVE> <role/tier> — <one-line why> — <evidence/source>
-...
-```
-
-## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. WebSearch/WebFetch for external research is REQUIRED — do not answer from memory alone; if you cannot verify a claim via search, mark it "unverified — inference only, not measurement" per epistemic discipline. Every finding must cite either a search source or a repo grep/read, not assumption. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
-```
+Source: **§9 SDLC Role Research** in `evolve-phase0-templates.md` (evolve-agents-only; no tokens). Spawns `Agent(name="sdlc-role-researcher", subagent_type="distinguished-engineer", model="fable")`.
 
 ### Phase 0: Repetition Audit
 
@@ -411,6 +365,7 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 8. **Rename**: Only if compelling.
 
 ## Rules
+- **READ-ONLY — never Edit/Write, never commit.** Return every change as an `OLD_STRING`/`NEW_STRING` CHANGE block for the ORCHESTRATOR to apply; do NOT edit your own definition file. Prevents the recurring Phase-1 failure: a reviewer self-edits its target and fabricates an "applied to disk" claim the orchestrator never wrote.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team.
 - **No peer-to-peer SendMessage** — the orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
@@ -499,6 +454,6 @@ Always run this stage — it spawns its reviewer every cycle and no-ops cleanly 
 ## Rules
 
 1. **Always run Phase 2** — even for single-agent improvements.
-2. **Orchestrator-only edits.** Teammates are read-only. Never commit.
+2. **Orchestrator-only edits.** Teammates are read-only — sole exception: the Phase 4 `history-compactor`, spawned with Edit, which applies (and on a failed invariant check reverts) its own compaction edits per the retention-compaction master. Never commit.
 3. **Fail loud.** See Crash & Stall Recovery.
 4. **Clean up.** Shutdown all teammates and clean up the team after wrap-up.

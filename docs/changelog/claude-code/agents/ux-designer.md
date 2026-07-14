@@ -1,5 +1,35 @@
 # Changelog: ux-designer
 
+## 2026-07-13 (DKT-270 Phase 3 disambiguation)
+
+### Summary
+Disambiguated the deep-research sanction: the unexplained `Skill(vote)` restriction-class pointer, the fused "team-lead/operator" routing target, and a "gates" pointer colliding with this file's other named Gates. Findings: 3 → 3 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: glossed "same restriction class as `Skill(vote)`" with the shared class itself (swarm-spawning entry points are main-session-only)
+- AMPLIFY[SUBSTANTIVE]: split "team-lead/operator" into "team-lead (team mode) or the operator (standalone)"
+- AMPLIFY[SUBSTANTIVE]: "per this role's gates" → "under this role's Honest-critique evidence discipline" — this file names several unrelated things "Gate" (Pre-Flight, render/verdict, Liveness-Confirmation); the intended referent (the :33 evidence rules) was never called a gate
+
+### Dimensions Evaluated
+Disambiguation (multi-reading ×2, confusable-name ×1).
+
+### Rename
+No rename.
+
+## 2026-07-13 (DKT-270 correction)
+
+### Summary
+Corrected the deep-research sanction in Responsibility 3 (Research and Discovery) — deep-research is a bundled Workflow, not a Skill, and is not directly teammate-invokable. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: replaced the "prefer `Skill(deep-research, ...)` — a registered bundled skill" clause with the Workflow-vs-Skill distinction, the dozens-to-~97 background-subagent fan-out, the no-`Workflow`-tool teammate restriction (same class as `Skill(vote)`), and the route-to-team-lead-or-hand-roll fallback per this role's gates — cited DKT-270 investigation, independently corroborated via code.claude.com/docs/en/workflows
+
+### Dimensions Evaluated
+Actionability.
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary

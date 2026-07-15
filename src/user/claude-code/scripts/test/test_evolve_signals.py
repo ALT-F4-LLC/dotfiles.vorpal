@@ -18,6 +18,7 @@ PITFALLS = SIGNALS / "pitfalls-root"
 MIMIR = SIGNALS / "mimir.json"
 TEAM_ROOT = HERE / "fixtures" / "signals-team" / "projects"
 IDLE_ROOT = HERE / "fixtures" / "signals-idle" / "projects"
+META_ROOT = HERE / "fixtures" / "signals-meta" / "projects"
 
 
 def run(*args):
@@ -86,6 +87,32 @@ def test_meta_join():
     # customAgentType="senior-engineer" (actual ROLE) — customAgentType must win.
     # Fails under the old agentType-first precedence (would read "impl-DKT-31").
     assert by_sid["sess-repeat"]["role"] == "senior-engineer", by_sid["sess-repeat"]["role"]
+
+
+def test_sidecar_missing_vs_unreadable():
+    # Missing sidecar (<omitted>) must read differently from a present-but-corrupt
+    # one (<unparseable>); a valid sidecar still surfaces its real requested_model.
+    code, out, err = run("--all", "--projects-root", str(META_ROOT), "--no-remote")
+    assert code == 0, f"exit {code}: {err}"
+    by_sid = {e["session_id"]: e for e in json.loads(out)["local"]["per_spawn"]}
+    assert by_sid["sess-nosidecar"]["requested_model"] == "<omitted>", by_sid["sess-nosidecar"]
+    assert by_sid["sess-badsidecar"]["requested_model"] == "<unparseable>", by_sid["sess-badsidecar"]
+    assert by_sid["sess-oksidecar"]["requested_model"] == "opus", by_sid["sess-oksidecar"]
+
+
+def test_load_meta_with_status_direct():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("evolve_signals", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    missing = META_ROOT / "-Users-fixture-meta" / "metasess-0002" / "subagents" / "agent-anosidecar-1111111111111111.jsonl"
+    bad = META_ROOT / "-Users-fixture-meta" / "metasess-0002" / "subagents" / "agent-abadsidecar-2222222222222222.jsonl"
+    ok = META_ROOT / "-Users-fixture-meta" / "metasess-0002" / "subagents" / "agent-aoksidecar-3333333333333333.jsonl"
+    assert mod.load_meta_with_status(missing) == ({}, None)
+    assert mod.load_meta_with_status(bad) == ({}, False)
+    assert mod.load_meta_with_status(ok) == ({"agentType": "senior-engineer", "name": "senior-engineer", "model": "opus"}, True)
+    # load_meta() itself stays dict-only for callers that ignore readability.
+    assert mod.load_meta(missing) == {} and mod.load_meta(bad) == {}
 
 
 def test_role_of_precedence():

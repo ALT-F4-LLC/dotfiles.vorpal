@@ -39,6 +39,7 @@ from pathlib import Path
 
 SYNTHETIC = "<synthetic>"
 UNPARSEABLE = "<unparseable>"
+OMITTED = "<omitted>"
 DEFAULT_MIMIR_BASE = "https://mimir.bulbasaur.altf4.domains"
 # One PromQL vector query; the exact series are a labeled supplement, never
 # determinism-bearing (the remote arm is omitted under --distribution / --no-remote).
@@ -103,15 +104,24 @@ def load_jsonl(path):
     return records, parse_errors
 
 
-def load_meta(jsonl_path):
-    """Read the ``.meta.json`` sidecar paired with a spawn transcript."""
+def load_meta_with_status(jsonl_path):
+    """Read the ``.meta.json`` sidecar paired with a spawn transcript, plus
+    ``sidecar_readable`` distinguishing "no sidecar file" (``None``) from
+    "sidecar present but unreadable/unparseable" (``False``) from "sidecar
+    present and parsed" (``True``)."""
     meta_path = jsonl_path.with_name(jsonl_path.stem + ".meta.json")
     if not meta_path.is_file():
-        return {}
+        return {}, None
     try:
-        return json.loads(meta_path.read_text())
+        return json.loads(meta_path.read_text()), True
     except (OSError, json.JSONDecodeError):
-        return {}
+        return {}, False
+
+
+def load_meta(jsonl_path):
+    """Read the ``.meta.json`` sidecar paired with a spawn transcript."""
+    meta, _ = load_meta_with_status(jsonl_path)
+    return meta
 
 
 def role_of(meta):
@@ -176,13 +186,15 @@ def parse_spawns(projects_root, cutoff_iso):
             continue  # entire spawn is older than the window
         sessions_scanned += 1
         session_ids = [rec["sessionId"] for rec in records if rec.get("sessionId")]
+        meta, sidecar_readable = load_meta_with_status(path)
         spawns.append({
             "path": path,
             "session_id": session_ids[0] if session_ids else None,
             "records": records,
             "parse_errors": parse_errors,
             "models": assistant_models(records),
-            "meta": load_meta(path),
+            "meta": meta,
+            "sidecar_readable": sidecar_readable,
             "unparseable": len(records) == 0,
         })
     return spawns, sessions_scanned
@@ -238,10 +250,18 @@ def build_local(projects_root, cutoff_iso, distribution_only):
         all_models = [m for spawn in group for m in spawn["models"]]
         resolved = resolve_model(all_models)
 
+        sidecar_readable = rep["sidecar_readable"]
+        if sidecar_readable is None:
+            requested_model = OMITTED  # no .meta.json sidecar at all
+        elif sidecar_readable is False:
+            requested_model = UNPARSEABLE  # sidecar present but unreadable/corrupt
+        else:
+            requested_model = meta.get("model")  # sidecar present and parsed
+
         per_spawn.append({
             "session_id": rep["session_id"],
             "role": role,
-            "requested_model": meta.get("model"),
+            "requested_model": requested_model,
             "resolved_model": resolved,
         })
         if resolved not in (SYNTHETIC, UNPARSEABLE):

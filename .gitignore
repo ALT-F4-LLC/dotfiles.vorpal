@@ -1,5 +1,9 @@
 .docket/
 
+# next_doc_number.sh --claim: permanent number-only lock markers (DKT-307)
+docs/adr/.claim-*.lock
+docs/tdd/.claim-*.lock
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,rust,rust-analyzer
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,rust,rust-analyzer
 

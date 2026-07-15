@@ -28,6 +28,13 @@ Also enforces the "Completeness check before reporting done" convention
 (project-manager.md:293): when --expected-count N is given, asserts the
 number of DIRECT child issues under <root-id> equals N.
 
+When root_id has no children (a Trivial/Small single-issue plan), the DoR
+checks run against the root issue itself instead of exiting 2.
+
+--emit-map prints a markdown id->title->labels table of root's direct
+children, for verbatim inclusion in a plan-completion report per the
+Completeness check convention above.
+
 Read-only. Never edits, never writes. Stdlib + docket CLI only.
 """
 
@@ -58,13 +65,16 @@ def run_docket_json(*args):
 
 
 def collect_tree_ids(root_id):
-    """(all_descendant_ids, direct_child_count) for the tree rooted at root_id,
-    walked breadth-first via `docket issue list --parent <id> --all`."""
+    """(all_descendant_ids, direct_child_count, direct_children) for the tree
+    rooted at root_id, walked breadth-first via
+    `docket issue list --parent <id> --all`. direct_children holds the raw
+    issue dicts for root_id's immediate children only (used by --emit-map)."""
     from collections import deque
 
     visited = {root_id}
     all_descendant_ids = []
     direct_child_count = 0
+    direct_children = []
     queue = deque([root_id])
     while queue:
         parent = queue.popleft()
@@ -77,8 +87,9 @@ def collect_tree_ids(root_id):
             all_descendant_ids.append(issue_id)
             if parent == root_id:
                 direct_child_count += 1
+                direct_children.append(issue)
             queue.append(issue_id)
-    return all_descendant_ids, direct_child_count
+    return all_descendant_ids, direct_child_count, direct_children
 
 
 def check_issue(issue, min_desc_length):
@@ -116,6 +127,19 @@ def check_issue(issue, min_desc_length):
     return findings
 
 
+def print_child_map(direct_children):
+    """Print a markdown id->title->labels table of root's direct children,
+    for verbatim inclusion in a plan-completion report (project-manager.md's
+    "Completeness check before reporting done")."""
+    print()
+    print("| ID | Title | Labels |")
+    print("| --- | --- | --- |")
+    for child in direct_children:
+        title = (child.get("title") or "").replace("|", "\\|")
+        labels = ", ".join(sorted(child.get("labels") or [])) or "(none)"
+        print(f"| {child['id']} | {title} | {labels} |")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -133,16 +157,28 @@ def main(argv=None):
         default=40,
         help="heuristic minimum description length in chars (default: 40)",
     )
+    parser.add_argument(
+        "--emit-map",
+        action="store_true",
+        help="also print a markdown id->title->labels table of root's direct "
+        "children, for verbatim inclusion in a plan-completion report",
+    )
     args = parser.parse_args(argv)
 
-    all_descendant_ids, direct_child_count = collect_tree_ids(args.root_id)
-    if not all_descendant_ids:
-        print(f"dor_check.py: no child issues found under root {args.root_id}", file=sys.stderr)
-        return 2
+    all_descendant_ids, direct_child_count, direct_children = collect_tree_ids(args.root_id)
+    if all_descendant_ids:
+        issue_ids_to_check = all_descendant_ids
+    else:
+        print(
+            f"dor_check.py: no child issues found under root {args.root_id}; "
+            "checking root issue itself",
+            file=sys.stderr,
+        )
+        issue_ids_to_check = [args.root_id]
 
     total_fail = 0
     total_warn = 0
-    for issue_id in all_descendant_ids:
+    for issue_id in issue_ids_to_check:
         issue = run_docket_json("issue", "show", issue_id)
         findings = check_issue(issue, args.min_desc_length)
         fails = [f for f in findings if f.startswith("FAIL")]
@@ -159,7 +195,7 @@ def main(argv=None):
 
     print()
     print(
-        f"DoR summary: {len(all_descendant_ids)} issue(s) checked, "
+        f"DoR summary: {len(issue_ids_to_check)} issue(s) checked, "
         f"{total_fail} FAIL finding(s), {total_warn} WARN finding(s)"
     )
 
@@ -171,6 +207,9 @@ def main(argv=None):
             f"Completeness check: direct children under {args.root_id} = "
             f"{direct_child_count}, expected = {args.expected_count} [{marker}]"
         )
+
+    if args.emit_map:
+        print_child_map(direct_children)
 
     return 1 if (total_fail > 0 or not count_ok) else 0
 

@@ -14,7 +14,7 @@ description: >
 color: yellow
 memory: project
 effort: high
-model: sonnet[1m]
+model: sonnet
 permissionMode: dontAsk
 skills:
   - vote

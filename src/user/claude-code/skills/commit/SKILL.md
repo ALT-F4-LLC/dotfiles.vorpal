@@ -266,8 +266,36 @@ Blocked: staged fileset does not match the intended scope after `git add`
 
 ## Step 5 — Commit
 
+**Sandbox-context invariant (mandatory, prevents stale-file commits).**
+`$TMPDIR` can resolve to a different path depending on whether a given Bash
+call runs sandboxed or with `dangerouslyDisableSandbox: true` — a file
+written in one context is not guaranteed to exist, or to hold the content
+you expect, in the other. Never split "write the checked message file" and
+"consume it with `git commit -F`" across two Bash calls that might differ
+in sandbox setting:
+
+- If this step needs to retry with the sandbox disabled (see the 1Password
+  row in Failure Modes), rewrite the message file with the same quoted
+  heredoc used in Step 3 and re-run all four Step 3 checks **inside that
+  same disabled-sandbox Bash call**, then run `git commit -F` in that
+  identical call.
+- If there is any doubt which context last wrote the file, `cat` it inside
+  the exact Bash call that will run the commit and confirm it still matches
+  the checked draft before proceeding.
+
 `git commit -F "$TMPDIR/commit-msg-draft.txt"` — using `-F` against the
 already-checked file avoids re-typing the message through shell quoting.
+
+**Post-commit verification (mandatory).** Immediately after `git commit -F`
+succeeds, run `git log -1 --format='%H%n%s%n%b'` and confirm the subject and
+body match the checked draft exactly. Do not proceed to Step 6 on the
+strength of `git commit`'s exit code alone — a stale or mismatched
+`$TMPDIR` file commits successfully while silently carrying the wrong
+message. On any mismatch, treat this as a failure: do not report success in
+Step 6, and do not self-fix with `git commit --amend` (still forbidden by
+this skill, see below) — report the mismatch and the resulting commit's SHA
+to the calling agent so it can secure fresh, explicit operator authorization
+for whatever git operation fixes it.
 
 Never run `git push`. Never run `git commit --amend`. If the calling agent
 asked for either, decline and point them at direct `git` usage under
@@ -299,5 +327,6 @@ owns next steps.
 | `git diff --cached --name-only` mismatches the intended fileset after `git add` | Abort at Step 4 with the `Blocked: staged fileset does not match` message; re-run from Step 1. |
 | `git add` or `git commit -F` fails with the guard hook's permission-mode denial (stderr containing `git writes are blocked in non-interactive permission mode`) | This is `guard-no-commit-hook.sh`'s own enforcement, not this skill's — there is no proactive check for it anymore. Surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was staged/committed.` Do not retry, do not probe the mode in advance, do not use `--no-verify`. |
 | `git commit -F` fails for another reason (hook rejection unrelated to permission mode, empty diff, etc.) | Surface the raw `git` error; do not retry with `--no-verify` or any other bypass. |
-| `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. |
+| `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. The retry MUST rewrite the message file and re-run the Step 3 checks inside that same disabled-sandbox Bash call before committing — per the Sandbox-context invariant in Step 5, `$TMPDIR` can resolve to a different path once the sandbox setting changes, so reusing the earlier file reference can silently commit stale or wrong content. |
+| `git commit -F` succeeds but the resulting commit's message doesn't match the checked draft (e.g. a stale `$TMPDIR` file reused across a sandbox-context switch) | Caught by the Step 5 post-commit verification. Do not report success in Step 6 and do not self-fix with `git commit --amend` (still forbidden by this skill) — report the mismatch and the wrong commit's SHA to the calling agent so it can secure fresh, explicit operator authorization for whatever git operation fixes it. |
 | Calling agent asks for `git push` or `git commit --amend` | Decline — outside this skill's contract; direct them to explicit direct `git` usage under operator instruction. |

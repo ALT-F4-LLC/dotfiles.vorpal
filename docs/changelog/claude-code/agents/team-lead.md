@@ -1,5 +1,52 @@
 # Changelog: team-lead
 
+## 2026-07-15
+
+### Summary
+Compacted 5 entries (2026-06-30..2026-07-01) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 5 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Added a Read-before-Edit pointer (B3, team-lead-main-session was in the failure set) and a bidirectional cross-ref naming the new receiving-side stale-dispatch convention (R3); vote relay-contract wire-form tail deduped to a Skill(vote) citation (I4). Byte budget still ~35KB over — flagged, not fixed this cycle (Remaining Issue).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): added a Read-before-Edit pointer at the sanctioned-write-paths sentence.
+- AMPLIFY[SUBSTANTIVE] (R3): Pre-dispatch completion check now cross-references senior-engineer.md's new receiving-side convention.
+- CULL[COSMETIC] (I4): relay-contract wire-form tail replaced with a citation to Skill(vote)'s Delegation Protocol (~90 bytes saved).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Landed the cycle's top-priority operator-pain fix: a HARD anti-idle turn-end invariant banning bare-sleep placeholders and zero-armed-watch turn-ends while teammates are outstanding. Merged SendMessage-schema + shutdown-typo guards into SP-1b (scope adjusted from the reviewer's proposal — kept schema content, verified no cross-agent parity break). Brief Done-state now names the issue-close disposition. Funded via consolidation of 6 dense paragraphs. Still ~35KB over budget — needs Phase 2 cross-file relocation. Findings: 14 → 6 sub / 5 cos / 0 rej / 5 def / 1 enc. Net -151B.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (H1/B1/R4/I3/I1): anti-idle invariant in the Monitor LOCAL block.
+- AMPLIFY[SUBSTANTIVE] (B2/H2): SP-1b gains bare-string/`summary`-required example, union-shape/no-ad-hoc-fields callout, shutdown-namespace-typo guard.
+- AMPLIFY[SUBSTANTIVE] (H3): brief Done-state must name move-to-done vs leave-open.
+- CULL[COSMETIC] ×5 (reviewer Pass B): consolidated Gold-first reflex, Pre-dispatch check, Liveness Gate, 2 blockquotes (terseness/optimization, alignment-verification), report-only disambig note, deduped Large-diagram advisor footnote.
+
+### Dimensions Evaluated
+Completeness/Capability Growth (idle-stall), Actionability (schema), Consolidation (Pass B). No change: Role Realism, Boundary Clarity, Spec Alignment.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (DKT-270 Phase 3 disambiguation)
 
 ### Summary
@@ -187,84 +234,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-07-01
-
-### Summary
-Phase 3 Disambiguation follow-up: removed direct verifier peer routing and normalized shutdown report fields.
-
-### Changes
-- DISAMBIG: rewrote SDET verifier context so team-lead owns fix-loop and advisor routing; lone verifier reports only to team-lead.
-- DISAMBIG: normalized master SP-1 final-report schema with explicit `safe_to_close` close readiness.
-
-### Dimensions Evaluated
-Phase 3 Disambiguation; verifier routing; shutdown schema.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Phase 2 TRIM correction: removed two spacer lines from `team-lead.md` after coherence left it over budget.
-
-### Changes
-- CULL: removed blank lines around `Plan-approval mode` in the @senior-engineer section; behavior unchanged.
-
-### Dimensions Evaluated
-Consolidation & Trimming; Phase 2 coherence follow-up.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Phase 2 coherence follow-up: wired plan-approval dispatch, supply-chain evidence packet routing, and `planner-fix-{N}` lifecycle wording.
-
-### Changes
-- FIX: `mode=plan` dispatch now routes senior implementation PLANs to advisor/security/UX receivers and relays `plan_approval_response`.
-- FIX: security review dispatch now carries or requires a security-owned `Cargo.lock` evidence packet for supply-chain verdicts.
-- FIX: Rule 7 ephemeral examples include `planner-fix-{N}`.
-
-### Dimensions Evaluated
-Lifecycle, PA dispatch, security review routing, Rule 7 consistency.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: team-lead TRIM and report-only close gate -> applied. Net trim targeted the over-budget team-lead file.
-
-### Changes
-- CULL: compacted Alignment/Optimization and Orchestration Patterns into a routing matrix.
-- CULL: replaced volatile model metrics with tier policy while keeping intentional model/reasoning routing.
-- AMPLIFY: normalized lone verifier as report-only; added minimal close gate, file-list checks, and draft-TDD override handoff.
-- CULL: collapsed Rule 8 to step 14/15 sizing and reconciliation pointers.
-
-### Dimensions Evaluated
-Consolidation, Spec Alignment, Lifecycle/Verification close semantics, Docket executability.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase 3 disambiguation: clarified the `verifier` name collision, distinguished the PA impl plan from the PM phase plan, and made advisor TDD-conformance plan-routing explicit. Net 0.
-
-### Changes
-- DISAMBIG (confusable-name): step 15 "ephemeral-teammate `verifier`" → "paired ephemeral-teammate verifiers (`verifier-criteria`/`verifier-integration`)" — the lone `verifier` is report-only, never a teammate.
-- DISAMBIG (term overload): step 11 "read-only plan" → "read-only implementation plan (distinct from the PM phase/decomposition plan the operator approves at step 10)".
-- DISAMBIG (overlapping-ownership): step 11 now routes TDD-bearing plans to `advisor` for TDD-conformance review (aligns staff Impl-plan review), then additionally to security-advisor/ux-advisor for security/spec'd surfaces.
-
-### Dimensions Evaluated
-Phase 3 disambiguation (confusable-name, term-overload, overlapping-ownership).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -312,3 +281,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-20: Phase-2 coherence — closed a GO-gate producer/consumer deadlock (step-14 dispatch now carries the `GO — review NOW` trigger) + within-file shutdown-sweep de-restatement. Drift: disabled (drift=0).
 - 2026-06-30: TRIM cycle, within-file safe whole-line trims (-6) + EI effort correction (teammates DO inherit session effort per v2.1.186; only frontmatter `effort:` is unhonored). Net -6 (667→661).
 - 2026-06-30: Phase 2 cross-cutting (operator-approved) — adopted PA plan-approval overlay; defaulted lone step-15 verifier to report-only subagent; added Rule 8 shared pre-computed reviewer brief; parallel `planner-{slug}` Large-Task decomposition. Net +2 (661→663). Trial: PA plan-approval overlay adopted family-wide → applied (measure next cycle).
+- 2026-06-30: Phase 3 disambiguation — clarified `verifier` name collision, distinguished PA impl plan from PM phase plan, made advisor TDD-conformance plan-routing explicit.
+- 2026-07-01: TRIM cycle — compacted Alignment/Optimization + Orchestration Patterns into a routing matrix; normalized lone verifier as report-only close gate. Trial: team-lead TRIM and report-only close gate -> applied.
+- 2026-07-01: Wired plan-approval dispatch routing, supply-chain `Cargo.lock` evidence-packet requirement, and `planner-fix-{N}` lifecycle wording.
+- 2026-07-01: Removed two spacer lines from team-lead.md after coherence left it over budget.
+- 2026-07-01: Removed direct verifier peer routing (team-lead owns fix-loop/advisor routing); normalized master SP-1 shutdown-report schema.

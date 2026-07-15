@@ -1,5 +1,65 @@
 # Changelog: sdet
 
+## 2026-07-15
+
+### Summary
+Compacted 4 entries (2026-06-30..2026-07-01) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+READ-BEFORE-EDIT pointer's "on every test file or fixture" scoping rephrased file-class-agnostic (was excludable-reading of shared/appended files, the master's dominant failure class); R7 gains the adjacency-gate outranking exception.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: comm rule 9 rephrased — the gate binds every file; test files/fixtures are the common case, not the scope; pitfalls.md explicitly named as binding identically.
+- AMPLIFY[SUBSTANTIVE]: R7 one-liner gains the Read-before-Edit adjacency rule as a second outranking exception.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading ×2).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Read-before-Edit rule → pointer to senior-engineer.md's new master (B3); stale-dispatch-check pointer added (R3); vote wire form deduped to Skill(vote) citation (I4).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): Rule 9 now points to senior-engineer.md §CANONICAL:READ-BEFORE-EDIT (inherits the adjacency/hot-file rules this file's copy lacked).
+- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on the report-only-verifier ack sentence.
+- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Fixed the unexecutable regression-baseline "capture before" instruction (verifier spawns post-impl) by pointing it at `regression_diff.sh`'s existing self-serve `baseline` mode (git-worktree reconstruction), reconciling a conflict between this review's own proposal and senior-engineer's independently-verified finding that `baseline` already closes the gap. Findings: 5 → 1 sub / 0 cos / 1 rej / 1 def / 2 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I9): step 3(b) now uses `regression_diff.sh baseline before` (self-serve, no cross-role handoff — supersedes this review's own originally-proposed ownership-reassignment text, which the orchestrator rejected after verifying `baseline` mode already exists for exactly this purpose) + `capture after` + `compare`; missing-baseline case now escalates to team-lead as a coverage gap instead of silently trusting the targeted run.
+- H7 routed to Coherence (team-lead dispatch-template wording, not this file). H8/D1 already-encoded. I8 (fixture_shape_check.sh) deferred as infra.
+
+### Dimensions Evaluated
+Actionability (unexecutable-instruction fix), Capability Growth (missing-baseline escalation), Cross-Communication (capture-before ownership resolved via existing tooling, not a new handoff).
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary
@@ -161,66 +221,6 @@ History Compaction (ADR 0001)
 ### Rename
 No rename.
 
-## 2026-07-01
-
-### Summary
-Phase 3 Disambiguation follow-up: clarified SDET report-only defect routing and shutdown report fields.
-
-### Changes
-- DISAMBIG: scoped defect Docket comments to interactive paired/test-infra spawns; lone verifier defects stay in the team-lead final report.
-- DISAMBIG: normalized SP-1 final-report schema with explicit `safe_to_close` close readiness.
-
-### Dimensions Evaluated
-Phase 3 Disambiguation; report-only routing; shutdown schema.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Phase 2 coherence follow-up: made lone `verifier` report-only semantics read-only across Docket and tests.
-
-### Changes
-- FIX: default report-only verifier no longer comments, reopens, or writes tests; findings return to team-lead for routing.
-- FIX: draft-TDD override Docket mirroring is scoped to team-lead or interactive spawns, not lone report-only verification.
-
-### Dimensions Evaluated
-Report-only lifecycle, Docket mutation scope, verifier composition.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: report-only verifier lifecycle -> applied. Phase 1 SDET-only edits aligned lifecycle/progress, verifier composition, risk-gated set-diff, TDD override handling, and `fix_owner` output.
-
-### Changes
-- AMPLIFY: default `verifier` is report-only: one final report to team-lead, no teammate `send_input`; paired verifiers and test-infra stay interactive.
-- AMPLIFY: risk-gated failing-test set diff; LIGHT checks may run targeted command only and state why full set-diff was not risk-justified.
-- AMPLIFY: explicit operator override required for normally blocking TDD gate; verdict relays append `fix_owner`.
-
-### Dimensions Evaluated
-Phase 1 approved edits: lifecycle, progress, composition, risk gate, TDD override, output contract.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase 3 disambiguation polish: sharpened the report-only default verifier wording so it doesn't blur the report-only-vs-teammate distinction. Net 0.
-
-### Changes
-- DISAMBIG polish: "one ephemeral covers BOTH..." → "one report-only worker covers BOTH...". Signal: Phase 3 remaining-issue ("ephemeral" overloaded vs Rule 7 teammate lifecycle).
-
-### Dimensions Evaluated
-Phase 3 disambiguation.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -287,3 +287,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-21: Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
 - 2026-06-30: Reconciled DEFAULT lone `verifier` to run as a report-only subagent (mirrors team-lead step 15); added abuse-case consult trigger; chained test-infra claim. Net +1 (476→477).
 - 2026-06-30: Folded GitOps selfHeal signal-timing pitfall + EISDIR path-handling guard; deduped TFD FIX-verdict restatement. Net 0 (476→476).
+- 2026-06-30: Phase 3 disambiguation polish — sharpened report-only default verifier wording to not blur report-only-vs-teammate distinction.
+- 2026-07-01: Phase 1 SDET edits — report-only verifier lifecycle, risk-gated set-diff, TDD override handling, `fix_owner` output. Trial: report-only verifier lifecycle -> applied.
+- 2026-07-01: Made lone `verifier` report-only semantics read-only across Docket and tests (no comments/reopens/writes; TDD override scoped to team-lead/interactive spawns).
+- 2026-07-01: Phase 3 Disambiguation follow-up — clarified SDET report-only defect routing and normalized SP-1 shutdown report schema.

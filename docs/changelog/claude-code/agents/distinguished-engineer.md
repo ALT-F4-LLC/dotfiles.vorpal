@@ -1,5 +1,52 @@
 # Changelog: distinguished-engineer
 
+## 2026-07-15
+
+### Summary
+Vote wire-form payload-noun clarity fix: post-Phase-2-dedupe text asserted "plain-string, never structured `message`" then referenced "the JSON payload", parseable as contradicting the plain-string claim.
+
+### Changes
+- AMPLIFY[COSMETIC]: "the JSON payload must contain no raw embedded newlines" → "the JSON embedded in that plain-string payload must contain no raw newlines".
+
+### Dimensions Evaluated
+Disambiguation (confusable-name).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Read-before-Write/Edit bullet → pointer to senior-engineer.md's new master (B3; aadvisor was in the failure set); stale-dispatch-check pointer added (R3); vote wire form deduped (I4, newline clause retained as local delta).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): Read bullet → READ-BEFORE-EDIT pointer (content-strings delta retained).
+- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on the Close-every-loop bullet.
+- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol (the no-raw-embedded-newlines clause kept as a local delta absent from the skill).
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Pointed both claim-mechanism references at `docket_claim.sh` (verified present, already adopted by senior-engineer/sdet); added an awaited-deliverable timeout for silently-dropped inbound SendMessages (ties to the operator idle-pain cluster); added a sole-editor confirmation step to crash-recovery hygiene. Findings: 4 → 4 sub / 0 cos / 0 rej / 0 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I12): deep-impl claim + Docket-CLI claim example now call `docket_claim.sh <id> distinguished-engineer` (was raw two-step edit-then-move), both sites.
+- AMPLIFY[SUBSTANTIVE] (H4): new "Awaited-deliverable timeout" bullet — re-request through team-lead when an expected inbound peer deliverable hasn't arrived (session 7244e499: a 4-peer-ping delivery gap).
+- AMPLIFY[SUBSTANTIVE] (H5): Crash/resume hygiene now requires confirming through team-lead that no live pre-crash instance holds the seat before claiming sole-editor status (two centralized seat-duplication pitfalls this cycle).
+- D1 already-encoded (line 33).
+
+### Dimensions Evaluated
+Actionability, Capability Growth & Cross-Communication, Boundary Clarity, Consolidation.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (DKT-270 Phase 3 disambiguation)
 
 ### Summary

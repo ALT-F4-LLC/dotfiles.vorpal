@@ -1,5 +1,64 @@
 # Changelog: security-engineer
 
+## 2026-07-15
+
+### Summary
+Compacted 4 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+READ-BEFORE-EDIT pointer's "on every TDD or ADR" scoping rephrased file-class-agnostic (same excludable-reading hazard as sdet); R7 gains the adjacency-gate outranking exception.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: rule 6's Read sentence rephrased — the gate binds every file; TDDs/ADRs are the common case, not the scope; pitfalls.md explicitly named as binding identically.
+- AMPLIFY[SUBSTANTIVE]: R7 one-liner gains the Read-before-Edit adjacency rule as a second outranking exception.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading ×2).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Read-before-Edit sentence → pointer to senior-engineer.md's new master (B3; asecurity was in bug-auditor's failure set); stale-dispatch-check pointer added (R3); vote wire form deduped (I4).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): Rule 6's Read sentence → READ-BEFORE-EDIT pointer (shutdown/relay content untouched).
+- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on Rule 2.
+- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Self-review: no edits. All 4 findings (H11 opus-pinning, H12 evidence-staleness cadence, I10 phase_diff.sh, D1 teammate-envelope note) dispositioned without a file change. Findings: 4 → 0 sub / 0 cos / 0 rej / 1 def / 3 enc
+
+### Changes
+None this cycle — no verified finding required a definition edit.
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation/Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename — all 8 pass; H11/H12/D1 already-encoded, I10 (phase_diff.sh) deferred as infra.
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary
@@ -188,65 +247,6 @@ Capability Growth, Completeness, Cross-Communication, Lifecycle Semantics.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase 2 (operator-approved PA): landed the PA shift-left review triggers — outgoing (recommend team-lead dispatch @senior-engineer in plan-approval mode) + incoming (review a team-lead-routed plan on a security-sensitive surface before the diff). Net +2 (287→289). Trial: PA plan-approval → applied.
-
-### Changes
-- AMPLIFY: outgoing trigger — security-sensitive impl about to start → recommend team-lead run @senior-engineer in plan-approval mode so security-advisor reviews the PLAN before the diff.
-- AMPLIFY: incoming trigger (FIX 2 receiver symmetry) — @senior-engineer PLAN routed by team-lead (plan-approval mode) on a security-sensitive surface → pre-impl security review delivered to team-lead as a plan note.
-
-### Dimensions Evaluated
-6 (Capability Growth) AMPLIFY×2. 1/2/3/4/5/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Added a plan-phase @sdet abuse-case handoff for small security-sensitive work with no TDD (today such work has no Testing-Strategy handoff, so security tests only appear post-diff), offset by culling the non-load-bearing Model-floor paragraph. Net -1 (288→287). PA shift-left plan-review trigger deferred to Phase 2 (needs team-lead PA counterpart).
-
-### Changes
-- AMPLIFY: new outgoing trigger — Small security-sensitive change with NO TDD → plan-phase abuse-case consult to @sdet. Signal: Phase 0 agent finding (3), non-TDD path has no abuse-case handoff.
-- CULL: removed Model-floor paragraph — informational (agent can't choose its model); grounding clause covered by Comm Discipline rule 5 + No Guessing. Signal: MODEL ROUTING (110× opus, 100% pinned, floor never corrective). Reconciliation-safe (not a pin change).
-- Deferred: PA shift-left review trigger → Phase 2 (cross-cutting; needs team-lead PA primitive + senior-engineer plan-mode receiver).
-
-### Dimensions Evaluated
-All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → 1 AMPLIFY (PA deferred). 1/2/3/4/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 12 entries (2026-05-25..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 12 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Encoded the `api.github.com` sandbox-TLS retry cue on the supply-chain CVE/advisory verification path. Net 0 (283→283). Drift: disabled (drift=0).
-
-### Changes
-- AMPLIFY (cited: historical-audit — security-engineer has zero pitfalls memory + gh-api supply-chain dead-end): the Dependency-CVEs rule now notes that `gh api`/`curl api.github.com` SHA/advisory checks fail on the first sandboxed call with a TLS error and must retry with a bounded `dangerouslyDisableSandbox: true` (cross-refs sdet sandbox-interaction patterns); closes a dead-end where a first-call TLS error reads as "advisory feed unreachable."
-
-### Dimensions Evaluated
-1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness AMPLIFY · 5 Consolidation RETAIN · 6 Cross-Comm RETAIN · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -283,3 +283,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Encoded phantom-deletion guard into the secret-handling audit bullet (sandboxed `git diff` renders deny-listed `.env*` as DELETED; verify via `git log -- <path>` before flagging).
 - 2026-06-17: Fixed docket graph arg-order; added persist-ordering gate to secret-handling review dimension. Trial: persist-ordering gate → adopted.
 - 2026-06-19: Closed version-resolution verification gap (lockfile/`cargo tree` authority); trimmed duplicated stall-clause. Net 0 (269→269). Drift: neutral reorder of the System-Level watch-item list → adopted.
+- 2026-06-20: Encoded `api.github.com` sandbox-TLS retry cue on the supply-chain CVE/advisory verification path. Drift: disabled (drift=0).
+- 2026-06-21: Compacted 12 entries (2026-05-25..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-30: Added plan-phase @sdet abuse-case handoff for small security-sensitive work with no TDD; culled non-load-bearing Model-floor paragraph.
+- 2026-06-30: Phase 2 PA: landed shift-left review triggers (outgoing recommend plan-approval mode; incoming pre-impl security review). Trial: PA plan-approval → applied.

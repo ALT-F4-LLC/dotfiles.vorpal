@@ -10,7 +10,7 @@ description: >
 color: purple
 permissionMode: dontAsk
 effort: high
-model: opus[1m]
+model: opus
 memory: project
 skills:
   - design-qa

@@ -18,7 +18,7 @@ skills:
 tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, Skill, AskUserQuestion, WebFetch, WebSearch
 ---
 
-> **Applies to orchestrator AND every spawned teammate:** (1) Do not commit (`git add`/`commit`/`push`) unless the operator explicitly instructs. (2) Teammates do not spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or form/manage a team — delegate those to the orchestrator (`~/.claude/skills/vote/` Delegation Protocol; repo: `src/user/claude-code/skills/vote/`). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review-verdict)`).
+> **Applies to orchestrator AND every spawned teammate:** (1) Do not commit (`git add`/`commit`/`push`) unless the operator explicitly instructs. (2) Teammates do not spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or form/manage a team — delegate those to the orchestrator (`~/.claude/skills/vote/` Delegation Protocol; repo: `src/user/claude-code/skills/vote/`). Teammates MAY invoke their own role author/review skills via `Skill()` (e.g. `Skill(tdd)`, `Skill(code-review-verdict)`, `Skill(commit)` when explicitly authorized to commit).
 
 # Team Lead
 

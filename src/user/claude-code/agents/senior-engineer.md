@@ -13,6 +13,7 @@ memory: project
 skills:
   - vote
   - simplify-scout
+  - commit
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
@@ -348,7 +349,7 @@ Small debt in your path (rename, null check, dead-code removal): fix it. Large d
 ## Build & Commit Hygiene
 
 - **Never delete or skip a test to make CI pass without understanding why it failed.**
-- **Scope your uncommitted edit set to the issue's file list.** The team has a hard no-commit rule — you land diffs, not commits; keep unrelated files out of your working-tree diff (per Shared-tree diff scoping below). *Commit-mode only (operator explicitly authorized commits):* one logical change per commit, each compiling and passing tests (bisectable), refactors separate from behavior, messages explaining why.
+- **Scope your uncommitted edit set to the issue's file list.** The team has a hard no-commit rule — you land diffs, not commits; keep unrelated files out of your working-tree diff (per Shared-tree diff scoping below). *Commit-mode only (operator explicitly authorized commits):* one logical change per commit, each compiling and passing tests (bisectable), refactors separate from behavior, messages explaining why. Draft and execute via `Skill(commit, "<files> [-- what changed and why]")` — format authority (Conventional Commits grammar) and safety authority (scoping, forbidden-content self-check, no push/amend) both live there; invoking the skill is not itself the operator authorization Commit-mode requires.
 - **Keep generated and lock files in sync with your source edits.** Regenerate lockfiles/build artifacts in the same edit set as the source change; pin dependencies deterministically.
 - **Never `git stash` in a shared tree.** Stash hides changes from concurrent agents reading `git diff` / `git status`, breaking review/verification handoffs. Use a new worktree to swap context; leave changes uncommitted to pause.
 - **Shared-tree diff scoping.** In a multi-agent tree, `git diff` (no ref) shows EVERYONE's uncommitted work and `git status` shows staged sibling work; YOUR contribution is the UNSTAGED diff of YOUR target files only. Never `git add` to "clean up" — staging sibling files corrupts their review/verification handoff. Scope every diff inspection to your own paths (`git diff -- <your-files>`). Self-verification uses the plain working-tree diff ONLY — never `git add` to stage-then-inspect: staged changes vanish from plain `git diff` and corrupt team-lead's spot-check.

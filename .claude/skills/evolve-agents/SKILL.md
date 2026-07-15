@@ -126,11 +126,11 @@ All changes tracked in `docs/changelog/claude-code/agents/<agent-name>.md` (crea
 
 ### Team Setup & Agent Lifecycle
 
-Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Docket CLI Audit", "Historical Audit", "Repetition Audit", "Bug Audit", "Innovation Scan", "Model Routing Audit", "SDLC Role Research"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
+Join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`). `TaskCreate` all tasks up-front: Phase 0 ("Docs Research", "Historical Audit", "Repetition Audit", "Bug Audit", "Innovation Scan", "Model Routing Audit", "SDLC Role Research"), one "Review <name>" per target agent, "Coherence & Renames", "Disambiguation", and "History Compaction".
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor`, `sdlc-role-researcher` | Spawn parallel → all complete → shut down all before Phase 1 |
+| 0 | `docs-researcher`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor`, `sdlc-role-researcher` | Spawn parallel → all complete → shut down all before Phase 1 |
 | 1 | `review-<name>` per target | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
 | 2 | `coherence-reviewer` (`distinguished-engineer`, `gold`) | Spawn after ALL Phase 1 applied → apply fixes → shut down |
 | 3 | `disambiguation-reviewer` (`distinguished-engineer`, `gold`) | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
@@ -151,9 +151,9 @@ Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence 
 <!-- CANONICAL:SECOND-FAILURE-RECOVERY:END -->
 - **Compaction recovery**: re-read verified goal, `TaskList()`, latest changelog entries for completed targets, and the active phase template before any new `SendMessage`/`Agent` call.
 
-### Phase 0: Documentation Research, Docket CLI Audit & Historical Audit
+### Phase 0: Documentation Research & Historical Audit
 
-Spawn EIGHT teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `docket-auditor` (senior-engineer, needs Bash), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-agent), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-agent), `innovation-scanner` (distinguished-engineer), `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), and `sdlc-role-researcher` (distinguished-engineer, needs WebSearch for external SDLC-org-role-taxonomy research — see its own template). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED; `sdlc-role-researcher` is NEVER skipped by that gate (it is WebSearch-driven, not transcript-mining, so an empty transcript window does not degrade it). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{docket_audit_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, `{model_routing_findings}`, and `{sdlc_research_findings}`. **At Phase 0 completion the orchestrator Writes each captured block to its own file** `{scratchpad}/phase0/<auditor>.md` — one per auditor: `docs-researcher`, `docket-auditor`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor`, `sdlc-role-researcher` — so Phase 1 reviewers Read them by path instead of receiving ~8 full reports inline-pasted (a large token cut on multi-agent runs). **A SKIPPED (pre-flight step 8) or UNAVAILABLE (Crash & Stall Recovery) auditor still gets its file — write the literal sentinel string as the file's entire content** — so all 8 paths always exist and Phase 1 never special-cases a missing file. From the captured blocks the orchestrator also materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — and **Writes it to `{scratchpad}/findings-ledger.md`**, making the ledger a persistent artifact the Phase 2 gate reads (it survives context compaction, unlike ephemeral orchestrator-context state). Do both Writes before spawning Phase 1.
+Spawn SEVEN teammates in parallel per the templates below: `docs-researcher` (staff-engineer), `historical-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), `repetition-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining unintentional cross-session repetition GLOBALLY rather than per-agent), `bug-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/` and `~/.claude/history.jsonl`, mining failed tool calls / incorrect-parameter bugs GLOBALLY rather than per-agent), `innovation-scanner` (distinguished-engineer), `model-routing-auditor` (senior-engineer, needs Bash for read-only grep/jq over `~/.claude/projects/`, `~/.claude/history.jsonl`, `.claude/agent-memory/`), and `sdlc-role-researcher` (distinguished-engineer, needs WebSearch for external SDLC-org-role-taxonomy research — see its own template). Skip `historical-auditor`, `repetition-auditor`, `bug-auditor`, and `model-routing-auditor` if pre-flight step 8 flagged SKIPPED; `sdlc-role-researcher` is NEVER skipped by that gate (it is WebSearch-driven, not transcript-mining, so an empty transcript window does not degrade it). Assign Phase 0 tasks via `TaskUpdate`. Each agent's final `SendMessage` report is captured verbatim as `{docs_research_findings}`, `{historical_audit_findings}`, `{repetition_audit_findings}`, `{bug_audit_findings}`, `{innovation_findings}`, `{model_routing_findings}`, and `{sdlc_research_findings}`. **At Phase 0 completion the orchestrator Writes each captured block to its own file** `{scratchpad}/phase0/<auditor>.md` — one per auditor: `docs-researcher`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor`, `sdlc-role-researcher` — so Phase 1 reviewers Read them by path instead of receiving ~7 full reports inline-pasted (a large token cut on multi-agent runs). **A SKIPPED (pre-flight step 8) or UNAVAILABLE (Crash & Stall Recovery) auditor still gets its file — write the literal sentinel string as the file's entire content** — so all 7 paths always exist and Phase 1 never special-cases a missing file. From the captured blocks the orchestrator also materializes the Findings Ledger — one ID per actionable finding (CANONICAL:IMPACT-CLASS) — and **Writes it to `{scratchpad}/findings-ledger.md`**, making the ledger a persistent artifact the Phase 2 gate reads (it survives context compaction, unlike ephemeral orchestrator-context state). Do both Writes before spawning Phase 1.
 
 ### Phase 1: Review & Improve (parallel)
 
@@ -230,17 +230,6 @@ Substitute `{latest_features_digest}` from pre-flight step 9; `{TARGET_NOUN}`/`{
 
 Source: **§8 Docs Research — tokenized template** in `evolve-phase0-templates.md`. Substitute the spawn-time tokens with the Template-sourcing VALUES above; runtime token `{latest_features_digest}` passes through. Spawns `Agent(name="docs-researcher", subagent_type="staff-engineer", model="opus")`.
 
-### Phase 0: Docket CLI Audit
-
-```
-Agent(name="docket-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-Audit the docket CLI: consult `docket-cli.md` (`src/user/claude-code/skills/team-doctrine/references/docket-cli.md`) as the baseline, then run `--help` on all commands/subcommands, cross-reference against
-usage in `src/user/claude-code/agents/` and `.claude/skills/`.
-
-Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree. SendMessage the orchestrator the report verbatim.
-```
-
 ### Phase 0: Historical Audit (per-agent)
 
 Substitute `{target_agents}` from `\$ARGUMENTS` or all `src/user/claude-code/agents/*.md`.
@@ -297,7 +286,6 @@ Date: {today_date} (for changelog). Prioritize the operator experience feedback 
 ## Phase 0 Audit Findings — READ THESE PATHS (not pasted inline)
 Your Phase 0 inputs are materialized on disk, one file per auditor. Read each before Pass A:
 - `{scratchpad}/phase0/docs-researcher.md` — Claude Code Documentation Research
-- `{scratchpad}/phase0/docket-auditor.md` — Docket CLI Audit
 - `{scratchpad}/phase0/historical-auditor.md` — Historical Audit (find your own agent's block — strongest signal)
 - `{scratchpad}/phase0/innovation-scanner.md` — Innovation Suggestions
 - `{scratchpad}/phase0/model-routing-auditor.md` — Model Routing Audit

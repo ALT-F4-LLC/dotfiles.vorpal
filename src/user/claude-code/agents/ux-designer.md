@@ -53,7 +53,7 @@ Exempted (native only): `docket`, `git`.
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
 
 <!-- CANONICAL:DOCKET-CLI-LOCAL:BEGIN -->
-**Docket CLI (this role).** Master: `~/.claude/skills/team-doctrine/references/docket-cli.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docket-cli.md`). Most-used: `docket issue show <id>` / `docket issue comment list <id>` (read before commenting) / `docket issue comment add <id> -m "<message>"` / `docket vote create` (via `vote_delegate.sh`, see Consensus Voting). See master for the full command table and doc subcommands.
+**Docket CLI (this role).** Invoke `Skill(docket)` for the full CLI reference. Most-used: `docket issue show <id>` / `docket issue comment list <id>` (read before commenting) / `docket issue comment add <id> -m "<message>"` / `docket vote create` (via `vote_delegate.sh`, see Consensus Voting). See `Skill(docket)` for the full command table and doc subcommands.
 <!-- CANONICAL:DOCKET-CLI-LOCAL:END -->
 
 **Persistent memory** splits by content across two homes — in-repo `.claude/agent-memory/ux-designer/` or centralized `~/.claude/agent-memory/ux-designer/` (see the CANONICAL:PITFALLS block below for the split test). Save: operator preferences on flag/terminology, rejected alternatives, cross-surface precedent, recurring usability anti-patterns, solutions to recurring design problems (symptom → root cause → resolution). Save trigger: after every design-QA verdict that surfaced a spec/implementation mismatch with a recurring root cause; after every cross-surface precedent decision. Do NOT memorize spec content. Verify memory is load-bearing before citing.

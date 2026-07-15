@@ -41,6 +41,5 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/fable-completeness-heuristics.md` | Fable-distilled completeness heuristics (provenance, honest scope, full bullet bodies) | `team-lead.md` (compact LOCAL copy) |
 | `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` (compact LOCAL copy) |
 | `references/authoring-verification-gates.md` | Authoring verification gates for TDD/review authors (executable-claim, negative-claim re-grep, insertion-anchor, byte-budget) | `staff-engineer.md`, `distinguished-engineer.md` |
-| `references/docket-cli.md` | Docket CLI command reference (byte-exact vs live `docket --help`, version b59dd2f) | all 7 agents + `team-lead.md` |
 | `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md` |
 | `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates — auditors plus evolve-agents' SDLC Role Research (§9) (spawn-TEMPLATE store: paste-at-spawn-time, token-contracted; NOT a doctrine master with LOCAL copies) | `evolve-agents`, `evolve-skills`, `evolve-config` skills (Read-once at Phase-0 spawn) |

@@ -48,7 +48,7 @@ Exempted (native only): `docket`, `git`.
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
 
 <!-- CANONICAL:DOCKET-CLI-LOCAL:BEGIN -->
-**Docket CLI (this role).** Master: `~/.claude/skills/team-doctrine/references/docket-cli.md` (repo: `src/user/claude-code/skills/team-doctrine/references/docket-cli.md`). Most-used: `docket issue edit <id> -a @distinguished-engineer` then `docket issue move <id> in-progress` (claim, first tool call) / `docket vote list --json` (post-error retry gate — confirm before re-creating) / `docket vote create` (via `vote_delegate.sh`, see Consensus Voting). See master for the full command table, vote/doc subcommands, and senior-engineer.md's adopted `docket issue show|comment|log|graph` flow (deep-impl adopts senior's execution contract by reference).
+**Docket CLI (this role).** Invoke `Skill(docket)` for the full CLI reference. Most-used: `docket issue edit <id> -a @distinguished-engineer` then `docket issue move <id> in-progress` (claim, first tool call) / `docket vote list --json` (post-error retry gate — confirm before re-creating) / `docket vote create` (via `vote_delegate.sh`, see Consensus Voting). See `Skill(docket)` for the full command table, vote/doc subcommands, and senior-engineer.md's adopted `docket issue show|comment|log|graph` flow (deep-impl adopts senior's execution contract by reference).
 <!-- CANONICAL:DOCKET-CLI-LOCAL:END -->
 
 On `artifact alias not found` for a listed tool, the inventory is a preference list, not an availability guarantee — fall back to the equivalent subcommand of a resolvable artifact (`vorpal run go:<ver> fmt` covers gofmt) rather than stalling, and note the discrepancy in your report.

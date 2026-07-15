@@ -4,7 +4,8 @@ description: >
   Draft a Conventional-Commits-compliant commit message and execute a scoped
   `git add` + `git commit` with it. Guarantees the message never references
   agents/subagents, Docket issue IDs, harness/orchestration metadata, or
-  Claude/Claude Code/Anthropic. Requires the calling agent to already hold
+  Claude/Claude Code/Anthropic. Invokable ONLY by team-lead — no other agent
+  or subagent may call this skill. Requires team-lead to already hold
   explicit operator authorization to commit — invoking this skill is NOT
   itself that authorization.
   Trigger: "commit this", "create a commit", "standardized commit", "draft a commit message".
@@ -14,7 +15,7 @@ disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) This skill stages and commits ONLY when the calling agent has already received EXPLICIT operator authorization to commit right now — invoking `Skill(commit, ...)` is NOT itself that authorization. If the calling agent has not confirmed explicit authorization, STOP and ask; do not stage or commit. (2) Never run `git push`. Never run `git commit --amend` on a pre-existing commit. (3) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team.
+> **CRITICAL:** (1) This skill may be invoked ONLY by team-lead — no other agent or subagent may call `Skill(commit, ...)`. (2) This skill stages and commits ONLY when team-lead has already received EXPLICIT operator authorization to commit right now — invoking `Skill(commit, ...)` is NOT itself that authorization. If team-lead has not confirmed explicit authorization, STOP and ask; do not stage or commit. (3) Never run `git push`. Never run `git commit --amend` on a pre-existing commit. (4) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team.
 
 # Commit — Draft and Execute a Standardized Conventional Commit
 
@@ -43,24 +44,36 @@ in scope (per `src/user/claude-code/agents/senior-engineer.md:354`, "Shared-tree
 diff scoping": *"YOUR contribution is the UNSTAGED diff of YOUR target files
 only"*).
 
-## Step 0 — Authorization Gate (before any other step)
+## Step 0 — Caller & Authorization Gate (before any other step)
 
-Confirm the calling agent's invocation context states the operator has
-already given explicit authorization to commit *now* (not a general standing
-permission, not an inference from "this seems done"). If that confirmation is
-not present in the calling context:
+**Caller check (first).** This skill may be invoked ONLY by `team-lead` — no
+other agent or subagent (e.g. `@senior-engineer`, `@staff-engineer`,
+`@distinguished-engineer`, `@security-engineer`, `@sdet`, `@ux-designer`,
+`@project-manager`) may call `Skill(commit, ...)`. If the calling agent is
+not `team-lead`, STOP:
 
 ```
-Blocked: Skill(commit) requires the calling agent to already hold explicit
-operator authorization to commit. Invoking this skill is not itself that
-authorization — confirm with the operator, then re-invoke.
+Blocked: Skill(commit) may only be invoked by team-lead. Route the commit
+request to team-lead instead of invoking this skill directly.
 ```
 
-Do not proceed to Step 1. This gate operates *within* the team's standing
-no-commit rule (`src/user/claude-code/agents/senior-engineer.md`'s repo-wide
-"do NOT commit ANY changes ... unless EXPLICITLY instructed by the user")
-— it never replaces or weakens that rule, it only adds message-format and
-scoping guarantees once authorization already exists.
+**Authorization check (second, only once the caller check passes).** Confirm
+team-lead's invocation context states the operator has already given explicit
+authorization to commit *now* (not a general standing permission, not an
+inference from "this seems done"). If that confirmation is not present in the
+calling context:
+
+```
+Blocked: Skill(commit) requires team-lead to already hold explicit operator
+authorization to commit. Invoking this skill is not itself that authorization
+— confirm with the operator, then re-invoke.
+```
+
+Do not proceed to Step 1 until both checks pass. This gate operates *within*
+the team's standing no-commit rule (`src/user/claude-code/agents/senior-engineer.md`'s
+repo-wide "do NOT commit ANY changes ... unless EXPLICITLY instructed by the
+user") — it never replaces or weakens that rule, it only adds message-format
+and scoping guarantees once authorization already exists.
 
 ## When to Use
 
@@ -71,6 +84,8 @@ scoping guarantees once authorization already exists.
 
 ## When NOT to Use
 
+- The calling agent is not `team-lead` — stop at Step 0; route the commit
+  request to team-lead instead.
 - No explicit, current operator authorization to commit — stop at Step 0.
 - The fileset spans multiple unrelated logical changes (see Step 2's
   one-change guard) — split into separate invocations first.
@@ -227,69 +242,13 @@ Step 2), and alternate phrasing such as "peer-skills" instead of "teammate".
 This is a drafting preference to avoid rework, not a change to the checks
 themselves.
 
-## Step 3.5 — Permission-mode pre-flight (best-effort)
-
-This step runs after Step 3 and before Step 4, because
-`guard-no-commit-hook.sh` intercepts `git add` as well as `git commit` — Step
-4 is the first git write in this flow, so the check must precede it, not
-just precede Step 5.
-
-Read the live permission mode from the session's own transcript JSONL (never
-from a hook file, and never by writing a new file):
-
-```bash
-T=$(ls -t "$HOME"/.claude/projects/*/"$CLAUDE_CODE_SESSION_ID".jsonl 2>/dev/null | head -1)
-MODE=""
-if [ -n "$T" ]; then
-    MODE=$(jq -rc 'select(.type=="permission-mode") | .permissionMode' "$T" 2>/dev/null | tail -1)
-fi
-```
-
-Use `jq`'s `select(.type=="permission-mode")` structural match, not a bare
-`grep '"type":"permission-mode"'` substring match — a substring match is
-brittle against JSON key-order or content variation.
-
-Branch on `MODE`:
-
-1. **Hard-deny modes** (`auto`, `dontAsk`, `bypassPermissions` — the modes
-   `guard-no-commit-hook.sh` denies outright). STOP; do not proceed to Step
-   4. Emit:
-
-   ```
-   This session is in '<mode>' permission mode; the repo's guard-no-commit hook hard-blocks git add/commit/push there because no human can approve the write. Switch to an interactive mode (Shift+Tab, or /permissions) — default/plan/acceptEdits — then re-invoke Skill(commit). Nothing was staged.
-   ```
-
-2. **Ask-and-proceed modes** (`default`, `plan`, `acceptEdits` — the modes
-   `guard-no-commit-hook.sh` interactively prompts on). Proceed to Step 4 as
-   normal; no extra notice needed.
-
-3. **Inconclusive read** (`MODE` empty, unrecognized, or the read otherwise
-   failed — missing transcript file, `jq` absent, malformed JSON). Never
-   hard-block on an inconclusive read; the guard hook remains the real
-   enforcement and independently fails closed on an unrecognized
-   `permission_mode`. Emit a one-line notice, then proceed to Step 4:
-
-   ```
-   Couldn't confirm the current permission mode from the session transcript — proceeding, relying on guard-no-commit-hook.sh's own enforcement to ask/deny as appropriate.
-   ```
-
-Two invariants:
-
-1. **Never probe indirectly.** Do not run a dry-run/probe `git` command to
-   detect the mode — the hook's exit-2 stderr on a denied probe is fed back
-   to the model, so a probe "works" but burns a denied attempt, which is the
-   exact failure this pre-flight exists to avoid.
-2. **Advisory only.** This check is not itself the security control —
-   `guard-no-commit-hook.sh` remains the sole real enforcement and
-   independently fails closed regardless of what this pre-flight determines.
-   Never treat this pre-flight as a substitute for the hook.
-
-This check is independent of Step 0's authorization gate: a compliant
-permission mode does not imply operator authorization, and operator
-authorization does not imply a compliant permission mode. Both gates must
-hold; neither substitutes for the other.
-
 ## Step 4 — Stage the scoped files
+
+`guard-no-commit-hook.sh` intercepts `git add` (as well as `git commit`), so
+this is the first point in the flow where a permission-mode denial can
+surface. There is no proactive mode check before this step — react only if
+the command itself fails; see the Failure Modes table for the exact denial
+signature and the message to surface.
 
 `git add -- <file1> <file2> ...` naming every path from Step 1 explicitly.
 Never `git add .` / `git add -A` / a bare directory that could sweep in
@@ -331,13 +290,14 @@ owns next steps.
 | Trigger | Handling |
 |---|---|
 | `<files to commit>` missing or empty | Abort: `Error: Usage: Skill(commit, "<files> [-- what changed and why]") — name the exact files to stage.` |
+| Calling agent is not `team-lead` | Abort at Step 0 with the caller-gate `Blocked:` message; do not proceed further. |
 | Calling agent has not confirmed explicit, current operator authorization | Abort at Step 0 with the `Blocked:` authorization message. |
 | Bare `.`/`-A`/`--all` pathspec passed | Abort: reject, require explicit paths. |
 | Index already has unrelated staged content before `git add` | Abort at Step 1 with the `Blocked: index already has staged changes` message. |
 | Fileset mixes unrelated logical changes | Abort at Step 2 (one-change guard); ask the calling agent to split into separate invocations. |
 | Forbidden-content self-check (Step 3) finds any hit | Rewrite the draft and re-run all four checks; do not stage or commit until clean. |
-| Session is in a hard-deny permission mode (`auto`/`dontAsk`/`bypassPermissions`) per the Step 3.5 pre-flight | Abort at Step 3.5 with the mode-mismatch notice; do not proceed to Step 4. Nothing staged. |
 | `git diff --cached --name-only` mismatches the intended fileset after `git add` | Abort at Step 4 with the `Blocked: staged fileset does not match` message; re-run from Step 1. |
-| `git commit -F` fails (hook rejection, empty diff, permission denial) | Surface the raw `git` error; do not retry with `--no-verify` or any other bypass. |
+| `git add` or `git commit -F` fails with the guard hook's permission-mode denial (stderr containing `git writes are blocked in non-interactive permission mode`) | This is `guard-no-commit-hook.sh`'s own enforcement, not this skill's — there is no proactive check for it anymore. Surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was staged/committed.` Do not retry, do not probe the mode in advance, do not use `--no-verify`. |
+| `git commit -F` fails for another reason (hook rejection unrelated to permission mode, empty diff, etc.) | Surface the raw `git` error; do not retry with `--no-verify` or any other bypass. |
 | `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. |
 | Calling agent asks for `git push` or `git commit --amend` | Decline — outside this skill's contract; direct them to explicit direct `git` usage under operator instruction. |

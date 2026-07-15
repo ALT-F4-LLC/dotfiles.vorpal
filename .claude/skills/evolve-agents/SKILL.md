@@ -216,7 +216,7 @@ After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `find src/user/claude-code/agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-agent byte budget (pre-flight step 4).
 3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the Findings Ledger outcome (per finding: ID → terminal disposition; substantive-floor result per organism), the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
-4. **Post-cycle coherence gate (recommend to operator).** These edits are un-committed and not yet audited for cross-family drift — recommend the operator run `/evolve-coherence` before committing, to catch any parity or cross-reference drift this cycle introduced. evolve-coherence is the post-edit gate for standalone evolve-agents runs; it never edits, only reports and routes.
+4. **Post-cycle coherence gate (recommend to operator).** Only when this cycle actually modified files (skip this suggestion on a true no-op cycle): these edits are un-committed and not yet audited for cross-family drift — recommend the operator run `/evolve-coherence` before committing, to catch any parity or cross-reference drift this cycle introduced. evolve-coherence is the post-edit gate for standalone evolve-agents runs; it never edits, only reports and routes.
 
 ---
 
@@ -235,7 +235,7 @@ Source: **§8 Docs Research — tokenized template** in `evolve-phase0-templates
 ```
 Agent(name="docket-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
 
-Audit the docket CLI: run `--help` on all commands/subcommands, cross-reference against
+Audit the docket CLI: consult `docket-cli.md` (`src/user/claude-code/skills/team-doctrine/references/docket-cli.md`) as the baseline, then run `--help` on all commands/subcommands, cross-reference against
 usage in `src/user/claude-code/agents/` and `.claude/skills/`.
 
 Output: New, Changed, Deprecated commands (with synopsis) plus full CLI reference tree. SendMessage the orchestrator the report verbatim.

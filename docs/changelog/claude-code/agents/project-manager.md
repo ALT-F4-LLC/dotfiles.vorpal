@@ -1,5 +1,50 @@
 # Changelog: project-manager
 
+## 2026-07-15
+
+### Summary
+Compacted 4 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Added a Read-before-Edit pointer via R7 (PM had no such rule; also resolves a latent R7-vs-adjacency contradiction) and a stale-dispatch-check pointer (R3, B3).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): R7 now names the Read-before-Edit gate as an explicit exception that outranks it, pointing to senior-engineer.md's new master.
+- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on Rule 2.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Compressed the §8 verify-chain to wrapper-script pointers (docket_write.sh/docket_create.sh verified on disk), added a docket comment-add common-mistakes callout (~20-session gh-cli-habit error class), and caveated the §10 DoR gate for single-issue plans (dor_check.py verified to exit 2 with no children). Findings: 6 → 2 sub / 1 cos / 0 rej / 2 def / 1 enc
+
+### Changes
+- CULL[COSMETIC] (I7): §8 "Never trust the success line" trimmed to docket_write.sh/docket_create.sh pointers + marker-grep + timestamp-reconcile; dropped script-internal activity-log-vs-updated_at explanation.
+- AMPLIFY[SUBSTANTIVE] (B5): DOCKET-CLI block gains a comment-add common-mistake callout (no `-b`/`--body`/`comment create`; `-m` never positional).
+- AMPLIFY[SUBSTANTIVE] (H10): §10 DoR gate notes dor_check.py exits 2 on single-issue plans (verified via source read) — use manual checklist for Trivial/Small.
+
+### Dimensions Evaluated
+Actionability, Consolidation & Trimming. H9 routed to Coherence (team-lead spawn-template bug, shared with staff-engineer). I6 deferred (`--emit-map` flag verified absent). D1 already-encoded.
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary
@@ -175,63 +220,6 @@ Phase 1 targeted fixes: Docket CLI accuracy, delta planning, collision evidence,
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase 2 coherence: aligned the Claim Ritual to the chained one-call (`docket issue edit -a && docket issue move in-progress`) so the issue-body template @senior-engineer reads no longer contradicts the applied chained-claim convention. Net 0 (380→380).
-
-### Changes
-- Aligned Claim Ritual from "edit THEN move (two-step)" to the chained one-call (assignee first, then status). Signal: FIX 7 coherence (senior/team-lead/sdet all chained).
-
-### Dimensions Evaluated
-Coherence alignment only. 1/2/3/4/5/6/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Deduped the triple `edit -f` REPLACES-attachments warning (canonical copy stays on the CLI edit line; `--orphan` foot-gun preserved) and added a boundary-safe note to surface multi-TDD decomposition parallelization to team-lead instead of serially decomposing all TDDs. Net 0 (380→380).
-
-### Changes
-- CULL: collapsed the grooming-section `edit -f` warning duplicate (stated 3×; canonical inline copy on the edit line retained). Signal: Phase 0 Consolidation + in-file triple-statement.
-- AMPLIFY: Complex tier surfaces multi-TDD parallel-decomposition option to team-lead (PM does not spawn — line-24 boundary + SP-2 nested-teammate). Signal: Phase 0 PM INNOVATION (serial multi-TDD decomposition).
-
-### Dimensions Evaluated
-All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → 1 AMPLIFY. 1/2/3/4/7/8 RETAIN (docket audit ZERO fabrications; `-d -` body guidance already correct; no routing changes — alias cutover only).
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 8 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Fixed a reject-class CLI error: `docket doc link add/remove` requires the `--issue` flag, not a positional second arg; corrected both occurrences. Net 0 (364→364). Drift: neutral reorder of the two Session-Init state-reconstruction probes (`docket stats`/`docket plan --json`) → adopted.
-
-### Changes
-- CULL→AMPLIFY: `docket doc link add/remove <doc-id> <issue-id>` → `... --issue <issue-id>` (issue template + CLI reference); orchestrator-verified via `docket doc link add/remove --help`. Phase-0 docket-audit reject-class signal; only PM carried the positional form (cross-agent grep clean).
-
-### Dimensions Evaluated
-Spec Alignment (CULL→AMPLIFY: doc-link CLI). Role Realism / Actionability / Boundary Clarity / Completeness / Consolidation / Capability Growth / Rename — RETAIN (health high; 0 corrections/errors in window).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +283,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Consolidated session-init/re-engagement Docket state reconstruction (`plan --json` + `docket stats` replacing `board --json --expand`). Net 0 (334 lines).
 - 2026-06-10: Compacted 2 entries (2026-05-19..2026-05-24) into Compacted history per ADR 0001.
 - 2026-06-17: Required Fn→issue-ID mapping in completion reports; added relay-authority clause; documented docket doc subsystem. Trial: report-mapping / relay-authority / docket-doc → adopted. Drift: neutral reword of the `-l must-have` label → adopted.
+- 2026-06-19: Fixed reject-class CLI error — `docket doc link add/remove` requires `--issue` flag, not a positional arg. Drift: neutral reorder of the two Session-Init state-reconstruction probes (`docket stats`/`docket plan --json`) → adopted.
+- 2026-06-21: Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
+- 2026-06-30: Deduped triple `edit -f` REPLACES-attachments warning; added multi-TDD parallel-decomposition surfacing to team-lead.
+- 2026-06-30: Aligned Claim Ritual to chained one-call (assignee first, then status), matching senior/team-lead/sdet convention.

@@ -1,5 +1,67 @@
 # Changelog: senior-engineer
 
+## 2026-07-15
+
+### Summary
+Compacted 4 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Stale-dispatch check gains a scope discriminator (duplicate dispatch vs a new contradicting directive — overlapping trigger conditions had opposite prescribed responses); R7 now names the Read-before-Edit adjacency rule as a second outranking exception; master gains the missing empty-Read/new-path clause two citing files had assumed.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: CANONICAL:STALE-DISPATCH-CHECK gains a Scope sentence distinguishing a duplicate dispatch (reply-once, never re-execute) from a new directive contradicting closed work (evidence + ask-which-is-final).
+- AMPLIFY[SUBSTANTIVE]: R7 one-liner now names the READ-BEFORE-EDIT adjacency rule as a second exception that outranks it.
+- AMPLIFY[SUBSTANTIVE]: CANONICAL:READ-BEFORE-EDIT master gains the new-path/empty-Read-satisfies-the-gate clause (staff-engineer.md and distinguished-engineer.md already cited this as master content it didn't contain).
+
+### Dimensions Evaluated
+Disambiguation (multi-reading ×3).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Hosts two new fleet-wide masters: `CANONICAL:READ-BEFORE-EDIT` (B3, 50-session fleet-wide failure class) and `CANONICAL:STALE-DISPATCH-CHECK` (R3, receiving-side crossed-in-flight convention); vote wire-form paragraph deduped to a Skill(vote) citation (I4).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): wrapped the existing Read-before-Edit paragraph (content unchanged, verified strongest copy) in `CANONICAL:READ-BEFORE-EDIT` markers so 6 other agent files can point to it.
+- AMPLIFY[SUBSTANTIVE] (R3): new `CANONICAL:STALE-DISPATCH-CHECK` block — receiving-side convention for a stale inbound task_assignment.
+- CULL[COSMETIC] (I4): vote wire-form paragraph replaced with a citation to `Skill(vote)`'s §Delegation Protocol (Team Path), which is the authoritative master.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication (fleet-wide masters).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Wired the orphaned self_review_scan.sh into self-review step 5; added a terminal-state marker to the completion report to reduce the operator-reported team-lead idle gap. Findings: 5 → 2 sub / 0 cos / 1 rej / 0 def / 2 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I5): step 5 runs `self_review_scan.sh` as its mechanical first substep (debug/TODO/commented-code/merge-marker scan) before the manual re-read for error-handling/logic. Verified script existed (5570B) and was unreferenced.
+- AMPLIFY[SUBSTANTIVE] (idle-pain, reviewer-originated): completion report now leads with a `DONE — awaiting shutdown_request` terminal marker so team-lead distinguishes finished from mid-work without probing.
+- I9 rejected as a senior-engineer change — already-encoded via `regression_diff.sh baseline` mode (see sdet.md); routed as coherence.
+
+### Dimensions Evaluated
+Actionability, Capability Growth & Cross-Communication (all 8 evaluated). B3/B4/D1 already-encoded; 66% reinvocation rate assessed as legitimate ephemeral-lifecycle structure, not fix-loop churn.
+
+### Rename
+No rename.
+
 ## 2026-07-13
 
 ### Summary
@@ -163,65 +225,6 @@ Phase 2: landed the PA (plan-approval) mode bullet now that team-lead adopted PA
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Chained the two docket claim-writes into one Bash call (claim+ack 3→2 tool calls; reconciled the §Implementation L146 "two-step" wording to "chained" to stay internally coherent). Net -1 (490→489). PA-mode bullet deferred to Phase 2 (conditional on team-lead PA dispatch adoption).
-
-### Changes
-- AMPLIFY: dispatch claim now `docket issue edit -a && docket issue move in-progress` in ONE call (assignee-first preserved — team-lead's probe key intact). Signal: Phase 0 efficiency, highest-volume agent (124 inv/41 sessions).
-- Deferred: PA-mode impl bullet (emit plan + await approval before edit) → Phase 2 (cross-cutting; dangling without team-lead PA dispatch + reviewer-side wiring).
-
-### Dimensions Evaluated
-All 8. 2 (Actionability) AMPLIFY. 5 (Consolidation) AMPLIFY (bash -1). 6 (Capability Growth) → PA deferred. 4 (Completeness) RETAIN (Read-before-Edit complete+top-placed despite 144 is_error — execution-discipline gap, not docs). 1/3/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-One net-zero in-place edit extending an incoming-trigger to cover late/out-of-order directives contradicting closed work; five strongest Phase-0 signals confirmed already-encoded (NO-OP). Net 0 (488→488). Drift: disabled (drift=0).
-
-### Changes
-- AMPLIFY (cited: historical message-ordering signal): the @project-manager plan-change incoming-trigger now also catches any late directive contradicting already-closed on-disk state — resolution is reply-with-evidence-and-ask-which-is-final before acting.
-
-### Dimensions Evaluated
-1 Role Realism RETAIN · 2 Actionability RETAIN · 3 Boundary Clarity RETAIN · 4 Completeness RETAIN (TFD pre-flight, git-diff scoping, zsh `!` hygiene already encoded) · 5 Consolidation RETAIN · 6 Cross-Comm AMPLIFY · 7 Spec Alignment RETAIN · 8 Rename RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Collapsed the duplicated two-step-claim mechanic to a pointer; folded the redundant "Idle after final report" paragraph's unique facts into the completion-contract step and removed it; corrected the pitfalls-memory survival claim (file verified absent on disk). Net -2 (384→382). Drift: neutral reorder of Core Operating Principle 3's three scenario-bullets → adopted.
-
-### Changes
-- CULL: Execution Workflow step 1 restated the claim command pair already owned by §Communication discipline → "Claim before work + dispatch-ack"; collapsed to a pointer.
-- CULL: "Idle after final report" paragraph duplicated the Ephemeral completion contract; its 2 unique facts (TaskStop Monitor watches; team-lead owns the sweep, step 13) folded into step 5, paragraph removed.
-- CORRECTION: pitfalls.md "is version-controlled and survives" → "version-controlled — once created … survives" (file absent; create-on-first-use).
-
-### Dimensions Evaluated
-Consolidation (CULL ×2), Spec Alignment (correction). Others RETAIN (fix-2 rate 2/22 healthy; shared-tree git-hygiene HELD per XC-1 spike-gate).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -289,3 +292,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Phase 2 coherence — SE→staff cross-reference added linking escalate-or-implement test to staff's TDD-decision rubric.
 - 2026-06-10: Compacted 3 entries (2026-05-25..2026-05-26) into Compacted history per ADR 0001.
 - 2026-06-17: Repaired dead "see Runtime Discipline" cross-reference (L38) via non-numbered Shell-hygiene (zsh) bullet. Drift: neutral reword of the grep-call-sites bullet → adopted.
+- 2026-06-19: Collapsed duplicated two-step-claim mechanic to a pointer; folded Idle-after-report facts into completion-contract step; corrected pitfalls-memory survival claim. Drift: neutral reorder of Core Operating Principle 3's three scenario-bullets → adopted.
+- 2026-06-20: Extended @project-manager plan-change trigger to catch late directives contradicting closed work; five Phase-0 signals confirmed already-encoded. Drift: disabled (drift=0).
+- 2026-06-21: Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-30: Chained the two docket claim-writes into one Bash call (claim+ack 3→2 tool calls); PA-mode bullet deferred to Phase 2.

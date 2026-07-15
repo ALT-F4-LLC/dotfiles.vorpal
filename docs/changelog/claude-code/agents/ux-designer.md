@@ -1,5 +1,63 @@
 # Changelog: ux-designer
 
+## 2026-07-15
+
+### Summary
+Compacted 6 entries (2026-06-19..2026-07-01) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 6 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+R7 gains the Read-before-Edit adjacency rule as a second outranking exception (R7's sole post-compaction exception implied mid-session adjacency re-Reads were unneeded, contradicting the master this file binds "in full").
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: R7 one-liner gains the adjacency-gate outranking exception, citing the top-of-file Read-before-Edit/Write rule.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Read-before-Edit paragraph → pointer to senior-engineer.md's new master (B3; Skill(ux-spec) delta retained); stale-dispatch-check pointer added (R3); vote wire form deduped (I4).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (B3): Read-before-Edit paragraph → READ-BEFORE-EDIT pointer (concurrent docs/ux edits are the hot-file hotspot the master covers).
+- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on Rule 2.
+- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Cross-Communication.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Folded the H6 reporting-discipline gap (proposal-only Phase 1 output reported as "applied") into Communication Discipline as rule 8; S2/I13 deferred, D1 already-encoded. Findings: 4 → 1 sub / 0 cos / 0 rej / 2 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added Communication Discipline rule 8 — proposal voice for un-applied output (claim "applied" only after a self-run, verified Edit/Write) — cited historical-auditor + centralized pitfalls "reported proposal-only output as applied" (H6)
+
+### Dimensions Evaluated
+Capability Growth & Cross-Communication, Actionability (all 8 evaluated; S2 accessibility-dimension addition deferred to evolve-skills, I13 render_verify.sh deferred as infra, D1 teammate-envelope note already present).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (DKT-270 Phase 3 disambiguation)
 
 ### Summary
@@ -163,95 +221,6 @@ Consolidation & Trimming (primary); Capability Growth & Cross-Communication; Act
 ### Rename
 No rename.
 
-## 2026-07-01
-
-### Summary
-Phase 3 Disambiguation follow-up: normalized UX shutdown report fields.
-
-### Changes
-- DISAMBIG: updated local SP-1 to require scope or changed files, checks run, unresolved risks, and explicit `safe_to_close` close readiness.
-
-### Dimensions Evaluated
-Phase 3 Disambiguation; shutdown schema.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: UX lifecycle and QA classification -> applied. Phase 1 update tightened dispatch, plan-review, QA evidence, and ephemeral close guidance for ux-designer only.
-
-### Changes
-- AMPLIFY: dispatch now includes operator-visible lifecycle, cleanup, status, and handoff flow changes.
-- AMPLIFY: incoming @senior-engineer implementation PLAN review returns Pass / Pass-with-Issues / Fail with pattern, copy, and error-state findings.
-- AMPLIFY: design-QA findings now classify deviation/spec/tradeoff/operator-choice class and name inspected commands/artifacts/outputs.
-- AMPLIFY: ephemeral close handling adds a pre-idle checklist; removed duplicate Fix-loop continuity paragraph.
-
-### Dimensions Evaluated
-Capability Growth, Lifecycle Coherence, QA Evidence, Consolidation.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase 2 (operator-approved PA): landed the deferred PA plan-stage incoming trigger — ux-advisor reviews a team-lead-routed @senior-engineer PLAN for a spec'd surface before code, converting a would-be post-impl QA-Fail into a plan note. Net +1 (299→300). Trial: PA plan-approval → applied.
-
-### Changes
-- AMPLIFY: incoming trigger — @senior-engineer implementation PLAN routed by team-lead (plan-approval mode) for a surface with a docs/ux/ spec → pre-impl design check flagging pattern/copy/error-state deviations before code. Signal: Phase 0 PA innovation.
-
-### Dimensions Evaluated
-6 (Capability Growth) AMPLIFY. 1/2/3/4/5/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Culled a redundant Fix-loop restatement (Responsibility 2) that duplicated §Ephemeral-roles + §ux-advisor Lifecycle. Confirmed the three render-gate pitfalls remain structurally encoded (NO-OP). Net -2 (301→299). PA pre-impl plan-review trigger deferred to Phase 2 cross-cutting PA aggregation.
-
-### Changes
-- CULL: removed "Fix-loop continuity" paragraph — restated §Ephemeral-roles + Lifecycle §ux-advisor in substance. Signal: Consolidation (every-addition-offset).
-- Verified NO-OP: render gate encodes all three fem-kubernetes pitfalls (Marp broken-diagram export, giphy 200-but-dead embed, CSS-cue unreadable at delivery scale).
-- Deferred: PA plan-stage incoming trigger → Phase 2 (applied family-wide only if team-lead adopts PA primitive).
-
-### Dimensions Evaluated
-All 8. 5 (Consolidation) → 1 CULL. 6 (Capability Growth) → PA deferred to Phase 2. 1/2/3/4/7/8 RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-21
-
-### Summary
-Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 8 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Maintenance review (lowest-usage agent, 2 spawns/window). Verified the design-QA render gate already covers the cross-project "build-green ≠ render-correct" lesson; no edits warranted. Net 0 (284→284). Drift: skipped (seed-target was the cross-agent Pre-Flight parity gate — unsafe).
-
-### Changes
-- Verified NO-OP: design-QA render gate covers broken-image placeholders, 200-but-removed media, and CSS-correct-but-unreadable-at-scale cues — full strength vs the lesson.
-
-### Dimensions Evaluated
-All 8 RETAIN. Consolidation examined closest (render-verification authoring→validate→QA progression; distinct TeammateIdle polarities) — no trim clears the bar given lowest-usage + 0 historical failures.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -313,3 +282,9 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Phase 2 coherence — R5 ux-advisor self-summary trigger fires only on a design-QA verdict surfacing spec/implementation mismatch (lockstep with team-lead.md R5).
 - 2026-06-10: Compacted 3 entries (2026-05-17..2026-05-24) into Compacted history per ADR 0001.
 - 2026-06-17: Added rendered-EFFECT obligation to spec self-validation + relay-authority clause. Trial: rendered-EFFECT / relay-authority → adopted.
+- 2026-06-19: Maintenance review confirmed design-QA render gate already covers build-green-vs-render-correct; NO-OP. Drift: skipped (seed-target was the cross-agent Pre-Flight parity gate — unsafe).
+- 2026-06-21: Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
+- 2026-06-30: Culled redundant Fix-loop restatement; confirmed three render-gate pitfalls remain encoded (NO-OP); PA plan-review trigger deferred to Phase 2.
+- 2026-06-30: Phase 2 PA: landed pre-impl plan-review trigger for @senior-engineer PLANs on spec'd surfaces. Trial: PA plan-approval → applied.
+- 2026-07-01: Phase 1 UX lifecycle/QA classification update — dispatch, plan-review, QA evidence, ephemeral close guidance tightened. Trial: UX lifecycle and QA classification -> applied.
+- 2026-07-01: Phase 3 Disambiguation follow-up — normalized UX shutdown report fields (SP-1 scope/changed-files/checks/risks/safe_to_close).

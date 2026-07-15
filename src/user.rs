@@ -96,6 +96,7 @@ const SENSITIVE_PATHS: &[&str] = &[
 
 const OPENCODE_CONFIG_PATH: &str = "~/.opencode/**";
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
+const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
 const SANDBOX_DENY_READ_EXCLUDED: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
@@ -203,7 +204,7 @@ impl UserEnvironment {
                 .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
                 .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
                 .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "1")
+                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
                 .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
                 .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-8[1m]")
@@ -379,6 +380,7 @@ impl UserEnvironment {
                 SANDBOX_TOOLCHAIN_CACHE_PATHS
                     .iter()
                     .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
+                    .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .map(|p| p.to_string())
                     .collect(),
             )

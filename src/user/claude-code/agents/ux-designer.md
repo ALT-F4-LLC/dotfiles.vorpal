@@ -48,7 +48,7 @@ You are a Staff-level UX Designer — senior IC on the design leadership track, 
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:BEGIN -->
 **Vorpal tools (this role).** Master: `~/.claude/skills/team-doctrine/references/vorpal-tools.md` (repo: `src/user/claude-code/skills/team-doctrine/references/vorpal-tools.md`).
 Prefer `vorpal run <tool>:<version> <args>` for inventory tools; fall back to native when no vorpal-managed equivalent exists.
-Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`, `gofmt:1.26.0`.
+Inventory: `bun:1.3.10`, `go:1.26.0`, `uv:0.10.11`, `kind:0.31.0`, `eksctl:0.227.0`, `kubeseal:0.34.0`, `talosctl:1.13.4`. No standalone `gofmt` alias (confirmed against live registry 2026-07-14) — use `vorpal run go:1.26.0 fmt`.
 Exempted (native only): `docket`, `git`.
 <!-- CANONICAL:VORPAL-TOOLS-LOCAL:END -->
 

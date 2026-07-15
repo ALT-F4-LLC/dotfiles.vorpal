@@ -25,9 +25,8 @@ never `Skill(team-doctrine)`.
 | eksctl | 0.227.0 | `vorpal run eksctl:0.227.0 <args>` |
 | kubeseal | 0.34.0 | `vorpal run kubeseal:0.34.0 <args>` |
 | talosctl | 1.13.4 | `vorpal run talosctl:1.13.4 <args>` |
-| gofmt | 1.26.0 | `vorpal run gofmt:1.26.0 <args>` |
 
 **Exempted (use natively, never via vorpal):** `docket` and `git` — direct command conventions are woven throughout all agent files; `vorpal run docket:latest` / `vorpal run git:latest` must NOT appear as guidance.
 
-**Availability caveat.** This inventory is a PREFERENCE list, not an availability guarantee — a pinned tool may not be published for every platform. If `vorpal run <tool>:<ver>` fails with `artifact alias not found`, fall back to the natively installed tool or a covering vorpal tool: e.g. `gofmt` is covered by `vorpal run go:1.26.0 fmt`.
+**Availability caveat.** This inventory is a PREFERENCE list, not an availability guarantee — a pinned tool may not be published for every platform. If `vorpal run <tool>:<ver>` fails with `artifact alias not found`, fall back to the natively installed tool or a covering vorpal tool: e.g. `gofmt` has no standalone alias in the registry (confirmed against the live registry 2026-07-14) — use `vorpal run go:1.26.0 fmt` instead.
 <!-- CANONICAL:VORPAL-TOOLS:END -->

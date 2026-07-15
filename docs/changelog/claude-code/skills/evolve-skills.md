@@ -1,5 +1,48 @@
 # Changelog: evolve-skills
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery; added a post-cycle /evolve-coherence pointer to Wrap-up (root-cause fix for evolve-coherence's zero in-window invocations).
+
+### Changes
+- AMPLIFY: Crash & Stall Recovery gains (d) API-error self-report crash signal + a nudge-before-respawn bullet (lockstep from evolve-agents).
+- AMPLIFY: Wrap-up step 4 recommends operator run /evolve-coherence before committing.
+
+### Dimensions Evaluated
+Coherence (family lockstep), Cross-communication (recovery signals).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Wired check_citations.py into the Phase-2 coherence check to mechanize stale repo-layout path-literal detection. Findings: 7 → 1 sub / 0 cos / 0 rej / 3 def / 2 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase-2 coherence-reviewer runs check_citations.py per skill file to catch stale path literals — cited H1 (distinguished-engineer/pitfalls.md:176; Phase-3 disambiguation was not catching them).
+
+### Dimensions Evaluated
+All 8. Findings I6/I7/I8 deferred parity-bound to Phase 2; I5 deferred (script absent); H2 already-encoded; M2 no routing change (verified negative).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 4 history compaction)
 
 ### Summary
@@ -177,50 +220,6 @@ All 8. Over-Engineering: net -1 (TRIM honored, 533/535). No model/routing/drift 
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-Phase 2 (self-edit): pinned model= (aliases) on all 8 Agent() spawns + added a $TMPDIR scratch guard to the shell-heavy auditor Rules. In-line edits, no line growth (stays 534, at self-budget).
-
-### Changes
-- AMPLIFY: pinned `model=` on every Agent() spawn — sonnet (docket/historical/model-routing auditors) / opus (docs-researcher, innovation-scanner, review-<name>, coherence-reviewer, disambiguation-reviewer). Cited the dispatch-defect rule; operator-approved per-tier pinning.
-- AMPLIFY: appended a `$TMPDIR`-not-`/tmp` scratch guard to the historical-auditor + model-routing-auditor Rules lines — cited the /tmp run ERROR.
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Compacted 7 entries (2026-06-04..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 7 oldest committed entries (entries 11-17) with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Phase 2 coherence pass: concrete stall threshold added to stall-detect line, biodiversity CANONICAL-tag correctness cull (lockstep with evolve-agents). Parity checks 5-9 all CLEAN.
-
-### Changes
-- AMPLIFY: added "≥2 turns with no new tool call is stall evidence" to stall-detect line — concretizes abstract trigger.
-- CULL: removed "CANONICAL tag" from biodiversity niche-token filter — matches every family carrier, defeats monoculture guard (correctness defect; lockstep with evolve-agents).
-
-### Dimensions Evaluated
-Coherence (stall threshold, biodiversity correctness defect).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -228,6 +227,9 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-04: Fixed live `/evolve-skills days=7` all-skills pattern — pre-flight guards no longer treat `days=N` as skill name; Parsing rule strips window token first; net +2.
 - 2026-06-05: Trimmed redundant Phase 1 reviewer read-list recap from template-forwarding sentence (already verbatim in spawning template); net 0; symmetric with evolve-agents.
 - 2026-06-08: Trimmed historical-auditor "never bulk-cat ~/Development" clause (duplicated in CANONICAL:HARVEST); net 0 in-line shorten; parity-bound with evolve-agents.
+- 2026-06-19: Phase 2 coherence — added concrete stall threshold; culled "CANONICAL tag" from biodiversity niche-token filter (correctness defect).
+- 2026-06-20: Compacted 7 entries (2026-06-04..2026-06-09) into Compacted history per ADR 0001.
+- 2026-06-20: Phase 2 self-edit — pinned model= (aliases) on all 8 Agent() spawns; added $TMPDIR scratch guard to shell-heavy auditor Rules. No line growth.
 - 2026-06-09: NO-OP Phase 1 (360 lines) — 4 parity-bound items routed to Phase 2; headline: correction-regex FP guard excludes teammate-message/command-output turns.
 - 2026-06-09: Phase 2 — historical-auditor FP guard, budget-truth wording mirrored from evolve-agents, WebFetch added to allowed-tools; Coherence + Actionability.
 - 2026-06-09: Three mid-run-safe additions (360→359): docs-researcher repo-adoption grep gate, Phase-1 $-escape reviewer flag, rename-sweep LIVE-file scoping; 2 parity-bound with evolve-agents.

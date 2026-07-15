@@ -144,8 +144,9 @@ All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (crea
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error; (d) a teammate that dies on an API error self-reports `failed` to the orchestrator — a faster, cleaner crash signal than Monitor-silence heuristics.
 
+- **Nudge before re-spawn (stall only).** For a stuck/idle teammate, one `SendMessage` nudge wakes it to retry immediately — cheaper than a fresh spawn; escalate to `-r2` only if the nudge draws no new tool call within one turn.
 - **Re-spawn exactly once** with the `-r2` suffix, supplying a `Resume context:` block that lists (a) the prior partial report, (b) the task ID to claim, (c) the target file.
 <!-- CANONICAL:SECOND-FAILURE-RECOVERY:BEGIN -->
 - **Second failure**: mark task completed and skip; never do the work directly. Phase 1 reviewer → record "No review performed — agent unavailable" in the changelog. Phase 0 auditor → write `"UNAVAILABLE: <name> failed twice"` as the entire content of that auditor's `{scratchpad}/phase0/<name>.md` (its findings-token value) so the Phase 1 Read-by-path stays valid.
@@ -226,6 +227,7 @@ After Phase 4 (or its no-op gate check) completes:
 1. Clean up the team (the session's single implicit team — no name needed) per lifecycle rules (coherence-reviewer and any history-compactor are already shut down); its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `find .claude/skills src/user/claude-code/skills -maxdepth 2 -name SKILL.md -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-skill byte budget (pre-flight step 4).
 3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the Findings Ledger outcome (per finding: ID → terminal disposition; substantive-floor result per organism), the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted or no-op, plus invariant-check 0-5 results per the retention-compaction master), and reminder that NO changes have been committed.
+4. **Post-cycle coherence gate (recommend to operator).** These edits are un-committed and not yet audited for cross-family drift — recommend the operator run `/evolve-coherence` before committing, to catch any parity or cross-reference drift this cycle introduced. evolve-coherence is the post-edit gate for standalone evolve-skills runs; it never edits, only reports and routes.
 
 ---
 
@@ -366,6 +368,7 @@ Today's date: {today_date}. **Read-only** — the orchestrator applies all chang
 4. Check cross-communication: verify orchestrator-to-teammate SendMessage trigger completeness, flag hub-and-spoke patterns (>50% routing through one agent)
 5. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check all` (non-zero exit = drift; mechanizes the manual eyeball for the byte-symmetric CANONICAL:IMPACT-CLASS block — innovation-scanner is now single-homed in evolve-phase0-templates.md §7 and no longer compared). Flag any drift.
 6. Run `python3 src/user/claude-code/scripts/symmetry_check.py --check mimir-note` (non-zero exit = the historical-auditor Mimir note is missing from one or more of the §3a/§3b/§3c historical variants in `evolve-phase0-templates.md`; mechanizes the manual eyeball — do NOT flag structural differences as drift, the historical-auditor variants are intentionally asymmetric, presence of the note is the only check). Flag any MISSING result.
+7. Run `python3 src/user/claude-code/scripts/check_citations.py <skill-file>` (repo-root base) per skill file — MISSING lines are candidate stale repo-layout path literals (mechanizes step 3's `accurate references` invariant, which Phase-3 disambiguation does not reliably catch). Adjudicate each: flag a genuinely stale/renamed path as a coherence fix; discard prose-fragment false positives (bare glob tokens, an ad-hoc-created `docs/spec/`).
 
 ## Output Format
 ### Renames

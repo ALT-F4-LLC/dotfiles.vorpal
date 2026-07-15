@@ -1,5 +1,34 @@
 # Changelog: session-metrics
 
+## 2026-07-14
+
+### Summary
+Phase 3 disambiguation: pinned the referent of the stale-price caveat line.
+
+### Changes
+- "the table may be stale" → "the script's price table may be stale" — the user-facing caveat had two plausible table referents (chat roster table vs price table); only the price table can be stale (multi-reading).
+
+### Dimensions Evaluated
+Confusable names/triggers/terms; multi-reading wording; overlapping ownership.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Added a session-level stale-price caveat instruction (SKILL.md slice of I40): the renderer now flags that an unpriced model UNDERCOUNTS total cost rather than letting per-cell "n/a" pass unremarked — derivable from `summary.by_model` with no script change. Dropped a frozen "environment is 2.1.207" version claim (already drifted to 2.1.210). Findings: 1 sub / 1 cos / 1 rej (D2) / 1 def (I40 script-side) / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: instruct surfacing a one-line stale/undercount caveat when any `by_model`/subagent `cost_est` is `null` (I40, SKILL.md slice)
+- TRIM[COSMETIC]: removed drift-prone "this environment is 2.1.207", keeping the load-bearing 2.1.196+ minimum
+
+### Dimensions Evaluated
+Actionability/Completeness (unpriced-model caveat), Coherence (version staleness), Skill Design Quality (D2 SKILL_DIR resolver — rejected migration). Deferred: I40 programmatic `price_table_models` emission (script-only).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary

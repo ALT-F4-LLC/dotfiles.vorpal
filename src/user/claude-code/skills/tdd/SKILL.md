@@ -148,8 +148,11 @@ malformed frontmatter.
    state, or data flow). Validation §5 is the gate.
 5. **Verify embedded technical assertions before stating them as fact.** For each
    concrete claim the TDD commits to, apply the matching check arm and record the
-   artifact or command behind it. A "verified" label must not over-claim scope;
-   state unverified claims as assumptions.
+   artifact or command behind it. A "verified" label must not over-claim scope.
+   Label each load-bearing claim OBSERVED (you ran the command / read the artifact)
+   or INFERRED (reasoning only); a claim that feeds a Risk row (§8) or a phase AC
+   (§11) MUST be OBSERVED, not asserted as fact — an unverified claim a reviewer
+   later falsifies invalidates every row and AC built on it.
    - **Snippet / command**: execute it; record the exit code or an output excerpt.
    - **Portability claim** (cross-platform, cross-engine, cross-dialect SQL): test
      each declared target — "valid in both X and Y" requires a run in both (see
@@ -160,16 +163,19 @@ malformed frontmatter.
      vs. the workflow's pin, a diagram count vs. the assets actually referenced.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
      target exists and its signature matches before writing it as settled.
+   - **Insertion anchor** (a phase that directs an edit relative to a verbatim
+     anchor line): before citing the anchor, test its mirrored-block
+     membership: `Grep` the target file for `CANONICAL:` markers and check whether
+     the anchor falls between a BEGIN/END pair — an anchor line INSIDE a `CANONICAL:*-LOCAL` block
+     is synced across sibling files, so an insertion there silently breaks parity.
+     Cite a stable anchor OUTSIDE the synced block, or name the whole block as the
+     edit unit.
    - **Path citations**: every inline-backtick path the TDD cites must resolve on
-     disk — verify with `Grep`/`Read` while drafting. The acceptance panel
-     mechanizes this post-Write via `~/.claude/scripts/tdd_preflight.sh
-     {output_path} [companion.md]` (repo: `src/user/claude-code/scripts/tdd_preflight.sh`),
-     which chains `check_citations.py` (path existence) with numbered-cross-reference
-     reconciliation against a companion ADR/TDD. **Migration/relocation caveat** —
-     the checker resolves against the CURRENT tree, so a TDD that cites TARGET-STATE
-     (post-move) paths reports them `MISSING`; that is expected. Classify each MISSING
-     hit as target-state, glob-literal, or genuinely-broken before treating it as a
-     failure.
+     disk — verify with `Grep`/`Read` while drafting. Both the author (pre-Write,
+     Validation §4) and the acceptance panel (post-Write) mechanize this via
+     `~/.claude/scripts/tdd_preflight.sh` (repo: `src/user/claude-code/scripts/tdd_preflight.sh`);
+     see Validation §4 for the run and the `MISSING`-hit classification (target-state,
+     glob-literal, or genuinely-broken).
 6. **Proceed to Validation Before Save** — that step is the single source of
    truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
    checks (matches sibling PRD's §6).
@@ -252,7 +258,10 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
     (paths affected), (c) per-phase acceptance criteria — a grep/regex-based AC
    must embed the exact command and its expected hit count (run it; the count is
-   the evidence) per §9 and staff-engineer.md rule 6, (d) effort estimate
+   the evidence) per §9 and staff-engineer.md rule 6; for a MEASURED or RENDERED
+   value (timing, byte/pixel size, sampled count) use a tolerance band or range,
+   NOT exact-match — exact ACs on non-deterministic values fail ~15-20% of runs
+   intermittently, while deterministic grep/regex hit counts stay exact, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags, (g) each phase must be interpretable stand-alone when
     copied verbatim into a Docket issue — restate any load-bearing contract inline
@@ -291,6 +300,16 @@ before the final Write:
      ```
      Error: validator unavailable: {stderr}
      ```
+
+4. **Author-side citation pre-check (pre-Write).** On the staged draft, run
+   `Bash ~/.claude/scripts/tdd_preflight.sh "$TMPDIR/{slug}.md"` (append ` {companion.md}`
+   when a companion ADR/TDD exists) — it chains `check_citations.py` (path existence)
+   with numbered-cross-reference reconciliation against the companion. This is the
+   SAME gate the acceptance panel re-runs post-Write; running it here converts a
+   broken-citation rejection (a full fix-respawn cycle) into a pre-Write repair.
+   Advisory, not a hard abort — the checker resolves against the CURRENT tree, so
+   classify each `MISSING` hit as target-state (post-move path — expected),
+   glob-literal, or genuinely-broken; repair only the genuinely-broken before Save.
 
 **Meta-TDD caveat** — the placeholder scan treats only ``` fenced blocks as exempt,
 so a TDD that *documents a doc-authoring skill* and must show path templates should

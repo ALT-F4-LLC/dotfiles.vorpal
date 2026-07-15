@@ -18,9 +18,45 @@ EVOLUTION-MODEL	.claude/skills/evolve-config/SKILL.md
 DISAMBIGUATION-CHARTER	.claude/skills/evolve-agents/SKILL.md
 DISAMBIGUATION-CHARTER	.claude/skills/evolve-config/SKILL.md
 DISAMBIGUATION-CHARTER	.claude/skills/evolve-skills/SKILL.md
-# .claude/skills/evolve-config/SKILL.md:49 carries a deliberately-specialized
-# (non-identical — appends a config-blast-radius sentence) variant of the
-# Scientific Trial Protocol paragraph. Intentionally NOT a registered carrier
-# below — omission is by design, not an oversight.
+# evolve-config's config-blast-radius sentence sits OUTSIDE the CANONICAL block
+# (a separate <!-- CONFIG-ONLY --> line after :END), so the block itself is
+# byte-identical across all three carriers and IS registered below.
 SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-agents/SKILL.md
 SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-skills/SKILL.md
+SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-config/SKILL.md
+# evolve-* orchestrator family — CANONICAL blocks shared verbatim across the
+# team-spawning evolve skills (mechanized separately by symmetry_check.py; also
+# registered here so doctrine_check.sh enforces them in one place).
+GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-agents/SKILL.md
+GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-skills/SKILL.md
+GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-config/SKILL.md
+OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-agents/SKILL.md
+OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-skills/SKILL.md
+OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-config/SKILL.md
+SECOND-FAILURE-RECOVERY	.claude/skills/evolve-agents/SKILL.md
+SECOND-FAILURE-RECOVERY	.claude/skills/evolve-skills/SKILL.md
+SECOND-FAILURE-RECOVERY	.claude/skills/evolve-config/SKILL.md
+PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-agents/SKILL.md
+PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-skills/SKILL.md
+PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-config/SKILL.md
+IMPACT-CLASS	.claude/skills/evolve-agents/SKILL.md
+IMPACT-CLASS	.claude/skills/evolve-skills/SKILL.md
+BANNER	.claude/skills/evolve-agents/SKILL.md
+BANNER	.claude/skills/evolve-skills/SKILL.md
+BANNER	.claude/skills/evolve-config/SKILL.md
+BANNER	.claude/skills/evolve-coherence/SKILL.md
+BANNER	.claude/skills/evolve-model-distribution/SKILL.md
+# doc-authoring family — ARGUMENT_HANDLING / COLLISION_DIALOG / SAVE_AND_RETURN
+# are byte-identical across adr/prd/tdd/ux-spec (the 4 doc skills).
+ARGUMENT_HANDLING	src/user/claude-code/skills/adr/SKILL.md
+ARGUMENT_HANDLING	src/user/claude-code/skills/prd/SKILL.md
+ARGUMENT_HANDLING	src/user/claude-code/skills/tdd/SKILL.md
+ARGUMENT_HANDLING	src/user/claude-code/skills/ux-spec/SKILL.md
+COLLISION_DIALOG	src/user/claude-code/skills/adr/SKILL.md
+COLLISION_DIALOG	src/user/claude-code/skills/prd/SKILL.md
+COLLISION_DIALOG	src/user/claude-code/skills/tdd/SKILL.md
+COLLISION_DIALOG	src/user/claude-code/skills/ux-spec/SKILL.md
+SAVE_AND_RETURN	src/user/claude-code/skills/adr/SKILL.md
+SAVE_AND_RETURN	src/user/claude-code/skills/prd/SKILL.md
+SAVE_AND_RETURN	src/user/claude-code/skills/tdd/SKILL.md
+SAVE_AND_RETURN	src/user/claude-code/skills/ux-spec/SKILL.md

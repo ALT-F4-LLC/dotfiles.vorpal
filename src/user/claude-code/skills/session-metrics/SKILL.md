@@ -26,7 +26,7 @@ You report on the **current** Claude Code session by parsing its local transcrip
 python3 "${CLAUDE_SKILL_DIR}/scripts/session_metrics.py"
 ```
 
-`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.196+; this environment is 2.1.207). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
+`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.196+). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
 
 **Output shape:** all stdout except the final line is a single pretty-printed JSON object (the summary); the final line repeats the absolute path to the generated HTML file. Split on the last newline and parse everything before it as one JSON blob — don't attempt to `json.loads()` line-by-line as JSONL.
 
@@ -52,6 +52,7 @@ State the absolute HTML path plainly (e.g. "Report written to: `<path>`"). Do no
 ## Notes on what the numbers mean
 
 - **Every cost figure is an estimate** (`est.`) — derived from a hardcoded per-model price table, not billing-authoritative usage. Caching-tier nuances, batch discounts, and `inference_geo` multipliers are not modeled.
+- **An unpriced model undercounts cost — it doesn't zero it.** When any `summary.by_model` entry or a subagent `cost_est` is `null` (rendered "n/a"), that model is absent from the script's price table; surface one caveat line that the session total is undercounted and the script's price table may be stale, rather than letting the n/a pass unremarked.
 - **Subagent effort is never inferred.** The transcript does not record per-subagent effort; the script emits the literal string `"unknown (not recorded in transcript)"`. If asked to estimate it, decline — that would be fabrication.
 - **Files-touched is deduped** across the main session and every subagent transcript.
 - **Timeline has two numbers**: wall-clock duration (first timestamp to last) and total `turn_duration` (the sum of the harness's own per-turn timing records) — these differ when there were idle gaps.

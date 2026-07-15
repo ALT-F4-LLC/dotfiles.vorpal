@@ -1,5 +1,47 @@
 # Changelog: evolve-coherence
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-04..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Refreshed D4 rubric's manifest-enumeration prose after doc-authoring + evolve-* families were registered in doctrine_check_manifest.tsv this cycle (self-consistency fix for drift my own manifest edit introduced).
+
+### Changes
+- AMPLIFY: D4 CANONICAL-parity bullet — dropped the stale "currently PITFALLS/EVOLUTION-MODEL/DISAMBIGUATION-CHARTER" hand-count; ARGUMENT_HANDLING/COLLISION_DIALOG/SAVE_AND_RETURN + evolve-* families now noted as registered.
+
+### Dimensions Evaluated
+Coherence (self-consistency after shared-infra edit).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+D4 #2 now reads manifest-registered CANONICAL carrier SETS from doctrine_check_manifest.tsv (source of truth doctrine_check.sh enforces) instead of hand-counting them — resolves recurring stale-enumeration drift (H8) and a live instance: the inline "7 carriers" for PITFALLS under-counted the manifest's registered set (omitted the team-doctrine reference carrier). Findings: 7 → 1 sub / 0 cos / 1 rej / 3 def / 0 enc (+ M4 no-change)
+
+### Changes
+- CULL/REDIRECT[SUBSTANTIVE][H8]: replaced hardcoded carrier counts for PITFALLS/EVOLUTION-MODEL/DISAMBIGUATION-CHARTER with a manifest pointer; HARVEST + doc-family stay inline (not yet manifest-registered). Net +69.
+
+### Dimensions Evaluated
+All 8. Coherence (6) + Over-Engineering (4) primary. Report-and-route-only charter verified intact (4 enforcement layers). No routing change (M4: zero usage, no evidence). Rejected I16 (scratchpad-write conflicts with disallowed-tools no-write design); deferred I17/I19 (cross-skill script builds), partial-applied I18.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
 
 ### Summary
@@ -237,60 +279,12 @@ Coherence, Completeness (D3/D4 whitelist accuracy).
 ### Rename
 No rename (audits the renamed code-review-verdict).
 
-## 2026-06-09
+## Compacted history
 
-### Summary
-Closed the spawn-template rubric handoff gap: Phase 0/1 teammate prompts referenced "the rubric" without a path, but spawned teammates never receive the SKILL.md — added an explicit Read instruction for `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric to both templates. Escaped the documentary `\$ARGUMENTS` at L29. Net 0.
+Entries below were compacted per the retention-compaction policy; full text in git
+history (see the compaction entry's date).
 
-### Changes
-- Phase 0 + Phase 1 templates: within-line addition of "Read .claude/skills/evolve-coherence/SKILL.md §The Coherence Rubric — NOT in this prompt".
-- L29: `$ARGUMENTS` → `\$ARGUMENTS` so the Argument Handling prose stays literal (no-arg invocations previously rendered empty backticks); the live substitution at L44 retained.
-
-### Dimensions Evaluated
-Actionability (HIGHEST impact — teammate prompts must be self-sufficient); Skill Design Quality (arg escape); Coherence (re-verified ALL rubric ground-truth claims against today's modified agents/*.md — zero drift). All 8 reviewed; Over-Engineering trims rejected (protective redundancy on the empty-hash guard).
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Replaced the stale hardcoded line number `staff-engineer.md:103` (3 occurrences: D2 #4 invariant, D2 detection seed, Phase-1 spawn template) — content drifted to line 112 in the c10195b docs-path refactor — with content-anchored references on the unique `Skill(verify-ac)` rule-body token. Aligns D2 references with the skill's own D4 #1 anti-line-number principle. Net 0.
-
-### Changes
-- L82 / L88 / L277: swapped `:103` for a content anchor ("the sole `Skill(verify-ac)` token in `agents/staff-engineer.md`"); verified exactly 1 occurrence (now line 112), excluded-FALSE-Blocker classification unchanged.
-
-### Dimensions Evaluated
-Coherence (HIGHEST — accurate references + self-consistency with D4 #1); Over-Engineering (net 0, no additions; rubric density load-bearing). All 8 reviewed; rest sound.
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Removed the standalone "Whitelist of intentional variants" rubric section — a redundant restatement of carve-outs already stated inline per dimension (each with a `(D<n> #<m>)` back-pointer) and re-enumerated in the Phase 1 spawn template's `## Task` (bullets 1-8), with bullet 9's full substance inline at D3 #7 (invariant L99 + detection seed L108). Replaced with a 1-line pointer to the two live sources. Net -10 (332→322).
-
-### Changes
-- Deleted `### Whitelist of intentional variants` (9 bullets): verified each carve-out is preserved inline in its origin dimension and (1-8) in the line-290 template before removal; left a 1-line pointer so a future editor doesn't re-add it as "lost".
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — pure restatement removed), Coherence (internal non-redundancy; own CANONICAL:BANNER re-confirmed byte-identical to evolve-agents/evolve-skills; report-and-route discipline intact, no self-invoke). All 8 reviewed; rest sound.
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-First evolve cycle. Hardened the central never-edits contract structurally: removed Edit/Write from `allowed-tools` and added `disallowed-tools: ["Edit","Write"]`, matching the report-only sibling skills. Resolved the self-contradiction where the No-Edit Guard claimed Edit/Write bookkeeping while Data Models § says all artifacts are in-context. Net +1.
-
-### Changes
-- Frontmatter: dropped Edit/Write from `allowed-tools`; added `disallowed-tools: ["Edit","Write"]` (verified real per code.claude.com/docs; clears per operator message — defense-in-depth atop the prose No-Edit Guard, not a replacement).
-- No-Edit Guard: rewrote the two stale sentences — artifacts are in-context (never written to disk), bookkeeping uses TaskCreate/TaskUpdate; Edit/Write now hard-removed via disallowed-tools. (Orchestrator self-corrected the middle sentence the reviewer's wording left stale.)
-
-### Dimensions Evaluated
-Skill Design Quality + Over-Engineering (HIGHEST — removed a self-contradiction, net +1 at ~333/500); Coherence (report-only sibling parity, internal Data-Models consistency).
-
-### Rename
-No rename.
+- 2026-06-04: First evolve cycle — hardened never-edits contract: dropped Edit/Write from allowed-tools, added disallowed-tools; fixed self-contradiction.
+- 2026-06-05: Removed redundant "Whitelist of intentional variants" section (restated per-dimension carve-outs + Phase 1 template); pointer instead.
+- 2026-06-08: Replaced stale hardcoded line refs (staff-engineer.md:103) with content-anchored Skill(verify-ac) token refs, per D4 #1 anti-line-number rule.
+- 2026-06-09: Closed spawn-template rubric handoff gap — Read instruction for SKILL.md §Coherence Rubric added to Phase 0/1 templates.

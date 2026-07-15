@@ -1,5 +1,50 @@
 # Changelog: tdd
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Phase 3 disambiguation: made the insertion-anchor authoring check's grep procedure single-reading.
+
+### Changes
+- Rewrote "`Grep` it for `CANONICAL:` / mirrored-block membership" as an explicit BEGIN/END-membership test on the target file — the literal reading (grep the anchor line itself) false-passes any anchor sitting mid-block, defeating the parity guard (multi-reading).
+
+### Dimensions Evaluated
+Confusable names/triggers/terms; multi-reading wording; overlapping ownership.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Added an author-side pre-Write citation gate (tdd_preflight.sh now also runs on the staged draft, not just panel-side post-Write), OBSERVED/INFERRED labeling for load-bearing claims, an insertion-anchor CANONICAL-block check, and tolerance-band ACs for measured/rendered values. Findings: 5 → 4 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Validation Before Save now runs `tdd_preflight.sh` author-side on the staged draft (was panel-side post-Write only), converting broken-citation rejections into pre-Write repairs; Authoring §5 Path-citations bullet shortened to point at it (I29)
+- AMPLIFY[SUBSTANTIVE]: load-bearing claims must be labeled OBSERVED or INFERRED; a claim feeding a Risk row or phase AC MUST be OBSERVED (H21)
+- AMPLIFY[SUBSTANTIVE]: new Insertion-anchor check arm — verify an anchor line is not inside a CANONICAL:*-LOCAL synced block before citing it (H22)
+- AMPLIFY[SUBSTANTIVE]: §11(c) ACs — MEASURED/RENDERED values now use tolerance bands, not exact-match; deterministic grep/regex counts stay exact (H23)
+
+### Dimensions Evaluated
+Completeness/Actionability (primary), Coherence (insertion-anchor + citation-gate consistency with staff-engineer.md). Deferred: I30 (doc-family CANONICAL manifest rows), PARITY-BOUND with adr/prd/ux-spec/init-specs.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 4 history compaction)
 
 ### Summary
@@ -204,62 +249,6 @@ Completeness / Correctness (AMPLIFY), Over-Engineering (RETAIN), others RETAIN.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Closed the cited 2026-06-10 staff pitfall (TDD line-budget feasibility asserted from estimate — a net-additive phase nearly breached the 500-line gate): Authoring §5's verify-before-settled enumeration now names quantitative/line-budget feasibility claims (measure with wc -l/sed -n, never estimate). Measured net +1 (301 → 302 per post-apply wc -l; reviewer estimate was 0).
-
-### Changes
-- AMPLIFY: Authoring §5 — added quantitative/line-budget claims to the MUST-verify enumeration; dropped the illustrative "zero X exist (verified)" tail parenthetical (normative rule stands without it) — cited signal: staff pitfalls 2026-06-10 line-budget re-fire.
-
-### Dimensions Evaluated
-All 8; Completeness primary; AC-vocabulary focus area confirmed already encoded (§5 L142-144 + §11(c)); staff-engineer.md L111 quantitative-arm gap routed out of scope (tracking issue); CANONICAL shared-include duplication remains a Phase 2 standing item.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 11 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L43) already states the identical ignore-silently rule. Applied identically to all 4 doc-authoring siblings (prd/tdd/adr/ux-spec, -1 each). Net -1 (301 lines).
-
-### Changes
-- Failure Modes: deleted last table row (intra-file duplication of the CANONICAL block; byte-identical removal across the family, grep-verified 0 survivors).
-
-### Dimensions Evaluated
-Coherence (family lockstep), Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO-OP. All cross-project pitfall signals (verified/canonical-claim discipline, coherence-grep AC under-match) confirmed already encoded against the live file — Authoring §5 (L142-148) bars contradicted-facts + scope-overreach; §11(c) (L222-227) requires run-with-hit-set-verified grep ACs. verify-ac-snippet innovation declined (sibling-boundary + no BALANCED offset).
-
-### Changes
-- None (NO-OP verdict, grep-cited against live file).
-
-### Dimensions Evaluated
-All 8; Over-Engineering HIGHEST (no trim slack without breaking format-authority determinism); Completeness (pitfall halves a/b/c all present); Coherence (CANONICAL trio + COUPLING verified across family).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +281,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Mythos/Fable-5 cycle audit — NO-OP; 3 cross-repo signals already encoded (regex-AC, scope-bounded verified claims, named-source-vs-live-artifact).
 - 2026-06-09: Full-cycle audit NO-OP — allowed-tools/cross-refs/description verified consistent with siblings; stale 2026-06-04 entry noted as historical artifact (entries immutable).
 - 2026-06-09: Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
+- 2026-06-10: Full-cycle audit NO-OP — verified/canonical-claim discipline and coherence-grep AC signals already encoded; verify-ac-snippet declined.
+- 2026-06-10: Phase 2 lockstep trim — removed redundant "additional positional args" row (dup of CANONICAL:ARGUMENT_HANDLING); family-wide, net -1.
+- 2026-06-10: Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
+- 2026-06-10: Closed staff pitfall — Authoring §5 requires quantitative/line-budget feasibility claims be measured (wc -l), never estimated; net +1.

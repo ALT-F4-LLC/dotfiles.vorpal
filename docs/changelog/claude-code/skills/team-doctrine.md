@@ -1,5 +1,37 @@
 # Changelog: team-doctrine
 
+## 2026-07-14
+
+### Summary
+Coherence-class fix surfaced during Phase 3: corrected docket-cli.md's index Cited-by column, which under-listed consumers 5-to-3.
+
+### Changes
+- Index row for `references/docket-cli.md`: Cited-by `project-manager.md, sdet.md, senior-engineer.md` → `all 7 agents + team-lead.md` — verified via `grep -l 'CANONICAL:DOCKET-CLI-LOCAL' src/user/claude-code/agents/*.md`, all 8 files carry the LOCAL block, not just 3.
+
+### Dimensions Evaluated
+Coherence (accurate references — routed from Phase 3 as coherence-class, not disambiguation).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Documented 3 undocumented docket capabilities + 2 synopsis nits verified live against `docket b59dd2f`, and elevated the recurring `comment add --body` wrong-flag warning to a bold rendered callout. SKILL.md unchanged; all edits landed in `references/docket-cli.md` (no byte budget). Findings: 8 → 5 sub / 0 cos / 0 rej / 2 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: docket-cli.md — added `docket config` top-level command (K1)
+- AMPLIFY[SUBSTANTIVE]: docket-cli.md — `plan` `-l/--label` + `-s/--status` shown repeatable w/ default (K4)
+- AMPLIFY[SUBSTANTIVE]: docket-cli.md — `import <file>` positional + `--replace` destructive note (K5)
+- AMPLIFY[SUBSTANTIVE]: docket-cli.md — `doc show --rev N` + `doc list` filters documented (K2, K3)
+- AMPLIFY[SUBSTANTIVE]: docket-cli.md — bold `comment add` wrong-flag foot-gun outside the code fence (B5)
+
+### Dimensions Evaluated
+Completeness, Actionability, Coherence. Deferred: I41 (doctrine_check_manifest.tsv expansion, PARITY-BOUND), H19 (vorpal gofmt registry drift, unverifiable this cycle — network-blocked). R1 (docket --help re-discovery) routed cross-cutting to evolve-agents (LOCAL-block distribution question).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass)
 
 ### Summary

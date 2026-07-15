@@ -1,5 +1,19 @@
 # Changelog: verify-ac
 
+## 2026-07-14
+
+### Summary
+Propagated mktemp race-safe validation staging to complete report-emission family symmetry (code-review-verdict's this-cycle race fix had left 3 siblings on the fixed-name pattern).
+
+### Changes
+- AMPLIFY: `mktemp`-unique staging file in FULL-mode Validation Before Emit — restores lockstep with code-review-verdict's this-cycle race fix.
+
+### Dimensions Evaluated
+Coherence (cross-family staging symmetry).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary

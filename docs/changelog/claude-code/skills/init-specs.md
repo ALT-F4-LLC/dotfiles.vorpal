@@ -1,5 +1,33 @@
 # Changelog: init-specs
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-08..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+No-change verdict. All 8 dimensions clean. I32 parity re-verified manually: init-specs Spec File Reference table and prd RESERVED-NAMES are IN SYNC (7 names, same order) — flagged PARITY-BOUND, mechanized check deferred to prd's I27 arm. spec_verify.sh now exists and Step 3's description matches it exactly. No trim headroom.
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no trim without dropping a safety rail); Coherence (prd RESERVED-NAMES parity + spec_verify.sh reference accuracy verified on-disk).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 4 history compaction)
 
 ### Summary
@@ -215,34 +243,6 @@ All 8; Over-Engineering primary; $-escape audit: documented-variable exception a
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Third consecutive no-change verdict (184 lines, one-time bootstrap, zero usage in window). Phase-0 signals verified against ground truth: `$`+digit substitution audit clean; COUPLING reciprocity with prd re-confirmed accurate post file-based-paths refactor (c10195b); RESERVED-NAMES exact-match with team-lead.md taxonomy.
-
-### Changes
-- None. Spawning Template envelope-safe (no Skill() prescribed to spawned agents). `docket doc` adoption and `paths:` re-add rejected (Content Gate / prior operator revert f8b18a2).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no trim headroom, concur with prior cycle), Orchestration (envelope-safety verified), Coherence (prd reciprocity + taxonomy parity verified on-disk).
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (185 lines, one-time bootstrap orchestrator, unused in window — expected). Seven Spec File names verified exact-match against team-lead.md §Docs-Path Taxonomy; team-spawn/shutdown lifecycle verified against the async-shutdown model + Rule 7; COUPLING reciprocity with prd confirmed coherent on-disk. No trim candidate removable without dropping a load-bearing verification rail.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no trim headroom without losing safety rails), Orchestration (shutdown + parallel-spawn lifecycle), Coherence (Seven-Spec-File taxonomy parity).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +286,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Fixed crossed shutdown handshake in parallel-spawn flow — orchestrator now approves self-initiated shutdown_request instead of originating competing requests. Net 0.
 - 2026-05-30: No-change verdict; changelog file renamed specs.md → init-specs.md to match the skill rename applied in a prior cycle.
 - 2026-06-05: Corrected factually wrong COUPLING comment (prd does not write to docs/spec/; siblings refuse reserved names by doc-type, not directory).
+- 2026-06-08: Phase 1 no-change verdict — Seven Spec File names verified exact-match vs team-lead.md taxonomy; shutdown lifecycle + COUPLING confirmed.
+- 2026-06-09: Third consecutive no-change verdict — $+digit audit clean; COUPLING reciprocity re-confirmed post refactor; RESERVED-NAMES exact-match.

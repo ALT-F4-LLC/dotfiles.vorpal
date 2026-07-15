@@ -22,7 +22,7 @@ output path, and collision handling all live here.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
 - Writes: `docs/ux/{slug}.md`.
-- Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`.
+- Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/`, `docs/adr/`.
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 

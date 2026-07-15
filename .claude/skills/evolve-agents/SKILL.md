@@ -142,7 +142,7 @@ Join the session's single implicit team on your first `Agent(name=..., ...)` spa
 
 ### Crash & Stall Recovery
 
-Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error; (d) a teammate that dies on an API error self-reports `failed` to the lead — a faster, cleaner crash signal than Monitor-silence heuristics.
+Detect failure via: (a) `TeammateIdle` notification or `Monitor` stream silence past expected progress — ≥2 turns with no new tool call is stall evidence (stall); (b) `shutdown_request` gets no response within one turn (crash); (c) Agent() returns an explicit error; (d) a teammate that dies on an API error self-reports `failed` to the orchestrator — a faster, cleaner crash signal than Monitor-silence heuristics.
 
 - **Nudge before re-spawn (stall only).** For a stuck/idle teammate, one `SendMessage` nudge wakes it to retry immediately — cheaper than a fresh spawn; escalate to `-r2` only if the nudge draws no new tool call within one turn.
 - **Re-spawn ONCE** with suffix `-r2` and a `Resume context:` block listing (a) prior partial report, (b) task ID to claim, (c) target file.
@@ -216,6 +216,7 @@ After Phase 4 completes or no-ops:
 1. Shut down any remaining teammates and clean up the team (the session's single implicit team — no name needed) per lifecycle rules; its `~/.claude/teams/` resources are auto-removed at session end.
 2. Run `find src/user/claude-code/agents -maxdepth 1 -name '*.md' -exec wc -c {} + 2>/dev/null`. Consolidate any over the per-agent byte budget (pre-flight step 4).
 3. Report: files modified, before/after byte counts, improvements, renames/coherence fixes, the Disambiguation outcome (findings applied / "No disambiguation findings"), cross-communication events, the Findings Ledger outcome (per finding: ID → terminal disposition; substantive-floor result per organism), the cross-project pitfalls harvest outcome (lessons applied as edits / captured as tracking issues with IDs / already-present), the History Compaction outcome (per file: compacted with checks 0-5 evidence, no-op, or rejected/reverted; flag any pitfalls file still over 100 lines post-compaction as undispositioned backlog), and reminder that NO changes have been committed.
+4. **Post-cycle coherence gate (recommend to operator).** These edits are un-committed and not yet audited for cross-family drift — recommend the operator run `/evolve-coherence` before committing, to catch any parity or cross-reference drift this cycle introduced. evolve-coherence is the post-edit gate for standalone evolve-agents runs; it never edits, only reports and routes.
 
 ---
 

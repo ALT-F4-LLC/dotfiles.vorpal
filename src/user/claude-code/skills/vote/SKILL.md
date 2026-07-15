@@ -177,7 +177,7 @@ docket vote link {vote-id} --issue {issue_id}
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). **Shared pre-computed brief (C7).** Per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8, compute the mechanical brief items (changed-file list, relevant `docs/spec/` excerpts, and any keyed `cargo audit` result) ONCE and embed identically into every reviewer's prompt — a Communication-Optimization artifact carrying ZERO engineering authority; it never pre-judges a finding. Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
+Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). **Shared pre-computed brief (C7).** Per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8, compute the mechanical brief items (changed-file list, relevant `docs/spec/` excerpts, and any keyed `cargo audit` result) ONCE and embed identically into every reviewer's prompt — a Communication-Optimization artifact carrying ZERO engineering authority; it never pre-judges a finding. **Artifact-by-reference (I20).** Write the artifact under review ONCE to an absolute scratchpad path (`mkdir -p "$TMPDIR/vote-{vote-id}"`, then write the full artifact to `$TMPDIR/vote-{vote-id}/artifact.md`) and embed that RESOLVED absolute path into each reviewer prompt's `## Artifact` section instead of inlining the content — every reviewer Reads the byte-identical file (empirically cross-teammate-readable under `$TMPDIR`), avoiding up to 8 inline copies on a doubled critical panel. Both standalone entries (operator `/vote` and team-lead's `vote_id` relay) run with `$TMPDIR` set; there is no team-mode inline template. Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
 
 ### Handling Reviewer Failures
 
@@ -224,9 +224,8 @@ You are participating in a consensus vote as an independent reviewer.
 - **Rationale**: {rationale}
 
 ## Artifact
-<artifact>
-{full artifact content}
-</artifact>
+Read the artifact under review at the absolute path below — it is byte-identical for every reviewer; do NOT expect it inline:
+{artifact_path}  (the coordinator's resolved `$TMPDIR/vote-{vote-id}/artifact.md`)
 
 ## Your Review Task
 Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,

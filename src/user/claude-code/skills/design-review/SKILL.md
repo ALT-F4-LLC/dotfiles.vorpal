@@ -9,6 +9,7 @@ description: >
   Invoke BEFORE implementation (spec/draft review). For post-implementation verification use Skill(design-qa). Trigger: "design review", "review UX spec", "peer design review", "review this design".
 argument-hint: "<scope>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -206,10 +207,10 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 
 ## Validation Before Emit
 
-Mechanically validate the drafted review before emitting it. Write the review verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted review before emitting it. Write the review verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — doubled panels (`design-review-{N}`) share one `$TMPDIR`, so a fixed `review.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/review-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-report_lint.py --skill design-review "$TMPDIR/review.md"
+report_lint.py --skill design-review "$STAGE"
 ```
 
 Handle the exit code DISTINCTLY:

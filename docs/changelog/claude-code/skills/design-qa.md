@@ -1,5 +1,48 @@
 # Changelog: design-qa
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-05-29..2026-06-04) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Added `effort: xhigh` frontmatter for report-emission family lockstep with code-review-verdict/verify-ac/tdd; propagated mktemp race-safe validation staging (doubled `design-qa-{N}` panels shared `$TMPDIR`, fixed `report.md` name raced).
+
+### Changes
+- AMPLIFY: added `effort: xhigh` (was absent) — matches code-review-verdict/verify-ac/tdd; comparable six-dimension + render analytical demand.
+- AMPLIFY: `mktemp`-unique staging file in Validation Before Emit — restores lockstep with code-review-verdict's this-cycle race fix.
+
+### Dimensions Evaluated
+Coherence (frontmatter parity, cross-family staging symmetry).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Named `render_verify.sh` as the render mechanism in QA Procedure step 2, closing the agent↔skill coherence gap (ux-designer.md already canonicalized the tool; the skill's procedure did not name it). Findings: 3 → 1 sub / 0 cos / 0 rej / 1 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: QA Procedure step 2 static-export mandate now names `render_verify.sh <arm>` (html/tui/cli) and cites ux-designer.md's canonical per-surface table rather than duplicating it. Prior (2026-07-10) decline resolved: the script now exists and is multi-surface, answering the "over-fits" objection. (I33)
+
+### Dimensions Evaluated
+All 8; Coherence + Actionability primary. Over-Engineering: no untrimmable single-skill redundancy (concurs with 2026-07-10). I34 flagged PARITY-BOUND.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
 
 ### Summary
@@ -227,49 +270,6 @@ Coherence (report-emission family COUPLING parity).
 ### Rename
 No rename.
 
-## 2026-06-04
-
-### Summary
-Added a Phase-0-validated media-rendering edge case to QA Procedure step 2 — design-qa's documented distinct value is catching dead media payloads (HTTP 200 / ref present but renders "content not available") that all @sdet liveness checks miss. Offset by removing the redundant "Stream long commands" bullet (duplicate of Pre-flight step 7). Net -1.
-
-### Changes
-- QA Procedure step 2: appended an externally-referenced-media check — confirm rendered content, not HTTP 200 / ref presence.
-- Common Discipline: removed "Stream long commands" bullet — duplicate of Pre-flight step 7 (same run_in_background + Monitor prescription).
-
-### Dimensions Evaluated
-Completeness (HIGHEST — media-rendering gap), Over-Engineering (net -1 — bullet removal offsets the in-line addition), Coherence (clause is design-qa-specific — no family lockstep needed).
-
-### Rename
-No rename.
-
-## 2026-05-30
-
-### Summary
-Aligned the Doubling Rule with team-lead.md Rule 8: design QA defaults to a single ux-advisor (opt up to doubled per Rule 8 triggers) rather than framing ≥2 parallel reviewers as the default. Canonical ephemeral name design-qa-{N}. Net 0.
-
-### Changes
-- Doubling Rule: "spawns ≥2 reviewers in parallel" (default) → "defaults to a single ux-advisor … opt up to a doubled panel when a Rule 8 trigger fires"; ephemeral `design-qa-2` → `design-qa-{N}`. Applied in lockstep with design-review (identical inversion) and code-review.
-
-### Dimensions Evaluated
-Coherence (HIGHEST — authority divergence vs team-lead.md Rule 8 default-single), Over-Engineering (no trim; net 0), Skill Design, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-05-29
-
-### Summary
-Harmonized the silent-completion self-check framing with the report-emission skill family (Phase 2 coherence).
-
-### Changes
-- Self-check now frames the actor as the calling agent ("the calling agent MUST self-check"), removing the self-referential "confirm you SendMessaged...to the calling agent" phrasing — the skill loads into the calling agent's context, so the calling agent is the actor. Matches code-review/verify framing. [Phase 2 coherence item 3]
-
-### Dimensions Evaluated
-Cross-skill coherence; instruction accuracy.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +285,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Phase 2 coherence: repointed the line-66 dead `docs/tdd/reviewer-doubling-lifecycle.md` references (file does not exist) to `agents/team-lead.md` Rule 8 + st...
 - 2026-05-28: Over-engineering trim: collapsed the Failure Modes table — all 3 rows were verbatim duplicates of inline aborts (Pre-flight lines 86 & 92, Argument Handling...
 - 2026-05-29: Removed the empty Failure Modes section — pure meta-narration with no scope-specific content (it only stated that abort paths live elsewhere); the abort-emis...
+- 2026-05-29: Harmonized silent-completion self-check framing with report-emission family — actor is the calling agent, not self-referential phrasing.
+- 2026-05-30: Aligned Doubling Rule with team-lead.md Rule 8 — single ux-advisor by default, opt up on trigger; canonical ephemeral design-qa-{N}.
+- 2026-06-04: Added media-rendering edge case to QA step 2 (catch dead media payloads, not just HTTP 200); removed redundant "Stream long commands" bullet.

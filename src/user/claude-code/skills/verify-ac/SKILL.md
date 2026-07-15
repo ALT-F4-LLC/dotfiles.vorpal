@@ -208,10 +208,10 @@ One of: **APPROVE** / **ACCEPT WITH CAVEATS** / **BLOCK** — {rationale tying v
 
 ## Validation Before Emit
 
-Mechanically validate the drafted report before emitting it. In LIGHT mode the emission is a single line — nothing to lint. In FULL mode, write the report verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted report before emitting it. In LIGHT mode the emission is a single line — nothing to lint. In FULL mode, write the report verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — a doubled verify panel shares one `$TMPDIR`, so a fixed `report.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/report-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-report_lint.py --skill verify-ac [--mode light] "$TMPDIR/report.md"
+report_lint.py --skill verify-ac [--mode light] "$STAGE"
 ```
 
 Pass `--mode light` for the LIGHT single-line emission (the validator short-circuits to exit 0 by contract — LIGHT has nothing to lint); omit `--mode` (default `full`) for the FULL template. Handle the exit code DISTINCTLY:

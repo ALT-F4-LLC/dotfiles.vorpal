@@ -1,5 +1,20 @@
 # Changelog: brief
 
+## 2026-07-14
+
+### Summary
+Added a pre-emit self-check for verbatim citations (I42) and restored the Docket-issue-by-ID fallback that a prior edit silently dropped. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: verbatim citations now get a pre-emit `Grep`-tool self-check (search cited file for the quoted line as a fixed string; mark "unverified quote — source drifted" on a miss) — protects the re-verification trust property team-lead's Pre-flight HARD GATE consumes (I42; tool-corrected from the finding's `grep -F` since brief has no Bash)
+- AMPLIFY[SUBSTANTIVE]: restored Docket-issue-by-ID fallback (paste-or-placeholder, no fetch) — content documented as added 2026-06-30 was absent from the live file, re-exposing the documented permission-gate stall
+
+### Dimensions Evaluated
+Actionability/Completeness (primary, extra pass given ~115x/week leverage), Coherence (changelog↔file regression). Over-Engineering: lean 68-line file, no cull candidate with a fitness signal.
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 3 disambiguation pass)
 
 ### Summary

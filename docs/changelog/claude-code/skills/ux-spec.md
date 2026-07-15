@@ -1,5 +1,33 @@
 # Changelog: ux-spec
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-04..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Coherence: added `docs/adr/` to the DOCS-PATHS-LOCAL Reads list to match Authoring Procedure §1, which greps `docs/adr/` for prior art. No behavior change — the read already happened; only the declared read-surface was stale.
+
+### Changes
+- DOCS-PATHS-LOCAL Reads: `docs/spec/`, `docs/tdd/`, `docs/ux/` → +`docs/adr/`.
+
+### Dimensions Evaluated
+Coherence (declared-contract vs. body), Completeness, Over-Engineering (Pass B — no trims warranted), Skill Design Quality (frontmatter parity confirmed clean).
+
+### Rename
+No rename.
+
 ## 2026-07-12
 
 ### Summary
@@ -241,34 +269,6 @@ Spec Alignment (false cite), Over-Engineering (HIGHEST), Coherence (status-autho
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: added a fenced-code-block carve-out to the §4 Section-order validation (count only `##` headings outside ``` fences), for doc-authoring family parity (lockstep with tdd/adr/prd). Phase 1 review found no other gap.
-
-### Changes
-- §4 Section order: count only `##` headings at column 0 outside ``` code fences.
-
-### Dimensions Evaluated
-Coherence (doc-authoring family lockstep).
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Dropped vestigial `Glob`/`Grep` from `allowed-tools` — the skill discovers prior art via `docket doc list`/`show` (Bash) and `Read`, never the Glob/Grep tools. Family lockstep with adr/prd/tdd.
-
-### Changes
-- `allowed-tools` trimmed to `["AskUserQuestion", "Bash", "Read", "Write"]` (dropped `Glob`, `Grep`).
-
-### Dimensions Evaluated
-Skill Design Quality (frontmatter tool pool), Coherence (byte-identical lockstep with adr/prd/tdd).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -293,3 +293,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Closed a §9 Handoff Notes coordination gap (operator priority): orthogonalized the two priority axes — (a) is now the sequence axis (P0/P1/P2 for @project-ma...
 - 2026-05-29: Merged two overlapping When-to-Use bullets into one, and corrected the same `allowed-tools`-excludes-Edit misinformation found in prd/tdd (per docs, allowed-...
 - 2026-05-30: One over-engineering trim: Authoring §4 was re-declaring the Mermaid rule (including the diagram-type examples) that the canonical "### Mermaid Mandate" sect...
+- 2026-06-04: Dropped vestigial Glob/Grep from allowed-tools (prior art via docket doc list/show + Read, not Glob/Grep). Family lockstep with adr/prd/tdd.
+- 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §4 Section-order validation (count `##` headings outside fences); family parity.

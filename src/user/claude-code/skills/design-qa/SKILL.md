@@ -7,6 +7,7 @@ description: >
   Trigger: "design QA", "run design QA", "verify implementation against UX spec", "QA the shipped UX".
 argument-hint: "<scope>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Monitor"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -102,7 +103,7 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
 
 1. **Walk every workflow in the spec.** For each: interactions, states, transitions, error branches, success path, accessibility hooks, copy.
 2. **Test edge cases.** Empty inputs, error states, overloaded inputs, degraded mode, missing dependencies, NO_COLOR / accessibility settings for TUI/CLI, viewport breakpoints for web. For externally-referenced media (images, icons, embeds), confirm the rendered content — not just HTTP 200 or ref presence: a dead payload (broken-image placeholder, "content not available") passes liveness checks but fails the spec.
-   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass. A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport. A missing or broken render is a Blocker.
+   - **Static-export / slide / visual surfaces: "build green" is NOT a render pass.** A clean export can still emit broken-image placeholders (unbundled asset paths) or dead embeds (200-but-removed media). MANDATORY: render to image and visually READ the output at real delivery resolution before any Pass — run `render_verify.sh <arm>` (`html`/`tui`/`cli`, dispatched by surface class; canonical table in `~/.claude/agents/ux-designer.md` §Render mechanism by surface class, repo `src/user/claude-code/agents/ux-designer.md`), then `Read` the captured artifact. A subtle cue (thin color accent) that meets the CSS/token contract can fail to read once compressed into streamed/screenshared video or a small viewport. A missing or broken render is a Blocker.
 3. **Check accessibility implementation** against the spec's accessibility section. Verify against this checklist (minimum bar; expand for the surface):
    - **Color contrast** — measure actual rendered contrast ratios (not just token values) against WCAG 2.2 AA (4.5:1 normal text, 3:1 large text/UI components); confirm color is not the sole indicator.
    - **Keyboard navigability** — drive every interactive element via keyboard alone; confirm focus order matches visual/reading order, focus is visibly indicated, and no keyboard traps exist.
@@ -174,10 +175,10 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 
 ## Validation Before Emit
 
-Mechanically validate the drafted QA report before emitting it. Write the report verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted QA report before emitting it. Write the report verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — doubled panels (`design-qa-{N}`) share one `$TMPDIR`, so a fixed `report.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/report-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-report_lint.py --skill design-qa "$TMPDIR/report.md"
+report_lint.py --skill design-qa "$STAGE"
 ```
 
 Handle the exit code DISTINCTLY:

@@ -1,5 +1,34 @@
 # Changelog: vote
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Applied artifact-by-reference (I20): the artifact under review is written ONCE to `$TMPDIR/vote-{vote-id}/artifact.md` and each reviewer Reads it by absolute path, replacing up-to-8x inline `{full artifact content}` duplication on doubled panels. Standalone-path `$TMPDIR` availability + cross-teammate readability verified. Findings: 6 → 2 sub / 0 cos / 2 rej / 2 def / 0 enc.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Phase 2 spawn-prep now writes the artifact once to a scratchpad path and embeds the resolved absolute path per reviewer (I20)
+- AMPLIFY[SUBSTANTIVE]: Reviewer Prompt Template `## Artifact` section switched from inline `<artifact>` to Read-by-path (I20)
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (primary — token efficiency + byte-identical artifact guarantee). Rejected: I21 vote_cast.sh (script absent), M5 routing (no evidence). Deferred: I22/H9 (script change, out of scope; --threshold already explicit), H10 (agent-file governance scope).
+
+### Rename
+No rename.
+
 ## 2026-07-12 (Phase 4 history compaction)
 
 ### Summary
@@ -218,37 +247,6 @@ All 8; Over-Engineering primary (stable trimmed floor); Coherence (CLI + caller-
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. The cross-repo silent-idle-reviewer signal RE-VERIFIED (prior cycle's NO-OP justification was wrong about the mechanism, but the skill is correctly hardened): verdict capture is ground-truth docket (`docket vote cast` by coordinator, `docket vote result --json` read; L168/L255 mandate SendMessage delivery, "plain final-turn text is NOT visible"). Cast flags match the verified CLI surface exactly. Reasoning-echo clean; recall-filter clean; $ARGUMENTS at L27 is a documented shell command, not a template token.
-
-### Changes
-- None (NO-OP verdict, mechanism re-verified against live file + CLI audit).
-
-### Dimensions Evaluated
-All 8; verdict-capture hardening re-verified (do-not-trust-prior-NO-OP applied).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Closed the verdict-delivery channel defect (agentic-services pitfall: 4 reviewers idle, zero verdicts): reviewers are teammates, so plain final-turn text never reaches the coordinator — the template now mandates SendMessage delivery, Phase 2 parses SendMessage payloads (not Agent()-returns), and failure handling treats idle-without-delivery as a failed reviewer. Corrects the 2026-06-08 NO-OP, which cited the dead Agent()-return channel as enforcement. Net −1 (335→334).
-
-### Changes
-- Reviewer Prompt Template: added MANDATORY Delivery section (SendMessage full review to team-lead; un-sent review = failed review; then shutdown_request).
-- Phase 2: retrieval channel corrected to SendMessage-only; "empty returns" → "idling without a SendMessage'd review".
-- Coherence: reviewers deliver, coordinator casts (matches coordinator-casts architecture).
-- Offsets: uniqueness restatement (−1), Pre-flight step 1 + proposer-exclusion compression (−3), Findings-JSON note trimmed; template outer fence → 4 backticks (nesting fix).
-
-### Dimensions Evaluated
-All 8; Orchestration (PRIMARY — teammate envelope vs Agent()-return), Over-Engineering (HIGHEST), Coherence (CLI zero-drift re-verified live; team-lead.md sizing-table parity intact). Spec Alignment N/A.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +292,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-04: Closed two Phase 0 memory failure modes in the invocation bar (vote-not-recorded-in-docket, altitude-mismatch-escalated-to-vote); net 0.
 - 2026-06-05: Closed a proposer-exclusion gap — staff row now matches `tdd-author*` prefix (was exact match, missed re-spawned variants); dropped fictional `security-tdd-author`.
 - 2026-06-08: Phase 1 no-change verdict (335 lines) — re-verified docket vote CLI + delegation relay contract + voter-count table all zero-drift.
+- 2026-06-09: Mythos/Fable-5 audit NO-OP — re-verified silent-idle-reviewer signal; verdict capture ground-truth docket, delivery mandate confirmed live.
+- 2026-06-09: Closed verdict-delivery defect (4 reviewers idle, zero verdicts) — reviewers are teammates; template mandates SendMessage delivery. Net -1.

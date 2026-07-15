@@ -1,5 +1,33 @@
 # Changelog: code-review-verdict
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-04..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Fixed a report-lint staging-file collision on doubled/3-way review panels (H17): parallel reviewers share one `$TMPDIR` and a fixed `review.md` name races, causing the validator to lint the wrong reviewer's body. Staging file now allocated per-invocation with `mktemp`. H15/H16 confirmed already-fixed (Pre-Injected section removed 2026-07-12) — no action. Findings: 5 → 1 sub / 0 cos / 0 rej / 1 def / 2 enc
+
+### Changes
+- FIX[SUBSTANTIVE]: Validation-Before-Emit staging file → unique `mktemp "$TMPDIR/review-XXXXXX.md"` (was fixed `$TMPDIR/review.md`) — cited historical-auditor H17 (parallel-panel scratchpad collision).
+
+### Dimensions Evaluated
+Orchestration & Agent Teams (primary); Completeness. Already-encoded (no action): H15/H16 (`## Pre-Injected Diff-Scope Context` removed 2026-07-12). Deferred: I38 (g5_check.sh — script-authoring). Parity-bound: I39 (CANONICAL:SILENT-COMPLETION).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
 
 ### Summary
@@ -247,35 +275,6 @@ Coherence (report-emission family COUPLING parity with verify-ac/design-qa/desig
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Trimmed two Doubling-Rule paragraphs (Ephemeral lifecycle + Degraded fallback) that restated team-lead-owned spawn/shutdown/degraded-annotation mechanics verbatim, replacing them with a single calling-layer-ownership pointer to agents/team-lead.md (Rule 8, step 14) — matches the verify-ac family consolidation and removes a duplicated-state drift hazard. Net -2 (401/500).
-
-### Changes
-- Doubling Rule: collapsed Ephemeral-lifecycle + Degraded-fallback paragraphs to one team-lead.md ownership pointer; load-bearing single-reviewer-authority fact + 4-parallel topology retained in the opening paragraph.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — duplicated team-lead mechanics removed), Coherence (verify-ac family-pattern alignment; drift hazard eliminated). NO-OP verified: $-escape, mid-cycle/partial-tree guard (already encoded), docs/spec tolerance, effort:max, disallowed-tools (prior decline holds).
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Added the Phase 0 partial-tree guard (code-review fired mid-cycle on a partial working tree 2x cross-project → stale review) folded into the empty-diff step; de-duplicated an anti-anchoring rationale to a team-lead.md step-14 pointer. Net +2 (403/500, ample headroom).
-
-### Changes
-- Pre-flight empty-diff guard: added a partial-tree guard for `uncommitted`/`staged` scopes — a local diff is a point-in-time snapshot, so the skill prefixes the verdict with a files-present / point-in-time line and routes the completeness judgment to the calling agent (which owns AC context) rather than guessing the expected file-set.
-- Save & Return: trimmed the duplicated anti-anchoring rationale to a team-lead.md step-14 pointer (directive retained).
-
-### Dimensions Evaluated
-Completeness (HIGHEST — partial-tree guard), Over-Engineering (HIGHEST — anti-anchoring rationale de-duplicated to a pointer; net +2 at 403/500), Coherence (anti-anchoring authority owned by team-lead.md).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +293,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: Standardized the multi-file argument grammar (top historical inconsistency — 3 call forms), added a compact Round-N re-review output for the dominant fix→re-...
 - 2026-05-29: Fixed a markdown run-on-bullet defect in When-to-Use and repointed it at the authoritative Round-N section; tightened the Save & Return silent-completion par...
 - 2026-05-30: Added a finding-sourcing (anti-fabrication) discipline to the Review Procedure — the file had no procedural guard against the cycle's #1 failure class (findi...
+- 2026-06-04: Added Phase 0 partial-tree guard (mid-cycle fire → stale review) to empty-diff step; anti-anchoring rationale → team-lead.md pointer.
+- 2026-06-05: Trimmed two Doubling-Rule paragraphs (Ephemeral lifecycle + Degraded fallback) to a team-lead.md Rule 8 pointer, matching verify-ac consolidation.

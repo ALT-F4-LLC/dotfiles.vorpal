@@ -1,5 +1,47 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-14
+
+### Summary
+Coherence-class fix surfaced during Phase 3: dropped a dangling reference to the retired `model-policy-researcher` optional task.
+
+### Changes
+- Team Setup task list: removed `(+ optional "Model-Policy Research")` — this cycle's Phase 1 retirement of `model-policy-researcher` left the Phase-0 task list naming a spawn that no longer exists.
+
+### Dimensions Evaluated
+Coherence (accurate references — routed from Phase 3 as coherence-class, not disambiguation).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery.
+
+### Changes
+- AMPLIFY: Crash & Stall Recovery gains (d) API-error self-report crash signal + a nudge-before-respawn bullet (lockstep from evolve-agents).
+
+### Dimensions Evaluated
+Coherence (family lockstep).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Retired the redundant `model-policy-researcher` opus spawn — its Policy-stale grep is folded into the routing-proposer's existing live-Tiers read, making class-5 always-evaluated and removing one spawn/shutdown cycle. Findings: 4 → 1 sub / 0 cos / 0 rej / 2 def / 1 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: deleted the `model-policy-researcher` spawn template + `{model_policy_status}` skip machinery; proposer now derives the suspended-alias note from its Categorization AUTHORITY read (I3). Net -1718 bytes.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (Pass B) drove the one change. I1 (evolve_signals.py swap) deferred — C2b absent-vs-unreadable-sidecar regression needs a script extension first; I2 deferred — tier_map.sh phantom; I4 PARITY-BOUND; M1 already-encoded (no routing change evidence-justified this cycle).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
 
 ### Summary

@@ -1,5 +1,49 @@
 # Changelog: evolve-config
 
+## 2026-07-14
+
+### Summary
+Coherence-class fix surfaced during Phase 3: replaced two stale "five CANONICAL blocks" hand-counts with a manifest-anchored instruction — this cycle's doctrine_check_manifest.tsv edit registered this file as a carrier of 8 tags, not 5.
+
+### Changes
+- Phase 2 prose + coherence-reviewer template (2 locations): "the five CANONICAL blocks... (list)" → verify every `CANONICAL:<TAG>` this file carries against `doctrine_check_manifest.tsv`, naming the 8 currently-registered families explicitly.
+
+### Dimensions Evaluated
+Coherence (accurate references — routed from Phase 3 as coherence-class, not disambiguation).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery (findings-ledger half not applicable — evolve-config produces no findings-ledger.md).
+
+### Changes
+- AMPLIFY: Crash & Stall Recovery gains (d) API-error self-report crash signal + a nudge-before-respawn bullet (lockstep from evolve-agents).
+
+### Dimensions Evaluated
+Coherence (family lockstep).
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Extended the Hooks & scripts checklist with the Notification hook's background-agent events, documented a static-vs-runtime verification split, and guarded the CULL gate against dead-setter false signals. Findings: 5 → 3 sub / 0 cos / 1 rej / 1 def
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added `Notification` hook `agent_needs_input`/`agent_completed` to item-4 hook-event checklist (I14) — cited innovation+docs signal, verified live at code.claude.com/docs/en/hooks.
+- AMPLIFY[SUBSTANTIVE]: Phase 1 step 3 now states serialization checks are static-only; enforcement is runtime, deferred to next-cycle Phase 0 (H3) — cited sdet/pitfalls.md:78-80.
+- AMPLIFY[SUBSTANTIVE]: Phase 1 template CULL gate now excludes bare dead-setter observations as fitness signals (H4) — cited staff-engineer/pitfalls.md:595 / DKT-282.
+
+### Dimensions Evaluated
+Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename — all 8.
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
 
 ### Summary

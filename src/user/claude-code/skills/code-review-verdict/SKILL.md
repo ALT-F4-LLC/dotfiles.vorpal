@@ -351,10 +351,10 @@ On re-invocation against a fixed diff (the dominant call pattern — fix→re-re
 
 ## Validation Before Emit
 
-Mechanically validate the drafted review before emitting it. Write the review verbatim to a staging file under `$TMPDIR`, then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted review before emitting it. Write the review verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — parallel panel reviewers (advisor + `reviewer-2`, or the 3-way security panel) share one `$TMPDIR`, so a fixed `review.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/review-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
 
 ```
-report_lint.py --skill code-review-verdict [--mode round-n] "$TMPDIR/review.md"
+report_lint.py --skill code-review-verdict [--mode round-n] "$STAGE"
 ```
 
 Omit `--mode` (default `full`) for the full general/security template; pass `--mode round-n` for a compact Re-Review emission. Handle the exit code DISTINCTLY:

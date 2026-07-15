@@ -1,5 +1,34 @@
 # Changelog: design-review
 
+## 2026-07-14 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-05..2026-06-08) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-14
+
+### Summary
+Added `effort: xhigh` for report-emission family lockstep with code-review-verdict/verify-ac/tdd; propagated mktemp race-safe validation staging (doubled `design-review-{N}` panels shared `$TMPDIR`, fixed `review.md` name raced).
+
+### Changes
+- AMPLIFY: added `effort: xhigh` (was absent) — six-UX-dimension review + user-journey simulation; comparable demand to xhigh siblings.
+- AMPLIFY: `mktemp`-unique staging file — doubled `design-review-{N}` panels shared `$TMPDIR`, fixed `review.md` name raced.
+
+### Dimensions Evaluated
+Coherence (frontmatter parity, cross-family staging symmetry).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 4 history compaction)
 
 ### Summary
@@ -244,39 +273,13 @@ All 8. Coherence (vote-routing contradiction), Over-Engineering (HIGHEST — sel
 ### Rename
 No rename.
 
-## 2026-06-08
-
-### Summary
-Coherence: corrected the Doubling Rule reconciliation dedupe key from `(file, symbol)` to `(spec section, surface)` — a UX peer review grounds findings on spec sections/workflows (pre-implementation, often no code), matching Validation check #4 and the design-qa sibling. design-review-local divergence; siblings (code-review/verify-ac key on file/symbol) unaffected. Net 0.
-
-### Changes
-- Doubling Rule: dedupe key `(file, symbol)` → `(spec section, surface)`.
-
-### Dimensions Evaluated
-Coherence (dedupe-key accuracy vs this skill's own grounding unit + design-qa parity), Over-Engineering (HIGHEST — nothing to trim at 250 lines after 16 cycles), all 8 reviewed; rest sound. Scope boundary vs design-qa verified crisp.
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: moved the COUPLING marker above "When NOT to Use" and replaced "doubling-rule note below" with directionless wording ("The Doubling Rule section...") — the Doubling Rule sits above the marker post-move, so "below" was inaccurate. All 4 family markers now byte-identical.
-
-### Changes
-- COUPLING marker relocated under "When NOT to Use"; "below" wording corrected; family parity restored.
-
-### Dimensions Evaluated
-Coherence (report-emission family COUPLING placement + text parity).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
 
 - 2026-05-16: First changelog entry — Output Contract maturity field, Praise→What's Strong routing, AskUserQuestion contract, Validation rule #2 loosened, Failure Modes 7→3 rows.
+- 2026-06-05: Phase 2 coherence — moved COUPLING marker above "When NOT to Use"; corrected "below" wording. All 4 family markers byte-identical.
+- 2026-06-08: Coherence — corrected Doubling Rule dedupe key from (file, symbol) to (spec section, surface), matching Validation check #4 + design-qa.
 - 2026-05-16: Coherence — banner footer + Docket comments; Save & Return preamble → "Output Contract owns the emission rules" (family parity).
 - 2026-05-17: Trim — Role Detection Note removed, redundant Failure Modes row dropped, Validation rule #2 tightened, Failure Modes preamble compressed. Net -22.
 - 2026-05-18: Trim + Epistemic — "Stream long inspections" removed; Honest Critique → evidence; Pre-flight step 6 collapsed to Failure Modes ref. Net -5.

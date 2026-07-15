@@ -88,19 +88,19 @@ All model-routing changes tracked in `docs/changelog/claude-code/model-distribut
 
 | Phase | Teammate(s) | subagent_type / model | Lifecycle |
 |---|---|---|---|
-| 0 | `distribution-auditor` (+ optional `model-policy-researcher`) | senior-engineer/`sonnet`; staff-engineer/`opus` | Spawn parallel → complete → shut down before Phase 1 |
+| 0 | `distribution-auditor` | senior-engineer/`sonnet` | Spawn → complete → shut down before Phase 1 |
 | 1 | `routing-proposer` | staff-engineer/`opus` | Spawn → emit proposals (read-only) → shut down |
 | 2 | — (orchestrator) | — | Evidence re-verify gate → operator-approval HARD GATE per proposal batch → orchestrator applies edits → writes changelog |
 | 3 | `coherence-verifier` | staff-engineer/`opus` | Spawn after edits applied → verify (read-only) → orchestrator applies fixes → shut down |
 
 All teammates are READ-ONLY; the orchestrator applies every edit itself (the same reviewer-proposes / orchestrator-applies shape as evolve-agents). Join the session's single implicit team on the first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`).
 
-**Team Setup.** `TaskCreate` all tasks up-front — Phase 0 "Distribution Audit" (+ optional "Model-Policy Research"), Phase 1 "Routing Proposals", Phase 2 "Operator Gate & Apply", Phase 3 "Coherence Verify" — and assign each via `TaskUpdate` at spawn.
+**Team Setup.** `TaskCreate` all tasks up-front — Phase 0 "Distribution Audit", Phase 1 "Routing Proposals", Phase 2 "Operator Gate & Apply", Phase 3 "Coherence Verify" — and assign each via `TaskUpdate` at spawn.
 
 **Shutdown protocol (orchestrator-driven).** `SendMessage(to="<name>", message={type: "shutdown_request", reason: "<phase> complete"})`. The teammate replies `shutdown_response` **addressed to the orchestrator** (never a peer). If rejected, read the `reason`, address it, re-request; if no reply within one turn, see Crash & Stall Recovery. Orchestrator-originated shutdown is intentional — evolve orchestrators drive their own team's lifecycle, unlike leaf-review skills whose ephemeral reviewers AWAIT the orchestrator's `shutdown_request` (per `src/user/claude-code/agents/team-lead.md` Rule 7).
 ### Phase 0: Collection (LOCAL per-spawn + REMOTE Mimir)
 
-Pre-flight already gated this phase: `{local_metrics_status}` = SKIPPED aborts the whole run (Improvement-Only Mandate — no ground truth, no edits), and `{mimir_status}` is either `available` or the `"Mimir metrics unavailable: <reason>"` string. Spawn the `distribution-auditor` (ALWAYS) and the `model-policy-researcher` (OPTIONAL — skippable) in parallel. Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{today_date}`, `{mimir_status}` from pre-flight; do NOT let a teammate re-compute the window.
+Pre-flight already gated this phase: `{local_metrics_status}` = SKIPPED aborts the whole run (Improvement-Only Mandate — no ground truth, no edits), and `{mimir_status}` is either `available` or the `"Mimir metrics unavailable: <reason>"` string. Spawn the `distribution-auditor`. Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`, `{today_date}`, `{mimir_status}` from pre-flight; do NOT let a teammate re-compute the window.
 
 #### distribution-auditor (always)
 
@@ -174,29 +174,9 @@ SendMessage the orchestrator verbatim:
 Read-only (no Edit/Write, no commit). No sub-agents. No peer SendMessage — orchestrator only. Per-session grep — never load transcripts wholesale. Every count carries its session path.
 ```
 
-#### model-policy-researcher (optional — skippable)
+#### Policy-stale check (folded into the proposer — no spawn)
 
-Spawn ONLY when a Policy-stale check is wanted (a measured or canonical alias may reference a suspended alias like `haiku`). Skippable: if skipped or if it fails twice under Crash & Stall Recovery, substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` and the Policy-stale divergence class degrades to operator judgment (no auto-correction of a suspended alias).
-
-```
-Agent(name="model-policy-researcher", subagent_type="staff-engineer", model="opus", prompt="...")
-
-You are the model-policy researcher. Read-only. No file edits. No commits. No sub-agents. SendMessage the orchestrator only.
-
-## Task
-Report the CURRENT valid model-alias policy so the proposer can flag any measured/canonical alias that references a suspended or nonexistent tier:
-1. Read the `team-lead.md` per-spawn model-routing prose (grep the `**Per-spawn model routing` paragraph + the `Tiers (three named tiers` block) for its three tier bullets (`gold`/`silver`/`bronze`) and each bullet's `resolves to model alias` line — the RESOLVED alias set (`fable`/`opus`/`sonnet`) — and any suspension/`best`-alias note (`haiku` is the out-of-vocabulary/suspended alias per team-lead.md — NOT `fable`, the alias `gold` resolves to — the Gold-seat classes' tier).
-2. State, as a short list: valid tiers in force (`gold`/`silver`/`bronze`) with the alias each resolves to, any SUSPENDED alias (e.g. `haiku`) and its live replacement (`opus`/`best`), and any alias that `team-lead.md` references but no longer resolves.
-
-## Output Format
-SendMessage the orchestrator verbatim:
-- Valid tiers (in force): <gold/silver/bronze, each with its resolved alias>
-- Suspended → replacement: <e.g. `haiku` → `best`/`opus`, or "none">
-- Stale references in team-lead.md: <alias + anchor, or "none">
-
-## Rules
-Read-only. No sub-agents. Orchestrator-only SendMessage. Grep the two routing structures by content string, never by line number.
-```
+The Policy-stale class-5 check needs only the CURRENT valid alias policy — the three tier bullets, each bullet's `resolves to model alias` line, and any suspended-alias note (`haiku` is the out-of-vocabulary/suspended alias per team-lead.md). The `routing-proposer` ALREADY re-reads this exact block (the Categorization AUTHORITY rule), so it derives the policy from that one read; no separate spawn or `{model_policy_status}` threading exists.
 
 #### LOCAL/REMOTE reconciliation
 
@@ -208,7 +188,7 @@ Combine the two arms by AUTHORITY, never by averaging:
 <!-- Dry-run fixture harness for this collection loop lives at test/fixtures/ (paired agent-a*.jsonl + agent-a*.meta.json, one pair per divergence class); see test/fixtures/README.md. -->
 ### Phase 1: Categorization + routing-proposer (READ-ONLY)
 
-Phase 0 handed the orchestrator the per-spawn `role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, the Mimir cost arm (or the `"Mimir metrics unavailable: <reason>"` string), and `{model_policy_status}`. Phase 1 spawns ONE `routing-proposer` (staff-engineer/`opus`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
+Phase 0 handed the orchestrator the per-spawn `role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, and the Mimir cost arm (or the `"Mimir metrics unavailable: <reason>"` string). Phase 1 spawns ONE `routing-proposer` (staff-engineer/`opus`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
 
 #### Categorization AUTHORITY rule (live Tiers = SINGLE SOURCE OF TRUTH)
 
@@ -245,7 +225,7 @@ Each disposition requires an evidence citation — session path + measured per-r
 2. **Under-powered with harm** — a role measured below canonical AND correlated with bad outcomes (`TeammateIdle`, `-r2` respawn, `is_error`, operator corrections) → **FILE-EDIT** (demonstrated harm justifies it): UPGRADE the category's canonical tier in the Tiers list.
 3. **Over-powered / cost-waste** — measured tier > canonical on an explicitly-pinned spawn (`.meta.json.model` PRESENT, per C2b) AND non-trivial Mimir cost → **FILE-EDIT but TRIAL-ONLY**. "No stalls were avoided by the higher tier" is an UNOBSERVABLE COUNTERFACTUAL — you cannot measure the stalls that did not happen — so a downgrade is always speculative and NEVER a direct permanent edit. Record it as a mandatory `Trial:` hypothesis (Hypothesis → operator approval → apply → MEASURE the effect in the NEXT cycle's audit → adopt-or-rollback). The hard-floor authoring/review/verify roles are NEVER downgrade candidates.
 4. **Fallback-drift (corroborated)** — a role whose `.meta.json.model` is ABSENT (per C2b) and whose resolved tier differs from canonical. Omitting `model=` is a dispatch defect the file already forbids, so the default is a **RUNTIME-DISCIPLINE REPORT**. Escalate to **FILE-EDIT** ONLY when the corroborated pattern shows the Tiers/prose for that class is ambiguous enough to invite the omission → sharpen the centralized prose. One instance is enough to report; a repeated pattern strengthens the escalation.
-5. **Policy-stale** — a measured/canonical alias references a SUSPENDED alias (`haiku`) or a nonexistent tier → **FILE-EDIT**: correct to a live alias (`opus` / `best`), fed by the optional `model-policy-researcher`. If that researcher was SKIPPED (`{model_policy_status}` = SKIPPED), this class degrades to operator judgment — no auto-correction of a suspended alias.
+5. **Policy-stale** — a measured/canonical alias references a SUSPENDED alias (`haiku`) or a nonexistent tier → **FILE-EDIT**: correct to a live alias (`opus` / `best`). The live replacement comes from the suspended-alias note the proposer reads in the live Tiers block, so this class is always evaluated.
 
 6. **Quality-mismatch (match-suboptimality) — the ONE class that fires on a CONFORMANT spawn (resolved == canonical).** Classes 1-5 all require resolved ≠ canonical; this asks whether the canonical tier ITSELF matches the task's cognitive demand. It evaluates the MAP, not conformance to it, and its bar is set by DIRECTION (the anti-backdoor lock; formal statement in the Improvement-Only Mandate):
    - **Capability-ADDING (under-match UPGRADE or granularity SPLIT)** — admissible on a QUALITY ARGUMENT even with zero/few measured spawns, because a capability-match claim is NON-COUNTERFACTUAL and falsifiable-by-reading. MUST cite a READ role-definition demand anchor (`effort: xhigh`, architecture-ownership, the defect-class if it underperforms) + task-cognitive-demand reasoning + the exact seam → **FILE-EDIT** (raise the category tier, or split a too-coarse category and tier the finer sub-category up). Legitimate prophylactically because an upgrade only ADDS cost — a bounded, reversible failure mode (walk back via the class-3 Trial-downgrade path), not the invisible harm a downgrade risks. A measured harm signal strengthens but is not required.
@@ -260,10 +240,10 @@ Agent(name="routing-proposer", subagent_type="staff-engineer", model="opus", pro
 
 You are the routing proposer. Read-only. You edit NOTHING — `team-lead.md` included; the orchestrator applies every edit in Phase 2. No commits. No sub-agents (no /vote, Skill(), Agent(); no team). SendMessage the orchestrator only. Any scratch file goes under $TMPDIR, never /tmp.
 
-Inputs (verbatim from the orchestrator's Phase-0 collection): the per-spawn `role → requested → resolved` rows grouped by role, the fallback-drift candidate list, the Mimir token/cost arm (or the "Mimir metrics unavailable: <reason>" string), and {model_policy_status}.
+Inputs (verbatim from the orchestrator's Phase-0 collection): the per-spawn `role → requested → resolved` rows grouped by role, the fallback-drift candidate list, and the Mimir token/cost arm (or the "Mimir metrics unavailable: <reason>" string).
 
 ## Task
-1. Read the LIVE Tiers (the Categorization AUTHORITY rule) and build category → canonical-tier from it — NEVER a static copy.
+1. Read the LIVE Tiers (the Categorization AUTHORITY rule) and build category → canonical-tier from it — NEVER a static copy. From that same read, note any SUSPENDED alias (e.g. `haiku`) + its live replacement (`opus`/`best`) — the Policy-stale (class-5) input; no separate policy spawn exists.
 2. For each measured spawn, assign a category and compare resolved vs canonical, applying the C2b sidecar corroboration.
 3. Classify each divergence into one of the six classes (or AMBIGUOUS) and attach its disposition (FILE-EDIT / RUNTIME-DISCIPLINE REPORT / Trial-only).
 3b. Additionally, for CONFORMANT spawns (resolved == canonical), evaluate class 6 (quality-mismatch): does the canonical tier match the task's cognitive demand? A capability-ADDING proposal (under-match UPGRADE / granularity SPLIT) is admissible on a cited READ role-definition demand anchor + reasoning + seam even with zero measured spawns; a capability-REDUCING one stays Trial-only + measured cost (hard-floor roles never downgraded). See the Improvement-Only Mandate lanes.
@@ -350,10 +330,11 @@ If the verifier reports a contradiction, the orchestrator applies the single fix
 
 ### Crash & Stall Recovery
 
-Mirrors evolve-agents. Detect failure via: (a) a `TeammateIdle` notification or `Monitor` silence past expected progress (≥2 turns with no new tool call is stall evidence); (b) a `shutdown_request` with no reply within one turn (crash); (c) an `Agent()` call returning an explicit error.
+Mirrors evolve-agents. Detect failure via: (a) a `TeammateIdle` notification or `Monitor` silence past expected progress (≥2 turns with no new tool call is stall evidence); (b) a `shutdown_request` with no reply within one turn (crash); (c) an `Agent()` call returning an explicit error; (d) a teammate that dies on an API error self-reports `failed` to the orchestrator — a faster, cleaner crash signal than Monitor-silence heuristics.
 
+- **Nudge before re-spawn (stall only).** For a stuck/idle teammate, one `SendMessage` nudge wakes it to retry immediately — cheaper than a fresh spawn; escalate to `-r2` only if the nudge draws no new tool call within one turn.
 - **Re-spawn ONCE** with the `-r2` suffix and a `Resume context:` block listing (a) the prior partial report, (b) the task ID to claim, (c) the phase inputs already computed (window, cutoffs, the Phase-0 collection).
-- **Second failure** → record the audit as unavailable and continue; never do the teammate's work directly. `distribution-auditor` twice → no LOCAL ground truth → SKIP the edit phases and report "no distribution audit — cannot ground edits" (the same terminal state as an empty LOCAL window). `model-policy-researcher` twice → substitute `{model_policy_status}` = `"SKIPPED: policy research not run"` (Policy-stale degrades to operator judgment). `routing-proposer` / `coherence-verifier` twice → record "no proposals / no coherence check performed — teammate unavailable" and no-op that phase.
+- **Second failure** → record the audit as unavailable and continue; never do the teammate's work directly. `distribution-auditor` twice → no LOCAL ground truth → SKIP the edit phases and report "no distribution audit — cannot ground edits" (the same terminal state as an empty LOCAL window). `routing-proposer` / `coherence-verifier` twice → record "no proposals / no coherence check performed — teammate unavailable" and no-op that phase.
 - **Compaction recovery** — after a context compaction, re-read the verified goal, `TaskList()`, the latest changelog entry, and the active phase content before any new `SendMessage` / `Agent` call.
 
 ### Wrap-up

@@ -1,10 +1,19 @@
-# START MIGRATION: Needs to be moved to Vorpal
+# Lines configured by zsh-newuser-install
+HISTFILE=~/.histfile
+HISTSIZE=1000
+SAVEHIST=1000
+setopt autocd
+bindkey -v
+bindkey '^R' history-incremental-search-backward
+# End of lines configured by zsh-newuser-install
+# The following lines were added by compinstall
+zstyle :compinstall filename '/home/${USER}/.zshrc'
 
-export HISTSIZE=100000
-# Maximum lines saved to $HISTFILE
-export SAVEHIST=100000
-# Like INC_APPEND_HISTORY + re-read history whenever accessing it
-setopt SHARE_HISTORY
+autoload -Uz compinit
+compinit
+# End of lines added by compinstall
+
+# START MIGRATION: Needs to be moved to Vorpal
 
 ## Claude Code
 c () {
@@ -111,13 +120,8 @@ eval "$(starship init zsh)"
 ## Zoxide
 eval "$(zoxide init zsh)"
 
-## History search
-bindkey -v
-bindkey '^R' history-incremental-search-backward
-
 # END MIGRATION: Needs to be moved to Vorpal
 
 # Added by LM Studio CLI (lms)
-export PATH="$PATH:/Users/erikreinert/.lmstudio/bin"
+export PATH="$PATH:/Users/${USER}/.lmstudio/bin"
 # End of LM Studio CLI section
-

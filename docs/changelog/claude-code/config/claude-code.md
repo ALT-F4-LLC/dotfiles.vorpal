@@ -1,5 +1,19 @@
 # Changelog: claude-code
 
+## 2026-07-15
+
+### Summary
+Registered the Stop-event hook wiring `stop-guard-hook.sh` was missing (DKT-328 AC items 3-4, scoped evolve-config run). Operator explicitly approved wiring it as-is via the Scientific Trial Protocol's operator HARD GATE, accepting the script's documented false-positive risk (append-only teammate-list limitation) rather than deferring or softening it this cycle.
+
+### Changes
+- AMPLIFY: `src/user.rs` gains `.with_hook("Stop", None, "bash ~/.claude/hooks/stop-guard-hook.sh", "command")`, inserted after the existing `SubagentStop` registration — same pattern as the 5 existing hooks, no new `claude_code.rs` setter needed (generic `BTreeMap<String, Vec<HookConfig>>`). `cargo check` passes clean.
+
+### Dimensions Evaluated
+Hooks & scripts (primary); Permissions/Sandbox (verified `Bash(docket:*)` allowed, no `deny_read` blocks `~/.claude/teams/**`, script is fail-open).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 3 disambiguation pass)
 
 ### Summary

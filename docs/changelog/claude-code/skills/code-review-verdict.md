@@ -1,5 +1,49 @@
 # Changelog: code-review-verdict
 
+## 2026-07-15 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-05..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Phase 3 disambiguation: replaced the two-valued "(both roles)" parentheticals with "(both playbooks)" so the three-caller role model (staff/distinguished/security) reads unambiguously against the new Review evidence gates. Findings: 2 → 1 sub / 1 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] Review evidence gates bullet: "(both roles)" → "(both playbooks)" — removes the reading that the gates exclude a @distinguished-engineer caller (DISAMBIG 2, multi-reading).
+- AMPLIFY[COSMETIC] Common Discipline heading: "(both roles)" → "(both playbooks)" — keeps the section parenthetical consistent with the fixed bullet (DISAMBIG 3, multi-reading).
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership)
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Absorbed the 4 role-agnostic review evidence gates (stale-cached-test-results, empty-diff triage triple, sandbox-signature-before-attribution, hollow-green CI) into Common Discipline (H3), and made the audit_snapshot.sh census repo-root-relative + hard-fail-proof for cross-repo invocation (H4). Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: New "Review evidence gates (both roles)" bullet-group under Common Discipline — 4 gates extracted from distinguished-engineer.md's Review-evidence-gates section (H3, innovation-scanner I11 / DKT-335 AC1).
+- AMPLIFY[SUBSTANTIVE]: Pre-flight step-4 census now resolves audit_snapshot.sh via `git rev-parse --show-toplevel` (repo-root first, home fallback) guarded with `2>/dev/null || true` (H4, bug-auditor PREVENT 8 / DKT-335 AC3-4).
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -215,66 +259,6 @@ Skill Design Quality (recall-suppression removal), Over-Engineering, Actionabili
 ### Rename
 No rename. Rename-away-from-/code-review collision note verified still accurate (bundled skill ships --fix).
 
-## 2026-06-09
-
-### Summary
-Phase 2: renamed code-review → code-review-verdict (bundled-skill collision) and mode-split the vote-escalation bullet in Save & Return.
-
-### Changes
-- Renamed skill + directory + all internal self-references; external refs updated across 4 agents and 6 skills (47 occurrences); description gains a bundled-skill disambiguation clause.
-- Save & Return vote bullet: team mode now routes via docket vote create + delegation_request (never Skill(vote)); standalone unchanged. Model: design-review's Phase 1 fix.
-- When-NOT-to-Use vote bullet left as routing pointer (family decision).
-
-### Dimensions Evaluated
-Coherence (Phase 2 lockstep), Orchestration (vote delegation), Rename.
-
-### Rename
-Renamed code-review → code-review-verdict. Observable collision with the bundled /code-review skill (supports --fix, edits the working tree — violates this skill's leaf read-only contract). Precedent: verify → verify-ac.
-
-## 2026-06-09
-
-### Summary
-Hardened the freshness gate (moving-tree ABORT precondition for orchestrated `uncommitted`/`staged` reviews — cross-project pitfall where reviews fired before implementers finished despite agent-level gates) and added Validation check 10 (citation-presence scan — fabricated-"VERIFIED" defect class). Offset by collapsing the Role Detection table to prose and folding the one-row Failure Modes table into Argument Handling. Net −13 (395/500).
-
-### Changes
-- Pre-flight: Moving-tree precondition — under orchestration, ABORT on `uncommitted`/`staged` without an implementation-complete signal (`docket issue show <id> -q` flag live-verified).
-- Validation check 10: every Finding citation must name a file in the resolved diff's captured file list.
-- Role Detection table → prose; Failure Modes section removed, gh-CLI abort folded into Argument Handling.
-
-### Dimensions Evaluated
-All 8. Over-Engineering (HIGHEST — net −13), Completeness (freshness gate), Actionability (anti-fabrication), Coherence (COUPLING md5-parity verified), Skill Design ($-audit clean).
-
-### Rename
-RENAME RECOMMENDED (reversal of prior cycles): bundled `/code-review` (v2.1.147) collides observably; proposed `code-review-verdict`; execution routed to Phase 2 pending operator decision (~47 refs, 10 files).
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (highest-traffic skill, 408/500 lines, at local optimum). Verified the partial-tree/scope-timing guard already exists (Pre-flight step 5) — the exact cross-project pitfall flagged this cycle, confirmed NO-OP. COUPLING marker byte-identical across the 4 leaf siblings; G1-G5→senior-engineer principle map resolves.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no net-negative edit without removing load-bearing content), Completeness (partial-tree guard present), Coherence (family parity verified).
-
-### Rename
-No rename. Bundled `/code-review` name-collision surfaced to Phase 2 (not self-acted; stability has compounding value).
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: appended the Doubling-Rule family-parity sentence to the report-emission COUPLING marker (placement already canonical — directly above the When-NOT routes). All 4 family markers now byte-identical.
-
-### Changes
-- COUPLING marker: added "The Doubling Rule section is also part of this family — keep its shape in sync across siblings per team-lead Rule 8."
-
-### Dimensions Evaluated
-Coherence (report-emission family COUPLING parity with verify-ac/design-qa/design-review).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +279,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Added a finding-sourcing (anti-fabrication) discipline to the Review Procedure — the file had no procedural guard against the cycle's #1 failure class (findi...
 - 2026-06-04: Added Phase 0 partial-tree guard (mid-cycle fire → stale review) to empty-diff step; anti-anchoring rationale → team-lead.md pointer.
 - 2026-06-05: Trimmed two Doubling-Rule paragraphs (Ephemeral lifecycle + Degraded fallback) to a team-lead.md Rule 8 pointer, matching verify-ac consolidation.
+- 2026-06-05: Phase 2 coherence — appended Doubling-Rule family-parity sentence to report-emission COUPLING marker; all 4 family markers byte-identical.
+- 2026-06-08: Phase 1 no-change verdict (408/500 lines) — verified partial-tree/scope-timing guard already exists (Pre-flight step 5); bundled /code-review name-collision surfaced to Phase 2.
+- 2026-06-09: Hardened freshness gate (moving-tree ABORT precondition) + added Validation check 10 (citation-presence scan); collapsed Role Detection table to prose. Net -13 (395/500).
+- 2026-06-09: Phase 2 — renamed code-review → code-review-verdict (bundled-skill collision, 47 refs across 4 agents/6 skills); mode-split vote-escalation bullet in Save & Return.

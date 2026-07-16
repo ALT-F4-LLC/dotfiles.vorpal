@@ -1,5 +1,47 @@
 # Changelog: design-qa
 
+## 2026-07-15 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-05..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Reviewer superseded its own prior same-day H6 recommendation to reach lockstep with design-review's H5: reverted the "Non-color encoding" bullet split and the Blocker-row edit, leaving the pre-existing Color-contrast bullet's "color is not the sole indicator" clause intact and using the identical bullet names design-review uses. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: step-3 checklist now gains exactly two bullets — **Data-visualization output** and **Data-table semantics** — appended after Semantic/ARIA correctness, reframed post-implementation ("measure actual rendered contrast", "inspect the rendered markup/accessibility tree"). Supersedes the immediately-prior 2026-07-15 entry's 3-bullet + Blocker-row version (H6, DKT-336 AC item 2).
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Applied DKT-336 accessibility finding H6: expanded QA Procedure step-3 accessibility checklist with post-implementation dataviz-output contrast, non-color encoding, and table/tabular-layout semantic checks (keyboard-only flows already covered); folded the two net-new critical failure modes into the Blocker severity ladder. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: step-3 checklist gains **Data-visualization output**, **Non-color encoding** (promoted + specified from the old color-contrast clause), and **Table / tabular-layout semantics** checks; Blocker severity row now names color-only encoding and table semantics. All statelessly verifiable per the Content Gate. (H6, DKT-336 AC item 2)
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -228,48 +270,6 @@ Coherence (ux-spec contract, family lockstep), Completeness.
 ### Rename
 No rename (sibling code-review renamed → code-review-verdict; refs updated).
 
-## 2026-06-09
-
-### Summary
-Phase 1 no-change verdict (2nd consecutive). Verified both historical-audit signals (render-content-not-liveness; perceptual legibility at screenshare scale) already Blocker-enforced (QA Procedure step 2 + Severity ladder, added 2026-06-04).
-
-### Changes
-- None. Unescaped-$-substitution scan clean; COUPLING marker byte-identical across the 4 siblings; team-lead.md Rule 8/step 14 references resolve. disallowed-tools family decline reaffirmed.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no untrimmable redundancy at 215 lines), Completeness (both audit signals pre-encoded), Coherence (family parity md5-verified).
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict. Verify-then-recommend confirmed the cross-project render mandate (render-and-LOOK / external-asset bundling / legibility-at-scale) is already Blocker-enforced (QA Procedure step 2 + Severity ladder, added 2026-06-04) — a NO-OP, not a re-add. COUPLING marker byte-identical across the 4 leaf siblings.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no redundancy at 215 lines), Completeness (render mandate present), Coherence (family parity verified).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: moved the report-emission COUPLING marker above "When NOT to Use" and synced its text with the family. All 4 markers now byte-identical. Phase 1 review found no other gap.
-
-### Changes
-- COUPLING marker relocated under "When NOT to Use"; doubling-rule parity sentence added.
-
-### Dimensions Evaluated
-Coherence (report-emission family COUPLING parity).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +288,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-29: Harmonized silent-completion self-check framing with report-emission family — actor is the calling agent, not self-referential phrasing.
 - 2026-05-30: Aligned Doubling Rule with team-lead.md Rule 8 — single ux-advisor by default, opt up on trigger; canonical ephemeral design-qa-{N}.
 - 2026-06-04: Added media-rendering edge case to QA step 2 (catch dead media payloads, not just HTTP 200); removed redundant "Stream long commands" bullet.
+- 2026-06-05: Phase 2 coherence — moved report-emission COUPLING marker above "When NOT to Use"; synced text with family, all 4 markers byte-identical.
+- 2026-06-08: Phase 1 no-change verdict — verified cross-project render mandate already Blocker-enforced (QA Procedure step 2 + Severity ladder); COUPLING marker family-parity confirmed.
+- 2026-06-09: Phase 1 no-change verdict (2nd consecutive) — verified render-content-not-liveness + perceptual-legibility-at-scale signals already Blocker-enforced (added 2026-06-04).

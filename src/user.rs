@@ -255,6 +255,12 @@ impl UserEnvironment {
                     "bash ~/.claude/hooks/subagent-report-hook.sh",
                     "command",
                 )
+                .with_hook(
+                    "Stop",
+                    None,
+                    "bash ~/.claude/hooks/stop-guard-hook.sh",
+                    "command",
+                )
                 .with_include_git_instructions(false)
                 .with_model("claude-sonnet-5")
                 .with_output_style("Proactive")

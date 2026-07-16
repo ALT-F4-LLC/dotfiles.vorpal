@@ -114,6 +114,8 @@ Apply all six dimensions, weighted by what the artifact touches. Mark unaffected
    - **Color contrast** — text and interactive-control contrast ratios meet WCAG 2.2 AA (4.5:1 normal text, 3:1 large text/UI components); color is never the sole indicator.
    - **Keyboard navigability** — every interactive element is reachable and operable via keyboard alone; focus order matches visual/reading order and is visibly indicated; no keyboard traps.
    - **Semantic / ARIA correctness** — native semantic elements/roles specified before ARIA; ARIA roles/labels/live-regions are correct and announce state changes; heading/landmark structure supports screen-reader navigation.
+   - **Data-visualization output** — charts/graphs/dataviz encode each series with a non-color channel (pattern, direct label, or annotation) in addition to color, and series marks plus axis/label text meet WCAG 2.2 AA contrast against their background; a color→series legend alone is insufficient.
+   - **Data-table semantics** — tabular data uses real table structure with associated row/column headers rather than layout-only or ASCII-art tables that a screen reader linearizes into unlabeled cells; column meaning is recoverable without sighted scanning.
 4. **Information Hierarchy** — what's primary, what's secondary, progressive disclosure, scan-ability, signal-to-noise. (HIG: Simplicity)
 5. **Error Handling** — every workflow has error branches; messages follow "what happened → why → what to do now"; specific values/paths in errors; degraded modes covered. (HIG: Agency, Responsibility)
 6. **Performance Perception** — feedback latency, loading states, perceived progress, silence-is-the-worst-UX violations, animation timing. (HIG: Familiarity, Craft)

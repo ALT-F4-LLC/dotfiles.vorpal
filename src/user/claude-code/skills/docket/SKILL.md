@@ -37,6 +37,15 @@ docket issue show DKT-1 --json                # show full detail incl. comments/
 docket next --json                            # what's ready to work on right now?
 ```
 
+> **The flag reference in this file is complete and current** — the Global
+> Flags table and the Complete Command & Flag Reference section below
+> transcribe every flag from the `docket` source. Look flags up here; do NOT
+> re-run `docket --help` or per-subcommand `--help` unless you suspect the
+> installed `docket` has drifted from this reference, or a governing gate
+> (e.g. the evolve-* Phase-0 ground-truth check) explicitly names `--help`
+> as its verification source — a mandated ground-truth check outranks this
+> lookup shortcut.
+
 Issue IDs are formatted `DKT-<n>` (e.g. `DKT-42`), document IDs `DOC-<n>`,
 and proposal (vote) IDs `DKT-V<n>` — all three accept either the bare number
 or the formatted string as CLI arguments (`model.ParseID`, `ParseDocID`,
@@ -212,6 +221,10 @@ docket issue comment list DKT-1 --json
 read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
 (default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
 required — there is no editor fallback.
+
+> **Common mistakes** — the correct form is `docket issue comment add <id> -m
+> "<message>"`. There is **no** `-b`/`--body` flag (use `-m`/`--message`), and
+> **no** `docket issue comment create` subcommand — the verb is `add`.
 
 ---
 

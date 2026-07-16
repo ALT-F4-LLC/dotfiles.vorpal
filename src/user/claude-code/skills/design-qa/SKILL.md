@@ -108,6 +108,8 @@ When invoked under team-lead orchestration (or `@ux-designer` orchestration), de
    - **Color contrast** — measure actual rendered contrast ratios (not just token values) against WCAG 2.2 AA (4.5:1 normal text, 3:1 large text/UI components); confirm color is not the sole indicator.
    - **Keyboard navigability** — drive every interactive element via keyboard alone; confirm focus order matches visual/reading order, focus is visibly indicated, and no keyboard traps exist.
    - **Semantic / ARIA correctness** — inspect rendered markup/accessibility tree for correct semantic elements/roles, accurate ARIA attributes, and screen-reader announcement of state changes.
+   - **Data-visualization output** — for shipped charts/graphs/dataviz, measure actual rendered contrast of marks against their background and between adjacent series (not just text), and confirm categories stay distinguishable without hue (direct labels, patterns, or shape).
+   - **Data-table semantics** — inspect the rendered markup/accessibility tree for genuine table structure (header cells, scope/association, caption) so screen readers can navigate; a visually-tabular layout built from non-semantic markup (aligned divs or spaced text) is screen-reader-hostile.
 4. **Trace cross-surface consistency** — if the spec sets precedent, verify the same concept uses the same name and copy across surfaces.
 5. **Decide verdict** per the ladder:
 

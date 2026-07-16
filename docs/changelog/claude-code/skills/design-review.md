@@ -1,5 +1,33 @@
 # Changelog: design-review
 
+## 2026-07-15 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-15
+
+### Summary
+Amplified Accessibility dimension #3 with dataviz-output-contrast and data-table-semantics checks (DKT-336 H5). Applied as AMPLIFY not a new dimension — Accessibility is already dimension #3 and the six-dimension count is validator-enforced. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added two checklist bullets to Accessibility dimension #3 — dataviz-output contrast/color-encoding and screen-reader table semantics (H5); color-only + keyboard-only checks already present.
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -242,37 +270,6 @@ All 8; Over-Engineering primary; reasoning-echo + $-escape + recall-filter audit
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Phase 2: code-review→code-review-verdict reference updates (lockstep only).
-
-### Changes
-- 2 refs updated for the sibling rename, incl. the byte-identical COUPLING marker.
-- Monitor retained in allowed-tools despite no body usage — family parity decision (pre-approval, not capability).
-
-### Dimensions Evaluated
-Coherence (family lockstep).
-
-### Rename
-No rename (sibling code-review renamed → code-review-verdict; refs updated).
-
-## 2026-06-09
-
-### Summary
-Coherence: fixed Save & Return vote escalation to mode-split (standalone `Skill(vote)`; team mode delegation_request to team-lead) — prior wording instructed a team-mode Skill(vote) call that agents/ux-designer.md's CRITICAL banner forbids. Trimmed duplicated routing parenthetical + rhetorical tail from the self-check. Net 0.
-
-### Changes
-- Save & Return vote bullet: `Skill(vote, ...)` → mode-split escalation per agents/ux-designer.md Design Spec Approval.
-- Self-check: dropped routing clause duplicating bullet 1 and "regardless of how complete..." filler.
-- Cross-cutting: same Skill(vote) hazard in code-review:390, verify-ac:261, and family When-NOT-to-Use bullets routed to Phase 2 for lockstep harmonization.
-
-### Dimensions Evaluated
-All 8. Coherence (vote-routing contradiction), Over-Engineering (HIGHEST — self-check trim), Skill Design (no unescaped $digit; under compaction cap; description under budget). Spec Alignment N/A (docs/spec/ absent).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +288,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-29: OE — Validation check #2: 3 sub-bullets → 1 enforceable line. Net -3.
 - 2026-05-29: Harmonized silent-completion self-check framing with report-emission family — "MUST self-check" (peer/team-lead), resolved Phase-1 SendMessage objection.
 - 2026-05-30: Aligned Doubling Rule with team-lead.md Rule 8 (default-single, opt-up-doubled); ephemeral name design-review-2 → design-review-{N}.
+- 2026-06-09: Coherence — mode-split Save & Return vote escalation (standalone Skill(vote); team mode → delegation_request); trimmed duplicate routing text. Net 0.
+- 2026-06-09: Phase 2 — code-review→code-review-verdict reference updates (2 refs, lockstep only); Monitor retained in allowed-tools (family parity).

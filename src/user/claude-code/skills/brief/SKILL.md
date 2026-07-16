@@ -8,8 +8,6 @@ description: >
   block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
   nothing. Trigger: "create brief", "brief this request", "standardize this request".
 argument-hint: "<freeform work request>"
-allowed-tools: Read, Grep, Glob, AskUserQuestion, WebFetch, WebSearch, Bash(docket issue show:*), Bash(docket issue comment list:*), Bash(docket issue log:*), Bash(docket issue file list:*), Bash(docket issue graph:*), Bash(docket plan:*)
-disallowed-tools: Edit, Write, Agent, SendMessage
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

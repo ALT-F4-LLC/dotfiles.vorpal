@@ -219,12 +219,12 @@ Each task must be independently executable — a @senior-engineer picks up one `
 
 Scale the hierarchy to the work size:
 
-- **Small**: Single issue. One `docket issue create` with `-t`, `-d`, `-p`, `-T`, `-l`, plus explicit `-s todo` (all tiers — create defaults to `backlog`, invisible to executors).
+- **Small**: Single issue. One `docket issue create` with `-t`, `-d`, `-p`, `-T`, `-l` (all tiers — create defaults to `backlog`; team-lead promotes to `todo` before spawning the claiming ephemeral).
 - **Medium**: Parent issue + subtasks via `--parent <id>`. Typical shape: Explore, Implement (parallel where possible), Test (depends_on Implement), Docs.
 - **Large**: Epic parent → Phase sub-issues (depends_on chain) → Task sub-issues within each phase. Independent implementation streams within a phase run parallel.
 
 ```bash
-docket issue create -t "Feature" -d "Context, success criteria" -p high -T epic -l must-have -s todo
+docket issue create -t "Feature" -d "Context, success criteria" -p high -T epic -l must-have
 docket issue create -t "Implement X" --parent <id> -d "..." -p high -T feature -l must-have -f src/x.rs
 docket issue link add <later_id> depends_on <earlier_id>
 ```
@@ -301,7 +301,7 @@ If an issue cannot pass DoR, convert it to a spike whose output makes the real i
 
 **Re-engagement spawns a FRESH ephemeral** (per Strict Ephemeral Lifecycle above; team-lead supplies the continuity preamble). The new ephemeral's first turn: re-run session init + `docket issue comment list <id>` on active issues, identify plan drift (scope growth, invalidated assumptions, new risks), revise descriptions/dependencies, document in the parent comment. Reconstruct Docket state from the preamble and a fresh `docket plan --json` + `docket stats`. Report progress (X/Y), plan changes, critical path, and blockers; portfolio-rollup adds per-workstream progress, critical-path ETA, cross-workstream risks, and prioritization recommendations.
 
-**Cancellation / completion:** close remaining `todo`/`in-progress` issues with cancellation comments, summarize completed-vs-cancelled in the parent, then **explicitly `docket issue close <epic-id>`** — child closure does NOT cascade to the parent epic. Never leave orphaned open issues.
+**Cancellation / completion:** close remaining `backlog`/`todo`/`in-progress` issues with cancellation comments, summarize completed-vs-cancelled in the parent, then **explicitly `docket issue close <epic-id>`** — child closure does NOT cascade to the parent epic. Never leave orphaned open issues.
 
 **Cross-workstream:** before issues for a new workstream, check `docket issue file list` on in-progress issues for collisions; declare hard deps via `depends_on` and soft cross-refs via `relates_to`; surface resource conflicts with a prioritization recommendation; create a shared contract task when multiple workstreams touch the same interface.
 

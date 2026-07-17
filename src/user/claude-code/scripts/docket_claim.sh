@@ -8,6 +8,7 @@ usage() {
     echo "Usage: docket_claim.sh <id> <role>" >&2
     echo "  Claims <id> for @<role>: docket issue edit -a @<role> && docket issue move in-progress" >&2
     echo "  Guards cwd to repo root and verifies updated_at advanced." >&2
+    echo "  Rejects the claim (no state change) if the issue's status is still 'backlog'." >&2
     exit 1
 }
 
@@ -24,16 +25,27 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 cd "$REPO_ROOT"
 
-show_updated_at() {
+show_json() {
     local out
     out=$(docket issue show "$ID" --json) || {
         echo "docket_claim.sh: failed to show ${ID}: ${out}" >&2
         exit 1
     }
-    printf '%s' "$out" | jq -r '.data.updated_at'
+    printf '%s' "$out"
 }
 
-BEFORE_UPDATED_AT=$(show_updated_at)
+show_updated_at() {
+    show_json | jq -r '.data.updated_at'
+}
+
+BEFORE_JSON=$(show_json)
+BEFORE_UPDATED_AT=$(printf '%s' "$BEFORE_JSON" | jq -r '.data.updated_at')
+BEFORE_STATUS=$(printf '%s' "$BEFORE_JSON" | jq -r '.data.status')
+
+if [ "$BEFORE_STATUS" = "backlog" ]; then
+    echo "docket_claim.sh: refusing to claim ${ID} — status is still 'backlog' (must be promoted to todo before claiming)" >&2
+    exit 1
+fi
 
 docket issue edit "$ID" -a "@${ROLE}"
 docket issue move "$ID" in-progress

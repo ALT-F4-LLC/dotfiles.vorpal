@@ -14,6 +14,7 @@ effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:
+  - commit
   - vote
 tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, Skill, AskUserQuestion, WebFetch, WebSearch
 ---

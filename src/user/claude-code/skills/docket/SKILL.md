@@ -146,11 +146,15 @@ Create an issue (only `--title` is required in JSON mode):
 docket issue create --json \
   -t "Add rate limiting to API" \
   -d "Prevent abuse on public endpoints" \
-  -s todo -p high -T feature \
+  -p high -T feature \
   -l backend -l must-have \
   -f internal/api/router.go \
   -a "@alice"
 ```
+
+New issues default to `backlog` status (omitting `-s`, as above); only
+team-lead promotes an issue to `todo`, immediately before spawning the
+ephemeral that claims it.
 
 Description can be piped from stdin with `-d -`:
 

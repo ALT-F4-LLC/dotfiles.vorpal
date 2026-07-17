@@ -1,0 +1,59 @@
+{
+    "ok": true,
+    "data": {
+        "phases": [
+            {
+                "phase": 1,
+                "issues": [
+                    {
+                        "id": "DKT-1",
+                        "title": "Outstanding fixture issue",
+                        "description": "Represents a todo issue for stop-guard-hook fixture capture.",
+                        "status": "todo",
+                        "priority": "medium",
+                        "kind": "bug",
+                        "assignee": "",
+                        "labels": [],
+                        "files": [],
+                        "docs": [],
+                        "created_at": "2026-07-16T23:42:12Z",
+                        "updated_at": "2026-07-16T23:42:25Z"
+                    },
+                    {
+                        "id": "DKT-2",
+                        "title": "In-progress fixture issue",
+                        "description": "Represents an in-progress issue for stop-guard-hook fixture capture.",
+                        "status": "in-progress",
+                        "priority": "medium",
+                        "kind": "bug",
+                        "assignee": "",
+                        "labels": [],
+                        "files": [],
+                        "docs": [],
+                        "created_at": "2026-07-16T23:42:12Z",
+                        "updated_at": "2026-07-16T23:42:25Z"
+                    },
+                    {
+                        "id": "DKT-4",
+                        "title": "Deferred fixture issue",
+                        "description": "Represents a todo issue labeled stop-defer that must be excluded.",
+                        "status": "todo",
+                        "priority": "medium",
+                        "kind": "bug",
+                        "assignee": "",
+                        "labels": [
+                            "stop-defer"
+                        ],
+                        "files": [],
+                        "docs": [],
+                        "created_at": "2026-07-16T23:42:12Z",
+                        "updated_at": "2026-07-16T23:42:25Z"
+                    }
+                ]
+            }
+        ],
+        "total_issues": 3,
+        "total_phases": 1,
+        "max_parallelism": 3
+    }
+}

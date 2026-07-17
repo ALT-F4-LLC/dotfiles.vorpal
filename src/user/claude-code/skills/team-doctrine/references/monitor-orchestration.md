@@ -18,6 +18,28 @@ only — never `Skill(team-doctrine)`.
 
   **Why not `docket ... --watch` for this:** `--watch` (and hand-rolled `docket issue list -a @role -s in-progress --watch --json` variants) only emits when a row's fields CHANGE between refreshes — it is a change-detector, not a silence-detector. An issue that has genuinely stalled (no status/updated_at delta at all — the exact zombie case this sweep exists to catch) produces zero `--watch` events, so a stall recipe built on `--watch` structurally cannot fire. `deadman_watch.sh` exists specifically to close this gap: it polls on a timer and treats an *unchanged* `updated_at` past the threshold as the signal, rather than waiting for a change event that will never come. Do not reintroduce a `--watch`-based recipe here for this reason.
 - **CI / PR checks (when work touches a PR):** `Monitor("gh pr checks <num> --watch", filter: terminal states succeeded/failed/cancelled)`.
-- **Inbound Discovered comments (mid-phase scope deltas):** `Monitor("docket issue comment list <ID> --watch", filter: 'Discovered:' lines)`. Surfaces scope deltas in real time instead of waiting for the spot-check.
+- **Inbound Discovered comments (mid-phase scope deltas):** compare the sorted comment-ID set from `--json` output — the same cost as a raw comment count, but also discriminates a delete+add netting to an equal count if the CLI ever grows deletion, and immune to relative-timestamp drift because it contains no rendered text:
 
-Filter must be selective (no raw log dumps) and cover failure signatures alongside the happy path (per Monitor tool's coverage rule). The change-detection recipes above (phase completion, CI/PR checks, inbound comments) hand `docket`'s native `--watch`/`-w` global flag (with `--interval DURATION`, default 2s — confirmed live in `docket --help`) to Monitor as the poll primitive; prefer it over wrapping a bare `docket` query in a hand-rolled `while … ; sleep N; done` loop. The stall sweep is the sanctioned exception: it needs to detect the *absence* of a change, which `--watch` cannot express, so `deadman_watch.sh` polls-and-diffs on its own timer instead of asking `docket` to watch. Use `Bash(run_in_background=true)` for one-shot "wait until X is done" cases; use Monitor for "tell me each time X happens." Combine with TaskUpdate at every state transition so the operator sees progress.
+  ```bash
+  prev=$(docket issue comment list <ID> --json | jq -r '[.data[].id] | sort | join(",")')
+  while true; do
+    cur=$(docket issue comment list <ID> --json 2>/dev/null \
+          | jq -r '[.data[].id] | sort | join(",")') || cur="$prev"
+    if [ "$cur" != "$prev" ]; then
+      docket issue comment list <ID> --json \
+        | jq -r '.data[] | "\(.id)\t\(.body)"' \
+        | awk -F'\t' -v prev=",$prev," 'index(prev, ","$1",")==0 {print $2}' \
+        | grep --line-buffered "Discovered:" || true
+      prev="$cur"
+    fi
+    sleep 30
+  done
+  ```
+
+  **Why never hash or text-diff rendered CLI output for this:** rendered docket output embeds relative timestamps that drift on every poll — a comment authored "25 minutes ago" reads as changed text on the very next refresh even though nothing changed, which is the false-positive polling loop from the 2026-07-16 DKT-345 incident. Compare `--json` IDs, counts, or absolute timestamps instead; never hash or text-diff rendered output for change detection. Absolute `created_at` timestamps are available in the same payload but add nothing over sorted IDs here.
+
+  **Docket query failure caveat:** `|| cur="$prev"` treats a failed `docket` call as "no change," sound for a transient blip but silently blind forever if the failure is persistent (DB corruption, permissions) — the loop compares `$prev` to itself indefinitely. Escalate after a bounded run of consecutive failures rather than retrying unboundedly.
+
+Filter must be selective (no raw log dumps) and cover failure signatures alongside the happy path (per Monitor tool's coverage rule). The change-detection recipes above (phase completion, CI/PR checks) hand `docket`'s native `--watch`/`-w` global flag (with `--interval DURATION`, default 2s — confirmed live in `docket --help`) to Monitor as the poll primitive; prefer it over wrapping a bare `docket` query in a hand-rolled `while … ; sleep N; done` loop. Two recipes are sanctioned exceptions that poll-and-diff on their own timer instead of asking `docket` to watch: the stall sweep, because it needs to detect the *absence* of a change, which `--watch` cannot express (`deadman_watch.sh`); and inbound Discovered comments, because change detection there must never hash or text-diff `--watch`'s rendered, timestamp-bearing output — it compares the stable `--json` comment-ID set instead. Use `Bash(run_in_background=true)` for one-shot "wait until X is done" cases; use Monitor for "tell me each time X happens." Combine with TaskUpdate at every state transition so the operator sees progress.
+
+**One wait per condition.** Arm a hand-rolled `Bash(run_in_background=true)` background wait through `singleton_wait.sh <key> <interval-seconds> <condition-command>` (`src/user/claude-code/scripts/singleton_wait.sh`), keyed to the condition it polls, rather than spawning a bare loop directly. The lock makes re-arming an already-covered key idempotent instead of cumulative — impossible when armed through the `singleton_wait.sh` helper; a hand-rolled loop that bypasses the helper entirely is not caught by the lock, since this is a doctrine convention plus opt-in helper, not a mechanical guarantee across every invocation path. A stop-guard nudge is never license on its own to arm a second wait for a condition an existing poller already covers — check for an `already-armed key=<key> pid=<pid>` response (or an existing armed key) before spawning another.

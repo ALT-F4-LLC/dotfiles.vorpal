@@ -1,0 +1,9 @@
+{
+    "ok": true,
+    "data": {
+        "phases": [],
+        "total_issues": 0,
+        "total_phases": 0,
+        "max_parallelism": 0
+    }
+}

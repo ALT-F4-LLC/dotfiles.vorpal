@@ -1,5 +1,63 @@
 # Changelog: evolve-skills
 
+## 2026-07-17 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+coherence-reviewer's Phase 2 pass verified the rename/parity fixes landed clean and proposed one additional parity-bound fix: mechanize the Phase 2 byte-identity check with doctrine_check.sh.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: appended a `doctrine_check.sh` (exit 0 required) invocation after the manual grep-based byte-identity check in the Phase 2 apply instructions - its byte-parity arm re-verifies ALL manifest-registered CANONICAL blocks, catching a diverged carrier the single-line grep misses. Parity-bound with evolve-agents (identical appended clause).
+
+### Dimensions Evaluated
+Mechanical verification coverage; family parity.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Phase 2 family-wide lockstep application: the docs-researcher rename (P1) and 2 parity-bound findings (I4, I5b) deferred from this cycle's Phase 1 self-review, applied identically across evolve-agents + evolve-skills (+ the shared canonical template + evolve-config for the rename).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: renamed evolve Phase-0 auditor `docs-researcher` -> `docs-researcher-phase0` (8 occurrences) - lockstep with the canonical evolve-phase0-templates.md:422 template + evolve-agents (8 occ) + evolve-config (9 occ, bespoke copy). team-lead.md's bronze docs-researcher untouched (P1).
+- AMPLIFY[SUBSTANTIVE]: Phase 2 gate now runs findings_ledger_check.py mechanically (I4) - byte-identical wiring applied to evolve-agents too; verified via grep post-apply.
+- CULL[COSMETIC]: stripped settled innovation-scanner-relocation clause from symmetry_check step (I5b) - byte-identical strip applied to evolve-agents too; verified via grep post-apply.
+
+### Dimensions Evaluated
+Rename, Coherence, Actionability.
+
+### Rename
+docs-researcher -> docs-researcher-phase0 (Phase-0 auditor instance; team-lead.md's docs-researcher is a separate, untouched agent).
+
+## 2026-07-17
+
+### Summary
+Targeted cycle (self-review, one of 4 sibling skills sharing a 3-item mandate). Applied I5(a) cosmetic strip now; P3 tier-split confirmed already-correct (gold, no edit needed); rename (P1) and the byte-identical I4/I5(b) parity fixes deferred to Phase 2 for family-wide lockstep. Findings: 12 -> 1 sub / 1 cos / 1 rej / 6 def / 3 enc (rename+I4+I5b apply in Phase 2, not counted here).
+
+### Changes
+- CULL[COSMETIC]: stripped the settled legacy-carve-out parenthetical from the Self-budget line (I5a) - evolve-agents-unique wording confirmed not parity-bound.
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Rename (P1 recommended, Phase 2), Actionability.
+
+### Rename
+Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (8 occurrences), lockstep with evolve-phase0-templates.md:422 + evolve-agents + evolve-config.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -158,68 +216,6 @@ Cross-reference accuracy.
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Removed redundant Phase 2 coherence steps 6-8 (mechanized by symmetry_check.py `--check all`) and fixed the stale top-level `skills/` root that made scope-detection blind to the 15 skills under `src/user/claude-code/skills/` (this cycle's own operator-corrected scope). Net -583 (68,832→68,249; still TRIM, drift-section consolidation pending Phase 2).
-
-### Changes
-- CULL: dropped Phase 2 steps 6-8 (innovation-scanner/model-routing/Mimir byte-symmetry checks), renumbered 9→6 — cited symmetry_check.py docstring "mechanizes checks 5-8" + innovation-scanner Retire finding. Parity-locked with evolve-agents (deferred to Phase 2 lockstep).
-- CULL: fixed 2 `find .claude/skills skills` commands + 7 prose `skills/*/SKILL.md` refs → `src/user/claude-code/skills/*/SKILL.md` — cited this cycle's operator scope correction; the command silently missed all 15 non-evolve skills. Family-wide (evolve-agents, evolve-coherence share the same stale root — routed to Phase 2).
-- DEFERRED (Phase 2, parity-locked with evolve-agents): consolidate the Genetic-Drift Operator prose (~2,352B, no measured usage benefit) — not applied unilaterally.
-
-### Dimensions Evaluated
-All 8. Over-Engineering (net -583, TRIM honored but still over budget). Rejected a CHANGELOG-cache addition as over-engineering (no persistent cache substrate; step already fails open).
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Restored evolve-agents/evolve-skills symmetry for innovation and model-routing audit text.
-
-### Changes
-- AMPLIFY: innovation-scanner now uses the shared script-path skip/fail-open wording.
-- AMPLIFY: model-routing auditor now matches the session JSON and Mimir discovery wording used by evolve-agents, with skill nouns substituted.
-
-### Dimensions Evaluated
-Phase 2 coherence.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Pre-flight pins the two Codex skill roots and Phase 1 budget honors prompted caps including the 535-line self-budget. Net 0.
-
-### Changes
-- AMPLIFY: pre-flight names `.codex/skills` and `src/user/codex/skills` as the only Codex skill roots — cited historical `find: skills: No such file or directory` abort.
-- AMPLIFY: Phase 1 NET_LINES guidance now follows the prompted cap, including the 535-line evolve-skills self-budget — cited self-review budget mismatch.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Fixed the live zsh-nomatch glob-abort across all 4 inventory/changelog glob sites (reproduced this cycle: a missing top-level `skills/` root aborted pre-flight discovery and `2>/dev/null` does not suppress nomatch) and added a last-run preamble so re-running isn't the only way to confirm prior completion. Net -1 (534→533).
-
-### Changes
-- CULL: replaced 4 `*/SKILL.md`/`*.md` globs (pre-flight steps 4 & 7, Phase 4 gate, wrap-up step 2) with `find … -maxdepth 2 -name … -exec wc -l {} + 2>/dev/null` — cited HISTORICAL BUG, reproduced live (zsh aborts mid-discovery, yielding zero inventory).
-- AMPLIFY: pre-flight step 7 now surfaces `Last evolve-skills changelog entry: <date>` — cited HISTORICAL signal (3 same-day re-runs were the only way to confirm prior completion); also collapses 2 lines to 1.
-- AMPLIFY: Phase 1 template `Read(limit=80)` → ranged Read of the relevant section — cited INNOVATION (the 80-line cap predates the 1M-context default and can hide a cross-file contract past line 80).
-
-### Dimensions Evaluated
-All 8. Over-Engineering: net -1 (TRIM honored, 533/535). No model/routing/drift changes (none data-justified, operator hard-gate). No unescaped `$`+digit. Phase-2 deferrals: glob-abort family propagation; report-only auditor conversion.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +281,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Drift-only cycle — heading & DOCS-PATHS-LOCAL reorder trials, no reviewer edits (498 lines). | Drift: heading "Phase 0: Historical Audit (per-skill)" → "(one block per target skill)" (seed 124bf552, i=229) → applied, net 0. | Drift: DOCS-PATHS-LOCAL Reads-list reorder (seed 124bf552, i=230) → proposed (operator declined — CANONICAL-maintained block).
 - 2026-06-10: Phase 2 coherence (lockstep evolve-agents) — apply step 2 gains Read-before-Edit, re-Read-after-grep/mv, 1:1 Edit↔CHANGE discipline; line-neutral.
 - 2026-06-19: BUG fix (docket-auditor scope) + day= alias + Read(limit=80) AMPLIFYs, drift rewords, net-zero. | Drift: Changelog-Format read-latest clause reworded (seed 6f0ab504, pick 5) → applied. | Drift: Crash & Stall "Re-spawn ONCE" bullet reworded (pick 6) → applied. | DRIFT: Changelog-Format read-latest clause reworded — neutral, pick 5, net 0. | DRIFT: Crash & Stall "Re-spawn ONCE" → "Re-spawn exactly once" — neutral, pick 6, net 0.
+- 2026-06-30: Fixed live zsh-nomatch glob-abort across 4 inventory/changelog glob sites; added last-run preamble for re-run confirmation.
+- 2026-06-30: Pre-flight pinned two Codex skill roots; Phase 1 budget honors prompted caps including the 535-line self-budget.
+- 2026-06-30: Restored evolve-agents/evolve-skills symmetry for innovation and model-routing audit text.
+- 2026-07-10: Removed redundant Phase 2 coherence steps 6-8 (mechanized by symmetry_check.py); fixed stale top-level `skills/` root blind to 15 skills.

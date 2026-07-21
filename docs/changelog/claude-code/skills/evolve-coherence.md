@@ -1,5 +1,33 @@
 # Changelog: evolve-coherence
 
+## 2026-07-17 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Coherence-class fix surfaced by the evolve-skills cycle's Phase 2 coherence-reviewer: the ephemeral-name-consistency invariant went stale after evolve-* renamed its Phase-0 docs-researcher auditor to docs-researcher-phase0.
+
+### Changes
+- Naming invariant (D3 #5) now lists `docs-researcher` (team-lead's retrieval-only ephemeral) and `docs-researcher-phase0` (the evolve-* Phase 0 doc-research ephemeral) as distinct names, so the intentional split is not flagged as an inconsistency.
+
+### Dimensions Evaluated
+D3 (naming & rename drift) - accurate references, consistent terminology.
+
+### Rename
+No rename (this file itself was not renamed; it documents a rename in sibling skills).
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -249,36 +277,6 @@ All 8; Over-Engineering primary (dense but load-bearing); $-escape audit clean (
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Added brief to the D4 leaf-family BANNER enumeration — the 2026-06-09 audit found brief is a genuine leaf carrier omitted from the rubric list (FINDING 1, facet b).
-
-### Changes
-- D4 #2 leaf-family enumeration now reads "…verify-ac, simplify-scout, brief" so future audits hash brief within the leaf family instead of discovering it ad hoc. Paired with normalizing brief's banner tail (see brief changelog). Net lines: 0.
-
-### Dimensions Evaluated
-Coherence (manifest-scoped remediation cycle — other dimensions out of scope per operator-approved slice).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2: D3 stale-name pair code-review→code-review-verdict added; review-and-comment banner carve-out whitelisted in D4; rename reference updates.
-
-### Changes
-- D3 invariant 1 + detection seed now cover the code-review→code-review-verdict pair with token-boundary grep (mirrors verify→verify-ac encoding).
-- D4 #2 + Phase 1 template whitelist review-and-comment's intentionally non-CANONICAL banner.
-- 11 refs updated for the rename (incl. XREF schema examples).
-
-### Dimensions Evaluated
-Coherence, Completeness (D3/D4 whitelist accuracy).
-
-### Rename
-No rename (audits the renamed code-review-verdict).
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git
@@ -288,3 +286,5 @@ history (see the compaction entry's date).
 - 2026-06-05: Removed redundant "Whitelist of intentional variants" section (restated per-dimension carve-outs + Phase 1 template); pointer instead.
 - 2026-06-08: Replaced stale hardcoded line refs (staff-engineer.md:103) with content-anchored Skill(verify-ac) token refs, per D4 #1 anti-line-number rule.
 - 2026-06-09: Closed spawn-template rubric handoff gap — Read instruction for SKILL.md §Coherence Rubric added to Phase 0/1 templates.
+- 2026-06-09: Phase 2 — added code-review→code-review-verdict D3 stale-name pair; whitelisted review-and-comment's non-CANONICAL banner in D4; updated 11 rename refs.
+- 2026-06-09: Added brief to the D4 leaf-family BANNER enumeration — confirmed genuine leaf carrier omitted from the rubric list.

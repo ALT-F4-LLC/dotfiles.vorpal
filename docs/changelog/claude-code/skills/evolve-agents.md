@@ -1,5 +1,64 @@
 # Changelog: evolve-agents
 
+## 2026-07-17 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-07-11..2026-07-12) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+coherence-reviewer's Phase 2 pass verified the rename/parity fixes landed clean and proposed one additional parity-bound fix: mechanize the Phase 2 byte-identity check with doctrine_check.sh.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: appended a `doctrine_check.sh` (exit 0 required) invocation after the manual grep-based byte-identity check in the Phase 2 apply instructions - its byte-parity arm re-verifies ALL manifest-registered CANONICAL blocks, catching a diverged carrier the single-line grep misses. Parity-bound with evolve-skills (identical appended clause).
+
+### Dimensions Evaluated
+Mechanical verification coverage; family parity.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Phase 2 family-wide lockstep application: the docs-researcher rename (P1) and 2 parity-bound findings (I4, I5b) deferred from this cycle's Phase 1 pass, applied identically across evolve-agents + evolve-skills (+ the shared canonical template + evolve-config for the rename).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: renamed evolve Phase-0 auditor `docs-researcher` -> `docs-researcher-phase0` (8 occurrences) - lockstep with the canonical evolve-phase0-templates.md:422 template + evolve-skills (8 occ) + evolve-config (9 occ, bespoke copy). team-lead.md's bronze docs-researcher untouched (P1).
+- AMPLIFY[SUBSTANTIVE]: Phase 2 gate now runs findings_ledger_check.py mechanically (I4) - byte-identical wiring applied to evolve-skills too; verified via grep post-apply.
+- CULL[COSMETIC]: stripped settled innovation-scanner-relocation clause from symmetry_check step (I5b) - byte-identical strip applied to evolve-skills too; verified via grep post-apply.
+
+### Dimensions Evaluated
+Rename, Coherence, Actionability.
+
+### Rename
+docs-researcher -> docs-researcher-phase0 (Phase-0 auditor instance; team-lead.md's docs-researcher is a separate, untouched agent).
+
+## 2026-07-17
+
+### Summary
+Targeted 2-item cycle (of a 3-item shared mandate across evolve-agents/evolve-skills/evolve-config/evolve-model-distribution): documented the intentional gold(agent/skill genome)/silver(config genome) coherence-reviewer tier split, and added the missing check_citations.py parity step to the Phase 2 coherence template. The docs-researcher rename (P1) is deferred to this cycle's Phase 2 for family-wide lockstep application (touches the shared evolve-phase0-templates.md + 2 sibling skills). Findings: 12 -> 2 sub / 0 cos / 1 rej / 6 def / 2 enc (P1 rename applies in Phase 2, not counted here).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: document gold/silver coherence-reviewer tier split as intentional (agent/skill-genome auditing = gold; Rust-config-genome auditing = silver) - cited gold-tier-routing-gap-investigation (P3).
+- AMPLIFY[SUBSTANTIVE]: add check_citations.py step to Phase 2 coherence template - parity restore vs evolve-skills' existing step, cited I3.
+
+### Dimensions Evaluated
+Coherence, Completeness, Spec Alignment.
+
+### Rename
+Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (evolve Phase-0 auditor instance only; team-lead.md's bronze docs-researcher is untouched), lockstep with evolve-phase0-templates.md + evolve-skills + evolve-config.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -165,68 +224,6 @@ None — History Compaction per the retention-compaction policy, not a review cy
 ### Rename
 No rename.
 
-## 2026-07-12 (Phase 3 disambiguation pass)
-
-### Summary
-Pinned single ownership of team-lead.md's model-routing surface (overlapping-ownership with /evolve-model-distribution); aligned the `day=N` alias documentation with evolve-skills' convention. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 1 template now defers Tiers-list/routing-prose edits on team-lead.md to /evolve-model-distribution (DEFERRED disposition) — resolves overlapping-ownership with the routing-dedicated skill's heavier gates (Trial-only downgrades, per-proposal operator gate)
-- AMPLIFY[SUBSTANTIVE]: Argument Handling — documented `day=N` as an accepted alias for `days=N`, matching evolve-skills
-
-### Dimensions Evaluated
-Disambiguation (overlapping-ownership, argument-parsing family consistency). Flagged for a FUTURE dedicated pass (too large/risky for this cycle's wrap-up): 29 occurrences of a stale `agents/*.md` path literal (real location is `src/user/claude-code/agents/`) — confirmed live via `ls`; the same class of bug this cycle already fixed twice elsewhere (evolve-skills' changelog path, this file's own changelog path). Recommend the next /evolve-agents cycle's own Phase 1 self-review fix this, or a dedicated targeted pass.
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 2 coherence pass)
-
-### Summary
-Repaired two silently-dead `find` paths (the sibling of the fix evolve-skills received earlier this cycle) and adopted cache-first changelog fetch in lockstep with evolve-skills/evolve-config. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- FIX[SUBSTANTIVE]: pre-flight step 6 + Phase-4 gate — `docs/changelog/agents` → `docs/changelog/claude-code/agents` (old dir nonexistent; `2>/dev/null` masked it, deadening the compaction gate permanently)
-- AMPLIFY[SUBSTANTIVE]: pre-flight step 9 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback (repetition-auditor confirmed repeated re-fetch of an unchanged ~400KB file)
-
-### Dimensions Evaluated
-Coherence (sibling path-fix parity), Efficiency. Still over the 65,000B budget (79,481B) — the only real close is the deferred shared-doctrine/Phase-0-template extraction (recorded as a Trial proposal below).
-
-### Rename
-No rename.
-
-Trial: extract shared Phase-0 auditor templates (historical/repetition/bug/model-routing + CANONICAL:HARVEST) to team-doctrine/references → proposed
-
-## 2026-07-12
-
-### Summary
-Fixed stale @staff-engineer→@distinguished-engineer headings (Phase 2/3, same bug class as evolve-skills); added a mirrored-doctrine divergence check to the coherence-reviewer. Reverted an initial TRIM attempt on the Genetic-Drift Operator prose after confirming it is byte-identical parity-bound across evolve-agents/evolve-skills/evolve-config — deferred to Phase 2 lockstep instead. File remains over the 65,000B budget (79,229B); the only real budget-closing lever is the deferred shared Phase-0/doctrine template extraction. Findings: 6 → 1 sub / 1 cos / 1 rej / 4 def / 0 enc
-
-### Changes
-- CULL[COSMETIC]: corrected Phase 2/3 headings to @distinguished-engineer — cited innovation-scanner Retire + lifecycle-table/body cross-check (matches evolve-skills' identical fix)
-- AMPLIFY[SUBSTANTIVE]: coherence-reviewer now greps agents/*.md for diverged mirrored doctrine beyond symmetry_check.py's 5 skill-vs-skill blocks — cited distinguished-engineer pitfalls 2026-07-11 (recurring gap)
-
-### Dimensions Evaluated
-All 8. Over-Engineering primary: file is 14.2KB over budget; only the DEFERRED shared-doctrine extraction closes it (this file is the primary beneficiary per its own §Self-budget line). Rejected the sdlc-role-researcher staleness gate (unproven safety, cost-optimization belongs in evolve-model-distribution). Deferred: drift_target.py codification, WebFetch docs-cache adoption (both cross-cutting w/ evolve-skills/evolve-config).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Operator-directed permanent doctrine changes (not a self-review cycle): added `sdlc-role-researcher` as a STANDING Phase 0 teammate (was ad-hoc/supplementary in the just-completed SDLC-comparison cycle), and switched Phase 2 `coherence-reviewer` + Phase 3 `disambiguation-reviewer` from `staff-engineer`/opus to `distinguished-engineer`/fable. File grows further over the pre-existing 65,000-byte overage (now ~78,126B; tracked separately, not addressed here).
-
-### Changes
-- ADD: `sdlc-role-researcher` (distinguished-engineer, fable) added to the Phase 0 roster (now EIGHT teammates), its own spawning template, `{sdlc_research_findings}` threaded into the Phase 1 per-agent template, and the TaskCreate/Phase-table entries. Never gated by the historical-audit SKIPPED flag (WebSearch-driven, not transcript-mining) — always runs.
-- CHANGE: `coherence-reviewer` and `disambiguation-reviewer` subagent_type/model changed from `staff-engineer`/`opus` to `distinguished-engineer`/`fable` (Phase table, both Phase gate descriptions, both spawn templates).
-
-### Dimensions Evaluated
-Operator directive, applied verbatim (not a self-review Content-Gate cycle). Byte-budget overage is a known, separately-tracked condition (this changelog's own 2026-07-10 entries); not remediated here.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +292,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-20: Phase 2 — pinned model= on all 8 Agent() spawns; added $TMPDIR scratch guard to shell-heavy auditor Rules.
 - 2026-06-30: Phase-2 coherence — propagated glob-abort find-form fix (zsh nomatch) to all 4 single-root inventory/changelog globs; inline, net 0.
 - 2026-06-30: Trimmed evolve-agents 522→498 lines; added Phase 0 coordination/lifecycle heatmap output; replaced fixed line-window reads with relevant-section reads.
+- 2026-07-11: Added sdlc-role-researcher as standing Phase 0 teammate; switched coherence-reviewer/disambiguation-reviewer to distinguished-engineer/fable (operator-directed).
+- 2026-07-12: Fixed stale @staff-engineer→@distinguished-engineer headings (Phase 2/3); added mirrored-doctrine divergence check to coherence-reviewer beyond symmetry_check.py.
+- 2026-07-12: Repaired two silently-dead `find` paths; adopted cache-first changelog fetch (lockstep evolve-skills/evolve-config). | Trial: extract shared Phase-0 auditor templates (historical/repetition/bug/model-routing + CANONICAL:HARVEST) to team-doctrine/references → proposed
+- 2026-07-12: Pinned single ownership of team-lead.md's model-routing surface to /evolve-model-distribution; aligned `day=N` alias documentation with evolve-skills.

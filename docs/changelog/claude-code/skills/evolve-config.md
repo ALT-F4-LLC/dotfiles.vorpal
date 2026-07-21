@@ -1,5 +1,63 @@
 # Changelog: evolve-config
 
+## 2026-07-17 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy. First compaction for this file — created the terminal Compacted history section.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Phase 3 disambiguation: clarified the reviewer-tier note's roster parenthetical so it cannot be read as delegitimizing the sibling skills' gold reviewer seats.
+
+### Changes
+- Reworded the P3 tier-note parenthetical - distinguished-engineer.md listing neither reviewer supports silver HERE; it is not evidence against the evolve-agents/evolve-skills gold seats (multi-reading resolved; claims re-verified against staff-engineer.md:48 and distinguished-engineer.md).
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership).
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Phase 2 family-wide lockstep application: the docs-researcher rename (P1, bespoke inline copy), deferred from this cycle's Phase 1 pass, applied in lockstep with the shared canonical template + evolve-agents + evolve-skills.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: renamed bespoke Phase-0 `docs-researcher` -> `docs-researcher-phase0` (9 occurrences) - lockstep with evolve-phase0-templates.md:422 + evolve-agents (8 occ) + evolve-skills (8 occ). team-lead.md's bronze docs-researcher untouched (P1).
+
+### Dimensions Evaluated
+Rename, Coherence.
+
+### Rename
+docs-researcher -> docs-researcher-phase0 (bespoke inline Phase-0 auditor instance; team-lead.md's docs-researcher is a separate, untouched agent).
+
+## 2026-07-17
+
+### Summary
+Targeted cycle (one of 4 sibling skills sharing a 3-item mandate). Applied I9 (retired self-contradicting hardcoded CANONICAL enumeration, 2 sites), P3 rationale (KEEP silver - grounded in staff-engineer.md's own spawn list), and H9 (symmetric forward-fitness-signal gate on wiring a dead setter). Rename (P1, bespoke inline copy, 9 occurrences) deferred to Phase 2 for lockstep with the shared template + siblings.
+
+### Changes
+- CULL[SUBSTANTIVE]: deleted the hardcoded 8-block CANONICAL enumeration at 2 sites (Phase 2 prose + template) - self-contradicted the "manifest-is-authority, not a hand-count" instruction it prefaced (I9; subsumes phantom-HARVEST H8, already-fixed).
+- AMPLIFY[SUBSTANTIVE]: reviewer-tier rationale note documenting the intentional silver-here/gold-there split (P3) - grounded in staff-engineer.md:48 owning coherence-reviewer; distinguished-engineer.md owns neither reviewer.
+- AMPLIFY[SUBSTANTIVE]: symmetric forward-fitness-signal gate on WIRING a dead setter, not just CULLing one (H9, staff-engineer/pitfalls.md:595).
+
+### Dimensions Evaluated
+Rename (P1, Phase 2), Coherence, Over-Engineering, Actionability, Orchestration & Agent Teams.
+
+### Rename
+Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (9 occurrences, bespoke inline copy), lockstep with evolve-phase0-templates.md + evolve-agents + evolve-skills.
+
 ## 2026-07-14
 
 ### Summary
@@ -220,47 +278,10 @@ All 8. Over-Engineering: inline, net 0 (no destructive trim forced on a no-signa
 ### Rename
 No rename.
 
-## 2026-06-20
+## Compacted history
 
-### Summary
-Phase 2: pinned model= (aliases) on all 8 Agent() spawns + added a $TMPDIR scratch guard to 3 auditor Rules lines. In-line edits, no line growth (stays 535, at self-budget).
+Entries below were compacted per the retention-compaction policy; full text in git history (see the compaction entry's date).
 
-### Changes
-- AMPLIFY: pinned `model=` on every Agent() spawn — sonnet (config-history/historical/model-routing auditors) / opus (docs-researcher, innovation-scanner, review-config, coherence-reviewer, disambiguation-reviewer). Cited the dispatch-defect rule; operator-approved per-tier pinning.
-- AMPLIFY: appended a `$TMPDIR`-not-`/tmp` scratch guard to the config-history-auditor + historical-auditor + model-routing-auditor Rules — directly fixes the cited run ERROR `operation not permitted: /tmp/...` (config-history-auditor).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Coherence trim: removed a false git blame claim from the config-history-auditor description; the changelog-path operator question resolved as a NO-OP (config/claude-code.md is correct, distinct from skills/evolve-config.md).
-
-### Changes
-- AMPLIFY: dropped `git blame` from the config-history-auditor Bash description — the Phase-0 template runs only `git log`; over-stated tooling invited needless blame over the 1636-line claude_code.rs. Cited: auditor stall hot-spot (32 TeammateIdle / 9.5% idle on sonnet).
-- Drift (rate 7): all SKIP — D0/D3/D4/D5/D6 evolve-family parity (Phase-2 lockstep); D1 already drifted this date (same seed) — guarded as churn.
-
-### Dimensions Evaluated
-Coherence, Efficiency, Over-Engineering, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Drift: reworded the Crash & Stall "Compaction recovery" bullet (seed 6f0ab504, pick 4) — instruction order changed, meaning preserved. Tagged config-specific drift sentence CONFIG-ONLY and trimmed its duplicate rationale. All 5 innovation-scanner config features verified real but rejected — they lack claude_code.rs setters and are owned by the runtime innovation pipeline per cycle.
-
-### Changes
-- AMPLIFY: tagged Genetic-Drift "Drift targets THIS SKILL's prose" sentence with `<!-- CONFIG-ONLY -->` — signals intentional family divergence to coherence reviewer; trimmed duplicate "config settings carry fitness consequences" rationale (stated twice in 2 lines).
-- DRIFT: Crash & Stall "Compaction recovery" bullet reordered — neutral allele substitution, seed 6f0ab504 pick 4, net 0.
-
-### Dimensions Evaluated
-All 6 config surfaces RETAIN (no setter exists for enforceAvailableModels / requiredMin|MaxVersion / MessageDisplay; fallbackModel/Tool(param:value) already covered). Runtime note: with_fallback_model defined but never called in src/user.rs (dead capability — next cycle finding).
-
-### Rename
-No rename.
+- 2026-06-19: Tagged Genetic-Drift CONFIG-ONLY marker; trimmed duplicate rationale; rejected 5 innovation-scanner config features (no claude_code.rs setters). | DRIFT: Crash & Stall "Compaction recovery" bullet reordered — neutral allele substitution, seed 6f0ab504 pick 4, net 0.
+- 2026-06-19: Coherence trim — removed false git blame claim from config-history-auditor description; changelog-path question resolved NO-OP.
+- 2026-06-20: Phase 2 — pinned model= (aliases) on all 8 Agent() spawns; added $TMPDIR scratch guard to 3 auditor Rules lines.

@@ -1,5 +1,20 @@
 # Changelog: model-distribution/team-lead
 
+## 2026-07-17
+
+### Summary
+Investigation-sourced cycle (4 governance gaps from investigator@gold+advisor@silver audit, converged). Resolved 1/4 in this skill's team-lead.md-only scope: QUALITY upgrade, PRD authoring bronze→silver. Other 3 are cross-file agent/skill coherence issues, routed to evolve-coherence.
+
+### Routing Changes
+- QUALITY: BIND PRD authoring (@project-manager via `Skill(prd)`) to silver — previously ungoverned (absent from the closed gold-authoring enumeration AND the bronze `planner`/decomposition bullet). PRD is spec-authoring landing in `docs/spec/`, matching the silver floor's charter; kept distinct from bronze `planner`. n=1 measured `prd-author` spawn (100% sonnet, zero drift) confirmed the gap was defaulting to bronze, not ruled there. Edit: silver Tiers bullet (line 242), appended PRD-authoring clause after "standalone vote reviewers."
+
+### Evidence
+LOCAL: 141 sessions (cutoff 2026-07-10T21:53:31Z), 1207 spawns joined; 73 PM/planner/PRD-family spawns isolated, all sonnet/zero-drift. Mimir: available, agent_name too coarse for PRD-specific cost. Re-verified team-lead.md lines 184/240-243/466 — all citations accurate.
+
+### Rejected
+- Secondary edits (gold-floor explicit PRD listing; Dispatch Table PRD row) — operator chose primary-edit-only.
+- 3 non-PRD gaps (evolve-model-distribution's stale ux-* categorization; coherence-reviewer gold/silver split across evolve-agents/skills vs evolve-config; docs-researcher name/tier collision) — outside this skill's editable surface, routed to evolve-coherence.
+
 ## 2026-07-13
 
 ### Summary

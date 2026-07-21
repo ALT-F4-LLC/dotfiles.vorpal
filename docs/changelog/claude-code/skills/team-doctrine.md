@@ -1,5 +1,34 @@
 # Changelog: team-doctrine
 
+## 2026-07-17
+
+### Summary
+Phase 3 disambiguation: annotated section 4's tool_call_frequency.sh invocation to pin --since day-count semantics against the adjacent ISO-cutoff --since of evolve_signals.py.
+
+### Changes
+- Section 4 Repetition Audit: added a day-count-vs-ISO note on `--since {history_days}` (confusable flag semantics across adjacent templates; verified against the script's usage text: days, range 1-90).
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership).
+
+### Rename
+No rename.
+
+## 2026-07-17
+
+### Summary
+Two Phase-2-sourced fixes to the shared evolve-phase0-templates.md reference (consumed by evolve-agents/evolve-skills/evolve-config): the docs-researcher rename lockstep, and wiring tool_call_frequency.sh into the repetition-audit template to close a recurring hand-rolled-pipeline pattern.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: canonical Phase-0 spawn template (section 8) renamed `docs-researcher` -> `docs-researcher-phase0` (P1; lockstep with evolve-agents/evolve-skills/evolve-config).
+- AMPLIFY[SUBSTANTIVE]: repetition-audit template (section 4) step 1 now prescribes `tool_call_frequency.sh` as the preferred extraction method, falling back to the hand-rolled pipeline only for shapes the script cannot express - cited repetition-auditor FIX 1 (4 independent sessions rebuilt this pipeline from scratch; the script had zero consumers).
+
+### Dimensions Evaluated
+Coherence (accurate references), Actionability (closes a recurring-repetition finding), Rename coordination.
+
+### Rename
+docs-researcher -> docs-researcher-phase0 (section 8 canonical template only).
+
 ## 2026-07-14
 
 ### Summary

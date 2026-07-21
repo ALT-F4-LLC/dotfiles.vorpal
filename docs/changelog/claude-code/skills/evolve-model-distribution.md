@@ -1,5 +1,19 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-17
+
+### Summary
+Investigation-sourced targeted fix cycle (P2 of a 3-item mandate spanning evolve-agents/evolve-skills/evolve-config/evolve-model-distribution). Synced the Tier-invariant-floor prose to team-lead.md's current 5 gold-seat classes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Tier-invariant floor prose (~line 204) now enumerates the current 5 gold-seat classes and the ux-advisor gold(spec-authoring)/silver(review-QA-consult) split, matching live team-lead.md Tiers block verbatim-re-read — cited investigation finding P2 (prior text listed only 4 classes, blanketed ux-* silver).
+
+### Dimensions Evaluated
+Spec Alignment (7), Coherence (6) — Divergence-class-1 ux-* hard-floor (line 224) re-verified as still correct post-edit, no change needed there.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary

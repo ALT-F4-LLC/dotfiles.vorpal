@@ -42,7 +42,8 @@ emit_empty() {
 
 emit_block() {
     emit_debug "${1:-}" "block" "${2:-}"
-    jq -n --arg reason "$BLOCK_REASON" '{decision: "block", reason: $reason}' 2>/dev/null || printf '{}\n'
+    jq -n --arg reason "$BLOCK_REASON" '{decision: "block", reason: $reason}' 2>/dev/null || \
+        printf '%s\n' '{"decision":"block","reason":"PREMATURE-COMPLETION-BLOCKED: completion report not found; blocking by default (decision emitter degraded). Send your completion report to team-lead, then retry TaskUpdate."}'
     exit 0
 }
 

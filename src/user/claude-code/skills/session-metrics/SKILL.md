@@ -37,8 +37,8 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/session_metrics.py"
 From the JSON summary, build a concise chat reply covering:
 
 1. **The data-source note** (`summary.note`) — one line, verbatim or near-verbatim. This must appear; it's the one place the user learns the data source.
-2. **Headline KPIs**: total tokens, total est. cost (`summary.totals.cost_est_usd`, labeled "est."), cache hit ratio, wall-clock duration, files touched count.
-3. **Subagent roster** (`summary.subagents`) as a table: name, role, model, effort (always the literal string from the JSON — never paraphrase or infer a number), tokens, est. cost (`cost_est` is `null` when the subagent used a model absent from the price table — render as "n/a", never as $0), tool calls, errors, files touched. If empty, say "no subagents in this session."
+2. **Headline KPIs**: total tokens, total est. cost (`summary.totals.cost_est_usd`, labeled "est."), cache hit ratio, wall-clock duration, files touched count. Include the price table's `summary.price_table.updated` date alongside the cost figure so staleness is visible, not just documented as a caveat.
+3. **Subagent roster** (`summary.subagents`) as a table: name, role, model, effort (always the literal string from the JSON — never paraphrase or infer a number), tokens, est. cost (`cost_est` is `null` when the subagent used a model absent from the price table — render as "n/a", never as \$0), tool calls, errors, files touched. If empty, say "no subagents in this session."
 4. **Session-level effort** (`summary.session_effort`, from `$CLAUDE_EFFORT`) called out separately from the roster — it describes the orchestrating session, not any one subagent.
 5. **Tool-usage breakdown** (`summary.tool_usage`) — top few by call count, with error counts where nonzero.
 6. **The HTML report path** (the script's final stdout line) — tell the user it's a self-contained, sortable HTML file they can open in a browser.
@@ -51,8 +51,8 @@ State the absolute HTML path plainly (e.g. "Report written to: `<path>`"). Do no
 
 ## Notes on what the numbers mean
 
-- **Every cost figure is an estimate** (`est.`) — derived from a hardcoded per-model price table, not billing-authoritative usage. Caching-tier nuances, batch discounts, and `inference_geo` multipliers are not modeled.
-- **An unpriced model undercounts cost — it doesn't zero it.** When any `summary.by_model` entry or a subagent `cost_est` is `null` (rendered "n/a"), that model is absent from the script's price table; surface one caveat line that the session total is undercounted and the script's price table may be stale, rather than letting the n/a pass unremarked.
+- **Every cost figure is an estimate** (`est.`) — derived from a per-model price table loaded from `scripts/model_prices.json`, not billing-authoritative usage. Caching-tier nuances, batch discounts, and `inference_geo` multipliers are not modeled. The table's `updated` date is surfaced as `summary.price_table.updated` so staleness is a visible fact, not a permanent shrug.
+- **An unpriced model undercounts cost — it doesn't zero it.** When any `summary.by_model` entry or a subagent `cost_est` is `null` (rendered "n/a"), that model is absent from `model_prices.json`; surface one caveat line that the session total is undercounted, pointing at the `price_table.updated` date so the user can judge how far the table has drifted.
 - **Subagent effort is never inferred.** The transcript does not record per-subagent effort; the script emits the literal string `"unknown (not recorded in transcript)"`. If asked to estimate it, decline — that would be fabrication.
 - **Files-touched is deduped** across the main session and every subagent transcript.
 - **Timeline has two numbers**: wall-clock duration (first timestamp to last) and total `turn_duration` (the sum of the harness's own per-turn timing records) — these differ when there were idle gaps.

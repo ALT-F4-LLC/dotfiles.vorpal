@@ -25,28 +25,25 @@ A single positional `<PR>`: a bare number (`109`), a full URL (`https://github.c
 
 ## Operational preconditions (read once)
 
-- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true`.
-- **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip.
-- Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting.
+- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true` — this includes Step 1's script call below and the raw `gh` calls in Steps 5, 7, and 8.
+- **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip. (Step 1's script already does this internally; this still applies to the raw `gh` calls in Steps 5, 7, and 8.)
+- Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting. (Step 1's script already captures and prints this as `IDENTITY` — reuse that value.)
 
-## Step 1 — Fetch PR metadata + diff
+## Step 1 — Fetch PR metadata + diff, and clone (via rc_pr_setup.sh)
+
+Run the shared setup script `~/.claude/scripts/rc_pr_setup.sh` (repo: `src/user/claude-code/scripts/rc_pr_setup.sh`) with `dangerouslyDisableSandbox: true`:
 
 ```
-gh pr view <num> --repo <owner/repo> --json title,author,baseRefName,headRefName,additions,deletions,changedFiles,files,url
-gh api repos/<owner>/<repo>/pulls/<num> --jq '{head_sha:.head.sha, commits:.commits}'   # head_sha anchors every comment
-gh pr diff <num> --repo <owner/repo>
+~/.claude/scripts/rc_pr_setup.sh <owner/repo> <num>
 ```
+
+One deterministic call: resolves `gh`/`jq` to absolute paths (avoids the subshell PATH-resolution footgun above), prints the acting `IDENTITY`, fetches PR metadata (`METADATA_JSON`: `title,author,baseRefName,headRefName,additions,deletions,changedFiles,files,url`) and `HEAD_SHA` (anchors every comment — Step 4), writes the full diff to `DIFF_FILE`, and shallow-clones the PR head branch to `CLONE_DIR` (see Step 2). On a TLS/certificate failure it prints an explicit re-run-with-sandbox-disabled instruction instead of a cryptic curl error.
+
+**Reuse the printed `DIFF_FILE`/`CLONE_DIR` absolute paths verbatim for the rest of this skill** — the sandbox remaps `$TMPDIR` between calls, so recomputing them from `$TMPDIR` later points at the wrong location.
 
 ## Step 2 — Clone the PR head for full-repo context
 
-The diff alone misses cross-file issues (callers not in the diff, repo-wide conventions, dependency graph). Shallow-clone the head branch:
-
-```
-DIR="$TMPDIR/rc-pr<num>"; rm -rf "$DIR"
-gh repo clone <owner>/<repo> "$DIR" -- --depth 1 --branch <headRefName>
-```
-
-Note: the sandbox remaps `$TMPDIR`; when you later read/grep the clone, use the literal absolute path printed by the clone step, not `$TMPDIR`.
+The diff alone misses cross-file issues (callers not in the diff, repo-wide conventions, dependency graph). `rc_pr_setup.sh` (Step 1) already shallow-cloned the PR head branch to the printed `CLONE_DIR` — read/grep that path for full-repo context; no separate clone command is needed.
 
 ## Step 3 — Review through both lenses
 
@@ -78,6 +75,8 @@ If no samples surface, draft in a concise first-person engineer voice (short, di
 One inline comment per finding (never a single consolidated mega-comment). Each: short, first-person, names the concern + a concrete suggestion. Prefix nits with `nit:`. Keep high-severity ones direct but collegial (questions over commands). Map findings → anchors from Step 4.
 
 ## Step 7 — Per-item approval gate (MANDATORY)
+
+Before presenting, fetch the PR's existing inline comments once (`gh api repos/<owner>/<repo>/pulls/<num>/comments --jq '.[]|"\(.path):\(.line)\t\(.body)"'`, run sandbox-off) and mark any draft whose `path:line` + concern already matches one as `[DUP — already on PR]`; exclude dups from the post set by default unless the operator opts to re-post. This keeps a re-run (fix→re-review, or an interrupted retry) from posting the same comment twice under the operator's account.
 
 Present ALL drafts to the operator as a numbered list, each showing `file:line · severity` and the exact body. Then STOP and ask for per-item approval (e.g. "post all", "post 1–5, drop 6", "edit #3 to …", "add …"). **Post nothing until the operator explicitly approves.** Apply any edits and re-confirm changed items.
 

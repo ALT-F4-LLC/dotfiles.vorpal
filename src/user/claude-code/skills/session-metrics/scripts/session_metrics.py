@@ -18,31 +18,22 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Per-model USD price per 1M tokens. Source: platform.claude.com/docs/en/about-claude/pricing
-# (fetched 2026-06-30). Every cost figure derived from this table is an estimate, not a
-# billing-authoritative number — caching tiers, batch discounts, and inference_geo
-# multipliers are not reproduced here.
-PRICES = {
-    "claude-fable-5": {"in": 10, "out": 50, "cache_w5": 12.50, "cache_w1h": 20, "cache_r": 1},
-    "claude-mythos-5": {"in": 10, "out": 50, "cache_w5": 12.50, "cache_w1h": 20, "cache_r": 1},
-    "claude-opus-4-8": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
-    "claude-opus-4-7": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
-    "claude-opus-4-6": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
-    "claude-opus-4-5": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
-    "claude-opus-4-1": {"in": 15, "out": 75, "cache_w5": 18.75, "cache_w1h": 30, "cache_r": 1.50},
-    "claude-opus-4-0": {"in": 15, "out": 75, "cache_w5": 18.75, "cache_w1h": 30, "cache_r": 1.50},
-    "claude-sonnet-4-6": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
-    "claude-sonnet-4-5": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
-    "claude-sonnet-4-0": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
-    "claude-haiku-4-5": {"in": 1, "out": 5, "cache_w5": 1.25, "cache_w1h": 2, "cache_r": 0.10},
-    "claude-3-5-haiku": {"in": 0.80, "out": 4, "cache_w5": 1, "cache_w1h": 1.60, "cache_r": 0.08},
-}
-# Claude Sonnet 5 has introductory pricing through 2026-08-31, then steps up.
-_SONNET_5_INTRO_CUTOFF = datetime.date(2026, 8, 31)
-if datetime.datetime.now(datetime.timezone.utc).date() <= _SONNET_5_INTRO_CUTOFF:
-    PRICES["claude-sonnet-5"] = {"in": 2, "out": 10, "cache_w5": 2.50, "cache_w1h": 4, "cache_r": 0.20}
-else:
-    PRICES["claude-sonnet-5"] = {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30}
+def load_price_table():
+    """Load the per-model price table from model_prices.json (colocated with this
+    script), resolving any time-boxed intro/standard pricing against today's date."""
+    data = json.loads((Path(__file__).parent / "model_prices.json").read_text())
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    prices = {}
+    for model, entry in data["prices"].items():
+        if "intro" in entry:
+            cutoff = datetime.date.fromisoformat(entry["intro_cutoff"])
+            prices[model] = entry["intro"] if today <= cutoff else entry["standard"]
+        else:
+            prices[model] = entry
+    return prices, {"updated": data["updated"], "source": data.get("source")}
+
+
+PRICES, PRICE_TABLE_META = load_price_table()
 
 COORDINATION_TOOLS = {"Agent", "SendMessage", "Task"}
 FILE_TOOLS = {"Edit", "Write", "Read"}
@@ -319,6 +310,7 @@ def build_summary(cwd, project_dir, session_path, resolution_method):
             "aggregate metrics (e.g. OTEL) can't attribute to this specific session "
             "or reconstruct per-session detail, so they are not consulted."
         ),
+        "price_table": PRICE_TABLE_META,
         "session": {
             "id": session_id,
             "cwd": cwd,
@@ -420,7 +412,8 @@ def render_html(summary):
 <p class="note">{esc(s['note'])}<br>
 Session: {esc(s['session']['id'])} · cwd: {esc(s['session']['cwd'])} · branch: {esc(s['session']['git_branch'])} ·
 Claude Code {esc(s['session']['claude_code_version'])} · resolved via {esc(s['session']['resolution_method'])}<br>
-Session-level effort ($CLAUDE_EFFORT): {esc(s['session_effort'])}</p>
+Session-level effort ($CLAUDE_EFFORT): {esc(s['session_effort'])}<br>
+Price table last updated: {esc(s['price_table']['updated'])}</p>
 
 <section class="kpis">
   <div class="kpi"><div class="label">Total tokens</div><div class="value">{kpi['tokens']:,}</div></div>

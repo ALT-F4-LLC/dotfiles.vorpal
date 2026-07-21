@@ -1,5 +1,33 @@
 # Changelog: ux-spec
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-05..2026-06-08) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Correctness (L41): §4 Interaction Design now requires any affordance gated on backend/system state to cite the authoritative code-level eligibility predicate verbatim (grepped, confirmed against code) rather than describe the condition in prose. Closes a verified inverted-gate defect class — a prose-derived gate showed exactly when the backend would reject the action.
+
+### Changes
+- AMPLIFY: §4 Required Section — affordance visibility/enablement gates MUST cite the backend predicate (handler precondition / accepted-state set) as ground truth, not infer from prose. Grounded in ux-designer memory L113-116 (real 422-inverted `s switch backend` affordance).
+
+### Dimensions Evaluated
+All 8. Correctness (L41 AMPLIFY — sole finding). Over-Engineering (HIGHEST): no removable waste; file settled after ~20 cycles. Bug/repetition/model-routing/innovation auditors: clean for ux-spec. No model/routing/drift change (6 invocations, 3× opus / 3× fable, no error/respawn/correction signal).
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -240,35 +268,6 @@ All 8. Over-Engineering (HIGHEST): trim candidates resolved to deliberate prior 
 ### Rename
 No rename. ux-spec (authoring) remains distinct from design-review (peer review) and design-qa (post-impl QA).
 
-## 2026-06-08
-
-### Summary
-Removed a false circular cite ("mirrors `agents/ux-designer.md` Responsibility 1 design spec format") from the Required Sections preamble. The 2026-06-05 entry documented this same removal but the edit was not present in the file (un-applied or reverted); grep re-confirms ux-designer.md Responsibility 1 ("Design Specifications", L115) does NOT enumerate the 9 section names. The skill self-owns the section list. Net -1.
-
-### Changes
-- Required Sections preamble: dropped the circular ux-designer.md Responsibility 1 cite.
-
-### Dimensions Evaluated
-Spec Alignment (false cite — HIGHEST finding), Coherence (allowed-tools sibling parity, COUPLING bridge bidirectionality, docs-path taxonomy all verified clean), Over-Engineering (HIGHEST — none beyond settled trims). §9 Handoff Notes intact.
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 1: removed a false "mirrors agents/ux-designer.md Responsibility 1" cross-reference (the skill self-owns the section list; the cite was circular and absent there). Phase 2: restored the body-`status:` authority caveat (lockstep with prd).
-
-### Changes
-- Required Sections preamble: dropped the false ux-designer.md cross-ref (-1; verified none of the 9 section names appear there).
-- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4).
-
-### Dimensions Evaluated
-Spec Alignment (false cite), Over-Engineering (HIGHEST), Coherence (status-authority parity). Historical Write-bypass path verified closed.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +294,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: One over-engineering trim: Authoring §4 was re-declaring the Mermaid rule (including the diagram-type examples) that the canonical "### Mermaid Mandate" sect...
 - 2026-06-04: Dropped vestigial Glob/Grep from allowed-tools (prior art via docket doc list/show + Read, not Glob/Grep). Family lockstep with adr/prd/tdd.
 - 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §4 Section-order validation (count `##` headings outside fences); family parity.
+- 2026-06-05: Phase 1 — removed false circular ux-designer.md cross-ref (self-owns section list); Phase 2 restored status: authority caveat (lockstep prd).
+- 2026-06-08: Removed circular cite again — 2026-06-05 fix was un-applied/reverted; grep re-confirmed ux-designer.md doesn't enumerate 9 sections. Net -1.

@@ -1,5 +1,36 @@
 # Changelog: docket
 
+## 2026-07-20
+
+### Summary
+Disambiguated three flag-reference Notes whose "required (when explicitly set)" phrasing read as conditional; all three verified unconditionally required in --json mode against the live CLI.
+
+### Changes
+- Reworded `vote create --voters` Note to "required in --json mode" with the verified VALIDATION_ERROR text — the old parenthetical invited omitting -n (Phase 3 disambiguation, multi-reading).
+- Reworded `vote cast --confidence`/`--domain-relevance` Notes identically — live probe: omission exits 3 with "required in JSON mode".
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership).
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Closed the enum-discoverability gap that caused agents to guess invalid `--type` values (test/docs/spike) by inlining the Issue status/type enums into the create/edit/list flag tables, and surfaced the 5 deterministic wrapper scripts previously invisible to skill-only loaders. Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] issue create/edit/list flag tables: inlined `--status` (`backlog`|`todo`|`in-progress`|`review`|`done`) and `--type` (`task`|`bug`|`feature`|`epic`|`chore`) enums into the Notes column, scoped to `docket issue` commands (doc/next/plan untouched) (L13).
+- AMPLIFY[SUBSTANTIVE] new "Deterministic Wrapper Scripts" section citing docket_claim/close/write/create.sh + vote_delegate.sh with verified invocation syntax (L17).
+- DEFER: flags.md progressive-disclosure split — file at 44% of TRIM threshold, churn unjustified (L15). L14 already encoded by existing Quick Start callout — no change.
+
+### Dimensions Evaluated
+Actionability, Discoverability, Completeness, Non-redundancy
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary

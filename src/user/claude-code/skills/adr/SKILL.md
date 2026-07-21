@@ -6,7 +6,7 @@ description: >
   below.
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
 argument-hint: "<topic>"
-allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
+allowed-tools: ["AskUserQuestion", "Bash", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -83,7 +83,12 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: if the resolved `{output_path}` exists after numbering (step 5), run the COLLISION_DIALOG below.
+4. **Collision handling**: not applicable to the ADR numbering path — atomic claim
+   (step 5) reserves `{output_path}` and creates it as an empty stub in the same
+   operation, so it always exists immediately after numbering and this is never a real
+   collision. The COLLISION_DIALOG below is retained only for byte-identical parity
+   with the sibling doc-authoring skills (`doctrine_check_manifest.tsv`); this skill's
+   own flow never invokes it.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -113,23 +118,37 @@ Never silently overwrite. There is no "append" option — partial appends produc
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-5. **ADR numbering** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh docs/adr` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
-   — the shared doc-number allocation + citation-hijack script (also used by
-   `src/user/claude-code/agents/distinguished-engineer.md`, `src/user/claude-code/agents/staff-engineer.md`,
-   and `src/user/claude-code/agents/security-engineer.md` when hand-authoring ADRs outside this skill).
-   1. On success (exit 0), stdout is `{next_num}` (4-digit zero-padded) — the next
-      available number. The script has already skipped any candidate already cited
-      elsewhere in the repo under a different slug (citation-hijack) even though no
-      file with that number exists yet; skipped candidates are reported on stderr —
-      surface them to the calling agent as an informational note, not an abort.
+5. **ADR numbering + atomic claim** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh --claim docs/adr {slug}` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
+   — the shared doc-number allocation + citation-hijack script, run here in `--claim`
+   mode so numbering and reservation happen as one atomic step (also used in plain,
+   non-claiming mode by `src/user/claude-code/agents/distinguished-engineer.md`,
+   `src/user/claude-code/agents/staff-engineer.md`, and
+   `src/user/claude-code/agents/security-engineer.md` when hand-authoring ADRs outside
+   this skill).
+   1. On success (exit 0), stdout is `{next_num}` (4-digit zero-padded). The number is
+      now atomically claimed: the script has already created an empty stub at
+      `docs/adr/{next_num}-{slug}.md` via noclobber (`set -C`) lock semantics, so no
+      concurrent author can claim the same number out from under you — a losing
+      concurrent claimant retries the next candidate instead of colliding. The script
+      has also already skipped any candidate already cited elsewhere in the repo under
+      a different slug (citation-hijack) even though no file with that number exists
+      yet; skipped candidates are reported on stderr — surface them to the calling
+      agent as an informational note, not an abort.
    2. On failure (non-zero exit — existing filenames in `docs/adr/` don't match
-      `^\d{4}-[a-z0-9-]+\.md$`), ABORT using the script's stderr as `{detail}`:
+      `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`), ABORT using the
+      script's stderr as `{detail}`:
 
       ```
       Error: Could not determine next ADR number. {detail}
       ```
 
-   3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`.
+   3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`. This file already exists on
+      disk as the empty claimed stub from step 5.1 — expected, not a collision.
+   4. **Abort-after-claim caveat**: if the skill aborts anywhere past this point
+      (Authoring Procedure, Validation Before Save), the empty stub at `{output_path}`
+      is left on disk as an orphaned reservation of `{next_num}` — a re-invocation does
+      not reclaim it and instead claims the number above it. Note the orphaned stub
+      path in the abort report so the operator can delete it manually if unwanted.
 
 ## Authoring Procedure
 
@@ -250,21 +269,16 @@ On operator Cancel during the collision dialog: emit
 For this skill, `{output_dir}` is `docs/adr/` and `{output_path}` is
 `docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
-ADR-specific full sequence: `mkdir → pre-Write race Glob → Write → post-Write race Glob → Emit`. The initial numbering (Pre-flight step 5) is authoritative. ADR authoring is *usually* single-author, but simultaneous invocations do occur (a peer can claim your `{NNNN}` while you draft), so two Globs bracket the Write: the pre-Write Glob is a clean early-out that avoids creating a colliding file, and the post-Write Glob is the residual backstop for the microsecond race between it and the Write.
-
-**Before Write**: Re-run `Glob docs/adr/{NNNN}-*.md` (using the `{NNNN}` chosen in Pre-flight step 5). If it returns any file, a peer claimed your number while you drafted — ABORT cleanly WITHOUT writing (no orphan file, no cryptic harness unread-overwrite error):
-
-```
-Error: ADR number {NNNN} was claimed by another author during drafting — re-invoke to get a fresh number.
-```
-
-**After Write, before Emit**: Re-run `Glob docs/adr/{NNNN}-*.md` again. If more than one file is returned, a race slipped through the pre-Write check — ABORT loudly instead of emitting the confirmation:
-
-```
-Error: ADR number collision detected — another author may have raced you. Manual resolution required.
-```
-
-The post-Write Glob catches different-slug races at the same `{NNNN}`. Same-slug same-number races do not reach a silent clobber: the pre-Write Glob catches the common case, and the harness blocks an overwrite Write of a file this author never Read. On clean Glob (exactly one match), proceed to canonical step 3 (Emit confirmation) and end.
+ADR-specific full sequence: `mkdir → Read stub → Write → Emit`. Unlike the sibling
+doc-authoring skills, canonical step 2 (`Write {output_path}`) here targets a file that
+already exists on disk — the empty stub the atomic `--claim` created back in Pre-flight
+step 5 — so the harness's unread-overwrite guard applies. Insert one
+`Read {output_path}` between canonical steps 1 and 2 to satisfy it (the stub is empty;
+there is nothing to review). Because the number was reserved atomically at Pre-flight
+step 5 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
+interim — the pre-Write/post-Write race-detection Globs the prior non-atomic design
+needed to catch that race are no longer necessary and have been removed. On a clean
+Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
 
@@ -272,10 +286,8 @@ The post-Write Glob catches different-slug races at the same `{NNNN}`. Same-slug
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
-| `next_doc_number.sh docs/adr` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
-| Output file already exists at the resolved `{NNNN}-{slug}.md` path | Run COLLISION_DIALOG; never silently overwrite. On Cancel: `Cancelled — no file written.` |
-| Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
-| Pre-write Glob finds an existing file at the chosen `{NNNN}` (peer claimed it during drafting) | Abort cleanly WITHOUT writing: `Error: ADR number {NNNN} was claimed by another author during drafting — re-invoke to get a fresh number.` |
-| Post-write Glob finds two files with the same `{NNNN}` prefix (different slugs) | Abort loudly: `Error: ADR number collision detected — another author may have raced you. Manual resolution required.` |
+| `next_doc_number.sh --claim docs/adr {slug}` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
+| A peer claims a candidate `{NNNN}` before this invocation does | Handled transparently inside `next_doc_number.sh --claim` (retries the next candidate); never surfaces as a failure to this skill. |
+| Read of `{output_path}` (the claimed stub) fails before Write (stub deleted or unreadable between claim and Save & Return) | Surface raw error: `Error: Read failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

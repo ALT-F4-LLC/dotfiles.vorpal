@@ -209,20 +209,20 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 
 ## Validation Before Emit
 
-Mechanically validate the drafted review before emitting it. Write the review verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — doubled panels (`design-review-{N}`) share one `$TMPDIR`, so a fixed `review.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/review-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted review before emitting it. Pipe the review verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — doubled panels (`design-review-{N}`) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_lint.py --skill design-review "$STAGE"
+report_stage_lint.sh design-review "$DRAFT_FILE"
 ```
 
-Handle the exit code DISTINCTLY:
+(or pipe the review body on stdin and omit `$DRAFT_FILE`). Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the review in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-review, "<scope>")`:
   ```
   Error: validation failed: {section/field} — {detail}.
   ```
-- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+- **exit 2 (infra/usage — script or `report_lint.py` missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
 
 Every check in this review's checklist is text-decidable and lives in the validator — nothing stays in-skill. The validator enforces: recommendation on the ladder; recommendation matches severity counts (any Blocker ⇒ Block/Redesign/Incremental Improvement; any Concern with no Blockers forbids plain Approve); every Blocker cites one of the six dimensions via its `[dimension]` tag; every Blocker/Concern bullet carries a non-empty finding naming the section/workflow it affects; every Blocker has a `—` alternative/fix fragment; Dimension Checklist covers all six dimensions with a status; empty severity buckets explicit; required sections present in order; placeholder scan; banned-confidence-phrase scan (scoped to What's Strong, What Needs Work, Open Questions, Next Steps).
 

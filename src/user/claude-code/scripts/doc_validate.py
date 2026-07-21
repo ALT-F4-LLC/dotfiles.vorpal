@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Shared "Validation Before Save" checker for the doc-authoring skills
 (adr, prd, tdd, ux-spec), previously hand-maintained as per-skill prose
-checklists. Each type's checklist is transcribed check-for-check into the
-per-type rule table below; no check is added, dropped, or widened.
+checklists, plus `--type spec` for docs/spec/ files (init-specs), transcribed
+from the Spawning Template's frontmatter/section contract and spec_verify.sh's
+prior shallow checks. Each type's checklist is transcribed check-for-check into
+the per-type rule table below; no check is added, dropped, or widened.
 
-Usage: doc_validate.py --type {adr|prd|tdd|ux-spec} <file>
+Usage: doc_validate.py --type {adr|prd|tdd|ux-spec|spec} <file>
 
   stdout: OK: <file> (<type>)                        exit 0
   stderr: validation failed: <check> — <detail>      exit 1  (one line per failure)
@@ -33,6 +35,9 @@ COMMON_PLACEHOLDERS = ["{slug}", "{topic}", "{project_name}", "TBD", "TODO"]
 #   status_field / status_allowed: allow-list check on that field's value.
 #   forbid_field: a frontmatter field whose presence is a defect.
 #   sections: exact ordered list of ## headings the body must carry.
+#   min_h2 / required_sections: for types without a fixed section list (spec) —
+#     a minimum H2 count and a list of ## titles that must appear somewhere
+#     (order-independent), used instead of `sections`.
 #   alternatives: ("nonempty", section) or ("subsections>=2", section).
 #   mermaid: whether a ```mermaid block with a diagram-type keyword is required.
 #   placeholders: banned tokens (body only, fence-exempt).
@@ -89,6 +94,15 @@ RULES = {
         "sections": ["Overview", "Information Architecture", "Layout & Structure",
                      "Interaction Design", "Visual & Sensory Design", "Edge Cases & Error States",
                      "Accessibility", "Internationalization / Privacy / Measurement", "Handoff Notes"],
+        "mermaid": True,
+        "placeholders": COMMON_PLACEHOLDERS,
+    },
+    "spec": {
+        "frontmatter": ["project", "maturity", "last_updated", "updated_by", "scope", "owner", "dependencies"],
+        "forbid_field": "status",
+        "maturity_allowed": MATURITY_ALLOWED,
+        "min_h2": 3,
+        "required_sections": ["Gaps & Risks"],
         "mermaid": True,
         "placeholders": COMMON_PLACEHOLDERS,
     },
@@ -239,11 +253,22 @@ def validate(doc_type, text):
         if val not in rule["maturity_allowed"]:
             failures.append(("maturity", f"'{val}' not in {rule['maturity_allowed']}"))
 
-    # Check: section order (exact ordered match of ## headings outside fences).
+    # Check: section order (exact ordered match of ## headings outside fences) —
+    # or, for types without a fixed section list (spec), a minimum H2 count plus
+    # presence of specific required section titles (order-independent).
     observed = [t for _, t in h2_titles(records)]
-    if observed != rule["sections"]:
-        failures.append(("section-order",
-                         f"expected {rule['sections']} got {observed}"))
+    if "sections" in rule:
+        if observed != rule["sections"]:
+            failures.append(("section-order",
+                             f"expected {rule['sections']} got {observed}"))
+    else:
+        min_h2 = rule.get("min_h2", 0)
+        if len(observed) < min_h2:
+            failures.append(("section-count",
+                             f"expected >={min_h2} H2 headings, got {len(observed)}: {observed}"))
+        for sect in rule.get("required_sections", []):
+            if sect not in observed:
+                failures.append(("section-presence", f"required section '{sect}' missing"))
 
     # Check: alternatives.
     alt = rule.get("alternatives")

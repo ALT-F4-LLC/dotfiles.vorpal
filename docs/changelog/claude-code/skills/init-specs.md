@@ -1,5 +1,33 @@
 # Changelog: init-specs
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+No-change verdict (evolve-skills cycle). L28 (bump spawn-template model sonnet→opus) REJECTED after live verification: team-lead.md:243 explicitly routes `init-specs` spec-gen to the BRONZE tier, so model="sonnet" (SKILL.md:96) is correct and coherent — bumping it would desync the skill from its routing authority, recreating the inconsistency the 2026-07-12 and 2026-06-20 cycles already ruled against. All 8 dimensions clean; $+digit scan clean; spec_verify.sh citation resolves on disk; description 380 chars (far under 1,536 cap, L48 N/A). No trim headroom without dropping a distinct-audience instruction.
+
+### Changes
+- None (NO-OP verdict). L28 rejected with evidence (team-lead.md:243 bronze pin). L29 deferred (DKT-28, new script feature).
+
+### Dimensions Evaluated
+All 8; Coherence (PRIMARY — model-pin vs team-lead.md live routing authority); Over-Engineering (no safe trim; orchestrator-facing vs spawned-agent-facing instances are not redundant).
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -215,34 +243,6 @@ Skill Design Quality (arg-escape correctness); Coherence (family-wide documentar
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Fourth consecutive no-change verdict. Phase-0 step-ordering signal NO-OP: unknown-arg abort (L23) fires before Pre-flight; overwrite dialog (L60) unreachable by reserved-name concern (init-specs owns those names; prd's refusal-first ordering confirmed downstream). Seven Spec Files exact-match team-lead taxonomy.
-
-### Changes
-- None (NO-OP verdict). `$ARGUMENTS` substitution-intent ruling (L21/52/60) deferred to Phase 2 alongside the family-wide escape decision.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (183 lines, no trim headroom); Coherence (COUPLING reciprocity with prd consistent).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean. $ARGUMENTS hits (L21/52/60) are backtick-inline documented-variable idiom — NOT positional-expansion hazards; deliberately NOT escaped (escaping would corrupt the documented meaning). Third consecutive no-change verdict.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; $-escape audit: documented-variable exception applied.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +288,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Corrected factually wrong COUPLING comment (prd does not write to docs/spec/; siblings refuse reserved names by doc-type, not directory).
 - 2026-06-08: Phase 1 no-change verdict — Seven Spec File names verified exact-match vs team-lead.md taxonomy; shutdown lifecycle + COUPLING confirmed.
 - 2026-06-09: Third consecutive no-change verdict — $+digit audit clean; COUPLING reciprocity re-confirmed post refactor; RESERVED-NAMES exact-match.
+- 2026-06-09: Fourth consecutive no-change — step-ordering NO-OP (unknown-arg abort precedes Pre-flight); Spec Files exact-match team-lead taxonomy.
+- 2026-06-09: Mythos/Fable-5 no-change (3rd consecutive) — $ARGUMENTS hits are documented-variable idiom, deliberately not escaped.

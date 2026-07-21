@@ -82,7 +82,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
    `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
    filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
    `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`;
-   the shared {NNNN} allocation + citation-hijack script) is `adr/SKILL.md`'s numbering
+   the shared {NNNN} allocation + citation-hijack script) is `src/user/claude-code/skills/adr/SKILL.md`'s numbering
    step, not this skill's — do not invoke it here.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
@@ -138,12 +138,15 @@ malformed frontmatter.
    `N/A.` paragraph with a one-line justification. The chosen alternative in §3
    must match the Architecture & System Design section (§4).
 
-   **Authoring hazard — single-writer baton.** When two agents co-author one TDD
+   **Authoring hazard — co-author serialization.** When two agents co-author one TDD
    (e.g., `@staff-engineer` drafts the body and `@security-engineer` appends the
-   security sections), only one holds the edit token at a time. Hand off via the
-   file on disk: the appending agent re-reads the file fresh immediately before
-   editing; concurrent edits to the same file cause "File modified since read"
-   failures. Serialize the handoff through team-lead, not async peer messages.
+   Threat Model / Trust Boundaries / Security Considerations sections), the prose
+   hand-off does not serialize anything — the file-global modified-since-read gate is
+   the real primitive, so the appending agent re-Reads fresh immediately before
+   editing and, on a "File modified since read" error, re-Reads and diffs rather than
+   blind-retrying. Sequence the hand-off through team-lead, not async peer messages;
+   the sole-editor protocol authority is `security-engineer.md` §Responsibility 1
+   (Threat-Model Annotation).
 4. **Mermaid diagrams**: produce at least one Mermaid block (component map, sequence,
    state, or data flow). Validation §5 is the gate.
 5. **Verify embedded technical assertions before stating them as fact.** For each
@@ -219,8 +222,9 @@ Field rules:
 The TDD body MUST contain these top-level sections, in this order. Each is a
 `##` heading in the drafted document.
 
-1. **Problem Statement** — what, why now, who is affected, constraints, acceptance
-   criteria, business context.
+1. **Problem Statement** — what, why now, who is affected, constraints, non-goals
+   (explicit out-of-scope), acceptance criteria, business context. State non-goals
+   affirmatively — a goals-only framing is advocacy, not design.
 2. **Context & Prior Art** — existing patterns in this repo and outside; how this
    work fits.
 3. **Alternatives Considered** — at least two; shape, strengths, weaknesses,
@@ -341,9 +345,8 @@ On operator Cancel during the collision dialog: emit
 
 Planning-phase consumers (PM decomposition, team-lead briefs) copy this TDD's
 committed values verbatim into issue bodies and briefs, with file+section provenance
-annotations; post-planning phases operate exclusively from those distilled copies.
-This file is ephemeral — safely deletable at any time after its cycle's
-implementation completes (docs-paths.md §Persistence & lifecycle). Any prescribed
+annotations; post-planning phases operate exclusively from those distilled copies
+(this TDD is ephemeral — see the `status` frontmatter rule). Any prescribed
 `Skill(verify-ac)` is an EXPLICIT invocation, not a teammate-frontmatter assumption
 (teammates load only `tools`+`model`).
 

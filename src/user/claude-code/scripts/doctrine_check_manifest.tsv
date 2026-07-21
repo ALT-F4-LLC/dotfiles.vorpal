@@ -1,6 +1,21 @@
 # doctrine_check.sh manifest — parity-locked CANONICAL:<TAG> blocks that must
 # stay byte-identical across every carrier file listed for that tag.
-# Format: TAG<TAB>path/to/carrier.md   (paths are repo-root relative)
+# Format: TAG<TAB>path/to/carrier.md<TAB>[strip-transform]<TAB>[marker]
+# TAG is the comparison-group key (also the literal in-file
+# CANONICAL:<TAG>:BEGIN/END marker, UNLESS the 4th column overrides it — see
+# below). The 3rd column, when present, is a sed(1) script applied to that
+# carrier's extracted CANONICAL block before hashing — use it to normalize an
+# intentional per-carrier tail (e.g. a leaf skill's trailing peer-messaging
+# clause) that would otherwise break byte-parity across an otherwise-shared
+# family. If the strip transform reduces a carrier's block to an empty
+# string, doctrine_check.sh REJECTS that carrier outright (nonzero exit,
+# explicit error) rather than letting two empty strings match vacuously. The
+# 4th column, when present, is the literal CANONICAL marker to search for in
+# that carrier's file when it differs from TAG — needed when one physical
+# marker (e.g. `CANONICAL:BANNER:BEGIN/END`) carries multiple non-comparable
+# variant families: give each family its own TAG (e.g. `BANNER-LEAF`) so they
+# hash-compare independently, and set the 4th column to the real in-file
+# marker (`BANNER`) so extraction still finds the block.
 # Append new tags/carriers as new lines; comments (#) and blank lines are
 # ignored. A tag needs at least 2 carrier lines to be checkable.
 PITFALLS	src/user/claude-code/agents/ux-designer.md
@@ -36,6 +51,12 @@ OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-config/SKILL.md
 SECOND-FAILURE-RECOVERY	.claude/skills/evolve-agents/SKILL.md
 SECOND-FAILURE-RECOVERY	.claude/skills/evolve-skills/SKILL.md
 SECOND-FAILURE-RECOVERY	.claude/skills/evolve-config/SKILL.md
+# CRASH-STALL-CORE — detection paragraph + nudge + re-spawn bullets preceding
+# SECOND-FAILURE-RECOVERY. evolve-model-distribution's variant is intentionally
+# divergent (different resume-context/second-failure semantics) — not a carrier.
+CRASH-STALL-CORE	.claude/skills/evolve-agents/SKILL.md
+CRASH-STALL-CORE	.claude/skills/evolve-skills/SKILL.md
+CRASH-STALL-CORE	.claude/skills/evolve-config/SKILL.md
 PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-agents/SKILL.md
 PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-skills/SKILL.md
 PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-config/SKILL.md
@@ -46,6 +67,23 @@ BANNER	.claude/skills/evolve-skills/SKILL.md
 BANNER	.claude/skills/evolve-config/SKILL.md
 BANNER	.claude/skills/evolve-coherence/SKILL.md
 BANNER	.claude/skills/evolve-model-distribution/SKILL.md
+# BANNER-LEAF — leaf-family BANNER bodies share an identical prefix through
+# "...or form/manage a team." and diverge only in an intentional per-skill
+# trailing clause (peer-messaging / Docket-comment wording); the 3rd-column
+# strip transform truncates each body at that shared boundary before hashing
+# so parity is asserted on the shared prefix, never the whitelisted tail. The
+# 4th column ("BANNER") overrides the search marker since the in-file marker
+# is literally `CANONICAL:BANNER:BEGIN/END`, not `BANNER-LEAF`.
+BANNER-LEAF	src/user/claude-code/skills/adr/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/prd/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/tdd/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/ux-spec/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/code-review-verdict/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/design-review/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/design-qa/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/verify-ac/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/simplify-scout/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
+BANNER-LEAF	src/user/claude-code/skills/brief/SKILL.md	s/ The calling agent handles peer messaging.*$//	BANNER
 # doc-authoring family — ARGUMENT_HANDLING / COLLISION_DIALOG / SAVE_AND_RETURN
 # are byte-identical across adr/prd/tdd/ux-spec (the 4 doc skills).
 ARGUMENT_HANDLING	src/user/claude-code/skills/adr/SKILL.md

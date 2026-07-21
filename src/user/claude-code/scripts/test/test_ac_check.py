@@ -102,6 +102,32 @@ def test_no_ac_shaped_commands_exits_two():
     assert "no AC-shaped commands found" in err, err
 
 
+def test_differently_named_heading_ignored_without_section_flag():
+    desc = "**Testable Requirements**:\n- `test -e /`\n"
+    code, out, err = run("FAKE-8", desc)
+    assert code == 2, f"exit {code}: {out}{err}"
+    assert "no AC-shaped commands found" in err, err
+
+
+def test_section_flag_extracts_from_custom_heading():
+    desc = ("**Where**: `./should-not-run.sh`\n"
+            "**Testable Requirements**:\n"
+            "- `test -e /`\n"
+            "**Design Contracts**: none\n")
+    code, out, err = run("FAKE-9", desc, "--section", "Testable Requirements")
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert "./should-not-run.sh" not in out, out
+    assert "[PASS] test -e /" in out, out
+    assert "1/1 passed" in out, out
+
+
+def test_section_flag_is_case_insensitive():
+    desc = "**testable requirements**:\n- `test -e /`\n"
+    code, out, err = run("FAKE-10", desc, "--section", "Testable Requirements")
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert "[PASS] test -e /" in out, out
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

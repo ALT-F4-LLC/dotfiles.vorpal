@@ -1,5 +1,33 @@
 # Changelog: prd
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-04..2026-06-05) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Full-cycle audit: NO changes. All 8 dimensions clean. Zero prd-specific Phase 0 signals (historical/model-routing/docs/bug/repetition all report nothing for prd); zero ledger findings. Verified doc_validate.py (prd rule) still mechanizes every claimed check — maturity allow-list, no-status forbid_field, section order, mermaid, success-metrics concreteness — matching the skill's Validation/Failure-Mode prose.
+
+### Changes
+- None (NO-OP verdict). CANONICAL shared blocks (ARGUMENT_HANDLING, COLLISION_DIALOG, SAVE_AND_RETURN, DOCS-PATHS-LOCAL) byte-consistent with tdd/adr siblings. Validator coherence re-confirmed against ~/.claude/scripts/doc_validate.py lines 52-60.
+
+### Dimensions Evaluated
+All 8; Over-Engineering: no trims (Validation/Failure-Mode pairing still deliberate per 2026-07-10).
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary
@@ -240,34 +268,6 @@ All 8; Over-Engineering (HIGHEST — prior cycles already deduped), Coherence (f
 ### Rename
 No rename.
 
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: added a fenced-code-block carve-out to the §4 Section-order validation (count only `##` headings outside ``` fences), for doc-authoring family parity (lockstep with tdd/adr/ux-spec). Phase 1 review found no other gap.
-
-### Changes
-- §4 Section order: count only `##` headings at column 0 outside ``` code fences.
-
-### Dimensions Evaluated
-Coherence (doc-authoring family lockstep).
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Dropped vestigial `Glob`/`Grep` from `allowed-tools` — prior-art discovery uses `docket doc list`/`show` (Bash) and `Read`, never the Glob/Grep tools. Family lockstep with adr/tdd/ux-spec.
-
-### Changes
-- `allowed-tools` trimmed to `["AskUserQuestion", "Bash", "Read", "Write"]` (dropped `Glob`, `Grep`).
-
-### Dimensions Evaluated
-Skill Design Quality (frontmatter tool pool), Coherence (byte-identical lockstep with adr/tdd/ux-spec).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +292,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-28: One coordination fix (net 0): linked Authoring §1 prior-art discovery to the `dependencies` frontmatter field so downstream reviewers/decomposition can trace...
 - 2026-05-29: Corrected a factually-incorrect frontmatter rationale: `allowed-tools` does NOT remove `Edit` from the skill's tool pool (per Claude Code docs, every tool st...
 - 2026-05-30: Single over-engineering trim: collapsed the triple-listed `maturity` allowed-set to one canonical source (Field rules), preventing independent drift. Net 0.
+- 2026-06-04: Dropped vestigial Glob/Grep from allowed-tools — prior-art discovery uses docket doc list/show (Bash) + Read; lockstep with adr/tdd/ux-spec.
+- 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §4 Section-order validation (count ## outside fences); lockstep with tdd/adr/ux-spec.

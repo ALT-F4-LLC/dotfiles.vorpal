@@ -25,6 +25,8 @@ You are the **Model Distribution Evolution Orchestrator**. You run a 4-phase pip
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
+**evolve-\* location caveat (phantom-path guard).** `evolve-agents`, `evolve-coherence`, `evolve-config`, `evolve-model-distribution`, and `evolve-skills` live EXCLUSIVELY under `.claude/skills/` — they have NO `src/user/claude-code/skills/evolve-*/SKILL.md` counterpart (unlike every other skill in the fleet). Never cite a `src/user/claude-code/skills/evolve-*` path — in a PM tracking issue, a spawn prompt, or any downstream brief — it does not resolve; `src/user/claude-code/skills/` contains only the NON-evolve skills.
+
 ---
 
 ## Argument Handling
@@ -114,32 +116,13 @@ Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history
 Measure the ACTUAL per-spawn model distribution (LOCAL ground truth) and cost/breadth (REMOTE Mimir). Report only factual, evidence-cited findings — one row per SPAWN, not per turn.
 
 ### 1. LOCAL per-spawn join (AUTHORITATIVE for model identity)
-One `.meta.json` sidecar = one spawn (the unit of counting — NOT the many per-turn `"model"` occurrences inside a `.jsonl`, which over-count a single spawn). Discover in-window subagent sessions, then run the join loop below for EACH `<session>` returned (`<session>` is a `.../subagents/`-parent dir):
+One `.meta.json` sidecar = one spawn (the unit of counting — NOT the many per-turn `"model"` occurrences inside a `.jsonl`, which over-count a single spawn). Run `~/.claude/scripts/spawn_model_join.sh {history_days}` (repo: `src/user/claude-code/scripts/spawn_model_join.sh`) via Bash — do NOT re-derive the join loop by hand. It discovers in-window `subagents/` dirs under `$HOME/.claude/projects` itself (no separate discovery step) and emits one TSV row per spawn: `role<TAB>requested<TAB>resolved<TAB>session`.
 
-```bash
-find ~/.claude/projects -type d -name subagents -mtime -{history_days} 2>/dev/null
-```
-
-```bash
-# find -print0 drives the loop (zsh+bash-safe). A shell glob here ABORTS under zsh
-# with "no matches found" on an empty/absent subagents dir BEFORE any guard runs,
-# and 2>/dev/null does NOT suppress a zsh nomatch; find just yields nothing → no-op.
-find ~/.claude/projects/<session>/subagents -name 'agent-a*.meta.json' -print0 2>/dev/null |
-while IFS= read -r -d '' meta; do
-  jf="${meta%.meta.json}.jsonl"
-  role=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("name") or "<unnamed>")' "$meta" 2>/dev/null || echo '<unparseable>')
-  req=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("model") or "<omitted>")' "$meta" 2>/dev/null || echo '<unparseable>')
-  # resolved model(s): drop the <synthetic> placeholder (a real on-disk sentinel, not a model)
-  resolved=$(grep -oh '"model":"[^"]*"' "$jf" 2>/dev/null | grep -v '<synthetic>' | sort -u | paste -sd, -)
-  printf '%s\trequested=%s\tresolved=%s\n' "$role" "$req" "${resolved:-<none>}"
-done
-```
-
-This yields, per spawn, `role → requested-alias → resolved-model`. Semantics that MUST be preserved:
-- **`role`** comes from `.meta.json.name`; **`requested`** from `.meta.json.model` (the alias team-lead pinned, or `<omitted>` when `model=` was absent — the fallback-drift signal); **`resolved`** from the `.jsonl` `"model"` field (what actually ran).
-- **`<synthetic>` filtered** — the `grep -v '<synthetic>'` drops the sentinel; never count it as a model.
-- **Spawn-count, not turn-count** — one meta = one row; `sort -u` collapses a spawn's many turns to its distinct resolved model(s).
-- **Malformed/absent tolerance** — a truncated or non-JSON meta degrades to `<unparseable>`; a missing/zero-byte jsonl degrades resolved to `<none>` — the pair still emits its row (it is not skipped). The `find -print0` driver plus the per-parse `|| echo` / `2>/dev/null` guards keep the loop running rather than aborting the cycle.
+This yields, per spawn, `role → requested-alias → resolved-model → session`. Semantics that MUST be preserved (the script's contract — do not re-derive):
+- **`role`** comes from `.meta.json.name`; **`requested`** from `.meta.json.model` (the alias team-lead pinned, or `<omitted>` when `model=` was absent — the fallback-drift signal); **`resolved`** from the `.jsonl` `"model"` field (what actually ran); **`session`** is the `.../subagents/`-parent dir name.
+- **`<synthetic>` filtered** — the script drops the sentinel; never count it as a model.
+- **Spawn-count, not turn-count** — one meta = one row; a spawn's many turns collapse to its distinct resolved model(s) (comma-joined if more than one).
+- **Malformed/absent tolerance** — a truncated or non-JSON meta degrades `role`/`requested` to `<unparseable>`; a missing/zero-byte jsonl degrades `resolved` to `<none>` — the pair still emits its row (it is not skipped, and the script keeps running rather than aborting the cycle).
 
 Report the per-spawn rows grouped by role. This is the ONLY signal that reveals per-role identity + fallback drift — do NOT substitute the aggregate below for it.
 
@@ -185,7 +168,7 @@ Combine the two arms by AUTHORITY, never by averaging:
 - **REMOTE wins for COST magnitude and population breadth** — Mimir catches cross-session/cross-machine spend LOCAL cannot see and is authoritative for how much a tier actually costs.
 - **Disagreements are REPORTED, not silently resolved.** Where the two disagree (e.g. LOCAL shows a role always `sonnet` but Mimir shows `opus` tokens for that `agent_name`), surface the discrepancy explicitly as a signal that other machines route differently or that labels map differently — do NOT pick one and drop the other.
 - **Fallbacks** (already gated in pre-flight, restated for the auditor): Mimir non-200/empty → `"Mimir metrics unavailable: <reason>"`, proceed LOCAL-only with cost marked unquantified; LOCAL empty → the run already SKIPPED the edit phases and reported "no local metrics — cannot ground edits".
-<!-- Dry-run fixture harness for this collection loop lives at test/fixtures/ (paired agent-a*.jsonl + agent-a*.meta.json, one pair per divergence class); see test/fixtures/README.md. -->
+<!-- Dry-run fixture harness for spawn_model_join.sh lives at test/fixtures/ (paired agent-a*.jsonl + agent-a*.meta.json, one pair per divergence class); see test/fixtures/README.md. -->
 ### Phase 1: Categorization + routing-proposer (READ-ONLY)
 
 Phase 0 handed the orchestrator the per-spawn `role → requested → resolved` rows (grouped by role), the fallback-drift candidate list, and the Mimir cost arm (or the `"Mimir metrics unavailable: <reason>"` string). Phase 1 spawns ONE `routing-proposer` (staff-engineer/`opus`, read-only) that categorizes every spawn against the LIVE `team-lead.md` Tiers and emits evidence-cited proposals. It edits NOTHING — the orchestrator applies in Phase 2.
@@ -276,7 +259,7 @@ Phase 1 handed the orchestrator the proposer's two lists (PROPOSALS + REJECTED).
 
 #### Step 1 — Evidence-verification pre-apply gate (proposer counts are SIGNALS, not facts)
 
-The `routing-proposer` is READ-ONLY and its cited counts are SIGNALS-TO-VERIFY — the recurring cross-skill failure is a proposer citing a fabricated or stale measurement. Before applying ANY proposal, the orchestrator RE-EXECUTES that proposal's evidence citation itself: re-run the per-spawn LOCAL join loop (Phase 0 §1) against the EXACT session path(s) the proposal names and confirm the `role → resolved-model` measurement AND the cited outcome-signal count (a stall / `-r2` / `is_error` / operator-correction for an UPGRADE, or the Mimir cost figure for a Trial downgrade) MATCH the proposal.
+The `routing-proposer` is READ-ONLY and its cited counts are SIGNALS-TO-VERIFY — the recurring cross-skill failure is a proposer citing a fabricated or stale measurement. Before applying ANY proposal, the orchestrator RE-EXECUTES that proposal's evidence citation itself: re-run `~/.claude/scripts/spawn_model_join.sh {history_days} <session-path>` (repo: `src/user/claude-code/scripts/spawn_model_join.sh`; the SAME script as Phase 0 §1, restricted via its `[session-path]` argument to the EXACT session path(s) the proposal names) and confirm the `role → resolved-model` measurement AND the cited outcome-signal count (a stall / `-r2` / `is_error` / operator-correction for an UPGRADE, or the Mimir cost figure for a Trial downgrade) MATCH the proposal.
 
 - **Match** → the proposal advances to the operator HARD GATE.
 - **Mismatch** (session absent, count off, resolved model differs) → REJECT it, record it under the changelog `### Rejected` section with the discrepancy (`evidence-gate mismatch: proposed <X>, re-ran <Y> at <session>`), and do NOT re-litigate it this cycle.

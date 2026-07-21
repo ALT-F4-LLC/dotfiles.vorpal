@@ -1,5 +1,33 @@
 # Changelog: adr
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-08..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+No changes needed. Verified both L1 numbering-race findings are already fully encoded — citation-hijack skip in next_doc_number.sh:106-115 (surfaced at Pre-flight §5.1) covers the phantom-number collision; the pre/post-Write race Globs in §Save & Return cover the parallel-author race. Pass B found no removable slack with a cited fitness signal at this 16+-cycle maturity plateau; the prose-heavy §Save & Return double-Glob section is ledger-locked (L2). allowed-tools Glob/Grep re-confirmed genuinely used (race Globs, prior-art Grep).
+
+### Changes
+- None (NO-OP verdict).
+
+### Dimensions Evaluated
+All 8; Over-Engineering (HIGHEST — no removable slack outside the L2-locked section); Coherence (family parity with prd/tdd/ux-spec, allowed-tools usage, $-escape clean); Completeness (L1 races already encoded). Deferred: L2 --claim wiring (tracked separately, DKT-19; note: the --claim mode already exists in next_doc_number.sh per DKT-307 — only the SKILL.md wiring remains deferred, deliberately, given interaction risk).
+
+### Rename
+No rename.
+
 ## 2026-07-13 (Phase 4 history compaction)
 
 ### Summary
@@ -230,34 +258,6 @@ All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-No-change verdict (second consecutive). Re-verified against the 2026-06-09 capability audit: zero unescaped `$`-substitution hazards; whole file (~3.3k tokens) fits the 5k compaction re-attachment cap so format authority needs no front-loading; `paths`/`disallowed-tools`/`when_to_use` adoption evaluated and inapplicable or parity-bound.
-
-### Changes
-- None. Frontmatter byte-parity and Skill(adr) reciprocity with tdd/prd/ux-spec re-confirmed; absent docs/tdd/adr/ handled by design (mkdir -p, next_num=1).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no removable slack; remaining candidates are parity-bound or churn), Skill Design Quality (new-frontmatter adoption audit), Coherence (family parity verified), Completeness (absent-dir edge benign).
-
-### Rename
-No rename. Family-aligned with prd/tdd/ux-spec/init-specs.
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (mature skill, 25+ cycles). Re-verified full file against ground truth: allowed-tools (Glob/Grep genuinely used + family-identical), docs-path taxonomy match (team-lead.md §Docs-Path Taxonomy, writer = adr), leaf semantics, COUPLING family parity, canonical-block integrity. No over-engineering slack removable without breaking family parity.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no removable redundancy), Coherence (family parity + taxonomy verified), Orchestration (leaf confirmed).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +286,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Added Authoring Procedure step 4 (verify embedded technical assertions before writing as settled fact); prior step 4 renumbered to 5. Net +6.
 - 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §3 Section-order validation (count `##` headings outside fences), lockstep with tdd/prd/ux-spec.
 - 2026-06-05: Phase 1 no-change verdict; Phase 2 added body-`status:` authority caveat naming Docket `.data.status` as source of truth (adr's proposed→accepted→superseded ladder).
+- 2026-06-08: Phase 1 no-change verdict (25+ cycles); re-verified allowed-tools, docs-path taxonomy, family parity — no removable slack.
+- 2026-06-09: No-change verdict (2nd consecutive); zero $-hazards, frontmatter/Skill(adr) reciprocity confirmed, absent docs/tdd/adr handled by design.

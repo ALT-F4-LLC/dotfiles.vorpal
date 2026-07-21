@@ -1,5 +1,33 @@
 # Changelog: design-review
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Fixed a BSD/macOS mktemp staging-file collision (L5). The `mktemp "$TMPDIR/review-XXXXXX.md"` template only randomizes trailing X's on BSD, so it yields a literal un-randomized name that collides `File exists` on the second call — defeating the section's own race-avoidance purpose. Reproduced on Darwin 25.5.0. Findings: 1 → 0 sub-cosmetic / 1 bug / 0 rej / 0 def / 0 enc
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: dropped `.md` from the mktemp staging template (`review-XXXXXX`); added an inline guard note on BSD trailing-X behavior. Verified fix randomizes; report_lint.py enforces no file extension. Identical pattern fixed in sibling report-emission skills this cycle.
+
+### Dimensions Evaluated
+Bug/Correctness, Coherence, Redundancy, Byte budget.
+
+### Rename
+No rename.
+
 ## 2026-07-15 (Phase 4 history compaction)
 
 ### Summary
@@ -242,34 +270,6 @@ All 8. Skill Design Quality / Actionability (HIGHEST — defect removal). Over-E
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO-OP verdict. Skill(vote signal fully resolved: L75 (parity reconciliation block), L84 (navigational pointer), L236 (mode-split — standalone direct, team NEVER) all verified correct via fresh grep.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (249 lines, no trim opportunities after prior cycles); Coherence (design-review/design-qa lifecycle pair clean).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean (accessibility rendered-effect line is review-rubric content); $-escape clean; recall-filter grep zero hits (orchestrator-verified); validation ladder + 6 dimensions preserved.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; reasoning-echo + $-escape + recall-filter audits clean.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +290,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Aligned Doubling Rule with team-lead.md Rule 8 (default-single, opt-up-doubled); ephemeral name design-review-2 → design-review-{N}.
 - 2026-06-09: Coherence — mode-split Save & Return vote escalation (standalone Skill(vote); team mode → delegation_request); trimmed duplicate routing text. Net 0.
 - 2026-06-09: Phase 2 — code-review→code-review-verdict reference updates (2 refs, lockstep only); Monitor retained in allowed-tools (family parity).
+- 2026-06-09: Full-cycle audit NO-OP — Skill(vote) signal resolved (parity block, nav pointer, mode-split) all verified via fresh grep.
+- 2026-06-09: Mythos/Fable-5 no changes — reasoning-echo/$-escape/recall-filter audits clean; validation ladder + 6 dimensions preserved.

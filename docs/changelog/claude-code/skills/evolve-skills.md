@@ -1,5 +1,52 @@
 # Changelog: evolve-skills
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-12) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: crash/stall core fenced, preflight single-homing, PM-delegation path guard, phantom-path note tail normalized.
+
+### Changes
+- Fenced detection/nudge/re-spawn as CANONICAL:CRASH-STALL-CORE; re-spawn bullet normalized to the shared 3-carrier wording
+- Pre-flight step 3 now consumes evolve_preflight.sh's today_date=/scratchpad= output instead of hand-rolling (DKT-292)
+- Pitfalls-triage: verify cited target paths resolve on disk before delegating tracking-issue creation
+- Phantom-path guard note tail normalized so all 5 evolve-* copies are byte-identical
+
+### Dimensions Evaluated
+Coherence, terminology consistency, reference accuracy, parity enforcement.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Added an evolve-* phantom-path guard note after the DOCS-PATHS-LOCAL block: the 5 evolve-* skills live only under .claude/skills/ and must never be cited under a src/user/claude-code/skills/evolve-* path (L27; corroborated by bug-auditor WRONG-PATH class, 3 sessions). Findings: 3 → 1 sub / 0 cos / 1 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added phantom-path guard after DOCS-PATHS-LOCAL — states evolve-agents/-coherence/-config/-model-distribution/-skills exist ONLY under .claude/skills/ with no src/user/claude-code/skills/evolve-* counterpart; bans citing such a path in PM issues/spawn prompts/briefs. Verified via find this cycle; placed outside the CANONICAL block (a -LOCAL, non-byte-parity block) to avoid drift checks. Cited signal: L27 + bug-auditor FIX 3.
+- REJECTED: L48 (split when_to_use:) — description frontmatter is 310 chars, far below the 1,536-char cap; no split warranted.
+- DEFERRED: L20 (CANONICAL-fence triplicated Crash & Stall Recovery text) — cross-skill parity-bound, routed to Phase 2.
+
+### Dimensions Evaluated
+Coherence (accurate references); Actionability. Byte budget: 58,570 → 59,126 (BALANCED, SUBSTANTIVE un-offset, under 65,000).
+
+### Rename
+No rename.
+
 ## 2026-07-17 (Phase 4 history compaction)
 
 ### Summary
@@ -173,49 +220,6 @@ Efficiency (repetition-auditor: repeated re-fetch of an unchanged ~400KB changel
 ### Rename
 No rename.
 
-## 2026-07-12
-
-### Summary
-Self-review: fixed the never-existent `docs/changelog/skills` path (3 sites, silently zeroed changelog discovery + the Phase 4 compaction gate) and the stale `@staff-engineer` labels on the Phase 2/3 templates that actually spawn `distinguished-engineer` (confirmed contradicting the 2026-07-11 entry below). Findings: 9 → 1 sub / 1 cos / 0 rej / 5 def / 2 enc
-
-### Changes
-- CULL[SUBSTANTIVE]: `find docs/changelog/skills` → `.../claude-code/skills` at pre-flight step 7 (2×) + Phase 4 gate — dir never existed, `2>/dev/null` hid the error so compaction could never trigger (bug-auditor confirmed, live-verified)
-- CULL[SUBSTANTIVE]: dropped contradictory "Use the @staff-engineer agent" directive from Phase 2/3 prompt bodies; relabeled headings @staff-engineer → @distinguished-engineer to match pinned spawn params (innovation-scanner Retire, confirmed)
-
-### Dimensions Evaluated
-Coherence (routing labels), Actionability (broken find command), Over-Engineering (net −13 B; sustainable TRIM = deferred Phase-0-template extraction, cross-cutting with evolve-agents/evolve-config). Deferred: docs-cache WebFetch adoption, Findings-Ledger validator script, changelog_normalize.py, shared Phase-0 template extraction, path-normalization mismatch vs evolve-agents (all cross-cutting, routed to Phase 2 / future Trial).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Operator-directed permanent doctrine change (not a self-review cycle): switched Phase 2 `coherence-reviewer` + Phase 3 `disambiguation-reviewer` from `staff-engineer`/opus to `distinguished-engineer`/fable, keeping symmetry with the same change just made in evolve-agents.
-
-### Changes
-- CHANGE: `coherence-reviewer` and `disambiguation-reviewer` subagent_type/model changed from `staff-engineer`/`opus` to `distinguished-engineer`/`fable` (Phase table, both Phase gate descriptions, both spawn templates).
-
-### Dimensions Evaluated
-Operator directive, applied verbatim. Kept symmetric with evolve-agents' identical change per the CANONICAL:EVOLUTION-MODEL shared vocabulary these two skills share.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference. File remains ~3,352B over the 65,000 hard limit — same shared-doctrine-extraction candidate flagged for evolve-agents applies here too (operator-gated, not applied).
-
-### Changes
-- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
-
-### Dimensions Evaluated
-Cross-reference accuracy.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +289,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Pre-flight pinned two Codex skill roots; Phase 1 budget honors prompted caps including the 535-line self-budget.
 - 2026-06-30: Restored evolve-agents/evolve-skills symmetry for innovation and model-routing audit text.
 - 2026-07-10: Removed redundant Phase 2 coherence steps 6-8 (mechanized by symmetry_check.py); fixed stale top-level `skills/` root blind to 15 skills.
+- 2026-07-10: Phase 2 coherence — aligned docs-paths citation to relocated team-doctrine reference. ~3,352B over 65,000 hard limit (operator-gated).
+- 2026-07-11: Operator-directed doctrine change — Phase 2/3 reviewers switched staff-engineer/opus → distinguished-engineer/fable, parity w/ evolve-agents.
+- 2026-07-12: Self-review — fixed never-existent docs/changelog/skills path (zeroed compaction gate); stale @staff-engineer labels (actually DE).

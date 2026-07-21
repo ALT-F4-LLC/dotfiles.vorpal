@@ -236,22 +236,25 @@ Every finding MUST include: `file:line`, the mapped principle number (`1–12`) 
 
 Before emitting the report, verify in the calling agent's context:
 
-1. **Sections present and in order** — for a non-empty report: `Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`. For an empty/trivial scope, the single-line short-circuit is the entire output.
-2. **Every finding cites a principle number in `1–12`** — a finding with no principle, a principle outside `1–12`, or an invented rubric label is a defect.
-3. **Confidence rung on every finding** is one of `Clear win | Likely win | Judgment call` — no other label; cross-mixing with code-review-verdict's severity ladder (Blocker/Concern/Critical/etc.) is a defect (this scout emits no verdict).
-4. **Calibration honored** — no finding proposes a rewrite that reduces line count at the cost of scannability/readability. The "Why clearer" line must justify a *clarity* gain, not merely a shorter form.
-5. **Rewrite snippets carry no redundant comments** — no `//`, `#`, `/* */`, docstring, or JSDoc narration that restates the rewritten code (per principle #7 / minimal-informative-comments policy). A `simplify:` marker or other minimal informative comment is permitted where the rewrite itself carries one; a comment that merely narrates the rewrite is a defect.
-6. **No-edit guarantee present** — the report (or short-circuit line) states "no files written, no edits applied."
-7. **Placeholder scan** — body contains no literal `{file:line}`, `{count}`, `{scope}`, `{lang}`, `TBD`, or `TODO` text outside of code-fenced examples.
-8. **Trailing confirmation line present** — emission ends with the confirmation line below.
+1. **Calibration honored** — no finding proposes a rewrite that reduces line count at the cost of scannability/readability. The "Why clearer" line must justify a *clarity* gain, not merely a shorter form.
+2. **Rewrite snippets carry no redundant comments** — no `//`, `#`, `/* */`, docstring, or JSDoc narration that restates the rewritten code (per principle #7 / minimal-informative-comments policy). A `simplify:` marker or other minimal informative comment is permitted where the rewrite itself carries one; a comment that merely narrates the rewrite is a defect.
+3. **Every finding cites a principle number in `1–12`** — a finding with no principle, a principle outside `1–12`, or an invented rubric label is a defect.
 
-If any check fails, ABORT:
+Then mechanically validate everything else text-decidable — sections present and in order (`Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`; empty/trivial scope's single-line short-circuit is exempt), confidence rung on every finding on the `Clear win | Likely win | Judgment call` allow-list with rejection of any code-review-verdict-style severity-ladder term (Blocker/Concern/Critical/etc. — this scout emits no verdict), the no-edit guarantee ("no files written, no edits applied") present, a placeholder scan (no unsubstituted `{...}` template token or `TBD`/`TODO` text outside fenced snippets), and the trailing confirmation line present — by piping the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a unique-per-invocation `mktemp` path under `$TMPDIR` and runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-Error: validation failed: {section/field} — {detail}.
+report_stage_lint.sh simplify-scout "$DRAFT_FILE"
 ```
 
-The calling agent corrects in its own context and re-invokes `Skill(simplify-scout, "<scope>")`.
+(or pipe the report body on stdin and omit `$DRAFT_FILE`). Handle the exit code:
+
+- **exit 0** — emit the report in the calling agent's context.
+- **exit 1 (validation failure)** — ABORT:
+  ```
+  Error: validation failed: {section/field} — {detail}.
+  ```
+  The calling agent corrects in its own context and re-invokes `Skill(simplify-scout, "<scope>")`.
+- **exit 2 (infra/usage — script or `report_lint.py` missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the calling agent.
 
 ## Save & Return
 

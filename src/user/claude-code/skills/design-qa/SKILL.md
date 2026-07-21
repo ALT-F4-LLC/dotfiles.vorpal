@@ -177,20 +177,20 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 
 ## Validation Before Emit
 
-Mechanically validate the drafted QA report before emitting it. Write the report verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — doubled panels (`design-qa-{N}`) share one `$TMPDIR`, so a fixed `report.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/report-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted QA report before emitting it. Pipe the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — doubled panels (`design-qa-{N}`) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_lint.py --skill design-qa "$STAGE"
+report_stage_lint.sh design-qa "$DRAFT_FILE"
 ```
 
-Handle the exit code DISTINCTLY:
+(or pipe the report body on stdin and omit `$DRAFT_FILE`). Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the report in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-qa, "<scope>")`:
   ```
   Error: validation failed: {section/field} — {detail}.
   ```
-- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+- **exit 2 (infra/usage — script or `report_lint.py` missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
 
 Every check in this QA report's checklist is text-decidable and lives in the validator — nothing stays in-skill. The validator enforces: verdict on the ladder; verdict matches severity counts (any Blocker ⇒ Fail; any Concern with no Blockers ⇒ Pass with Issues; none ⇒ Pass); every Concern/Blocker row cites a non-empty Spec Section (the literal `"Cross-surface"` is accepted); every Concern/Blocker row cites non-empty implementation evidence in Description; required sections present in order; placeholder scan; banned-confidence-phrase scan (scoped to Issues, What's Implemented Well, Acceptable Deviations, Recommendation).
 

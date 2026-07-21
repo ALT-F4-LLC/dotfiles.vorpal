@@ -1,5 +1,50 @@
 # Changelog: vote
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Disambiguated the vote-existence check (bare `docket vote list` default hides resolved proposals). Also fixed two verified-broken `docket vote commit` instructions (open/rejected proposals cannot be committed — CLI requires `status: approved`) and a stale line-number citation.
+
+### Changes
+- "if `docket vote list` would not show it" → "`docket vote list --all`" with the open-only-default caveat — verified live that a resolved proposal leaves the default listing.
+- Delegation Protocol step 5: removed the broken `docket vote commit` attempt on an orphaned OPEN proposal (verified: exits with "must be approved before it can be committed"); replaced with leave-open + Docket-comment guidance.
+- View Change step 1: removed the broken `docket vote commit` attempt on a quorum-failed proposal (verified live: quorum failure auto-transitions to `rejected`, already excluded from the default list — no commit needed or possible).
+- Replaced stale `distinguished-engineer.md:224` citation with a content anchor (§Author recusal, actually at line 267).
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership); Coherence (verified CLI behavior).
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Closed the `docket vote cast --help` adoption gap (L14): Recording Votes now points agents to `Skill(docket)`'s durable `docket vote cast` flag reference instead of re-deriving flags via `--help` (19 sessions re-ran the help lookup after the reference existed). L44 (0.67 silent-threshold-default bug) verified already covered by the `vote_delegate.sh` citation + warning in Delegation Protocol step 2 and the explicit `--threshold` in Phase 1 — no action.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Recording Votes cites the `Skill(docket)` `docket vote cast` flags table, discouraging redundant `docket vote cast --help` shell-outs (L14)
+
+### Dimensions Evaluated
+Repetition-reduction / adoption (primary). Verified no pre-existing flags-reference pointer (non-redundant). L44 confirmed already-covered (vote_delegate.sh exists + threshold map high=0.75/critical=0.90; team-path warning + Phase 1 explicit `--threshold`) — reported, no edit. L43 (vote_record.sh, DKT-33) deferred/out-of-scope; L45 (reviewer session-limit) not a content defect.
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -176,77 +221,6 @@ Completeness / Correctness (AMPLIFY), others RETAIN.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-NO-OP. All 8 dimensions clean. docket vote cast/create CLI re-verified zero-drift against --help; silent-idle verdict capture verified hardened on the correct mechanism (SendMessage-only delivery L168/L255, idle-without-delivery handling L172/L174); $ARGUMENTS at L27 correctly bare (live shell command).
-
-### Changes
-- None (NO-OP verdict). Reviewer-template extraction rejected — no fitness signal, 333/500 budget, extraction adds Read indirection for zero behavioral gain.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — stable trimmed floor); Completeness (verdict-capture re-verified); Coherence (panel-sizing parity with team-lead.md Rule 8 and code-review-verdict verified in-sync).
-
-### Rename
-No rename — `vote` maps to the `docket vote` CLI subcommand.
-
-## 2026-06-10
-
-### Summary
-Compacted 8 entries (2026-05-13..2026-05-28) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Deleted phantom `--double` flag / `doubled=true` parenthetical at L75 — confirmed non-existent against `docket vote create --help` (docket b161f57) and absent from team-lead.md's opt-up wording. Net 0 lines.
-
-### Changes
-- L75: removed ghost-flag text; the correct opt-up mechanism (`docket vote create -n N` override) was already stated in the same sentence — pure deletion, no information lost.
-- Cross-project pitfall checks: verdict-delivery-via-SendMessage and ground-truth-over-chat (`docket vote result`) verified ALREADY encoded; `docket doc edit -d` full-body-replace hazard not applicable (zero docket doc refs).
-
-### Dimensions Evaluated
-All 8; Coherence (CLI ground-truth drift — primary fix); Over-Engineering; Orchestration (verdict-delivery mechanics verified).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Compacted 28 entries (2026-03-19..2026-05-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 28 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Third same-day re-verify, zero drift: NO changes. docket vote CLI zero-drift (all 6 subcommands --help-checked); silent-idle/verdict-capture hardening present (L168/L255); sizing-table parity with team-lead.md L282; delegation contract canonical and coherent across verify-ac/design-review/code-review-verdict callers.
-
-### Changes
-- None (NO-OP verdict). `vote list -s` adoption rejected (fails Content Gate — non-behavioral).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (stable trimmed floor); Coherence (CLI + caller-contract verified).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +268,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-08: Phase 1 no-change verdict (335 lines) — re-verified docket vote CLI + delegation relay contract + voter-count table all zero-drift.
 - 2026-06-09: Mythos/Fable-5 audit NO-OP — re-verified silent-idle-reviewer signal; verdict capture ground-truth docket, delivery mandate confirmed live.
 - 2026-06-09: Closed verdict-delivery defect (4 reviewers idle, zero verdicts) — reviewers are teammates; template mandates SendMessage delivery. Net -1.
+- 2026-06-09: Third same-day re-verify, zero drift — docket vote CLI zero-drift (6 subcommands); silent-idle/verdict-capture hardening present.
+- 2026-06-09: Compacted 28 entries (2026-03-19..2026-05-09) into Compacted history per ADR 0001.
+- 2026-06-10: Deleted phantom --double flag/doubled=true parenthetical — confirmed non-existent against docket vote create --help. Net 0.
+- 2026-06-10: Compacted 8 entries (2026-05-13..2026-05-28) into Compacted history per ADR 0001.
+- 2026-06-10: NO-OP, all 8 dimensions clean — docket vote cast/create CLI zero-drift; silent-idle verdict capture hardened on correct mechanism.

@@ -1,5 +1,33 @@
 # Changelog: design-qa
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Fixed the BSD/macOS mktemp staging-file collision (L5). The `mktemp "$TMPDIR/report-XXXXXX.md"` template only randomizes trailing X's on BSD, so it yields a literal un-randomized name that collides `File exists` on the second call — defeating the section's own race-avoidance purpose. Reproduced on Darwin 25.5.0. Findings: 1 → 0 sub-cosmetic / 1 bug / 0 rej / 0 def / 0 enc
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: staging template `report-XXXXXX.md` → `report-XXXXXX`; empirically verified on Darwin 25.5.0 that the suffixed form collides and the bare form randomizes. (L5)
+
+### Dimensions Evaluated
+Bug-fix (executable correctness), Actionability, Completeness, Coherence.
+
+### Rename
+No rename.
+
 ## 2026-07-15 (Phase 4 history compaction)
 
 ### Summary
@@ -241,35 +269,6 @@ All 8; Over-Engineering primary (214 lines, parity-bound blocks only); Coherence
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. The strong cross-repo render-gate signal (fem-kubernetes) verified FULLY encoded in live file: render-to-image + visually-READ at delivery resolution mandatory gate (L108, Blocker row L123); embedded-media liveness by render not HTTP 200 (L107). Reasoning-echo + $-escape + recall-filter audits clean.
-
-### Changes
-- None (NO-OP verdict, render-gate coverage grep-cited against live file).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; historical render-gate signal NO-OP with citation.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2: MVP-cutline consumer note added to Pre-flight; code-review→code-review-verdict reference updates (lockstep).
-
-### Changes
-- Pre-flight step 4 now captures the ux-spec §9 Handoff Notes MVP cutline; deferred-polish components route to Acceptable Deviations, not Blockers (closes the ux-spec §9(b) consumer gap).
-- 3 refs updated for the sibling rename, incl. the byte-identical COUPLING marker.
-
-### Dimensions Evaluated
-Coherence (ux-spec contract, family lockstep), Completeness.
-
-### Rename
-No rename (sibling code-review renamed → code-review-verdict; refs updated).
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +290,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Phase 2 coherence — moved report-emission COUPLING marker above "When NOT to Use"; synced text with family, all 4 markers byte-identical.
 - 2026-06-08: Phase 1 no-change verdict — verified cross-project render mandate already Blocker-enforced (QA Procedure step 2 + Severity ladder); COUPLING marker family-parity confirmed.
 - 2026-06-09: Phase 1 no-change verdict (2nd consecutive) — verified render-content-not-liveness + perceptual-legibility-at-scale signals already Blocker-enforced (added 2026-06-04).
+- 2026-06-09: Mythos/Fable-5 no changes — render-gate signal (fem-kubernetes) verified fully encoded; reasoning-echo/$-escape/recall-filter audits clean.
+- 2026-06-09: Phase 2 — MVP-cutline consumer note added to Pre-flight; code-review→code-review-verdict reference updates (lockstep).

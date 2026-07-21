@@ -3,8 +3,10 @@
 # manual checks found violated/unverified this cycle: (a) team-doctrine/
 # SKILL.md's reference-file index parity, (b) every CANONICAL:*-LOCAL
 # "Master:" pointer resolves to an existing file (both the ~/.claude and
-# repo: forms), (c) CANONICAL:<TAG> blocks stay byte-identical across the
-# carriers listed in doctrine_check_manifest.tsv. Read-only; exits 1 if any
+# repo: forms), (c) CANONICAL:<TAG> blocks stay byte-identical — optionally
+# after a per-carrier strip-transform from the manifest's 3rd column — across
+# the carriers listed in doctrine_check_manifest.tsv, rejecting outright any
+# carrier whose strip transform empties its block. Read-only; exits 1 if any
 # arm fails.
 set -uo pipefail
 
@@ -157,6 +159,8 @@ tags=$(grep -vE '^[[:space:]]*#' "$MANIFEST" | grep -vE '^[[:space:]]*$' | awk -
 
 for tag in $tags; do
     files=$(awk -F'\t' -v t="$tag" '$1==t {print $2}' "$MANIFEST")
+    marker=$(awk -F'\t' -v t="$tag" '$1==t && $4!="" {print $4; exit}' "$MANIFEST")
+    marker="${marker:-$tag}"
 
     manifest_line_count=0
     while IFS= read -r f; do
@@ -186,13 +190,33 @@ for tag in $tags; do
             tag_ok=0
             continue
         fi
-        block=$(sed -n "/CANONICAL:${tag}:BEGIN/,/CANONICAL:${tag}:END/p" "$f")
+        block=$(sed -n "/CANONICAL:${marker}:BEGIN/,/CANONICAL:${marker}:END/p" "$f")
         if [ -z "$block" ]; then
             echo "  - ${tag} block not found in ${f}"
             tag_ok=0
             continue
         fi
-        h=$(printf '%s' "$block" | hash_of)
+
+        # Drop the BEGIN/END marker lines before hashing: they're constant
+        # per-marker literal text, so leaving them in the comparison content
+        # lets a strip transform that empties only the body (but leaves the
+        # markers intact) hash-match vacuously across carriers with
+        # genuinely different bodies.
+        body=$(printf '%s\n' "$block" | sed -e "/CANONICAL:${marker}:BEGIN/d" -e "/CANONICAL:${marker}:END/d")
+
+        strip_expr=$(awk -F'\t' -v t="$tag" -v ff="$f" '$1==t && $2==ff {print $3; exit}' "$MANIFEST")
+        if [ -n "$strip_expr" ]; then
+            compare_block=$(printf '%s' "$body" | sed "$strip_expr")
+        else
+            compare_block="$body"
+        fi
+        if [ -z "$compare_block" ]; then
+            echo "  - ${tag} carrier ${f}: strip transform reduced the block to an empty string (vacuous-empty-match trap) — refusing to compare"
+            tag_ok=0
+            continue
+        fi
+
+        h=$(printf '%s' "$compare_block" | hash_of)
         if [ -z "$ref_hash" ]; then
             ref_hash="$h"
             ref_file="$f"

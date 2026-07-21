@@ -1,5 +1,19 @@
 # Changelog: review-and-comment
 
+## 2026-07-20
+
+### Summary
+Closed a public-write safety gap: the Step 7 approval gate now fetches the PR's existing inline comments and flags duplicate drafts so a re-run (fix→re-review or interrupted retry) cannot post the same comment twice under the operator's account. Prior to this, drafts were presented without the existing-comment context needed for an informed dedup decision. All other Phase 0 signals zero/deferred. Findings: 1 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Step 7 — fetch existing PR inline comments, mark drafts matching an existing path:line+concern as `[DUP — already on PR]`, exclude by default unless operator opts to re-post. Guards public duplicate posts on re-runs.
+
+### Dimensions Evaluated
+All 8; Completeness (the gap), Over-Engineering (HIGHEST — single scoped guard, one gh call the skill already makes; deferred rc_pr_setup.sh NOT attempted per L30, DKT-29). Content Gate: no unescaped $+digit in prose. gh_inline_comment.sh interface verified matching Steps 5/8.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary

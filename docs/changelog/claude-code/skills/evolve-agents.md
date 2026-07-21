@@ -1,5 +1,50 @@
 # Changelog: evolve-agents
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-12..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: crash/stall core CANONICAL-fenced, preflight values single-homed, PM-delegation path guard, phantom-path note propagated.
+
+### Changes
+- Fenced detection/nudge/re-spawn as CANONICAL:CRASH-STALL-CORE (registered in doctrine_check_manifest.tsv; re-spawn bullet normalized to "target file(s)"); compaction bullet left unfenced (role-appropriate divergence)
+- Pre-flight step 3 now consumes evolve_preflight.sh's today_date=/scratchpad= output (DKT-292 single-homing) instead of hand-rolling; mkdir retained
+- Pitfalls-triage: verify cited target paths resolve on disk before delegating tracking-issue creation to project-manager
+- Added evolve-* phantom-path guard note after DOCS-PATHS-LOCAL (byte-identical across 5 siblings)
+
+### Dimensions Evaluated
+Coherence, terminology consistency, reference accuracy, parity enforcement.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+TRIM-adjacent maintenance cycle: verified L18's failure-mode guards (canonical-single-mirror, proposal-reported-as-applied) are already-encoded; trimmed one redundant drift-seed rationale from Pre-flight step 8; applied. Findings: 3 → 0 sub / 1 cos / 0 rej / 2 def / 1 enc (L18 counted as one; L18c/L19/L20 deferred to Phase 2).
+
+### Changes
+- CULL[COSMETIC]: removed step-8 drift-seed fitness-independence + reproducibility restatement — already owned by the Genetic-Drift Operator section; Content Gate Non-redundant. -117 bytes.
+
+### Dimensions Evaluated
+Consolidation & Trimming (Pass B); non-redundancy; L18 already-encoded verification.
+
+### Rename
+No rename.
+
 ## 2026-07-17 (Phase 4 history compaction)
 
 ### Summary
@@ -176,54 +221,6 @@ Disambiguation (multi-reading).
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 2 coherence pass)
-
-### Summary
-Phase 2 coherence: extended the Template-sourcing Read-once/ABORT convention to explicitly cover the relocated §9 SDLC Role Research template.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Template-sourcing paragraph now names §9 as single-homed under the same Read-once and ABORT rules — closes the gap where only the four auditor templates were enumerated after today's relocation
-
-### Dimensions Evaluated
-Coherence, Orchestration & Agent Teams, Completeness
-
-### Rename
-No rename.
-
-## 2026-07-13
-
-### Summary
-Applied 1 accepted Docket finding (DKT-266a, folded into §8's future content, not applied here) + 5 verified Phase-0 findings from a scoped evolve-skills cycle. Relocated the SDLC Role Research template to team-doctrine's new §9 (clean, ~5.4KB relief, file now 58,666/65,000 bytes). Deferred the Innovation Scan/Docs Research relocation (§7/§8) — blocked by `symmetry_check.py` + tokenization coupling with evolve-skills' own inline copies. Findings: 6 → 6 sub / 0 cos / 0 rej / 1 def / 0 enc
-
-### Changes
-- CULL[SUBSTANTIVE]: SDLC Role Research inline template (49 lines) → 2-line pointer to `evolve-phase0-templates.md` §9 (I3c; verbatim relocation, evolve-agents-only, no symmetry-gate conflict)
-- AMPLIFY[SUBSTANTIVE]: Wrap-up step 2 — fixed dead-path `find agents` → `find src/user/claude-code/agents` (I5; the over-budget consolidation gate was silently no-oping every cycle)
-- CULL[SUBSTANTIVE]: cut false "currently over 65,000-byte limit" self-budget clause (I6; file was 63,444B, under budget even before this cycle)
-- AMPLIFY[SUBSTANTIVE]: Phase-1 spawn-prompt `## Rules` — added explicit READ-ONLY rule citing the recurring self-edit + fabricated-"applied" failure (H1+H2; 5 Read-before-Edit violations in one session + 3 pitfalls.md entries across team-lead/ux-designer/staff-engineer memories)
-- AMPLIFY[SUBSTANTIVE]: Crash & Stall Recovery — added signal (d) API-error self-report as a faster crash signal (DR1; changelog 2.1.198, verified)
-- AMPLIFY[SUBSTANTIVE]: Crash & Stall Recovery — added nudge-before-respawn step for stuck (not dead) teammates (DR1; same 2.1.198 fix)
-- DEFER: I3 §7 (Innovation Scan) + §8 (Docs Research) relocation — §7 is blocked by `symmetry_check.py`'s hardcoded byte-compare between evolve-agents/evolve-skills inline copies; §8 needs new tokenization ({TARGET_GLOB}, divergent FOCUS AREAS) and only partially completes (evolve-skills still duplicates docs-researcher). Both routed to a dedicated future cycle that can touch evolve-skills/SKILL.md + `symmetry_check.py` atomically.
-
-### Dimensions Evaluated
-Actionability (dead-path bug, stale claim), Orchestration & Agent Teams (crash detection, self-review discipline), Over-Engineering (template consolidation via single-homing).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 4 history compaction)
-
-### Summary
-Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +293,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-12: Fixed stale @staff-engineer→@distinguished-engineer headings (Phase 2/3); added mirrored-doctrine divergence check to coherence-reviewer beyond symmetry_check.py.
 - 2026-07-12: Repaired two silently-dead `find` paths; adopted cache-first changelog fetch (lockstep evolve-skills/evolve-config). | Trial: extract shared Phase-0 auditor templates (historical/repetition/bug/model-routing + CANONICAL:HARVEST) to team-doctrine/references → proposed
 - 2026-07-12: Pinned single ownership of team-lead.md's model-routing surface to /evolve-model-distribution; aligned `day=N` alias documentation with evolve-skills.
+- 2026-07-12: Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+- 2026-07-13: Applied DKT-266a + 5 Phase-0 findings; relocated SDLC Role Research template to team-doctrine §9 (~5.4KB relief); deferred §7/§8 relocation.
+- 2026-07-13: Phase 2 coherence — extended Template-sourcing Read-once/ABORT convention to cover the relocated §9 SDLC Role Research template.

@@ -37,6 +37,10 @@ docket issue show DKT-1 --json                # show full detail incl. comments/
 docket next --json                            # what's ready to work on right now?
 ```
 
+> At session start, prefer `docket_bootstrap.sh` (see Deterministic Wrapper
+> Scripts below) over hand-typing `docket init && docket version --quiet` —
+> it's the recommended one-call bootstrap invocation.
+
 > **The flag reference in this file is complete and current** — the Global
 > Flags table and the Complete Command & Flag Reference section below
 > transcribe every flag from the `docket` source. Look flags up here; do NOT
@@ -44,7 +48,10 @@ docket next --json                            # what's ready to work on right no
 > installed `docket` has drifted from this reference, or a governing gate
 > (e.g. the evolve-* Phase-0 ground-truth check) explicitly names `--help`
 > as its verification source — a mandated ground-truth check outranks this
-> lookup shortcut.
+> lookup shortcut. `docket_ref_check.sh` (see Deterministic Wrapper Scripts
+> below) mechanizes exactly this drift check against the installed `docket`
+> binary and is the recommended Phase-0 ground-truth step whenever
+> evolve-skills audits this skill specifically.
 
 Issue IDs are formatted `DKT-<n>` (e.g. `DKT-42`), document IDs `DOC-<n>`,
 and proposal (vote) IDs `DKT-V<n>` — all three accept either the bare number
@@ -384,6 +391,25 @@ is a `CONFLICT`.
 
 ---
 
+## Deterministic Wrapper Scripts
+
+Seven helper scripts under `src/user/claude-code/scripts/` chain the multi-command
+Docket rituals below behind a cwd-guard and post-write verification. Prefer them
+over hand-composing the raw `docket` sequences, which drift from the
+assignee-first-then-status claim contract and the close-then-verify contract:
+
+| Script | Args | Encodes |
+|---|---|---|
+| `docket_bootstrap.sh` | (none) | `init` then `version --quiet` — the recommended session-start invocation |
+| `docket_claim.sh` | `<id> <role>` | `edit -a @<role>` then `move in-progress`; rejects if still `backlog` |
+| `docket_close.sh` | `<id> <msg>` | `close` → verify `status==done` → `comment "Completed: <msg>"` |
+| `docket_write.sh` | `<id> <issue subcommand...>` | any `docket issue` write + activity-log-advanced re-verify |
+| `docket_create.sh` | `<issue create flags...>` | `issue create` + re-verify every `-l`/`-f` landed, backfilling omissions |
+| `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create` with criticality-correct `--threshold` + prints the delegation payload |
+| `docket_ref_check.sh` | `[skill-md-path]` | Diffs this file's flag tables against installed `docket <cmd> --help` output per subcommand; exits nonzero on drift — run during evolve-skills Phase 0 when auditing this skill |
+
+---
+
 ## Complete Command & Flag Reference
 
 Every flag below is transcribed directly from the `cmd.Flags().*` calls in
@@ -400,9 +426,9 @@ required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
 |---|---|---|---|---|
 | `--title` | `-t` | string | `""` | Required in `--json` mode |
 | `--description` | `-d` | string | `""` | `"-"` reads from stdin |
-| `--status` | `-s` | string | `"backlog"` | |
+| `--status` | `-s` | string | `"backlog"` | `backlog`\|`todo`\|`in-progress`\|`review`\|`done` |
 | `--priority` | `-p` | string | `"none"` | |
-| `--type` | `-T` | string | `"task"` | |
+| `--type` | `-T` | string | `"task"` | `task`\|`bug`\|`feature`\|`epic`\|`chore` |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--file` | `-f` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
@@ -414,9 +440,9 @@ required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
 |---|---|---|---|---|
 | `--title` | `-t` | string | `""` | only applied when explicitly set |
 | `--description` | `-d` | string | `""` | `"-"` reads from stdin |
-| `--status` | `-s` | string | `""` | |
+| `--status` | `-s` | string | `""` | `backlog`\|`todo`\|`in-progress`\|`review`\|`done` |
 | `--priority` | `-p` | string | `""` | |
-| `--type` | `-T` | string | `""` | |
+| `--type` | `-T` | string | `""` | `task`\|`bug`\|`feature`\|`epic`\|`chore` |
 | `--assignee` | `-a` | string | `""` | |
 | `--file` | `-f` | stringSlice | `nil` | repeatable; **replaces** existing file list |
 | `--parent` | — | string | `""` | `"0"` or `"none"` clears parent |
@@ -429,10 +455,10 @@ No local flags. Watch-eligible.
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--status` | `-s` | stringSlice | `nil` | repeatable |
+| `--status` | `-s` | stringSlice | `nil` | repeatable; `backlog`\|`todo`\|`in-progress`\|`review`\|`done` |
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
-| `--type` | `-T` | stringSlice | `nil` | repeatable |
+| `--type` | `-T` | stringSlice | `nil` | repeatable; `task`\|`bug`\|`feature`\|`epic`\|`chore` |
 | `--assignee` | `-a` | string | `""` | |
 | `--parent` | — | string | `""` | |
 | `--roots` | — | bool | `false` | root issues only |
@@ -515,6 +541,9 @@ Watch-eligible.
 | `--root` | — | string | `""` | scope to a parent issue subtree |
 | `--status` | `-s` | stringSlice | `nil` | repeatable |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
+| `--assignee` | `-a` | string | `""` | filter by assignee |
+| `--priority` | `-p` | stringSlice | `nil` | repeatable |
+| `--type` | `-T` | stringSlice | `nil` | repeatable |
 
 Watch-eligible. Cycle in the dependency graph → `CONFLICT`.
 
@@ -539,7 +568,7 @@ Watch-eligible.
 | `--description` | `-d` | string | `""` | required in `--json`; `"-"` reads stdin |
 | `--rationale` | `-r` | string | `""` | `"-"` reads stdin |
 | `--criticality` | `-c` | string | `"medium"` | `low`\|`medium`\|`high`\|`critical` |
-| `--voters` | `-n` | int | `0` | required (when explicitly set) in `--json` mode; must be `>= 1` |
+| `--voters` | `-n` | int | `0` | required in `--json` mode (omission fails `VALIDATION_ERROR: --voters is required`); must be `>= 1` |
 | `--threshold` | — | float64 | `0.67` | must be in `(0.0, 1.0]` |
 | `--created-by` | — | string | `""` | defaults to `git user.name` if empty |
 | `--domain-tags` | — | string | `""` | comma-separated |
@@ -553,8 +582,8 @@ Watch-eligible.
 | `--voter` | — | string | `""` | defaults to `git user.name` |
 | `--role` | — | string | `""` | |
 | `--verdict` | `-v` | string | `""` | required in `--json`; `approve`\|`approve-with-concerns`\|`reject` |
-| `--confidence` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
-| `--domain-relevance` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
+| `--confidence` | — | float64 | `0` | required in `--json` mode (omission fails `VALIDATION_ERROR: --confidence is required in JSON mode`); range `[0.0, 1.0]` |
+| `--domain-relevance` | — | float64 | `0` | required in `--json` mode (same unconditional check); range `[0.0, 1.0]` |
 | `--findings` | — | string | `""` | `"-"` reads stdin |
 | `--findings-json` | — | string | `""` | `"-"` reads stdin; parsed as `model.Findings` JSON; mutually exclusive with `--findings` for stdin use |
 | `--summary` | — | string | `""` | one-line summary |

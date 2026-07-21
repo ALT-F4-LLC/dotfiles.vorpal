@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Shared "Validation Before Emit" checker for the report-emission skills
-(code-review-verdict, verify-ac, design-review, design-qa), previously
-hand-maintained as per-skill prose checklists. Each skill's text-decidable
-checks are transcribed check-for-check into the per-skill parameter tables
-below; per-skill parameterization is preserved, never flattened. No check is
-added, dropped, or widened; checks needing external state (a resolved diff's
-file list, a Docket issue's AC list, semantic evidence quality, the
-override-vs-diff arm) stay in the skill as prose and are NOT mechanized here.
+(code-review-verdict, verify-ac, design-review, design-qa, simplify-scout),
+previously hand-maintained as per-skill prose checklists. Each skill's
+text-decidable checks are transcribed check-for-check into the per-skill
+parameter tables below; per-skill parameterization is preserved, never
+flattened. No check is added, dropped, or widened; checks needing external
+state (a resolved diff's file list, a Docket issue's AC list, semantic
+evidence quality, the override-vs-diff arm) stay in the skill as prose and
+are NOT mechanized here.
 
-Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|design-qa|investigator}
+Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|design-qa|simplify-scout|investigator}
                       [--mode full|round-n|light] <file>
 
   stdout: OK: <skill> report (<mode>)                exit 0
@@ -18,6 +19,20 @@ Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|desig
   --mode default: full. round-n is valid only with code-review-verdict.
   light is valid only with verify-ac and short-circuits to exit 0 by contract
   (verify-ac LIGHT mode is a single line — nothing to lint).
+
+  The ``simplify-scout`` profile checks exactly the six text-decidable items
+  named in its own Validation Before Emit section: required sections present
+  in order (its dynamic ``Findings ({count})`` heading is count-normalized
+  before comparison), every finding's confidence rung on the
+  Clear win/Likely win/Judgment call allow-list, rejection of any
+  code-review-verdict-style severity-ladder term (Blocker/Critical/Approve/
+  etc.) appearing where a confidence rung belongs, presence of the
+  "no files written, no edits applied" guarantee, a placeholder scan (a
+  generic bare ``{...}`` brace-token scan, per this skill's own broader
+  "any bare {word} brace token" wording, plus literal TBD/TODO), and the
+  trailing confirmation line. Its empty-scope short-circuit line is a
+  legitimate trivial emission, handled the same way as the crv LGTM
+  short-form (nothing to lint).
 
   The ``investigator`` profile is not a report-emission skill but the
   distinguished-engineer.md Mode 3 output contract for an investigator-class
@@ -117,6 +132,14 @@ SKILLS = {
         "verdict_rule": "design-qa",
         "issues_table": True,
     },
+    "simplify-scout": {
+        # senior-engineer.md self-service scout — advisory confidence rungs
+        # only, never a verdict/severity ladder; own validate_* branch below.
+        "simplify_scout_profile": True,
+        # Empty/trivial scope short-circuit is a legitimate trivial emission
+        # (mirrors the crv LGTM shortform_re mechanism verbatim).
+        "shortform_re": r"^No simplification opportunities found in .+\. No files written, no edits applied\.$",
+    },
     "investigator": {
         # distinguished-engineer.md Mode 3 output contract — not a report skill.
         "investigator_profile": True,
@@ -130,6 +153,32 @@ _UNCERTAINTY_CUES = re.compile(
     re.IGNORECASE,
 )
 _NEXT_PROBE_CUE = re.compile(r"next[- ]probe|next probe", re.IGNORECASE)
+
+# Simplify-scout profile vocabularies (skills/simplify-scout/SKILL.md).
+_SIMPLIFY_SCOUT_SECTIONS = ["Scope Scanned", "Findings", "Summary by Principle",
+                            "Confidence Tally", "Reminder"]
+_SIMPLIFY_SCOUT_RUNGS = ["Clear win", "Likely win", "Judgment call"]
+# Bucket/allow-list labels from the other four skills' severity ladders — a
+# confidence rung using one of these is the cross-mix defect SKILL.md's
+# Validation Before Emit item 3 names explicitly.
+_SEVERITY_LADDER_TERMS = {
+    "Blocker", "Blockers", "Concern", "Concerns", "Suggestion", "Suggestions",
+    "Question", "Questions", "Praise", "Overrides Recognized",
+    "Critical", "High", "Medium", "Low", "Info",
+    "Pass", "Pass with Issues", "Fail",
+    "Approve", "Approve with follow-up", "Block", "Redesign",
+    "Incremental Improvement", "Split required",
+    "APPROVE", "ACCEPT WITH CAVEATS", "BLOCK",
+}
+_SIMPLIFY_SCOUT_FINDING_RE = re.compile(r"^\d+\.\s+.+ — principle #\d{1,2} \([^)]*\) — (.+)$")
+_SIMPLIFY_SCOUT_TRAILING_RE = re.compile(
+    r"^Simplify scout emitted \(\d+ opportunities, 0 edits applied\)\.\s*$", re.M
+)
+_SIMPLIFY_SCOUT_NO_EDIT_RE = re.compile(r"no files written,?\s*no edits applied", re.IGNORECASE)
+# Generic bare-brace token scan — simplify-scout's own item 7 asks for "any
+# bare {word} brace token", broader than the other skills' enumerated
+# literal-token lists (their own SKILL.md prose names only a fixed set).
+_SIMPLIFY_SCOUT_BRACE_RE = re.compile(r"\{[^{}\n]+\}")
 
 
 def tokenize(text):
@@ -636,6 +685,83 @@ def validate_investigator(records, text):
     return failures
 
 
+def simplify_scout_section_order(records):
+    """Section order, with the dynamic ``Findings ({count})`` heading
+    count-normalized to ``Findings`` before comparison."""
+    observed = h3_titles(records)
+    normalized = []
+    for title in observed:
+        normalized.append("Findings" if re.match(r"^Findings \(\d+\)$", title) else title)
+    if normalized != _SIMPLIFY_SCOUT_SECTIONS:
+        return [("section-order", f"expected {_SIMPLIFY_SCOUT_SECTIONS} got {normalized}")]
+    return []
+
+
+def simplify_scout_confidence_rungs(records):
+    """Every ``#### n. file:line — principle #N (name) — {rung}`` finding
+    header: rung must be on the confidence allow-list, and rejected outright
+    if it is a severity-ladder term (verdict/bucket cross-mix)."""
+    f = []
+    for idx, raw, in_fence in records:
+        if in_fence:
+            continue
+        m = re.match(r"^#### (.+?)\s*$", raw)
+        if not m:
+            continue
+        header = m.group(1)
+        fm = _SIMPLIFY_SCOUT_FINDING_RE.match(header)
+        if not fm:
+            f.append(("confidence-rung",
+                      f"line {idx + 1}: could not parse confidence rung from finding header {header!r}"))
+            continue
+        rung = fm.group(1).strip()
+        if rung in _SEVERITY_LADDER_TERMS:
+            f.append(("severity-ladder-cross-mix",
+                      f"line {idx + 1}: confidence rung uses severity-ladder term '{rung}' "
+                      "(simplify-scout emits confidence rungs only, never a verdict)"))
+        elif rung not in _SIMPLIFY_SCOUT_RUNGS:
+            f.append(("confidence-rung", f"line {idx + 1}: '{rung}' not on allow-list {_SIMPLIFY_SCOUT_RUNGS}"))
+    return f
+
+
+def simplify_scout_no_edit_guarantee(records):
+    for idx, raw, in_fence in records:
+        if in_fence:
+            continue
+        if _SIMPLIFY_SCOUT_NO_EDIT_RE.search(raw):
+            return []
+    return [("no-edit-guarantee", "missing 'no files written, no edits applied' guarantee line")]
+
+
+def simplify_scout_placeholders(records):
+    f = []
+    for idx, raw, in_fence in records:
+        if in_fence:
+            continue
+        for m in _SIMPLIFY_SCOUT_BRACE_RE.finditer(raw):
+            f.append(("placeholder", f"line {idx + 1}: banned token '{m.group(0)}'"))
+        for tok in ("TBD", "TODO"):
+            if tok in raw:
+                f.append(("placeholder", f"line {idx + 1}: banned token '{tok}'"))
+    return f
+
+
+def validate_simplify_scout(records, text):
+    """skills/simplify-scout/SKILL.md Validation Before Emit — the six
+    text-decidable items: section order, confidence-rung allow-list,
+    severity-ladder cross-mix rejection, no-edit-guarantee presence,
+    placeholder scan, trailing confirmation line."""
+    failures = []
+    failures.extend(simplify_scout_section_order(records))
+    failures.extend(simplify_scout_confidence_rungs(records))
+    if not _SIMPLIFY_SCOUT_TRAILING_RE.search(text):
+        failures.append(("trailing-confirmation",
+                         "missing trailing line `Simplify scout emitted ({count} opportunities, 0 edits applied).`"))
+    failures.extend(simplify_scout_no_edit_guarantee(records))
+    failures.extend(simplify_scout_placeholders(records))
+    return failures
+
+
 def main():
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--skill", required=True, choices=sorted(SKILLS.keys()))
@@ -677,6 +803,8 @@ def main():
 
     if cfg.get("investigator_profile"):
         failures = validate_investigator(records, text)
+    elif cfg.get("simplify_scout_profile"):
+        failures = validate_simplify_scout(records, text)
     elif args.mode == "round-n":
         failures = validate_round_n(cfg, records, text)
     else:

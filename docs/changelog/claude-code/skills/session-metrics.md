@@ -1,5 +1,19 @@
 # Changelog: session-metrics
 
+## 2026-07-20
+
+### Summary
+Content-Gate hardening: escaped the one unescaped `$`+digit in prose (`$0` → `\$0` in the subagent-roster est.-cost instruction) so harness positional substitution cannot blank the guidance. No behavioral/coherence changes; skill verified coherent against scripts/session_metrics.py (all summary.* field references accurate). Findings: 0 sub / 1 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- TRIM[COSMETIC]: escape `$0` → `\$0` in Step 2 roster est.-cost line (Content Gate: unescaped `\$`+digit in prose; skill has no args so `$0` is an undefined positional)
+
+### Dimensions Evaluated
+Skill Design Quality / Coherence (Content Gate dollar-sigil scan; full field-reference cross-check against session_metrics.py). Deferred (unchanged, out of scope): L31 (DKT-30) script-side `price_table_version` emission.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary

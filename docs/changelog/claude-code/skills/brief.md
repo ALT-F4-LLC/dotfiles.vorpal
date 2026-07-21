@@ -1,5 +1,35 @@
 # Changelog: brief
 
+## 2026-07-20
+
+### Summary
+Coherence-class fix surfaced during Phase 3 disambiguation: the body claimed `WebFetch`/`WebSearch`/Bash were "auto-approved" via an `allowed-tools` frontmatter grant that does not exist in this file (frontmatter has only name/description/argument-hint).
+
+### Changes
+- Reworded the 3 tool-approval claims (Docket lookup, WebFetch, WebSearch) to state approval follows the invoking context's own tool permissions, since brief carries no `allowed-tools` frontmatter of its own — removes an in-file reference that failed to resolve.
+
+### Dimensions Evaluated
+Coherence (reference accuracy — routed from Phase 3 as coherence-class, not disambiguation).
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Closed the "verified against source" fix-direction inversion vector (L4) and escaped two body `$ARGUMENTS` the 2026-07-10 escaping cycle missed. Findings: 2 → 2 sub / 0 cos / 0 rej / 1 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: the `Grep` self-check proves a quoted line is PRESENT, not that a root-cause/fix-DIRECTION claim wrapping it is correct (symptom polarity-ambiguity) — never label a fix-direction `verified`/`confirmed against source`; distill it as the operator's claim (L4; project-manager pitfalls, downstream issue-AC inversion)
+- COHERENCE[SUBSTANTIVE]: escaped body `$ARGUMENTS` → `\$ARGUMENTS` at the WebFetch/WebSearch bullets — added after the 2026-07-10 banner-escaping cycle, they inline the full request into two anti-exfil sentences at render time
+- DEFERRED: L3 (`quote_check.sh` fixed-string extension, DKT-20) — new script-authoring, out of scope; L48 (split `when_to_use:`) skipped — description 484 chars, ~31% of the 1,536 cap, not near it
+
+### Dimensions Evaluated
+Actionability/Completeness (primary — L4 downstream misuse mode), Coherence (`$ARGUMENTS` escaping parity vs. banner/L19; changelog precedent). Over-Engineering: anti-exfil rule stated 3× (L41/L42/L46) reviewed and KEPT — defensible defense-in-depth on a security rule, not accidental bloat; no cull.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary

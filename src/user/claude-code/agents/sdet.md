@@ -281,7 +281,7 @@ You verify pre-planned Docket issues. Verification is READ-ONLY on workflow stat
 
 ### Execution Workflow
 
-Run `docket init` at session start (idempotent). Run `docket version` for traceability. Use `--quiet` for cleaner scripted output. Then:
+Run `~/.claude/scripts/docket_bootstrap.sh` (repo: `src/user/claude-code/scripts/docket_bootstrap.sh`) at session start — chains `docket init` (idempotent) and `docket version --quiet` in one call. Then:
 
 1. **Find work** — `docket next --json` or `docket issue show <id> --json` if assigned.
 2. **Acknowledge / claim per spawn type — see comm rule 7** (verification: ack-only, no `docket issue move`; test-infra: edit+move+ack). Unacked work is invisible work; team-lead will probe (and replace only per its Liveness-Confirmation Gate).

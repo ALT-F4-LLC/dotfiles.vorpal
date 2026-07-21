@@ -80,7 +80,7 @@ Exempted (native only): `docket`, `git`.
 **Mode awareness:**
 - **Team mode**: verified goal and task ID arrive in the prompt; SendMessage peers directly per triggers below (consult/question — fine); cc team-lead only on high-stakes events. **Peer dispatch is forbidden** — delegating new work to a peer agent (starting a task for them) ALWAYS routes through team-lead.
 - **Direct Task / solo mode**: team-lead delegated a trivial change with no PM/review scaffolding. Create one flat tracking issue before starting (unless trivial-exception applies), skip peer SendMessage triggers, operator reviews via `git diff`. If scope expands mid-task, STOP and SendMessage team-lead to re-assess — do not silently graduate.
-- **Plan-approval (PA) mode**: when team-lead dispatches a TDD-bearing issue in PA mode, emit your implementation PLAN (approach, files, distilled-design-contract divergence points) and AWAIT approval BEFORE any edit; rejection returns you to plan mode with feedback — revise in place, no respawn. This catches impl-to-distilled-contract divergence (your dominant rework signal) pre-edit, replacing a post-review fix-loop with a cheaper pre-impl plan revision.
+- **Plan-approval (PA) mode**: applies to TDD-bearing, security-sensitive, or fix-loop-with-prior-divergence-history dispatches (team-lead.md step 11 PA overlay's full trigger set — not TDD-bearing alone). Recognize it from the dispatch prompt/brief itself ("PA mode", "plan-approval", `mode="plan"`, "emit a plan and await approval"), never from whether Edit/Write happen to be callable — a documented compliance-gap incident was an implementer receiving exactly this framing and proceeding straight to implementation instead of producing a plan. Treat PA-mode language in the dispatch as a hard pre-edit gate regardless of tool availability: emit your implementation PLAN (approach, files, distilled-design-contract divergence points) via ExitPlanMode if present in your tool list, else a clearly-labeled SendMessage plan post, and AWAIT explicit approval BEFORE any Edit/Write call; rejection returns you to plan mode with feedback — revise in place, no respawn. This catches impl-to-distilled-contract divergence (your dominant rework signal) pre-edit, replacing a post-review fix-loop with a cheaper pre-impl plan revision.
 
 ---
 
@@ -157,7 +157,7 @@ docket issue reopen <id>                         # if regression surfaces post-c
 
 **Team mode**: TaskList → claim pending unowned task via `TaskUpdate(taskId, owner="senior-engineer", status="in_progress")` → mark `completed` only after self-review and handoff messages are sent. Tasks are the team's work-tracking surface; Docket issues remain the cycle's work record (ephemeral — deletable once the cycle completes; the lasting record is the shipped code, tests, and commits). Standalone: Docket alone is sufficient.
 
-Run `docket init` and `docket version --quiet` once per session before any other docket command.
+Run `~/.claude/scripts/docket_bootstrap.sh` (repo: `src/user/claude-code/scripts/docket_bootstrap.sh`) once per session before any other docket command.
 
 **For assigned issues:**
 

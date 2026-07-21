@@ -1,5 +1,51 @@
 # Changelog: evolve-config
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-30..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: crash/stall core fenced, preflight single-homing (step-6), PM-delegation path guard, phantom-path note added.
+
+### Changes
+- Fenced detection/nudge/re-spawn as CANONICAL:CRASH-STALL-CORE (fence-only; bullets already matched normalized wording)
+- Pre-flight step 3 now consumes evolve_preflight.sh's today_date=/scratchpad= output (step-6 run) instead of hand-rolling
+- Pitfalls-triage: verify cited target paths resolve on disk before delegating tracking-issue creation
+- Added byte-identical evolve-* phantom-path guard note after DOCS-PATHS-LOCAL
+
+### Dimensions Evaluated
+Coherence, terminology consistency, reference accuracy, parity enforcement.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Wired config_render_diff.sh (empirically unreferenced by any skill) into the Content Gate Behavioral check + Phase 1 step 3 as its mechanization — honestly gated on the missing claude_code.rs render target (DKT-309), serde-attribute read stays primary. Consolidated the Phase 2 template's duplicated doctrine_check.sh paragraph into a single-home reference to offset the additions.
+
+### Changes
+- AMPLIFY: Content Gate Behavioral check + Phase 1 step 3 now cite `config_render_diff.sh` as the byte-diff mechanization of "does this setter change settings.json" — cited signal: L25 (script exists, zero skill/agent references) + sdet memory (L24) that same-session runtime verification is impossible. Gated explicitly: no render target prints the full config yet, so no overclaim.
+- CONSOLIDATE: Phase 2 spawn template step 3 references the authoritative doctrine_check.sh procedure in SKILL.md §Phase 2 step 3 instead of restating it verbatim — removes the two-copy drift surface that caused the 2026-07-13 Phase 2 fix.
+
+### Dimensions Evaluated
+Content Gate / verification tooling (AMPLIFY); Hooks & scripts, Redundancy (CONSOLIDATE); Core & model-routing / Permissions / Sandbox / Skills & auto-mode / Plugins-UI-governance (RETAIN). L24 confirmed already-documented (lines 177, 234) — no-op.
+
+### Rename
+No rename.
+
 ## 2026-07-17 (Phase 4 history compaction)
 
 ### Summary
@@ -236,48 +282,6 @@ All 8.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase-3 disambiguation: resolved the "genome" multi-reading. Inline, net 0 (stays 535).
-
-### Changes
-- AMPLIFY: the intro line defined "genome" as "the settings.json artifact produced by the Rust builders" while line 38 defines genome = the four source files and settings.json = phenotype. Reworded the intro so genome = the Rust builder sources (per SOURCE-OF-TRUTH) and settings.json = phenotype (per EVOLUTION-MODEL), since all edit-targeting language keys off "genome". Phase-3 finding DISAMBIG 1.
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0. Clarity: intra-file multi-reading fix. No model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase-2 coherence: restored 3-way Crash & Stall parity. Inline, net 0 (stays 535).
-
-### Changes
-- AMPLIFY: Crash & Stall detection (a) now carries the "— ≥2 turns with no new tool call is stall evidence" clause that evolve-agents + evolve-skills already had (config had dropped it). Restores byte-parity on the stall clause across the 3 editing evolve skills.
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0. Coherence: parity-drift fix. No model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Named SessionStart + MessageDisplay as candidate hook surfaces in Config-Surface dimension 4 so the Phase-1 config reviewer can evaluate wiring them. Inline (net 0, stays 535). No config-source changes this cycle.
-
-### Changes
-- AMPLIFY: dimension 4 (Hooks & scripts) now names `SessionStart` (reloadSkills/sessionTitle) + `MessageDisplay` (v2.1.147+) as candidate surfaces, gated behind a cited fitness signal — cited docs-research signal; the dimension can't surface a setter it never names. Wording corrected at apply (reloadSkills re-scans for newly-added skills; edits auto-apply via file-watching).
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0 (no destructive trim forced on a no-signal RETAIN-biased organism). No model/routing/drift changes. No unescaped `$`+digit. Phase-2 deferral: Crash & Stall Recovery parity — evolve-config is missing the "≥2 turns no new tool call is stall evidence" clause both siblings carry → CANONICAL-ize family-wide.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git history (see the compaction entry's date).
@@ -285,3 +289,6 @@ Entries below were compacted per the retention-compaction policy; full text in g
 - 2026-06-19: Tagged Genetic-Drift CONFIG-ONLY marker; trimmed duplicate rationale; rejected 5 innovation-scanner config features (no claude_code.rs setters). | DRIFT: Crash & Stall "Compaction recovery" bullet reordered — neutral allele substitution, seed 6f0ab504 pick 4, net 0.
 - 2026-06-19: Coherence trim — removed false git blame claim from config-history-auditor description; changelog-path question resolved NO-OP.
 - 2026-06-20: Phase 2 — pinned model= (aliases) on all 8 Agent() spawns; added $TMPDIR scratch guard to 3 auditor Rules lines.
+- 2026-06-30: Phase-3 disambiguation — resolved "genome" multi-reading; genome = Rust builder sources, settings.json = phenotype. Inline, net 0.
+- 2026-06-30: Phase-2 coherence — restored 3-way Crash & Stall Recovery parity (stall clause) with evolve-agents/evolve-skills. Inline, net 0.
+- 2026-06-30: Named SessionStart + MessageDisplay as candidate hook surfaces in dimension 4 (Hooks & scripts) for Phase-1 evaluation. Inline, net 0.

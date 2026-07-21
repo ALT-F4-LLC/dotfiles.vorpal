@@ -40,7 +40,7 @@ Error: Usage: Skill(commit, "<files> [-- what changed and why]") — name the ex
 Never infer the fileset from a bare `git status` / `git diff` scan. In a
 shared multi-agent tree, an unscoped scan surfaces sibling agents' uncommitted
 work too — the calling agent must already know and state which files are
-in scope (per `src/user/claude-code/agents/senior-engineer.md:354`, "Shared-tree
+in scope (per `src/user/claude-code/agents/senior-engineer.md`, "Shared-tree
 diff scoping": *"YOUR contribution is the UNSTAGED diff of YOUR target files
 only"*).
 
@@ -97,8 +97,8 @@ and scoping guarantees once authorization already exists.
 
 1. Parse `<files to commit>` into an explicit path list. Reject bare `.` or
    `-A`/`--all` tokens — pathspecs must name real files or directories, not a
-   blanket wildcard (`src/user/claude-code/agents/senior-engineer.md:354`:
-   *"Never `git add .` to 'clean up'"*).
+   blanket wildcard (`src/user/claude-code/agents/senior-engineer.md`,
+   "Shared-tree diff scoping": *"Never `git add` to 'clean up'"*).
 2. `git status --short -- <files>` scoped to exactly those paths — confirms
    each path has an actual pending change and surfaces its state
    (modified/untracked/deleted).
@@ -144,7 +144,7 @@ refactor plus an unrelated bug fix, or two unrelated features) that cannot be
 honestly described by one `<type>(<scope>): <description>` line, STOP and
 tell the calling agent to split into separate `Skill(commit, ...)`
 invocations — one per logical, independently bisectable change
-(`src/user/claude-code/agents/senior-engineer.md:351`: *"one logical change
+(`src/user/claude-code/agents/senior-engineer.md`, "Commit-mode only": *"one logical change
 per commit, each compiling and passing tests (bisectable), refactors separate
 from behavior"*).
 
@@ -216,19 +216,24 @@ Mechanize the check rather than eyeballing it:
    it will actually be committed) to `$TMPDIR/commit-msg-draft.txt` via Bash
    (`cat > ... <<'EOF' ... EOF`, quoted heredoc so no shell expansion
    touches the message).
-2. Run all four checks against that file:
+2. Run all four checks in one deterministic call via
+   `~/.claude/scripts/commit_msg_check.sh`
+   (repo: `src/user/claude-code/scripts/commit_msg_check.sh`) — the single
+   source of truth for the four regex patterns, so the check run always
+   matches what's documented above rather than a hand-retyped copy:
 
    ```
-   grep -niE '@(senior-engineer|staff-engineer|distinguished-engineer|security-engineer|sdet|ux-designer|project-manager|team-lead|advisor)\b' "$TMPDIR/commit-msg-draft.txt"
-   grep -niE '\b[A-Z]{2,10}-[0-9]+\b' "$TMPDIR/commit-msg-draft.txt"
-   grep -niE '\b(session[_ -]?id|task[_ -]?id|vote[_ -]?id|teammate|docket)\b' "$TMPDIR/commit-msg-draft.txt"
-   grep -niE '\b(claude|anthropic)\b|generated (with|by)|co-authored-by' "$TMPDIR/commit-msg-draft.txt"
+   ~/.claude/scripts/commit_msg_check.sh "$TMPDIR/commit-msg-draft.txt"
    ```
 
-3. Any hit is a defect in the draft, not a false positive to explain away —
-   rewrite the message to remove the offending content and re-run all four
-   checks before continuing. Do not proceed to Step 4 until all four checks
-   report zero matches.
+3. Any nonzero exit is a defect in the draft, not a false positive to
+   explain away — the script prints which of the four checks failed and the
+   offending line(s). Rewrite the message to remove the offending content
+   and re-run before continuing. Do not proceed to Step 4 until the script
+   exits 0. (Rule 2's check pipes its hits through an allowlist so standard
+   technical identifiers — `UTF-8`, `SHA-256`, `RFC-7231`, `ISO-8601`,
+   `CVE-2024-…` — never count as matches; a surviving rule-2 hit is
+   therefore a genuine issue-tracker ID and must be removed.)
 
 ### Preemptable false-positive triggers (pick wording up front)
 

@@ -1,5 +1,48 @@
 # Changelog: evolve-coherence
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: phantom-path guard note added (this skill lacks a DOCS-PATHS-LOCAL block; anchored after the REPORT+ROUTE paragraph).
+
+### Changes
+- Added byte-identical evolve-* phantom-path guard note — this skill audits cross-references across both skill roots and is most at risk of emitting a phantom src/user/claude-code/skills/evolve-* path into its Remediation Manifest
+
+### Dimensions Evaluated
+Coherence, reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+L22: wired the existing-but-unreferenced `coupling_check.py` into D3 #6's COUPLING detection seed, replacing manual grep-and-parse with the script for legs (i) count=roster and (ii) reciprocity; leg (iii) delegation-list agreement stays manual (NLP-judgment, out of script scope). Aligned line 108's one-directional-bridge whitelist to include init-specs, matching the script's ONE_DIRECTIONAL_BRIDGES and closing the doc-gap the script's own docstring flagged. L21 verified NO-OP: D4 #2 already derives CANONICAL-block counts live from doctrine_check_manifest.tsv (the old hardcoded "7 carriers" bug is documented as fixed); D3 "family of 5/4" counts match live script output. Net +541 (post-apply ~43.4KB, far under 65KB).
+
+### Changes
+- L116: manual COUPLING grep-parse → `coupling_check.py` call (mechanizes legs i+ii; leg iii manual).
+- L108: added init-specs to the one-directional-bridge whitelist bullet.
+
+### Dimensions Evaluated
+All 8; Coherence + Executability primary (script wiring). L21 (self-referential CANONICAL count) verified already-mitigated at D4 #2. Content gate pass (executable/behavioral/non-redundant/concrete); no unescaped $-digit introduced.
+
+### Rename
+No rename.
+
 ## 2026-07-17 (Phase 4 history compaction)
 
 ### Summary
@@ -235,48 +278,6 @@ Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers; No-Edit Guard consisten
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO changes (323 lines). "Operator typed /evolve-coherence, no Skill invocation captured" signal resolved as benign — fast report-and-route exit or scope-gate abort fully explains it; execution path verified sound. BANNER byte-parity with evolve-agents/evolve-skills confirmed.
-
-### Changes
-- None (NO-OP verdict). D4 baseline-hash incrementalism and rubric-pinning deferred to Phase 2/operator as budget-positive additions needing paired trims.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; Coherence ($-escape clean, tool pool consistent with No-Edit Guard); Orchestration (Pre-flight HARD GATEs verified present).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 fix: escaped documentary `\$ARGUMENTS` at L48 ("Parse … per Argument Handling" — orchestrator-instruction prose, not a shell command). The prior entry's "intentional live substitution" rationale is refuted by this cycle's empirical evidence that substitution occurs inside backticks and renders empty in no-arg mode. L33 already escaped. Net 0 (323 lines).
-
-### Changes
-- L48: backticked `$ARGUMENTS` → `\$ARGUMENTS`.
-
-### Dimensions Evaluated
-Skill Design Quality (arg-escape); Coherence (family-wide documentary-escape ruling).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO changes. Both Phase-0 signals verified NO-OP via fresh grep: primacy banner correctly ordered (H1 L19 → REPORT+ROUTE banner L23 → Innovation Mandate L25); leaf-family rubric enumeration complete (10 carriers incl. brief, exact match to banner-scoped ground truth).
-
-### Changes
-- None (NO-OP verdict). Note for future cycles: `effort: xhigh` is lockstep-shared across all three evolve-* skills.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (dense but load-bearing); $-escape audit clean (L33 escaped documentary, L48 intentional live substitution).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git
@@ -288,3 +289,6 @@ history (see the compaction entry's date).
 - 2026-06-09: Closed spawn-template rubric handoff gap — Read instruction for SKILL.md §Coherence Rubric added to Phase 0/1 templates.
 - 2026-06-09: Phase 2 — added code-review→code-review-verdict D3 stale-name pair; whitelisted review-and-comment's non-CANONICAL banner in D4; updated 11 rename refs.
 - 2026-06-09: Added brief to the D4 leaf-family BANNER enumeration — confirmed genuine leaf carrier omitted from the rubric list.
+- 2026-06-09: Full-cycle audit NO changes — banner ordering + leaf-family rubric enumeration (10 carriers incl. brief) verified NO-OP via fresh grep.
+- 2026-06-09: Phase 2 — escaped documentary $ARGUMENTS at L48; refutes prior "live substitution" rationale (substitution occurs inside backticks). Net 0.
+- 2026-06-10: Full-cycle audit NO changes (323 lines) — "no Skill invocation captured" signal resolved as benign fast-exit; BANNER byte-parity confirmed.

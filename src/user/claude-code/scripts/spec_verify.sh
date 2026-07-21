@@ -1,12 +1,16 @@
 #!/bin/bash
 # Shared init-specs Step 3 "Verify" checks — validates generated docs/spec/*.md
-# files against the Spawning Template's structural requirements. Previously five
-# checks hand-typed inline in SKILL.md (target-set existence, frontmatter delimiter,
-# and three `grep -L` checks for mermaid/last_updated/Gaps & Risks), which meant
-# hand-inverting `grep -L` (files-WITHOUT-a-match) semantics five times over — a
-# recurring source of subtle inversion bugs. Encoded once here as direct
-# pass/fail conditions instead (no `-L` inversion to get wrong).
+# files against the Spawning Template's structural requirements. Chains
+# `doc_validate.py --type spec` (frontmatter contract, maturity allow-list,
+# >=3 H2 headings, "## Gaps & Risks" presence, mermaid diagram) for every check
+# that is generic across docs/spec/ files, then applies the one check
+# doc_validate.py cannot perform on its own: that last_updated matches this
+# run's today_date (doc_validate.py has no notion of "today"; a mismatch means
+# the agent ignored the pre-flight context, not a general frontmatter defect).
 set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOC_VALIDATE="${SCRIPT_DIR}/doc_validate.py"
 
 usage() {
     echo "Usage: spec_verify.sh <today_date> <file...>" >&2
@@ -41,21 +45,15 @@ for f in "$@"; do
 
     reasons=()
 
-    first_line=$(head -1 "$f")
-    if [ "$first_line" != "---" ]; then
-        reasons+=("malformed frontmatter (first line is not ---)")
-    fi
-
-    if ! grep -q '```mermaid' "$f"; then
-        reasons+=("missing mermaid diagram")
+    validate_output=$(python3 "$DOC_VALIDATE" --type spec "$f" 2>&1 >/dev/null)
+    if [ -n "$validate_output" ]; then
+        while IFS= read -r line; do
+            reasons+=("$line")
+        done <<< "$validate_output"
     fi
 
     if ! grep -qF "last_updated: \"${TODAY}\"" "$f"; then
         reasons+=("last_updated does not match \"${TODAY}\"")
-    fi
-
-    if ! grep -q '^## Gaps & Risks' "$f"; then
-        reasons+=("missing '## Gaps & Risks' section")
     fi
 
     if [ "${#reasons[@]}" -eq 0 ]; then

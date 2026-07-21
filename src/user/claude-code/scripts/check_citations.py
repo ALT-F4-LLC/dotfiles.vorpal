@@ -26,10 +26,19 @@ number with no matching definition anywhere in the pair is DANGLING drift.
 Only this decidable half is mechanized; "one fact cited under two different
 decision numbers" needs semantic fact-identity and stays a reviewer judgment.
 
+``--verify-quotes`` switches to batch fixed-string quote verification: reads a
+JSON array of ``{"file": <path>, "quote": <text>}`` objects from stdin and
+checks each ``quote`` is a literal substring of its ``file`` (relative to
+``--base``), one deterministic call in place of N ad-hoc Greps. Matching is
+plain substring containment — no regex compilation of the quote — so quotes
+containing regex metacharacters and quotes spanning multiple lines are both
+handled correctly without escaping.
+
 Read-only. Never edits, never writes. Stdlib only.
 """
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -182,12 +191,66 @@ def run_xref(doc_a, doc_b):
     return 0
 
 
+def verify_quotes(base):
+    """Read a JSON array of {"file": <path>, "quote": <text>} objects from
+    stdin and verify each `quote` is a literal (fixed-string, not regex)
+    substring of `file`'s contents, relative to `base`. Multi-line quotes and
+    quotes containing regex metacharacters are handled correctly because this
+    is plain substring containment, never `re`. Prints PASS/FAIL per pair.
+    Returns an exit code: 0 all pass, 1 at least one fail, 2 malformed input."""
+    try:
+        pairs = json.load(sys.stdin)
+    except json.JSONDecodeError as e:
+        print(f"error: malformed JSON on stdin: {e}", file=sys.stderr)
+        return 2
+
+    if not isinstance(pairs, list):
+        print('error: stdin JSON must be a list of {"file": ..., "quote": ...} objects', file=sys.stderr)
+        return 2
+
+    if not pairs:
+        print("quote-check: none found on stdin")
+        return 0
+
+    failed = 0
+    for i, pair in enumerate(pairs):
+        if not isinstance(pair, dict) or "file" not in pair or "quote" not in pair:
+            print(f"  FAIL     <item {i}> — missing 'file' or 'quote' key")
+            failed += 1
+            continue
+
+        file_str, quote = pair["file"], pair["quote"]
+        path = Path(file_str).expanduser() if file_str.startswith("~") else base / file_str
+        if not path.is_file():
+            print(f"  FAIL     {file_str} — file not found")
+            failed += 1
+            continue
+
+        ok = quote in path.read_text()
+        print(f"  {'PASS' if ok else 'FAIL':<8} {file_str}")
+        if not ok:
+            failed += 1
+
+    if failed:
+        print(f"quote-check: FAIL ({failed} of {len(pairs)} quote(s) not found verbatim)")
+        return 1
+    print(f"quote-check: OK ({len(pairs)} quote(s) verified verbatim)")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("artifact", help="markdown file to scan for path-like citations (doc A in --xref mode)")
+    parser.add_argument("artifact", nargs="?", help="markdown file to scan for path-like citations (doc A in --xref mode); omit with --verify-quotes")
     parser.add_argument("--base", default=".", help="root to resolve relative citations against (default: cwd)")
     parser.add_argument("--xref", metavar="DOC_B", help="reconcile numbered cross-references between artifact and DOC_B")
+    parser.add_argument("--verify-quotes", action="store_true", help="batch-verify (file, quote) pairs read as a JSON array from stdin; ignores artifact/--xref")
     args = parser.parse_args(argv)
+
+    if args.verify_quotes:
+        return verify_quotes(Path(args.base))
+
+    if not args.artifact:
+        parser.error("artifact is required unless --verify-quotes is set")
 
     if args.xref:
         return run_xref(Path(args.artifact), Path(args.xref))

@@ -1,15 +1,14 @@
 # evolve-model-distribution fixture harness
 
 Synthetic `projects/<sess>/subagents/` tree (all content fabricated — no real
-session transcripts) so the `distribution-auditor` per-spawn join loop and the
-categorization logic can be dry-run against deterministic, re-runnable input
-instead of a hand-simulated one. Point the collection loop's
-`~/.claude/projects` root at `test/fixtures/projects` to exercise it, e.g.:
+session transcripts) so `spawn_model_join.sh` (the `distribution-auditor`
+per-spawn join, codified as a script) and the categorization logic can be
+dry-run against deterministic, re-runnable input instead of a hand-simulated
+one. Point the script's `[session-path]` argument at `test/fixtures/projects`
+to exercise it, e.g.:
 
 ```bash
-for meta in .claude/skills/evolve-model-distribution/test/fixtures/projects/*/subagents/agent-a*.meta.json; do
-  ...  # same join loop as SKILL.md § LOCAL per-spawn join
-done
+~/.claude/scripts/spawn_model_join.sh 7 .claude/skills/evolve-model-distribution/test/fixtures/projects
 ```
 
 ## `fixture-session-divergent/` — one pair per divergence class

@@ -191,7 +191,12 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
    TUI, command tree for CLI, schemas for API, file tree for doc structures).
 4. **Interaction Design** — user flows with error branches, input patterns,
    feedback patterns, perceived performance, keyboard/shortcut map, destructive
-   action confirmation.
+   action confirmation. Any affordance whose visibility or enabled/disabled state
+   depends on backend or system state MUST cite the authoritative eligibility check
+   verbatim — the code-level predicate (handler precondition / accepted-state set),
+   grepped and confirmed against code, not the prose description — so the affordance
+   surfaces iff the action would be accepted. A prose-inferred gate can invert
+   against the backend and appear exactly when the action would be rejected.
 5. **Visual & Sensory Design** — semantic color palette, typography hierarchy,
    spacing/density, motion (where it aids comprehension), terminal constraints.
    Specify the rendered EFFECT target at real delivery resolution (screenshare,

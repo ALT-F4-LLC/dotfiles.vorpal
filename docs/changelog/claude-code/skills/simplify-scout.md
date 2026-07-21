@@ -1,5 +1,19 @@
 # Changelog: simplify-scout
 
+## 2026-07-20
+
+### Summary
+Near NO-OP. Re-verified 12-principle table exact-match vs senior-engineer.md L246-268, Mode 4 anchor + senior-engineer.md L174 wiring resolve, report_lint roster confirms L32 (un-mechanized validation) accurate + DEFERRED, no $-hazards, 17967 bytes. One completeness fix to validation item 7.
+
+### Changes
+- FIX[SUBSTANTIVE]: placeholder-scan (item 7) generalized from a closed token list to "any unsubstituted `{...}` token outside code fences" — the closed list missed `{short principle name}`/`{confidence rung}`, real emitted-header tokens a leak of which would false-negative. Removes enumeration staleness; pre-specifies the deferred L32 mechanization (DKT-31). NET +184.
+
+### Dimensions Evaluated
+All 8; Coherence primary (12-principle re-sync + cross-ref + wiring); Completeness (item-7 gap). Over-Engineering: fix reduces drift surface, not adds. Zero in-window usage is adoption/agent-file scope, not skill defect. L32 DEFERRED, not attempted.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary

@@ -1,0 +1,25 @@
+{
+  "updated": "2026-06-30",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "note": "USD price per 1M tokens. Every cost figure derived from this table is an estimate, not a billing-authoritative number — caching tiers, batch discounts, and inference_geo multipliers are not reproduced here.",
+  "prices": {
+    "claude-fable-5": {"in": 10, "out": 50, "cache_w5": 12.50, "cache_w1h": 20, "cache_r": 1},
+    "claude-mythos-5": {"in": 10, "out": 50, "cache_w5": 12.50, "cache_w1h": 20, "cache_r": 1},
+    "claude-opus-4-8": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
+    "claude-opus-4-7": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
+    "claude-opus-4-6": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
+    "claude-opus-4-5": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50},
+    "claude-opus-4-1": {"in": 15, "out": 75, "cache_w5": 18.75, "cache_w1h": 30, "cache_r": 1.50},
+    "claude-opus-4-0": {"in": 15, "out": 75, "cache_w5": 18.75, "cache_w1h": 30, "cache_r": 1.50},
+    "claude-sonnet-4-6": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
+    "claude-sonnet-4-5": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
+    "claude-sonnet-4-0": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30},
+    "claude-haiku-4-5": {"in": 1, "out": 5, "cache_w5": 1.25, "cache_w1h": 2, "cache_r": 0.10},
+    "claude-3-5-haiku": {"in": 0.80, "out": 4, "cache_w5": 1, "cache_w1h": 1.60, "cache_r": 0.08},
+    "claude-sonnet-5": {
+      "intro": {"in": 2, "out": 10, "cache_w5": 2.50, "cache_w1h": 4, "cache_r": 0.20},
+      "intro_cutoff": "2026-08-31",
+      "standard": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30}
+    }
+  }
+}

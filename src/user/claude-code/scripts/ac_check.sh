@@ -23,18 +23,22 @@
 #      word or a path-like invocation (./, ../, ~/, /, .claude/), and it
 #      does not contain a <placeholder> or {template} token.
 #   Known gap: a minority of issues continue AC-shaped content under a
-#   differently-named heading (e.g. "Additionally") after closing the
-#   Acceptance Criteria section -- those commands are not picked up.
+#   differently-named heading (e.g. "Additionally") -- pass --section to
+#   point extraction at that heading instead of falling back to manual
+#   verbatim-run.
 set -euo pipefail
 
 usage() {
-    echo "Usage: ac_check.sh <issue-id> [--pre]" >&2
+    echo "Usage: ac_check.sh <issue-id> [--pre] [--section <heading-regex>]" >&2
     echo "  Default: runs each extracted AC command, reports [PASS|FAIL]," >&2
     echo "    exits non-zero if any failed (PASS = exit 0)." >&2
     echo "  --pre: inverts the expectation -- each AC command is expected to" >&2
     echo "    FAIL against current pre-implementation state (a discriminating" >&2
     echo "    AC must not already be true). Reports [EXPECTED-FAIL|UNEXPECTED-PASS]," >&2
     echo "    exits non-zero if any command unexpectedly passes." >&2
+    echo "  --section <heading-regex>: scope inline-backtick extraction to the" >&2
+    echo "    bold heading matching this regex (case-insensitive) instead of the" >&2
+    echo "    default 'Acceptance Criteria'. Matched as ^\\*\\*<heading-regex>." >&2
     exit 1
 }
 
@@ -43,9 +47,15 @@ usage() {
 ID="$1"
 shift
 PRE=0
+SECTION=""
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --pre) PRE=1 ;;
+        --section)
+            shift
+            [ "$#" -gt 0 ] || usage
+            SECTION="$1"
+            ;;
         *) usage ;;
     esac
     shift
@@ -68,7 +78,7 @@ DESCRIPTION=$(printf '%s' "$ISSUE_JSON" | jq -r '.data.description')
 # heredoc already owns stdin to deliver this script to `python3 -`, so
 # piping the description in over stdin as well would race the heredoc for
 # the same channel and be silently dropped.
-COMMANDS=$(AC_CHECK_DESCRIPTION="$DESCRIPTION" python3 - <<'PYEOF'
+COMMANDS=$(AC_CHECK_DESCRIPTION="$DESCRIPTION" AC_CHECK_SECTION="$SECTION" python3 - <<'PYEOF'
 import os
 import re
 
@@ -93,9 +103,14 @@ for fence in fence_re.finditer(text):
         if line and not line.startswith("#"):
             add(line)
 
-# Scope inline-backtick extraction to the Acceptance Criteria section only.
+# Scope inline-backtick extraction to a single bold-heading section --
+# "Acceptance Criteria" by default, or the heading matching --section.
 lines = text.split("\n")
-ac_start = re.compile(r"^\*\*Acceptance Criteria\b", re.IGNORECASE)
+section_regex = os.environ.get("AC_CHECK_SECTION", "")
+if section_regex:
+    ac_start = re.compile(r"^\*\*(?:" + section_regex + r")", re.IGNORECASE)
+else:
+    ac_start = re.compile(r"^\*\*Acceptance Criteria\b", re.IGNORECASE)
 bold_heading = re.compile(r"^\*\*[A-Za-z]")
 section = []
 in_section = False

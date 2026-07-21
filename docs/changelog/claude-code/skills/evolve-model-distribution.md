@@ -1,5 +1,34 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-20
+
+### Summary
+Coherence pass: phantom-path guard note added. Crash & Stall variant deliberately NOT registered as a CRASH-STALL-CORE carrier.
+
+### Changes
+- Added byte-identical evolve-* phantom-path guard note after DOCS-PATHS-LOCAL
+- Documented (manifest comment) that this skill's crash-recovery variant is intentionally divergent (different resume-context/second-failure semantics) and excluded from CRASH-STALL-CORE parity
+
+### Dimensions Evaluated
+Coherence, parity enforcement.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+No changes needed. This skill is a clean pass — anchors verified live (Tiers, gold/silver/bronze bullets, Per-spawn model routing resolve in team-lead.md lines 236, 240-243), ux-* categorization already current, no Content Gate violations. The two ledger findings (L26 script codification, L46 Mimir labeling) are out of scope this cycle. Phase 0 audits show a single clean in-window invocation with zero error/stall signal.
+
+### Changes
+- None (NO-OP verdict). L26 deferred (DKT-27, new script authoring); L46 out of scope (Mimir/OTEL instrumentation).
+
+### Dimensions Evaluated
+All 8; Coherence (live-anchor re-verification, ux-* categorization currency), Content Gate (no unescaped `$`+digit).
+
+### Rename
+No rename.
+
 ## 2026-07-17
 
 ### Summary

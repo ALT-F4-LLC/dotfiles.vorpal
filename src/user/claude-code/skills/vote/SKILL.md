@@ -16,7 +16,7 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 
 You are the **Consensus Coordinator**. You spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome — you do NOT vote yourself. Reviewer prompts must instruct each reviewer to prioritize identifying weaknesses; rubber-stamping a proposal is worse than no protocol.
 
-**When to invoke (high bar).** Single-reviewer is the default across the fleet. Vote earns its cost (multiple agents, weighted quorum, audit record) only when: (a) the decision is irreversible or has a long blast radius (TDD acceptance, breaking changes, security-boundary changes, data-model migrations), (b) two reviewers materially disagree AFTER a factual altitude/phase read against the artifact failed to collapse the disagreement (an altitude-mismatch — one reviewer judging a later phase's concern against an earlier phase's §Acceptance — is resolved by reading, not by voting), or (c) a security-sensitive change with explicit `criticality: critical` per the Classification table. Do NOT vote on: solo-author TDD critique cycles (use peer SendMessage), routine code review verdicts, refactors that fit existing patterns, or anything reversible in one PR. **A vote is not "done" until it is recorded in docket** — a prose/narrative "approved" with no `docket vote create` + `commit` does not exist for downstream verify-ac/tdd gates; if `docket vote list` would not show it, it did not happen.
+**When to invoke (high bar).** Single-reviewer is the default across the fleet. Vote earns its cost (multiple agents, weighted quorum, audit record) only when: (a) the decision is irreversible or has a long blast radius (TDD acceptance, breaking changes, security-boundary changes, data-model migrations), (b) two reviewers materially disagree AFTER a factual altitude/phase read against the artifact failed to collapse the disagreement (an altitude-mismatch — one reviewer judging a later phase's concern against an earlier phase's §Acceptance — is resolved by reading, not by voting), or (c) a security-sensitive change with explicit `criticality: critical` per the Classification table. Do NOT vote on: solo-author TDD critique cycles (use peer SendMessage), routine code review verdicts, refactors that fit existing patterns, or anything reversible in one PR. **A vote is not "done" until it is recorded in docket** — a prose/narrative "approved" with no `docket vote create` + `commit` does not exist for downstream verify-ac/tdd gates; if `docket vote list --all` would not show it, it did not happen (the bare default lists OPEN proposals only, so a correctly resolved vote drops out of it).
 
 ---
 
@@ -43,7 +43,7 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
    `SendMessage(to="team-lead", message="delegation_request (vote) JSON: {\"protocol_version\":\"1\",\"skill\":\"vote\",\"request_id\":\"{uuid}\",\"vote_id\":\"{vote-id}\",\"from\":\"{your-agent-name}\",\"summary\":\"{one-line}\",\"artifact\":\"{path-or-omit}\"}", summary="{one-line}")`
    The SendMessage `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for the `delegation_response` reply (also a text-prefixed JSON string) with matching `request_id`.
 4. **Expected response shape** — team-lead replies with a text-prefixed JSON string (same string-not-object rule), e.g. `delegation_response (vote) JSON: {"request_id":"{uuid}","status":"completed|failed|escalated","vote_id":"{vote-id}","reason":"{string-or-omit}"}`; parse the JSON out of the text prefix. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
-5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: finalize the orphaned proposal from step 2 (`docket vote commit {vote-id} --outcome "Delegation failed/timed out"`, best-effort if it still resolves) so `docket vote list` stays accurate — mirrors the Phase 3 view-change hygiene — then report error with `vote_id` and abort. On `escalated`: read the vote record and relay findings to caller.
+5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: `docket vote commit` cannot force-finalize the orphaned proposal from step 2 — verified live, the CLI requires `status: approved` before commit and exits with `must be approved before it can be committed` on an `open` proposal. Leave the proposal `open` (it remains visible under `docket vote list --all`, a correct record of the failed delegation) and record the failure via `docket issue comment add {linked-issue} -m "Vote {vote-id} delegation failed/timed out — proposal left open, unresolved"` if a linked issue exists, then report error with `vote_id` and abort. On `escalated`: read the vote record and relay findings to caller.
 
 ---
 
@@ -130,7 +130,7 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 | `"sdet"`, or starts with `"verifier-"` | `sdet` |
 | `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
 | `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
-| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md:224` recusal; absent from Agent Selection). Its TDD-acceptance reviewers include the merged acceptance panel's `@staff-engineer` seat (architecture + system-fit lens; Pinned composition, C1), which must stay selectable. |
+| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md` §Author recusal; absent from Agent Selection). Its TDD-acceptance reviewers include the merged acceptance panel's `@staff-engineer` seat (architecture + system-fit lens; Pinned composition, C1), which must stay selectable. |
 
 > Unmapped `created_by`: apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
 
@@ -189,26 +189,13 @@ Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() spa
 
 ### Recording Votes
 
-After each reviewer returns, cast their vote using the JSON block from the reviewer's output (see Reviewer Prompt Template `### Findings JSON`) as the primary path. ALWAYS pass findings via the stdin heredoc (`--findings-json -` / `--findings -`) shown below, NEVER inline as a `--findings-json "..."` argument — reviewer prose can contain a bare ! (zsh history-expansion inside double quotes) or stray backslashes that corrupt the payload and surface as `--findings-json is not valid JSON: invalid character ... in string escape code` (exit 3). The `<<'EOF'` single-quoted delimiter passes the body literally. If a `--findings-json` cast still exits non-zero with a JSON parse error (reviewer emitted malformed JSON), retry the SAME cast with the plaintext `--findings -` heredoc — do not skip recording the vote.
+After each reviewer returns via SendMessage, write its COMPLETE structured review text verbatim to `$TMPDIR/vote-{vote-id}/reviewer-{N}.md`, then cast the vote by invoking `~/.claude/scripts/vote_record.sh {vote-id} "{vote-id}-reviewer-{N}" "{agent-type}" "$TMPDIR/vote-{vote-id}/reviewer-{N}.md"` (repo: `src/user/claude-code/scripts/vote_record.sh`):
 
 ```bash
-# Primary: structured JSON (preferred — preserves blocker/concern/suggestion arrays for docket aggregation)
-docket vote cast {vote-id} \
-  --voter "{vote-id}-reviewer-{N}" \
-  --role "{agent-type}" \
-  -v {mapped_verdict} \
-  --confidence {confidence} \
-  --domain-relevance {domain_relevance} \
-  --summary "{one-line reviewer summary}" \
-  --findings-json - <<'EOF'
-{"blockers":[...], "concerns":[...], "suggestions":[...]}
-EOF
-
-# Fallback: plaintext heredoc when JSON block is missing or malformed
-docket vote cast {vote-id} ... --findings - <<'EOF'
-{multi-line findings text}
-EOF
+~/.claude/scripts/vote_record.sh {vote-id} "{vote-id}-reviewer-{N}" "{agent-type}" "$TMPDIR/vote-{vote-id}/reviewer-{N}.md"
 ```
+
+The script parses Verdict/Confidence/Domain Relevance/Findings/Summary directly out of the report file's `### <heading>` sections and invokes `docket vote cast` itself, streaming the findings payload through a temp file via stdin redirection rather than interpolating reviewer prose into a command-line argument or heredoc body — this is what prevents the previously-documented corruption mode (a bare `!` or stray backslash in reviewer prose breaking an inlined `--findings-json` and surfacing as `--findings-json is not valid JSON: invalid character ... in string escape code`, exit 3). It automatically falls back from `--findings-json` to plaintext `--findings -` whenever the parsed `### Findings JSON` block is missing or fails a `jq empty` validity check (and retries with plaintext again if docket itself still rejects the JSON cast) — do not skip recording the vote on a fallback; it is handled for you. A non-zero exit means BOTH the JSON and plaintext casts failed — treat the reviewer as failed per Handling Reviewer Failures below, not a silent skip. The full `docket vote cast` flag set the script wraps is documented in `Skill(docket)`'s `docket vote cast <id>` reference (docket/SKILL.md).
 
 ### Reviewer Prompt Template (Standalone Mode Only)
 
@@ -312,7 +299,7 @@ After all votes have been cast, retrieve the consensus result via `docket vote r
 
 ### If Quorum Is NOT Reached (View Change)
 
-1. **Finalize the failed round in docket** — `docket vote commit {vote-id} --outcome "Quorum not reached (score: {score})" --escalation-reason "view-change: round {N} of 3"`. This closes the proposal so `docket vote list` reflects accurate state.
+1. **No finalization action needed** — a full-quorum vote that misses threshold auto-transitions to `status: rejected` the moment the last vote is cast (verified live); `docket vote commit` cannot be run on it (`must be approved before it can be committed`) and would only error. The proposal already drops out of the default `docket vote list` (open-only) and is visible via `--all` — confirm with `docket vote show {vote-id} --json` if you need to double-check the auto-transition landed.
 2. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
 3. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
 4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability. **Issue link hygiene**: if the prior round's vote was linked to a Docket issue, run `docket vote unlink {prior-vote-id} --issue {issue-id}` before linking the new vote to the same issue, so the issue's audit trail points only to the active round.

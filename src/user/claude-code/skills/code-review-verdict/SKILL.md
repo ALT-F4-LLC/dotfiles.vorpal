@@ -51,7 +51,7 @@ Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR 
 
 **Scope resolution** (apply rules in order; first match wins):
 
-<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `verify-ac/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet in the Ambiguity rules below is near-identical (differs only by "on such a name"). Keep all four in sync across both files when either changes — decision record: TDD `docs/tdd/coordinated-shared-extraction-of-duplicated-skill.md` §4.4 (extraction rejected; coupling documented instead, per DKT-250). -->
+<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `src/user/claude-code/skills/verify-ac/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet in the Ambiguity rules below is near-identical (differs only by "on such a name"). Keep all four in sync across both files when either changes — decision record: DKT-250 (extraction rejected; coupling documented instead; the originating TDD was deleted per docs-paths.md TDD ephemerality). -->
 | Form | Detection | Diff source |
 |---|---|---|
 | GitHub PR number | matches `^\d+$` | `gh pr view {n}` (description) + `gh pr diff {n}` (diff) |
@@ -190,7 +190,7 @@ Four narrow, mechanically detectable symptoms gate the merge **regardless of fea
 | **G2 — Unguarded shared mutation** | Shared or module-global mutable state accessed without a lock, channel, actor, or single-owner pattern. NOT fired by `Mutex`/`RwLock`/atomic-guarded access, message-passing, single-owner goroutines/tasks, or local mutation inside a function whose result escapes as a new value. | `// OVERRIDE: code-philosophy/4 — <reason>` on the unguarded access |
 | **G3 — Unparsed boundary input** | Untrusted input (HTTP body/query/header, env var, CLI arg, queue payload, DB row, third-party API response, file off disk) consumed without a schema parse into a precise type at first contact. NOT fired by data flowing through internal calls after it has been parsed once at the boundary; NOT fired by parsed-and-typed data simply being accessed deeper in the call stack. | `// OVERRIDE: code-philosophy/5 — <reason>` on the consumption site |
 | **G4 — Surface-not-invariant patch** | Fix that papers over an edge case rather than addressing the underlying contract. Patterns: a `null` check added where the real bug is that upstream data is the wrong shape; a retry loop wrapped around a non-idempotent operation; defensive guards added that mask a real invariant violation instead of fixing it; a snapshot or test updated to make a failing case pass without diagnosing why. Detection requires reading the issue to understand what the code was supposed to *uphold* — flag when the diff looks like symptom-masking. | `// OVERRIDE: code-philosophy/11 — <reason>` on the affected block |
-| **G5 — Unexecuted AC regex** | TDD/spec/AC diff introduces or modifies a regex (`grep -E`, `\bword\b`, alternation arms) intended to gate verification, with no evidence the regex was executed against the actual target files. Patterns: AC text says "match `Lifecycle:.*persistent name`" but the target file uses `**Lifecycle**:` (markdown-bold inserts `**` between word and colon); AC requires literal adjacency where target uses intervening words; expected hit count in the AC does not match actual `grep -lE` output; under `grep -E` a `\|` is a LITERAL pipe (BRE alternation), so `'a\|b'` matches the string `a|b` and returns 0 on a correct file — a false-negative; the alternation must be bare `|` under `-E`. Detection: when a diff edits regex in `docs/tdd/` or `docs/spec/`, the reviewer MUST run the regex against the named target files and compare hit count to the AC's claimed file-set. A mismatch is a Blocker. | `// OVERRIDE: code-philosophy/5 — <reason>` on the AC block (G5 maps to principle #5, parse-at-the-edge, since AC regex is the verification's parse contract) |
+| **G5 — Unexecuted AC regex** | TDD/spec/AC diff introduces or modifies a regex (`grep -E`, `\bword\b`, alternation arms) intended to gate verification, with no evidence the regex was executed against the actual target files. Patterns: AC text says "match `Lifecycle:.*persistent name`" but the target file uses `**Lifecycle**:` (markdown-bold inserts `**` between word and colon); AC requires literal adjacency where target uses intervening words; expected hit count in the AC does not match actual `grep -lE` output; under `grep -E` a `\|` is a LITERAL pipe (BRE alternation), so `'a\|b'` matches the string `a|b` and returns 0 on a correct file — a false-negative; the alternation must be bare `|` under `-E`. Detection: when a diff edits regex in `docs/tdd/` or `docs/spec/`, run `~/.claude/scripts/g5_check.sh <scope>` (the same `<scope>` this skill resolved) — it extracts every added backtick `grep`, executes each against the tree, and reports `[RAN <n> hits]` / `[FAIL]` / `[REJECTED]` / `[TIMEOUT]` per command plus a `[BRE-PIPE-WARNING]` static flag for an escaped `\|` under `-E` (exit 0 all clean, 1 a candidate failed/rejected/warned, 2 no candidates in scope). Compare each reported hit count to the AC's claimed file-set; any count mismatch, exit-1 line, or BRE-pipe warning is a Blocker. | `// OVERRIDE: code-philosophy/5 — <reason>` on the AC block (G5 maps to principle #5, parse-at-the-edge, since AC regex is the verification's parse contract) |
 
 **Override recognition (mandatory).** Before emitting a Blocker for any gate, scan the diff *and* the immediately adjacent lines for an `OVERRIDE: code-philosophy/<id>` comment matching the gate (the language's comment syntax — `//`, `#`, `--`, `;`, etc.). When present:
 - Do NOT add a Blocker / Critical finding for that occurrence.
@@ -221,6 +221,7 @@ For substantive changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} ({git diff --stat one-line summary})
+- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12> — first 12 chars of `git diff HEAD | shasum` — for uncommitted/staged] — the tree this verdict binds to; a Round-N delta re-review checks carry-forward via `git diff --stat {recorded}..HEAD` plus, on a dirty tree, re-hashing `git diff HEAD` against the recorded dirty-hash (HEAD alone cannot detect working-tree change between dirty rounds).
 - Reference docs: {TDDs, specs consulted — or "None applicable"}
 
 ### Risk Assessment
@@ -295,6 +296,7 @@ For substantive security-relevant changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} (security-touched paths called out)
+- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12> — first 12 chars of `git diff HEAD | shasum` — for uncommitted/staged] — the tree this verdict binds to; carry-forward checked via `git diff --stat {recorded}..HEAD` plus, on a dirty tree, re-hashing `git diff HEAD` against the recorded dirty-hash.
 - Reference docs: {the issue's distilled security contracts, `docs/adr/` security records, docs/spec/security.md sections — or "None applicable"}
 
 ### Threat Model (assumed)
@@ -353,24 +355,24 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 
 On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
 
-**G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `git diff --stat` shows BOTH the AC regex block AND its named target files untouched since that round — cite it as `G5 PASS — unchanged since round {N}`. Never carry a prior G5 Blocker forward (re-run it); never carry forward when either the regex or any target file moved.
+**G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `git diff --stat {prior-round Tree state}..HEAD` shows BOTH the AC regex block AND its named target files untouched since that round AND, when the prior fingerprint carries `+dirty:<sha12>`, a fresh `git diff HEAD | shasum` (first 12 chars) matches it — cite it as `G5 PASS — unchanged since round {N}`. Never carry a prior G5 Blocker forward (re-run it); never carry forward when either the regex or any target file moved.
 
 ## Validation Before Emit
 
-Mechanically validate the drafted review before emitting it. Write the review verbatim to a UNIQUE-per-invocation staging file under `$TMPDIR` — parallel panel reviewers (advisor + `reviewer-2`, or the 3-way security panel) share one `$TMPDIR`, so a fixed `review.md` name races: one reviewer's staging write clobbers another's and the validator lints the wrong body. Allocate the name atomically with `mktemp` (`STAGE=$(mktemp "$TMPDIR/review-XXXXXX.md")`), then run the shared validator at the deployed path `~/.claude/scripts/report_lint.py` (repo: `src/user/claude-code/scripts/report_lint.py`):
+Mechanically validate the drafted review before emitting it. Pipe the review verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — parallel panel reviewers (advisor + `reviewer-2`, or the 3-way security panel) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_lint.py --skill code-review-verdict [--mode round-n] "$STAGE"
+report_stage_lint.sh code-review-verdict [--mode round-n] "$DRAFT_FILE"
 ```
 
-Omit `--mode` (default `full`) for the full general/security template; pass `--mode round-n` for a compact Re-Review emission. Handle the exit code DISTINCTLY:
+(or pipe the review body on stdin and omit `$DRAFT_FILE`). Omit `--mode` (default `full`) for the full general/security template; pass `--mode round-n` for a compact Re-Review emission. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the review in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(code-review-verdict, "<scope>")`:
   ```
   Error: validation failed: {section/field} — {detail}.
   ```
-- **exit 2 (infra/usage — validator missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
+- **exit 2 (infra/usage — script or `report_lint.py` missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the review anyway with the mandatory annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the caller. An advisory verdict a human/team-lead consumes downstream must not be suppressed by a lint-infrastructure hiccup.
 
 The validator mechanizes the shared, text-decidable checks: heading matches the role's banner, required sections present in order (Round-N compact template under `--mode round-n`), severity ladder matches role, empty severity buckets explicit (general role includes the `Overrides Recognized` bucket in this check), recommendation on the role's allow-list, trailing confirmation line present, placeholder scan, banned-confidence-phrase scan (scoped to Findings/Praise/Recommendation), the report-internal hard-gate arm (a Blocker citing G1..G5 must cross-list that gate under `Hard Gates Triggered`), and `Hard Gates Triggered` enumeration (all five gates G1..G5 listed individually, even when None).
 

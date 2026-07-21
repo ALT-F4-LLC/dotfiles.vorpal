@@ -1,5 +1,51 @@
 # Changelog: code-review-verdict
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: Tree state aligned to verify-ac's +dirty:<sha12> fingerprint; G5 carry-forward honors the dirty-hash; COUPLING comment citations repaired.
+
+### Changes
+- Tree state (both output templates) now records +dirty:<sha12> (git diff HEAD | shasum, 12 chars) — bare +dirty flag could not detect working-tree change between dirty rounds on uncommitted/staged scopes
+- G5 carry-forward additionally requires a matching fresh dirty-hash when the prior fingerprint was dirty
+- COUPLING comment: deleted-TDD citation replaced with DKT-250 as primary record; sibling ref expanded to full repo path
+
+### Dimensions Evaluated
+Coherence, cross-skill consistency (verify-ac parity), reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Fixed the BSD/macOS mktemp suffix-randomization bug in staging-file allocation (L5, empirically confirmed on Darwin), wired the orphaned g5_check.sh into the G5 hard gate (L6), and added a Tree state field to both output templates tied into Round-N G5 carry-forward (L7). Findings: 3 → 3 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- FIX[SUBSTANTIVE] Validation Before Emit: drop the `.md` suffix from the mktemp staging template — BSD/macOS mktemp randomizes only trailing X's, so the suffix defeated randomization and parallel panel reviewers collided (L5, verified `mkstemp failed: File exists` reproduction + bare-template fix).
+- AMPLIFY[SUBSTANTIVE] Hard Gate G5: replace the manual "reviewer MUST run the regex" instruction with `g5_check.sh <scope>`, wiring the previously-unreferenced script that mechanizes G5 execution + BRE-pipe static check (L6).
+- AMPLIFY[SUBSTANTIVE] Output templates (staff + security) + Round-N carry-forward: add a `Tree state: {git rev-parse --short HEAD}[+dirty]` field and reference it as the diff base for G5 PASS carry-forward (L7).
+
+### Dimensions Evaluated
+Correctness/bug (L5), Mechanization/orphaned-tooling (L6), Mechanical-checkability (L7)
+
+### Rename
+No rename.
+
 ## 2026-07-15 (Phase 4 history compaction)
 
 ### Summary
@@ -217,48 +263,6 @@ All 8; Over-Engineering (HIGHEST); Completeness (recall coverage grep-verified);
 ### Rename
 No rename. Deliberate rename away from bundled /code-review stands.
 
-## 2026-06-09
-
-### Summary
-Compacted 5 entries (2026-05-09..2026-05-16) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Coherence fix: corrected stale `G{1..4}` → `G{1..5}` in the Overrides Recognized output template (L241) — the lone G-range token left un-updated when G5 was added; all other refs already read G1..G5. Net 0 (396 lines, orchestrator-verified post-apply).
-
-### Changes
-- Overrides Recognized template gate range `G{1..4}` → `G{1..5}` so a recognized G5 override has a template slot (verified: L241 was the only stale token).
-
-### Dimensions Evaluated
-All 8; Coherence (inverted-scope G-range sweep); vote mode-split verified present at L387 (NO-OP); rename-collision sweep clean — bundled /code-review rationale intact.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Recall fix for Fable/Opus-4.8-class literal instruction-following: replaced the lone severity FILTER (Common Discipline "Calibrate to value… skip stylistic") with a report-every-finding mandate — findings always surface with severity + confidence; filtering relocated downstream (team-lead step 14 / operator). Severity ladders untouched. Net +2 (396 lines).
-
-### Changes
-- Common Discipline: "Calibrate to value / Skip stylistic preferences and what cargo clippy/audit should catch" → "Report every finding — do NOT self-filter": all issues reported (incl. low-severity/uncertain) tagged severity + confidence; linter-catchable issues become Suggestion/Info rather than omitted; downstream owns filtering.
-
-### Dimensions Evaluated
-Skill Design Quality (recall-suppression removal), Over-Engineering, Actionability, Coherence, Reasoning-echo audit (clean), Spec Alignment.
-
-### Rename
-No rename. Rename-away-from-/code-review collision note verified still accurate (bundled skill ships --fix).
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -283,3 +287,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-08: Phase 1 no-change verdict (408/500 lines) — verified partial-tree/scope-timing guard already exists (Pre-flight step 5); bundled /code-review name-collision surfaced to Phase 2.
 - 2026-06-09: Hardened freshness gate (moving-tree ABORT precondition) + added Validation check 10 (citation-presence scan); collapsed Role Detection table to prose. Net -13 (395/500).
 - 2026-06-09: Phase 2 — renamed code-review → code-review-verdict (bundled-skill collision, 47 refs across 4 agents/6 skills); mode-split vote-escalation bullet in Save & Return.
+- 2026-06-09: Recall fix — replaced severity FILTER with report-every-finding mandate (Fable/Opus-4.8 literal-following); filtering moved downstream. Net +2.
+- 2026-06-09: Coherence — corrected stale G{1..4}→G{1..5} in Overrides Recognized output template (L241); all other refs already read G1..G5. Net 0.
+- 2026-06-09: Compacted 5 entries (2026-05-09..2026-05-16) into Compacted history per ADR 0001.

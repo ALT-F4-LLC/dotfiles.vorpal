@@ -1,5 +1,63 @@
 # Changelog: verify-ac
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 5 entries (2026-06-04..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Aligned the banner's whitelisted trailing clause with the Save & Return contract: verification never closes issues.
+
+### Changes
+- Banner tail "Docket close/comment" → "Docket comment/reopen" — close is a no-op (issue already closed by @senior-engineer); reopen-on-BLOCK is the sole legitimate state change per sdet.md Rule 7 (Phase 3 disambiguation, multi-reading; parity-safe — leaf-family hash strips this clause).
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership).
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: COUPLING comment citations repaired (mirror of code-review-verdict edit). Tree state field verified as the fingerprint authority — no change needed.
+
+### Changes
+- COUPLING comment: deleted-TDD citation replaced with DKT-250 as primary record; sibling ref expanded to full repo path
+- Confirmed mktemp staging fix landed (report-XXXXXX, no suffix) — consistent with 3 siblings
+
+### Dimensions Evaluated
+Coherence, cross-skill consistency, reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Fixed the BSD/macOS mktemp `.md`-suffix uniqueness bug in FULL-mode Validation Before Emit (the suffix defeats randomization, refusing the second panelist on a doubled verify panel) and added a Tree state fingerprint field to the FULL template so Pre-flight §3a's Round-N carry-forward is executable in the no-commit tree. Net +565.
+
+### Changes
+- FIX[SUBSTANTIVE]: dropped `.md` from `mktemp "$TMPDIR/report-XXXXXX"` (BSD randomizes only trailing X's) + guard note against regression. Empirically re-confirmed on Darwin 25.5.0.
+- AMPLIFY[SUBSTANTIVE]: FULL Output template gains a `**Tree state**` fingerprint field (HEAD sha +dirty hash); Pre-flight §3a now reads it as the `git diff --stat` carry-forward baseline instead of the underspecified "prior round's commit".
+
+### Dimensions Evaluated
+Correctness (PRIMARY — mktemp bug), Actionability/Coherence (§3a made executable). Byte budget: +565, far under 65KB.
+
+### Rename
+No rename.
+
 ## 2026-07-14
 
 ### Summary
@@ -204,80 +262,6 @@ Coherence (family lockstep), Orchestration (vote delegation).
 ### Rename
 No rename (sibling code-review renamed → code-review-verdict; refs updated).
 
-## 2026-06-09
-
-### Summary
-Added an OUT-OF-SCOPE deferral path for runtime/render-only acceptance criteria (fem-kubernetes pitfall: static gates — files exist, refs present, build exit 0 — passed while rendered output shipped broken images; design-qa gates its side, verify-ac had no marker). Threaded through FULL step 1, verdict ladder (caps at ACCEPT WITH CAVEATS), report template ([~] marker + route), and validation checks 2/5/6. Offset: deduplicated the LIGHT one-liner and pointed the Round-2 bullet at Pre-flight §4a. Net −6 (268/500).
-
-### Changes
-- FULL §1: PASS/FAIL/OUT-OF-SCOPE; runtime-only criteria never pass on static proxies; route named (design-qa / bundled runtime verify), dispatch stays with the calling agent.
-- Verdict ladder + validation 2/5/6: OUT-OF-SCOPE requires a named route, satisfies the ACCEPT-WITH-CAVEATS finding requirement, and bars APPROVE.
-- LIGHT: switch-to-FULL includes runtime-only criteria; duplicate one-liner removed; Round-2 carry-forward deferred to §4a.
-- Phase-0 NO-OPs verified: no `$`+digit; description 695/1536 chars; `disallowed-tools` rejected (caller-strip risks SendMessage deliverable).
-
-### Dimensions Evaluated
-All 8. Completeness (PRIMARY), Over-Engineering (HIGHEST — net −6), Coherence (design-qa boundary + COUPLING parity byte-identical).
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (274 lines). COUPLING marker byte-identical across the 4-skill family; all docket CLI usage (reopen / comment add -m / comment list) verified live and matches sdet.md closeout contracts; static-vs-runtime boundary confirmed sharp (bundled `verify` collision disambiguator accurate). Audit-grounded Pre-flight additions (§4a/§7a/§8) all pass the Content Gate — nothing to trim.
-
-### Changes
-- None. Noted (no edit): the 2026-06-04/06-05 entries' "draft|approved" narrative is stale — live body correctly gates §7 on `status: accepted`, matching skills/tdd/SKILL.md canonical lifecycle. Editing to `approved` would break tdd parity; changelog is historical, left as-is.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — zero net, no trimmable additions), Coherence (COUPLING/BANNER/docket/sdet.md parity verified).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 2 coherence: moved the report-emission COUPLING marker from under "When to Use" to directly above the "When NOT to Use" routes it governs (matching code-review's semantically-correct placement) and synced its text. All 4 family markers now byte-identical. (Supersedes the same-day Phase 1 entry below, which deferred this to Phase 2.)
-
-### Changes
-- COUPLING marker relocated under "When NOT to Use"; doubling-rule parity sentence added (directionless wording).
-
-### Dimensions Evaluated
-Coherence (report-emission family COUPLING placement + text parity).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Reviewed against all 8 dimensions; no edits applied. The Phase 0 "TDD status: accepted abort" signal is stale — the skill correctly gates on `approved` (canonical lifecycle is draft|approved); already resolved/rejected in the 2026-06-04 entry below.
-
-### Changes
-- No changes. `$`-escape (2.1.163): no `$`+digit in body — NO-OP. A proposed COUPLING-marker relocation was REJECTED: empirical grep shows verify-ac matches the 3/4 family norm (marker after "When to Use"); the real drift (code-review's marker placement, design-review's longer marker text) is routed to Phase 2.
-
-### Dimensions Evaluated
-Coherence (PRIMARY), Completeness, Over-Engineering (HIGHEST — zero net). All Phase 0 signals resolved NO-OP.
-
-### Rename
-No rename.
-
-## 2026-06-04
-
-### Summary
-Routed the TDD-status-gate abort to the authoritative Docket status field. The body-frontmatter `status:` mirrors Docket's top-level doc status but can go stale (verified: DOC-4 is top-level `approved` / body `draft`); the prior abort unconditionally sent the caller to "vote approval" — the wrong path when the TDD is already Docket-approved and only the mirror is stale. The status READ (top-level `.data.status`, L103) was already correct and unchanged. Net 0.
-
-### Changes
-- Pre-flight §7 status-gate abort: added a clause directing the caller to re-confirm via `docket doc list -T tdd -s approved` (the authoritative top-level field) before escalating, since the body-frontmatter mirror may be stale.
-- Pre-flight §7 not-found abort: trimmed the redundant "before re-invoking" tail (an abort always precedes a re-invoke) as the BALANCED offset.
-
-### Dimensions Evaluated
-Completeness (PRIMARY — status-gate abort guidance), Coherence (status-authority theme shared with tdd; the read mechanism agrees across both), Over-Engineering (HIGHEST — net 0, offset; rejected an ungrounded "test-writing closes separately" addition).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +280,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-29: Trimmed the Doubling Rule's orchestration re-narration to a pointer (it contradicted team-lead.md step 15's default-single-verifier rule and duplicated canon...
 - 2026-05-30: Fixed a verified coherence defect: the description's runtime-disambiguator named a phantom `runtime-verify` skill — the bundled runtime skill is registered a...
 - 2026-05-30: Killed the verify-ac claim-drift in two places, both contradicting the corrected agents/sdet.md Rule 7 (verification is READ-ONLY on Docket workflow state; t...
+- 2026-06-04: Routed TDD-status-gate abort to authoritative Docket status field — mirror can go stale; caller re-confirms via docket doc list. Net 0.
+- 2026-06-05: Reviewed all 8 dimensions, no edits — Phase 0 "status: accepted abort" signal stale (skill correctly gates on approved); resolved 2026-06-04.
+- 2026-06-05: Phase 2 coherence — moved report-emission COUPLING marker above "When NOT to Use"; all 4 family markers now byte-identical.
+- 2026-06-08: Phase 1 no-change (274 lines) — COUPLING marker byte-identical across 4-skill family; docket CLI usage verified vs sdet.md contracts.
+- 2026-06-09: Added OUT-OF-SCOPE deferral for runtime/render-only ACs (fem-kubernetes pitfall); threaded through FULL step 1, verdict ladder, report. Net -6.

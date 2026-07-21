@@ -1,5 +1,21 @@
 # Changelog: team-doctrine
 
+## 2026-07-20
+
+### Summary
+Added a source-citation prefix-discipline reminder to the docs-paths master (L40/L53): citing this repo's own agent/skill/script source always uses the `src/user/claude-code/` prefix, never bare `agents/…` or a deployed `.claude/…` prefix (evolve-* skills excepted). Rejected L36 (remove SKILL.md "Cited by" column) — the doctrine_check manifest does NOT own these carrier sets; column is load-bearing. L37/L38 confirmed already-correct. Findings: 1 sub / 0 cos / 1 rej / 2 already-encoded
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: docs-paths.md `CANONICAL:DOCS-PATHS` block — appended citation prefix-discipline reminder to the "Repo-root vs source-tree" note (L40/L53; 3-session recurring wrong-prefix miss). Master edit only; DOCS-PATHS is not parity-registered and LOCAL copies are role-scoped, so no lockstep needed.
+- REJECT: L36 (remove SKILL.md "Cited by (LOCAL-copy consumers)" column) — verified doctrine_check_manifest.tsv registers only PITFALLS among the 16 masters; the other 15 have role-scoped (non-byte-identical) LOCAL copies deliberately excluded from byte-parity, so the manifest does not own the column's carrier sets. Removal would be a regression.
+- NO-OP: L37 (vorpal-tools.md gofmt) and L38 (shutdown-protocol.md SP-1b union-type trap) confirmed already-encoded correctly.
+
+### Dimensions Evaluated
+Actionability (closes recurring-repetition finding), Coherence (accurate path citations). L36 verified and rejected; L37/L38 verified already-correct.
+
+### Rename
+No rename.
+
 ## 2026-07-17
 
 ### Summary

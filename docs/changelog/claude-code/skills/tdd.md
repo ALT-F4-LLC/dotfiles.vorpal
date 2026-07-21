@@ -1,5 +1,49 @@
 # Changelog: tdd
 
+## 2026-07-20 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-17..2026-06-19) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Coherence pass: one sibling-relative citation expanded to a repo-root path.
+
+### Changes
+- `adr/SKILL.md` reference in Pre-flight step 2 expanded to `src/user/claude-code/skills/adr/SKILL.md` (fails repo-root citation resolution; fleet convention is full paths)
+
+### Dimensions Evaluated
+Reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-20
+
+### Summary
+Retired the "single-writer baton" co-author framing (contradicted the file-global modified-since-read doctrine), added Non-Goals to Problem Statement §1 as the validator-safe interim form, and consolidated a duplicated ephemerality statement. L21 (OBSERVED/INFERRED marking) verified already-encoded. Findings: 3 → 2 sub / 1 cos / 0 rej / 0 def / 1 enc
+
+### Changes
+- FIX[SUBSTANTIVE]: Authoring §3 hazard note rewritten — drop the "edit token"/baton metaphor; state the file-global modified-since-read gate is the real primitive, add on-error re-Read+diff (no blind-retry), cite security-engineer.md §Responsibility 1 as the sole-editor authority (L34; contradicts distinguished-engineer.md's co-author serialization doctrine)
+- FIX[SUBSTANTIVE]: Required Sections §1 now names non-goals (explicit out-of-scope) with an anti-advocacy clause — validator forbids a top-level `## Non-Goals` (doc_validate.py exact-match), so implemented as the DE-prescribed interim Problem-Statement form (L33)
+- REDUCE[COSMETIC]: Save & Return ephemerality sentence replaced with an in-file pointer to the `status` frontmatter rule (deduped verbatim fact + citation)
+
+### Dimensions Evaluated
+Cross-file coherence; completeness/anti-advocacy; redundancy/size budget; validator-coupling correctness.
+
+### Rename
+No rename.
+
 ## 2026-07-14 (Phase 4 history compaction)
 
 ### Summary
@@ -216,39 +260,6 @@ Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Cohe
 ### Rename
 No rename.
 
-## 2026-06-19
-
-### Summary
-Strengthened the §9 untested-claims inventory into an actionable anti-fabrication callout, offset by compressing redundant §11 grep/regex prose; added downstream verbatim-citation + explicit Skill(verify-ac) envelope reminders.
-
-### Changes
-- AMPLIFY §9: inventory now enumerates forward-looking/unreachable no-trigger branches and prescribes extract-pure-fn-and-unit-test remediation when an AC demands a positive test for an unreachable path (3 convergent cross-project pitfalls).
-- CULL §11: triplicated grep/regex-AC prose collapsed to a §9 + staff-engineer rule-6 pointer (core requirement kept inline).
-- AMPLIFY Save & Return: downstream must cite this TDD verbatim; prescribed Skill(verify-ac) is an explicit invocation.
-- Drift (rate 7): D2, D5 APPLY (neutral rewords); D0/D1/D3/D4/D6 SKIP (slug/CANONICAL/format parity).
-
-### Dimensions Evaluated
-Over-Engineering, Completeness, Non-redundancy, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-Added a co-author single-writer baton note, restructured assertion-verification as a checklist, and added the COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / verify-checklist / inert-caveat → adopted.
-
-### Changes
-- AMPLIFY: single-writer baton note — concurrent co-author edits to one TDD cause "File modified since read"; serialize via team-lead, file-on-disk is the handoff state.
-- AMPLIFY: step-5 verify restructured into a 4-arm checklist (snippet/portability/size/module), citing staff-engineer.md's Executable-claim gate (rule 6) rather than restating it.
-- AMPLIFY: COLLISION_DIALOG teammate-context caveat (AskUserQuestion inert in teammates → block, don't silently overwrite); applied lockstep across adr/prd/tdd/ux-spec.
-
-### Dimensions Evaluated
-Completeness / Correctness (AMPLIFY), Over-Engineering (RETAIN), others RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +296,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Phase 2 lockstep trim — removed redundant "additional positional args" row (dup of CANONICAL:ARGUMENT_HANDLING); family-wide, net -1.
 - 2026-06-10: Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
 - 2026-06-10: Closed staff pitfall — Authoring §5 requires quantitative/line-budget feasibility claims be measured (wc -l), never estimated; net +1.
+- 2026-06-17: Added co-author single-writer baton note, verify-checklist restructure, COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / verify-checklist / inert-caveat → adopted.
+- 2026-06-19: Strengthened §9 untested-claims inventory into anti-fabrication callout; compressed §11 grep/regex prose; added verbatim-citation + Skill(verify-ac) reminders. Drift (rate 7): D2, D5 APPLY (neutral rewords); D0/D1/D3/D4/D6 SKIP (slug/CANONICAL/format parity).

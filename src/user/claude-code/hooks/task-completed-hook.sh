@@ -46,6 +46,22 @@ emit_block() {
     exit 0
 }
 
+# GNU-first: on GNU coreutils, `stat -f` is --file-system (no format arg) and
+# colliding with a literal '%m' argument prints filesystem-info noise to
+# stdout before falling through, corrupting the mtime value. Trying `-c`
+# first means GNU resolves cleanly without ever reaching `-f`; on BSD/macOS
+# `-c` fails fast (unsupported flag, no stdout) so the `-f` fallback still
+# runs clean there. The numeric guard rejects whatever garbage either branch
+# might still produce, independent of which branch produced it.
+file_mtime() {
+    local f="$1" mtime
+    mtime=$(stat -c '%Y' "$f" 2>/dev/null || stat -f '%m' "$f" 2>/dev/null)
+    case "$mtime" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    printf '%s\n' "$mtime"
+}
+
 DATA=$(cat 2>/dev/null) || emit_empty 1
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -138,8 +154,7 @@ case "$TRANSCRIPT_PATH" in
 
             FN_MATCH_COUNT=$((FN_MATCH_COUNT + 1))
 
-            CAND_MTIME=$(stat -f '%m' "$CAND_JSONL" 2>/dev/null || stat -c '%Y' "$CAND_JSONL" 2>/dev/null)
-            [ -n "$CAND_MTIME" ] || continue
+            CAND_MTIME=$(file_mtime "$CAND_JSONL") || continue
 
             if [ "$CAND_MTIME" -gt "$FN_NEWEST_MTIME" ]; then
                 FN_NEWEST_MTIME=$CAND_MTIME
@@ -172,8 +187,7 @@ case "$TRANSCRIPT_PATH" in
 
                 MT_MATCH_COUNT=$((MT_MATCH_COUNT + 1))
 
-                CAND_MTIME=$(stat -f '%m' "$CAND_JSONL" 2>/dev/null || stat -c '%Y' "$CAND_JSONL" 2>/dev/null)
-                [ -n "$CAND_MTIME" ] || continue
+                CAND_MTIME=$(file_mtime "$CAND_JSONL") || continue
 
                 if [ "$CAND_MTIME" -gt "$MT_NEWEST_MTIME" ]; then
                     MT_NEWEST_MTIME=$CAND_MTIME

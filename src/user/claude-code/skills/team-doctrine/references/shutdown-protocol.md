@@ -53,7 +53,13 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   the not-death negative list — any `idle_notification`/`TeammateIdle` with ANY `idleReason`
   (including `"failed"`), session/usage-limit messages, probe silence or timeout of any length, a
   `shutdown_response` or any shutdown acknowledgement, or a shutdown-rejection or "context
-  saturated" SendMessage — these mean alive-or-indeterminate — never death (the last two — shutdown ack/rejection and saturation — prove ALIVE; idle reasons/session-limit messages/probe silence are indeterminate, not proof of death). Reliability ordering:
+  saturated" SendMessage — these mean alive-or-indeterminate — never death (the last two — shutdown ack/rejection and saturation — prove ALIVE; idle reasons/session-limit messages/probe silence are indeterminate, not proof of death). **Unordered-idle clause:**
+  `idle_notification` delivery is additionally UNORDERED relative to the same teammate's own
+  SendMessages (observed out-of-order in the field and in anthropics/claude-code#24246, closed as
+  not planned; the agent-teams documentation makes no ordering guarantee) — a bare
+  `idle_notification` is a turn-end signal only, NEVER evidence that a report has been sent, been
+  lost, or is not coming; disambiguate via team-lead.md §Teammate Stall & Crash Recovery, Bare-idle disambiguation.
+  Reliability ordering:
   D1/D2 are reliable and always-available; D3 is sufficient when observed but never required and
   never waited for (resume-on-send means a probe typically resumes a dormant name rather than
   erroring). The exhaustive probe-outcome contract: (i) tool-call error → D3, name free; (ii)

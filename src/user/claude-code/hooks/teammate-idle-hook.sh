@@ -29,7 +29,7 @@ TEAMMATE_NAME=$(printf '%s' "$DATA" | jq -r '.teammate_name // empty' 2>/dev/nul
 NAME="$TEAMMATE_NAME"
 [ -n "$NAME" ] || NAME="$AGENT_TYPE"
 
-SUFFIX="idle: shutdown is lead-initiated — do NOT self-emit shutdown_request or any other structured shutdown/plan protocol message. Ephemeral teammates: first confirm your completion report/verdict was delivered to team-lead via SendMessage and your Docket issue is closed/commented; THEN idle and AWAIT team-lead's shutdown_request, replying shutdown_response (approve) when it arrives. Persistent advisors idling between turns is expected and needs no shutdown_request. If you still have an open assigned task or unsent report, finish it instead of idling."
+SUFFIX="idle: shutdown is lead-initiated — do NOT self-emit shutdown_request or any other structured shutdown/plan protocol message. Ephemeral teammates: first land your Docket mirror/close comment, THEN confirm your completion report/verdict was delivered to team-lead via SendMessage (mirror-first — team-lead.md Rule 2); THEN idle and AWAIT team-lead's shutdown_request, replying shutdown_response (approve) when it arrives. Persistent advisors idling between turns is expected and needs no shutdown_request. If you still have an open assigned task or unsent report, finish it instead of idling."
 
 if [ -n "$NAME" ]; then
     REMINDER="Teammate '${NAME}' ${SUFFIX}"

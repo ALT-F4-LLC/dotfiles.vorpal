@@ -1,5 +1,67 @@
 # Changelog: evolve-coherence
 
+## 2026-07-22 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-10..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: three local multi-reading fixes plus the family-wide PHANTOM-PATH-GUARD rewording.
+
+### Changes
+- Phase 2 gate names its task-plane-unavailable fallback (reports + shutdown handshakes), reconciling it with the best-effort note — one reading, not two.
+- D4 #2 leaf-family definition keys on the CANONICAL-marked BANNER block body, excluding `commit`'s bespoke un-marked banner from the literal-grep sweep.
+- Innovation Mandate names its audited set (evolve-agents/skills/config, the EVOLUTION-MODEL carriers); evolve-model-distribution's mandate absence marked intentional — never a finding.
+- CANONICAL:PHANTOM-PATH-GUARD parenthetical rewritten in lockstep (5 carriers) to close the inverse `.claude/skills/<non-evolve>` dual-homing reading.
+
+### Dimensions Evaluated
+Disambiguation (confusable-name, multi-reading, overlapping-ownership) — all kept findings multi-reading.
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 2 coherence (stacked entry — same-date Phase 1 entry below retained per prepend rule): discharged the I4 deferral recorded in this date's Phase 1 entry — phantom-path-guard paragraph wrapped as CANONICAL:PHANTOM-PATH-GUARD in all 5 evolve-* files and registered in doctrine_check_manifest.tsv. No hand-enumeration update needed: D4 #2 reads the tag set from the manifest (the Phase 1 CULL of inline lists made this registration zero-touch here beyond the wrap itself).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I4,D4]: wrapped the evolve-* location caveat in CANONICAL:PHANTOM-PATH-GUARD markers; registered 5-carrier tag in doctrine_check_manifest.tsv (no strip-transform — zero per-file tail verified). doctrine_check.sh Arm (c) now enforces parity.
+
+### Dimensions Evaluated
+D4 canonical-block parity (primary); D1/D2/D3 re-verified clean this pass (symmetry_check 8/8 OK, mimir-note present, coupling_check 8/8, registry/scripts/Skill() refs all resolve, citation MISSING lines all adjudicated false-positive).
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Recorded WHY evolve-coherence has no §6a Model Routing Audit job (MR1: no history window, hardcoded non-Tiers model= pins — verified) + main-session-only depth note; hardened Team Setup against TaskCreate/TaskUpdate unavailability (H1, 6 in-window is_error hits); retired two self-inflicted hand-enumerations (I3: leaf-carrier list L125, manifest-tag list L129 which had already drifted, omitting CRASH-STALL-CORE); added `commit` to the bespoke-banner outsider whitelist (L128 said "two" — actually three). Findings: 5 → 5 sub / 0 cos / 1 rej / 2 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][MR1,D1]: L40 divergence-rationale note (no Model Routing Audit; main-session-only) — cited by 3 independent Phase-0 auditors.
+- AMPLIFY[SUBSTANTIVE][H1]: L148 TaskCreate/TaskUpdate best-effort fallback note — cited 6 in-window is_error hits, session 3975dd71.
+- CULL[SUBSTANTIVE][I3]: L125/L129 hand-enumerated leaf-carrier + manifest-tag lists → manifest pointers; L129's list had already drifted (omitted live tag CRASH-STALL-CORE, verified).
+- AMPLIFY[SUBSTANTIVE][reviewer-originated]: L128 whitelist `commit` as a third bespoke-banner outsider (verified: commit/SKILL.md:18 carries "This is a leaf skill" in a non-CANONICAL banner, unregistered in doctrine_check_manifest.tsv).
+
+### Dimensions Evaluated
+All 8; Completeness (3) + Coherence (6) + Over-Engineering (4) primary. H3 (2 pitfalls.md items) verified ALREADY-ENCODED (all 5 orchestrator BANNERs byte-identical + correct path; CANONICAL:HARVEST correctly single-homed). I2 (coherence_xref.py automation) DEFERRED to a project-manager implementation issue — new script authoring is out of this read-only cycle's scope. I4 (phantom-path-guard CANONICAL registration) DEFERRED to Phase 2 — parity-bound across all 5 evolve-* files.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -216,68 +278,6 @@ All 8 (Skill Design, Actionability, Completeness, Over-Engineering, Orchestratio
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-Over-engineering trim + AMPLIFY (Phase 1) and model= pinned on all 3 Agent() spawns (Phase 2). Net +1 line (327→328). Shared-CANONICAL-source flagged for a future cycle.
-
-### Changes
-- CULL: collapsed the D4 BANNER byte-parity detection-seed to method-only — it restated invariant #2's full family rules verbatim (Content Gate Non-redundant).
-- CULL: dropped the triplicate @senior-engineer cross-tag clause from the Matrix-parity seed — already stated at invariant #3 and the Rule-numbering seed.
-- AMPLIFY: added a post-edit-gate cue to the description — cited Phase-0 historical signal (standalone evolve-agents/skills edits skipped the coherence gate this window).
-- AMPLIFY (Phase 2): pinned `model=` on the 3 Agent() spawns — xref-builder→sonnet, review-d<n>/reconciler→opus (dispatch-defect rule; operator-approved).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Drift: reworded the Question-severity gloss in the Coherence Report ladder (seed 6f0ab504, pick 3) — meaning preserved. Both AMPLIFY findings rejected on ground truth: spawn-template disallowed-tools is non-executable (Agent() spawn takes no such param; tool restriction lives in the referenced subagent definition's frontmatter), and an evolve-config Remediation bucket is out-of-scope (no dimension audits src/*.rs; bucket would always read None).
-
-### Changes
-- DRIFT: Question-severity gloss reworded ("blocked on confirmation before dispositioned") — neutral allele substitution, net 0.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (density load-bearing, no cull). Coherence: BANNER + EVOLUTION-MODEL byte-identical across all 3 evolve-* carriers (live-verified). $-escape clean.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO changes (327 lines). All three Phase-0 pitfall focus areas re-verified NO-OP: leaf-family enumeration current (10 carriers incl. brief — exact grep match); section ordering correct (H1 → primacy banner → EVOLUTION-MODEL → Innovation Mandate); redundant-TaskUpdate guidance correctly absent (orchestrator-owned, belongs in team-lead.md — routed out of scope).
-
-### Changes
-- None (NO-OP verdict). D4 #2 invariant↔seed redundancy re-evaluated and RETAINED (protective empty-collapse guard; no cited failure signal).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; Coherence (BANNER 8b897fe4 + EVOLUTION-MODEL e9ef8d09 byte-identical across all 3 evolve-* carriers; $-escape clean); Spec Alignment (symlink claim grounded in src/user.rs:492).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Introduced evolutionary-theory core: CANONICAL:EVOLUTION-MODEL block carrying the full shared vocabulary, with evolve-coherence explicitly reframed as the **reproductive-isolation monitor** — it detects cross-organism incompatibility (parity/contract drift) and routes corrective selection to evolve-agents/evolve-skills; it never edits. D4 CANONICAL:EVOLUTION-MODEL parity check formalized as single-family byte-identical across all three evolve-* carriers (hash e9ef8d09). Innovation Mandate updated to scope evolve-coherence's audit role over sibling innovation-mandate sections.
-
-### Changes
-- CANONICAL:EVOLUTION-MODEL block added (Phase A); byte-identical across all three evolve-* carriers.
-- Skill identity reframed: evolve-coherence is the reproductive-isolation monitor, not a reproducing organism; never edits or applies selection.
-- D4 #2 rubric updated to declare EVOLUTION-MODEL as single-family byte-identical across evolve-agents + evolve-skills + evolve-coherence.
-- Innovation Mandate scoped to auditing sibling innovation-mandate sections for completeness and terminology consistency.
-
-### Dimensions Evaluated
-Coherence (EVOLUTION-MODEL family parity, D4 0 Blockers; No-Edit Guard consistency with reproductive-isolation framing); Completeness (D4 rubric coverage of new CANONICAL tag).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git
@@ -292,3 +292,7 @@ history (see the compaction entry's date).
 - 2026-06-09: Full-cycle audit NO changes — banner ordering + leaf-family rubric enumeration (10 carriers incl. brief) verified NO-OP via fresh grep.
 - 2026-06-09: Phase 2 — escaped documentary $ARGUMENTS at L48; refutes prior "live substitution" rationale (substitution occurs inside backticks). Net 0.
 - 2026-06-10: Full-cycle audit NO changes (323 lines) — "no Skill invocation captured" signal resolved as benign fast-exit; BANNER byte-parity confirmed.
+- 2026-06-20: Over-engineering trim + AMPLIFY (Phase 1); model= pinned on all 3 Agent() spawns (Phase 2). Net +1 line (327→328).
+- 2026-06-19: Question-severity gloss rejected two AMPLIFY findings (non-executable param; out-of-scope bucket). | DRIFT: Question-severity gloss reworded ("blocked on confirmation before dispositioned") — neutral allele substitution, net 0.
+- 2026-06-10: Full-cycle audit — NO changes (327 lines); all 3 Phase-0 pitfall focus areas re-verified NO-OP (leaf-family enumeration, section ordering, redundant-TaskUpdate guidance).
+- 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL block; evolve-coherence reframed as reproductive-isolation monitor (detects drift, routes to evolve-agents/evolve-skills, never edits).

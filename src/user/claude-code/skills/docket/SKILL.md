@@ -414,7 +414,7 @@ assignee-first-then-status claim contract and the close-then-verify contract:
 | `docket_close.sh` | `<id> <msg>` | `close` → verify `status==done` → `comment "Completed: <msg>"` |
 | `docket_write.sh` | `<id> <issue subcommand...>` | any `docket issue` write + activity-log-advanced re-verify |
 | `docket_create.sh` | `<issue create flags...>` | `issue create` + re-verify every `-l`/`-f` landed, backfilling omissions |
-| `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create` with criticality-correct `--threshold` + prints the delegation payload |
+| `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create -n <voters>` (`<voters>` = integer voter count, not names) with criticality-correct `--threshold` + prints the delegation payload |
 | `docket_ref_check.sh` | `[skill-md-path]` | Diffs this file's flag tables against installed `docket <cmd> --help` output per subcommand; exits nonzero on drift — run during evolve-skills Phase 0 when auditing this skill |
 
 ---

@@ -1,5 +1,47 @@
 # Changelog: evolve-skills
 
+## 2026-07-22 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-12..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: family-wide lockstep rewording of the CANONICAL:PHANTOM-PATH-GUARD parenthetical (byte-identity across 5 carriers).
+
+### Changes
+- PHANTOM-PATH-GUARD: "(unlike every other skill in the fleet)" → "(every other skill in the fleet lives EXCLUSIVELY under `src/user/claude-code/skills/`; no skill is dual-homed)" — the "counterpart" wording supported a dual-homing reading that could mint the inverse `.claude/skills/<non-evolve>` phantom path.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 2 coherence: phantom-path-guard paragraph promoted to CANONICAL:PHANTOM-PATH-GUARD (I4) — in-file wrap + doctrine_check_manifest.tsv registration, 5 evolve-* carriers, byte-parity now mechanized.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I4,D4]: wrapped the evolve-* location caveat in CANONICAL:PHANTOM-PATH-GUARD markers; registered 5-carrier tag in doctrine_check_manifest.tsv (no strip-transform — zero per-file tail verified). doctrine_check.sh Arm (c) now enforces parity.
+
+### Dimensions Evaluated
+D4 canonical-block parity (primary); D1/D3 re-verified clean.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -176,50 +218,6 @@ Disambiguation (multi-reading).
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 2 coherence pass)
-
-### Summary
-Phase 2 coherence: retired six stale pre-`src/`-migration `skills/`/`agents/` root references (one behavioral: single-skill arg validation aborted on src-only skills); EVOLUTION-MODEL lockstep; docket-auditor report-back line.
-
-### Changes
-- Replaced dead `skills/`/`agents/` roots with `src/user/claude-code/...` in pre-flight step 5 (behavioral fix), DOCS-PATHS-LOCAL, shutdown protocol, Phase-2 rename scope, docket-auditor template, Phase-1 template, SendMessage trigger.
-- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
-- docket-auditor template: explicit SendMessage report-back line.
-
-### Dimensions Evaluated
-Coherence (reference accuracy, CANONICAL parity, cross-communication).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 4 history compaction)
-
-### Summary
-Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 2 coherence pass)
-
-### Summary
-Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-config. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: pre-flight step 10 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback
-
-### Dimensions Evaluated
-Efficiency (repetition-auditor: repeated re-fetch of an unchanged ~400KB changelog). Still over the 65,000B budget (72,670B) — see the deferred shared-doctrine extraction Trial recorded in this cycle's earlier entry.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +290,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: Phase 2 coherence — aligned docs-paths citation to relocated team-doctrine reference. ~3,352B over 65,000 hard limit (operator-gated).
 - 2026-07-11: Operator-directed doctrine change — Phase 2/3 reviewers switched staff-engineer/opus → distinguished-engineer/fable, parity w/ evolve-agents.
 - 2026-07-12: Self-review — fixed never-existent docs/changelog/skills path (zeroed compaction gate); stale @staff-engineer labels (actually DE).
+- 2026-07-12: Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-config.
+- 2026-07-12: Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+- 2026-07-13: Phase 2 coherence — retired six stale skills/agents root references; EVOLUTION-MODEL lockstep; docket-auditor report-back line.

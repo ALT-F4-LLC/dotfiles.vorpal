@@ -1,5 +1,33 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: family-wide lockstep rewording of the CANONICAL:PHANTOM-PATH-GUARD parenthetical (byte-identity across 5 carriers).
+
+### Changes
+- PHANTOM-PATH-GUARD: "(unlike every other skill in the fleet)" → "(every other skill in the fleet lives EXCLUSIVELY under `src/user/claude-code/skills/`; no skill is dual-homed)" — the "counterpart" wording supported a dual-homing reading that could mint the inverse `.claude/skills/<non-evolve>` phantom path.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 2 coherence: phantom-path-guard paragraph promoted to CANONICAL:PHANTOM-PATH-GUARD (I4) — in-file wrap + doctrine_check_manifest.tsv registration, 5 evolve-* carriers, byte-parity now mechanized.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I4,D4]: wrapped the evolve-* location caveat in CANONICAL:PHANTOM-PATH-GUARD markers; registered 5-carrier tag in doctrine_check_manifest.tsv (no strip-transform — zero per-file tail verified). doctrine_check.sh Arm (c) now enforces parity.
+
+### Dimensions Evaluated
+D4 canonical-block parity (primary); D1/D3 re-verified clean.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

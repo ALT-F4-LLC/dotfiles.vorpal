@@ -67,6 +67,14 @@ BANNER	.claude/skills/evolve-skills/SKILL.md
 BANNER	.claude/skills/evolve-config/SKILL.md
 BANNER	.claude/skills/evolve-coherence/SKILL.md
 BANNER	.claude/skills/evolve-model-distribution/SKILL.md
+# PHANTOM-PATH-GUARD — evolve-* location caveat paragraph, byte-identical
+# across all 5 evolve-* skills (no strip-transform, no per-file tail; marker
+# equals TAG, so no 4th-column override).
+PHANTOM-PATH-GUARD	.claude/skills/evolve-agents/SKILL.md
+PHANTOM-PATH-GUARD	.claude/skills/evolve-skills/SKILL.md
+PHANTOM-PATH-GUARD	.claude/skills/evolve-config/SKILL.md
+PHANTOM-PATH-GUARD	.claude/skills/evolve-coherence/SKILL.md
+PHANTOM-PATH-GUARD	.claude/skills/evolve-model-distribution/SKILL.md
 # BANNER-LEAF — leaf-family BANNER bodies share an identical prefix through
 # "...or form/manage a team." and diverge only in an intentional per-skill
 # trailing clause (peer-messaging / Docket-comment wording); the 3rd-column

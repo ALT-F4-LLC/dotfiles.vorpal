@@ -58,7 +58,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
   `docs/tdd/{slug}.md` as the authoritative design record. Pick TDD over PRD when
   *how* is the question — the what/why is settled and architecture is the open work
   (the inverse of prd's "scope precedes architecture" boundary).
-- The calling agent (typically `@staff-engineer`) is producing a design that needs to
+- The calling agent (typically `@staff-engineer`, or `@distinguished-engineer` on Medium+ cycles) is producing a design that needs to
   go through the draft → questions-resolved → in-review → accepted lifecycle.
 - The team-lead orchestrator's Medium Task pattern asks for a TDD without a separate
   PRD — this skill is the canonical path.

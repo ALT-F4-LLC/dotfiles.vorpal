@@ -55,7 +55,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 - A single architectural or design decision needs to be recorded as an immutable
   artifact at `docs/adr/{NNNN}-{slug}.md` (numbered chronologically) so future
   readers can trace the why.
-- The calling agent (typically `@staff-engineer`) is logging a decision that emerged
+- The calling agent (typically `@staff-engineer`, or `@distinguished-engineer` on Medium+ cycles) is logging a decision that emerged
   during design, review, or implementation and that future work will need to reference.
 - The decision has long-term consequences (e.g., choice of library, protocol, schema
   shape, naming convention) and a one-line note in a TDD or PR is not enough.

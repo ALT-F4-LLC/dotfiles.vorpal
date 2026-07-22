@@ -11,17 +11,26 @@
 set -uo pipefail
 
 usage() {
-    echo "Usage: doctrine_check.sh" >&2
+    echo "Usage: doctrine_check.sh [--emit-hashes]" >&2
     echo "  Runs 3 check arms (index parity, pointer resolution, CANONICAL" >&2
     echo "  tag byte-parity) against the current repo state. Emits a PASS/FAIL" >&2
     echo "  line per arm (failure reasons indented above it) and exits 0 if" >&2
     echo "  every arm passes, 1 if any arm fails." >&2
+    echo "  --emit-hashes: machine mode. Skip arms (a)/(b); emit one" >&2
+    echo "  'tag<TAB>ref_hash<TAB>carrier_count<TAB>parity' line per manifest" >&2
+    echo "  tag (parity = ok|fail|single) and exit 0 unless a tag's carriers" >&2
+    echo "  diverge. Consumed by coherence_xref.py for its canonical_blocks key." >&2
     exit 1
 }
 
-if [ "$#" -ne 0 ]; then
-    usage
-fi
+EMIT_HASHES=0
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --emit-hashes) EMIT_HASHES=1; shift ;;
+        -h|--help) usage ;;
+        *) usage ;;
+    esac
+done
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
     echo "doctrine_check.sh: not inside a git repository" >&2
@@ -44,6 +53,70 @@ for required in "$SKILL_MD" "$REFERENCES_DIR" "$MANIFEST"; do
 done
 
 overall_status=0
+
+hash_of() {
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 | awk '{print $1}'
+    else
+        sha256sum | awk '{print $1}'
+    fi
+}
+
+# Extract a carrier's CANONICAL:<marker> block, drop the BEGIN/END marker lines,
+# apply the manifest strip-transform (3rd column) if any, and print the
+# comparable block on stdout. Returns 0 (printed block), 1 (file missing),
+# 2 (block not found), 3 (strip transform emptied the block). Single source of
+# the extract+strip pipeline, shared by arm (c) and --emit-hashes.
+carrier_compare_block() {
+    local tag="$1" marker="$2" f="$3"
+    [ -f "$f" ] || return 1
+    local block body strip_expr compare_block
+    block=$(sed -n "/CANONICAL:${marker}:BEGIN/,/CANONICAL:${marker}:END/p" "$f")
+    [ -z "$block" ] && return 2
+    # Drop the BEGIN/END marker lines before hashing: they're constant
+    # per-marker literal text, so leaving them in the comparison content lets a
+    # strip transform that empties only the body (but leaves the markers intact)
+    # hash-match vacuously across carriers with genuinely different bodies.
+    body=$(printf '%s\n' "$block" | sed -e "/CANONICAL:${marker}:BEGIN/d" -e "/CANONICAL:${marker}:END/d")
+    strip_expr=$(awk -F'\t' -v t="$tag" -v ff="$f" '$1==t && $2==ff {print $3; exit}' "$MANIFEST")
+    if [ -n "$strip_expr" ]; then
+        compare_block=$(printf '%s' "$body" | sed "$strip_expr")
+    else
+        compare_block="$body"
+    fi
+    [ -z "$compare_block" ] && return 3
+    printf '%s' "$compare_block"
+}
+
+# --emit-hashes machine mode: skip the human arms (a)/(b)/(c) and emit one
+# 'tag<TAB>ref_hash<TAB>carrier_count<TAB>parity' line per manifest tag.
+if [ "$EMIT_HASHES" -eq 1 ]; then
+    emit_status=0
+    emit_tags=$(grep -vE '^[[:space:]]*#' "$MANIFEST" | grep -vE '^[[:space:]]*$' | awk -F'\t' '{print $1}' | sort -u)
+    for tag in $emit_tags; do
+        files=$(awk -F'\t' -v t="$tag" '$1==t {print $2}' "$MANIFEST")
+        marker=$(awk -F'\t' -v t="$tag" '$1==t && $4!="" {print $4; exit}' "$MANIFEST")
+        marker="${marker:-$tag}"
+        ref_hash=""
+        parity="ok"
+        ccount=0
+        for f in $files; do
+            [ -z "$f" ] && continue
+            ccount=$((ccount + 1))
+            compare_block=$(carrier_compare_block "$tag" "$marker" "$f") || { parity="fail"; continue; }
+            h=$(printf '%s' "$compare_block" | hash_of)
+            if [ -z "$ref_hash" ]; then
+                ref_hash="$h"
+            elif [ "$h" != "$ref_hash" ]; then
+                parity="fail"
+            fi
+        done
+        [ "$ccount" -lt 2 ] && parity="single"
+        printf '%s\t%s\t%s\t%s\n' "$tag" "$ref_hash" "$ccount" "$parity"
+        [ "$parity" = "fail" ] && emit_status=1
+    done
+    exit "$emit_status"
+fi
 
 # ---------------------------------------------------------------------------
 echo "== Arm (a): team-doctrine/SKILL.md index parity =="
@@ -147,14 +220,6 @@ fi
 echo
 echo "== Arm (c): CANONICAL tag byte-parity (${MANIFEST}) =="
 
-hash_of() {
-    if command -v shasum >/dev/null 2>&1; then
-        shasum -a 256 | awk '{print $1}'
-    else
-        sha256sum | awk '{print $1}'
-    fi
-}
-
 tags=$(grep -vE '^[[:space:]]*#' "$MANIFEST" | grep -vE '^[[:space:]]*$' | awk -F'\t' '{print $1}' | sort -u)
 
 for tag in $tags; do
@@ -185,36 +250,24 @@ for tag in $tags; do
     for f in $files; do
         [ -z "$f" ] && continue
         carrier_count=$((carrier_count + 1))
-        if [ ! -f "$f" ]; then
-            echo "  - ${tag} carrier missing from disk: ${f}"
-            tag_ok=0
-            continue
-        fi
-        block=$(sed -n "/CANONICAL:${marker}:BEGIN/,/CANONICAL:${marker}:END/p" "$f")
-        if [ -z "$block" ]; then
-            echo "  - ${tag} block not found in ${f}"
-            tag_ok=0
-            continue
-        fi
-
-        # Drop the BEGIN/END marker lines before hashing: they're constant
-        # per-marker literal text, so leaving them in the comparison content
-        # lets a strip transform that empties only the body (but leaves the
-        # markers intact) hash-match vacuously across carriers with
-        # genuinely different bodies.
-        body=$(printf '%s\n' "$block" | sed -e "/CANONICAL:${marker}:BEGIN/d" -e "/CANONICAL:${marker}:END/d")
-
-        strip_expr=$(awk -F'\t' -v t="$tag" -v ff="$f" '$1==t && $2==ff {print $3; exit}' "$MANIFEST")
-        if [ -n "$strip_expr" ]; then
-            compare_block=$(printf '%s' "$body" | sed "$strip_expr")
-        else
-            compare_block="$body"
-        fi
-        if [ -z "$compare_block" ]; then
-            echo "  - ${tag} carrier ${f}: strip transform reduced the block to an empty string (vacuous-empty-match trap) — refusing to compare"
-            tag_ok=0
-            continue
-        fi
+        compare_block=$(carrier_compare_block "$tag" "$marker" "$f")
+        case "$?" in
+            1)
+                echo "  - ${tag} carrier missing from disk: ${f}"
+                tag_ok=0
+                continue
+                ;;
+            2)
+                echo "  - ${tag} block not found in ${f}"
+                tag_ok=0
+                continue
+                ;;
+            3)
+                echo "  - ${tag} carrier ${f}: strip transform reduced the block to an empty string (vacuous-empty-match trap) — refusing to compare"
+                tag_ok=0
+                continue
+                ;;
+        esac
 
         h=$(printf '%s' "$compare_block" | hash_of)
         if [ -z "$ref_hash" ]; then

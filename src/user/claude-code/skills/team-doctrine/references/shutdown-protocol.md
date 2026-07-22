@@ -22,6 +22,9 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   SILENT confirmation — it MUST NOT carry `reason` text. `reason` (+ETA) is delivered
   ONLY on a rejection (`approve: false`). Grant shutdown → `approve: true`, omit `reason`.
   Decline → `approve: false` with `reason`. An approval carrying `reason` is harness-rejected.
+  **OMIT the key — do not set it to `null` or `""`.** `reason: null` and `reason: ""` fail
+  validation exactly like `reason: "some text"` does; the only valid form on `approve: true` is
+  the `reason` key absent from the object entirely, not present-with-an-empty-or-null-value.
 - **SP-1b — Nest `type` inside `message`; never duplicate it at the top level.** Valid
   top-level `SendMessage` params are ONLY `to`/`message`/`summary` — `type` and `recipient`
   belong exclusively inside the `message` object, never duplicated alongside it. WRONG (top-level

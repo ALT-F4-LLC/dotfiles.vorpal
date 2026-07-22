@@ -204,6 +204,21 @@ docket issue show DKT-1 --json     # full detail: sub-issues, relations, comment
 docket issue log DKT-1 --json --limit 50
 ```
 
+> **Parsing `docket issue list --json` output:** the issues array is
+> nested under `data.issues`, not a bare top-level array — `d[0]` or
+> `d['issues']` are both wrong shapes.
+>
+> ```python
+> d = json.loads(subprocess.run(
+>     ["docket", "issue", "list", "--json"], capture_output=True, text=True
+> ).stdout)
+> issues = d["data"]["issues"]  # correct — NOT d[0] or d["issues"]
+> ```
+>
+> ```bash
+> docket issue list --json | jq '.data.issues'
+> ```
+
 > **Common CLI mistakes — these forms will fail:**
 >
 > | Wrong | Right |
@@ -232,6 +247,17 @@ and `issue edit -f`. Files are additive on `file add` (unlike `issue edit
 
 ## Workflow: Comments
 
+> **Common mistake — read this before calling `comment add`:**
+>
+> | Wrong | Right |
+> |---|---|
+> | `docket issue comment add DKT-1 "note"` — positional message arg | `docket issue comment add DKT-1 -m "note"` |
+> | `docket issue comment add DKT-1 -b "note"` / `--body "note"` — no such flag | `docket issue comment add DKT-1 -m "note"` |
+> | `docket issue comment create DKT-1 -m "note"` — no such subcommand | `docket issue comment add DKT-1 -m "note"` |
+>
+> The message is **always** `-m`/`--message` — never a bare positional arg,
+> never `-b`/`--body`, and the verb is `add`, never `create`.
+
 ```bash
 docket issue comment add DKT-1 --json -m "Investigated — root cause is a stale cache key"
 docket issue comment list DKT-1 --json
@@ -241,10 +267,6 @@ docket issue comment list DKT-1 --json
 read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
 (default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
 required — there is no editor fallback.
-
-> **Common mistakes** — the correct form is `docket issue comment add <id> -m
-> "<message>"`. There is **no** `-b`/`--body` flag (use `-m`/`--message`), and
-> **no** `docket issue comment create` subcommand — the verb is `add`.
 
 ---
 

@@ -37,11 +37,17 @@ Read costs ~2,000 lines of context. Apply these defaults:
   `-rn` ONLY when the line content itself IS the evidence you need.
 - Large files: use `Read(file, offset=N, limit=M)`, NOT a full-file `Read`, when you only need
   a section. Read the whole file ONLY when you must reason about whole-file structure.
+- `Read` takes a file path, not a directory — passing a directory path errors closed. Enumerate
+  a directory's contents with `Glob` or `ls`/`find` via Bash first, then `Read` the specific
+  file(s) you actually need.
 - Bash dumps: use `wc -l`, `head`, `tail`, or `awk` summary patterns. Do NOT pipe raw `cat`
   into your context. Pipe through `jq` / `grep` to filter BEFORE the result lands.
 - Batched calls: dispatch 3+ independent reads/greps in ONE turn (harness runs them concurrently).
 - Escape hatch: when the bulk read IS the load-bearing evidence (full file for review, full diff for verification), the full read is correct — the rule bans speculative bulk reads, not load-bearing ones.
 - cwd PERSISTS across Bash calls (the shell keeps its working directory) and `docket` resolves its DB from cwd — never leave the repo `src/` root; scope directory-local commands with a subshell `(cd <dir> && ...)` or absolute paths. On `no docket database found`, `pwd` and cd back to root — do NOT re-`docket init`.
+- `Monitor`'s `timeout_ms` has a hard floor of 1000ms (default 300000ms if omitted, max
+  3600000ms) — a call below the floor is rejected outright, not silently clamped up. Round up
+  to at least 1000 rather than retrying with a slightly larger guess.
 
 ### R2 — Skill Invocation Restraint
 
@@ -54,8 +60,13 @@ body into your context.
   invoke routinely. Treat occasional skills (e.g., `vote` for non-staff agents) as
   trigger-dispatched, NOT defensive.
 - **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review-verdict`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
+- **Scope boundary — this rule restrains `Skill(name, ...)` calls only, never a skill-prescribed Bash validation step.** R2 governs whether you reload a SKILL.md body into context; it says nothing about whether a mechanical validation script that skill prescribes still runs. Several skills (`code-review-verdict`, `verify-ac`, `design-qa`, `design-review`, `simplify-scout`) prescribe `report_stage_lint.sh` as a mandatory Bash-invoked staging + lint gate before emitting their artifact. "I've learned this skill's format and no longer need to re-invoke `Skill(name)`" and "I no longer need to run `report_stage_lint.sh` before emitting" are two different claims — the first is what R2 licenses; the second is never licensed by R2 and remains required on every emission, regardless of how many times you've run it before. Do not let familiarity with the format collapse into skipping the gate.
 - Escape hatch: when the operator or team-lead directs `/skill-name` explicitly, invoke per
   the directive.
+- **Never guess a skill name.** Invoke only a name that appears verbatim in the current
+  available-skills listing (or one the operator/team-lead typed explicitly). A plausible-sounding
+  guess either fails closed as `Unknown skill` or, worse, collides with an unrelated real skill
+  and silently loads the wrong body.
 
 ### R3 — SendMessage Terseness
 
@@ -64,6 +75,10 @@ R3. **SendMessage Terseness.** SendMessage payloads accumulate in BOTH endpoints
 - Send one message per purpose. Do NOT append a status update to a question, or vice versa.
 - Do NOT quote back the message you are replying to — the recipient already has it in their
   thread. Reference the prior message's claim/ask in 5-10 words and respond.
+- The `summary` field is REQUIRED whenever `message` is a plain STRING — a string `message` with
+  no `summary` is harness-rejected. Object-form `message` (structured `shutdown_response` /
+  `plan_approval_response` payloads) needs no `summary` — see shutdown-protocol.md SP-1 for that
+  shape's schema.
 - Use `TaskUpdate` state transitions (in_progress / completed / blocked) instead of narrative
   status paragraphs.
 - Escape hatch: high-stakes events (re-plan triggers, scope deltas, blocker escalations) earn
@@ -104,6 +119,17 @@ anxiety is context bloat with no evidence value.
   explicit reviewer concern pointing at the specific file. Same discipline for lagging readers:
   once the owning authority confirms state (write acked by the live DB/system), STOP re-reading a possibly-stale reader to re-confirm it.
 - Banned-phrase extension (complements Rule 6): "let me also check", "to be safe I'll Read", "let me confirm by Read" — anxiety-driven bloat. Verifying a specific load-bearing claim is fine; Reading "to be sure" is not.
+- **Stable-script trust convention.** These 6 helper scripts are stable, already-deployed tooling
+  (repo `src/user/claude-code/scripts/`, deployed `~/.claude/scripts/`) — trust them without
+  per-invocation existence or usage verification (`test -e`, `--help`, `ls -la`):
+  `docket_create.sh`, `docket_write.sh`, `dor_check.py`, `plan_collision_check.py`,
+  `docket_claim.sh`, `dispatch_ledger.sh`. Invoke each directly per the calling agent's
+  documented argument contract; a defensive existence or `--help` check before calling one of
+  these is the exact anxiety-driven bloat this rule already bans (repetition-auditor finding R2,
+  evolve-coherence Phase 0, 2026-07-22 — DKT-59). This does NOT extend to the general
+  Read-before-Edit gate or to file-existence verification at other trust boundaries (e.g.,
+  confirming an issue's attached file paths resolve on disk before citing them) — those
+  requirements are unrelated and stand unchanged.
 - Escape hatch: after a long stretch of work or compaction, re-anchoring on the original brief
   is correct. The rule bans defensive re-checks of facts already in your turn context, not
   legitimate re-anchoring of context that has been lost.

@@ -95,7 +95,7 @@ log_team_session_gate() {
     ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) || ts="-"
     mkdir -p "$STATE_DIR" 2>/dev/null || return 0
     prune_state_dir
-    { printf 'ts=%s team_session=1 outcome=%s\n' "$ts" "$outcome" > "${STATE_DIR}/${SESSION_ID_SAFE}.gate-log"; } 2>/dev/null || true
+    { printf 'ts=%s team_session=1 outcome=%s trigger=%s\n' "$ts" "$outcome" "${TEAMMATE_BLOCK_TRIGGER:--}" > "${STATE_DIR}/${SESSION_ID_SAFE}.gate-log"; } 2>/dev/null || true
 }
 
 emit_allow() {
@@ -205,6 +205,7 @@ fi
 # have elapsed since the last block.
 TEAMMATE_BLOCK=0
 TEAMMATE_RATE_LIMITED=0
+TEAMMATE_BLOCK_TRIGGER="-"
 if [ "$TEAM_MEMBER_COUNT" -gt 0 ]; then
     if [ -n "$SESSION_ID_SAFE" ]; then
         TEAMMATE_STATE_FILE="${STATE_DIR}/${SESSION_ID_SAFE}.teammate-sig"
@@ -230,10 +231,18 @@ if [ "$TEAM_MEMBER_COUNT" -gt 0 ]; then
 
         NOW_EPOCH=$(date +%s 2>/dev/null) || NOW_EPOCH=0
 
-        if [ ! -f "$TEAMMATE_STATE_FILE" ] || [ "$EPOCH_VALID" -eq 0 ] || [ "$PREV_ROSTER_SIGNATURE" != "$TEAM_ROSTER_SIGNATURE" ]; then
+        if [ ! -f "$TEAMMATE_STATE_FILE" ]; then
             TEAMMATE_BLOCK=1
+            TEAMMATE_BLOCK_TRIGGER="first-check"
+        elif [ "$EPOCH_VALID" -eq 0 ]; then
+            TEAMMATE_BLOCK=1
+            TEAMMATE_BLOCK_TRIGGER="state-reset"
+        elif [ "$PREV_ROSTER_SIGNATURE" != "$TEAM_ROSTER_SIGNATURE" ]; then
+            TEAMMATE_BLOCK=1
+            TEAMMATE_BLOCK_TRIGGER="roster-changed"
         elif [ $(( NOW_EPOCH - PREV_BLOCK_EPOCH )) -ge "$REBLOCK_INTERVAL" ]; then
             TEAMMATE_BLOCK=1
+            TEAMMATE_BLOCK_TRIGGER="interval-elapsed"
         else
             TEAMMATE_RATE_LIMITED=1
         fi
@@ -250,19 +259,20 @@ if [ "$TEAM_MEMBER_COUNT" -gt 0 ]; then
         # advisor-confirmed: deliberately untested, see
         # test_stop_guard_hook.py's module docstring).
         TEAMMATE_BLOCK=1
+        TEAMMATE_BLOCK_TRIGGER="fail-safe"
     fi
 fi
 
 if [ "$TEAMMATE_BLOCK" -eq 1 ] || [ "$DOCKET_BLOCK" -eq 1 ]; then
     REASON="Session stop blocked:"
     if [ "$TEAMMATE_BLOCK" -eq 1 ]; then
-        REASON="${REASON} ${TEAM_MEMBER_COUNT} teammate(s) recorded in this session (${TEAM_MEMBER_NAMES}); periodic nudge (at most one per interval): re-check state once, reuse the existing armed wait (Monitor or singleton_wait.sh) — do NOT spawn a new background wait for this nudge."
+        REASON="${REASON} ${TEAM_MEMBER_COUNT} teammate(s) recorded in this session (${TEAM_MEMBER_NAMES}); teammate nudge trigger: ${TEAMMATE_BLOCK_TRIGGER} (immediate on roster change; otherwise at most one nudge per ${REBLOCK_INTERVAL:-600}s): re-check state once, reuse the existing armed wait (Monitor or singleton_wait.sh) — do NOT spawn a new background wait for this nudge."
     fi
     if [ "$DOCKET_BLOCK" -eq 1 ]; then
         REASON="${REASON} ${DOCKET_OUTSTANDING_COUNT} outstanding Docket issue(s) (${DOCKET_OUTSTANDING_IDS});"
     fi
     REASON="${REASON} resolve or shut down teammates and close/defer issues before stopping."
-    emit_block "$REASON" "team_session=${IS_TEAM_SESSION} teammates=${TEAM_MEMBER_COUNT} teammate_rate_limited=${TEAMMATE_RATE_LIMITED} docket=${DOCKET_OUTSTANDING_COUNT} docket_rate_limited=${DOCKET_RATE_LIMITED}"
+    emit_block "$REASON" "team_session=${IS_TEAM_SESSION} teammates=${TEAM_MEMBER_COUNT} teammate_rate_limited=${TEAMMATE_RATE_LIMITED} docket=${DOCKET_OUTSTANDING_COUNT} docket_rate_limited=${DOCKET_RATE_LIMITED} trigger=${TEAMMATE_BLOCK_TRIGGER}"
 fi
 
 emit_allow "clear team_session=${IS_TEAM_SESSION} teammates=${TEAM_MEMBER_COUNT} teammate_rate_limited=${TEAMMATE_RATE_LIMITED} docket=${DOCKET_OUTSTANDING_COUNT} docket_rate_limited=${DOCKET_RATE_LIMITED}"

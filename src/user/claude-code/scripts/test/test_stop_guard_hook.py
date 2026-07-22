@@ -139,6 +139,23 @@ def test_team_session_one_member_no_prior_state_blocks_with_tail():
         shutil.rmtree(home, ignore_errors=True)
 
 
+# Row 2b (DKT-77): first block's reason names the first-check trigger, and
+# the gate-log line records the same trigger.
+def test_first_block_reason_and_gate_log_show_first_check_trigger():
+    home = _tmp_home()
+    try:
+        session_id = "teamsessDabcdef"
+        _write_team_config(home, session_id, ["alice"])
+        payload = {"session_id": session_id, "cwd": str(home), "stop_hook_active": False}
+        out = _stdout_json(run_hook(payload, home))
+        assert out.get("decision") == "block", out
+        assert "teammate nudge trigger: first-check" in out.get("reason", ""), out
+        gate_log = home / ".claude" / "stop-guard-hook-state" / f"{session_id}.gate-log"
+        assert "trigger=first-check" in gate_log.read_text(), gate_log.read_text()
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+
 # Row 3 (AC-2): same roster, immediate second run => suppressed.
 def test_team_session_same_roster_immediate_rerun_suppressed():
     home = _tmp_home()
@@ -171,6 +188,25 @@ def test_team_session_interval_elapsed_reblocks():
         shutil.rmtree(home, ignore_errors=True)
 
 
+# Row 4b (DKT-77): interval-elapsed reblock reason names the
+# interval-elapsed trigger.
+def test_interval_elapsed_reason_shows_interval_elapsed_trigger():
+    home = _tmp_home()
+    try:
+        session_id = "teamsessFabcdef"
+        _write_team_config(home, session_id, ["alice"])
+        payload = {"session_id": session_id, "cwd": str(home), "stop_hook_active": False}
+        env_extra = {"STOP_GUARD_TEAMMATE_REBLOCK_SECONDS": "1"}
+        first = _stdout_json(run_hook(payload, home, env_extra=env_extra))
+        assert first.get("decision") == "block", first
+        time.sleep(2)
+        second = _stdout_json(run_hook(payload, home, env_extra=env_extra))
+        assert second.get("decision") == "block", second
+        assert "teammate nudge trigger: interval-elapsed" in second.get("reason", ""), second
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+
 # Row 5: roster changed => immediate block despite a fresh epoch.
 def test_team_session_roster_change_blocks_immediately():
     home = _tmp_home()
@@ -184,6 +220,24 @@ def test_team_session_roster_change_blocks_immediately():
         second = _stdout_json(run_hook(payload, home))
         assert second.get("decision") == "block", second
         assert "bob" in second.get("reason", ""), second
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+
+# Row 5b (DKT-77): roster-change reblock reason names the roster-changed
+# trigger.
+def test_roster_change_reason_shows_roster_changed_trigger():
+    home = _tmp_home()
+    try:
+        session_id = "teamsessEabcdef"
+        _write_team_config(home, session_id, ["alice"])
+        payload = {"session_id": session_id, "cwd": str(home), "stop_hook_active": False}
+        first = _stdout_json(run_hook(payload, home))
+        assert first.get("decision") == "block", first
+        _write_team_config(home, session_id, ["alice", "bob"])
+        second = _stdout_json(run_hook(payload, home))
+        assert second.get("decision") == "block", second
+        assert "teammate nudge trigger: roster-changed" in second.get("reason", ""), second
     finally:
         shutil.rmtree(home, ignore_errors=True)
 
@@ -334,6 +388,24 @@ def test_teammate_state_corrupt_epoch_treated_as_changed():
         payload = {"session_id": session_id, "cwd": str(home), "stop_hook_active": False}
         out = _stdout_json(run_hook(payload, home))
         assert out.get("decision") == "block", out
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+
+# Row 11b (DKT-77): corrupt-epoch state file reason names the state-reset
+# trigger.
+def test_corrupt_epoch_reason_shows_state_reset_trigger():
+    home = _tmp_home()
+    try:
+        session_id = "teamsessGabcdef"
+        _write_team_config(home, session_id, ["alice"])
+        state_dir = home / ".claude" / "stop-guard-hook-state"
+        state_dir.mkdir(parents=True, exist_ok=True)
+        (state_dir / f"{session_id}.teammate-sig").write_text("alice\nnot-a-number\n")
+        payload = {"session_id": session_id, "cwd": str(home), "stop_hook_active": False}
+        out = _stdout_json(run_hook(payload, home))
+        assert out.get("decision") == "block", out
+        assert "teammate nudge trigger: state-reset" in out.get("reason", ""), out
     finally:
         shutil.rmtree(home, ignore_errors=True)
 

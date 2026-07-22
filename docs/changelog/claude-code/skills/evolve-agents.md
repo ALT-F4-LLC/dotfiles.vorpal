@@ -1,5 +1,47 @@
 # Changelog: evolve-agents
 
+## 2026-07-22 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-13..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: family-wide lockstep rewording of the CANONICAL:PHANTOM-PATH-GUARD parenthetical (byte-identity across 5 carriers).
+
+### Changes
+- PHANTOM-PATH-GUARD: "(unlike every other skill in the fleet)" → "(every other skill in the fleet lives EXCLUSIVELY under `src/user/claude-code/skills/`; no skill is dual-homed)" — the "counterpart" wording supported a dual-homing reading that could mint the inverse `.claude/skills/<non-evolve>` phantom path.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 2 coherence: registered the phantom-path-guard paragraph (I4, deferred from Phase 1) as CANONICAL:PHANTOM-PATH-GUARD — wrapped in-file and registered in doctrine_check_manifest.tsv across all 5 evolve-* carriers, closing the unenforced-parity gap on a shasum-confirmed byte-identical family paragraph.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I4,D4]: wrapped the evolve-* location caveat in CANONICAL:PHANTOM-PATH-GUARD markers; registered 5-carrier tag in doctrine_check_manifest.tsv (no strip-transform — zero per-file tail verified). doctrine_check.sh Arm (c) now enforces parity.
+
+### Dimensions Evaluated
+D4 canonical-block parity (primary); D1/D3 re-verified clean (symmetry_check all OK, coupling_check 8/8, no stale refs).
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -175,52 +217,6 @@ Disambiguation (multi-reading).
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 2 coherence pass)
-
-### Summary
-Phase 2 coherence: EVOLUTION-MODEL vocabulary line corrected in 4-carrier lockstep; docket-auditor template gains explicit report-back line.
-
-### Changes
-- Fixed CANONICAL:EVOLUTION-MODEL header to name all 4 carriers (added evolve-config) — lockstep with siblings; doctrine_check.sh arm (c) re-verified.
-- Added "SendMessage the orchestrator the report verbatim." to the docket-auditor spawn template — only Phase-0 template lacking the explicit report-back line.
-
-### Dimensions Evaluated
-Coherence (CANONICAL parity, cross-communication trigger completeness).
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 0 findings materialization)
-
-### Summary
-Materialized Phase 0 audit blocks + Findings Ledger to a shared scratchpad path instead of inline-pasting into Phase 1 spawn templates (DKT-275). Findings: 12 → 1 sub / 0 cos / 0 rej / 8 def / 1 enc.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 0 completion Writes each audit block → `{scratchpad}/phase0/<auditor>.md` and the ledger → `{scratchpad}/findings-ledger.md`, where `{scratchpad}` = `$TMPDIR/evolve-agents-{today_date}` (shared, non-session-scoped path — cross-teammate Read access empirically verified 2026-07-13) — DKT-275 (large token cut; ledger survives compaction).
-- AMPLIFY[SUBSTANTIVE]: Phase 1 template flips 8 `{..._findings}` inline pastes → a Read-these-paths list — DKT-275.
-- AMPLIFY[SUBSTANTIVE]: SKIPPED (pre-flight step 8) + UNAVAILABLE (Crash & Stall Recovery) sentinels now written as file content so Read-by-path never hits a missing file — DKT-275.
-- AMPLIFY[SUBSTANTIVE]: Phase 2 gate + Phase-1-spawn substitution list point at `{scratchpad}/findings-ledger.md` / add `{scratchpad}` — DKT-275.
-
-### Dimensions Evaluated
-Capability Growth, Actionability, Boundary Clarity (all 8 dimensions assessed; Pass B no-op — the DKT-275 SUBSTANTIVE changes ride un-offset, well under the 65,000-byte budget: 55,510 → 57,726 bytes).
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 3 disambiguation pass)
-
-### Summary
-Phase 3 disambiguation: Rules §2's read-only invariant now names its sole exception.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Rules §2 — "Teammates are read-only" read as exceptionless, contradicting Phase 4's `history-compactor` (spawned with Edit; applies/reverts its own compaction edits) — now names the compactor as sole exception
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,4 +291,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-12: Pinned single ownership of team-lead.md's model-routing surface to /evolve-model-distribution; aligned `day=N` alias documentation with evolve-skills.
 - 2026-07-12: Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
 - 2026-07-13: Applied DKT-266a + 5 Phase-0 findings; relocated SDLC Role Research template to team-doctrine §9 (~5.4KB relief); deferred §7/§8 relocation.
+- 2026-07-13: Phase 2 coherence — EVOLUTION-MODEL vocabulary line corrected in 4-carrier lockstep; docket-auditor template gains report-back line.
+- 2026-07-13: Materialized Phase 0 audit blocks + Findings Ledger to a shared scratchpad path instead of inline-pasting into Phase 1 templates (DKT-275).
+- 2026-07-13: Phase 3 disambiguation — Rules §2's read-only invariant now names history-compactor (Phase 4) as its sole exception.
 - 2026-07-13: Phase 2 coherence — extended Template-sourcing Read-once/ABORT convention to cover the relocated §9 SDLC Role Research template.

@@ -25,7 +25,9 @@ You are the **Skill Evolution Orchestrator**. All additions pass through the Con
 - Always singular docs/spec/ — never docs/specs/.
 <!-- CANONICAL:DOCS-PATHS-LOCAL:END -->
 
-**evolve-\* location caveat (phantom-path guard).** `evolve-agents`, `evolve-coherence`, `evolve-config`, `evolve-model-distribution`, and `evolve-skills` live EXCLUSIVELY under `.claude/skills/` — they have NO `src/user/claude-code/skills/evolve-*/SKILL.md` counterpart (unlike every other skill in the fleet). Never cite a `src/user/claude-code/skills/evolve-*` path — in a PM tracking issue, a spawn prompt, or any downstream brief — it does not resolve; `src/user/claude-code/skills/` contains only the NON-evolve skills.
+<!-- CANONICAL:PHANTOM-PATH-GUARD:BEGIN -->
+**evolve-\* location caveat (phantom-path guard).** `evolve-agents`, `evolve-coherence`, `evolve-config`, `evolve-model-distribution`, and `evolve-skills` live EXCLUSIVELY under `.claude/skills/` — they have NO `src/user/claude-code/skills/evolve-*/SKILL.md` counterpart (every other skill in the fleet lives EXCLUSIVELY under `src/user/claude-code/skills/`; no skill is dual-homed). Never cite a `src/user/claude-code/skills/evolve-*` path — in a PM tracking issue, a spawn prompt, or any downstream brief — it does not resolve; `src/user/claude-code/skills/` contains only the NON-evolve skills.
+<!-- CANONICAL:PHANTOM-PATH-GUARD:END -->
 
 ---
 

@@ -1,5 +1,19 @@
 # Changelog: vote
 
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: `vote_delegate.sh` `<voters>` argument typed in the Delegation Protocol.
+
+### Changes
+- Delegation Protocol step 2 now states `<voters>` is the integer `-n` reviewer count per the Criticality Classification table, never a reviewer-name list (script usage verified: "required number of voters (integer)").
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary

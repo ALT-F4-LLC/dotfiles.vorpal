@@ -1,5 +1,47 @@
 # Changelog: evolve-config
 
+## 2026-07-22 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: family-wide lockstep rewording of the CANONICAL:PHANTOM-PATH-GUARD parenthetical (byte-identity across 5 carriers).
+
+### Changes
+- PHANTOM-PATH-GUARD: "(unlike every other skill in the fleet)" → "(every other skill in the fleet lives EXCLUSIVELY under `src/user/claude-code/skills/`; no skill is dual-homed)" — the "counterpart" wording supported a dual-homing reading that could mint the inverse `.claude/skills/<non-evolve>` phantom path.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
+## 2026-07-22
+
+### Summary
+Phase 2 coherence: phantom-path-guard paragraph promoted to CANONICAL:PHANTOM-PATH-GUARD (I4) — in-file wrap + doctrine_check_manifest.tsv registration, 5 evolve-* carriers, byte-parity now mechanized.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I4,D4]: wrapped the evolve-* location caveat in CANONICAL:PHANTOM-PATH-GUARD markers; registered 5-carrier tag in doctrine_check_manifest.tsv (no strip-transform — zero per-file tail verified). doctrine_check.sh Arm (c) now enforces parity.
+
+### Dimensions Evaluated
+D4 canonical-block parity (primary); D1/D3 re-verified clean.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -237,51 +279,6 @@ Disambiguation (confusable-name). Cross-evolve-* trigger set otherwise distinct 
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference.
-
-### Changes
-- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
-
-### Dimensions Evaluated
-Cross-reference accuracy.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Trimmed a redundant self-referential budget line and propagated the mandatory build-deploy-lag reminder from evolve-model-distribution into Wrap-up.
-
-### Changes
-- CULL: removed the "Self-budget." line duplicating Pre-flight step 4 / Wrap-up step 2 — cited innovation-scanner Retire (Non-redundant-gate violation + broke the numbered list).
-- AMPLIFY: added build-deploy-lag reminder to Wrap-up step 3 (config-source edits inert until vorpal rebuild+redeploy) — cited innovation-scanner Cross-Skill Leverage; parity with evolve-model-distribution.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Strengthened official-docs digestion, generated-phenotype verification, and setter/call-chain inventory fallback. Net 0; stays 475.
-
-### Changes
-- AMPLIFY: Codex config docs research now prefers the OpenAI docs/manual helper and distills installed-version plus config-field changes — cited stale-docs risk.
-- AMPLIFY: generated-output verification now compares before/after phenotype without editing deployed `$HOME/.codex/` files — cited source-of-truth safety.
-- AMPLIFY: config-history audit now uses a repo-owned inventory helper when present, otherwise an `rg` fallback — cited dead-setter detection robustness.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git history (see the compaction entry's date).
@@ -292,3 +289,6 @@ Entries below were compacted per the retention-compaction policy; full text in g
 - 2026-06-30: Phase-3 disambiguation — resolved "genome" multi-reading; genome = Rust builder sources, settings.json = phenotype. Inline, net 0.
 - 2026-06-30: Phase-2 coherence — restored 3-way Crash & Stall Recovery parity (stall clause) with evolve-agents/evolve-skills. Inline, net 0.
 - 2026-06-30: Named SessionStart + MessageDisplay as candidate hook surfaces in dimension 4 (Hooks & scripts) for Phase-1 evaluation. Inline, net 0.
+- 2026-06-30: Strengthened official-docs digestion, generated-phenotype verification, and setter/call-chain inventory fallback. Net 0.
+- 2026-07-10: CULL removed redundant self-budget line; AMPLIFY added build-deploy-lag reminder to Wrap-up step 3 (parity with evolve-model-distribution).
+- 2026-07-10: Phase 2 coherence — aligned docs-paths master citation to the relocated team-doctrine reference (was team-lead.md §copy).

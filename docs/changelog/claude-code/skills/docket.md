@@ -1,5 +1,19 @@
 # Changelog: docket
 
+## 2026-07-22
+
+### Summary
+Phase 3 disambiguation: `vote_delegate.sh` wrapper-table row types its `<voters>` argument.
+
+### Changes
+- Deterministic Wrapper Scripts table's Encodes column now reads `vote create -n <voters>` with `<voters>` glossed as an integer voter count, not names — closing the count-vs-name-list two-reading in the CLI reference home.
+
+### Dimensions Evaluated
+Disambiguation (multi-reading).
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

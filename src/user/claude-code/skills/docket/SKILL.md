@@ -204,6 +204,15 @@ docket issue show DKT-1 --json     # full detail: sub-issues, relations, comment
 docket issue log DKT-1 --json --limit 50
 ```
 
+> **Common CLI mistakes — these forms will fail:**
+>
+> | Wrong | Right |
+> |---|---|
+> | `docket issue comment add DKT-1 "note"` — positional message arg | `docket issue comment add DKT-1 -m "note"` |
+> | `docket issue comment add DKT-1 -b "note"` / `--body "note"` — no such flag | `docket issue comment add DKT-1 -m "note"` |
+> | `docket issue edit DKT-1 -l backend` — no `-l`/`--label` flag on `edit` | `docket issue label add DKT-1 backend` |
+> | `docket issue move DKT-1 review -m "note"` — no message flag on `move` | `docket issue move DKT-1 review` (add a note separately via `docket issue comment add`) |
+
 ---
 
 ## Workflow: File Attachment (`docket issue file`)

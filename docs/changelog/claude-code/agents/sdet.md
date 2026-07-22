@@ -1,5 +1,49 @@
 # Changelog: sdet
 
+## 2026-07-21
+
+### Summary
+Compacted 3 entries (2026-07-01..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 3 disambiguation: "Stateless subagent" → "Stateless between spawns" to remove a confusable-name collision with the reserved report-only-subagent mechanism term — sdet's own file is where the teammate-vs-report-only-subagent split matters most.
+
+### Changes
+- FIX[COSMETIC]: Operating context now reads "Stateless between spawns" instead of a role-level "subagent" label that could prime the wrong dispatch mode.
+
+### Dimensions Evaluated
+Confusable-name clarity (Phase 3).
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Consolidated report-only-verifier "no SendMessage" caveat from Comm Discipline rules 2/7/8 into one preamble above the numbered rules (I-sdet2); wired zero-citation `copy_verify.sh` into §Verification Workflow as a deterministic UX-copy-literal check (I-ux2). Net +323. Findings: 7 → 3 sub / 0 cos / 1 rej / 1 def / 0 enc. Drift: reworded 'Over-mocking' bullet (Testing Philosophy) to an equivalent formulation → applied.
+
+### Changes
+- CULL[SUBSTANTIVE] (I-sdet2): hoisted the "teammate/paired paths only" caveat (rules 2, 7, 8) into one mode-applicability preamble above the numbered rules; removed all 3 individual restatements.
+- AMPLIFY[SUBSTANTIVE] (I-ux2): §Verification Workflow now cites `copy_verify.sh` as the deterministic UX-copy-literal check against a `docs/ux/` spec.
+- Drift[COSMETIC] (DRIFT-sdet-L137): reworded the "Over-mocking" bullet (Testing Philosophy) to an equivalent formulation, surfacing the refactor-breakage "tell" explicitly.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Capability Growth & Cross-Communication. Deferred: I-sdet1 (red_green_verify.sh doesn't exist). No-op: B4 (no gap in this file).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -178,49 +222,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: fixed vote-delegation `message: {object}` bug and flagged wire form.
-
-### Changes
-- FIX: `message: {"type": "delegation_request", ...}` rewrote to a plain-text string (`message: "delegation_request (vote) JSON: {...}"`) — this was the ONLY instance fleet-wide where a JSON object was literally assigned to SendMessage's `message:` param (bug-audit FIX-9's clearest illustration). Added the same wire-form clarification as the other 6 files.
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep, hard tool-call bug).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Documented the `--findings-json` array-of-STRINGS shape on the vote-cast CLI reference to prevent a recurring BAD-PARAM class. Net +119 bytes. Cleanest-audit agent this cycle (0 stalls, 0 shutdown-rejections) — most sections RETAIN by design.
-
-### Changes
-- AMPLIFY: `docket vote cast --findings-json` reference now shows the exact `{"blockers":[…],"concerns":[…],"suggestions":[…]}` string-array shape, not objects. Signal: bug-audit FIX-7 (4 sessions).
-- Deferred to Phase 2 (shared/parity-bound, not applied here): the `delegation_request` JSON block duplicated near-verbatim across 7+ agent files, differing only by `--created-by`.
-
-### Dimensions Evaluated
-Completeness, Actionability. Consolidation (highest priority) evaluated but RETAIN — the report-only-vs-teammate guard-clause repetition across comm rules correlates with a clean audit, no cited cull signal. Role Realism/Boundary/Capability Growth/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 2 oldest date-headed entries beyond the 10-entry keep-window with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +292,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-01: Phase 1 SDET edits — report-only verifier lifecycle, risk-gated set-diff, TDD override handling, `fix_owner` output. Trial: report-only verifier lifecycle -> applied.
 - 2026-07-01: Made lone `verifier` report-only semantics read-only across Docket and tests (no comments/reopens/writes; TDD override scoped to team-lead/interactive spawns).
 - 2026-07-01: Phase 3 Disambiguation follow-up — clarified SDET report-only defect routing and normalized SP-1 shutdown report schema.
+- 2026-07-01: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
+- 2026-07-10: Phase 2 coherence follow-up — fixed vote-delegation `message: {object}` bug (rewrote to plain-text string); only fleet-wide instance of a JSON object literally assigned to SendMessage's `message:` param (bug-audit FIX-9).
+- 2026-07-10: Documented `docket vote cast --findings-json` array-of-STRINGS shape (not objects) to prevent a recurring BAD-PARAM class. Net +119 bytes.

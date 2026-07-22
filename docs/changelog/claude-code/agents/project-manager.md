@@ -1,5 +1,33 @@
 # Changelog: project-manager
 
+## 2026-07-21
+
+### Summary
+Compacted 2 entries (2026-07-01..2026-07-01) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Aligned Session Initialization step 1 to reference `docket_bootstrap.sh` (mirrors senior-engineer.md/sdet.md), replacing the bare inline `docket init` with the cwd-guarded init+version chain. Findings: 4 → 1 sub / 0 cos / 0 rej / 2 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (R-PREVENT-1): Session Init step 1 now runs `~/.claude/scripts/docket_bootstrap.sh` (verified on disk) then the PM-specific `docket stats` + `docket plan --json`.
+
+### Dimensions Evaluated
+Spec Alignment, Actionability, Consolidation & Trimming (no redundant offset found — file recently trimmed).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -191,35 +219,6 @@ Consolidation & Trimming (primary), Actionability, Boundary Clarity. Role Realis
 ### Rename
 No rename.
 
-## 2026-07-01
-
-### Summary
-Phase 2 coherence follow-up: added PM's local shutdown protocol copy.
-
-### Changes
-- FIX: added `CANONICAL:SHUTDOWN-PROTOCOL-LOCAL` for `planner` / `planner-fix-{N}` lifecycle and close evidence semantics.
-
-### Dimensions Evaluated
-Canonical shutdown parity, planner lifecycle.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: PM delta planning and collision evidence -> applied.
-
-### Changes
-- AMPLIFY: added planner-fix delta mode, deterministic Collision table, Worker Handoff, final PM close-state verification, and situational Mermaid guidance.
-- FIX: corrected Docket doc-link syntax and file attachment examples to `--issue` / repeatable `--file`.
-
-### Dimensions Evaluated
-Phase 1 targeted fixes: Docket CLI accuracy, delta planning, collision evidence, worker/final closeout, plan-summary ergonomics.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -287,3 +286,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-21: Compacted 8 entries (2026-05-25..2026-06-05) into Compacted history per ADR 0001.
 - 2026-06-30: Deduped triple `edit -f` REPLACES-attachments warning; added multi-TDD parallel-decomposition surfacing to team-lead.
 - 2026-06-30: Aligned Claim Ritual to chained one-call (assignee first, then status), matching senior/team-lead/sdet convention.
+- 2026-07-01: Phase 2 coherence follow-up — added PM's local shutdown protocol copy (CANONICAL:SHUTDOWN-PROTOCOL-LOCAL for planner/planner-fix-{N} lifecycle, close evidence semantics).
+- 2026-07-01: Trial: PM delta planning and collision evidence -> applied — added planner-fix delta mode, deterministic Collision table, Worker Handoff, final PM close-state verification, situational Mermaid guidance.

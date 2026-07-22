@@ -177,6 +177,24 @@ def test_idle_regex_anchors_on_hook_event():
     assert idle == {"tp-role": 1}, idle
 
 
+def test_respawn_regex_legacy_and_fix_suffix():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("evolve_signals", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    # Legacy -rN suffix (preserved, no regression).
+    assert mod._RESPAWN_RE.search("impl-DKT-31-r2")
+    assert mod._RESPAWN_RE.search("impl-DKT-31-r10")
+    assert not mod._RESPAWN_RE.search("impl-DKT-31-r1")  # r1 is the original spawn, not a respawn
+    # New -fix-{N} suffix (this repo's actual fix-loop respawn convention).
+    assert mod._RESPAWN_RE.search("impl-DKT-123-fix-2")
+    assert mod._RESPAWN_RE.search("impl-DKT-123-fix-10")
+    assert mod._RESPAWN_RE.search("impl-DKT-123-fix-1")
+    # Non-respawn names must not match either alternative.
+    assert not mod._RESPAWN_RE.search("impl-DKT-31")
+    assert not mod._RESPAWN_RE.search("senior-engineer")
+
+
 def test_jdn_helpers():
     import importlib.util
     spec = importlib.util.spec_from_file_location("evolve_signals", SCRIPT)

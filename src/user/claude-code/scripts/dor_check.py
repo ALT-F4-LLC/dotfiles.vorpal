@@ -31,6 +31,12 @@ number of DIRECT child issues under <root-id> equals N.
 When root_id has no children (a Trivial/Small single-issue plan), the DoR
 checks run against the root issue itself instead of exiting 2.
 
+--single <id> forces single-issue mode explicitly: the 4 DoR checks run
+against exactly that one issue, with no tree walk, even if the issue has
+children. Use this for a standalone Trivial/Small single-issue plan where
+the plan intentionally has no child issues to walk. --expected-count and
+--emit-map are tree-level concerns and are not applicable in --single mode.
+
 --emit-map prints a markdown id->title->labels table of root's direct
 children, for verbatim inclusion in a plan-completion report per the
 Completeness check convention above.
@@ -144,12 +150,23 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("root_id", help="root/epic Docket issue id, e.g. DKT-180")
+    parser.add_argument(
+        "root_id", nargs="?", default=None, help="root/epic Docket issue id, e.g. DKT-180"
+    )
+    parser.add_argument(
+        "--single",
+        metavar="ID",
+        default=None,
+        help="force single-issue mode: run the 4 DoR checks against exactly this "
+        "issue id, with no tree walk, even if it has children. Use for a "
+        "standalone Trivial/Small single-issue plan.",
+    )
     parser.add_argument(
         "--expected-count",
         type=int,
         default=None,
-        help="expected direct-child-issue count (N); enforces created-child-count == N",
+        help="expected direct-child-issue count (N); enforces created-child-count == N "
+        "(not applicable with --single)",
     )
     parser.add_argument(
         "--min-desc-length",
@@ -161,20 +178,35 @@ def main(argv=None):
         "--emit-map",
         action="store_true",
         help="also print a markdown id->title->labels table of root's direct "
-        "children, for verbatim inclusion in a plan-completion report",
+        "children, for verbatim inclusion in a plan-completion report "
+        "(not applicable with --single)",
     )
     args = parser.parse_args(argv)
 
-    all_descendant_ids, direct_child_count, direct_children = collect_tree_ids(args.root_id)
-    if all_descendant_ids:
-        issue_ids_to_check = all_descendant_ids
-    else:
+    if args.single and args.root_id:
+        parser.error("pass either root_id or --single ID, not both")
+    if not args.single and not args.root_id:
+        parser.error("root_id is required unless --single ID is given")
+
+    direct_child_count = 0
+    direct_children = []
+    if args.single:
         print(
-            f"dor_check.py: no child issues found under root {args.root_id}; "
-            "checking root issue itself",
+            f"dor_check.py: --single mode; checking issue {args.single} only, no tree walk",
             file=sys.stderr,
         )
-        issue_ids_to_check = [args.root_id]
+        issue_ids_to_check = [args.single]
+    else:
+        all_descendant_ids, direct_child_count, direct_children = collect_tree_ids(args.root_id)
+        if all_descendant_ids:
+            issue_ids_to_check = all_descendant_ids
+        else:
+            print(
+                f"dor_check.py: no child issues found under root {args.root_id}; "
+                "checking root issue itself",
+                file=sys.stderr,
+            )
+            issue_ids_to_check = [args.root_id]
 
     total_fail = 0
     total_warn = 0
@@ -200,7 +232,7 @@ def main(argv=None):
     )
 
     count_ok = True
-    if args.expected_count is not None:
+    if args.expected_count is not None and not args.single:
         count_ok = direct_child_count == args.expected_count
         marker = "OK" if count_ok else "MISMATCH"
         print(
@@ -208,7 +240,7 @@ def main(argv=None):
             f"{direct_child_count}, expected = {args.expected_count} [{marker}]"
         )
 
-    if args.emit_map:
+    if args.emit_map and not args.single:
         print_child_map(direct_children)
 
     return 1 if (total_fail > 0 or not count_ok) else 0

@@ -1,5 +1,33 @@
 # Changelog: security-engineer
 
+## 2026-07-21
+
+### Summary
+Compacted 2 entries (2026-07-01..2026-07-01) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Q4-closure trigger wired to the deterministic `gate_check.sh --gates sdet-abuse` (I-tl4), replacing the hand-grep of the issue thread and sharing team-lead's Promised-gate check. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 3 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I-tl4): Q4 closure now calls `gate_check.sh <issue-id> --gates sdet-abuse` (exit 1 = MISSING) instead of prose-defining its own `docket issue comment list`/`file list` grep.
+
+### Dimensions Evaluated
+Actionability; Capability Growth & Cross-Communication. B7 (no manual-staging refs), D9 (skills-not-auto-load caveat present), I-sec1 (edit_baton.sh absent) — all verified no-op.
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -217,36 +245,6 @@ Phase 3 Disambiguation; shutdown schema.
 ### Rename
 No rename.
 
-## 2026-07-01
-
-### Summary
-Phase 2 coherence follow-up: aligned security local shutdown copy with master cleanup-evidence semantics.
-
-### Changes
-- FIX: SP-2 now states close acknowledgement alone is not cleanup evidence; team-lead records explicit closed-agent evidence or degraded cleanup.
-
-### Dimensions Evaluated
-Canonical shutdown sense parity, close handling.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: security plan handoffs and risk acceptance fields -> applied.
-
-### Changes
-- AMPLIFY: plan-phase abuse-case + plan-approval security PLAN handoffs; CVE evidence now resolves `Cargo.lock` / `cargo tree` and panel packets before dependency verdicts.
-- AMPLIFY: verdicts require `risk_acceptance_vote_required` plus handoff evidence for Blocks, deferrals, or Critical/High downgrades.
-- CULL: persistent `security-advisor` close handling now uses active-obligation semantics and minor-consult wrap-up.
-
-### Dimensions Evaluated
-Capability Growth, Completeness, Cross-Communication, Lifecycle Semantics.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -287,3 +285,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-21: Compacted 12 entries (2026-05-25..2026-06-09) into Compacted history per ADR 0001.
 - 2026-06-30: Added plan-phase @sdet abuse-case handoff for small security-sensitive work with no TDD; culled non-load-bearing Model-floor paragraph.
 - 2026-06-30: Phase 2 PA: landed shift-left review triggers (outgoing recommend plan-approval mode; incoming pre-impl security review). Trial: PA plan-approval → applied.
+- 2026-07-01: Trial: security plan handoffs and risk acceptance fields -> applied — added plan-phase abuse-case + plan-approval security PLAN handoffs; CVE evidence resolves Cargo.lock/cargo tree; risk_acceptance_vote_required for Blocks/deferrals/downgrades.
+- 2026-07-01: Phase 2 coherence follow-up — aligned security local shutdown copy with master cleanup-evidence semantics (close ack alone is not cleanup evidence).

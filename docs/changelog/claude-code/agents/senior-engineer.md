@@ -1,5 +1,51 @@
 # Changelog: senior-engineer
 
+## 2026-07-21
+
+### Summary
+Compacted 4 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 3 disambiguation: two vocabulary substitutions to remove multi-reading/confusable-name risk, no behavioral change.
+
+### Changes
+- FIX[COSMETIC]: Lifecycle "fresh Jobs" → "fresh ephemeral spawns" (sole family-wide occurrence of "Jobs", misreadable as background-job/fork-class dispatch after this cycle's fork-trial revert).
+- FIX[COSMETIC]: Operating context "Stateless subagent" → "Stateless between spawns" (bare "subagent" collides with the reserved report-only-subagent mechanism term; every senior-engineer spawn is actually a teammate).
+
+### Dimensions Evaluated
+Confusable-name and multi-reading clarity (Phase 3).
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Findings: 5 → 3 sub / 1 cos / 0 rej / 2 def / 0 enc. Adopted the shared phase_diff.sh cross-check for pre-close scope self-verification; corrected the AskUserQuestion tool-envelope fallback; made the /tmp→$TMPDIR rule explicit.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I-se1): Shared-tree diff scoping now cites `phase_diff.sh` for declared-vs-actual remainder detection before handoff — parity with sdet/security-engineer/staff-engineer, which already cite it.
+- AMPLIFY[SUBSTANTIVE] (B6): Tool-envelope fallback corrected — AskUserQuestion has no Bash equivalent and routes via SendMessage team-lead when absent, instead of the wrong grep/find guidance.
+- AMPLIFY[SUBSTANTIVE] (B2): Shell hygiene now explicitly prohibits literal `/tmp/…` paths (25x-recurring leak) with a concrete `cat > "$TMPDIR/edit.py"` pattern.
+- CULL[COSMETIC]: trimmed the redundant inline pitfalls.md path listing in the pre-CANONICAL:PITFALLS bridge sentence (paths defined in full three lines below).
+
+### Dimensions Evaluated
+Actionability, Boundary Clarity, Capability Growth & Cross-Communication, Consolidation & Trimming. Deferred: B4 (READ-BEFORE-EDIT block already sharp, execution-leak not definition gap), D9 (teammate skills-inert caveat already correct).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -164,67 +210,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
-
-### Changes
-- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Coordination & tool-correctness fixes offset by redundancy trims. Net +119 bytes. Role & coordination focus this cycle.
-
-### Changes
-- AMPLIFY: Read-before-Edit now names shared/appended files (pitfalls.md, MEMORY.md) needing immediate re-Read — concurrent ephemerals append (historical-audit PREVENT-2, 13 sessions).
-- CORRECTION: disambiguated `docket issue create -f` (flag) vs `docket issue file add` (positional, no -f) (bug-audit FIX-6, 3 sessions).
-- AMPLIFY: premise-check extended from shared-helpers to ANY cited artifact (code/TDD/ADR path) (bug-audit PREVENT-16, 4+ sessions).
-- CULL: redundant compaction re-read sentence, verbose Monitor bullet, and persistent-memory intro trimmed (each duplicated content already stated elsewhere).
-
-### Dimensions Evaluated
-Actionability (2 corrections), Capability Growth & Cross-Communication (2 amplify), Consolidation & Trimming (3 culls). Role Realism/Boundary/Completeness/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Trial: close-safety and plan-mode dispatch -> applied.
-
-### Changes
-- AMPLIFY: close handling now drains background shell tasks before the final report, requires `safe_to_close`, and names report contents plus idle-after-report boundaries.
-- AMPLIFY: Plan mode dispatch now claims first, reads Docket/TDD/spec context, sends assumptions plus verification commands, and waits for proceed/revise before edits.
-- CORRECTION: Docket file attachment example now uses repeatable `--file <path>` / `-f <path>` flags.
-
-### Dimensions Evaluated
-Close Safety, Plan Dispatch, Docket Traceability.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase 2: landed the PA (plan-approval) mode bullet now that team-lead adopted PA dispatch (operator-approved). Net +1 (489→490). Trial: PA plan-approval → applied.
-
-### Changes
-- AMPLIFY: PA-mode bullet — on a TDD-bearing issue dispatched `mode="plan"`, emit the impl PLAN and AWAIT approval before any edit; rejection returns to plan mode with feedback (no respawn). Catches impl-to-TDD divergence pre-edit. Signal: Phase 0 PA innovation (senior = PA's primary home).
-
-### Dimensions Evaluated
-6 (Capability Growth) AMPLIFY. 1/2/3/4/5/7/8 RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +281,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-20: Extended @project-manager plan-change trigger to catch late directives contradicting closed work; five Phase-0 signals confirmed already-encoded. Drift: disabled (drift=0).
 - 2026-06-21: Compacted 9 entries (2026-05-26..2026-06-09) into Compacted history per ADR 0001.
 - 2026-06-30: Chained the two docket claim-writes into one Bash call (claim+ack 3→2 tool calls); PA-mode bullet deferred to Phase 2.
+- 2026-06-30: Phase 2 landed the PA (plan-approval) mode bullet now that team-lead adopted PA dispatch. Net +1 (489→490). Trial: PA plan-approval → applied.
+- 2026-07-01: Close handling drains background tasks pre-report; Plan mode dispatch claims-then-waits for proceed/revise; Docket file-attach example fixed. Trial: close-safety and plan-mode dispatch -> applied.
+- 2026-07-10: Coordination & tool-correctness fixes (shared/appended-files rule, docket create -f vs file add, premise-check widened) offset by redundancy trims. Net +119 bytes.
+- 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.

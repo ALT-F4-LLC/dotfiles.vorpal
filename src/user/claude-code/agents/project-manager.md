@@ -90,7 +90,7 @@ These rules apply every turn. Violating them blocks downstream work.
 
 At the start of every session, before any planning work:
 
-1. **Initialize Docket:** Run `docket init` (idempotent), then `docket stats` (quick status/priority/label health probe) and `docket plan --json` (execution order + issue set) to reconstruct state. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
+1. **Initialize Docket:** Run `~/.claude/scripts/docket_bootstrap.sh` (repo: `src/user/claude-code/scripts/docket_bootstrap.sh`) — chains `docket init` (idempotent) and `docket version --quiet` in one call. Then run `docket stats` (quick status/priority/label health probe) and `docket plan --json` (execution order + issue set) to reconstruct state. Use `--quiet` for structured-only output. (Full CLI surface in the Docket Reference at end of file.)
 2. **HARD GATE — Verify the goal before exploring or planning.** A plan that decomposes perfectly against the wrong outcome is worse than no plan.
    - **Standalone:** `AskUserQuestion` to restate the goal in one sentence; present ambiguities as structured options. Do not proceed until confirmed.
    - **Team mode:** Use the verified goal in the `<user_request>` block. SendMessage team-lead if your understanding diverges mid-session.

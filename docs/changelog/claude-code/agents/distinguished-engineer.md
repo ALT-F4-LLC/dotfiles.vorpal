@@ -1,5 +1,34 @@
 # Changelog: distinguished-engineer
 
+## 2026-07-21
+
+### Summary
+Phase 2 coherence review: disambiguated the "staff-engineer.md step 9" cross-reference — staff's file has 3+ numbered lists and unqualified "step 9" collides with its Communication rule 9.
+
+### Changes
+- FIX[COSMETIC]: Mode 2 Recusals now cites "staff-engineer.md §Responsibility 1 step 9" instead of bare "step 9", matching the qualification style already used at line 129.
+
+### Dimensions Evaluated
+Boundary Clarity (cross-reference integrity). Verified: staff-engineer.md's Responsibility 1 numbered list still runs 1-9 exactly as this cycle's Mode 1 adoption assumes (its own Phase 1 edit only added an item to a different lettered sub-list inside step 6, no renumbering).
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Mode 1 TDD workflow converted from parallel restatement to by-reference adoption of staff-engineer.md's TDD Creation Workflow (the pattern Mode 4 already uses for senior's execution contract), keeping only gold-seat deltas; verbatim-quote gate hardened from when-challenged discriminator to mandatory pre-fact falsification pass. Findings: 5 → 2 sub / 0 cos / 0 rej / 1 def / 2 enc. Net −1765 bytes.
+
+### Changes
+- CULL[SUBSTANTIVE] (I-de1): Mode 1's 6-step workflow + Skeleton-round bullet replaced with by-reference adoption of staff steps 1-9; gold deltas kept local (verbatim-quote pass, ADR path/placeholder rule, Non-Goals/do-nothing, premortem, PRR); two internal cross-refs retargeted.
+- AMPLIFY[SUBSTANTIVE] (H-de2): verbatim-quote gate is now a mandatory falsification pass BEFORE any load-bearing fetched claim enters an artifact — centralized pitfalls confirmed WebFetch summarization fabricating field semantics absent from the source page.
+
+### Dimensions Evaluated
+Consolidation & Trimming (primary), Actionability, Capability Growth, Boundary Clarity (cross-ref integrity). Deferred: H-de1 (94% fable routing, /evolve-model-distribution). Already-encoded: D9, S1-S5 (Principal-Engineer mapping reconfirmed, naming closed).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary

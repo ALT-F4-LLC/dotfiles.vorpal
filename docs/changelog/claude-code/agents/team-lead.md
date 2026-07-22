@@ -1,5 +1,64 @@
 # Changelog: team-lead
 
+## 2026-07-21
+
+### Summary
+Compacted 4 entries (2026-07-01..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 3 disambiguation: Rule 8's reviewer-default sentence split by phase type to prevent a multi-reading — verification's default was misreadable as a persistent-advisor seat.
+
+### Changes
+- FIX[COSMETIC]: Rule 8 opening sentence now names the persistent advisor for review/design-QA and the single report-only `@sdet` verifier for verification separately, instead of one em-dash apposition covering all three phase types.
+
+### Dimensions Evaluated
+Multi-reading clarity (Phase 3). No behavioral change — codifies what step 15 and sdet.md already prescribe.
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 2 coherence review. Trial: replace fix-loop continuity preambles with Agent(subagent_type="fork") → REVERTED same-cycle. Platform semantics: "fork" clones the CALLER, not a context-inheriting spawn of a different role — a team-lead fork is bound by team-lead's own no-self-edit charter and cannot claim/edit an issue; it also bypasses senior-engineer's named-ephemeral execution contract and pins fix rounds to team-lead's model.
+
+### Changes
+- REVERT[SUBSTANTIVE]: §Fix-loop re-spawn and its 3 downstream pointers (step 14, step 15, Rule 7) restored to the named `impl-{DOCKET-ID}-fix-{N}` + continuity-preamble mechanism, verbatim pre-trial text.
+
+### Dimensions Evaluated
+Boundary Clarity, Actionability. The finding's underlying value (eliminating hand-assembled-preamble errors) is re-proposable as a fork-generates-the-brief design (fork consults its own context to author the brief, then dispatches a normal named ephemeral) in a future baselined Phase 1 trial — not attempted here.
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Applied the fork trial + three verified fixes, paid for by consolidating triplicate Promised-gate prose and the now-fallback continuity-preamble enumeration. Net −8 bytes (TRIM satisfied; file remains ~42KB over the 80,000-byte target — needs a dedicated future trim pass). Trial: replace fix-loop continuity preambles with Agent(subagent_type="fork") for fully-Closed, no-SendMessage dispatches → applied (baseline: senior-engineer shutdown-rejections=2 @5d, weak proxy — no direct preamble-error metric existed pre-trial). Findings: 9 → 3 sub / 1 cos / 0 rej / 3 def / 2 enc.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I-tl1, Trial): Fork-default fix-loop re-spawn at §Fix-loop re-spawn; preamble now fallback-only. Consolidated 3 downstream preamble references (steps 14/15, Rule 7) to pointers.
+- AMPLIFY[SUBSTANTIVE] (I-tl3): real entropy source `git diff --name-only | shuf -n 2` for the blind spot-check pick.
+- AMPLIFY[SUBSTANTIVE] (I-tl4): wired `gate_check.sh` into the step-16 Promised-gate delivery check; compressed the triplicate Promised-gate passages at steps 14/15/16.
+- AMPLIFY[COSMETIC] (R-PREVENT-1): `docket_bootstrap.sh` reference in step 2, matching senior-engineer/sdet.
+
+### Dimensions Evaluated
+Actionability (I-tl3/I-tl4), Consolidation & Trimming (priority — 5 trims), Capability Growth (fork trial), Spec Alignment (bootstrap). Deferred: H-tl2 (already covered by pre-shutdown gate + SP-4), B3 (marginal under TRIM), M4/D8 (no natural fit).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -171,69 +230,6 @@ Actionability (effort correction + SP-1b), Spec Alignment (SP-2 v2.1.198), Compl
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Compacted 3 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 3 disambiguation follow-up: unified the `V/I/SR` pattern abbreviation (was spelled two ways within the file — prose used "V/I/SR", the dispatch-ledger enum used "VISR" with no gloss linking them).
-
-### Changes
-- DISAMBIG: dispatch-ledger `pattern={...|VISR}` token changed to `pattern={...|V/I/SR}` to match the abbreviation used everywhere else in the file.
-
-### Dimensions Evaluated
-Boundary Clarity (consistent terminology).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-TRIM-mode cycle. Applied Rule-8 lettering/ledger-grammar fix, 3 BAD-PARAM bug fixes (FIX-9 vote-delegation plain-text payload, FIX-13 Agent model= rejects [1m], FIX-4 threshold fraction), a brief-block Pre-flight fast path, and a mechanical pre-respawn liveness check hardening the convergent 3-auditor signal (advisor triple-spawn recurrence). Net +387 this pass; the largest cited trim (-513, acceptance-panel hoist to a shared master) is CONTINGENT on creating that master and is deferred to Phase 2 since it touches 4 files atomically.
-
-### Changes
-- FIX: Rule 8 opt-up triggers renumbered (c)/(d)/(e)→(a)/(b)/(c); dispatch-ledger grammar and cross-refs updated to match (0 net bytes, correctness-only).
-- AMPLIFY: vote-delegation JSON clarified as a plain-text string payload, not the structured SendMessage `message` object (bug-audit FIX-9, 16 sessions — largest SendMessage finding this cycle).
-- AMPLIFY: `Agent()` `model=` clarified to take the bare alias only — `[1m]` suffix is REJECTED by the tool enum (bug-audit FIX-13).
-- AMPLIFY: `--threshold` clarified as a fraction 0.0-1.0, not a percentage (bug-audit FIX-4, 4 sessions).
-- AMPLIFY: Pre-flight step 1 gains a brief-block fast path — consumes the `brief` skill's block instead of re-verifying from scratch (innovation-scan: producer-with-no-consumer gap).
-- AMPLIFY: Liveness-Confirmation Gate decision-ladder step (1) now forces a `TaskList`+`docket -a @<role> -s in-progress` tool call before any respawn — convergent signal from 3 independent Phase-0 auditors (historical: 2 shutdown-rejections this window correctly caught team-lead's own stale state; repetition: advisor/advisor-2/advisor-3 recurred AFTER being memory-logged; model-routing: DE's outlier idle/error density traces to the same duplicate-concurrency pattern) that the prose gate, though comprehensive, was not firing under pressure.
-- CULL: line-235 teammate/subagent fallback explanation consolidated (-290); line-237 duplicate Fable reasoning-echo caveat removed, already stated at line 211 (-123).
-- DEFERRED to Phase 2 (contingent, multi-file): step-6 merged-acceptance-panel composition hoisted to a new CANONICAL:ACCEPTANCE-PANEL-LOCAL pointer once `team-doctrine/references/acceptance-panel.md` exists — same content is duplicated in staff-engineer.md, security-engineer.md, and distinguished-engineer.md.
-
-### Dimensions Evaluated
-Actionability (3 bug fixes + brief fast path), Boundary Clarity (liveness-gate forcing), Consolidation & Trimming (2 applied trims + 1 deferred large trim). Role Realism/Completeness/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Compacted 4 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the four oldest committed date-headed entries outside the 10-entry keep-window with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +282,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-01: Wired plan-approval dispatch routing, supply-chain `Cargo.lock` evidence-packet requirement, and `planner-fix-{N}` lifecycle wording.
 - 2026-07-01: Removed two spacer lines from team-lead.md after coherence left it over budget.
 - 2026-07-01: Removed direct verifier peer routing (team-lead owns fix-loop/advisor routing); normalized master SP-1 shutdown-report schema.
+- 2026-07-01: Compacted 4 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
+- 2026-07-10: TRIM-mode cycle — Rule-8 lettering fix, 3 BAD-PARAM bug fixes (FIX-9 vote-delegation payload, FIX-13 model=[1m] rejected, FIX-4 threshold fraction), brief-block fast path, liveness-gate pre-respawn check hardened. Net +387.
+- 2026-07-10: Phase 3 disambiguation follow-up — unified `V/I/SR` pattern abbreviation (dispatch-ledger `VISR` token changed to match prose usage everywhere else).
+- 2026-07-10: Compacted 3 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.

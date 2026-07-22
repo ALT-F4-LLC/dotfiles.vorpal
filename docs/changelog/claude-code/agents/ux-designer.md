@@ -1,5 +1,48 @@
 # Changelog: ux-designer
 
+## 2026-07-21
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 2 coherence review: rebased both `copy_verify.sh` citations from a bare `scripts/` relative path (would not resolve at agent runtime) to the dual-home convention.
+
+### Changes
+- FIX[COSMETIC]: both `copy_verify.sh` citations (content rule, QA Workflow) now read `~/.claude/scripts/copy_verify.sh` with the `repo:` pointer, matching the family convention.
+
+### Dimensions Evaluated
+Spec Alignment (path-citation correctness). Flagged, not fixed: `mcp__claude-in-chrome__*` frontmatter grantability to a spawned teammate is unverified — no other agent file uses `mcp__` naming; routed to the operator / a future evolve-config check.
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Applied two operator-approved trials. Trial: adopt claude-in-chrome interactive QA for Web surfaces (gated, static-render fallback) → applied (baseline: no prior keyboard-reachability verification mechanism existed — claims were asserted, not measured). I-ux2: wired uncited scripts/copy_verify.sh into the spec content rule (author side) + QA Workflow (verify side). Findings: 5 → 2 sub / 0 cos / 0 rej / 2 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I-ux1): render-mechanism table gains Web-interactive-a11y row + tools frontmatter grants mcp__claude-in-chrome__* + accessibility check routes keyboard-reachability to it; gated on extension site-permission, static render_verify.sh fallback.
+- AMPLIFY[SUBSTANTIVE] (I-ux2): content rule + QA Workflow now cite scripts/copy_verify.sh as the deterministic copy-literal acceptance check (was uncited by any agent/skill).
+
+### Dimensions Evaluated
+Actionability, Capability Growth & Cross-Communication, Completeness. H-ux2 deferred (cross-agent hook concern), H-ux1 informational, D9 confirmed already-correct.
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -177,50 +220,6 @@ Actionability + Capability Growth (primary). SDLC role research confirms fit to 
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
-
-### Changes
-- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Scoped session-start reads (removed internal R1 contradiction), made the design-QA verdict a terminal artifact only via a durable Docket comment (DKT-76 near-miss), and trimmed redundant prose. Net -72 bytes.
-
-### Changes
-- CULL: session-start blanket whole-tree reads → scoped to dispatched-surface slugs via `ls docs/ux/` first. Signal: innovation-scan Retire (R1 self-contradiction).
-- AMPLIFY: design-QA verdict is not terminal until posted as a durable `[UX→team-lead] Design QA: <verdict>` Docket comment. Signal: historical-audit DKT-76 shutdown-rejection near-miss (team-lead nearly closed an issue with no QA verdict on record).
-- CULL: verbose code-samples paragraph compressed; redundant "What to save here" pitfalls-restatement line removed (dup of §Persistent memory + CANONICAL:PITFALLS block).
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary); Capability Growth & Cross-Communication; Actionability. Role Realism/Boundary Clarity/Completeness/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +287,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Phase 2 PA: landed pre-impl plan-review trigger for @senior-engineer PLANs on spec'd surfaces. Trial: PA plan-approval → applied.
 - 2026-07-01: Phase 1 UX lifecycle/QA classification update — dispatch, plan-review, QA evidence, ephemeral close guidance tightened. Trial: UX lifecycle and QA classification -> applied.
 - 2026-07-01: Phase 3 Disambiguation follow-up — normalized UX shutdown report fields (SP-1 scope/changed-files/checks/risks/safe_to_close).
+- 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.
+- 2026-07-10: Scoped session-start reads to dispatched-surface slugs; made design-QA verdict terminal only via a durable Docket comment (DKT-76 near-miss). Net -72 bytes.

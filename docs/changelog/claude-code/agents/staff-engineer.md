@@ -1,5 +1,47 @@
 # Changelog: staff-engineer
 
+## 2026-07-21
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Phase 3 disambiguation: "Stateless subagent" → "Stateless between spawns" to remove a confusable-name collision with the reserved report-only-subagent mechanism term.
+
+### Changes
+- FIX[COSMETIC]: Operating context now reads "Stateless between spawns" — staff-engineer's spawn forms (persistent advisor, ephemeral reviewers) are teammates with the full shutdown handshake, not report-only subagents.
+
+### Dimensions Evaluated
+Confusable-name clarity (Phase 3).
+
+### Rename
+No rename.
+
+## 2026-07-21
+
+### Summary
+Verified H-staff1's sampled pitfalls, D7, and B7 as already-encoded/not-applicable NO-OPs. Encoded one undistilled sign-off lesson from the full 733-line pitfalls backlog: green-but-blind synthetic fixtures. Findings: 9 → 1 sub / 0 cos / 0 rej / 4 def / 4 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (own pitfalls-backlog read): Sign-off verification techniques gains (d) Green-but-blind synthetic fixtures — a green suite where every external-sourced fixture uses the empty/happy shape is not real-environment evidence; ties to existing TFD-3 live-exercise requirement.
+
+### Dimensions Evaluated
+Capability Growth (Responsibility 2). Deferred: I-staff1 (xref_check.py doesn't exist), I-staff2 + B7 (cross-cutting, routed to Phase 2 / evolve-skills).
+
+### Rename
+No rename.
+
 ## 2026-07-15
 
 ### Summary
@@ -174,50 +216,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 3 disambiguation follow-up: qualified a mixed local/foreign rule citation and fixed 2 stale "Rule 8(e)" cross-references (the letter no longer exists after this cycle's team-lead.md Rule 8 relettering).
-
-### Changes
-- DISAMBIG: "rule 9, Rules 3a/3b" qualified to "staff rule 9, team-lead.md step-14 rules 3a/3b" — staff's own rules have no 3a/3b, so the unqualified citation read as internally self-contradictory.
-- FIX: 2 stale "team-lead.md Rule 8(e)" cross-references corrected to "Rule 8(c)" (team-lead.md's Rule 8 opt-up triggers were relettered (c)/(d)/(e)→(a)/(b)/(c) earlier this cycle; this file's own copies were missed in that pass).
-
-### Dimensions Evaluated
-Multi-reading (rule-citation qualifier), Boundary Clarity (stale cross-reference).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
-
-### Changes
-- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Consolidation-only cycle: trimmed a redundant tier-split restatement in §Operating context (already stated in full at §Lifecycle/§What You Are NOT). Net -32 bytes. Highest audit signals (247 errors, 11 idle-failed) attributed to team-lead-side panel capacity/scheduling, not a quality defect — no fix needed here.
-
-### Changes
-- CULL: §Operating context tier-split restatement trimmed to a short cue + AUTHORITY pointer (dup of §Lifecycle/§What You Are NOT).
-- Deferred to Phase 2 (shared/parity-bound, not applied here): FIX-9 vote-delegation JSON clarification (spans ~7 agent files).
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary). Role Realism/Actionability/Boundary Clarity/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +286,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Phase 2 PA + coherence: added Impl-plan REVIEW (advisor reviews plan, team-lead emits plan_approval_response) + shared pre-computed reviewer brief clause. Trial: PA plan-approval → applied.
 - 2026-07-01: Added `routing_recommendation` fields, close-ready report schema, team-lead verdict handoff, doubled-review cap/fix-loop wording. Trial: lifecycle close-ready/routing schema -> applied.
 - 2026-07-01: Added staff receiver for team-lead-routed implementation PLAN review (TDD-conformance check + routing_recommendation; does not waive later diff review).
+- 2026-07-10: Phase 3 disambiguation follow-up — qualified mixed local/foreign rule citation ("staff rule 9, team-lead.md step-14 rules 3a/3b") and fixed 2 stale "Rule 8(e)" cross-references to "Rule 8(c)".
+- 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.
+- 2026-07-10: Consolidation-only cycle — trimmed redundant tier-split restatement in §Operating context (dup of §Lifecycle/§What You Are NOT). Net -32 bytes.

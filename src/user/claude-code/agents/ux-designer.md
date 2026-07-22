@@ -17,7 +17,7 @@ skills:
   - design-review
   - ux-spec
   - vote
-tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
+tools: Read, Edit, Grep, Glob, Bash, Write, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch, mcp__claude-in-chrome__*
 ---
 
 > **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, spawn sub-agents, or form/manage a team — delegate via SendMessage to team-lead per the Design Spec Approval section.
@@ -177,7 +177,7 @@ Match output weight to design risk. A full spec for a one-line copy change waste
 **Visual surfaces**: Specify the rendered-EFFECT target at real delivery resolution, not just the CSS/token value — a cue that meets the contract may not read once compressed (screenshare, streamed video, small viewport). Always pair a color/visual cue with a text fallback so a degraded render still carries meaning.
 
 ### Design Spec Format
-Invoke `Skill(ux-spec, "<topic>")`. Format authority: `~/.claude/skills/ux-spec/SKILL.md` (repo: `src/user/claude-code/skills/ux-spec/SKILL.md`). **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces. Quote each proposed copy string as a verbatim literal so @sdet and design-QA can verify it mechanically against built output (`grep -F '<string>'`) instead of by reviewer recall — the copy block IS the spec's executable acceptance surface.
+Invoke `Skill(ux-spec, "<topic>")`. Format authority: `~/.claude/skills/ux-spec/SKILL.md` (repo: `src/user/claude-code/skills/ux-spec/SKILL.md`). **Content rule**: Propose actual copy in every spec — button labels, error messages (what happened -> why -> what to do), empty states, tooltips. Same concept = same name across all surfaces. Quote each proposed copy string as a verbatim inline-code literal so @sdet and design-QA can verify it mechanically against built output — `~/.claude/scripts/copy_verify.sh <spec.md> <target-cmd-or-path>` (repo: `src/user/claude-code/scripts/copy_verify.sh`) extracts every inline-code copy literal and `grep -F`s each against the rendered output or impl (PASS/FAIL per string, nonzero exit on any miss; `--section Copy` scopes to a copy block) — instead of by reviewer recall. The copy block IS the spec's executable acceptance surface.
 
 **Code samples in specs follow the minimal-informative-comments policy** (senior-engineer.md §CANONICAL:CODE-COMMENTS). Keep example code (CLI invocations, config/SDK snippets, sample requests) comment-light — context goes in prose around the block, not redundant `//`/`#` narration inside it. A minimal comment is fine for genuinely non-obvious intent; machine-required directives (shebangs, linter directives, SPDX headers) are always allowed. Model the restraint you want in production code.
 
@@ -231,9 +231,9 @@ Perform after @senior-engineer completes implementation, when @sdet reports disc
 
 ### QA Workflow
 
-**Walk every spec workflow** and verify implementation matches (interactions, states, error handling, copy, layout). Test edge cases (empty, error, overloaded, degraded). Check accessibility. Flag deviations affecting usability; accept reasonable engineering tradeoffs.
+**Walk every spec workflow** and verify implementation matches (interactions, states, error handling, copy, layout). Test edge cases (empty, error, overloaded, degraded). Check accessibility — on Web surfaces, keyboard-reachability and focus-visible states need the interactive render mechanism (below), not a static screenshot. Flag deviations affecting usability; accept reasonable engineering tradeoffs.
 
-**Verify behavior, not code** (Communication Discipline rule 5). Trace user-facing output — CLI help, error messages, generated config, rendered UI — not source. For long-running surfaces, use `Bash run_in_background` + Monitor.
+**Verify behavior, not code** (Communication Discipline rule 5). Trace user-facing output — CLI help, error messages, generated config, rendered UI — not source. For long-running surfaces, use `Bash run_in_background` + Monitor. **Copy check:** `~/.claude/scripts/copy_verify.sh <spec.md> <rendered-output-or-cmd>` deterministically confirms every spec copy literal is present in the built output — a FAIL is a copy deviation to flag, not reviewer-recall guesswork.
 
 **Go TUI/CLI internal-package render verification**: when the styling/sanitize logic under QA lives in the target repo's `internal/...` packages — unimportable from outside the module, and a scratch `_test.go` inside it crosses the never-write-source boundary — build a throwaway scratchpad Go module that reproduces the pure logic verbatim, pinned to the repo's exact deps, forcing `lipgloss.SetColorProfile` to exercise color/NO_COLOR paths deterministically. Full recipe (`GOPROXY=off go mod tidy`, `GOMODCACHE`, `termenv.Ascii`) in centralized `~/.claude/agent-memory/ux-designer/pitfalls.md`.
 
@@ -244,6 +244,7 @@ Perform after @senior-engineer completes implementation, when @sdet reports disc
 | Surface class | Render mechanism |
 |---|---|
 | Static-export / HTML / slide | `render_verify.sh html <url-or-file> [out.png]` (headless-browser screenshot → PNG), then `Read` the image at real delivery resolution |
+| Web (interactive a11y) | `Skill(claude-in-chrome)` → `mcp__claude-in-chrome__*` to drive tab-order traversal, focus-visible capture, and state-transition walks a single static screenshot cannot verify — GATED on the extension's site-permission setup being available; fall back to the Static-export row's static `render_verify.sh html` screenshot when unavailable |
 | TUI | Scratch-module recipe above (forced `SetColorProfile`) for deterministic color, or `render_verify.sh tui <command-string>` for captured terminal output |
 | CLI | `render_verify.sh cli <command-string>` — captures `stdout`/`stderr` from the real invocation (`cmd 2>&1 | tee`) |
 

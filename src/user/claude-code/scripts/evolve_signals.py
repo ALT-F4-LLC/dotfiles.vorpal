@@ -167,7 +167,7 @@ def error_count(records):
 # separators put a space after ':' -- \s* also tolerates a raw, space-free line.
 _IDLE_RE = re.compile(r'"hookEvent"\s*:\s*"TeammateIdle"')
 _SHUTDOWN_REJECT_RE = re.compile(r"shutdown[_-]?reject", re.IGNORECASE)
-_RESPAWN_RE = re.compile(r"-r([2-9]|\d{2,})$")
+_RESPAWN_RE = re.compile(r"-r([2-9]|\d{2,})$|-fix-\d+$")
 
 
 def parse_spawns(projects_root, cutoff_iso):

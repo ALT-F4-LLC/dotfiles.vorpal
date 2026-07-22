@@ -85,6 +85,8 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/.doppler/**",
     "~/.gemini/**",
     "~/.gnupg/**",
+    // kubeconfig may hold long-lived inline credentials (e.g. Talos-generated), so this stays
+    // deny-read rather than allowlisted; kubectl work requires `dangerouslyDisableSandbox=true`.
     "~/.kube/**",
     "~/.netrc",
     "~/.opencode/**",
@@ -396,6 +398,12 @@ impl UserEnvironment {
                 "static.crates.io".to_string(),
                 "github.com".to_string(),
                 "api.github.com".to_string(),
+            ])
+            // 1Password requires per-use approval for SSH-agent signing operations, so
+            // allowlisting only this socket (not `allow_all_unix_sockets`) keeps that
+            // approval prompt as the safety gate for sandboxed `git commit` signing.
+            .with_sandbox_network_allow_unix_sockets(vec![
+                "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
             .with_sandbox_network_allow_local_binding(false)
             .with_teammate_mode("in-process")

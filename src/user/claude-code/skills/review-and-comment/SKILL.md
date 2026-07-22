@@ -13,7 +13,7 @@ disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or SendMessage, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting.
+> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or SendMessage, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting. (5) Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage.
 
 # Review-and-Comment — Dual-Lens PR Review → Inline Comments in Your Voice
 

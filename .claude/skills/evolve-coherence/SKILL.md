@@ -55,7 +55,7 @@ Before spawning any agents:
 
 1. **Goal alignment (HARD GATE)** — Team mode: adopt the verified goal from the orchestrator prompt; re-verify if your understanding diverges. Standalone: `AskUserQuestion` with options "All 4 dimensions", "Specific dimension(s)" (follow-up multiSelect over D1/D2/D3/D4, max 4), "Address operator-reported drift (free-text follow-up)", "Abort". Capture as `{verified_goal}`. Do not proceed until verified.
 2. **Resolve dimensions** — Parse `\$ARGUMENTS` per Argument Handling. Default = all four. Store as `{dimensions}` (an ordered subset of D1–D4). Reject out-of-range tokens and abort.
-3. **Inventory agents + skills** — Run `find src/user/claude-code/agents .claude/skills src/user/claude-code/skills -maxdepth 2 \( -path 'src/user/claude-code/agents/*.md' -o -name SKILL.md \) -exec wc -l {} + 2>/dev/null` and `find src/user/claude-code/skills .claude/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null` (find tolerates an absent root — e.g. a fresh repo with no `src/user/claude-code/skills/` — whereas a zsh `*/SKILL.md` or `src/user/claude-code/skills/*/` glob nomatch-aborts the whole command even with `2>/dev/null`). Capture the file set + counts as `{inventory}` (substituted into the Phase 0 builder prompt). If no agent files OR no skill files are found, inform the operator and abort.
+3. **Inventory agents + skills** — Run `find src/user/claude-code/agents .claude/skills src/user/claude-code/skills -maxdepth 2 \( -path 'src/user/claude-code/agents/*.md' -o -name SKILL.md \) -exec wc -l {} + 2>/dev/null` and `find src/user/claude-code/skills .claude/skills -mindepth 1 -maxdepth 1 -type d 2>/dev/null` (find tolerates an absent root — e.g. a fresh repo with no `src/user/claude-code/skills/` — whereas a zsh `*/SKILL.md` or `src/user/claude-code/skills/*/` glob nomatch-aborts the whole command even with `2>/dev/null`). Capture the file set + counts as `{inventory}` (surfaced in the Scope-confirmation gate below; Phase 0's `coherence_xref.py` rediscovers files itself, so no builder prompt consumes it). If no agent files OR no skill files are found, inform the operator and abort.
 4. **Scope-confirmation gate (HARD GATE)** — The all-targets inventory always exceeds 3. Surface the planned scope via `AskUserQuestion` with options: "Proceed (all <N> files, <dims> dimensions)", "Restrict dimensions (multiSelect D1–D4 follow-up)", "Abort". List the agent + skill counts and the resolved dimensions in the question body so the operator sees est. cycle weight before commit. Team mode: skip — orchestrator already verified scope.
 
 ---
@@ -146,14 +146,14 @@ For each dimension: the **invariants** (checkable assertions) and the **detectio
 
 ### Team Setup & Lifecycle
 
-1. Resolve `{today_date}` (run `date +%Y-%m-%d`) for date substitution, then join the session's single implicit team on your first `Agent(name=..., ...)` spawn (Phase 0 below; the runtime ignores `team_name`).
-2. `TaskCreate` up-front: "Build XREF" (Phase 0), one "Audit <Dn>" per resolved dimension (Phase 1), and "Reconcile & Report" (Phase 2).
+1. Resolve `{today_date}` (run `date +%Y-%m-%d`) for date substitution. Phase 0 (XREF build) is now an inline script run, not a spawn — you join the session's single implicit team on your first `Agent(name=..., ...)` spawn, which is Phase 1 below (the runtime ignores `team_name`).
+2. `TaskCreate` up-front: "Build XREF" (Phase 0 — script run), one "Audit <Dn>" per resolved dimension (Phase 1), and "Reconcile & Report" (Phase 2).
 
 > **Task-plane is best-effort, not load-bearing.** `TaskCreate`/`TaskUpdate` can be unavailable in some invocation contexts (observed in-window: `No such tool available: TaskCreate ... not enabled in this context`). Treat the phase table + shutdown handshakes below as the AUTHORITATIVE progress-tracking mechanism and the `TaskCreate` calls as best-effort bookkeeping; if any task call errors, continue — do NOT abort or treat it as a stall.
 
 | Phase | Agents | Lifecycle |
 |---|---|---|
-| 0 | `xref-builder` (senior-engineer, read-only Bash) | Spawn → completes → shut down before Phase 1 |
+| 0 | none — `coherence_xref.py` run inline via Bash (no spawn) | Orchestrator runs the script → captures `{xref}` before Phase 1 |
 | 1 | `review-d{n}` per resolved dimension (staff-engineer, read-only) | Spawn ALL in same turn → each delivers its dimension report → shut down (don't wait for siblings) |
 | 2 | `reconciler` (staff-engineer, read-only) | Spawn after ALL Phase 1 reports in → emit Report + Manifest → shut down → team cleanup |
 
@@ -167,9 +167,16 @@ Detect failure via: (a) TeammateIdle / `Monitor` silence past expected progress;
 - **Degraded single-reviewer fallback** (mirrors `src/user/claude-code/agents/team-lead.md` Rule 8): if a Phase 1 dimension reviewer fails TWICE (probe-once + respawn both abort/empty), record that dimension verbatim as `DEGRADED: single-reviewer (ephemeral failed 2×)` and fold its scan into the reconciler — NEVER silently drop. If ALL four ephemerals are unavailable, fall back to the linear behavior (reconciler scans all four dimensions itself) with the `DEGRADED:` annotation.
 - **Compaction recovery**: re-read `{verified_goal}`, `TaskList()`, `{xref}`, and the active phase template before any new `SendMessage`/`Agent` call.
 
-### Phase 0 — Cross-Reference Index Builder (single `senior-engineer`)
+### Phase 0 — Cross-Reference Index Builder (mechanized script, no spawn)
 
-Spawn ONE `xref-builder` per the Phase 0 template. Read-only Bash (grep/awk/parse). It builds the XREF the four Phase 1 reviewers consume, so each reviewer does not re-scan all files from scratch, and reports it verbatim to the orchestrator (captured as `{xref}` for Phase 1 substitution). **It does NOT judge** — judgment is Phase 1's job; XREF is signals-to-verify. The XREF schema is PINNED (see Data Models) — the builder emits exactly those keys as one fenced ` ```json ` block, every key present (`null`/`[]` for absent, never omit).
+Run the XREF builder inline via Bash — NO spawn:
+
+```bash
+python3 src/user/claude-code/scripts/coherence_xref.py           # all four dimensions
+python3 src/user/claude-code/scripts/coherence_xref.py --dimensions d1,d3   # dimension subset
+```
+
+`coherence_xref.py` emits the PINNED XREF schema (Data Models §) as one fenced ` ```json ` block — every key present, `null` for a dimension not selected on the subset path and `[]` for a selected dimension that found nothing, never an omitted key. Capture its stdout verbatim as `{xref}` for Phase 1 substitution. It is byte-stable and deterministic across runs, replacing the former hand-executed `xref-builder` sonnet spawn (whose per-run grep/awk hand-execution varied and dropped schema keys). Two of the eight keys are the outputs of already-mechanized coherence legs the script CALLS rather than reimplements: `coupling_notes` (D3 #6) from `coupling_check.py`, and `canonical_blocks` (D4 #2) `family_hash` from `doctrine_check.sh --emit-hashes` (the schema carries no separate parity flag — a reviewer re-derives divergence via arm (c) if the surfaced hash looks suspect). **The script does NOT judge** — judgment is Phase 1's job; XREF is signals-to-verify. If it exits non-zero (a called leg or the manifest was missing/errored), surface the stderr and abort Phase 0 rather than feeding a partial XREF to Phase 1.
 
 ### Phase 1 — Four parallel dimension reviewers (`staff-engineer`)
 
@@ -254,26 +261,7 @@ Remediation Manifest
 
 ## Spawning Templates
 
-### Phase 0: @senior-engineer (XREF builder)
-
-```
-Agent(name="xref-builder", subagent_type="senior-engineer", model="sonnet", prompt="...")
-
-You are the cross-reference index builder. Read-only Bash (grep/awk/parse). No file edits. No commits. No sub-agents.
-Inventory: {inventory}
-
-## Task
-Build the XREF index over ALL agents (src/user/claude-code/agents/*.md) and ALL skills (src/user/claude-code/skills/*/SKILL.md, .claude/skills/*/SKILL.md) using the detection seeds in the rubric — Read `.claude/skills/evolve-coherence/SKILL.md` §The Coherence Rubric first; it is NOT in this prompt — (D1 registry/refs/frontmatter; D2 role_claims; D3 ladders/coupling_notes; D4 canonical_blocks/rule_presence). Compute family_hash LIVE per the D4 family rule (key on the opening-prefix string, strip trailing whitespace via `sed 's/[[:space:]]*$//'` before `shasum`). You do NOT judge — emit signals only.
-
-## Output
-Emit the PINNED XREF schema (Data Models §) as ONE fenced ```json block — every key present, `null`/`[]` for absent, never omit a key. SendMessage the orchestrator the json block verbatim.
-
-## Rules
-- Read-only. Do NOT use Edit/Write. Do NOT commit.
-- No sub-agents: no /vote, Skill(), Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator is the only relay.
-- Per-file grep — never bulk-cat. Exclude the placeholder token `name`.
-```
+> Phase 0 (XREF build) has NO spawn template — it is a deterministic inline Bash run of `src/user/claude-code/scripts/coherence_xref.py` (see Phase 0 above), which retired the former `xref-builder` sonnet spawn. Phase 1 and Phase 2 spawn as below.
 
 ### Phase 1: @staff-engineer (dimension reviewer — one per resolved dimension)
 

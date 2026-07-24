@@ -1,5 +1,36 @@
 # Changelog: model-distribution/team-lead
 
+## 2026-07-24
+
+### Summary
+Release-rollover record (hand-written, non-cycle — no spawn-telemetry evidence
+base). Opus 5 released 2026-07-24; silver's underlying model advanced. Routing
+changes: NONE. Recorded so the next rollover does not re-litigate the triage.
+
+### Routing Changes
+- None. Evaluated and declined.
+
+### Evidence
+Alias binding already advanced (src/user.rs ANTHROPIC_DEFAULT_OPUS_MODEL);
+price row added (session-metrics model_prices.json); 1M-context claim
+(team-lead.md silver bullet) re-verified true. Classifier posture unchanged
+from the prior Opus generation (same ASL-3 real-time classifier guards, no
+ASL-4 threshold) — the Fable classifier-fallback asymmetry and the
+security-work silver pin remain correct as written. ZDR compatibility
+retained, so ux-designer.md's ZDR-safe fallback net still holds.
+
+### Rejected
+- All benchmark results (Frontier-Bench, ARC-AGI 3, OSWorld 2.0, life
+  sciences): snapshots, not capability-anchored; barred by the anti-staleness
+  rule.
+- All generational-comparative claims ("improved agency and self-verification",
+  "lower misaligned-behavior scores"): meaning depends on naming both versions,
+  which tier-only prose cannot express.
+- Fast-mode availability: no existing consumer anywhere in the tree; would be
+  new surface, not distillation.
+- OSWorld computer-use result: confirms existing ux-designer silver routing
+  rather than changing it.
+
 ## 2026-07-17
 
 ### Summary

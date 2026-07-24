@@ -18,6 +18,8 @@ jobs:
 
       - run: bash tests/doctrine_check.test.sh
 
+      - run: bash tests/model_census.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

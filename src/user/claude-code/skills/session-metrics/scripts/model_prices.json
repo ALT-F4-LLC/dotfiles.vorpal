@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-30",
+  "updated": "2026-07-24",
   "source": "https://platform.claude.com/docs/en/about-claude/pricing",
   "note": "USD price per 1M tokens. Every cost figure derived from this table is an estimate, not a billing-authoritative number — caching tiers, batch discounts, and inference_geo multipliers are not reproduced here.",
   "prices": {
@@ -20,6 +20,7 @@
       "intro": {"in": 2, "out": 10, "cache_w5": 2.50, "cache_w1h": 4, "cache_r": 0.20},
       "intro_cutoff": "2026-08-31",
       "standard": {"in": 3, "out": 15, "cache_w5": 3.75, "cache_w1h": 6, "cache_r": 0.30}
-    }
+    },
+    "claude-opus-5": {"in": 5, "out": 25, "cache_w5": 6.25, "cache_w1h": 10, "cache_r": 0.50}
   }
 }

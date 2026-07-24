@@ -209,7 +209,7 @@ impl UserEnvironment {
                 .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
                 .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
                 .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
-                .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-4-8[1m]")
+                .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5")
                 .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
                 .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
                 .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)

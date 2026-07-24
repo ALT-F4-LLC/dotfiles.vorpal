@@ -1,5 +1,20 @@
 # Changelog: team-lead
 
+## 2026-07-24
+
+### Summary
+Widened the Tiers-block doctrine claim from a single-layer statement ("The tier→alias mapping resolves HERE and nowhere else in this file") to a two-layer statement distinguishing tier→alias authority (this file) from alias→model-ID authority (`src/user.rs`'s `ANTHROPIC_DEFAULT_*_MODEL` bindings), with an explicit exempt-category enumeration. Wires the new `scripts/model_census.sh` mechanism (arms 1+2) into CI via `tests/model_census.test.sh`.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Tiers-block doctrine claim (line ~240) now states both mapping layers and their separate authorities, plus the four exempt categories (product-capability facts, provenance records, functional values, deliberate enumerations) enforced machine-side by `scripts/model_census_exemptions.tsv` and checked by `scripts/model_census.sh`.
+- CI: added `bash tests/model_census.test.sh` as a new step in the `test-hooks` job (`.github/workflows/vorpal.yaml`), alongside the existing `doctrine_check.test.sh` step. Arm 3 (`--backstop`) is not wired into CI.
+
+### Dimensions Evaluated
+Doctrine Accuracy. Closes the gap found by this session's manual investigation (the `claude-mythos-5`-class miss), where the single-layer claim let alias→model-ID restatements and their exemption categories go unstated and machine-unchecked.
+
+### Rename
+No rename.
+
 ## 2026-07-21
 
 ### Summary

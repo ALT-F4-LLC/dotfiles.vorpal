@@ -82,15 +82,18 @@ If extra positional args follow `<scope>`, ignore them silently.
 - The team-lead Implementation Phase delegates review to the persistent advisor, who invokes this skill to produce the format-correct verdict.
 - **Re-invocation after fix is expected** — the dominant call pattern is fix→re-review loops on the same scope (PR# first, then `uncommitted` once the fix lands locally). Emit the compact Round-N format (see Output Contract → Round-N Re-Review), not a fresh full sweep, unless new code introduces new risk.
 
-## Doubling Rule (under team-lead orchestration)
+## Doubling Rule
 
-When invoked under team-lead orchestration, code review defaults to a **single** reviewer — the persistent `advisor` via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** when a Rule 8 trigger fires (security-sensitive surface, diff ≥500 LOC, or operator flag): routine general review then runs `advisor` + ephemeral `reviewer-2`; security-sensitive review runs `advisor` (general, single) + `security-advisor` + ephemeral `security-reviewer-2` (3 parallel, per Rule 8 C3) — the security flag does NOT force-double the general track; `reviewer-2` joins only when its own doubling trigger independently fires too (4 total). Each reviewer invokes this skill independently and emits its own structured report — this skill remains the single-reviewer output-format authority; team-lead reconciles the parallel verdicts per its step 14. **Fix rounds default to a delta re-review (C4)** by the persistent advisor(s) of the track(s) that raised the surviving Blocker(s) — general Blocker → `advisor` alone (zero fresh ephemerals); security Blocker → the doubled security track (`security-advisor` + a fresh `security-reviewer-2` ephemeral); re-double the general track only on a NEW Blocker-class finding in the delta or an operator flag — in Round-N compact mode (§Round-N Re-Review below).
+Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, verdict reconciliation, and the degraded-single-reviewer annotation are owned by `~/.claude/agents/team-lead.md` Rule 8 / Rule 7 / step 14 — read them there, do not restate them here. Skill-specific delta only:
 
-Ephemeral lifecycle (`reviewer-2` / `security-reviewer-2` shutdown), eager dispatch, verdict reconciliation, and degraded-single-reviewer fallback annotation are owned by the calling layer per `~/.claude/agents/team-lead.md` (Rule 8, step 14) — do not duplicate that logic here. Outside team-lead orchestration, doubling is at the calling agent's discretion.
+- **Seats**: single (default) = persistent `advisor`, verdict final; doubled = `advisor` + one ephemeral `reviewer-2` (general track), `security-advisor` + one ephemeral `security-reviewer-2` (security track).
+- **Independent emission**: each reviewer invokes this skill independently and emits its own structured report — this skill is the single-reviewer output-format authority, never the panel-reconciliation authority.
+- **Fix-round delta**: a Rule 8 C4 fix-round re-review emits the compact §Round-N Re-Review format below, not the full template.
+- Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd, ...)`, `Skill(adr, ...)`, `Skill(prd, ...)`, `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on an artifact — use `Skill(vote, ...)`. After this skill produces a review, the calling agent decides whether the change meets a vote-criticality trigger (500+ lines, security-critical surfaces, breaking-change plans) and delegates accordingly.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)`, callable by `@sdet`.
@@ -168,7 +171,7 @@ Apply the **9 security dimensions**, weighted by what the change touches. Mark u
 
 ### Common Discipline (both playbooks)
 
-- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
+- **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract (absent in team-mode spawns — there route the question through the calling agent instead). Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the code.
 - **Report every finding — do NOT self-filter.** Report each issue you find, including low-severity and uncertain ones, each tagged with the role's severity (classification, not suppression) and a confidence note. Filtering and ranking happen downstream (team-lead step-14 reconciliation / operator), never here — declining to report a found issue because it seems minor is a recall defect. A finding a linter (`cargo clippy` / `cargo audit`) would also catch is reported as a `Suggestion` (general) / `Info` (security), not omitted. The severity ladder ranks; it does not gate what you surface.
 - **Honest critique.** Do NOT default to approval. Surface-level fixes that mask root cause are reject-class regardless of role. If the proper fix is out of scope, recommend a follow-up issue rather than approving the surface patch.
 - **Stream long commands.** For builds, tests, or scans expected to take >30s, use `Monitor` with an until-loop on a terminal pattern (PASS/FAIL line, exit marker), not a blocking poll.
@@ -275,6 +278,8 @@ One of: **Approve** / **Approve with follow-up** / **Request changes** / **Block
 
 ### Next Steps
 {What the calling agent should do — e.g., route blockers to @senior-engineer, request a vote for a 500+ line change, escalate to operator for re-plan}
+
+Code review emitted ({recommendation}).
 ```
 
 ### Security-Engineer Output
@@ -296,7 +301,7 @@ For substantive security-relevant changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} (security-touched paths called out)
-- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12> — first 12 chars of `git diff HEAD | shasum` — for uncommitted/staged] — the tree this verdict binds to; carry-forward checked via `git diff --stat {recorded}..HEAD` plus, on a dirty tree, re-hashing `git diff HEAD` against the recorded dirty-hash.
+- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12>] — same fingerprint and carry-forward recipe as the general template above
 - Reference docs: {the issue's distilled security contracts, `docs/adr/` security records, docs/spec/security.md sections — or "None applicable"}
 
 ### Threat Model (assumed)
@@ -349,11 +354,13 @@ One of: **Approve (security)** / **Approve with follow-up** / **Block (security)
 
 ### Next Steps
 {What the calling agent should do — e.g., deliver this verdict to team-lead for step-14 reconciliation (security verdict binds for security findings), surface any security-vs-general track contradiction, escalate to operator if the threat model diverges from the issue's distilled threat contracts, request a vote for residual-risk acceptance. Standalone (no orchestrator): notify the parallel reviewer for unified handoff and route critical/high to @senior-engineer.}
+
+Code review emitted ({recommendation}).
 ```
 
 ### Round-N Re-Review (compact)
 
-On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value). Revert to the full template if the fix introduces a new Blocker/Critical.
+On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value), ending with the trailing confirmation line `Code review emitted ({recommendation}).` — the validator requires it under `--mode round-n` too. Revert to the full template if the fix introduces a new Blocker/Critical.
 
 **G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `git diff --stat {prior-round Tree state}..HEAD` shows BOTH the AC regex block AND its named target files untouched since that round AND, when the prior fingerprint carries `+dirty:<sha12>`, a fresh `git diff HEAD | shasum` (first 12 chars) matches it — cite it as `G5 PASS — unchanged since round {N}`. Never carry a prior G5 Blocker forward (re-run it); never carry forward when either the regex or any target file moved.
 
@@ -362,7 +369,7 @@ On re-invocation against a fixed diff (the dominant call pattern — fix→re-re
 Mechanically validate the drafted review before emitting it. **Do NOT hand-roll `mktemp` or use `$$` across separate Bash calls to stage the draft.** Each Bash tool call is a fresh shell process, so `$$` and any locally-computed temp path are not stable across calls — this is what causes `mktemp: File exists` races, missing trailing-confirmation appends, and "no recognized review banner" failures when staging and linting are split across turns. The SOLE prescribed path is a SINGLE Bash invocation of the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`; verify it exists first: `ls -la ~/.claude/scripts/report_stage_lint.sh`) — it stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` internally — parallel panel reviewers (advisor + `reviewer-2`, or the 3-way security panel) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy, all within that one call:
 
 ```
-report_stage_lint.sh code-review-verdict [--mode round-n] "$DRAFT_FILE"
+~/.claude/scripts/report_stage_lint.sh code-review-verdict [--mode round-n] "$DRAFT_FILE"
 ```
 
 (or pipe the review body on stdin and omit `$DRAFT_FILE`). Omit `--mode` (default `full`) for the full general/security template; pass `--mode round-n` for a compact Re-Review emission. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
@@ -391,7 +398,7 @@ Code review emitted ({recommendation}).
 
 where `{recommendation}` is the role's recommendation value (e.g., `Approve`, `Block`, `Block (security)`, `Split required`).
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the SendMessage to team-lead (the calling agent) carrying the structured verdict body — the in-context emission is only the working artifact. Before ending the turn that invoked this skill, the calling agent MUST self-check: *Did I SendMessage the verdict this same turn?* If no, the turn is incomplete. Silent-completion is the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (under team-lead orchestration, to team-lead — who reconciles per step 14; standalone, to whoever requested the review). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Code review emitted (...)` is silent-completion — the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 

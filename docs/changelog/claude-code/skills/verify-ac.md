@@ -1,5 +1,66 @@
 # Changelog: verify-ac
 
+## 2026-07-24
+
+### Summary
+Compacted 4 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the COUPLING comment's "keep its shape in sync" instruction for the Doubling Rule invited flattening this skill's intentionally divergent (delegation-only) Doubling Rule to the family's three-bullet delta shape. Added an explicit carve-out.
+
+### Changes
+- CLARIFY[COSMETIC]: COUPLING comment's Doubling Rule sync clause gains a parenthetical naming this skill's Doubling Rule as intentionally delegation-only (no Seats/dedupe/degraded bullets) — never normalize it to the three-bullet shape (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+FULL template now carries the validator-required trailing confirmation line; lint invocation promoted to full deployed path; COUPLING comment gains the family sync guard naming this skill's mode-aware tail as never-flatten. Mode-aware silent-completion paragraph untouched by design.
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: `Verification report emitted ({verdict}).` added inside the FULL Output template (LIGHT untouched).
+- BUGFIX[SUBSTANTIVE]: ~/.claude/scripts/ prefix on the report_stage_lint.sh fence line.
+- COHERENCE: COUPLING comment extension (lockstep, 4 files) — records the SP-2 mode-aware delivery tail must never be flattened.
+
+### Dimensions Evaluated
+Coherence, Bug/Correctness. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Corrected the delivery contract to match sdet.md's report-only-subagent mode (the default verifier has no SendMessage) and closed the staging-path gap that let agents hand-roll a broken mktemp. The dispatched top finding (H-verify-ac-1 mktemp) was ALREADY-ENCODED; verifying it surfaced the real Blocker-class defect instead. Net +873.
+
+### Changes
+- FIX[SUBSTANTIVE]: Save & Return delivery bullet and the silent-completion self-check were unconditionally mandating SendMessage; sdet.md (SP-2) specifies PLAIN-TEXT final-message delivery for the DEFAULT lone `verifier`, which has no SendMessage. Both now route by mode; paired-panel teammates unchanged.
+- AMPLIFY[SUBSTANTIVE]: Validation Before Emit gains the anti-hand-roll staging prohibition already carried by code-review-verdict — prefer stdin; if staging, same Bash call, never hand-rolled mktemp.
+- CULL[COSMETIC]: dropped the internal-mktemp rationale and the trailing abort meta-index line.
+- Verified no-op: the 4-skill mktemp cluster bug is already fixed here (commit 4cbf096, 2026-07-21).
+
+### Dimensions Evaluated
+Coherence (PRIMARY — delivery-mode contradiction), Completeness, Actionability, Orchestration, Over-Engineering.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -203,65 +264,6 @@ All 8; Over-Engineering (HIGHEST — innovation declined); Completeness (literal
 ### Rename
 No rename. verify→verify-ac rename rationale stands.
 
-## 2026-06-09
-
-### Summary
-Compacted 4 entries (2026-05-16..2026-05-18) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Removed one Failure Modes row duplicating the "ignore extras silently" rule already at Argument Handling L70 and violating the table's own abort-path scope. Net -1 (267 → 266, orchestrator-verified post-apply). Both priority audit signals verified resolved: literal-command-AC rule present (L142); vote mode-split correct (L254).
-
-### Changes
-- Failure Modes: removed "Caller passes additional positional args" row — not an abort path; behavior already stated at L70.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (one trim); sdet pitfall #3 and staff pitfall #7 closed with grep citations; no unescaped $+digit.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Closed the refuted literal-command-AC gap: FULL-mode item 1 now mandates running an AC's named literal command VERBATIM — equivalents leave the named path unverified; PASS on a substitute is a defect. The 2026-06-05 cycle recorded this rule as already-encoded; a 2026-06-09 re-grep refuted that claim (only unrelated "report verbatim" at L172 matched). Net 0 physical lines (within-line append; 267 lines).
-
-### Changes
-- FULL-mode procedure item 1: added "When an AC names a literal command, run THAT command verbatim... cite the exact command in evidence."
-- Aligns with sdet.md Epistemic Discipline (empirical execution over text inspection).
-- [NO-OP, grep-cited] Reasoning-echo clean; recall-filter clean (PASS/FAIL/OUT-OF-SCOPE is classification; Validation checks 2+4 already forbid silent omission).
-
-### Dimensions Evaluated
-Completeness (refuted-NO-OP closure, primary), Over-Engineering (single clause, no new section), Actionability, Coherence.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2: code-review→code-review-verdict reference updates (lockstep) and vote-escalation mode-split in Save & Return.
-
-### Changes
-- 4 refs updated for the sibling rename, incl. the byte-identical COUPLING marker (byte parity re-verified across the family of 4).
-- Save & Return vote bullet now mode-split: standalone Skill(vote); team mode docket vote create + delegation_request per agents/sdet.md §Using /vote for Consensus.
-
-### Dimensions Evaluated
-Coherence (family lockstep), Orchestration (vote delegation).
-
-### Rename
-No rename (sibling code-review renamed → code-review-verdict; refs updated).
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +287,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Phase 2 coherence — moved report-emission COUPLING marker above "When NOT to Use"; all 4 family markers now byte-identical.
 - 2026-06-08: Phase 1 no-change (274 lines) — COUPLING marker byte-identical across 4-skill family; docket CLI usage verified vs sdet.md contracts.
 - 2026-06-09: Added OUT-OF-SCOPE deferral for runtime/render-only ACs (fem-kubernetes pitfall); threaded through FULL step 1, verdict ladder, report. Net -6.
+- 2026-06-09: Phase 2: code-review→code-review-verdict reference updates (lockstep) and vote-escalation mode-split in Save & Return.
+- 2026-06-09: Closed the refuted literal-command-AC gap: FULL-mode item 1 now mandates running an AC's named literal command VERBATIM — equivalents leave the named path un...
+- 2026-06-09: Removed one Failure Modes row duplicating the "ignore extras silently" rule already at Argument Handling L70 and violating the table's own abort-path scope....
+- 2026-06-09: Compacted 4 entries (2026-05-16..2026-05-18) into Compacted history per ADR 0001.

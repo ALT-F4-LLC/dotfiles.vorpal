@@ -1,5 +1,66 @@
 # Changelog: design-review
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the COUPLING comment's "keep its shape in sync" instruction for the Doubling Rule invited flattening verify-ac's intentionally divergent (delegation-only) Doubling Rule to this family's three-bullet delta shape. Added an explicit carve-out.
+
+### Changes
+- CLARIFY[COSMETIC]: COUPLING comment's Doubling Rule sync clause gains a parenthetical naming verify-ac's Doubling Rule as intentionally delegation-only (no Seats/dedupe/degraded bullets) — never normalize it to the three-bullet shape (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Staging guidance strengthened with the explicit never-hand-roll-mktemp clause; COUPLING comment gains the family silent-completion sync guard. Own trailing-line and path fixes landed in Phase 1; this pass completes family parity around them.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: "never hand-roll mktemp or carry $$ across separate Bash calls" added to the staging sentence (family anti-hand-roll parity).
+- COHERENCE: COUPLING comment extension (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Shrank the Doubling Rule to the family pointer+bullet template, closed two live staging defects (undefined $DRAFT_FILE leaking scratch to repo root; unresolvable bare script name yielding an unhandled exit 127), added a literal-vs-semantic rule for backticked spec tokens after a production false Blocker, and put the validator-required trailing confirmation line inside the Output Contract template. Findings: 5 → 4 sub / 1 cos / 1 rej / 2 def / 1 enc
+
+### Changes
+- REFACTOR[SUBSTANTIVE]: Doubling Rule shrunk 1,392B → 613B to the design-qa/verify-ac bullet template; every dropped mechanic verified present in team-lead.md Rule 8/Rule 7/step 14 before removal.
+- BUGFIX[SUBSTANTIVE]: staging guidance — prefer stdin; if staging, create under $TMPDIR in the same Bash call. Script invocation promoted to the full ~/.claude/scripts/ path (bare name unresolvable, verified exit 127, outside the documented 0/1/2 contract).
+- AMPLIFY[SUBSTANTIVE]: Common Discipline gains a literal-vs-semantic rule for backtick-quoted artifact tokens; ambiguous cases route to Question, not Blocker.
+- BUGFIX[SUBSTANTIVE]: Output Contract template now carries the trailing confirmation line — report_lint.py requires it in the linted body, while the section's own "no trailing notes" rule forbade appending it.
+- TRIM[COSMETIC]: removed the third inline copy of the recommendation ladder.
+
+### Dimensions Evaluated
+Selection, Over-Engineering, Bug/Correctness, Actionability, Redundancy, Coherence, Byte budget. Spec Alignment vacuous.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -200,76 +261,6 @@ Coherence, Actionability, Completeness, Over-Engineering, Rename.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Compacted 10 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
-
-### Changes
-- 10 entries (2026-05-16, 2026-05-16, 2026-05-17, 2026-05-18, 2026-05-19, 2026-05-20, 2026-05-25, 2026-05-28, 2026-05-28, 2026-05-29) replaced with ledger lines in ## Compacted history section.
-
-### Dimensions Evaluated
-History Compaction (ADR 0001).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-6 → 3-5. Measured net -2 (245 → 243).
-
-### Changes
-- CULL: Pre-flight step 3 "Resolve context" deleted (dead variable, lockstep with verify-ac/design-qa) — cited signal: coherence-reviewer grep verification.
-
-### Dimensions Evaluated
-Coherence (lockstep removal + renumber; no §-refs existed; no stale "Failure Modes" references after the Phase 1 inline — grep 0 hits), Consistency.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Inlined the empty-artifact abort guard at Pre-flight step 6 (matching design-qa's inline Empty-implementation guard structure) and removed the now-redundant single-row `## Failure Modes` section. Measured net -4 (249 → 245 per post-apply wc -l; reviewer estimate was -6).
-
-### Changes
-- CULL: Pre-flight step 6 "see Failure Modes" pointer → inline ABORT code-fence; `## Failure Modes` section removed — cited signal: single-row table duplicating an inline-guard pattern the design-qa sibling already inlines (structural parity + Over-Engineering trim; orchestrator grep-verified design-qa L95 inline guard and absence of a Failure Modes section).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST); Coherence (design-qa structural parity restored); vote-escalation mode-split and re-invocation parity verified sound; disable-model-invocation evaluated and rejected (ux-designer `skills:` preloads this skill).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 2 self-correct: restored the post-ABORT re-invocation line removed earlier this cycle. The Phase 1 removal claimed design-qa parity but design-qa:194 carries the identical line — the edit BROKE parity rather than restoring it. Net +2 (back to 249).
-
-### Changes
-- Re-inserted "The calling agent corrects in its own context and re-invokes `Skill(design-review, ...)`" after the validation ABORT fence, matching design-qa's structure exactly (grep-verified both at L221/L194 post-fix).
-
-### Dimensions Evaluated
-Coherence (sibling parity — empirical grep settled the conflicting Phase 1 claims).
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Removed re-invocation instruction after Validation Before Emit ABORT — it contradicted the ABORT contract (leaf aborts cannot be resumed in-place). Net -1.
-
-### Changes
-- Validation Before Emit: removed "calling agent corrects and re-invokes" line following the ABORT code-fence — on abort the skill ends; recovery is a fresh invocation. Restores parity with design-qa, which carries no such line at its abort gate.
-
-### Dimensions Evaluated
-All 8. Skill Design Quality / Actionability (HIGHEST — defect removal). Over-Engineering (net -1). Coherence (design-qa sibling parity restored).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +283,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Phase 2 — code-review→code-review-verdict reference updates (2 refs, lockstep only); Monitor retained in allowed-tools (family parity).
 - 2026-06-09: Full-cycle audit NO-OP — Skill(vote) signal resolved (parity block, nav pointer, mode-split) all verified via fresh grep.
 - 2026-06-09: Mythos/Fable-5 no changes — reasoning-echo/$-escape/recall-filter audits clean; validation ladder + 6 dimensions preserved.
+- 2026-06-10: Removed re-invocation instruction after Validation Before Emit ABORT — it contradicted the ABORT contract (leaf aborts cannot be resumed in-place). Net -1.
+- 2026-06-10: Phase 2 self-correct: restored the post-ABORT re-invocation line removed earlier this cycle. The Phase 1 removal claimed design-qa parity but design-qa:194 c...
+- 2026-06-10: Inlined the empty-artifact abort guard at Pre-flight step 6 (matching design-qa's inline Empty-implementation guard structure) and removed the now-redundant...
+- 2026-06-10: Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-6 → 3-5....
+- 2026-06-10: Compacted 10 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.

@@ -64,7 +64,6 @@ Error: Usage: Skill(simplify-scout, "<scope>") — name what to scan ("uncommitt
 **Ambiguity rules** (apply when multiple forms could match):
 
 - The literal `uncommitted` always resolves to the changed-diff form first. To scan a file or directory literally named `uncommitted`, prefix with `./` (e.g., `./uncommitted`).
-- A single existing token is tested as a file before a directory; on a real filesystem a path is one or the other, so first-match ordering (file-list → single-file → directory) is unambiguous.
 - Tokens that mix existing and non-existing paths do NOT resolve as a file list — if any token in a multi-token scope fails `test -f`, fall through and ABORT per the unresolvable rule below.
 
 If `<scope>` matches none of the above, ABORT:
@@ -228,6 +227,8 @@ LoC delta: {e.g. -3 (6 → 3)} · Why clearer: {one line — what the idiomatic 
 
 ### Reminder
 Report-only — no files written, no edits applied. The implementer chooses which findings to act on; this is not a merge verdict (formal review is Skill(code-review-verdict)).
+
+Simplify scout emitted ({count} opportunities, 0 edits applied).
 ````
 
 Every finding MUST include: `file:line`, the mapped principle number (`1–12`) with its short name, the confidence rung, the current snippet, the idiomatic rewrite (comment-free), the LoC delta, and the one-line "Why clearer." Rewrites that point in the line-count direction at the cost of clarity MUST NOT appear — they fail Calibration and are dropped during the scan.
@@ -243,10 +244,10 @@ Before emitting the report, verify in the calling agent's context:
 Then mechanically validate everything else text-decidable — sections present and in order (`Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`; empty/trivial scope's single-line short-circuit is exempt), confidence rung on every finding on the `Clear win | Likely win | Judgment call` allow-list with rejection of any code-review-verdict-style severity-ladder term (Blocker/Concern/Critical/etc. — this scout emits no verdict), the no-edit guarantee ("no files written, no edits applied") present, a placeholder scan (no unsubstituted `{...}` template token or `TBD`/`TODO` text outside fenced snippets), and the trailing confirmation line present — by piping the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a unique-per-invocation `mktemp` path under `$TMPDIR` and runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_stage_lint.sh simplify-scout "$DRAFT_FILE"
+~/.claude/scripts/report_stage_lint.sh simplify-scout "$DRAFT_FILE"
 ```
 
-(or pipe the report body on stdin and omit `$DRAFT_FILE`). Handle the exit code:
+**Prefer the stdin form** — pipe the report body in and omit `$DRAFT_FILE`, so there is no path to get wrong. If you stage a draft file, create it under `$TMPDIR` in the SAME Bash call that lints it, and never hand-roll `mktemp` or carry `$$`/a computed temp path across separate Bash calls — each Bash call is a fresh shell process, so a path computed in an earlier call is gone. Handle the exit code:
 
 - **exit 0** — emit the report in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT:
@@ -258,12 +259,6 @@ report_stage_lint.sh simplify-scout "$DRAFT_FILE"
 
 ## Save & Return
 
-No file is written and no edit is applied (this is the report-only guarantee). End with the confirmation line:
-
-```
-Simplify scout emitted ({count} opportunities, 0 edits applied).
-```
-
-where `{count}` is the number of findings (`0` for an empty/trivial scope).
+No file is written and no edit is applied (this is the report-only guarantee). The findings report ends with the confirmation line carried in the Output Contract template (`{count}` = number of findings) — it is part of the linted body, not appended after. The empty/trivial-scope short-circuit is emitted ALONE with NO confirmation line: the linter matches that single line as a whole-body short-form, so appending one drops it into full validation and fails `section-order`.
 
 **The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.

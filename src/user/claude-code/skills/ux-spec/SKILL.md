@@ -83,7 +83,8 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 ## Pre-flight
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/ux/{slug}.md`. The output directory is
+2. **Resolve `{output_path}`** as `docs/ux/{slug}.md`. The output directory
+   `{output_dir}` is
    `docs/ux/`.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
@@ -180,7 +181,9 @@ Field rules:
 ### Required Sections
 
 The UX spec body MUST contain these top-level sections, in this order. Each is a
-`##` heading in the drafted document.
+`##` heading in the drafted document carrying the section title ONLY — the list
+numbers below are NOT part of the heading (`## Overview`, never `## 1. Overview`).
+The validator matches heading text exactly.
 
 1. **Overview** — surface type, users (skill/context/frequency), key workflows
    (3-5 prioritized), success criteria (concrete, testable), success metrics
@@ -223,7 +226,7 @@ The UX spec body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). Authority: `~/.claude/agents/ux-designer.md` (repo: `src/user/claude-code/agents/ux-designer.md`).
+Mermaid is **required** for every UX spec (no override) — at least one block showing a user flow, state transition, or cross-surface journey. Acceptable block fences are ` ```mermaid ` (lowercase, no space). The block's FIRST non-blank line must start with a Mermaid diagram-type keyword (`journey`, `stateDiagram-v2`, `graph`/`flowchart`, `sequenceDiagram`, …) — a leading `%%` comment line fails the check. Authority: `~/.claude/agents/ux-designer.md` (repo: `src/user/claude-code/agents/ux-designer.md`).
 
 For non-GUI surfaces (CLI flag, API endpoint, config schema, log format), a
 cross-surface journey (e.g., `cli invocation → API call → persisted config`) or
@@ -238,10 +241,17 @@ placeholder scan — is mechanized by the shared `doc_validate.py`, the single s
 of truth for what a valid UX spec must satisfy. Validate the drafted document before
 the final Write:
 
-1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
-   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
-2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type ux-spec "$TMPDIR/{slug}.md"`
-   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
+   stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
+   never expand shell variables, so `$TMPDIR/{slug}.md` is treated as a relative
+   literal and resolved against the repo root, not the real temp dir. Then `Write` the
+   complete drafted content (frontmatter + body) to `{staging_dir}/{slug}.md`.
+2. **Run the validator.** `Bash python3 ~/.claude/scripts/doc_validate.py --type ux-spec "{staging_dir}/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`) — the same resolved `{staging_dir}`,
+   never a re-expanded `$TMPDIR`, so an unset-`TMPDIR` caller validates the file it just
+   wrote. Invoke via `python3`, never as a bare executable: a deployed copy that lost its
+   executable bit exits 126, which no branch below handles; under `python3` a missing
+   validator still exits 2.
 3. **Act on the exit code:**
    - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
      `docs/ux/...`).

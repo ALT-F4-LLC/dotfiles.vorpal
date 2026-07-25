@@ -1,5 +1,65 @@
 # Changelog: design-qa
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the COUPLING comment's "keep its shape in sync" instruction for the Doubling Rule invited flattening verify-ac's intentionally divergent (delegation-only) Doubling Rule to this family's three-bullet delta shape. Added an explicit carve-out.
+
+### Changes
+- CLARIFY[COSMETIC]: COUPLING comment's Doubling Rule sync clause gains a parenthetical naming verify-ac's Doubling Rule as intentionally delegation-only (no Seats/dedupe/degraded bullets) — never normalize it to the three-bullet shape (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Template now carries the trailing confirmation line; silent-completion self-check normalized to the family structure; lint invocation gains full path + the anti-hand-roll staging guard; COUPLING comment extended.
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: `Design QA report emitted ({verdict}).` added inside the Output Contract template.
+- BUGFIX[SUBSTANTIVE]: ~/.claude/scripts/ prefix on the report_stage_lint.sh fence line; stdin-preferred + never-hand-roll-mktemp guard added.
+- REFACTOR[SUBSTANTIVE]: silent-completion self-check normalized to family sentence structure, channel tail preserved.
+- COHERENCE: COUPLING comment extension (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence, Bug/Correctness. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Collapsed the Doubling Rule from a 1380-byte restatement of team-lead.md Rule 8 into a pointer plus the four genuine skill-specific deltas, removing design-qa's share of a 4-way hand-synced drift surface. Verified the cluster mktemp staging bug is already fixed here (fixed 2026-07-20; delegates to report_stage_lint.sh, carries no template). Findings: 4 → 1 sub / 0 cos / 1 rej / 1 def / 1 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: Doubling Rule reduced to a team-lead.md Rule 8 / Rule 7 / step 14 pointer plus deltas only — seat names, `(spec section, surface)` dedupe key, verbatim DEGRADED annotation, standalone carve-out. (-771 bytes; I-code-review-verdict-2b)
+- No edit for H-design-qa-2 (mktemp): ALREADY-ENCODED — verified no literal template remains.
+
+### Dimensions Evaluated
+Over-Engineering, Coherence, Skill Design Quality, Actionability, Completeness, Orchestration, Spec Alignment, Rename.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -198,77 +258,6 @@ Actionability, Completeness, Coherence, Over-Engineering, Rename.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-7 → 3-6. Measured net -2 (214 → 212). Family ruling recorded: disable-model-invocation NOT adopted (agents/ux-designer.md `skills:` preload path is real).
-
-### Changes
-- CULL: Pre-flight step 3 "Resolve context" deleted (dead variable, lockstep with verify-ac/design-review) — cited signal: coherence-reviewer grep verification.
-- Phase 2 rulings: silent-completion phrasing variance ruled acceptable (all four family carriers present, content equivalent); disable-model-invocation declined family-wide.
-
-### Dimensions Evaluated
-Coherence (lockstep removal + renumber; no §-refs existed), Consistency.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-No changes applied. Reviewer proposed `disable-model-invocation: true` + When-to-Use trim, but the sibling design-review reviewer rejected the same flag and orchestrator grep confirmed agents/ux-designer.md lists design-qa under `skills:` (preload reliance) — conflicting parity-bound recommendation deferred to Phase 2.
-
-### Changes
-- None (deferred). disable-model-invocation family question (design-qa/design-review, possibly code-review-verdict/verify-ac) routed to Phase 2 with the empirical datum above.
-
-### Dimensions Evaluated
-All 8; shutdown-handshake verified lead-initiated; post-ABORT re-invocation parity with design-review verified clean (L194/L221); COUPLING marker byte-identical.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 11 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 11 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Phase 1 audit: NO changes. All historical-audit signals (render-gate mandate, HTTP-200 vs. rendered-content liveness, Marp/static-export unbundled-asset risk) verified fully encoded at L107-108 and Severity ladder L123. Docket CLI references carry no phantom flags. Consecutive NO-OP: 4th cycle.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (214 lines — within budget, no untrimmable redundancy); Completeness (both audit signals pre-encoded, grep-confirmed); Coherence (COUPLING marker, Doubling Rule, family parity).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO changes. Render-gate signal (3rd consecutive re-fire from cross-project memory) definitively closed — mandate fully encoded at L107 (media liveness by render), L108 (render-to-image + visually READ, MANDATORY), L123 (Blocker row). Fresh grep citations recorded.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (214 lines, parity-bound blocks only); Coherence (COUPLING marker + Doubling Rule byte-parity with design-review confirmed).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -292,3 +281,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Phase 1 no-change verdict (2nd consecutive) — verified render-content-not-liveness + perceptual-legibility-at-scale signals already Blocker-enforced (added 2026-06-04).
 - 2026-06-09: Mythos/Fable-5 no changes — render-gate signal (fem-kubernetes) verified fully encoded; reasoning-echo/$-escape/recall-filter audits clean.
 - 2026-06-09: Phase 2 — MVP-cutline consumer note added to Pre-flight; code-review→code-review-verdict reference updates (lockstep).
+- 2026-06-09: Full-cycle audit: NO changes. Render-gate signal (3rd consecutive re-fire from cross-project memory) definitively closed — mandate fully encoded at L107 (med...
+- 2026-06-10: Phase 1 audit: NO changes. All historical-audit signals (render-gate mandate, HTTP-200 vs. rendered-content liveness, Marp/static-export unbundled-asset risk...
+- 2026-06-10: Compacted 11 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
+- 2026-06-10: No changes applied. Reviewer proposed `disable-model-invocation: true` + When-to-Use trim, but the sibling design-review reviewer rejected the same flag and...
+- 2026-06-10: Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-7 → 3-6....

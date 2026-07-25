@@ -1,5 +1,38 @@
 # Changelog: vote
 
+## 2026-07-24
+
+### Summary
+Compacted 2 entries (2026-06-17..2026-06-19) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Escaped the skill fleet's last unescaped `$ARGUMENTS` (Argument Handling rendered its vote_id-detection command with the argument elided). Retired the hardcoded gold-alias literal, added a blind-retry guard on proposal creation and a premise-staleness check for reviewers, and culled a counterfactual paragraph. Net +540.
+
+### Changes
+- COHERENCE[SUBSTANTIVE]: `$ARGUMENTS` → `\$ARGUMENTS` at L27 — grep-verified as the only unescaped occurrence fleet-wide; the 2026-06-09 escaping cycle missed vote.
+- COHERENCE[SUBSTANTIVE]: dropped `model="fable"` from the CRITICAL-upgrade sentence (I-vote-2); now resolves the gold alias live from team-lead.md's Tiers block, the sole tier→alias authority.
+- COMPLETENESS[SUBSTANTIVE]: Phase 1 blind-retry guard (H-vote-2) — a 529 after a landed create yields a permanently uncommittable duplicate; verify via `docket vote list --json -s open`.
+- ACTIONABILITY[SUBSTANTIVE]: reviewer must re-verify a state-dependent premise before casting (H-vote-3); a stale premise is a Blocker.
+- CULL[COSMETIC]: removed the 636-byte "Subtle-correctness point" counterfactual at L137.
+- Findings: 5 → 3 sub / 1 cos / 0 rej / 1 def / 1 enc
+
+### Dimensions Evaluated
+All 8. Pass A: 5 ledger findings dispositioned (3 applied, 1 already-encoded, 1 deferred). Pass B: one cull offsets 88% of Pass A's additions.
+
+### Rename
+No rename.
+
 ## 2026-07-22
 
 ### Summary
@@ -203,38 +236,6 @@ Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Cohe
 ### Rename
 No rename.
 
-## 2026-06-19
-
-### Summary
-Added a post-vote citation note: a committed outcome seals the voted artifact as canonical authority, so downstream references cite it verbatim.
-
-### Changes
-- AMPLIFY (§If Quorum Is Reached, step 1): a committed outcome seals the voted artifact (TDD/ADR/plan); downstream briefs/dispatches MUST cite the committed artifact verbatim (file+line), never paraphrase. Reciprocal to team-lead.md:243 brief-citation requirement; closes the recurring post-vote-drift gap (hermes pitfall). Net +4.
-- Drift (rate 7): all 7 SKIP — template placeholders, output fields, detection-logic prose.
-
-### Dimensions Evaluated
-Behavioral Completeness, Over-Engineering, Coherence, Content Gate, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-Added an AC-reconciliation check after commit, a deferred-vs-cancelled disposition-clarity rule on escalation, and corrected an inverted reviewer-template shutdown direction. Trial: AC-reconciliation / disposition-clarity / shutdown-direction → adopted.
-
-### Changes
-- AMPLIFY: AC-reconciliation check — an outcome reversing prior direction flags that pre-vote sub-issue ACs may encode the contradicted direction and must be reconciled before implementation.
-- AMPLIFY: disposition clarity — escalation `--outcome` must distinguish deferred ("blocked by X") from cancelled ("superseded by X") to prevent wrong issue closures.
-- CULL: reviewer-template "emit shutdown_request" → idle-AWAIT the coordinator's request (canonical protocol).
-- Deferred: `disable-model-invocation` (verify it doesn't block team-lead's `Skill(vote)` delegation first).
-
-### Dimensions Evaluated
-Completeness / Correctness (AMPLIFY), others RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -287,3 +288,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Deleted phantom --double flag/doubled=true parenthetical — confirmed non-existent against docket vote create --help. Net 0.
 - 2026-06-10: Compacted 8 entries (2026-05-13..2026-05-28) into Compacted history per ADR 0001.
 - 2026-06-10: NO-OP, all 8 dimensions clean — docket vote cast/create CLI zero-drift; silent-idle verdict capture hardened on correct mechanism.
+- 2026-06-17: AC-reconciliation check after commit, deferred-vs-cancelled disposition-clarity rule, and corrected inverted reviewer-template shutdown direction. | Trial: AC-reconciliation / disposition-clarity / shutdown-direction → adopted.
+- 2026-06-19: Added a post-vote citation note: a committed outcome seals the voted artifact as canonical authority, so downstream references cite it verbatim.

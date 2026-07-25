@@ -1,5 +1,66 @@
 # Changelog: prd
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-06-05..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: "TDDs have none either" read ambiguously (either "no override" or "no Validation Before Save enforcement" depending on which antecedent clause "none" binds to).
+
+### Changes
+- CLARIFY[COSMETIC]: "TDDs have none either" → "TDDs likewise have no override" — pins the antecedent explicitly.
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Validation-Before-Save steps 1-2 normalized to the family union shape (tdd's resolved-path + python3 + exit-126 + missing-validator clauses) keeping {staging_dir}; {output_dir} bound explicitly in Pre-flight; false "Unlike TDDs...override" claim corrected against doc_validate.py.
+
+### Changes
+- REFACTOR[SUBSTANTIVE]: steps 1-2 → union/reference shape, quoted staged path.
+- COHERENCE: Pre-flight step 2 binds {output_dir} (consumed by CANONICAL:SAVE_AND_RETURN; edit outside the block).
+- BUGFIX[SUBSTANTIVE]: Mermaid Mandate no longer implies a TDD pure-policy override exists (verified: mermaid:True unconditional for both; adr is the only type without the mandate).
+
+### Dimensions Evaluated
+Coherence, Bug/Correctness. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Fixed three verified-live defects in the Validation/Output-Contract path: Write never expands $TMPDIR so the staged draft landed off-target; the validator was invoked as a bare executable, making a lost +x bit exit 126 outside the documented 0/1/2 contract; the Mermaid mandate omitted the first-line-keyword rule the validator enforces and cited a nonexistent Validation §5. One Pass-B trim. Findings: 3 sub / 1 cos / 0 rej / 0 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: staging step resolves the staging dir via `Bash echo "${TMPDIR:-/tmp}"` and Writes the resolved absolute path; validator invoked as `python3 ~/.claude/scripts/doc_validate.py` so a lost executable bit no longer yields an unhandled exit 126. Cross-cutting — same defect in tdd/adr/ux-spec.
+- AMPLIFY[SUBSTANTIVE]: Mermaid Mandate now states the first-non-blank-line diagram-keyword rule and points at "Validation Before Save" instead of the nonexistent §5.
+- AMPLIFY[SUBSTANTIVE]: Required Sections states headings carry the title only, never the list number (H-ux-spec-1 parity family fix).
+- CULL[COSMETIC]: removed the third restatement of "no overwrite path" from the Reserved-Name List preamble.
+
+### Dimensions Evaluated
+All 8. Pass A: 3 verified defects applied. Pass B: 1 trim; Validation/Failure-Mode pairing retained per 2026-07-10.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -197,77 +258,6 @@ None — History Compaction per ADR 0001, not a review cycle.
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO changes. Reserved-name ordering signal verified resolved (refusal step 4 L85 precedes collision dialog step 5 L86). Stale 2026-06-04 entry (claimed Glob/Grep removal never reflected in live file) noted as historical artifact — entries immutable, live state correct.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (275 lines, no trims remaining); Coherence (allowed-tools vs body consistent; sibling parity with adr/tdd/ux-spec intact).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. Historical overwrite-guard signal verified resolved in live file (reserved-name refusal step 4 L85 precedes collision dialog step 5 L87; Failure Mode table ordering matches). Reasoning-echo clean; $-escape clean.
-
-### Changes
-- None (NO-OP verdict, guard-ordering grep-cited against live file).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-One completeness fix (net −1): reordered Pre-flight so reserved-name refusal precedes the collision check. All 7 reserved files exist on disk after init-specs runs, so the old ordering routed reserved slugs into COLLISION_DIALOG's "Overwrite" option before the hard-refusal fired — contradicting the Failure Mode table's "(and slug is not reserved)" precedence.
-
-### Changes
-- Pre-flight: reserved-name refusal moved from step 5 to step 4, ahead of collision; cross-reference in When NOT to Use updated (step 5 → step 4).
-- Phase-0 doc audit clean: no unescaped $-digit, description under budget, format authority within compaction cap.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no remaining trims; rejected docket-doc adoption as reversal of c10195b), Completeness (primary), Coherence (init-specs reciprocal coupling verified intact).
-
-### Rename
-No rename.
-
-## 2026-06-08
-
-### Summary
-Phase 1 no-change verdict (277 lines, ~25 cycles). Verified load-bearing claims: CANONICAL blocks (BANNER/ARGUMENT_HANDLING/COLLISION_DIALOG/SAVE_AND_RETURN) byte-identical (md5) across prd/tdd/adr/ux-spec; docs-path taxonomy match (singular docs/spec/, prd writes {slug}.md); reserved-name reciprocal coupling with init-specs intact.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — Validation/Failure-Mode pairing is deliberate, not redundant), Coherence (CANONICAL parity + reserved-name lockstep), Orchestration (leaf confirmed).
-
-### Rename
-No rename.
-
-## 2026-06-05
-
-### Summary
-Phase 1 no-change verdict. Phase 2: restored the body-`status:` authority caveat (lockstep with ux-spec) — warns the field is documentation-only, names Docket `.data.status` as the single source of truth for downstream gates, never gate on the body value.
-
-### Changes
-- `status` field rule: appended source-of-truth + documentation-only + never-gate caveat (+4 lines, identical to ux-spec).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — prior cycles already deduped), Coherence (family status-authority parity).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -294,3 +284,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-05-30: Single over-engineering trim: collapsed the triple-listed `maturity` allowed-set to one canonical source (Field rules), preventing independent drift. Net 0.
 - 2026-06-04: Dropped vestigial Glob/Grep from allowed-tools — prior-art discovery uses docket doc list/show (Bash) + Read; lockstep with adr/tdd/ux-spec.
 - 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §4 Section-order validation (count ## outside fences); lockstep with tdd/adr/ux-spec.
+- 2026-06-05: Phase 1 no-change verdict. Phase 2: restored the body-`status:` authority caveat (lockstep with ux-spec) — warns the field is documentation-only, names Docke...
+- 2026-06-08: Phase 1 no-change verdict (277 lines, ~25 cycles). Verified load-bearing claims: CANONICAL blocks (BANNER/ARGUMENT_HANDLING/COLLISION_DIALOG/SAVE_AND_RETURN)...
+- 2026-06-09: One completeness fix (net −1): reordered Pre-flight so reserved-name refusal precedes the collision check. All 7 reserved files exist on disk after init-spec...
+- 2026-06-09: Mythos/Fable-5 cycle audit: NO changes. Historical overwrite-guard signal verified resolved in live file (reserved-name refusal step 4 L85 precedes collision...
+- 2026-06-09: Full-cycle audit: NO changes. Reserved-name ordering signal verified resolved (refusal step 4 L85 precedes collision dialog step 5 L86). Stale 2026-06-04 ent...

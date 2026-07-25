@@ -124,7 +124,6 @@ functional-value	.claude/skills/evolve-model-distribution/SKILL.md	model="sonnet
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	out-of-vocabulary/suspended alias	closed alias vocabulary description
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	role always `sonnet` but Mimir shows `opus` tokens	illustrative discrepancy example
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	bare alias, e.g. `opus`	illustrative example value
-deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	opus`→`silver`, `sonnet`→`bronze`	alias-to-tier mapping enumeration
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	model="opus"	spawn-call template -- alias used as a literal argument
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	alias (`haiku`)	naming the suspended alias
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	alias (e.g. `haiku`)	naming the suspended alias
@@ -143,6 +142,7 @@ functional-value	.claude/skills/evolve-skills/SKILL.md	model="sonnet")`	spawn-ca
 functional-value	.claude/skills/evolve-skills/SKILL.md	model="fable")`	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-skills/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-skills/SKILL.md	, subagent_type="distinguished-engineer", model="fable", prompt="...")	spawn-call template -- alias used as a literal argument
+provenance-record	.claude/skills/evolve-skills/SKILL.md	Trial: downgrade disambiguation-reviewer fable→opus → operator-approved, applied	verbatim quoted changelog Trial: line, Reviewer-tier note anti-drift anchor
 provenance-record	.claude/skills/evolve-config/SKILL.md	fable-monoculture` local-optimum collapse	dated/commit-cited historical incident
 deliberate-enumeration	.claude/skills/evolve-config/SKILL.md	here, vs `distinguished-engineer`/`fable`	reviewer-tier split explanation naming role to model
 functional-value	.claude/skills/evolve-config/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
@@ -153,7 +153,6 @@ provenance-record	.claude/skills/evolve-coherence/SKILL.md	former hand-executed 
 provenance-record	.claude/skills/evolve-coherence/SKILL.md	retired the former `xref-builder` sonnet spawn	citation of a superseded prior practice
 functional-value	.claude/skills/evolve-coherence/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/vote/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
-functional-value	src/user/claude-code/skills/vote/SKILL.md	model="fable"`)	alias used as a literal argument, cited in prose
 provenance-record	src/user/claude-code/skills/team-doctrine/SKILL.md	Fable-distilled completeness	cross-reference to the named heuristics doc/title
 functional-value	src/user/claude-code/skills/init-specs/SKILL.md	model="sonnet", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	src/user/claude-code/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation
@@ -166,3 +165,6 @@ provenance-record	.claude/agent-memory	sonnet	agent-memory narrative entry -- hi
 provenance-record	.claude/agent-memory	Sonnet	agent-memory narrative entry -- historical incident record, not a live model claim
 provenance-record	.claude/agent-memory	haiku	agent-memory narrative entry -- historical incident record, not a live model claim
 provenance-record	.claude/agent-memory	Haiku	agent-memory narrative entry -- historical incident record, not a live model claim
+deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	Sonnet, Opus, Fable, Haiku,	naming the model/tier-name category rule 3 forbids, not asserting any of them
+functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	N× opus→<resolved>, M× sonnet→<resolved>	illustrative format-string fixture showing the script's real requested_model/resolved_model output shape, not a hardcoded model claim
+deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	both record bare ALIASES (`sonnet` / `opus` / `fable`)	naming the closed alias vocabulary this skill categorizes, not asserting a specific model

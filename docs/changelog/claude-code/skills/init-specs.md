@@ -1,5 +1,33 @@
 # Changelog: init-specs
 
+## 2026-07-24
+
+### Summary
+Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+No-change verdict. I-init-specs-1 (bump spawn-template model sonnet→opus) REJECTED on live evidence for the FOURTH cycle: team-lead.md:243 routes init-specs spec-gen to the BRONZE tier by name, team-lead.md:241's never-below-silver enumeration excludes spec-*, model_census_exemptions.tsv:157 already adjudicates the literal as a functional-value, and model_census.sh passes with actionable=0. Phase 0's own model-routing-auditor returned "no improvement opportunity grounded in data" for this skill. Findings: 0 sub / 0 cos / 1 rej / 0 def / 0 enc
+
+### Changes
+- None (NO-OP verdict). I-init-specs-1 rejected with evidence; recreating it would desync SKILL.md:96 from its routing authority.
+
+### Dimensions Evaluated
+All 8; Coherence (PRIMARY — model-pin vs team-lead.md live routing authority); Over-Engineering (no safe trim found).
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -215,34 +243,6 @@ All 8; Orchestration & Agent Teams (shutdown terminology correctness), Coherence
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 27 entries (2026-03-19..2026-05-07) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 27 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Phase 2 fix: escaped 3 documentary `\$ARGUMENTS` occurrences (L21/52/60). The prior "backtick-inline documented-variable, deliberately not escaped" rationale is refuted by this cycle's empirical evidence that substitution occurs inside backticks — bare occurrences corrupted Argument Handling/Pre-flight prose at invocation. Net 0 (183 lines).
-
-### Changes
-- L21/52/60: backticked `$ARGUMENTS` → `\$ARGUMENTS` in documentary prose.
-
-### Dimensions Evaluated
-Skill Design Quality (arg-escape correctness); Coherence (family-wide documentary-escape ruling; vote L27 live command confirmed stays bare).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +290,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Third consecutive no-change verdict — $+digit audit clean; COUPLING reciprocity re-confirmed post refactor; RESERVED-NAMES exact-match.
 - 2026-06-09: Fourth consecutive no-change — step-ordering NO-OP (unknown-arg abort precedes Pre-flight); Spec Files exact-match team-lead taxonomy.
 - 2026-06-09: Mythos/Fable-5 no-change (3rd consecutive) — $ARGUMENTS hits are documented-variable idiom, deliberately not escaped.
+- 2026-06-09: Phase 2 fix: escaped 3 documentary `\$ARGUMENTS` occurrences (L21/52/60). The prior "backtick-inline documented-variable, deliberately not escaped" rationale...
+- 2026-06-09: Compacted 27 entries (2026-03-19..2026-05-07) into Compacted history per ADR 0001.

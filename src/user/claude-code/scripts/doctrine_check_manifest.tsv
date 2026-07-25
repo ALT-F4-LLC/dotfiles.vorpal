@@ -98,7 +98,6 @@ ARGUMENT_HANDLING	src/user/claude-code/skills/adr/SKILL.md
 ARGUMENT_HANDLING	src/user/claude-code/skills/prd/SKILL.md
 ARGUMENT_HANDLING	src/user/claude-code/skills/tdd/SKILL.md
 ARGUMENT_HANDLING	src/user/claude-code/skills/ux-spec/SKILL.md
-COLLISION_DIALOG	src/user/claude-code/skills/adr/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/prd/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/tdd/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/ux-spec/SKILL.md

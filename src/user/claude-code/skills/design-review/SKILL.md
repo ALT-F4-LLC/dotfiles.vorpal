@@ -73,11 +73,16 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design review defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then dispatches both in the SAME turn (eager parallel dispatch) — the persistent `ux-advisor` via SendMessage (a CLOSED-set name, never re-spawned) + one ephemeral `design-review-{N}` via `Agent()`. The ephemeral `design-review-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `~/.claude/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.claude/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, and verdict reconciliation are owned by `~/.claude/agents/team-lead.md` Rule 8 / Rule 7 / step 14 — read them there, do not restate them here. Skill-specific delta only:
+
+- **Seats**: single (default) = persistent `ux-advisor` via SendMessage; doubled = `ux-advisor` + one ephemeral `design-review-{N}`.
+- **Finding-merge dedupe key**: `(spec section, surface)`.
+- **Degraded-fallback annotation**, verbatim: `DEGRADED: single-reviewer (ephemeral failed 2×)`.
+- Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
 - Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
@@ -147,11 +152,12 @@ Each dimension is anchored to named Apple HIG design principles — definitions 
 - **Ask clarifying questions first** when intent is ambiguous — use `AskUserQuestion` per the calling agent's structural contract. Peer SendMessage is the calling agent's job, not this skill's. Do NOT ask when the answer is in the artifact.
 - **Honest critique with evidence.** Do NOT default to Approve. A justified Block with a concrete alternative is more valuable than an unexamined Approve. Cite the artifact section, workflow, or precedent that grounds each finding — banned hedges: "clearly", "obviously", "should work", "definitely".
 - **Pair every Blocker with a concrete alternative.** A Blocker without an alternative is half a finding.
+- **Decide literal vs. semantic before grading a backticked token.** A backtick-quoted token in the artifact (`--no-color`, an error string, a config key) is either a LITERAL the surface must render verbatim or a SEMANTIC stand-in for a behavior. Read the surrounding sentence to decide which the author meant; if the artifact does not disambiguate, raise a Question, not a Blocker. Grading a literal against a semantic requirement (or the reverse) produces a false Blocker.
 - **Report every finding — do NOT self-filter.** Report each issue found, including low-severity and uncertain ones, each tagged with its severity (Blocker/Concern/Suggestion/Question/Praise — classification, not suppression). Filtering and ranking happen downstream (calling agent / team-lead reconciliation), never here — declining to report a finding because it seems minor is a recall defect.
 
 ## Output Contract
 
-Emit the review verbatim to the calling agent's context. Do NOT echo the raw artifact body. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format. **If the harness blocks this skill's invocation** (Stage-2 auto-mode classifier), render the review directly per THIS format authority — every required section in order and the Approve / Approve with follow-up / Block / Redesign / Incremental Improvement recommendation ladder — never an improvised structure.
+Emit the review verbatim to the calling agent's context. Do NOT echo the raw artifact body. Do NOT save to disk. Do NOT add a preamble or trailing notes outside the format. **If the harness blocks this skill's invocation** (Stage-2 auto-mode classifier), render the review directly per THIS format authority — every required section in order, the recommendation ladder above, and the trailing confirmation line — never an improvised structure.
 
 ```
 ## Design Review: {Artifact Title}
@@ -205,6 +211,8 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 
 ### Next Steps
 {What the calling agent should do — e.g., deliver the structured verdict to the calling agent / team-lead, escalate to vote for cross-surface precedent, route Blockers to the author for revision, propose redesign with concrete starting points}
+
+Design review emitted ({recommendation}).
 ```
 
 ## Validation Before Emit
@@ -212,10 +220,10 @@ One of: **Approve** / **Approve with follow-up** / **Block** / **Redesign** / **
 Mechanically validate the drafted review before emitting it. Pipe the review verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — doubled panels (`design-review-{N}`) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_stage_lint.sh design-review "$DRAFT_FILE"
+~/.claude/scripts/report_stage_lint.sh design-review "$DRAFT_FILE"
 ```
 
-(or pipe the review body on stdin and omit `$DRAFT_FILE`). Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
+**Prefer the stdin form** — pipe the review body in and omit `$DRAFT_FILE`, so there is no path to get wrong. If you stage a draft file, create it under `$TMPDIR` in the SAME Bash call that lints it, and never hand-roll `mktemp` or carry `$$` across separate Bash calls: a bare relative filename lands in the repo root as untracked scratch, and each Bash call is a fresh shell, so a path computed in an earlier call is gone. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the review in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-review, "<scope>")`:

@@ -24,7 +24,7 @@ You are the **Consensus Coordinator**. You spawn independent reviewers, collect 
 
 The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` — describe what you want voted on." Otherwise dispatch:
 
-- **Argument is a vote_id** — Detection: run `docket vote show $ARGUMENTS --json`; treat as vote_id iff exit 0 (do NOT pattern-match the string shape). Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
+- **Argument is a vote_id** — Detection: run `docket vote show \$ARGUMENTS --json`; treat as vote_id iff exit 0 (do NOT pattern-match the string shape). Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
 - **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. Standalone operator path only. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
 
 ---
@@ -134,8 +134,7 @@ Before selecting reviewers, apply proposer exclusion and uniqueness:
 
 > Unmapped `created_by`: apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
 
-**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD-acceptance seat. **Subtle-correctness point (post-C1 mechanics):** if a DE-authored TDD-acceptance proposal were ever mis-created with `created_by="advisor"`/`"tdd-author-*"`, it would now hit the **author-type carve-out** (Proposer Exclusion step 4) instead of step 3's full type-removal — the carve-out seats a fresh `@staff-engineer` instance rather than stripping the type, so the reviewer count is not lost. But the proposal is still mischaracterized (DE's TDD is not staff-authored, so no exclusion OR carve-out logic should fire at all) — the role-identity convention remains what prevents this mislabeling from occurring in the first place.
-
+**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD-acceptance seat.
 ### Uniqueness Constraint
 
 Each reviewer in a single vote round MUST have a unique `subagent_type`.
@@ -164,6 +163,8 @@ docket vote create \
 ```
 
 Extract `id` from the `--json` response — this is `{vote-id}` for all subsequent commands. Use `-n` and `--threshold` values from the Criticality Classification table.
+
+**Never blind-retry a failed `docket vote create`.** A transient harness error (529/500) can surface AFTER the proposal already landed, so a blind retry creates a duplicate open proposal that can never be committed (commit requires `status: approved`) and permanently pollutes the audit record. Before any retry, list what actually landed with `docket vote list --json -s open | jq '.data.proposals[] | {id, description}'` (verified envelope: `.data.proposals`, NOT a bare `.proposals`); if your description is already there, reuse that `id` instead of re-creating.
 
 **Create reviewer tasks** (standalone mode only): your reviewers join the session's single implicit team on your first `Agent(name=..., ...)` reviewer spawn (see Spawning below; the runtime ignores `team_name`); create one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
 
@@ -220,6 +221,10 @@ and you MUST NOT attempt to infer or coordinate with other reviewers. Do not def
 APPROVE — a justified REJECT is more valuable than an unexamined approval. Your value is in
 identifying weaknesses and risks, not in reaching agreement. Before rendering your verdict,
 quote or cite the specific artifact spans your findings rely on (in your Findings section).
+If the proposal rests on a premise about CURRENT repo or system state (e.g. a
+risk-acceptance ADR asserting "X is unreachable because Y"), re-verify that premise against
+ground truth NOW — a round spans wall-clock time and a premise true at proposal-creation can go
+stale mid-flight; a stale premise is a Blocker, not a Concern.
 Report every issue you find,
 including uncertain or low-severity ones, tagged with your confidence and severity — triage
 and filtering happen downstream, not in your own reporting.
@@ -262,7 +267,7 @@ SendMessage the COMPLETE structured review above to team-lead (your coordinator)
 {Insert the relevant checklist below based on the reviewer's agent type}
 ````
 
-CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier (pass the alias the Tiers block resolves it to — `model="fable"`) — upward-only, mirrors team-lead's escape hatch.
+CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier — upward-only, mirrors team-lead's escape hatch. Resolve the CURRENT gold alias live from the Tiers block in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) and pass that bare alias to `model=`; never hardcode it here — tier→alias resolves in the Tiers block and nowhere else, so a literal copied into this file silently overrides the authority it cites.
 
 | Agent | Checklist Focus |
 |---|---|

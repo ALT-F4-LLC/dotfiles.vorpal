@@ -88,7 +88,7 @@ For EACH target agent, mine read-only sources for signals the agent is failing, 
    - `TeammateIdle` events: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the agent name. Cluster repeat idles per agent per session.
    - `-r2` respawn convention (canonical from `src/user/claude-code/agents/team-lead.md`): `grep -hE '"name":"[^"]*-r2"' <transcripts>` then extract root name (strip `-r2` suffix). Count DISTINCT respawn events by `name`+`sessionId` (not replicated lines); each distinct event means the agent stalled once.
    - Shutdown-rejection: grep `"shutdown_response"` messages where the agent responded with `"approve":false`. Capture the `reason` field — signals ambiguous lifecycle definition.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
+   - **Model distribution (derive live — never assume a model name):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Read BOTH `requested_model` and `resolved_model` per spawn: alias→model resolution shifts on every Claude model release, so any model name not present in that run's output is stale. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 4. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input, `timestamp` is epoch-ms):
    - Count operator-typed `@<agent>` mentions in the window: `jq -r --argjson c {history_cutoff_epoch_ms} 'select(.timestamp >= $c and (.display // "" | test("@<agent-name>"))) | .display' ~/.claude/history.jsonl | wc -l`. Capture `none` if empty.
 5. **Mimir metrics (supplementary context — https://code.claude.com/docs/en/monitoring-usage)**: Query the Prometheus-compatible endpoint at `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) for session count and total cost over the audit window:
@@ -106,7 +106,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 - Error/abort signals: <count> with example
 - Re-invocation signals: <count of sessions with ≥2 spawns of this agent>
 - Stall signals: TeammateIdle=<count> / -r2 respawns=<count> / shutdown-rejections=<count> with reason excerpts
-- Model distribution: <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
+- Model distribution: <e.g. "N× opus→<resolved>, M× sonnet→<resolved>" — the run's actual alias→resolved pairs, never a remembered model name; `none` if no subagent sessions>
 - Memory excerpts: <1-3 representative lessons from .claude/agent-memory/<name>/, ≤240 chars each>
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
@@ -137,7 +137,7 @@ For EACH target skill, mine three read-only sources for signals that the skill i
    - Operator-correction phrases following an invocation (in the next user turn): `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers (relayed reports and command output echo these phrases; 3 consecutive audits were FP-dominated). Extract ≤240-char excerpts.
    - Error/abort signals tied to the skill: `"is_error":true` tool results in turns invoking the skill; abort/usage-error strings in the assistant text.
    - Re-invocation within the same `sessionId`: count DISTINCT invocation events per session (by tool-call UUID/timestamp, not replicated lines); ≥2 distinct invocations in one session is a failure signal.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Non-pinned spawns in this repo run `claude-opus-4-8` via classifier fallback even when the parent session runs a different model. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
+   - **Model distribution (derive live — never assume a model name):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — this is ground truth, not assumed. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}` across the audit window. Read BOTH `requested_model` and `resolved_model` per spawn: alias→model resolution shifts on every Claude model release, so any model name not present in that run's output is stale. Report per-spawn model distribution; model/effort recommendations MUST be grounded in these measured models, not assumed inherit semantics.
 2. **`~/.claude/history.jsonl`** (one JSON object per line; `display` field carries operator input with `timestamp` epoch-ms and `project`):
    - `grep -E '"display":"/<skill-name>' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface 1-2 representative `display` prompts per skill.
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `.claude/agent-memory/*/*.md`, relative to repo; the dir may not exist — treat absence as `none`):
@@ -158,7 +158,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 - Operator-correction signals: <count> with 1-2 example excerpts (≤240 chars each, include session-ref path)
 - Error/abort signals: <count> with example
 - Re-invocation signals: <count of sessions with ≥2 invocations>
-- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
+- Model distribution: <e.g. "N× opus→<resolved>, M× sonnet→<resolved>" — the run's actual alias→resolved pairs, never a remembered model name; `none` if no subagent sessions>
 - Memory references: <list of .claude/agent-memory paths, or "none">
 - Mimir metrics: <summary of session count and total cost, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets — actionable, Content-Gate-passing>
@@ -189,7 +189,7 @@ Mine three read-only sources for signals that a CONFIG SETTING is causing fricti
    - **Sandbox friction:** `"Operation not permitted"`, `dangerouslyDisableSandbox`, sandbox denial strings tied to a command/path/domain — each is a candidate sandbox-rule change. De-dupe by distinct command/path + session.
    - **De-dupe before counting** — transcripts replicate (same `sessionId` recurs), inflating raw grep hits ~10x. Report DISTINCT `sessionId` counts, never raw line-hit totals.
    - Operator-correction phrases after a config-related turn: `that's not right|didn't work|still showing|actually|that's wrong|not what I asked|broken|doesn't match` — match ONLY operator-typed turns: skip user turns containing `<teammate-message`, `<command-name>`, or `tool_result` markers. Extract ≤240-char excerpts.
-   - **Model distribution (verified 2026-06-09):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — ground truth. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`. Non-pinned spawns run `claude-opus-4-8` via classifier fallback. Report distribution; any model/effort env recommendation MUST be grounded in these measured models.
+   - **Model distribution (derive live — never assume a model name):** subagent `.jsonl` files record the ACTUAL model per turn in the `"model"` field — ground truth. Run `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`. Read BOTH `requested_model` and `resolved_model` per spawn; alias→model resolution shifts on every Claude model release, so any model name not present in that run's output is stale. Report distribution; any model/effort env recommendation MUST be grounded in these measured models.
 2. **`~/.claude/history.jsonl`** (`display` field carries operator input, `timestamp` epoch-ms): `grep -E '"display":"/evolve-config' ~/.claude/history.jsonl` to count operator-typed invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`).
 3. **Agent memory** (`.claude/agent-memory/*/MEMORY.md` and `*/*.md`, relative to repo; dir may not exist — treat absence as `none`): `grep -lri 'permission\|sandbox\|allow rule\|settings\|config' .claude/agent-memory/ 2>/dev/null` — durable lessons about config friction.
 {HARVEST_BLOCK}
@@ -208,7 +208,7 @@ Emit ONE findings block, then SendMessage the orchestrator verbatim:
 - Recurring permission prompts: <command pattern → count, top 3, or "none">
 - Sandbox friction: <command/path/domain → count, or "none">
 - Operator-correction signals: <count>, plus 1-2 example excerpts (≤240 chars each, with the session-ref path)
-- Model distribution: <e.g. "57× claude-opus-4-8 (non-pinned)"; or `none` when no subagent sessions exist>
+- Model distribution: <e.g. "N× opus→<resolved>, M× sonnet→<resolved>" — the run's actual alias→resolved pairs, never a remembered model name; or `none` when no subagent sessions exist>
 - Memory references: <list of .claude/agent-memory paths, or "none">
 - Mimir metrics: <summary, or "metrics unavailable: <reason>">
 - Suggested focus areas: <1-3 bullets mapped to a named config-surface dimension, Content-Gate-passing>
@@ -313,7 +313,7 @@ Every recommendation MUST carry factual justification grounded in measured distr
 Emit one block per target {TARGET_NOUN}, then SendMessage the orchestrator with all blocks verbatim:
 
 ### {TARGET_NOUN_CAP}: <{TARGET_NOUN}-name>
-- Model distribution (window): <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
+- Model distribution (window): <e.g. "N× opus→<resolved>, M× sonnet→<resolved>" — the run's actual alias→resolved pairs, never a remembered model name; `none` if no subagent sessions>
 - Stall signals by model: <model → TeammateIdle count, or "none">
 - Fix-loop respawns by model: <model → -r2 count, or "none">
 - Error/abort by model: <model → count, or "none">
@@ -367,7 +367,7 @@ Every recommendation MUST carry factual justification grounded in measured distr
 Emit one findings block, then SendMessage the orchestrator verbatim:
 
 ### Config Model Routing
-- Model distribution (window): <e.g. "854× claude-opus-4-8 (non-pinned), 87× claude-sonnet-4-6 (pinned)"; `none` if no subagent sessions>
+- Model distribution (window): <e.g. "N× opus→<resolved>, M× sonnet→<resolved>" — the run's actual alias→resolved pairs, never a remembered model name; `none` if no subagent sessions>
 - Stall signals by model: <model → TeammateIdle count, or "none">
 - Fix-loop respawns by model: <model → -r2 count, or "none">
 - Error/abort by model: <model → count, or "none">
@@ -403,6 +403,7 @@ Every finding MUST cite: (a) the exact target (file, heading, or named behavior)
 ## Rules
 - Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only.
 - Focus on WHAT could be better and WHY, grounded in a named target — not on cataloguing what already works, and not on "worth exploring" hedges. Each finding must be actionable THIS cycle and Content-Gate-passing (Executable, Behavioral, Non-redundant, Concrete). Zero findings in a lens beats a filler finding.
+- Before emitting a finding, read the target's changelog under `docs/changelog/claude-code/{agents,skills}/<name>.md`. A finding already dispositioned in a prior cycle is DROPPED unless you can cite what changed since that disposition — the Content Gate's Non-redundant check is against the target's full history, not only against this report.
 
 ## Output Format (per {TARGET_NOUN})
 Emit one block per target {TARGET_NOUN}, then SendMessage the orchestrator with all blocks verbatim:

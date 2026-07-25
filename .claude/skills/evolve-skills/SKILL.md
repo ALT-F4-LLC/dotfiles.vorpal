@@ -131,10 +131,12 @@ All changes tracked in `docs/changelog/claude-code/skills/<skill-name>.md` (crea
 | Phase | Agents | Lifecycle |
 |---|---|---|
 | 0 | `docs-researcher-phase0`, `historical-auditor`, `repetition-auditor`, `bug-auditor`, `innovation-scanner`, `model-routing-auditor` | Spawn parallel → all complete → shut down all before Phase 1 |
-| 1 | `review-<name>` per target skill | Spawn parallel → per agent: apply changes → shut down (don't wait for siblings) |
+| 1 | `review-<name>` per target skill | Spawn parallel → as each reviewer completes: orchestrator applies its changes → shut it down (don't wait for siblings) |
 | 2 | `coherence-reviewer` (`distinguished-engineer`, `gold`) | Spawn after ALL Phase 1 applied → apply fixes → shut down |
 | 3 | `disambiguation-reviewer` (`distinguished-engineer`, `gold`) | Spawn after Phase 2 applied and coherence-reviewer shut down → apply fixes → shut down |
 | 4 | `history-compactor` (gated) | Spawn after Phase 3 only if the History Compaction `wc -l` gate trips → compact → shut down before team cleanup |
+
+**Reviewer-tier note.** The phase table names the canonical `gold` tier for both reviewer seats; the Phase 3 template's `model="opus"` pin is the active `Trial:` downgrade recorded in this skill's changelog (`Trial: downgrade disambiguation-reviewer fable→opus → operator-approved, applied`) — intentional, do NOT revert it as drift.
 
 **Self-budget.** This SKILL.md is an ordinary member of the skill population governed by the standard skill byte budget.
 
@@ -159,7 +161,7 @@ Spawn SIX agents in parallel per the templates below: `docs-researcher-phase0` (
 
 ### Phase 1: Review & Improve (parallel)
 
-Spawn one @staff-engineer teammate per target skill. **Spawn all in the same turn** to maximize parallelism.
+Spawn one @staff-engineer teammate per target skill, **all in the same turn** to maximize parallelism — EXCEPT when the step-4 inventory exceeds the concurrently-running-subagent cap (default 20, overridable via `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), where every spawn past the cap fails. Then either batch into waves of ≤20 — shutting each wave's teammates down before spawning the next — or raise the env var above the target count BEFORE Phase 1 starts.
 Assign tasks via `TaskUpdate(taskId=<id>, owner="review-<name>", status="in_progress")`.
 
 Each teammate is read-only (no file edits) and follows the Phase 1 spawning template below.
@@ -171,7 +173,7 @@ Each teammate is read-only (no file edits) and follows the Phase 1 spawning temp
 4. Aggregates renames and coherence issues for Phase 2
 5. **Self-correct**: if changes worsen clarity without behavioral gain, revert and retry
 
-**Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the skill family; applying one reviewer's isolated recommendation breaks parity, and per-skill reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the skill forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add. Parity-bound prose is NOT only `CANONICAL`-tagged blocks: before recommending any prose TRIM, `grep -F` a distinctive phrase of the target paragraph across the sibling evolve-*/SKILL.md files; a verbatim hit in 2+ marks it parity-bound.
+**Defer parity-bound and shared-frontmatter findings to Phase 2 — never apply piecemeal.** Any Phase 1 finding that edits a shared frontmatter line or a `CANONICAL`-tagged block maintains byte-identical parity across the skill family; applying one reviewer's isolated recommendation breaks parity, and per-skill reviewers can CONFLICT. Flag these, do NOT apply in Phase 1, route to Phase 2 for a single family-wide lockstep call, and settle conflicting recommendations EMPIRICALLY (grep the actual usage) before applying. Before adopting any newly-shipped frontmatter field, also (a) read its official LIFECYCLE / clearing semantics, not just headline behavior (a field that "clears on next message" is a per-turn hint, not a durable control); (b) check whether the skill forks (`context: fork`) or runs in the caller's context — an in-context tool-removing field strips that tool from the CALLER's own turn. Also check prior changelogs for an existing family-wide decision before re-proposing — a satisfied or rejected recommendation is a NO-OP, not a re-add. Before endorsing any lockstep propagation, verify every artifact the shared text references (script, ledger file, section, or template) exists in EVERY carrier — generic wording can be parity-safe while a referenced artifact is missing from a sibling, and propagating the paragraph there ships a phantom reference. Parity-bound prose is NOT only `CANONICAL`-tagged blocks: before recommending any prose TRIM, `grep -F` a distinctive phrase of the target paragraph across the sibling evolve-*/SKILL.md files; a verbatim hit in 2+ marks it parity-bound.
 
 **Triage every harvested pitfalls lesson — apply, no-op, or track; never drop.** For each lesson in the Phase 0 CROSS-PROJECT PITFALLS MANIFEST (and any Phase 1 finding derived from it): (a) if ALREADY encoded in the target skill, it is a NO-OP — confirm against the current file (captured-resolution check) and note "already applied" rather than re-adding; (b) if encodable as a definition edit this cycle, apply it via Phase 1 (deferring shared-frontmatter / `CANONICAL`-block edits to Phase 2 per the rule above); (c) if it CANNOT be applied this cycle — it needs investigation, a cross-cutting decision, or remediation outside the skill files, or names a target outside this cycle's scope — capture it as a Docket tracking issue (delegate creation to a `project-manager` spawn; per role boundaries the orchestrator does not create issues directly; BEFORE delegating, verify each target file path the lesson cites resolves on disk — `test -e` each — and rewrite or annotate any non-resolving path as unverified in the issue body) rather than silently dropping it. Never hand-Edit any `pitfalls.md`; the sole sanctioned mutation is distill-time ledgering per the retention-compaction master — after applying (or confirming already-encoded) a lesson's definition edit, run `~/.claude/scripts/pitfalls_distill.sh` to replace that one entry with its ledger line (THIS repo's files and the centralized home only; Docket-tracked dispositions and cross-project files stay untouched; a centralized-home entry's encoding must sit under `src/user/claude-code/` — an evolve edit to project-local `.claude/skills/` satisfies only in-repo entries, so exit 8 there is by design).
 
@@ -253,19 +255,19 @@ Source: **§7 Innovation Scan — tokenized template** in `evolve-phase0-templat
 
 ### Phase 0: Model Routing Audit
 
-Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{target_skills}`, `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
+Substitute `{target_skills}`, `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight.
 
 Source: **§6a Model Routing Audit — tokenized template** in `evolve-phase0-templates.md`. Substitute the spawn-time tokens with the Template-sourcing VALUES above; runtime tokens pass through. Spawns `Agent(name="model-routing-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: Repetition Audit
 
-Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target skill (unlike historical-auditor's per-skill grep).
+Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target skill (unlike historical-auditor's per-skill grep).
 
 Source: **§4 Repetition Audit — shared template** in `evolve-phase0-templates.md` (no spawn-time tokens; runtime tokens pass through). Spawns `Agent(name="repetition-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
 ### Phase 0: Bug Audit
 
-Skip if pre-flight step 8 flagged SKIPPED (same gate as historical-auditor). Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target skill (unlike historical-auditor's per-skill grep).
+Substitute `{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}` from pre-flight. Scope is GLOBAL across the whole mined window — NOT filtered by target skill (unlike historical-auditor's per-skill grep).
 
 Source: **§5 Bug Audit — shared template** in `evolve-phase0-templates.md` (no spawn-time tokens; runtime tokens pass through). Spawns `Agent(name="bug-auditor", subagent_type="senior-engineer", model="sonnet")`.
 
@@ -372,7 +374,7 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 ### Phase 3: @distinguished-engineer (Disambiguation)
 
 ```
-Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="fable", prompt="...")
+Agent(name="disambiguation-reviewer", subagent_type="distinguished-engineer", model="opus", prompt="...")
 
 Surface residual semantic ambiguity Phase 2 Coherence does NOT catch, and recommend fixes.
 Today's date: {today_date}. **Read-only** — the orchestrator applies all changes.
@@ -395,8 +397,6 @@ Standard format (4 sections, max 20 lines) for each affected skill.
 ### Remaining Issues
 <Unresolvable issues, or "None">
 ```
-
-Always run this stage — it spawns its reviewer every cycle and no-ops cleanly when the reviewer reports `No disambiguation findings.` Shut down with `SendMessage(to="disambiguation-reviewer", message={type: "shutdown_request", reason: "Phase 3 complete"})`; the reviewer replies `shutdown_response` to the orchestrator.
 
 ---
 

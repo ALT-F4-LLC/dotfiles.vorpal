@@ -1,5 +1,64 @@
 # Changelog: evolve-agents
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-07-13..2026-07-14) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the Phase-1 lifecycle row's "per agent: apply changes → shut down" left the actor for "apply"/"shut down" implicit (reviewer or orchestrator?) — same disambiguation as evolve-skills' sibling row.
+
+### Changes
+- CLARIFY[COSMETIC]: Phase-1 lifecycle row "Spawn parallel → per agent: apply changes → shut down" → "Spawn parallel → as each reviewer completes: orchestrator applies its changes → shut it down" — names the orchestrator as actor.
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Parity-defer paragraph gains the lockstep artifact-existence guard (H-evolve-agents-2, lockstep across all 3 evolve-* carriers); Phase-3 closing paragraph removed as a triple restatement of its own §Phase 3 Mechanism + shutdown protocol (~285B).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: artifact-existence guard appended after the NO-OP sentence (evidence: findings-ledger occurrences 3/3/0 across the family).
+- TRIM[SUBSTANTIVE]: post-template "Always run this stage..." paragraph deleted; content verified restated at §Phase 3 Mechanism.
+
+### Dimensions Evaluated
+Coherence, Redundancy. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Trial: downgrade Phase 3 disambiguation-reviewer fable→opus → operator-approved, applied (claude-opus-5, ~half Fable price; baseline = 58 distinguished-engineer 7d spawns 100% fable; adopt/rollback measured next cycle's DISAMBIG findings-per-cycle + Coherence-Class misroute count). Confirmed the phantom-path guard is already encoded (no-op), routed the lockstep-artifact-verification guard to Phase 2, and trimmed one redundant token-substitution preamble. Findings: 3 → 1 sub / 1 cos / 0 rej / 1 def / 1 enc
+
+### Changes
+- TRIAL[SUBSTANTIVE]: disambiguation-reviewer model="fable"→"opus" — operator-approved 2026-07-24; coupled reviewer-tier-rationale line updated so a future cycle doesn't revert it as drift.
+- CULL[COSMETIC]: removed the redundant {latest_features_digest} substitution preamble (-151 bytes).
+- H-evolve-agents-1 → ALREADY-ENCODED. H-evolve-agents-2 → DEFERRED (Phase 2, family-wide lockstep guard).
+
+### Dimensions Evaluated
+All 8. Pass B found only 151 trimmable bytes — 10,913 bytes (17.6%) are parity-locked across 2+ siblings.
+
+### Rename
+No rename.
+
 ## 2026-07-22 (Phase 4 history compaction)
 
 ### Summary
@@ -146,77 +205,6 @@ Coherence, Completeness, Spec Alignment.
 ### Rename
 Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (evolve Phase-0 auditor instance only; team-lead.md's bronze docs-researcher is untouched), lockstep with evolve-phase0-templates.md + evolve-skills + evolve-config.
 
-## 2026-07-14 (Phase 4 history compaction)
-
-### Summary
-Compacted 2 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Phase 3 disambiguation: resolved a confusable recipient term in Crash & Stall Recovery.
-
-### Changes
-- Replaced "self-reports `failed` to the lead" with "to the orchestrator" — in standalone runs no team-lead exists, and the three sibling evolve-* copies of this clause already say "orchestrator" (confusable-name).
-
-### Dimensions Evaluated
-Confusable names/triggers/terms; multi-reading wording; overlapping ownership.
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Added a post-cycle /evolve-coherence pointer to Wrap-up — root-cause fix for evolve-coherence's zero in-window invocations despite its description promising a post-edit gate. Supersedes DKT-311's evolve-agents half.
-
-### Changes
-- AMPLIFY: Wrap-up step 4 recommends operator run /evolve-coherence before committing — supersedes DKT-311's evolve-agents half.
-
-### Dimensions Evaluated
-Coherence (post-edit gate handoff).
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 4 history compaction)
-
-### Summary
-Compacted 8 entries (2026-06-10..2026-06-30) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
-
-### Summary
-Phase 3 disambiguation (evolve-skills cycle): charter pointer made self-resolving; scratchpad computation now mandates `$TMPDIR` expansion. Findings: 2 → 2 sub
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 3 template charter citation names `.claude/skills/evolve-agents/SKILL.md` §Phase 3 (was a dangling "section above" unresolvable from the delivered prompt)
-- AMPLIFY[SUBSTANTIVE]: pre-flight step 3 — `{scratchpad}` computed by EXPANDING `$TMPDIR` to a literal absolute path before template substitution (an unexpanded string is un-Read-able by teammates; the sandbox remaps `$TMPDIR` per context)
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +283,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-13: Materialized Phase 0 audit blocks + Findings Ledger to a shared scratchpad path instead of inline-pasting into Phase 1 templates (DKT-275).
 - 2026-07-13: Phase 3 disambiguation — Rules §2's read-only invariant now names history-compactor (Phase 4) as its sole exception.
 - 2026-07-13: Phase 2 coherence — extended Template-sourcing Read-once/ABORT convention to cover the relocated §9 SDLC Role Research template.
+- 2026-07-13: Phase 3 disambiguation (evolve-skills cycle): charter pointer made self-resolving; scratchpad computation now mandates `$TMPDIR` expansion. Findings: 2 → 2 sub
+- 2026-07-13: Compacted 8 entries (2026-06-10..2026-06-30) into Compacted history per the retention-compaction policy.
+- 2026-07-14: Added a post-cycle /evolve-coherence pointer to Wrap-up — root-cause fix for evolve-coherence's zero in-window invocations despite its description promising...
+- 2026-07-14: Phase 3 disambiguation: resolved a confusable recipient term in Crash & Stall Recovery.
+- 2026-07-14: Compacted 2 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.

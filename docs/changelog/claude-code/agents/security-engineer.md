@@ -1,5 +1,19 @@
 # Changelog: security-engineer
 
+## 2026-07-24
+
+### Summary
+Line 103's Fable-fallback rationale converted from a restated explanation into a pointer at team-lead.md's Durable Fable classifier caveat, keeping a single source of truth for the rationale text.
+
+### Changes
+- Reworded the trailing parenthetical on line 103 from `(team-lead.md gold-tier routing, the Durable Fable classifier caveat — a determinism choice, not a capability one)` to `(team-lead.md gold-tier routing; see team-lead.md's Durable Fable classifier caveat for the current rationale)` — no independent re-derivation of the tier-stability rationale remains in this file.
+
+### Dimensions Evaluated
+Cross-reference accuracy (investigation + advisor consistency-check, ad-hoc, not an evolve-agents cycle).
+
+### Rename
+No rename.
+
 ## 2026-07-21
 
 ### Summary

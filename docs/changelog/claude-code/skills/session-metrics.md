@@ -1,5 +1,24 @@
 # Changelog: session-metrics
 
+## 2026-07-24
+
+### Summary
+Eliminated the phantom Task tool across all four carriers (frontmatter, both banner clauses, and the bundled script's coordination-tool set) — no bare Task tool exists, so the frontmatter entry was a silent no-op, the banner asserted a protection callers relied on, and the script under-reported coordination_tool_calls by omitting all six real Task-family tools. Also corrected a misattributed version floor and a dangling referent. Findings: 7 → 1 sub / 2 cos / 1 rej / 1 def / 2 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: dropped Task from disallowed-tools — D1, verified against the canonical tool list; enumerating the six real Task tools instead would strip a caller's orchestration state for no leaf-guard gain.
+- CULL[SUBSTANTIVE]: dropped Task from the banner's leaf-skill guard — D1, instructed against a nonexistent tool.
+- AMPLIFY[SUBSTANTIVE]: corrected the CALLER-SIDE-EFFECT enumeration to Agent and SendMessage — D1/B-PREVENT7; mechanism prose verified correct and left intact.
+- AMPLIFY[SUBSTANTIVE]: scripts/session_metrics.py COORDINATION_TOOLS now lists the six real Task-family tools — D1 fourth carrier, lockstep per the 2026-07-12 precedent.
+- AMPLIFY[COSMETIC]: named summary.html_report_path at the "final line repeats..." handoff.
+- AMPLIFY[COSMETIC]: version floor 2.1.196+ → 2.1.129+ — 2.1.196 is ${CLAUDE_PROJECT_DIR}'s documented floor, not ${CLAUDE_SKILL_DIR}'s.
+
+### Dimensions Evaluated
+Skill Design Quality, Coherence. Rejected: D6 (${CLAUDE_SKILL_DIR} in allowed-tools) — premise falsified, allowed-tools does not restrict and bare Bash already grants. Deferred: CALLER-SIDE-EFFECT canonicalization (Phase 2). Spec Alignment vacuous.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

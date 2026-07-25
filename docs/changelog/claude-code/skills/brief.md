@@ -1,5 +1,22 @@
 # Changelog: brief
 
+## 2026-07-24
+
+### Summary
+Closed the repo's last deep-research-is-a-Skill contradiction, made the Docket comment read unconditional, and culled four docket permissions orphaned by a frontmatter removal. Findings: 4 → 4 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- COHERENCE[SUBSTANTIVE]: Skill(deep-research) → the bundled deep-research Workflow, a separate main-session run this leaf skill never invokes — the only repo file contradicting the framing carried by 4 agent specs (D2; no such skill exists).
+- AMPLIFY[SUBSTANTIVE]: docket issue comment list is now unconditional with the supersession rule stated — comments supersede the description, so a body-only read can distill a Goal already superseded (H-brief-1). Rejected the finding's git-log pre-flight half: widens a deliberately-tight Bash bound.
+- CULL[SUBSTANTIVE]: "six read-only docket lookups above" → two — the six mirrored a since-deleted allowed-tools grant; 4 commands appeared nowhere above the sentence and had no usage guidance, all investigation-shaped (self-discovered, git-verified via `git log -S`).
+- AMPLIFY[SUBSTANTIVE]: fan-out requests must give each parallel producer's deliverable its own acceptance criterion — an unpartitioned brief raced two authors onto a near-duplicate ADR (H-brief-2).
+
+### Dimensions Evaluated
+Coherence, Actionability, Completeness. Over-Engineering: the cull pays the additions; anti-exfil restatement re-examined and kept per the 2026-07-20 decision. Spec Alignment vacuous.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

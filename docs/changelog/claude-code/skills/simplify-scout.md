@@ -1,5 +1,50 @@
 # Changelog: simplify-scout
 
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the two Ambiguity rules bullets had run together onto one line with no newline between them, reading as a single run-on bullet.
+
+### Changes
+- BUGFIX[COSMETIC]: inserted the missing newline/bullet break between the "literal uncommitted" rule and the "mixed existing/non-existing tokens" rule.
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Lint invocation promoted to full deployed path; stdin-preferred + anti-hand-roll staging guard added (family parity with the report-emission siblings).
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: ~/.claude/scripts/ prefix on the report_stage_lint.sh fence line (bare name = exit 127, off-contract).
+- AMPLIFY[SUBSTANTIVE]: stdin-preferred + never-hand-roll-mktemp guard replacing the bare "(or pipe...)" lead-in.
+
+### Dimensions Evaluated
+Coherence, Bug/Correctness. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Two live lint-contract defects found by executing the skill's own mandated validation. A report drafted verbatim from the Output Contract template fails `report_lint.py` with exit 1 (`trailing-confirmation`), and the empty-scope path per §Save & Return fails with exit 1 (`section-order`) — the short-circuit is a whole-body short-form that takes no trailing line. Both closed; one cull offsets. Findings: 2 sub / 1 cos / 0 rej / 0 def / 1 enc
+
+### Changes
+- FIX[SUBSTANTIVE]: Output Contract template now carries the trailing confirmation line, so the drafted body is lint-passing by construction instead of burning a guaranteed ABORT + re-invocation on every findings-bearing scan.
+- FIX[SUBSTANTIVE]: §Save & Return's "0 for an empty/trivial scope" clause corrected — the short-circuit is emitted ALONE; appending a confirmation line breaks `shortform_re` and drops into full validation.
+- CULL[COSMETIC]: dropped ambiguity bullet 2 — reassurance prose restating table ordering already normative above.
+
+### Dimensions Evaluated
+All 8. Completeness/Actionability primary (both defects proven by live execution). Coherence: 12-principle table re-verified exact-match vs senior-engineer.md.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

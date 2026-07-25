@@ -1,5 +1,19 @@
 # Changelog: distinguished-engineer
 
+## 2026-07-24
+
+### Summary
+Line 100's Security Exclusion rationale reworded to drop the retired "nondeterministic"/determinism framing, aligning with team-lead.md's tier-stability correction (238/241/242) while preserving the Fable-fallback factual claim verbatim.
+
+### Changes
+- FIX[COSMETIC]: "making a gold seat nondeterministic by construction" → "making a gold seat tier-unstable by construction" on line 100 — the "Fable's live classifiers silently fall back on such content" clause (model_census_exemptions.tsv row 59 anchor) is unchanged.
+
+### Dimensions Evaluated
+Cross-reference accuracy / retired-vocabulary drift (advisor consistency-check, ad-hoc, not an evolve-agents cycle).
+
+### Rename
+No rename.
+
 ## 2026-07-21
 
 ### Summary

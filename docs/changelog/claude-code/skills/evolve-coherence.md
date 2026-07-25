@@ -1,5 +1,35 @@
 # Changelog: evolve-coherence
 
+## 2026-07-24
+
+### Summary
+Compacted 3 entries (2026-06-30..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Re-grounded the main-session-only rule on the documented no-nested-teams limitation after the cited spawn-depth env-var mechanism went unverifiable in current docs; retired a self-referential role count that had already drifted; escaped the fleet's only unescaped $+digit. Findings: 3 → 2 sub / 1 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: corollary (2) now cites the agent-teams "No nested teams" limitation (fetched and verified live) instead of the 2.1.217 CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH default, which appears nowhere in current docs; adds a guard naming why spawn-depth is the wrong authority.
+- CULL[SUBSTANTIVE]: "three roles" → "spawned roles" — only two model= pins remain since the xref-builder spawn was retired; dropped the count rather than correcting it, per this file's own anti-hand-enumeration rule.
+- AMPLIFY[COSMETIC]: escaped $2 in the D1 registry awk seed — $N substitution is unconditional, so a 3+-token invocation would silently corrupt the seed with no error.
+
+### Dimensions Evaluated
+All 8; Correctness/Currency primary, Over-Engineering secondary (no standalone culls; No-Edit Guard's 9-site redundancy is deliberate defense-in-depth, retained). doctrine_check.sh all arms PASS; no CANONICAL block touched.
+
+### Rename
+No rename.
+
 ## 2026-07-22 (Phase 4 history compaction)
 
 ### Summary
@@ -234,50 +264,6 @@ All 8. Over-Engineering (primary): one redundant restatement culled. Coherence: 
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Phase-1 coherence follow-up: expanded D1 lifecycle ownership into lifecycle + report-delivery ownership, added report-delivery obligations to the XREF schema, and clarified that Remediation Manifest output is Phase-0 input signals-to-verify for sibling evolve cycles. Net +1 schema field; no report-and-route capability change.
-
-### Changes
-- AMPLIFY: D1 now audits report/final-report delivery obligations alongside spawn/lifecycle ownership and emits them in `report_delivery_obligations`, so coherence reviewers can detect silent-completion drift instead of treating lifecycle close semantics alone as sufficient.
-- AMPLIFY: Remediation Manifest handoff wording now says operators feed findings into the next evolve-agents/evolve-skills Phase 0 as signals-to-verify, preserving report-and-route and avoiding treating manifest lines as pre-verified facts.
-- CULL: removed the stale script-backed-check seed from D1; no Codex-compatible helper path is part of this skill's current contract.
-
-### Dimensions Evaluated
-All 8. Coherence/Completeness primary (report-delivery obligations + XREF schema). Over-Engineering: one stale helper-script seed culled. Report-and-route invariant preserved; no model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase-2 coherence: fixed a high-risk glob-abort in the Phase-0 inventory command. Inline, net 0 (stays 328).
-
-### Changes
-- CULL: replaced the step-3 inventory `wc -l agents/*.md skills/*/SKILL.md .claude/skills/*/SKILL.md` + `ls -d skills/*/ .claude/skills/*/` globs (both contain the guaranteed-absent top-level `skills/` root → zsh nomatch-aborts the whole command even with `2>/dev/null`) with `find … -exec wc -l {} +` / `find … -type d` forms that tolerate absent roots and preserve the exact `{inventory}` set. Same bug class fixed in evolve-skills this cycle; verified under zsh.
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0. Coherence/Completeness: glob-abort robustness. Report-and-route invariant preserved; no model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Encoded the cited ranged-Read confirmation efficiency gain at both binding sites with an absence/coverage grep carve-out. RETAIN otherwise (no-signal organism, 0 invocations). Net ~0 lines (inline expansion).
-
-### Changes
-- AMPLIFY: ranged `Read` of a pinned XREF `file:line` is now the default confirmation path for Phase 1 reviewers (cheaper than whole-file re-grep); grep retained for absence/coverage checks where no line anchor exists. Source: Phase 0 INNOVATION (a), cited — Edit-after-grep v2.1.160 + 1M context.
-
-### Dimensions Evaluated
-All 8 (Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename). Report-and-route invariant preserved; no model/routing change; drift=0. Phase-2 deferral noted: add report-family silent-completion/Round-N CANONICAL tags as D4 byte-parity carriers once they exist.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git
@@ -296,3 +282,6 @@ history (see the compaction entry's date).
 - 2026-06-19: Question-severity gloss rejected two AMPLIFY findings (non-executable param; out-of-scope bucket). | DRIFT: Question-severity gloss reworded ("blocked on confirmation before dispositioned") — neutral allele substitution, net 0.
 - 2026-06-10: Full-cycle audit — NO changes (327 lines); all 3 Phase-0 pitfall focus areas re-verified NO-OP (leaf-family enumeration, section ordering, redundant-TaskUpdate guidance).
 - 2026-06-10: Introduced evolutionary-theory core — CANONICAL:EVOLUTION-MODEL block; evolve-coherence reframed as reproductive-isolation monitor (detects drift, routes to evolve-agents/evolve-skills, never edits).
+- 2026-06-30: Encoded the cited ranged-Read confirmation efficiency gain at both binding sites with an absence/coverage grep carve-out. RETAIN otherwise (no-signal organis...
+- 2026-06-30: Phase-2 coherence: fixed a high-risk glob-abort in the Phase-0 inventory command. Inline, net 0 (stays 328).
+- 2026-06-30: Phase-1 coherence follow-up: expanded D1 lifecycle ownership into lifecycle + report-delivery ownership, added report-delivery obligations to the XREF schema...

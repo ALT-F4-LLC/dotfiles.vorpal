@@ -1,5 +1,68 @@
 # Changelog: code-review-verdict
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-06-10..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the COUPLING comment's "keep its shape in sync" instruction for the Doubling Rule invited flattening verify-ac's intentionally divergent (delegation-only) Doubling Rule to this family's three-bullet delta shape. Added an explicit carve-out.
+
+### Changes
+- CLARIFY[COSMETIC]: COUPLING comment's Doubling Rule sync clause gains a parenthetical naming verify-ac's Doubling Rule as intentionally delegation-only (no Seats/dedupe/degraded bullets) — never normalize it to the three-bullet shape (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Closed the trailing-confirmation template bug in all three emission forms, normalized Doubling Rule to the family bullet shape (ends the 3-vs-1 split), harmonized the silent-completion self-check to the shared family structure, promoted the lint invocation to the full deployed path, and extended the family COUPLING guard with the verify-ac mode-aware constraint.
+
+### Changes
+- BUGFIX[SUBSTANTIVE]: general + security Output Contract templates and Round-N prose now carry `Code review emitted ({recommendation}).` — report_lint.py requires it while "no trailing notes" forbade appending.
+- REFACTOR[SUBSTANTIVE]: Doubling Rule prose → design-qa/design-review pointer+bullet shape; all deltas preserved.
+- REFACTOR[SUBSTANTIVE]: silent-completion self-check normalized to family sentence structure with a crv-specific delivery tail.
+- BUGFIX[SUBSTANTIVE]: ~/.claude/scripts/ prefix on report_stage_lint.sh fence line (bare name = exit 127, off-contract).
+- COHERENCE: COUPLING comment gains silent-completion sync guard (lockstep, 4 files).
+
+### Dimensions Evaluated
+Coherence (family parity), Bug/Correctness. Phase 2 pass, not a full review.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+The cycle's designated CRITICAL top-priority bug and 4 of its 6 sibling findings were stale-window false positives — all already fixed in-repo (2026-07-12 and 2026-07-20); verified by grep + per-commit history walk. Real remaining work: Doubling Rule shrunk to a Rule 8 pointer, duplicate Tree-state recipe collapsed, AskUserQuestion qualified for team-mode. Findings: 8 → 1 sub / 1 cos / 0 rej / 2 def / 5 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: Doubling Rule replaced ~1,750 bytes restating team-lead.md Rule 8/step-14 panel mechanics with a pointer + skill-specific delta — verified redundant against staff-engineer.md/security-engineer.md, which already carry the same rules.
+- CULL[COSMETIC]: security output template's duplicated Tree-state fingerprint explanation dropped, recipe stated once in the general template.
+- FIX[SUBSTANTIVE]: Common Discipline qualified — AskUserQuestion is absent from team-mode teammate envelopes, this skill's dominant invocation context.
+- No action (already fixed in-repo): the reported load-time !+backtick crash and audit_snapshot.sh hard-dependency were removed 2026-07-12; the BSD mktemp suffix bug and staging-collision findings were fixed 2026-07-20.
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Actionability, Coherence, Skill Design Quality, Orchestration, Spec Alignment, Rename — all 8.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -191,78 +254,6 @@ All 8.
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-Over-engineering merge; net -2 (398→396). Doubling Rule + silent-completion self-check deferred to Phase 2 (family-wide).
-
-### Changes
-- CULL: merged the Partial-tree + Moving-tree Pre-flight guards into one Snapshot-tree guard — both addressed the same "uncommitted/staged diff is an incomplete point-in-time snapshot" premise with duplicated framing; merged form keeps both behaviors (ABORT under orchestration; one-line caveat standalone). Verified non-parity (unique to this skill — only sibling reviewing a moving code tree).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename (trigger already disambiguates from the bundled /code-review).
-
-## 2026-06-19
-
-### Summary
-Added a G5 Round-N carry-forward rule to cut redundant regex re-execution on the dominant fix→re-review loop.
-
-### Changes
-- AMPLIFY (Round-N Re-Review): a prior-round G5 PASS is reusable without re-running the regex only when `git diff --stat` shows the AC regex block AND its named target files untouched since that round; prior G5 Blockers are never carried forward. Mirrors verify-ac §3a. Net +1.
-- AMPLIFY (Output Contract): added a classifier-block fallback — if the Stage-2 auto-mode classifier blocks invocation, render the review per THIS format authority (banner + required sections + verdict ladder). Phase-2 family extension of verify-ac's measured fallback. Net +1.
-- Drift (rate 7): all 7 SKIP — every target is a format-authority output-template line.
-
-### Dimensions Evaluated
-Over-Engineering, Actionability, Completeness, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO changes (396/500). Both Phase 0 focus signals verified already-resolved against live content.
-
-### Changes
-- None (NO-OP verdict). Vote mode-split correct at L387 (team: docket vote create + delegation_request); rename-collision contract re-confirmed vs LIVE bundled /code-review (--fix present). Innovation suggestions (!injection, format.md extraction, round=N) reject-class: net-new surface, zero cross-skill adoption, no failure signal.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no addition earns its offset); Coherence (silent-completion family-phrasing variance routed to Phase 2); Rename (live skill-listing check).
-
-### Rename
-No rename. Deliberate rename away from bundled /code-review stands.
-
-## 2026-06-10
-
-### Summary
-Compacted 9 entries (2026-05-16..2026-05-30) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO changes (396/500). Highest-usage skill in window (8 sessions, 26 invocations, zero corrections). Recall fix verified applied to BOTH playbooks (L169 Common Discipline with general/security callouts; zero residual self-filter phrasing). Post-compaction ordering measured: ladders ~4k tokens deep, gates at ~5.5k — already front-loaded optimally.
-
-### Changes
-- None (NO-OP verdict). `round=N` arg and batched-validation-grep innovations declined (net new surface, no offsetting removal, no failure signal).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST); Completeness (recall coverage grep-verified); Coherence (docket refs verified vs --help; SILENT-COMPLETION drift + design-review gap routed to Phase 2).
-
-### Rename
-No rename. Deliberate rename away from bundled /code-review stands.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +281,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Recall fix — replaced severity FILTER with report-every-finding mandate (Fable/Opus-4.8 literal-following); filtering moved downstream. Net +2.
 - 2026-06-09: Coherence — corrected stale G{1..4}→G{1..5} in Overrides Recognized output template (L241); all other refs already read G1..G5. Net 0.
 - 2026-06-09: Compacted 5 entries (2026-05-09..2026-05-16) into Compacted history per ADR 0001.
+- 2026-06-10: Full-cycle audit: NO changes (396/500). Highest-usage skill in window (8 sessions, 26 invocations, zero corrections). Recall fix verified applied to BOTH pla...
+- 2026-06-10: Compacted 9 entries (2026-05-16..2026-05-30) into Compacted history per ADR 0001.
+- 2026-06-10: Full-cycle audit: NO changes (396/500). Both Phase 0 focus signals verified already-resolved against live content.
+- 2026-06-19: Added a G5 Round-N carry-forward rule to cut redundant regex re-execution on the dominant fix→re-review loop.
+- 2026-06-20: Over-engineering merge; net -2 (398→396). Doubling Rule + silent-completion self-check deferred to Phase 2 (family-wide).

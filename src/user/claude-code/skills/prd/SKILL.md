@@ -71,7 +71,8 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 ## Pre-flight
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/spec/{slug}.md`. The output directory is
+2. **Resolve `{output_path}`** as `docs/spec/{slug}.md`. The output directory
+   `{output_dir}` is
    `docs/spec/`.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
@@ -163,7 +164,9 @@ Field rules:
 ### Required Sections
 
 The PRD body MUST contain these top-level sections, in this order. Each is a
-`##` heading in the drafted document.
+`##` heading in the drafted document carrying the section title ONLY — the list
+numbers below are NOT part of the heading (`## Problem Statement`, never
+`## 1. Problem Statement`). The validator matches heading text exactly.
 
 1. **Problem Statement** — what the product surface is, why now, who is affected,
    constraints, business context.
@@ -183,7 +186,7 @@ The PRD body MUST contain these top-level sections, in this order. Each is a
 
 ### Mermaid Mandate
 
-PRDs require at least one ` ```mermaid ` (lowercase, no space) fenced block — user journey, state diagram, or component map. Unlike TDDs, there is no pure-policy override; Validation §5 enforces this.
+PRDs require at least one ` ```mermaid ` (lowercase, no space) fenced block — user journey, state diagram, or component map. The block's FIRST non-blank line must start with a Mermaid diagram-type keyword (`journey`, `stateDiagram-v2`, `graph`/`flowchart`, `erDiagram`, `sequenceDiagram`, …) — a leading `%%` comment line fails the check. There is no override; Validation Before Save enforces this unconditionally — TDDs likewise have no override (`doc_validate.py` sets `mermaid: True` for both; a pure-policy decision routes to `Skill(adr, ...)`, the only doc type without the mandate).
 
 ## Validation Before Save
 
@@ -193,10 +196,17 @@ scan, and Success-Metrics concreteness — is mechanized by the shared
 `doc_validate.py`, the single source of truth for what a valid PRD must satisfy.
 Validate the drafted document before the final Write:
 
-1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
-   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
-2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type prd "$TMPDIR/{slug}.md"`
-   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
+   stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
+   never expand shell variables, so `$TMPDIR/{slug}.md` is treated as a relative
+   literal and resolved against the repo root, not the real temp dir. Then `Write` the
+   complete drafted content (frontmatter + body) to `{staging_dir}/{slug}.md`.
+2. **Run the validator.** `Bash python3 ~/.claude/scripts/doc_validate.py --type prd "{staging_dir}/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`) — the same resolved `{staging_dir}`,
+   never a re-expanded `$TMPDIR`, so an unset-`TMPDIR` caller validates the file it just
+   wrote. Invoke via `python3`, never as a bare executable: a deployed copy that lost its
+   executable bit exits 126, which no branch below handles; under `python3` a missing
+   validator still exits 2.
 3. **Act on the exit code:**
    - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
      `docs/spec/...`).
@@ -244,7 +254,7 @@ On operator Cancel during the collision dialog: emit
 ### Reserved-Name List
 
 The 7 names below are owned by the `init-specs` skill (project-wide engineering specs)
-and HARD-REFUSED by this skill. There is no overwrite path.
+and HARD-REFUSED by this skill.
 
 <!-- COUPLING: the 7 reserved names are owned by src/user/claude-code/skills/init-specs (Spec File Reference) and HARD-REFUSED here because PRD shares docs/spec/ as its output directory. Sibling doc-authoring skills (tdd, adr, ux-spec) write to different directories (docs/tdd/, docs/adr/, docs/ux/) so they do not refuse these names. Update init-specs and this file in lockstep when adding/removing names. -->
 <!-- RESERVED-NAMES:BEGIN -->

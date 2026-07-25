@@ -10,11 +10,11 @@ description: >
   "cost so far this session", "subagent token/cost breakdown".
 argument-hint: ""
 allowed-tools: ["Bash", "Read", "Glob"]
-disallowed-tools: ["Agent", "SendMessage", "Task"]
+disallowed-tools: ["Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`/`Task`, do NOT form or manage a team, do NOT invoke other skills recursively. Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent`, `SendMessage`, and the `Task` tools from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage. (2) Do NOT commit any changes. (3) Transcript-only: every metric is derived from the local session JSONL under `~/.claude/projects/`. OTEL/aggregate metrics are deliberately NOT consulted — the aggregate sink cannot attribute tokens/cost to THIS specific session (its `skill_name` label is populated only for top-level orchestrator-dispatched skills, not subagent-invoked ones) nor reconstruct per-session tool/file/timeline detail.
+> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`, do NOT form or manage a team, do NOT invoke other skills recursively. Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage. (2) Do NOT commit any changes. (3) Transcript-only: every metric is derived from the local session JSONL under `~/.claude/projects/`. OTEL/aggregate metrics are deliberately NOT consulted — the aggregate sink cannot attribute tokens/cost to THIS specific session (its `skill_name` label is populated only for top-level orchestrator-dispatched skills, not subagent-invoked ones) nor reconstruct per-session tool/file/timeline detail.
 
 # Session Metrics — Transcript-Derived Token, Cost, Tool, and Subagent Report
 
@@ -26,9 +26,9 @@ You report on the **current** Claude Code session by parsing its local transcrip
 python3 "${CLAUDE_SKILL_DIR}/scripts/session_metrics.py"
 ```
 
-`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.196+). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
+`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.129+). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
 
-**Output shape:** all stdout except the final line is a single pretty-printed JSON object (the summary); the final line repeats the absolute path to the generated HTML file. Split on the last newline and parse everything before it as one JSON blob — don't attempt to `json.loads()` line-by-line as JSONL.
+**Output shape:** all stdout except the final line is a single pretty-printed JSON object (the summary); the final line repeats `summary.html_report_path`, the absolute path to the generated HTML file. Split on the last newline and parse everything before it as one JSON blob — don't attempt to `json.loads()` line-by-line as JSONL.
 
 **Failure modes:** the script exits non-zero with a one-line message on stderr if it can't find a Claude Code project directory for the current cwd, or can't find any session `*.jsonl` under it. Surface that message verbatim to the user — don't retry or guess a path yourself.
 

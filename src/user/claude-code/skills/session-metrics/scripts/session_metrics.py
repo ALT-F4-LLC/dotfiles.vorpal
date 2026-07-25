@@ -35,7 +35,7 @@ def load_price_table():
 
 PRICES, PRICE_TABLE_META = load_price_table()
 
-COORDINATION_TOOLS = {"Agent", "SendMessage", "Task"}
+COORDINATION_TOOLS = {"Agent", "SendMessage", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TaskStop", "TaskOutput"}
 FILE_TOOLS = {"Edit", "Write", "Read"}
 
 

@@ -1,5 +1,67 @@
 # Changelog: adr
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: the CANONICAL:SAVE_AND_RETURN block's "collision dialog" clause reads as a live branch, but Phase 1 already established collision is structurally impossible for this skill (atomic `--claim` at Pre-flight step 4). Annotated OUTSIDE the CANONICAL block (parity-locked, cannot edit) rather than inside it.
+
+### Changes
+- CLARIFY[COSMETIC]: adr-specific note added immediately after CANONICAL:SAVE_AND_RETURN:END stating the collision-dialog clause is unreachable for this skill and kept only for family parity.
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Validation-Before-Save steps 1-2 aligned to the family union shape; placeholder token {tmpdir} → {staging_dir} (family-wide single token).
+
+### Changes
+- REFACTOR[COSMETIC]: token rename + wording alignment; no semantic change — adr already carried all three clauses.
+
+### Dimensions Evaluated
+Coherence. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Retired the dead COLLISION_DIALOG block and its step-4 apology — verified next_doc_number.sh --claim makes collision structurally impossible, and the block's "if a file already exists" trigger actively mis-fires against the claimed stub Pre-flight guarantees exists. Narrowed a citation-hijack over-claim to path-prefix coverage, fixed a first-run defect handing the prior-art Grep nonexistent dirs, and fixed the full 3-part $TMPDIR/validator-invocation/heading-numbering bug found across the doc-authoring family (X1/X2/X3). H-adr-4 (docs/tdd/adr/ divergence) REJECTED — verified no defect (relocated to docs/adr/ per 120b273). Net +239 bytes (15,851 → 16,090; the earlier COLLISION_DIALOG/citation-hijack/Grep/X1 changes alone netted -135, offset by the X2/X3 follow-up).
+
+### Changes
+- CULL[SUBSTANTIVE]: removed Pre-flight step 4 + the CANONICAL:COLLISION_DIALOG block; renumbered step 5→4 across all cross-references. Coupled: adr's COLLISION_DIALOG row dropped from doctrine_check_manifest.tsv (4→3 carriers, still ≥2-checkable) and the orphaned AskUserQuestion dropped from allowed-tools.
+- FIX[SUBSTANTIVE]: citation-hijack text narrowed to the docs/adr/{NNNN}- path-prefix form the script actually greps; added a caller-side mismatch check against an upstream-mandated number.
+- FIX[SUBSTANTIVE]: prior-art Grep now passes only extant dirs (docs/spec/, docs/ux/ commonly absent — missing path arg exits 2) and aborts on a predecessor already recording the decision; new Failure Modes row.
+- FIX[SUBSTANTIVE]: $TMPDIR staging bug (X1, cross-cutting with prd/tdd/ux-spec) — Write/Read take literal paths and don't expand shell variables; staging dir now resolved via Bash first.
+- FIX[SUBSTANTIVE]: validator invoked via `python3` (X2) — a lost executable bit now exits 2 (handled) instead of an off-contract 126. Follow-up: review-tdd caught that this and X3 were mis-scoped as already-fixed in the original batch-2 briefs; applied directly here by the orchestrator.
+- FIX[SUBSTANTIVE]: Required Sections now states headings carry the title only, never the list number (X3, family parity with prd).
+- REJECTED: H-adr-4 — this repo's ADRs are correctly documented at docs/adr/ (relocated out of docs/tdd/adr/ per commit 120b273); the historical-auditor read pre-relocation transcript history.
+
+### Dimensions Evaluated
+All 8. Over-Engineering (-1808 bytes dead/orphaned content); Completeness (absent-dir Grep, duplicate decision, TMPDIR staging, validator invocation, heading numbering); Coherence (reference accuracy, family parity, step renumbering).
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -188,76 +250,6 @@ None — History Compaction per ADR 0001, not a review cycle.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L43) already states the identical ignore-silently rule. Applied identically to all 4 doc-authoring siblings (prd/tdd/adr/ux-spec, -1 each). Net -1 (271 lines).
-
-### Changes
-- Failure Modes: deleted last table row (intra-file duplication of the CANONICAL block; byte-identical removal across the family, grep-verified 0 survivors).
-
-### Dimensions Evaluated
-Coherence (family lockstep), Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-No changes needed. Verified live file state against all 8 dimensions; `allowed-tools` (Glob/Grep) confirmed correct and genuinely used in body. Triple-Glob pattern evaluated for collapse; pre-Write renumber Glob and post-Write race-detection Glob serve distinct safety purposes and cannot be merged.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no removable slack; triple-Glob justified by concurrent-author safety, 8-way parallel fan-out ran clean in window), Skill Design Quality ($-escape clean), Coherence (family parity confirmed; CANONICAL blocks intact), Orchestration (leaf confirmed).
-
-### Rename
-No rename. Family-aligned with prd/tdd/ux-spec/init-specs.
-
-## 2026-06-09
-
-### Summary
-Compacted 10 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 10 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO changes. Fourth consecutive no-change verdict. Glob/Grep confirmed genuinely used (numbering, race detection, prior-art) despite stale 2026-06-04 entry claiming removal — live state correct, historical entry left immutable per changelog policy.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no removable slack without breaking family parity or safety rails); $-escape clean; family parity with tdd/prd/ux-spec intact.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean; $-escape clean; no vague verify-reminders; numbering/race-detection steps are deterministic safety rails, not over-prescription. Third+ consecutive no-change verdict.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; reasoning-echo + $-escape audits clean.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +280,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Phase 1 no-change verdict; Phase 2 added body-`status:` authority caveat naming Docket `.data.status` as source of truth (adr's proposed→accepted→superseded ladder).
 - 2026-06-08: Phase 1 no-change verdict (25+ cycles); re-verified allowed-tools, docs-path taxonomy, family parity — no removable slack.
 - 2026-06-09: No-change verdict (2nd consecutive); zero $-hazards, frontmatter/Skill(adr) reciprocity confirmed, absent docs/tdd/adr handled by design.
+- 2026-06-09: Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean; $-escape clean; no vague verify-reminders; numbering/race-detection steps are deterministic saf...
+- 2026-06-09: Full-cycle audit: NO changes. Fourth consecutive no-change verdict. Glob/Grep confirmed genuinely used (numbering, race detection, prior-art) despite stale 2...
+- 2026-06-09: Compacted 10 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
+- 2026-06-10: No changes needed. Verified live file state against all 8 dimensions; `allowed-tools` (Glob/Grep) confirmed correct and genuinely used in body. Triple-Glob p...
+- 2026-06-10: Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L43) already states the identi...

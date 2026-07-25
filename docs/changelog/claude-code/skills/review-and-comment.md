@@ -1,5 +1,23 @@
 # Changelog: review-and-comment
 
+## 2026-07-24
+
+### Summary
+Ended a nine-cycle NO-OP streak with two genuine defects. Step 9's cleanup referenced an undefined `$DIR` — under `rm -rf ""` it exits 0 silently, so every run leaked a full shallow clone plus the diff file into `$TMPDIR` with no error. The CRITICAL banner's caller-side-effect clause named only `Agent`/`SendMessage` while the frontmatter also strips `Edit`/`Write`, mis-directing the very "restriction, not an outage" diagnosis the clause exists to enable. Findings: 4 sub / 2 cos / 0 rej / 2 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: banner item (5) now enumerates all four stripped tools (`Edit`, `Write`, `Agent`, `SendMessage`) and tells callers to schedule file edits, not just spawns, before invoking. Cross-cutting with `commit` (identical clause).
+- AMPLIFY[SUBSTANTIVE]: Step 9 cleanup fixed to `rm -rf <CLONE_DIR> <DIFF_FILE>` with literal Step-1 paths, plus the silent-failure rationale.
+- CULL[SUBSTANTIVE]: Step 5's redundant `LOGIN=$(gh api user …)` removed — Step 1 already prints `IDENTITY`, and the bare `gh` contradicted the skill's own `"$GH"` precondition.
+- CULL[COSMETIC]: preconditions 1-2 re-attributed — Steps 1/5/8 are script calls, Step 7 is the sole remaining raw `gh` call.
+- AMPLIFY[SUBSTANTIVE]: `effort: xhigh` added, matching every other review/verdict-producing skill.
+
+### Dimensions Evaluated
+All 8. Completeness (both defects); Skill Design Quality (effort gap); Coherence (script interfaces re-verified). Spec Alignment: N/A — docs/spec/ does not exist in this repo.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

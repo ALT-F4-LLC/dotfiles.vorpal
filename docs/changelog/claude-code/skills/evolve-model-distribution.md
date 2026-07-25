@@ -1,5 +1,23 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-24
+
+### Summary
+Pass A: retired the inline alias→tier map (I1) and removed a phantom `best` alias from all 3 sites — no `best` alias exists anywhere in team-lead.md or src/user.rs's ANTHROPIC_DEFAULT_* bindings; repaired the class-5 Policy-stale read path, whose input (the suspended-alias note) lives outside the block the proposer was told to read. Pass B: deleted a redundant, and factually incorrect, aggregate headline subsection. Net +1,282 bytes (42,127 → 43,409).
+
+### Changes
+- RETIRE[SUBSTANTIVE]: dropped the fable→gold/opus→silver/sonnet→bronze parenthetical — team-lead.md declares tier→alias resolves there "and nowhere else"; an embedded copy is a doctrine defect and stale on the next alias re-point.
+- FIX[SUBSTANTIVE]: phantom `best` alias removed from class-5, the proposer prompt, and the Phase-2 apply workflow. The instruction would have written a nonexistent alias into the routing authority.
+- FIX[SUBSTANTIVE]: Categorization AUTHORITY rule gains a third grep anchor (Per-spawn model routing). The suspended-alias note and closed alias vocabulary live only there, zero times in the Tiers bullets, so class 5 was structurally unevaluable despite claiming "always evaluated."
+- FIX[SUBSTANTIVE]: Phase-3 verifier check 4 now rejects any alias outside the live vocabulary, not just a nonexistent tier — the gap that let `best` through undetected.
+- RETIRE[SUBSTANTIVE]: Phase-0 §2 aggregate headline deleted (-632 bytes). §1's TSV already yields N spawns and M models; §2 counted per-turn occurrences, reporting TURNS under an "N spawns" label — internally contradictory with its own adjacent warning.
+
+### Dimensions Evaluated
+All 8. Correctness/bug (primary — 3 defects found beyond the assigned finding), Coherence (live anchor re-verification against team-lead.md and src/user.rs), Over-Engineering (Pass B), canonical-block parity untouched.
+
+### Rename
+No rename.
+
 ## 2026-07-22
 
 ### Summary

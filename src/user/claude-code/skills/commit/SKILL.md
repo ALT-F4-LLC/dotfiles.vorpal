@@ -15,7 +15,7 @@ disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) This skill may be invoked ONLY by team-lead — no other agent or subagent may call `Skill(commit, ...)`. (2) This skill stages and commits ONLY when team-lead has already received EXPLICIT operator authorization to commit right now — invoking `Skill(commit, ...)` is NOT itself that authorization. If team-lead has not confirmed explicit authorization, STOP and ask; do not stage or commit. (3) Never run `git push`. Never run `git commit --amend` on a pre-existing commit. (4) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. (5) Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage.
+> **CRITICAL:** (1) This skill may be invoked ONLY by team-lead — no other agent or subagent may call `Skill(commit, ...)`. (2) This skill stages and commits ONLY when team-lead has already received EXPLICIT operator authorization to commit right now — invoking `Skill(commit, ...)` is NOT itself that authorization. If team-lead has not confirmed explicit authorization, STOP and ask; do not stage or commit. (3) Never run `git push`. Never run `git commit --amend` on a pre-existing commit. (4) This is a leaf skill. You MUST NOT spawn sub-agents, invoke `Skill()` recursively, use `Agent()` or `SendMessage`, or form/manage a team. (5) Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Edit`, `Write`, `Agent`, and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages/file edits BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage.
 
 # Commit — Draft and Execute a Standardized Conventional Commit
 
@@ -219,8 +219,8 @@ Mechanize the check rather than eyeballing it:
 2. Run all four checks in one deterministic call via
    `~/.claude/scripts/commit_msg_check.sh`
    (repo: `src/user/claude-code/scripts/commit_msg_check.sh`) — the single
-   source of truth for the four regex patterns, so the check run always
-   matches what's documented above rather than a hand-retyped copy:
+   source of truth for the four regex patterns, so the run cannot drift
+   from a hand-retyped copy:
 
    ```
    ~/.claude/scripts/commit_msg_check.sh "$TMPDIR/commit-msg-draft.txt"
@@ -235,13 +235,20 @@ Mechanize the check rather than eyeballing it:
    `CVE-2024-…` — never count as matches; a surviving rule-2 hit is
    therefore a genuine issue-tracker ID and must be removed.)
 
+**Exit 0 is necessary but not sufficient for rule 3.** The script's rule-3
+pattern matches only `session_id`/`task_id`/`vote_id`/`teammate`/`docket` as
+literal tokens; model and tier names (Sonnet, Opus, Fable, Haiku,
+gold/silver) and bare teammate names (`advisor`, `reviewer-2`, `tdd-author`)
+are inside rule 3's documented scope but are NOT pattern-checked. Read the
+drafted subject and body once for those two categories before staging.
+
 ### Preemptable false-positive triggers (pick wording up front)
 
 Two tokens in common use elsewhere in this repo incidentally match the checks
 above: the conventional `(claude-code)` scope token matches rule 4's
 `\bclaude\b`-style check (it fires on `claude` inside `claude-code`), and the
 word "teammate" matches rule 3's check. Rather than draft with either, fail
-all four checks, and rewrite, pick non-triggering wording up front — a bare
+that check, and rewrite, pick non-triggering wording up front — a bare
 `feat:`/`fix:` type with no scope (or another scope token already in use per
 Step 2), and alternate phrasing such as "peer-skills" instead of "teammate".
 This is a drafting preference to avoid rework, not a change to the checks
@@ -253,7 +260,10 @@ themselves.
 this is the first point in the flow where a permission-mode denial can
 surface. There is no proactive mode check before this step — react only if
 the command itself fails; see the Failure Modes table for the exact denial
-signature and the message to surface.
+signature and the message to surface. In an interactive mode the hook
+returns `ask` rather than a denial, so Step 4's `git add` and Step 5's
+`git commit` each raise a SEPARATE operator prompt — approval here followed
+by a denial at Step 5 leaves the index staged, not clean.
 
 `git add -- <file1> <file2> ...` naming every path from Step 1 explicitly.
 Never `git add .` / `git add -A` / a bare directory that could sweep in
@@ -330,8 +340,8 @@ owns next steps.
 | Fileset mixes unrelated logical changes | Abort at Step 2 (one-change guard); ask the calling agent to split into separate invocations. |
 | Forbidden-content self-check (Step 3) finds any hit | Rewrite the draft and re-run all four checks; do not stage or commit until clean. |
 | `git diff --cached --name-only` mismatches the intended fileset after `git add` | Abort at Step 4 with the `Blocked: staged fileset does not match` message; re-run from Step 1. |
-| `git add` or `git commit -F` fails with the guard hook's permission-mode denial (stderr containing `git writes are blocked in non-interactive permission mode`) | This is `guard-no-commit-hook.sh`'s own enforcement, not this skill's — there is no proactive check for it anymore. Surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was staged/committed.` Do not retry, do not probe the mode in advance, do not use `--no-verify`. |
+| `git add` or `git commit -F` fails with the guard hook's permission-mode denial (stderr containing `git writes are blocked in non-interactive permission mode`) | This is `guard-no-commit-hook.sh`'s own enforcement, not this skill's — there is no proactive check for it anymore. Surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was committed.` If `git add` already succeeded, do NOT claim a clean tree — name the staged files, because Step 1's index precheck blocks the next Skill(commit) invocation until they are unstaged. Do not retry, do not probe the mode in advance, do not use `--no-verify`. |
 | `git commit -F` fails for another reason (hook rejection unrelated to permission mode, empty diff, etc.) | Surface the raw `git` error; do not retry with `--no-verify` or any other bypass. |
-| `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. The retry MUST rewrite the message file and re-run the Step 3 checks inside that same disabled-sandbox Bash call before committing — per the Sandbox-context invariant in Step 5, `$TMPDIR` can resolve to a different path once the sandbox setting changes, so reusing the earlier file reference can silently commit stale or wrong content. |
-| `git commit -F` succeeds but the resulting commit's message doesn't match the checked draft (e.g. a stale `$TMPDIR` file reused across a sandbox-context switch) | Caught by the Step 5 post-commit verification. Do not report success in Step 6 and do not self-fix with `git commit --amend` (still forbidden by this skill) — report the mismatch and the wrong commit's SHA to the calling agent so it can secure fresh, explicit operator authorization for whatever git operation fixes it. |
+| `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. Step 5's Sandbox-context invariant governs the retry — rewrite the message file and re-run the Step 3 checks inside that same disabled-sandbox Bash call. |
+| `git commit -F` succeeds but the resulting commit's message doesn't match the checked draft (e.g. a stale `$TMPDIR` file reused across a sandbox-context switch) | Caught by the Step 5 post-commit verification — follow its handling verbatim (no Step 6 success report, no `--amend`, report the mismatch plus the wrong commit's SHA to the calling agent). |
 | Calling agent asks for `git push` or `git commit --amend` | Decline — outside this skill's contract; direct them to explicit direct `git` usage under operator instruction. |

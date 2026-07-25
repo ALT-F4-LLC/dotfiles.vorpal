@@ -1,5 +1,65 @@
 # Changelog: evolve-config
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-07-10..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation routed a Coherence-Class item back to this cycle's Phase 2 pass: the Reviewer-tier note's comparison against evolve-agents/evolve-skills stated both their Phase 2 AND Phase 3 reviewer seats run at `distinguished-engineer`/`fable` — stale now that their Phase 3 `disambiguation-reviewer` is `opus` per this cycle's operator-approved Trial. Fixed to keep the comparison phase-accurate.
+
+### Changes
+- FIX[SUBSTANTIVE]: Reviewer-tier note's cross-file comparison split into per-phase clauses — Phase 2 `coherence-reviewer` stays `fable` in evolve-agents/evolve-skills, Phase 3 `disambiguation-reviewer` is now `opus` there (Trial downgrade), so this file's own `staff-engineer`/`opus` choice is no longer miscompared against a uniformly-`fable` sibling baseline.
+
+### Dimensions Evaluated
+Coherence (Coherence-Class item routed from Phase 3 disambiguation — passed neither Two-arm Boundary test arm cleanly: a factual staleness, not a pure clarity ambiguity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Parity-defer paragraph gains the lockstep artifact-existence guard (this file is the carrier the guard protects — 0 findings-ledger occurrences vs 3 in each sibling); Phase-3 closing paragraph removed as a triple restatement (~285B, lockstep with evolve-agents).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: artifact-existence guard appended after the NO-OP sentence.
+- TRIM[SUBSTANTIVE]: post-template "Always run this stage..." paragraph deleted; content verified restated at §Phase 3 Mechanism.
+
+### Dimensions Evaluated
+Coherence, Redundancy. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Replaced a stale hardcoded CANONICAL-block list that contradicted the skill's own manifest-authority rule, closed a corroborated-deadness loophole in the AMPLIFY gate, and trimmed three config-local duplications. Net -685 bytes (61,734 → 61,049).
+
+### Changes
+- CULL: line 187's hardcoded 4-item CANONICAL-block list → manifest pointer. The list named 2 non-parity-bound carve-outs (SOURCE-OF-TRUTH has exactly 1 carrier repo-wide) and omitted 8 genuinely shared blocks, inverting Phase 1 parity routing; it also violated its own anti-hardcoding rule 18 lines below.
+- AMPLIFY: dead-setter AMPLIFY gate now reads "however many auditors corroborate it" — closes the corroboration-as-verification loophole a cited incident (3 proposals citing the same deadness in one cycle) exposed.
+- CULL: reviewer-tier note's 213-byte defensive parenthetical; the "Do NOT fix to gold" directive already forecloses the mis-inference.
+- CULL: innovation-scanner MISSION automation sentence (fully absorbed by lens 2) and the Rules bullet restating four constraints stated earlier in the same template.
+
+### Dimensions Evaluated
+Correctness/Self-Consistency (primary, 2 fixes); Over-Engineering (primary, 3 trims — most large duplication is parity-bound and untouchable in Phase 1).
+
+### Rename
+No rename.
+
 ## 2026-07-22 (Phase 4 history compaction)
 
 ### Summary
@@ -205,80 +265,6 @@ Disambiguation (multi-reading).
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
-
-### Summary
-Phase 2 coherence: corrected the six→five CANONICAL-block self-description (HARVEST is single-homed in evolve-phase0-templates.md §2, not carried here); fixed two dead `agents/` root references; EVOLUTION-MODEL lockstep.
-
-### Changes
-- Phase-2 workflow prose + spawn template no longer instruct reviewers to find a nonexistent in-file HARVEST block (phantom-drift hazard).
-- Shutdown-protocol team-lead.md citation and biodiversity-invariant grep scope now use `src/user/claude-code/agents/`.
-- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
-
-### Dimensions Evaluated
-Coherence (carrier-set accuracy, reference accuracy, CANONICAL parity).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 3 disambiguation pass)
-
-### Summary
-Trigger scoped to the skill's actual target; corrected a stale CANONICAL-block count (said four, file carries six); aligned the `day=N` alias with evolve-skills/evolve-agents. Findings: 3 → 3 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: trigger "review config" → "review config sources" — the bare phrase was indistinguishable from a lightweight read request or a bundled update-config errand, yet launches a full xhigh multi-agent cycle
-- AMPLIFY[SUBSTANTIVE]: Phase 1/2 coherence-verifier tasks now correctly enumerate all six CANONICAL blocks (BANNER, EVOLUTION-MODEL, DOCS-PATHS-LOCAL, SOURCE-OF-TRUTH, HARVEST, DISAMBIGUATION-CHARTER) instead of four — HARVEST and DISAMBIGUATION-CHARTER were silently escaping the parity-verification list
-- AMPLIFY[SUBSTANTIVE]: Argument Handling — documented `day=N` as an accepted alias for `days=N`, matching evolve-skills
-
-### Dimensions Evaluated
-Disambiguation (confusable-name, internal count mismatch, argument-parsing family consistency).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 2 coherence pass)
-
-### Summary
-Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-skills. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: pre-flight step 7 — cache-first changelog fetch via `~/.claude/cache/changelog.md` (<24h mtime), curl-refresh fallback
-
-### Dimensions Evaluated
-Efficiency (family-wide lockstep with evolve-agents/evolve-skills).
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Added a `cargo check` compile-gate to Phase 1 step-3 verification — closes the Rust-compile-failure class the serde-attribute read cannot catch. No config-source changes this cycle. Findings: 6 → 1 sub / 0 cos / 0 rej / 3 def / 2 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 1 step-3 now runs `cargo check` before the serde-attribute read — catches calls to non-existent setters / type errors an applied Edit could introduce (innovation-scan Rethink, executable arm verified feasible; snapshot-test arm declined — no cited fitness signal, new test infra out of scope)
-
-### Dimensions Evaluated
-Actionability / Completeness (AMPLIFY). Deferred cross-cutting: shared Phase-0 template extraction + `mimir_query.sh` (shared with evolve-agents/evolve-skills), changelog-cache adoption (Repetition FIX 2), family-shared drift/S2 verbosity trim — all routed to Phase 2. Confirmed no-ops: `display-name`/`default-enabled`/`fallback` absent (correct); `disableBundledSkills` follow-up already Declined 2026-06-12, not re-proposed.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 3 disambiguation: retuned the colliding trigger phrase "refine Claude Code settings" → "refine config sources" and added a clause naming the bundled update-config (/config) skill for live settings.json edits.
-
-### Changes
-- Description: trigger "refine Claude Code settings" → "refine config sources" + added "evolves config SOURCE not live settings.json; use bundled update-config for one-off settings edits" — removes classifier collision with bundled update-config (confusable-name). Achieves parity with sibling skills that name their bundled near-namesakes.
-
-### Dimensions Evaluated
-Disambiguation (confusable-name). Cross-evolve-* trigger set otherwise distinct on primary token.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git history (see the compaction entry's date).
@@ -292,3 +278,8 @@ Entries below were compacted per the retention-compaction policy; full text in g
 - 2026-06-30: Strengthened official-docs digestion, generated-phenotype verification, and setter/call-chain inventory fallback. Net 0.
 - 2026-07-10: CULL removed redundant self-budget line; AMPLIFY added build-deploy-lag reminder to Wrap-up step 3 (parity with evolve-model-distribution).
 - 2026-07-10: Phase 2 coherence — aligned docs-paths master citation to the relocated team-doctrine reference (was team-lead.md §copy).
+- 2026-07-10: Phase 3 disambiguation: retuned the colliding trigger phrase "refine Claude Code settings" → "refine config sources" and added a clause naming the bundled up...
+- 2026-07-12: Added a `cargo check` compile-gate to Phase 1 step-3 verification — closes the Rust-compile-failure class the serde-attribute read cannot catch. No config-so...
+- 2026-07-12: Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-skills. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
+- 2026-07-12: Trigger scoped to the skill's actual target; corrected a stale CANONICAL-block count (said four, file carries six); aligned the `day=N` alias with evolve-ski...
+- 2026-07-13: Phase 2 coherence: corrected the six→five CANONICAL-block self-description (HARVEST is single-homed in evolve-phase0-templates.md §2, not carried here); fixe...

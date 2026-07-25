@@ -1,5 +1,23 @@
 # Changelog: team-doctrine
 
+## 2026-07-24
+
+### Summary
+Closed D5 in the shared Phase-0 template store (8 occurrences, not the 6 originally scoped) by removing an unsupportable non-pinned-fallback assertion and genericizing the model-distribution example slots, and repaired three drifted "Cited by" rows in the SKILL.md index. Paid for the SKILL.md additions by retiring a description enumeration that had itself drifted to 11-of-16. Findings: 7 sub / 0 cos / 0 rej / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: evolve-phase0-templates.md §3a/§3b/§3c — replaced "Non-pinned spawns run claude-opus-4-8 via classifier fallback (verified 2026-06-09)" with a live-derive instruction naming the script's real requested_model/resolved_model fields. Live census showed the claim misattributed a pinned-opus resolution to non-pinned fallback and was unsupportable at n=2.
+- AMPLIFY[SUBSTANTIVE]: evolve-phase0-templates.md §3a/§3b/§3c/§6a/§6b Output-Format slots (5) — genericized to alias→resolved pairs; §6a/§6b were outside the original 6-occurrence ledger scope.
+- FIX[SUBSTANTIVE]: SKILL.md index "Cited by" column — docs-paths 9→13 skills (all 4 evolve-* carry real LOCAL blocks); deep-collaboration "all 7 agents"→6 (senior-engineer.md cites it nowhere); sandbox-recovery +ux-designer.md.
+- RETIRE[SUBSTANTIVE]: SKILL.md description master enumeration (-206 bytes) — an unchecked second copy of the index table, already drifted to 11-of-16.
+- AMPLIFY[SUBSTANTIVE]: evolve-phase0-templates.md §7 (Innovation Scan) Rules gained a changelog-check requirement — a finding already dispositioned in a prior cycle must now be dropped unless the scanner cites what changed since. Landed after review-init-specs caught the innovation-scanner re-raising a proposal REJECTED on identical evidence for the 4th consecutive cycle (I-init-specs-1); root cause was §7 never instructing the scanner to check prior dispositions.
+
+### Dimensions Evaluated
+Coherence (3 drifted index rows + 1 drifted description, all verified by live grep), Actionability (D5 live-derive instruction; §7 changelog-check rule), Over-Engineering. Index invariant verified: 16 files == 16 rows, doctrine_check.sh all arms PASS.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

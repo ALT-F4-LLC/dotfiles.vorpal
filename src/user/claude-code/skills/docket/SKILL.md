@@ -16,7 +16,7 @@ description: >
 
 Docket (`docket`) is a local-first, SQLite-backed issue tracker driven
 entirely through a single CLI binary. There is no server and no network
-call — all state lives in a `.docket/docket.db` SQLite file, resolved via
+call — all state lives in a `.docket/issues.db` SQLite file, resolved via
 `internal/config`. This skill teaches an agent how to drive `docket` end to
 end: issue CRUD and lifecycle, file attachments, comments, labels,
 relations, dependency graphs, execution planning, consensus voting, docs,
@@ -30,7 +30,7 @@ parsing — the examples below show both.
 ## Quick Start
 
 ```bash
-docket init                                   # create .docket/docket.db in the cwd
+docket init                                   # create .docket/issues.db in the cwd
 docket issue create -t "Fix login bug" --json # create an issue, get its ID back
 docket issue list --json                      # list open issues
 docket issue show DKT-1 --json                # show full detail incl. comments/activity
@@ -204,27 +204,45 @@ docket issue show DKT-1 --json     # full detail: sub-issues, relations, comment
 docket issue log DKT-1 --json --limit 50
 ```
 
-> **Parsing `docket issue list --json` output:** the issues array is
-> nested under `data.issues`, not a bare top-level array — `d[0]` or
-> `d['issues']` are both wrong shapes.
+> **`--json` shapes are NOT uniform — check this table before parsing.**
+> Sub-entity `list` subcommands return `.data` as a **bare array**; every
+> other list command returns `.data` as an **object** with a named
+> collection key plus `total`. Confusing the two is the most common Docket
+> parsing failure: on a bare-array response `d["data"].get("issues")` raises
+> `AttributeError: 'list' object has no attribute 'get'` and
+> `d["data"]["issues"]` raises `TypeError: list indices must be integers`.
 >
-> ```python
-> d = json.loads(subprocess.run(
->     ["docket", "issue", "list", "--json"], capture_output=True, text=True
-> ).stdout)
-> issues = d["data"]["issues"]  # correct — NOT d[0] or d["issues"]
-> ```
+> | Command | `.data` | jq for the rows |
+> |---|---|---|
+> | `issue list`, `next` | object | `.data.issues[]` |
+> | `doc list` | object | `.data.docs[]` |
+> | `vote list` | object | `.data.proposals[]` |
+> | `issue log` | object | `.data.entries[]` |
+> | `plan` | object | `.data.phases[]` |
+> | `issue graph` | object | `.data.nodes[]` / `.data.edges[]` |
+> | `issue show` | object (the issue itself) | `.data.status`, `.data.comments[]` |
+> | `issue comment list`, `doc comment list` | **bare array** | `.data[]` |
+> | `issue file list`, `label list`, `link list` | **bare array** | `.data[]` |
 >
 > ```bash
-> docket issue list --json | jq '.data.issues'
+> docket issue list --json               | jq -r '.data.issues[].id'  # object
+> docket issue comment list DKT-1 --json | jq -r '.data[].body'       # bare array
+> ```
+>
+> **Truncation is silent.** `issue list`, `doc list` and `vote list` default
+> to `--limit 50` (`next` to 10) and print no warning when rows are cut.
+> `total` counts the FULL match set, so compare it against the page:
+>
+> ```bash
+> docket issue list --json | jq -e '.data.total > (.data.issues|length)' >/dev/null \
+>   && echo "TRUNCATED — re-run with a higher --limit"
 > ```
 
 > **Common CLI mistakes — these forms will fail:**
 >
 > | Wrong | Right |
 > |---|---|
-> | `docket issue comment add DKT-1 "note"` — positional message arg | `docket issue comment add DKT-1 -m "note"` |
-> | `docket issue comment add DKT-1 -b "note"` / `--body "note"` — no such flag | `docket issue comment add DKT-1 -m "note"` |
+> | `docket issue comment add` with a positional message, `-b`, or the verb `create` | always `-m` and always `add` — see the Comments section |
 > | `docket issue edit DKT-1 -l backend` — no `-l`/`--label` flag on `edit` | `docket issue label add DKT-1 backend` |
 > | `docket issue move DKT-1 review -m "note"` — no message flag on `move` | `docket issue move DKT-1 review` (add a note separately via `docket issue comment add`) |
 
@@ -267,6 +285,16 @@ docket issue comment list DKT-1 --json
 read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
 (default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
 required — there is no editor fallback.
+
+> **Always pass `--json` on `comment add`.** An empty message (`-m ""`, or
+> `-m "$VAR"` where `VAR` is unset) is NOT an error in human mode — it takes
+> the editor path, prints `Cancelled.`, **exits 0, and writes nothing**, so
+> an agent checking the exit status sees success for a comment that never
+> landed. The same input under `--json` is a hard `VALIDATION_ERROR` (exit
+> 3, `message is required in JSON mode`). Corollary: never split a
+> stage-file write from its consumption (`-m "$(cat "$STAGE")"`) across two
+> Bash tool calls — shell state does not persist between calls, so `$STAGE`
+> expands empty and the comment is silently dropped.
 
 ---
 
@@ -355,7 +383,7 @@ Inspect and finalize:
 ```bash
 docket vote show DKT-V1 --json
 docket vote result DKT-V1 --json
-docket vote list --json --all               # default: open proposals only
+docket vote list --json --all               # --all shows every proposal; omit --all for open-only (the default)
 docket vote commit DKT-V1 --json --outcome "Approved: adopting Result<T,E>"
 docket vote link DKT-V1 --json --issue DKT-1
 docket vote unlink DKT-V1 --json --issue DKT-1
@@ -424,7 +452,7 @@ is a `CONFLICT`.
 
 ## Deterministic Wrapper Scripts
 
-Seven helper scripts under `src/user/claude-code/scripts/` chain the multi-command
+Nine helper scripts under `src/user/claude-code/scripts/` chain the multi-command
 Docket rituals below behind a cwd-guard and post-write verification. Prefer them
 over hand-composing the raw `docket` sequences, which drift from the
 assignee-first-then-status claim contract and the close-then-verify contract:
@@ -434,10 +462,21 @@ assignee-first-then-status claim contract and the close-then-verify contract:
 | `docket_bootstrap.sh` | (none) | `init` then `version --quiet` — the recommended session-start invocation |
 | `docket_claim.sh` | `<id> <role>` | `edit -a @<role>` then `move in-progress`; rejects if still `backlog` |
 | `docket_close.sh` | `<id> <msg>` | `close` → verify `status==done` → `comment "Completed: <msg>"` |
+| `docket_promote.sh` | `<id>` | promote `backlog` → `todo` if still `backlog`, else no-op exit 0 — the team-lead-only pre-dispatch move |
 | `docket_write.sh` | `<id> <issue subcommand...>` | any `docket issue` write + activity-log-advanced re-verify |
 | `docket_create.sh` | `<issue create flags...>` | `issue create` + re-verify every `-l`/`-f` landed, backfilling omissions |
 | `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create -n <voters>` (`<voters>` = integer voter count, not names) with criticality-correct `--threshold` + prints the delegation payload |
+| `vote_record.sh` | `<vote-id> <voter> <role> <report-file>` | parses a reviewer report's Verdict/Confidence/Domain-Relevance/Findings sections and casts via `vote cast`, streaming findings through stdin instead of argv |
 | `docket_ref_check.sh` | `[skill-md-path]` | Diffs this file's flag tables against installed `docket <cmd> --help` output per subcommand; exits nonzero on drift — run during evolve-skills Phase 0 when auditing this skill |
+
+> **`docket_claim.sh` exit 1 is not proof the claim failed.** Its guard
+> compares `updated_at` before and after, but `updated_at` is
+> second-granularity (`2026-07-25T00:36:06Z`), so a promote-then-claim
+> completing inside one wall-clock second leaves the two equal and the
+> script reports `claim did not take effect` on a claim that fully
+> succeeded. On that error, confirm with `docket issue show <id> --json`
+> before retrying — if `.data.status` is `in-progress` and `.data.assignee`
+> is `@<role>`, the claim landed and a retry is a no-op.
 
 ---
 

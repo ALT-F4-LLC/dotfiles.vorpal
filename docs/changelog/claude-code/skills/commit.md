@@ -1,5 +1,25 @@
 # Changelog: commit
 
+## 2026-07-24
+
+### Summary
+Closed a documented-vs-implemented gap in the Step 3 forbidden-content check and a false abort message that could leave a dirty index unreported. `commit_msg_check.sh`'s rule-3 regex matches only five literal tokens (`session_id`/`task_id`/`vote_id`/`teammate`/`docket`), so model/tier names and bare teammate names that rule 3's prose forbids passed the mechanized check silently; Step 3 now states exit 0 is necessary but not sufficient for rule 3. The permission-mode failure row asserted "Nothing was staged/committed" even when `git add` had already succeeded. Findings: 4 sub / 3 cos / 2 rej / 1 def / 1 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Step 3 documents rule 3's un-mechanized residual scope (model/tier names, bare teammate names) and narrows the adjacent "always matches what's documented" overclaim.
+- AMPLIFY[SUBSTANTIVE]: Step 4 documents the guard hook's interactive `ask` path — two separate operator prompts, not one.
+- AMPLIFY[SUBSTANTIVE]: Failure Modes permission-mode row no longer claims a clean tree unconditionally; names the staged fileset when git add already succeeded.
+- CULL[COSMETIC]: 1Password row and post-commit-mismatch row shortened to cite Step 5 instead of restating it (I-commit-1 partial).
+- COSMETIC: corrected "fail all four checks" → "fail that check" (rule-specific accuracy).
+- REJECTED: historical-auditor's guard-hook-false-positives-on-prose finding — verified fixed in the hook's quote-aware pre-pass.
+- AMPLIFY[SUBSTANTIVE]: CRITICAL banner item (5) now enumerates all four tools `disallowed-tools` strips (`Edit`, `Write`, `Agent`, `SendMessage`), matching review-and-comment's clause byte-for-byte (CALLER-SIDE-EFFECT).
+
+### Dimensions Evaluated
+Actionability, Completeness, Coherence, Over-Engineering (Pass B). Skill Design Quality: frontmatter verified accurate (no phantom `Task` entry), but its banner under-enumerated the stripped tools — fixed. Orchestration: leaf skill, no agent use.
+
+### Rename
+No rename.
+
 ## 2026-07-20
 
 ### Summary

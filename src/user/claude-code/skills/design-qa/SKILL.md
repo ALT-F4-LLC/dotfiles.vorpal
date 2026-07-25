@@ -69,11 +69,16 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 ## Doubling Rule
 
-When invoked under team-lead orchestration (or `@ux-designer` orchestration), design QA defaults to a **single** reviewer — the persistent `ux-advisor` consulted via SendMessage, no ephemeral spawn — per `~/.claude/agents/team-lead.md` Rule 8; the single verdict is final. **Opt up to a doubled panel** only when a Rule 8 trigger fires: the calling layer then dispatches both in the SAME turn (eager parallel dispatch) — the persistent `ux-advisor` via SendMessage (a CLOSED-set name, never re-spawned) + one ephemeral `design-qa-{N}` via `Agent()`. The ephemeral `design-qa-{N}` delivers its verdict, then AWAITS the calling layer's lead-initiated `shutdown_request` (it never self-originates shutdown); the ephemeral lifecycle is owned by the calling layer per `~/.claude/agents/team-lead.md` Rule 7 / step 14. Verdict reconciliation (any Blocker blocks; findings merge with `(spec section, surface)` dedupe; contradictions surface to operator via `AskUserQuestion` or `Skill(vote, ...)`; reviewers never address the operator directly) per `~/.claude/agents/team-lead.md` step 14. On double-ephemeral failure (probe-once + respawn both abort), the calling layer falls back to `ux-advisor` alone AND annotates the consolidated message header verbatim `DEGRADED: single-reviewer (ephemeral failed 2×)`. Standalone-mode invocations follow the calling agent's own discretion.
+Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, and verdict reconciliation are owned by `~/.claude/agents/team-lead.md` Rule 8 / Rule 7 / step 14 — read them there, do not restate them here. Skill-specific delta only:
+
+- **Seats**: single (default) = persistent `ux-advisor` via SendMessage; doubled = `ux-advisor` + one ephemeral `design-qa-{N}`.
+- **Finding-merge dedupe key**: `(spec section, surface)`.
+- **Degraded-fallback annotation**, verbatim: `DEGRADED: single-reviewer (ephemeral failed 2×)`.
+- Standalone-mode invocations follow the calling agent's own discretion.
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
@@ -173,6 +178,8 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 
 ### Recommendation
 {One paragraph: verdict + concrete next steps for the calling agent — e.g., route Blockers to @senior-engineer, escalate spec ambiguity to operator, propose spec revision}
+
+Design QA report emitted ({verdict}).
 ```
 
 ## Validation Before Emit
@@ -180,10 +187,10 @@ One of: **Pass** / **Pass with Issues** / **Fail**
 Mechanically validate the drafted QA report before emitting it. Pipe the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — doubled panels (`design-qa-{N}`) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_stage_lint.sh design-qa "$DRAFT_FILE"
+~/.claude/scripts/report_stage_lint.sh design-qa "$DRAFT_FILE"
 ```
 
-(or pipe the report body on stdin and omit `$DRAFT_FILE`). Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
+**Prefer the stdin form** — pipe the report body in and omit `$DRAFT_FILE`, so there is no path to get wrong. If you stage a draft file, create it under `$TMPDIR` in the SAME Bash call that lints it, and never hand-roll `mktemp` or carry `$$`/a computed temp path across separate Bash calls — each Bash call is a fresh shell process, so a path computed in an earlier call is gone. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the report in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(design-qa, "<scope>")`:
@@ -204,7 +211,7 @@ Design QA report emitted ({verdict}).
 
 where `{verdict}` is `Pass`, `Pass with Issues`, or `Fail`.
 
-**Self-check before ending the turn:** the in-context emission is the calling agent's working artifact, NOT the deliverable. Before idling or marking the task complete, the calling agent MUST self-check: *Did I SendMessage the structured verdict this same turn?* (in team mode, to team-lead; standalone, to the peer per the trigger). If no, the turn is incomplete. Silent-completion is the dominant defect class across the report-emission skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
+**Self-check before ending the turn**: the calling agent MUST self-check — "Did I SendMessage the verdict (structured, not summarized) this same turn?" (in team mode, to team-lead; standalone, to the peer per the trigger). The skill's in-context emission is the calling agent's working artifact, not the deliverable; the deliverable is the SendMessage. A silent turn after `Design QA report emitted (...)` is silent-completion — the dominant defect class across this skill family (`code-review-verdict`, `verify-ac`, `design-review`, `design-qa`).
 
 The calling agent owns (in order):
 

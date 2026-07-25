@@ -1,5 +1,54 @@
 # Changelog: tdd
 
+## 2026-07-24
+
+### Summary
+Compacted 4 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Own shape adopted as the family reference; gains the one clause it was missing (missing-validator exit-2); token {tmpdir} → {staging_dir} (steps 1-2 + tdd_preflight line); {output_dir} bound explicitly in Pre-flight.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: missing-validator clause added to step 2 (true union — present in the other 3 carriers).
+- REFACTOR[COSMETIC]: token rename, 3 occurrences.
+- COHERENCE: Pre-flight step 2 binds {output_dir}.
+
+### Dimensions Evaluated
+Coherence. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Fixed the family-wide $TMPDIR staging bug, bare-executable validator invocation, and numbered-heading trap; live-reproduced a Mermaid prose/validator mismatch that failed the skill's own mandatory gate; repaired three drifted numbered cross-references. Findings: 6 → 5 sub / 0 cos / 1 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Validation §1-2/§4 resolve {tmpdir} once and invoke the validator via python3 (X1/X2, reproduced: 126 bare vs 0 under python3).
+- AMPLIFY[SUBSTANTIVE]: Required Sections headings carry title ONLY (X3, reproduced; validator untouched).
+- FIX[SUBSTANTIVE]: Mermaid gate now states the first-line keyword rule (reproduced both directions); fixed 2 dangling + 1 off-by-one numbered cross-refs.
+- AMPLIFY[SUBSTANTIVE]: Authoring §5 gains an Enumerated-set completeness arm (H-tdd-2); ACs must quote source text verbatim (H-tdd-3).
+- CULL[COSMETIC]: truncated status-lifecycle restatement → pointer.
+- REJECTED: H-tdd-1 — pre-fix observation, remedy contradicts the validator's section-order contract.
+
+### Dimensions Evaluated
+Actionability, completeness, coherence, over-engineering.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -202,64 +251,6 @@ All 8. Over-Engineering HIGHEST — no trim slack without breaking format-author
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-AMPLIFY sparse-repo prior-art discovery; net 0; no model-routing/frontmatter changes.
-
-### Changes
-- AMPLIFY: build prior-art search roots only from existing docs directories.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
-
-### Changes
-- AMPLIFY: §5's keyword list is now `e.g.`-prefixed (non-exhaustive) and adds `journey`, `classDiagram`, `gantt` — the Phase-2 4-keyword list would have rejected valid diagram types (prd's Mandate invites a `journey` diagram). Applied byte-identically across tdd/prd/ux-spec §5. Phase-3 remaining-issue catch.
-
-### Dimensions Evaluated
-All 8. Over-Engineering: inline, net 0. Correctness: closed a self-introduced validation gap. No model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Phase-2 family-wide: strengthened Validation §5 from mermaid presence-only to "presence & shape" (renderer-free diagram-type-keyword check). Applied byte-identically across tdd/prd/ux-spec §5 in lockstep. Phase 1 was RETAIN (cited fenced-code section-order fix already encoded).
-
-### Changes
-- AMPLIFY: §5 now requires the mermaid block's first non-blank line to declare a diagram-type keyword (graph/flowchart, sequenceDiagram, stateDiagram, erDiagram) — catches the empty/typeless block that renders broken but passed presence-only. Renderer-free (no mermaid CLI in-repo, verified). Cited INNOVATION. Satellites (§5-by-number refs) need no edit.
-- NO-OP (verified already-encoded): the cross-project fenced-code section-order exclusion is already present (§3/§4/§6 "outside code fences").
-
-### Dimensions Evaluated
-All 8. Over-Engineering: +5 lines, justified (closes a real malformed-block gap), renderer-free. No model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Encoded two recurring cross-project TDD pitfalls; net +3 (319→322). CANONICAL blocks deferred to Phase 2.
-
-### Changes
-- AMPLIFY: added a §5 "Concrete value" assertion-check arm — Grep the committed artifact that owns an asserted value (tag/count/path/flag/version) and confirm match. Cited Phase-0 canonical-fact-drift pitfall (`:latest` vs `:v1`; "8 diagrams" when 5 exist).
-- AMPLIFY: §11(c) grep/regex ACs must now embed the exact command + expected hit count inline as evidence. Cited Phase-0 regex-AC-brittleness pitfall (fixed-word-order regex never run before completion).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -298,3 +289,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Closed staff pitfall — Authoring §5 requires quantitative/line-budget feasibility claims be measured (wc -l), never estimated; net +1.
 - 2026-06-17: Added co-author single-writer baton note, verify-checklist restructure, COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / verify-checklist / inert-caveat → adopted.
 - 2026-06-19: Strengthened §9 untested-claims inventory into anti-fabrication callout; compressed §11 grep/regex prose; added verbatim-citation + Skill(verify-ac) reminders. Drift (rate 7): D2, D5 APPLY (neutral rewords); D0/D1/D3/D4/D6 SKIP (slug/CANONICAL/format parity).
+- 2026-06-20: Encoded two recurring cross-project TDD pitfalls; net +3 (319→322). CANONICAL blocks deferred to Phase 2.
+- 2026-06-30: Phase-2 family-wide: strengthened Validation §5 from mermaid presence-only to "presence & shape" (renderer-free diagram-type-keyword check). Applied byte-ide...
+- 2026-06-30: Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
+- 2026-06-30: AMPLIFY sparse-repo prior-art discovery; net 0; no model-routing/frontmatter changes.

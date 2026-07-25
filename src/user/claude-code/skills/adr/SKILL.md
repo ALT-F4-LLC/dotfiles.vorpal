@@ -6,7 +6,7 @@ description: >
   below.
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
 argument-hint: "<topic>"
-allowed-tools: ["AskUserQuestion", "Bash", "Grep", "Read", "Write"]
+allowed-tools: ["Bash", "Grep", "Read", "Write"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -83,42 +83,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Collision handling**: not applicable to the ADR numbering path — atomic claim
-   (step 5) reserves `{output_path}` and creates it as an empty stub in the same
-   operation, so it always exists immediately after numbering and this is never a real
-   collision. The COLLISION_DIALOG below is retained only for byte-identical parity
-   with the sibling doc-authoring skills (`doctrine_check_manifest.tsv`); this skill's
-   own flow never invokes it.
-
-<!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
-If a file already exists at the target output path, invoke `AskUserQuestion`:
-
-```
-AskUserQuestion(
-  header: "File exists",
-  question: "{output_path} already exists. How should I proceed?",
-  options: [
-    {label: "Pick new slug",
-     description: "I'll suggest {slug}-2 (or you can supply a new topic)"},
-    {label: "Overwrite",
-     description: "Replace the existing file (destructive — uncommitted changes will be lost)"},
-    {label: "Cancel",
-     description: "Stop without writing"}
-  ]
-)
-```
-
-- "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
-- "Overwrite" → first `Read {output_path}` (the harness blocks an overwrite Write of an unread file), then proceed to Authoring Procedure; the existing file is replaced on Write.
-- "Cancel" → emit `Cancelled — no file written.` and end.
-
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
-
-Never silently overwrite. There is no "append" option — partial appends produce
-malformed frontmatter.
-<!-- CANONICAL:COLLISION_DIALOG:END -->
-
-5. **ADR numbering + atomic claim** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh --claim docs/adr {slug}` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
+4. **ADR numbering + atomic claim** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh --claim docs/adr {slug}` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
    — the shared doc-number allocation + citation-hijack script, run here in `--claim`
    mode so numbering and reservation happen as one atomic step (also used in plain,
    non-claiming mode by `src/user/claude-code/agents/distinguished-engineer.md`,
@@ -130,10 +95,15 @@ malformed frontmatter.
       `docs/adr/{next_num}-{slug}.md` via noclobber (`set -C`) lock semantics, so no
       concurrent author can claim the same number out from under you — a losing
       concurrent claimant retries the next candidate instead of colliding. The script
-      has also already skipped any candidate already cited elsewhere in the repo under
-      a different slug (citation-hijack) even though no file with that number exists
-      yet; skipped candidates are reported on stderr — surface them to the calling
-      agent as an informational note, not an abort.
+      has also already skipped any candidate whose `docs/adr/{NNNN}-` path prefix is
+      cited elsewhere in the repo (citation-hijack) even though no file with that
+      number exists yet; skipped candidates are reported on stderr — surface them to
+      the calling agent as an informational note, not an abort. The check matches that
+      path-prefix form only: a prose-only `ADR-{NNNN}` citation never triggers a skip,
+      and a skip cannot tell a competing citation from this decision's own forward
+      reference, so it will skip a number an upstream TDD or plan mandated. When the
+      calling agent was handed an exact target number or filename, compare it against
+      `{next_num}` and report a mismatch rather than proceeding silently.
    2. On failure (non-zero exit — existing filenames in `docs/adr/` don't match
       `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`), ABORT using the
       script's stderr as `{detail}`:
@@ -143,7 +113,7 @@ malformed frontmatter.
       ```
 
    3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`. This file already exists on
-      disk as the empty claimed stub from step 5.1 — expected, not a collision.
+      disk as the empty claimed stub from step 4.1 — expected, not a collision.
    4. **Abort-after-claim caveat**: if the skill aborts anywhere past this point
       (Authoring Procedure, Validation Before Save), the empty stub at `{output_path}`
       is left on disk as an orphaned reservation of `{next_num}` — a re-invocation does
@@ -154,7 +124,14 @@ malformed frontmatter.
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
    ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
-   Read any candidate predecessors so the new ADR cites them in `Context`.
+   Pass only the dirs that exist — `docs/spec/` and `docs/ux/` are materialized on
+   first write and are commonly absent, and passing a path that does not exist makes
+   the search error out (exit 2 with warnings) rather than return a clean no-match.
+   Read any candidate predecessors so the new ADR cites them in `Context`. If a
+   predecessor already records THIS decision, ABORT with `Error: {path} already records
+   this decision — update or supersede it instead.` The atomic claim hands concurrent
+   authors distinct numbers, so it prevents duplicate NUMBERS but never duplicate
+   DECISIONS; this Grep is the only duplicate check in the flow.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
@@ -201,7 +178,9 @@ Field rules:
 ### Required Sections
 
 The ADR body MUST contain these top-level sections, in this order. Each is a `##`
-heading in the drafted document.
+heading in the drafted document carrying the section title ONLY — the list numbers
+below are NOT part of the heading (`## Context`, never `## 1. Context`). The
+validator matches heading text exactly.
 
 1. **Context** — the decision-driver: what situation, constraint, or trigger forced
    this decision. Cite related TDDs, PRDs, ADRs, or incidents.
@@ -220,10 +199,17 @@ minimum, and the placeholder scan — is mechanized by the shared `doc_validate.
 the single source of truth for what a valid ADR must satisfy. Validate the drafted
 document before the final Write:
 
-1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
-   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
-2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type adr "$TMPDIR/{slug}.md"`
-   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
+   stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
+   never expand shell variables, so `$TMPDIR/{slug}.md` is treated as a relative
+   literal and resolved against the repo root, not the real temp dir. Then `Write` the
+   complete drafted content (frontmatter + body) to `{staging_dir}/{slug}.md`.
+2. **Run the validator.** `Bash python3 ~/.claude/scripts/doc_validate.py --type adr "{staging_dir}/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`) — the same resolved `{staging_dir}`,
+   never a re-expanded `$TMPDIR`, so an unset-`TMPDIR` caller validates the file it just
+   wrote. Invoke via `python3`, never as a bare executable: a deployed copy that lost its
+   executable bit exits 126, which no branch below handles; under `python3` a missing
+   validator still exits 2.
 3. **Act on the exit code:**
    - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
      `docs/adr/...`).
@@ -266,16 +252,18 @@ On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
+**adr-specific note:** the CANONICAL block's "collision dialog" clause is a shared, family-wide branch (prd/adr/tdd/ux-spec) — for THIS skill it is structurally unreachable, since Pre-flight step 4's atomic `--claim` reserves `{NNNN}` before Authoring Procedure runs, making a same-number collision impossible by construction. Kept verbatim for CANONICAL parity; do not treat its presence here as a live code path.
+
 For this skill, `{output_dir}` is `docs/adr/` and `{output_path}` is
-`docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
+`docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 4).
 
 ADR-specific full sequence: `mkdir → Read stub → Write → Emit`. Unlike the sibling
 doc-authoring skills, canonical step 2 (`Write {output_path}`) here targets a file that
 already exists on disk — the empty stub the atomic `--claim` created back in Pre-flight
-step 5 — so the harness's unread-overwrite guard applies. Insert one
+step 4 — so the harness's unread-overwrite guard applies. Insert one
 `Read {output_path}` between canonical steps 1 and 2 to satisfy it (the stub is empty;
 there is nothing to review). Because the number was reserved atomically at Pre-flight
-step 5 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
+step 4 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
 interim — the pre-Write/post-Write race-detection Globs the prior non-atomic design
 needed to catch that race are no longer necessary and have been removed. On a clean
 Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
@@ -288,6 +276,7 @@ Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | `next_doc_number.sh --claim docs/adr {slug}` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
 | A peer claims a candidate `{NNNN}` before this invocation does | Handled transparently inside `next_doc_number.sh --claim` (retries the next candidate); never surfaces as a failure to this skill. |
+| Prior-art Grep finds a predecessor already recording this decision | Abort: `Error: {path} already records this decision — update or supersede it instead.` The claimed stub is orphaned — report its path per the abort-after-claim caveat. |
 | Read of `{output_path}` (the claimed stub) fails before Write (stub deleted or unreadable between claim and Save & Return) | Surface raw error: `Error: Read failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

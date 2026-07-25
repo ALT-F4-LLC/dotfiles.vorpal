@@ -1,5 +1,51 @@
 # Changelog: ux-spec
 
+## 2026-07-24
+
+### Summary
+Compacted 4 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Validation-Before-Save steps 1-2 normalized to the family union shape keeping {staging_dir}; {output_dir} bound explicitly in Pre-flight. Mermaid first-line-keyword rule re-verified present at HEAD (review-tdd's flag was stale — fixed earlier this cycle).
+
+### Changes
+- REFACTOR[SUBSTANTIVE]: steps 1-2 → union/reference shape (gains resolved-path clause + quoted staged path).
+- COHERENCE: Pre-flight step 2 binds {output_dir}.
+
+### Dimensions Evaluated
+Coherence. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Correctness: closes all three live-verified halves of H-ux-spec-1. Required Sections now states the `##` headings carry the section title only (the validator's exact-match rejected numbered headings, the form the numbered list invites). Validator staging resolves $TMPDIR before Write instead of passing it as a literal, and the validator is invoked through python3 so a lost executable bit can no longer exit 126/127 outside the documented 0/1/2 contract. Findings: 3 → 3 sub / 0 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Required Sections — headings carry the section title ONLY; numbers in the list are not part of the heading. Reproduced: numbered draft exits 1, unnumbered exits 0.
+- AMPLIFY[SUBSTANTIVE]: Validation Before Save step 1 — resolve {staging_dir} via echo "${TMPDIR:-/tmp}" first; Write takes a literal path and never expands $TMPDIR.
+- AMPLIFY[SUBSTANTIVE]: Validation Before Save step 2 — invoke via python3, never bare. Verified: bare non-executable exits 126, bare missing exits 127 (making the documented exit-2 branch unreachable); under python3 a missing validator exits 2.
+- FIX[SUBSTANTIVE]: Mermaid Mandate now states the first-non-blank-line diagram-keyword rule — caught by review-tdd's cross-cutting sweep after ux-spec's own Phase 1 pass missed it; matches the fix already landed in tdd/prd.
+
+### Dimensions Evaluated
+All 8. Correctness/Completeness primary. Over-Engineering (Pass B): no trim — all CULL-sourcing auditors clean for ux-spec. Coherence: all cited path literals resolve, doctrine_check.sh all arms PASS. Spec Alignment vacuous.
+
+### Rename
+No rename.
+
 ## 2026-07-20 (Phase 4 history compaction)
 
 ### Summary
@@ -212,62 +258,6 @@ All 8. Over-Engineering (HIGHEST): no removable waste found. Coherence: allowed-
 ### Rename
 No rename.
 
-## 2026-06-09
-
-### Summary
-Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 9 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Full-cycle audit: NO changes. 9 verification probes all clean: Glob/Grep present and used (c10195b restore — no phantom drift, pitfall #10 applied via git log -S); agents/ux-designer.md cites grounded (L35 Mermaid, L118-129 Tiers, L147 content-design); allowed-tools byte-lockstep with prd/tdd/adr; COUPLING list accurate; description 340 chars.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary (no removable waste); Coherence (CANONICAL blocks intact, boundary routes accurate).
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean (rendered-effect lines are artifact-content guidance, not narration); $-escape clean; no over-prescription; recall-filter grep zero hits. Format authority intact.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering primary; reasoning-echo + $-escape + recall-filter audits clean.
-
-### Rename
-No rename.
-
-## 2026-06-09
-
-### Summary
-No changes. Full 8-dimension review with 6 verification probes, all clean: no unescaped `$`+digit; `allowed-tools` in byte-identical family lockstep (current file correct post-c10195b, body uses Glob and Grep); Mermaid authority cite grounded in agents/ux-designer.md; design-review/design-qa routes reciprocal; placeholder-scan and failure-table rows parity-locked. Net 0.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8. Over-Engineering (HIGHEST): trim candidates resolved to deliberate prior decisions or parity-bound content. Skill Design Quality: description ~340 chars, under listing budget. Coherence: family lockstep verified; `paths: docs/ux/**` recommended AGAINST (teammate-invoked; glob auto-activation would wrong-skill-load on mere docs/ux reads). Spec Alignment: docs/spec/ absent (template skill — not a defect).
-
-### Rename
-No rename. ux-spec (authoring) remains distinct from design-review (peer review) and design-qa (post-impl QA).
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -296,3 +286,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-05: Phase 2 coherence — added fenced-code-block carve-out to §4 Section-order validation (count `##` headings outside fences); family parity.
 - 2026-06-05: Phase 1 — removed false circular ux-designer.md cross-ref (self-owns section list); Phase 2 restored status: authority caveat (lockstep prd).
 - 2026-06-08: Removed circular cite again — 2026-06-05 fix was un-applied/reverted; grep re-confirmed ux-designer.md doesn't enumerate 9 sections. Net -1.
+- 2026-06-09: No changes. Full 8-dimension review with 6 verification probes, all clean: no unescaped `$`+digit; `allowed-tools` in byte-identical family lockstep (current...
+- 2026-06-09: Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean (rendered-effect lines are artifact-content guidance, not narration); $-escape clean; no over-pr...
+- 2026-06-09: Full-cycle audit: NO changes. 9 verification probes all clean: Glob/Grep present and used (c10195b restore — no phantom drift, pitfall #10 applied via git lo...
+- 2026-06-09: Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.

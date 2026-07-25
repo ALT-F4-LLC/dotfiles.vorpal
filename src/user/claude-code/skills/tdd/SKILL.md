@@ -59,7 +59,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
   *how* is the question — the what/why is settled and architecture is the open work
   (the inverse of prd's "scope precedes architecture" boundary).
 - The calling agent (typically `@staff-engineer`, or `@distinguished-engineer` on Medium+ cycles) is producing a design that needs to
-  go through the draft → questions-resolved → in-review → accepted lifecycle.
+  go through the `status` lifecycle (see Required Frontmatter).
 - The team-lead orchestrator's Medium Task pattern asks for a TDD without a separate
   PRD — this skill is the canonical path.
 
@@ -71,15 +71,15 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
   `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §5 + Authoring §1) rather than restating it.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §6 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
 ## Pre-flight
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory is
-   `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
+2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory
+   `{output_dir}` is `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
    filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
    `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`;
    the shared {NNNN} allocation + citation-hijack script) is `src/user/claude-code/skills/adr/SKILL.md`'s numbering
@@ -147,8 +147,12 @@ malformed frontmatter.
    blind-retrying. Sequence the hand-off through team-lead, not async peer messages;
    the sole-editor protocol authority is `security-engineer.md` §Responsibility 1
    (Threat-Model Annotation).
-4. **Mermaid diagrams**: produce at least one Mermaid block (component map, sequence,
-   state, or data flow). Validation §5 is the gate.
+4. **Mermaid diagrams**: produce at least one ` ```mermaid ` (lowercase, no space)
+   fenced block — component map, sequence, state, or data flow. The block's FIRST
+   non-blank line MUST start with a Mermaid diagram-type keyword (`flowchart`/`graph`,
+   `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`, `C4Context`, …); the semantic
+   label is not a keyword, so a block opening `component map: …` fails the validator's
+   `mermaid` check, and a leading `%%` comment line fails it too.
 5. **Verify embedded technical assertions before stating them as fact.** For each
    concrete claim the TDD commits to, apply the matching check arm and record the
    artifact or command behind it. A "verified" label must not over-claim scope.
@@ -166,6 +170,11 @@ malformed frontmatter.
      vs. the workflow's pin, a diagram count vs. the assets actually referenced.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
      target exists and its signature matches before writing it as settled.
+   - **Enumerated set** stated as complete (every blocking gate, every carrier file,
+     every affected call site): derive the members by `Grep` and record the command
+     and count — never from memory or a peer's summary. A set asserted complete but
+     enumerated partially still reads as authoritative, and silently truncates every
+     phase, AC, and Risk row built on it.
    - **Insertion anchor** (a phase that directs an edit relative to a verbatim
      anchor line): before citing the anchor, test its mirrored-block
      membership: `Grep` the target file for `CANONICAL:` markers and check whether
@@ -220,7 +229,9 @@ Field rules:
 ### Required Sections
 
 The TDD body MUST contain these top-level sections, in this order. Each is a
-`##` heading in the drafted document.
+`##` heading in the drafted document carrying the section title ONLY — the list
+numbers below are NOT part of the heading (`## Problem Statement`, never
+`## 1. Problem Statement`). The validator matches heading text exactly.
 
 1. **Problem Statement** — what, why now, who is affected, constraints, non-goals
    (explicit out-of-scope), acceptance criteria, business context. State non-goals
@@ -233,7 +244,8 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    needed (component map, data flow, sequencing, contracts). **For security
    TDDs** (`updated_by` is `@security-engineer`), this section MUST include
    three `###` subsections — `Threat Model`, `Trust Boundaries`, and
-   `Security Considerations` — enforced by Validation §7. Non-security TDDs
+   `Security Considerations` — enforced by the validator's `security-subsections`
+   check. Non-security TDDs
    may omit them. (Mixed-scope routing — when @security-engineer appends
    these to a @staff-engineer TDD via the Threat-Model Annotation pattern
    — is owned by `~/.claude/agents/security-engineer.md` (repo: `src/user/claude-code/agents/security-engineer.md`), not this skill.)
@@ -265,7 +277,11 @@ The TDD body MUST contain these top-level sections, in this order. Each is a
    the evidence) per §9 and staff-engineer.md rule 6; for a MEASURED or RENDERED
    value (timing, byte/pixel size, sampled count) use a tolerance band or range,
    NOT exact-match — exact ACs on non-deterministic values fail ~15-20% of runs
-   intermittently, while deterministic grep/regex hit counts stay exact, (d) effort estimate
+   intermittently, while deterministic grep/regex hit counts stay exact; an AC whose meaning depends on
+   specific source text ("must state X", "must not say Y") quotes that text verbatim
+   inline rather than citing it — every downstream hop (issue distillation, a plan-mode
+   `OLD:`/`NEW:` prose summary) paraphrases, and a paraphrase silently drops the
+   sentence the AC tests, (d) effort estimate
     (S/M/L), (e) blocking dependencies on other phases, (f) explicit
     out-of-scope flags, (g) each phase must be interpretable stand-alone when
     copied verbatim into a Docket issue — restate any load-bearing contract inline
@@ -282,10 +298,17 @@ and `Abuse Cases` in §9) — is mechanized by the shared `doc_validate.py`, the
 source of truth for what a valid TDD must satisfy. Validate the drafted document
 before the final Write:
 
-1. **Stage the draft.** `Write` the complete drafted content (frontmatter + body)
-   to a staging path under `$TMPDIR` — e.g. `$TMPDIR/{slug}.md`.
-2. **Run the validator.** `Bash ~/.claude/scripts/doc_validate.py --type tdd "$TMPDIR/{slug}.md"`
-   (repo: `src/user/claude-code/scripts/doc_validate.py`).
+1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
+   stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
+   never expand shell variables, so `$TMPDIR/{slug}.md` is treated as a relative
+   literal and resolved against the repo root, not the real temp dir. Then `Write` the
+   complete drafted content (frontmatter + body) to `{staging_dir}/{slug}.md`.
+2. **Run the validator.** `Bash python3 ~/.claude/scripts/doc_validate.py --type tdd "{staging_dir}/{slug}.md"`
+   (repo: `src/user/claude-code/scripts/doc_validate.py`) — the same resolved `{staging_dir}`,
+   never a re-expanded `$TMPDIR`, so an unset-`TMPDIR` caller validates the file it just
+   wrote. Invoke via `python3`, never as a bare executable: a deployed copy that lost its
+   executable bit exits 126, which no branch below handles; under `python3` a missing
+   validator still exits 2.
 3. **Act on the exit code:**
    - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
      `docs/tdd/...`).
@@ -306,7 +329,7 @@ before the final Write:
      ```
 
 4. **Author-side citation pre-check (pre-Write).** On the staged draft, run
-   `Bash ~/.claude/scripts/tdd_preflight.sh "$TMPDIR/{slug}.md"` (append ` {companion.md}`
+   `Bash ~/.claude/scripts/tdd_preflight.sh "{staging_dir}/{slug}.md"` (append ` {companion.md}`
    when a companion ADR/TDD exists) — it chains `check_citations.py` (path existence)
    with numbered-cross-reference reconciliation against the companion. This is the
    SAME gate the acceptance panel re-runs post-Write; running it here converts a

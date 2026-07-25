@@ -87,7 +87,7 @@ Each verifier (whether paired `verifier-criteria` + `verifier-integration` under
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8. -->
+<!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
 - Design QA against a `docs/ux/` spec for user-facing surfaces — that's `Skill(design-qa, ...)`, callable by `@ux-designer`.
 - Peer design review of a draft UX spec or design proposal — that's `Skill(design-review, ...)`, callable by `@ux-designer`.
@@ -206,17 +206,19 @@ APPROVE — tests pass: {command}; criteria met.
 
 ### Recommendation
 One of: **APPROVE** / **ACCEPT WITH CAVEATS** / **BLOCK** — {rationale tying verdict to criteria results and issues found}
+
+Verification report emitted ({verdict}).
 ```
 
 ## Validation Before Emit
 
-Mechanically validate the drafted report before emitting it. In LIGHT mode the emission is a single line — nothing to lint. In FULL mode, pipe the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` — a doubled verify panel shares one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
+Mechanically validate the drafted report before emitting it. In LIGHT mode the emission is a single line — nothing to lint. In FULL mode, pipe the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a unique-per-invocation path under `$TMPDIR` internally (a doubled verify panel shares one `$TMPDIR`, so a fixed name would race) — then runs `~/.claude/scripts/report_lint.py` against the staged copy:
 
 ```
-report_stage_lint.sh verify-ac [--mode light] "$DRAFT_FILE"
+~/.claude/scripts/report_stage_lint.sh verify-ac [--mode light] "$DRAFT_FILE"
 ```
 
-(or pipe the report body on stdin and omit `$DRAFT_FILE`). Pass `--mode light` for the LIGHT single-line emission (the validator short-circuits to exit 0 by contract — LIGHT has nothing to lint); omit `--mode` (default `full`) for the FULL template. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
+**Prefer the stdin form** — pipe the report body in and omit `$DRAFT_FILE`, so there is no path to get wrong. If you do stage a draft file, build it in the SAME Bash call that lints it, and never hand-roll `mktemp`: each Bash call is a fresh shell, and a BSD template whose `X`s are not the trailing characters (`report-XXXXXX.md`) is not randomized at all — the first call creates a file at the LITERAL template path and returns it, and every later call fails `mkstemp failed: File exists` until someone deletes it, so the variable holds an unexpanded template and successive runs silently share one file. Disabling the sandbox does not fix this; it only changes which of the two outcomes you get. Pass `--mode light` for the LIGHT single-line emission (the validator short-circuits to exit 0 by contract — LIGHT has nothing to lint); omit `--mode` (default `full`) for the FULL template. Handle the exit code DISTINCTLY (identical semantics to a direct `report_lint.py` invocation):
 
 - **exit 0** — emit the report in the calling agent's context.
 - **exit 1 (validation failure)** — ABORT. The calling agent corrects in its own context (quoting the script's stderr) and re-invokes `Skill(verify-ac, "<scope>")`:
@@ -245,11 +247,9 @@ where `{verdict}` is `APPROVE`, `ACCEPT WITH CAVEATS`, or `BLOCK`. LIGHT mode's 
 The calling agent owns (in order):
 
 - Closing or commenting the Docket issue (the issue was already CLOSED by `@senior-engineer` at end of implementation — `docket issue close` here is a no-op): on APPROVE, `docket issue comment add <id> -m "..."`; on ACCEPT WITH CAVEATS, comment summarizing the caveats and route any follow-up via SendMessage `@project-manager` (no workflow-state move); on BLOCK, `docket issue reopen <id>` followed by a blocking-criteria comment. `reopen` on BLOCK is the only legitimate verification state-change.
-- SendMessage to peers per the `~/.claude/agents/sdet.md` Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
+- Delivering the verdict per the mode split in `~/.claude/agents/sdet.md` (SP-2): the DEFAULT lone `verifier` is a report-only subagent with NO SendMessage — return the verdict body to team-lead as its PLAIN-TEXT final message and END, folding any peer routing (BLOCK, ACCEPT-WITH-CAVEATS follow-up) into that text for team-lead to route. A PAIRED-panel teammate verifier (`verifier-criteria` / `verifier-integration`) SendMessages peers per that file's Inter-Agent Communication triggers (e.g., BLOCK → @senior-engineer + team-lead).
 - Escalating to vote per the vote triggers in `~/.claude/agents/sdet.md` — standalone: `Skill(vote, ...)`; team mode: NEVER `Skill(vote)` (nests a team) — `docket vote create` + `delegation_request` to team-lead per `~/.claude/agents/sdet.md` §Using `/vote` for Consensus.
 
-**Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's inbox. Before ending the turn, answer: "Did I SendMessage the structured verdict body (not summarized) to team-lead this same turn?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the SendMessage IS the deliverable.
+**Silent-completion self-check (mandatory before turn-end).** The trailing `Verification report emitted (...)` line is a confirmation, NOT a delivery — the verdict was emitted into your context, not the caller's. Before ending the turn, answer: "Did I deliver the structured verdict body (not summarized) to team-lead this same turn, by the channel my mode prescribes — PLAIN-TEXT final message as the default report-only `verifier`, SendMessage as a paired-panel teammate?" If no, the turn is incomplete regardless of how complete the in-context emission feels. The skill's in-context output is the working artifact; the delivery IS the deliverable.
 
 On any abort during Pre-flight, Verification Procedure, or Validation Before Emit: emit `Error: {one-line cause}` and end without producing a report.
-
-_Abort paths are specified inline at Argument Handling, Role Detection, and Pre-flight._

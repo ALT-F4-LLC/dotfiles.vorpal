@@ -3,6 +3,22 @@
 ## 2026-07-24
 
 ### Summary
+Rationale-only correction (no tier moved): the entry below's "classifier posture unchanged" claim was incomplete. team-lead.md's 3 interlocking `silver`-pin rationale sites (238/241/242) are corrected from a stale determinism framing to a tier-stability framing.
+
+### Routing Changes
+- RATIONALE: line 238 — replaced `(a determinism choice, not a capability one)` with a tier-stability framing; no tier moved.
+- RATIONALE: line 241 — pointer updated from "identical determinism rationale" to "identical tier-stability rationale"; no tier moved.
+- RATIONALE: line 242 — same correction applied to the BLOCKER-class cross-reference site; no tier moved.
+
+### Evidence
+Investigator (gold, live system-card fetch) card quotes refuting "classifier posture unchanged": "The Fable cyber classifier we have previously discussed also applies to Claude Opus 5, with one notable exception: for Claude Opus 5, we've unblocked vulnerability finding in source code"; "safety classifiers, with fallback to Claude Opus 4.8 on classifier refusal." Mimir: not consulted (rationale correction, not spawn-telemetry).
+
+### Rejected
+- The 3 other items from the entry below (benchmark snapshots, generational-comparative claims, OSWorld computer-use) remain correctly rejected — REAFFIRMED by this investigation, not re-litigated.
+
+## 2026-07-24
+
+### Summary
 Release-rollover record (hand-written, non-cycle — no spawn-telemetry evidence
 base). Opus 5 released 2026-07-24; silver's underlying model advanced. Routing
 changes: NONE. Recorded so the next rollover does not re-litigate the triage.

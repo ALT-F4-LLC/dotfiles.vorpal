@@ -1,5 +1,67 @@
 # Changelog: evolve-skills
 
+## 2026-07-24
+
+### Summary
+Compacted 5 entries (2026-07-13..2026-07-14) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Phase 3 disambiguation: two self-referential ambiguities. (1) The Phase 3 table names the canonical `gold` tier while the template pins the Trial-downgraded `model="opus"` — added a note reconciling the two so a future cycle doesn't read the table entry as drift. (2) The Phase-1 lifecycle row's "per agent: apply changes → shut down" left the actor for "apply"/"shut down" implicit (reviewer or orchestrator?).
+
+### Changes
+- CLARIFY[COSMETIC]: added a **Reviewer-tier note** before **Self-budget** reconciling the table's `gold` entry against the Phase 3 template's active `Trial:` downgrade to `model="opus"`.
+- CLARIFY[COSMETIC]: Phase-1 lifecycle row "Spawn parallel → per agent: apply changes → shut down" → "Spawn parallel → as each reviewer completes: orchestrator applies its changes → shut it down" — names the orchestrator as actor.
+
+### Dimensions Evaluated
+Coherence (disambiguation pass, Two-arm Boundary test — passed Arm 1 coherence, failed Arm 2 clarity).
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Parity-defer paragraph gains the lockstep artifact-existence guard (lockstep with evolve-agents/evolve-config). Own Phase-3 closing paragraph already removed in Phase 1 (verified gone).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: artifact-existence guard appended after the NO-OP sentence.
+
+### Dimensions Evaluated
+Coherence. Phase 2 pass.
+
+### Rename
+No rename.
+
+## 2026-07-24
+
+### Summary
+Trial: downgrade disambiguation-reviewer fable→opus → operator-approved, applied (baseline: distinguished-engineer 7d spawns 100% fable; TeammateIdle flagged as weak/role-confounded discriminator; adopt/rollback measured next cycle's Phase 3 finding + misroute counts). Self-review: added the concurrent-subagent batching guard (D4) and culled four redundant restatements. Findings: 7 → 3 sub / 0 cos / 0 rej / 2 def / 2 enc
+
+### Changes
+- TRIAL[SUBSTANTIVE]: disambiguation-reviewer model="fable"→"opus" — operator-approved 2026-07-24; next cycle's Phase 0 measures adopt/rollback per the criteria in this cycle's Phase 1 report.
+- AMPLIFY[SUBSTANTIVE][D4]: Phase 1's "spawn all in the same turn" now gates on the concurrently-running-subagent cap (default 20, CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS env override), prescribing waves of ≤20 — cited this cycle's live failure boundary at 22 targets, which the orchestrator hand-batched into 2 waves.
+- CULL[COSMETIC]: removed the trailing "Always run this stage..." paragraph after the Phase 3 template — restated §Phase 3 Mechanism and §Shutdown protocol verbatim.
+- CULL[COSMETIC]×3: removed "Skip if pre-flight step 8 flagged SKIPPED" from the Model Routing / Repetition / Bug Audit template preambles — §Phase 0 already gates all four auditors on that flag.
+- D5 (shared file, by review-team-doctrine): APPLIED-SUBSTANTIVE, all 8 occurrences fixed in evolve-phase0-templates.md.
+- I-evolve-skills-2/3: DEFERRED. H-evolve-skills-1/2: ALREADY-ENCODED.
+
+### Dimensions Evaluated
+All 8. Spec Alignment vacuous (docs/spec/ absent repo-wide).
+
+### Rename
+No rename.
+
 ## 2026-07-22 (Phase 4 history compaction)
 
 ### Summary
@@ -147,77 +209,6 @@ Over-Engineering, Coherence, Rename (P1 recommended, Phase 2), Actionability.
 ### Rename
 Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (8 occurrences), lockstep with evolve-phase0-templates.md:422 + evolve-agents + evolve-config.
 
-## 2026-07-14 (Phase 4 history compaction)
-
-### Summary
-Compacted 3 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery; added a post-cycle /evolve-coherence pointer to Wrap-up (root-cause fix for evolve-coherence's zero in-window invocations).
-
-### Changes
-- AMPLIFY: Crash & Stall Recovery gains (d) API-error self-report crash signal + a nudge-before-respawn bullet (lockstep from evolve-agents).
-- AMPLIFY: Wrap-up step 4 recommends operator run /evolve-coherence before committing.
-
-### Dimensions Evaluated
-Coherence (family lockstep), Cross-communication (recovery signals).
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Wired check_citations.py into the Phase-2 coherence check to mechanize stale repo-layout path-literal detection. Findings: 7 → 1 sub / 0 cos / 0 rej / 3 def / 2 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase-2 coherence-reviewer runs check_citations.py per skill file to catch stale path literals — cited H1 (distinguished-engineer/pitfalls.md:176; Phase-3 disambiguation was not catching them).
-
-### Dimensions Evaluated
-All 8. Findings I6/I7/I8 deferred parity-bound to Phase 2; I5 deferred (script absent); H2 already-encoded; M2 no routing change (verified negative).
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 4 history compaction)
-
-### Summary
-Compacted 3 entries (2026-06-10..2026-06-19) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 3 disambiguation pass)
-
-### Summary
-Phase 3 disambiguation: the Phase 3 spawn template's charter pointer is now self-resolving for the spawned reviewer. Findings: 1 → 1 sub
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 3 template — charter citation "in the workflow section above" → explicit `.claude/skills/evolve-skills/SKILL.md` §Phase 3 file+section pointer; "above" is a dangling deictic in the delivered prompt (this cycle's spawn needed an ad-hoc brief repair)
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -293,3 +284,8 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-12: Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-config.
 - 2026-07-12: Compacted 5 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
 - 2026-07-13: Phase 2 coherence — retired six stale skills/agents root references; EVOLUTION-MODEL lockstep; docket-auditor report-back line.
+- 2026-07-13: Phase 3 disambiguation: the Phase 3 spawn template's charter pointer is now self-resolving for the spawned reviewer. Findings: 1 → 1 sub
+- 2026-07-13: Compacted 3 entries (2026-06-10..2026-06-19) into Compacted history per the retention-compaction policy.
+- 2026-07-14: Wired check_citations.py into the Phase-2 coherence check to mechanize stale repo-layout path-literal detection. Findings: 7 → 1 sub / 0 cos / 0 rej / 3 def...
+- 2026-07-14: Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery; added a post-cycle /evolve-coherence pointer to Wrap-up...
+- 2026-07-14: Compacted 3 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy.

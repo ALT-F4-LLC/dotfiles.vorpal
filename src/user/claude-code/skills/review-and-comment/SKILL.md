@@ -10,10 +10,11 @@ description: >
 argument-hint: "<PR — number, full URL, or owner/repo#number>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read"]
 disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
+effort: xhigh
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or SendMessage, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting. (5) Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage.
+> **CRITICAL:** (1) Post NOTHING to GitHub until the operator has approved each comment individually — the per-item approval gate is mandatory and non-skippable. (2) Do NOT commit or push anything; do NOT modify the PR's code. (3) Leaf skill: do NOT use Agent or SendMessage, do NOT form/manage a team, and do NOT invoke other skills recursively. (4) Comments post under the authenticated `gh` account — confirm that is the intended identity before posting. (5) Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Edit`, `Write`, `Agent`, and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages/file edits BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage.
 
 # Review-and-Comment — Dual-Lens PR Review → Inline Comments in Your Voice
 
@@ -25,8 +26,8 @@ A single positional `<PR>`: a bare number (`109`), a full URL (`https://github.c
 
 ## Operational preconditions (read once)
 
-- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true` — this includes Step 1's script call below and the raw `gh` calls in Steps 5, 7, and 8.
-- **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip. (Step 1's script already does this internally; this still applies to the raw `gh` calls in Steps 5, 7, and 8.)
+- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true` — this includes the script calls in Steps 1, 5, and 8, and the raw `gh` call in Step 7.
+- **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip. (Step 1's script already does this internally; this still applies to the raw `gh` call in Step 7.)
 - Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting. (Step 1's script already captures and prints this as `IDENTITY` — reuse that value.)
 
 ## Step 1 — Fetch PR metadata + diff, and clone (via rc_pr_setup.sh)
@@ -64,8 +65,7 @@ For each finding, record: `path` (repo-relative), `line` (line number in the PR'
 Sample the operator's real comment style so drafts read like them, using `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`):
 
 ```
-LOGIN=$(gh api user --jq .login)
-~/.claude/scripts/gh_inline_comment.sh --sample-voice "$LOGIN" <owner/repo>
+~/.claude/scripts/gh_inline_comment.sh --sample-voice <IDENTITY> <owner/repo>
 ```
 
 If no samples surface, draft in a concise first-person engineer voice (short, direct, suggests a concrete fix) and tell the operator you had no samples — let them calibrate tone on the first 1–2 comments, then match the rest.
@@ -98,7 +98,7 @@ Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so back
 
 ## Step 9 — Clean up & report
 
-`rm -rf "$DIR"`. Report a table of posted comments (file:line + discussion URL), confirm nothing was committed and no PR verdict was submitted, and offer to post any deferred/optional comments.
+`rm -rf <CLONE_DIR> <DIFF_FILE>` — substitute the literal paths Step 1 printed; shell variables do not survive between Bash calls, so an unset one expands empty and `rm -rf ""` exits 0 silently, leaving the clone behind. Report a table of posted comments (file:line + discussion URL), confirm nothing was committed and no PR verdict was submitted, and offer to post any deferred/optional comments.
 
 ## When to escalate instead
 

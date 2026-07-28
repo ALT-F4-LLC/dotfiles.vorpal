@@ -100,6 +100,61 @@ def test_whitespace_only_ledger_exits_zero():
     assert "0/0 dispositioned" in out, out
 
 
+def test_hyphenated_id_flagged_loudly_instead_of_absorbed():
+    """A hyphenated finding ID (e.g. `SDLC-S2`) doesn't match ENTRY_START_RE's
+    strict grammar. Without the validation pass, its content would silently
+    get absorbed into the preceding entry's span (risking a false-positive
+    [OK]) instead of being checked on its own -- must fail loudly instead."""
+    text = (
+        "- H1: some finding — APPLIED-SUBSTANTIVE (CHANGE 3, team-lead.md:210)\n"
+        "- SDLC-S2: a mistyped hyphenated ID, no disposition of its own\n"
+    )
+    code, out, err = run(text)
+    assert code == 2, f"exit {code}: {out}{err}"
+    assert "SDLC-S2" in err, err
+    assert "does not match" in err, err
+
+
+def test_conforming_ids_never_trigger_mistyped_id_check():
+    text = (
+        "- H1: valid — ALREADY-ENCODED (Execution Workflow step 5)\n"
+        "- B2: still open\n"
+    )
+    code, out, err = run(text)
+    assert code == 1, f"exit {code}: {out}{err}"
+    assert err == "", err
+
+
+def test_disposition_vocabulary_bullets_never_trigger_mistyped_id_check():
+    """Column-0 rollup bullets using the ledger grammar's own disposition
+    keywords (e.g. `- APPLIED-SUBSTANTIVE: ...`) must not be mistaken for a
+    mistyped finding ID -- their last hyphen-segment is a word, not digits."""
+    text = (
+        "- H1: some finding — APPLIED-SUBSTANTIVE (CHANGE 3, team-lead.md:210)\n"
+        "- APPLIED-SUBSTANTIVE: rollup note\n"
+        "- ALREADY-ENCODED: already encoded rollup\n"
+        "- APPLIED-COSMETIC: cosmetic rollup\n"
+        "- See-also: DKT-156\n"
+    )
+    code, out, err = run(text)
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert err == "", err
+    assert "1/1 dispositioned" in out, out
+
+
+def test_hyphenated_id_ending_in_digit_still_flagged():
+    """A hyphenated ID whose last segment ends in a digit (e.g. `H1-B2`) is
+    still a plausible mistyped finding ID and must still be flagged."""
+    text = (
+        "- H1: some finding — APPLIED-SUBSTANTIVE (CHANGE 3, team-lead.md:210)\n"
+        "- H1-B2: a mistyped hyphenated ID, no disposition of its own\n"
+    )
+    code, out, err = run(text)
+    assert code == 2, f"exit {code}: {out}{err}"
+    assert "H1-B2" in err, err
+    assert "does not match" in err, err
+
+
 def test_no_entries_found_exits_two():
     text = "Just prose, no ledger entries here.\n"
     code, out, err = run(text)

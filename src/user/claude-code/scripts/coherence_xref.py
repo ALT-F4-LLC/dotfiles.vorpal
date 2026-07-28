@@ -129,6 +129,12 @@ def build_registry():
 
 SKILL_CALL_RE = re.compile(r"Skill\(([a-z][a-z-]*)")
 
+# Claude-Code-bundled skill names: no repo directory under either skill root
+# by design, so they can never resolve against `registry` — legitimate refs,
+# not dead/unregistered ones. Mirrors evolve-coherence SKILL.md D1 invariants
+# 1 & 5's carve-out language; do not extend without updating that prose too.
+BUNDLED_SKILLS = {"claude-in-chrome", "verify", "code-review"}
+
 
 def build_skill_refs():
     refs = []
@@ -136,6 +142,8 @@ def build_skill_refs():
         for i, line in enumerate(read_text(path).splitlines(), start=1):
             for token in SKILL_CALL_RE.findall(line):
                 if token == "name":  # documented placeholder, not a real ref
+                    continue
+                if token in BUNDLED_SKILLS:
                     continue
                 refs.append({
                     "file": path,
@@ -389,6 +397,15 @@ def build_canonical_blocks(root):
 
 
 RULE_TOKEN_RE = re.compile(r"\bR([1-7])\b")
+# A single non-nested parenthetical containing "omitted" — e.g. project-
+# manager.md's "(R4 + R5 omitted — PM does not verify ...)". Stripped before
+# the presence scan so an omitted rule's token isn't counted as present.
+# Scope caveat: stripping is file-wide on the whole parenthetical, not
+# token-scoped — a mixed parenthetical like "(R1 applies, R4 omitted)" would
+# also suppress R1. No current omission parenthetical in the tree mixes a
+# present and an omitted rule token, so this isn't live today; watch for it
+# if a future one does.
+OMISSION_PAREN_RE = re.compile(r"\([^()]*\bomitted\b[^()]*\)", re.IGNORECASE)
 TOP_RULE_RE = re.compile(r"^(\d+)\.")
 COMM_HEADING_RE = re.compile(r"^#{1,4}\s+Communication Discipline", re.IGNORECASE)
 RULES_HEADING_RE = re.compile(r"^#{1,4}\s+Rules\b", re.IGNORECASE)
@@ -436,7 +453,8 @@ def build_rule_presence():
     for path in agent_files():
         agent = agent_name(path)
         text = read_text(path)
-        present = sorted({"R%s" % n for n in RULE_TOKEN_RE.findall(text)})
+        scanned = OMISSION_PAREN_RE.sub("", text)
+        present = sorted({"R%s" % n for n in RULE_TOKEN_RE.findall(scanned)})
         unnumbered = agent in UNNUMBERED_AGENTS
         top = None
         if not unnumbered:

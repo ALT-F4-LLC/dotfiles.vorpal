@@ -42,7 +42,7 @@
 # tree.
 functional-value	src/user/claude-code/agents/team-lead.md	model: sonnet	frontmatter model pin -- config value selecting the launch model
 provenance-record	src/user/claude-code/agents/team-lead.md	fable-completeness-heuristics.md	filename citation, master-doc pointer
-provenance-record	src/user/claude-code/agents/team-lead.md	Fable completeness heuristics as demands	cross-reference to the named heuristics doc
+provenance-record	src/user/claude-code/agents/team-lead.md	Fable-distilled completeness heuristics	cross-reference to the named heuristics doc
 product-capability-fact	src/user/claude-code/agents/team-lead.md	official Fable prompting de-prescribes	behavioral fact about Fable's prompting sensitivity
 product-capability-fact	src/user/claude-code/agents/team-lead.md	undertrigger tool use	behavioral fact about Opus/Sonnet tool-use triggering
 product-capability-fact	src/user/claude-code/agents/team-lead.md	Fable template:	prescriptive template rooted in Fable's reason-giving behavior
@@ -67,7 +67,6 @@ functional-value	src/user/claude-code/agents/ux-designer.md	model: opus	frontmat
 product-capability-fact	src/user/claude-code/agents/ux-designer.md	the ZDR-safe fallback net	ZDR compatibility fact (explicit product-capability-fact example category)
 provenance-record	docs/changelog	fable	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	Fable	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	docs/changelog	haiku	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	Opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
@@ -114,12 +113,13 @@ functional-value	.claude/skills/evolve-model-distribution/SKILL.md	3 spawns meas
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	senior-engineer/`sonnet`	Phase roster table naming role to model
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	staff-engineer/`opus`	Phase roster table / prose naming role to model
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	model="sonnet"	spawn-call template -- alias used as a literal argument
-deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	out-of-vocabulary/suspended alias	closed alias vocabulary description
+deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	suspended-alias and outside-closed-vocabulary	closed alias vocabulary description
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	role always `sonnet` but Mimir shows `opus` tokens	illustrative discrepancy example
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	bare alias, e.g. `opus`	illustrative example value
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	model="opus"	spawn-call template -- alias used as a literal argument
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	alias (`haiku`)	naming the suspended alias
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	alias (e.g. `haiku`)	naming the suspended alias
+deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	the `haiku` suspension	naming the historical suspended-alias defect this phase caught
 product-capability-fact	.claude/skills/evolve-model-distribution/SKILL.md	which supports no effort levels	behavioral fact about haiku's effort-level support
 provenance-record	.claude/skills/evolve-agents/SKILL.md	fable-monoculture` local-optimum collapse	dated/commit-cited historical incident
 deliberate-enumeration	.claude/skills/evolve-agents/SKILL.md	(distinguished-engineer/fable)	reviewer-tier prose naming role to model
@@ -143,7 +143,6 @@ functional-value	.claude/skills/evolve-config/SKILL.md	model="sonnet", prompt=".
 functional-value	.claude/skills/evolve-config/SKILL.md	model="sonnet")`	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-config/SKILL.md	model="fable", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	.claude/skills/evolve-coherence/SKILL.md	former hand-executed `xref-builder` sonnet spawn	citation of a superseded prior practice
-provenance-record	.claude/skills/evolve-coherence/SKILL.md	retired the former `xref-builder` sonnet spawn	citation of a superseded prior practice
 functional-value	.claude/skills/evolve-coherence/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/vote/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	src/user/claude-code/skills/team-doctrine/SKILL.md	Fable-distilled completeness	cross-reference to the named heuristics doc/title
@@ -157,3 +156,9 @@ deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	`haiku`, `adv
 functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade disambiguation-reviewer fable to opus	test assertion literal -- fixture input/expected-output text, not a live model claim
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	N× opus→<resolved>, M× sonnet→<resolved>	illustrative format-string fixture showing the script's real requested_model/resolved_model output shape, not a hardcoded model claim
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	both record bare ALIASES (`sonnet` / `opus` / `fable`)	naming the closed alias vocabulary this skill categorizes, not asserting a specific model
+functional-value	src/user/claude-code/scripts/spawn_owner_lookup.sh	model="UNPINNED"	local bash variable feeding report-construction printf output (format_hit), not a spawn's model= argument (DKT-179)
+functional-value	src/user/claude-code/scripts/tier_map.sh	gold/silver/bronze -> fable/opus/sonnet	usage text documenting the script's own tier-to-alias mapping, not a live routing decision
+functional-value	src/user/claude-code/scripts/tier_map.sh	gold:fable silver:opus bronze:sonnet	the script's own tier-alias parsing loop -- literal pairs it iterates to emit tier_alias.<tier>= rows
+functional-value	src/user/claude-code/scripts/tier_map.sh	`haiku` is not in the routing vocabulary	anchor string the script greps for in team-lead.md to detect the suspended-alias doctrine text
+functional-value	src/user/claude-code/scripts/tier_map.sh	suspended_aliases=haiku	the script's own suspended-alias output line, mirroring team-lead.md's doctrine
+functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade flaky-confirm passes to haiku	test assertion literal -- fixture input/expected-output text, not a live model claim

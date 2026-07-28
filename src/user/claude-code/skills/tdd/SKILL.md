@@ -39,7 +39,9 @@ list, frontmatter contract, output path, and collision handling all live here.
 
 <!-- CANONICAL:ARGUMENT_HANDLING:BEGIN -->
 The argument is a single positional `<topic>` (free-text, 3-10 words describing the
-artifact). No flags, no other args.
+artifact) — the harness binds `\$ARGUMENTS` to this value. No flags, no other args.
+
+Topic for this invocation: $ARGUMENTS.
 
 If `<topic>` is missing or empty:
 
@@ -78,25 +80,41 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 - Architecture Decision Records (single decisions): use `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): use
   `Skill(prd, "<topic>")`.
-- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §6 + Authoring §1) rather than restating it.
+- UX / design specs: use `Skill(ux-spec, "<topic>")`. When a TDD touches a user-facing surface, the interaction-design portions belong in the UX spec; the TDD references it (per Pre-flight §4 + Authoring §1) rather than restating it.
 - Project-wide engineering specs (architecture, security, operations, performance,
   code-quality, review-strategy, testing): owned by the `init-specs` skill.
 
 ## Pre-flight
 
-1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory
-   `{output_dir}` is `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
-   filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
-   `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`) is `src/user/claude-code/skills/adr/SKILL.md`'s numbering
-   step, not this skill's — do not invoke it here.
-3. **Resolve context**:
-   - `{today_date}` = `Bash date +%Y-%m-%d`.
-   - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
+1. **Run `Bash ~/.claude/scripts/doc_preflight.sh tdd "<topic>"`** (repo: `src/user/claude-code/scripts/doc_preflight.sh`)
+   — single-homes slug derivation, date/project context, the collision check, and
+   the near-duplicate prefix probe (DKT-167; matches the `evolve_preflight.sh`
+   KEY=value convention). Parse its stdout: `{slug}`, `{today_date}`,
+   `{project_name}`, `{exact_path_collision}`, `{near_dups}`. On non-zero exit,
+   surface its stderr and ABORT (it propagates `slug.sh`'s own errors verbatim).
+   Both `{exact_path_collision}` and `{near_dups}` are tri-state — a real path,
+   empty (checked, no hit), or a `SKIPPED: docs/tdd absent` sentinel when the
+   directory doesn't exist yet (a fresh repo, or between TDD-ephemerality
+   cleanups) — never collapse the sentinel into "no collision".
+   - `{output_path}` = `docs/tdd/{slug}.md`. `{output_dir}` = `docs/tdd/`. **No
+     numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD filenames are never
+     number-prefixed (docs-paths.md master, `docs/tdd/` row);
+     `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
+     is `src/user/claude-code/skills/adr/SKILL.md`'s numbering step, not this
+     skill's — do not invoke it here.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **Check collision**: `Glob docs/tdd/{slug}.md`. If a file exists at
-   `{output_path}`, run the COLLISION_DIALOG below.
-5. **Near-duplicate probe** (advisory, non-blocking): if `len(slug) >= 12`, run `Glob "docs/tdd/{slug[:12]}*.md"` and exclude `{output_path}` itself from the results. If any hits remain, surface them to the calling agent context as a one-line note: `Near-duplicate TDD(s) detected: {paths}. Proceed only if this is intentionally distinct work.` The calling agent decides whether to continue or re-derive a more specific slug; no automatic block. This catches near-identical args (different punctuation, suffix words) that derive to different but adjacent slugs.
+2. **Check collision**: if `{exact_path_collision}` is a real path (not empty,
+   not a `SKIPPED:` sentinel), run the COLLISION_DIALOG below (`{exact_path_collision}`
+   is `{output_path}`). A `SKIPPED:` sentinel means `docs/tdd/` doesn't exist yet —
+   there is nothing to collide with; proceed directly to Authoring.
+3. **Near-duplicate probe** (advisory, non-blocking): if `{near_dups}` is a
+   non-empty, non-`SKIPPED:` value, surface it to the calling agent context as a
+   one-line note: `Near-duplicate TDD(s) detected: {near_dups}. Proceed only if
+   this is intentionally distinct work.` The calling agent decides whether to
+   continue or re-derive a more specific slug; no automatic block. This catches
+   near-identical args (different punctuation, suffix words) that derive to
+   different but adjacent slugs. A `SKIPPED:` sentinel or an empty value need no
+   further action.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -117,16 +135,16 @@ AskUserQuestion(
 ```
 
 - "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
-- "Overwrite" → first `Read {output_path}` (the harness blocks an overwrite Write of an unread file), then proceed to Authoring Procedure; the existing file is replaced on Write.
+- "Overwrite" → proceed directly to Authoring Procedure; the existing file is replaced by the final `mv` in Save & Return.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT proceed: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
 
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
 <!-- CANONICAL:COLLISION_DIALOG:END -->
 
-6. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
+4. **Related-doc probe**: `Glob docs/spec/*.md docs/ux/*.md`. For each match
    whose slug appears as a substring of `<topic>` (case-insensitive), include
    its relative path in the `dependencies` frontmatter array. The calling
    agent may add others from broader judgment.
@@ -134,7 +152,7 @@ malformed frontmatter.
 ## Authoring Procedure
 
 1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/` and read any candidate
-   parent PRD or UX spec identified in Pre-flight step 6. Read existing TDDs in
+   parent PRD or UX spec identified in Pre-flight step 4. Read existing TDDs in
    `docs/tdd/` touching adjacent areas — reference, not contradict, prior accepted work.
 2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "draft"` initially.
@@ -303,7 +321,7 @@ order, the Alternatives-Considered minimum (≥2 `###` subsections), Mermaid pre
 subsections (`Threat Model` / `Trust Boundaries` / `Security Considerations` in §4
 and `Abuse Cases` in §9) — is mechanized by the shared `doc_validate.py`, the single
 source of truth for what a valid TDD must satisfy. Validate the drafted document
-before the final Write:
+before the final `mv`:
 
 1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
    stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
@@ -317,7 +335,7 @@ before the final Write:
    executable bit exits 126, which no branch below handles; under `python3` a missing
    validator still exits 2.
 3. **Act on the exit code:**
-   - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
+   - **exit 0** — validation passed; proceed to Save & Return (the final `mv` to
      `docs/tdd/...`).
    - **exit 1** — validation failure. ABORT, quoting the script's stderr (no
      fix-and-retry — the skill validates then writes in a single pass; repair is the
@@ -356,7 +374,9 @@ put them inside a fenced block or use angle-bracket phrasing (`<slug>`,
 After Validation Before Save passes:
 
 1. `Bash mkdir -p {output_dir}` (idempotent).
-2. `Write {output_path}` with the drafted content.
+2. `Bash mv "{staging_dir}/{slug}.md" {output_path}` — the SAME resolved `{staging_dir}`
+   captured in Validation Before Save step 1, never a re-expanded `$TMPDIR` (the staged
+   file already passed validation; re-emitting via `Write` risks staged-vs-final divergence).
 3. Emit a single confirmation line:
 
    ```
@@ -390,4 +410,4 @@ annotations; post-planning phases operate exclusively from those distilled copie
 | Operator chooses "Pick new slug" but supplies an empty topic | Re-prompt up to 3 times; on third empty answer, abort: `Error: Could not derive a non-empty slug.` |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Mermaid mandate not satisfied | Abort: `Error: validation failed: Mermaid block missing — TDD requires at least one mermaid fenced block (component map, sequence, state, or data flow). Pure-policy decisions belong in an ADR.` |
-| Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
+| Filesystem `mv` fails (permissions, disk, read-only mount, cross-device rename) | Surface raw error: `Error: mv failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

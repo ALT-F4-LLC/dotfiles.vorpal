@@ -300,11 +300,7 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 {MENTION_COUNT_LINE}
 
 4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
-5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET, no headers required) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
-   - `sum by (model, {PROMQL_LABEL}) (increase(claude_code_token_usage[{history_days}d]))`
-   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
-   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
-   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
+5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Run `~/.claude/scripts/mimir_query.sh {history_days} --label {PROMQL_LABEL}` (repo: `src/user/claude-code/scripts/mimir_query.sh`) via Bash — do NOT hand-issue the PromQL yourself. On success it emits labeled TSV (`metric<TAB>model<TAB>label<TAB>value`, one row per `token_usage`/`cost_usage`/`active_time_total` series); on any unreachable/non-200/malformed-JSON/empty-result failure it emits the exact sentinel line `Mimir metrics unavailable: <reason>` and exits 0 — proceed using transcript signals only on that outcome. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
 
 ## Improvement-Only Mandate
 Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals from this audit. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.
@@ -354,11 +350,7 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 3. **`~/.claude/history.jsonl`** — count operator-typed `/evolve-config` invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 
 4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|effort\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for durable routing lessons.
-5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Query `https://mimir.bulbasaur.altf4.domains/prometheus/api/v1/query` (unauthenticated GET) with these PromQL instant queries using `{history_days}` from pre-flight — do NOT compute the window yourself:
-   - `sum by (model) (increase(claude_code_token_usage[{history_days}d]))`
-   - `sum by (model) (increase(claude_code_cost_usage[{history_days}d]))`
-   - `sum(increase(claude_code_active_time_total[{history_days}d]))`
-   On any non-200 response or empty result, emit `"Mimir metrics unavailable: <reason>"` and proceed using transcript signals only. Mimir results are factual ground truth that supplements and cross-checks the transcript grep — cite discrepancies.
+5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Run `~/.claude/scripts/mimir_query.sh {history_days}` (repo: `src/user/claude-code/scripts/mimir_query.sh`; no `--label` — this variant groups by `model` only) via Bash — do NOT hand-issue the PromQL yourself. On success it emits labeled TSV (`metric<TAB>model<TAB>label<TAB>value`, one row per `token_usage`/`cost_usage`/`active_time_total` series, `label` column `<none>`); on any unreachable/non-200/malformed-JSON/empty-result failure it emits the exact sentinel line `Mimir metrics unavailable: <reason>` and exits 0 — proceed using transcript signals only on that outcome. Mimir results are factual ground truth that supplements and cross-checks the transcript grep — cite discrepancies.
 
 ## Improvement-Only Mandate
 Every recommendation MUST carry factual justification grounded in measured distribution counts and observed outcome signals. Speculative or regression-risk routing changes are explicitly disallowed. A recommendation without an evidence citation (session path + count) is rejected.

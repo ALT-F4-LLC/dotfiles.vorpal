@@ -377,9 +377,13 @@ Use verdict `approve-with-concerns` when recommending ACCEPT WITH CAVEATS.
 
 Per the applicability matrix in `~/.claude/skills/team-doctrine/references/runtime-discipline.md` (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`), you apply **R1, R2, R3, R4, R6, R7** (R5 omitted — sdet is not a persistent advisor). Canonical bodies live in that same file. One-line reminders:
 
-- **R1 Tool-Use Parsimony.** Tool-call output lands verbatim in context. Prefer `grep -l`, ranged Read, filtered/summarized Bash; batch independent calls. **jq sanity-check** small expressions before embedding in `$()` (cryptic shell errors otherwise). Trust doctrine-cited `~/.claude/scripts/*.sh` paths as-is — do NOT `ls`/`test -f` them first (version-controlled, repo-invariant); verify-before-trust is for paths this file does not pin.
+- **R1 Tool-Use Parsimony.** Tool-call output lands verbatim in context. Prefer `grep -l`, ranged Read, filtered/summarized Bash; batch independent calls. **jq sanity-check** small expressions before embedding in `$()` (cryptic shell errors otherwise).
 - **R2 Skill Invocation Restraint.** Every Skill loads its full SKILL.md — invoke only on trigger match. Teammate mode does NOT auto-load `skills:`/`mcpServers:` frontmatter (only `tools`+`model`) — invoke via explicit `Skill(<name>)`; `verify-ac`/`vote` must be project-registered or the first call fails silently.
 - **R3 SendMessage Terseness.** One message per purpose, no quoting-back. Use TaskUpdate for state.
 - **R4 Iteration Cap.** Don't re-verify an AC once it's marked complete.
 - **R6 Anti-Defensive-Exploration.** Don't re-Read / re-`git status` to soothe anxiety. Banned phrases: "let me also check", "to be safe I'll Read", "let me confirm by Read".
 - **R7 In-Session Read-Cache Awareness.** Don't re-Read files already in this session's context. Exceptions (both outrank this rule): after compaction, one Read per file before next Edit; and the Read-before-Edit gate's zero-intervening-tool-calls adjacency (master: senior-engineer.md §CANONICAL:READ-BEFORE-EDIT, per comm rule 9).
+
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:BEGIN -->
+**Doctrine-pinned script trust (this role).** Doctrine-cited script paths are pinned — invoke directly, never `ls`/`test` one first. Master: `~/.claude/skills/team-doctrine/references/runtime-discipline.md` §R6 (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`).
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:END -->

@@ -5,16 +5,25 @@ previously hand-maintained as per-skill prose checklists. Each skill's
 text-decidable checks are transcribed check-for-check into the per-skill
 parameter tables below; per-skill parameterization is preserved, never
 flattened. No check is added, dropped, or widened; checks needing external
-state (a resolved diff's file list, a Docket issue's AC list, semantic
-evidence quality, the override-vs-diff arm) stay in the skill as prose and
-are NOT mechanized here.
+state (a Docket issue's AC list, semantic evidence quality, the
+override-vs-diff arm) stay in the skill as prose and are NOT mechanized
+here. The one exception: a resolved diff's file list, when supplied via the
+optional --files flag, is mechanized as the citation-presence check (DKT-144)
+against the ### Findings section — opt-in and additive, never required.
 
 Usage: report_lint.py --skill {code-review-verdict|verify-ac|design-review|design-qa|simplify-scout|investigator}
-                      [--mode full|round-n|light] <file>
+                      [--mode full|round-n|light] [--files <list-file>] <file>
 
   stdout: OK: <skill> report (<mode>)                exit 0
   stderr: validation failed: <check> — <detail>      exit 1  (one line per failure)
   stderr: usage / unknown skill / unreadable         exit 2
+
+  --files <list-file> is optional and strictly opt-in: a path to a file with
+  one reviewed-scope file path per line. When present, every `{file:line}`
+  citation found inside the report's ``### Findings`` section is checked
+  against that list; a cited path absent from it fails with check
+  `citation-presence`. Omitting --files leaves all existing behavior for
+  every skill unchanged.
 
   --mode default: full. round-n is valid only with code-review-verdict.
   light is valid only with verify-ac and short-circuits to exit 0 by contract
@@ -59,6 +68,10 @@ _BANNED_RE = re.compile(
              + [re.escape(p) for p in _OTHER_BANNED]),
     re.IGNORECASE,
 )
+
+# `{file:line}`-style citation scan (DKT-144) — a bare path/line pair such as
+# `uploader.go:42`, scoped to the ### Findings section only by the caller.
+_CITATION_RE = re.compile(r"\b([\w./-]+\.\w+):(\d+)\b")
 
 # code-review-verdict is one skill with two roles (general/security) and a
 # compact Round-N template. Each concrete report resolves to exactly one
@@ -420,6 +433,31 @@ def verdict_severity_failures(records, rule, verdict, cfg):
     return f
 
 
+def citation_presence_failures(records, allowed_files):
+    """Mechanizes code-review-verdict's own anti-fabrication check (SKILL.md
+    §Validation Before Emit): every `{file:line}` citation inside the
+    ### Findings section must name a path present in the reviewed-scope file
+    list. No-ops (empty list) when the report has no ### Findings section —
+    the other report-emission skills use differently-named bucket sections,
+    so passing --files for them is a safe, trivial no-op."""
+    f = []
+    b = section_bounds(records, "Findings")
+    if b is None:
+        return f
+    start, end = b
+    for ri in range(start + 1, end):
+        idx, raw, in_fence = records[ri]
+        if in_fence:
+            continue
+        for m in _CITATION_RE.finditer(raw):
+            path, line_no = m.group(1), m.group(2)
+            if path not in allowed_files:
+                f.append(("citation-presence",
+                          f"line {idx + 1}: cited '{path}:{line_no}' — "
+                          f"'{path}' not in reviewed-scope file list"))
+    return f
+
+
 def design_qa_rows(records):
     """Return the Issues table's data rows as lists of cell strings."""
     b = section_bounds(records, "Issues")
@@ -766,6 +804,9 @@ def main():
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--skill", required=True, choices=sorted(SKILLS.keys()))
     parser.add_argument("--mode", default="full", choices=["full", "round-n", "light"])
+    parser.add_argument("--files", default=None,
+                         help="path to a file listing one reviewed-scope file path per line "
+                              "(opt-in citation-presence check against the ### Findings section)")
     parser.add_argument("file")
     try:
         args = parser.parse_args()
@@ -809,6 +850,15 @@ def main():
         failures = validate_round_n(cfg, records, text)
     else:
         failures = validate_full(args.skill, cfg, records, text)
+
+    if args.files:
+        try:
+            with open(args.files, "r", encoding="utf-8") as fh:
+                allowed_files = {line.strip() for line in fh if line.strip()}
+        except OSError as exc:
+            print(f"report_lint.py: cannot read --files list {args.files}: {exc}", file=sys.stderr)
+            raise SystemExit(2)
+        failures.extend(citation_presence_failures(records, allowed_files))
 
     if failures:
         for check, detail in failures:

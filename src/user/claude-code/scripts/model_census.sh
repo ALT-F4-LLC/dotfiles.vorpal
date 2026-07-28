@@ -230,8 +230,13 @@ run_arm5_invented_alias() {
             [ "$bad" -eq 1 ] && filtered="${filtered:+${filtered}$'\n'}${line}"
         done <<< "$hits"
     fi
-    ARM5_INVENTED="$filtered"
-    ARM5_INVENTED_COUNT=$(count_lines "$filtered")
+    # Same content-anchored manifest arms 1+2 filter through (apply_exemptions)
+    # also backs this arm, so a non-spawn `model="..."` shell variable (e.g.
+    # spawn_owner_lookup.sh's report-construction sentinel, DKT-179) can be
+    # exempted the same way a doctrine mention is.
+    apply_exemptions "$filtered"
+    ARM5_INVENTED="$FILTERED_ACTIONABLE"
+    ARM5_INVENTED_COUNT=$(count_lines "$FILTERED_ACTIONABLE")
 }
 
 # --- Arm 3: report-only backstop (--backstop) -------------------------------
@@ -329,6 +334,11 @@ if [ -n "$ARM2_HITS" ]; then
 fi
 
 apply_exemptions "$COMBINED_HITS"
+# Captured immediately: arm5 also calls apply_exemptions (below), which
+# reassigns FILTERED_ACTIONABLE/FILTERED_EXEMPT_COUNT for its own hits --
+# reading $FILTERED_ACTIONABLE downstream of that call would silently pick up
+# arm5's list instead of arm1+2's.
+ACTIONABLE_HITS_RAW="$FILTERED_ACTIONABLE"
 ACTIONABLE_COUNT=$(count_lines "$FILTERED_ACTIONABLE")
 EXEMPT_COUNT="$FILTERED_EXEMPT_COUNT"
 TOTAL=$((ACTIONABLE_COUNT + EXEMPT_COUNT))
@@ -345,7 +355,7 @@ if [ "$JSON" -eq 1 ]; then
         --argjson total "$TOTAL" \
         --argjson exemptCount "$EXEMPT_COUNT" \
         --argjson actionableCount "$ACTIONABLE_COUNT" \
-        --arg actionableHitsRaw "$FILTERED_ACTIONABLE" \
+        --arg actionableHitsRaw "$ACTIONABLE_HITS_RAW" \
         --argjson staleCount "$ARM4_STALE_COUNT" \
         --arg staleRowsRaw "$ARM4_STALE" \
         --argjson inventedCount "$ARM5_INVENTED_COUNT" \
@@ -367,7 +377,7 @@ else
         echo "model_census.sh: arm1+arm2 PASS (total=${TOTAL}, exempt=${EXEMPT_COUNT}, actionable=0)"
     else
         echo "FAIL: ${ACTIONABLE_COUNT} actionable untiered model-name mention(s) (total=${TOTAL}, exempt=${EXEMPT_COUNT})"
-        printf '%s\n' "$FILTERED_ACTIONABLE"
+        printf '%s\n' "$ACTIONABLE_HITS_RAW"
     fi
 
     if [ "$ARM4_STALE_COUNT" -eq 0 ]; then

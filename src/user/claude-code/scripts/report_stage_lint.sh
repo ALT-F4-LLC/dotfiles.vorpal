@@ -17,8 +17,10 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: report_stage_lint.sh <skill-name> [--mode full|round-n|light] [<content-file>|-]" >&2
+    echo "Usage: report_stage_lint.sh <skill-name> [--mode full|round-n|light] [--files <list-file>] [<content-file>|-]" >&2
     echo "  <skill-name>    code-review-verdict | verify-ac | design-review | design-qa | simplify-scout" >&2
+    echo "  --files <list-file>  optional: path to a file listing one reviewed-scope file path per line;" >&2
+    echo "                        when present, enables the Findings-section citation-presence check" >&2
     echo "  <content-file>  path to the drafted report; omit or pass - to read stdin" >&2
     exit 2
 }
@@ -29,13 +31,28 @@ SKILL="$1"
 shift
 
 MODE_ARGS=()
-if [ "${1:-}" = "--mode" ]; then
-    [ "$#" -ge 2 ] || usage
-    MODE_ARGS=(--mode "$2")
-    shift 2
-fi
+FILES_ARGS=()
+POSITIONAL=()
+while [ "$#" -ge 1 ]; do
+    case "$1" in
+        --mode)
+            [ "$#" -ge 2 ] || usage
+            MODE_ARGS=(--mode "$2")
+            shift 2
+            ;;
+        --files)
+            [ "$#" -ge 2 ] || usage
+            FILES_ARGS=(--files "$2")
+            shift 2
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
 
-CONTENT_FILE="${1:--}"
+CONTENT_FILE="${POSITIONAL[0]:--}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LINTER="${SCRIPT_DIR}/report_lint.py"
@@ -61,4 +78,4 @@ else
     cp "$CONTENT_FILE" "$STAGE"
 fi
 
-python3 "$LINTER" --skill "$SKILL" "${MODE_ARGS[@]+"${MODE_ARGS[@]}"}" "$STAGE"
+python3 "$LINTER" --skill "$SKILL" "${MODE_ARGS[@]+"${MODE_ARGS[@]}"}" "${FILES_ARGS[@]+"${FILES_ARGS[@]}"}" "$STAGE"

@@ -61,6 +61,10 @@ harness artifact, NOT a bug to "fix" in the script:
 
 1. **`!` negation / process-substitution misfires** — a shell `!`-negation or `<(...)` that
    errors inside the sandbox; re-run with sandbox disabled BEFORE editing the script.
+   Specifically, `diff <(cmd1) <(cmd2)` can fail with `/dev/fd/N: Operation not permitted` —
+   retry once with `dangerouslyDisableSandbox: true`, or avoid the sandbox interaction
+   entirely by writing each side to a temp file under `$TMPDIR` and running a plain
+   `diff file1 file2`.
 2. **gh / curl TLS errors** — see dedicated section above.
 3. **kubectl waits** — use a bounded `Bash(dangerouslyDisableSandbox: true)` `kubectl wait`,
    never a Monitor-watched kubectl stream (Monitor can't read `~/.kube/config`).

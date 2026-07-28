@@ -194,7 +194,9 @@ docket issue delete DKT-1 --json --orphan # delete issue, promote sub-issues to 
 
 Valid `--status` values: `backlog`, `todo`, `in-progress`, `review`, `done`.
 Valid `--priority` values: `none`, `low`, `medium`, `high`, `critical`.
-Valid `--type`/`-T` values: `task`, `bug`, `feature`, `epic`, `chore`.
+Valid `--type`/`-T` values: `task`, `bug`, `feature`, `epic`, `chore`. There
+is no `docs` or `spike` kind — use `task` or `chore` for documentation-only
+work.
 
 List and inspect:
 

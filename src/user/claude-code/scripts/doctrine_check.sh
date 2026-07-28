@@ -1,22 +1,25 @@
 #!/bin/bash
-# Deterministic doctrine-consistency checks for team-doctrine, mechanizing 3
+# Deterministic doctrine-consistency checks for team-doctrine, mechanizing 4
 # manual checks found violated/unverified this cycle: (a) team-doctrine/
 # SKILL.md's reference-file index parity, (b) every CANONICAL:*-LOCAL
 # "Master:" pointer resolves to an existing file (both the ~/.claude and
 # repo: forms), (c) CANONICAL:<TAG> blocks stay byte-identical — optionally
 # after a per-carrier strip-transform from the manifest's 3rd column — across
 # the carriers listed in doctrine_check_manifest.tsv, rejecting outright any
-# carrier whose strip transform empties its block. Read-only; exits 1 if any
+# carrier whose strip transform empties its block, (d) each references/*.md
+# row's "Cited by" cell names exactly the set of agent/skill files that
+# actually cite that reference file's path on disk. Read-only; exits 1 if any
 # arm fails.
 set -uo pipefail
 
 usage() {
     echo "Usage: doctrine_check.sh [--emit-hashes]" >&2
-    echo "  Runs 3 check arms (index parity, pointer resolution, CANONICAL" >&2
-    echo "  tag byte-parity) against the current repo state. Emits a PASS/FAIL" >&2
-    echo "  line per arm (failure reasons indented above it) and exits 0 if" >&2
-    echo "  every arm passes, 1 if any arm fails." >&2
-    echo "  --emit-hashes: machine mode. Skip arms (a)/(b); emit one" >&2
+    echo "  Runs 4 check arms (index parity, pointer resolution, CANONICAL" >&2
+    echo "  tag byte-parity, 'Cited by' citer-set parity) against the current" >&2
+    echo "  repo state. Emits a PASS/FAIL line per arm (failure reasons" >&2
+    echo "  indented above it) and exits 0 if every arm passes, 1 if any" >&2
+    echo "  arm fails." >&2
+    echo "  --emit-hashes: machine mode. Skip arms (a)/(b)/(d); emit one" >&2
     echo "  'tag<TAB>ref_hash<TAB>carrier_count<TAB>parity' line per manifest" >&2
     echo "  tag (parity = ok|fail|single) and exit 0 unless a tag's carriers" >&2
     echo "  diverge. Consumed by coherence_xref.py for its canonical_blocks key." >&2
@@ -65,19 +68,30 @@ hash_of() {
 # Extract a carrier's CANONICAL:<marker> block, drop the BEGIN/END marker lines,
 # apply the manifest strip-transform (3rd column) if any, and print the
 # comparable block on stdout. Returns 0 (printed block), 1 (file missing),
-# 2 (block not found), 3 (strip transform emptied the block). Single source of
-# the extract+strip pipeline, shared by arm (c) and --emit-hashes.
+# 2 (block not found), 3 (strip transform emptied the block), 4 (BEGIN/END
+# marker count imbalance). Single source of the extract+strip pipeline,
+# shared by arm (c) and --emit-hashes.
+#
+# The BEGIN/END sed range below is anchored to the actual marker's
+# comment-line form (line starts with "<!-- CANONICAL:") rather than an
+# unanchored substring match. Prose that merely discusses/describes a marker
+# (e.g. "wrapped in `CANONICAL:BANNER:BEGIN/END` markers") does not start a
+# line that way, so it can no longer be misread as opening a second block
+# that never closes and swallows the rest of the file (DKT-169).
 carrier_compare_block() {
     local tag="$1" marker="$2" f="$3"
     [ -f "$f" ] || return 1
-    local block body strip_expr compare_block
-    block=$(sed -n "/CANONICAL:${marker}:BEGIN/,/CANONICAL:${marker}:END/p" "$f")
+    local block body strip_expr compare_block begin_count end_count
+    begin_count=$(grep -cE "^<!-- CANONICAL:${marker}:BEGIN -->" "$f")
+    end_count=$(grep -cE "^<!-- CANONICAL:${marker}:END -->" "$f")
+    [ "$begin_count" -ne "$end_count" ] && return 4
+    block=$(sed -n "/^<!-- CANONICAL:${marker}:BEGIN -->/,/^<!-- CANONICAL:${marker}:END -->/p" "$f")
     [ -z "$block" ] && return 2
     # Drop the BEGIN/END marker lines before hashing: they're constant
     # per-marker literal text, so leaving them in the comparison content lets a
     # strip transform that empties only the body (but leaves the markers intact)
     # hash-match vacuously across carriers with genuinely different bodies.
-    body=$(printf '%s\n' "$block" | sed -e "/CANONICAL:${marker}:BEGIN/d" -e "/CANONICAL:${marker}:END/d")
+    body=$(printf '%s\n' "$block" | sed -e "/^<!-- CANONICAL:${marker}:BEGIN -->/d" -e "/^<!-- CANONICAL:${marker}:END -->/d")
     strip_expr=$(awk -F'\t' -v t="$tag" -v ff="$f" '$1==t && $2==ff {print $3; exit}' "$MANIFEST")
     if [ -n "$strip_expr" ]; then
         compare_block=$(printf '%s' "$body" | sed "$strip_expr")
@@ -267,6 +281,11 @@ for tag in $tags; do
                 tag_ok=0
                 continue
                 ;;
+            4)
+                echo "  - ${tag} carrier ${f}: CANONICAL:${marker} BEGIN/END marker count imbalance (unclosed or duplicate marker) — refusing to compare"
+                tag_ok=0
+                continue
+                ;;
         esac
 
         h=$(printf '%s' "$compare_block" | hash_of)
@@ -285,6 +304,146 @@ for tag in $tags; do
         overall_status=1
     fi
 done
+
+# ---------------------------------------------------------------------------
+echo
+echo "== Arm (d): team-doctrine/SKILL.md 'Cited by' citer-set parity =="
+
+# Candidate citer files: every agent *.md under an agents/ dir, and every
+# skill's SKILL.md, across $POINTER_SEARCH_DIRS — excluding the team-doctrine
+# skill itself (its own index row and references/ dir cross-cite each other
+# and are not "citers" of themselves).
+citer_files=$(
+    for d in $POINTER_SEARCH_DIRS; do
+        find "$d" -type f \( -path "*/agents/*.md" -o -name "SKILL.md" \) 2>/dev/null
+    done | grep -v "/skills/team-doctrine/" | sort -u
+)
+
+# A citer's declared-table key: an agent's own basename (e.g. team-lead.md),
+# or a skill's directory name (e.g. evolve-agents) for a SKILL.md file.
+citer_key_for() {
+    local f="$1" base
+    base=$(basename "$f")
+    if [ "$base" = "SKILL.md" ]; then
+        basename "$(dirname "$f")"
+    else
+        echo "$base"
+    fi
+}
+
+worker_agents=$(
+    for f in $citer_files; do
+        [[ "$f" == */agents/*.md ]] || continue
+        k=$(citer_key_for "$f")
+        [ "$k" = "team-lead.md" ] && continue
+        echo "$k"
+    done | sort -u
+)
+
+arm_d_ok=1
+arm_d_row_count=0
+
+while IFS= read -r row; do
+    ref=$(printf '%s' "$row" | awk -F'|' '{print $2}' | grep -oE '`references/[A-Za-z0-9_.-]+\.md`' | tr -d '`' | sed 's#references/##')
+    cell=$(printf '%s' "$row" | awk -F'|' '{print $4}')
+    [ -z "$ref" ] && continue
+    arm_d_row_count=$((arm_d_row_count + 1))
+
+    # Parse the declared citer set out of the cell's free-text prose: an
+    # "all but `X`" exclusion (if present) is stripped and X excluded from
+    # the worker-agent roster; an "N agents" shorthand expands to that full
+    # roster (minus any exclusion) AND asserts N equals the resolved roster
+    # size; an "N ... skills (`a`, `b`, ...)" shorthand asserts N equals the
+    # count of backtick-quoted names in its own parenthetical list; every
+    # remaining backtick-quoted token (agent basename or bare skill dir name)
+    # is taken literally. Either numeral check failing is a count-divergence
+    # FAIL even when set membership (missing/extra) otherwise matches.
+    work="$cell"
+    excl=""
+    if [[ "$work" =~ all\ but\ \`([A-Za-z0-9_.-]+)\` ]]; then
+        excl="${BASH_REMATCH[1]}"
+        work="${work/${BASH_REMATCH[0]}/}"
+    fi
+
+    declared=""
+    count_ok=1
+    if [[ "$work" =~ ([0-9]+)\ agents ]]; then
+        agents_n="${BASH_REMATCH[1]}"
+        agents_expected=$(printf '%s\n' "$worker_agents" | grep -c .)
+        if [ -n "$excl" ] && printf '%s\n' "$worker_agents" | grep -qxF "$excl"; then
+            agents_expected=$((agents_expected - 1))
+        fi
+        if [ "$agents_n" -ne "$agents_expected" ]; then
+            echo "  - ${ref}: cell states \"${agents_n} agents\" but the resolved agent roster is ${agents_expected}"
+            count_ok=0
+        fi
+        while IFS= read -r a; do
+            [ -z "$a" ] && continue
+            [ "$a" = "$excl" ] && continue
+            declared="${declared}${a}"$'\n'
+        done <<< "$worker_agents"
+    fi
+    while IFS= read -r shorthand; do
+        [ -z "$shorthand" ] && continue
+        skills_n=$(printf '%s' "$shorthand" | grep -oE '^[0-9]+')
+        skills_list_count=$(printf '%s' "$shorthand" | grep -oE '`[A-Za-z0-9_.-]+`' | grep -c .)
+        if [ "$skills_n" -ne "$skills_list_count" ]; then
+            echo "  - ${ref}: cell states \"${skills_n} ... skills\" shorthand but its parenthetical list names ${skills_list_count} skill(s)"
+            count_ok=0
+        fi
+    done < <(printf '%s' "$work" | grep -oE '[0-9]+ [^()`]*skills[^()]*\([^)]*\)' || true)
+    for tok in $(printf '%s' "$work" | grep -oE '`[A-Za-z0-9_.-]+`' | tr -d '`'); do
+        declared="${declared}${tok}"$'\n'
+    done
+    declared=$(printf '%s' "$declared" | sed '/^$/d' | sort -u)
+
+    # A citer's live detection accepts either the literal master-file path
+    # (as before) or its matching CANONICAL:<TAG>-LOCAL pointer marker (the
+    # tag derived from the reference's own basename, e.g.
+    # runtime-discipline.md -> RUNTIME-DISCIPLINE-LOCAL) — a file may carry
+    # only the compact LOCAL-copy marker without ever spelling out the path.
+    # Require the literal ":BEGIN" suffix so a prose mention of the tag name
+    # elsewhere (e.g. describing another file's marker) doesn't count as
+    # this file carrying the block itself.
+    marker_tag="$(printf '%s' "${ref%.md}" | tr '[:lower:]' '[:upper:]')-LOCAL"
+    live=""
+    for f in $citer_files; do
+        if grep -qF "references/${ref}" "$f" 2>/dev/null || grep -qF "CANONICAL:${marker_tag}:BEGIN" "$f" 2>/dev/null; then
+            live="${live}$(citer_key_for "$f")"$'\n'
+        fi
+    done
+    live=$(printf '%s' "$live" | sed '/^$/d' | sort -u)
+
+    missing=$(comm -23 <(printf '%s\n' "$declared") <(printf '%s\n' "$live") 2>/dev/null)
+    extra=$(comm -13 <(printf '%s\n' "$declared") <(printf '%s\n' "$live") 2>/dev/null)
+
+    if [ -n "$missing" ] || [ -n "$extra" ] || [ "$count_ok" -eq 0 ]; then
+        arm_d_ok=0
+        if [ -n "$missing" ] || [ -n "$extra" ]; then
+            dcount=$(printf '%s\n' "$declared" | grep -c .)
+            lcount=$(printf '%s\n' "$live" | grep -c .)
+            echo "  - ${ref}: ${dcount} declared citer(s) in the 'Cited by' cell != ${lcount} live citer(s) found on disk"
+        fi
+        while IFS= read -r m; do
+            [ -z "$m" ] && continue
+            echo "      missing: ${m} is listed in the 'Cited by' cell but does not cite \`references/${ref}\` in any agent/skill file"
+        done <<< "$missing"
+        while IFS= read -r e; do
+            [ -z "$e" ] && continue
+            echo "      extra: ${e} cites \`references/${ref}\` on disk but is not listed in the 'Cited by' cell"
+        done <<< "$extra"
+    fi
+done < <(grep -E '^\| `references/' "$SKILL_MD")
+
+if [ "$arm_d_row_count" -eq 0 ]; then
+    echo "FAIL: 0 reference row(s) parsed from ${SKILL_MD} — a drift-guard that checks nothing is not a pass"
+    overall_status=1
+elif [ "$arm_d_ok" -eq 1 ]; then
+    echo "PASS: ${arm_d_row_count} reference row(s), 'Cited by' citer sets match live grep results"
+else
+    echo "FAIL: 'Cited by' citer-set parity violated (see above)"
+    overall_status=1
+fi
 
 # ---------------------------------------------------------------------------
 echo

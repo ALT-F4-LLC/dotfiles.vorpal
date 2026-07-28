@@ -30,7 +30,9 @@ contract, output path, reserved-name refusal, and collision handling all live he
 
 <!-- CANONICAL:ARGUMENT_HANDLING:BEGIN -->
 The argument is a single positional `<topic>` (free-text, 3-10 words describing the
-artifact). No flags, no other args.
+artifact) — the harness binds `\$ARGUMENTS` to this value. No flags, no other args.
+
+Topic for this invocation: $ARGUMENTS.
 
 If `<topic>` is missing or empty:
 
@@ -65,22 +67,30 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 - UX / design specs: use `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names: architecture, security,
   operations, performance, code-quality, review-strategy, testing): owned by the
-  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 4
+  `init-specs` skill. This skill HARD-REFUSES those names — see Pre-flight step 2
   and Failure Modes.
 
 ## Pre-flight
 
 1. **Resolve `{slug}`** from `<topic>` per the Argument Handling slug rule above.
-2. **Resolve `{output_path}`** as `docs/spec/{slug}.md`. The output directory
-   `{output_dir}` is
-   `docs/spec/`.
-3. **Resolve context**:
-   - `{today_date}` = `Bash date +%Y-%m-%d`.
-   - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
+2. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path) — checked before collision (and before invoking the script below) so reserved files never reach the overwrite dialog.
+3. **Run `Bash ~/.claude/scripts/doc_preflight.sh prd "<topic>"`** (repo: `src/user/claude-code/scripts/doc_preflight.sh`)
+   — single-homes slug derivation, date/project context, and the collision check
+   (DKT-167; matches the `evolve_preflight.sh` KEY=value convention; the
+   near-duplicate prefix probe is tdd-only and not emitted for `prd` — this
+   skill never had that check). Parse its stdout: `{slug}` (matches step 1),
+   `{today_date}`, `{project_name}`, `{exact_path_collision}`. On non-zero exit,
+   surface its stderr and ABORT (it propagates `slug.sh`'s own errors verbatim).
+   `{exact_path_collision}` is tri-state — a real path, empty (checked, no hit),
+   or a `SKIPPED: docs/spec absent` sentinel when the directory doesn't exist
+   yet — never collapse the sentinel into "no collision".
+   - `{output_path}` = `docs/spec/{slug}.md`. `{output_dir}` = `docs/spec/`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@project-manager`).
-4. **Reserved-name refusal**: if `{slug}` matches a name in the Failure Modes Reserved-Name List, ABORT per the Failure Mode table (no overwrite path) — checked before collision so reserved files never reach the overwrite dialog.
-5. **Check collision**: `Glob docs/spec/{slug}.md`. If a file exists at
-   `{output_path}`, run the COLLISION_DIALOG below.
+4. **Check collision**: if `{exact_path_collision}` is a real path (not empty,
+   not a `SKIPPED:` sentinel), run the COLLISION_DIALOG below
+   (`{exact_path_collision}` is `{output_path}`). A `SKIPPED:` sentinel means
+   `docs/spec/` doesn't exist yet — there is nothing to collide with; proceed
+   directly to Authoring.
 
 <!-- CANONICAL:COLLISION_DIALOG:BEGIN -->
 If a file already exists at the target output path, invoke `AskUserQuestion`:
@@ -101,10 +111,10 @@ AskUserQuestion(
 ```
 
 - "Pick new slug" → suggest `{slug}-2`, then `{slug}-3`, etc. via free-text follow-up.
-- "Overwrite" → first `Read {output_path}` (the harness blocks an overwrite Write of an unread file), then proceed to Authoring Procedure; the existing file is replaced on Write.
+- "Overwrite" → proceed directly to Authoring Procedure; the existing file is replaced by the final `mv` in Save & Return.
 - "Cancel" → emit `Cancelled — no file written.` and end.
 
-**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT Write: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
+**Teammate-context caveat.** `AskUserQuestion` is inert in a teammate (only the main-session lead can call it) — if you cannot get an overwrite decision, do NOT proceed: emit `Blocked: {output_path} exists; overwrite needs operator confirmation — the calling agent routes this to team-lead.` and end.
 
 Never silently overwrite. There is no "append" option — partial appends produce
 malformed frontmatter.
@@ -194,7 +204,7 @@ The full checklist — the frontmatter contract (including the no-`status` rule)
 the `maturity` allow-list, section order, Mermaid presence & shape, the placeholder
 scan, and Success-Metrics concreteness — is mechanized by the shared
 `doc_validate.py`, the single source of truth for what a valid PRD must satisfy.
-Validate the drafted document before the final Write:
+Validate the drafted document before the final `mv`:
 
 1. **Stage the draft.** First resolve the staging dir: `Bash echo "${TMPDIR:-/tmp}"` —
    stdout is `{staging_dir}`, an absolute path. `Write` and `Read` take a LITERAL path and
@@ -208,7 +218,7 @@ Validate the drafted document before the final Write:
    executable bit exits 126, which no branch below handles; under `python3` a missing
    validator still exits 2.
 3. **Act on the exit code:**
-   - **exit 0** — validation passed; proceed to Save & Return (the final `Write` to
+   - **exit 0** — validation passed; proceed to Save & Return (the final `mv` to
      `docs/spec/...`).
    - **exit 1** — validation failure. ABORT, quoting the script's stderr (no
      fix-and-retry — the skill validates then writes in a single pass; repair is the
@@ -232,7 +242,9 @@ Validate the drafted document before the final Write:
 After Validation Before Save passes:
 
 1. `Bash mkdir -p {output_dir}` (idempotent).
-2. `Write {output_path}` with the drafted content.
+2. `Bash mv "{staging_dir}/{slug}.md" {output_path}` — the SAME resolved `{staging_dir}`
+   captured in Validation Before Save step 1, never a re-expanded `$TMPDIR` (the staged
+   file already passed validation; re-emitting via `Write` risks staged-vs-final divergence).
 3. Emit a single confirmation line:
 
    ```
@@ -281,4 +293,4 @@ testing
 | Frontmatter contains `status` field | Abort: `Error: validation failed: frontmatter — PRDs use 'maturity', not 'status'. Remove the status field.` |
 | `maturity` value outside the allowed set | Abort: `Error: validation failed: frontmatter — 'maturity' must be one of proof-of-concept \| draft \| experimental \| stable. Got '{value}'.` |
 | Success Metrics section has no numeric targets | Abort: `Error: validation failed: Success Metrics — every metric must include a numeric target or threshold (e.g., 'p95 < 800ms'). Vague metrics are rejected.` |
-| Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
+| Filesystem `mv` fails (permissions, disk, read-only mount, cross-device rename) | Surface raw error: `Error: mv failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

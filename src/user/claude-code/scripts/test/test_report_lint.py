@@ -270,6 +270,64 @@ def test_verify_ac_multi_marker_line_classified_by_first_token():
         f"expected exit 0 (OUT-OF-SCOPE marker classified despite embedded PASS token), got {code}: {out}{err}"
 
 
+# ---- --files citation-presence check (DKT-144) ----
+
+def _write_file_list(paths):
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
+        fh.write("\n".join(paths) + "\n")
+        return fh.name
+
+
+def test_citation_presence_passes_when_all_cited_files_listed():
+    list_path = _write_file_list(["uploader.go", "uploader_test.go"])
+    try:
+        code, out, err = run("--skill", "code-review-verdict", "--files", list_path,
+                              str(FIX / "crv_general_pass.md"))
+    finally:
+        Path(list_path).unlink()
+    assert code == 0, f"expected exit 0, got {code}: {out}{err}"
+
+
+def test_citation_presence_fails_on_uncited_file_absent_from_list():
+    # uploader.go:42 is cited in the Findings section's Blockers bucket but
+    # deliberately omitted from the reviewed-scope file list.
+    list_path = _write_file_list(["uploader_test.go"])
+    try:
+        code, out, err = run("--skill", "code-review-verdict", "--files", list_path,
+                              str(FIX / "crv_general_pass.md"))
+    finally:
+        Path(list_path).unlink()
+    assert code == 1, f"expected exit 1, got {code}: {out}{err}"
+    assert "validation failed: citation-presence" in err, err
+    assert "uploader.go:42" in err, err
+
+
+def test_citation_presence_opt_in_omitted_flag_unaffected():
+    # No --files at all: identical to the pre-existing passing-fixture behavior.
+    code, out, err = run("--skill", "code-review-verdict", str(FIX / "crv_general_pass.md"))
+    assert code == 0, f"expected exit 0, got {code}: {out}{err}"
+
+
+def test_citation_presence_no_findings_section_is_noop():
+    # verify-ac has no ### Findings section (its bucket section is
+    # "Issues Found") — passing --files must be a safe no-op, proving the
+    # three unaffected callers stay unmodified even if they start passing
+    # --files by mistake.
+    list_path = _write_file_list(["nonexistent-file.go"])
+    try:
+        code, out, err = run("--skill", "verify-ac", "--files", list_path,
+                              str(FIX / "verify_ac_pass.md"))
+    finally:
+        Path(list_path).unlink()
+    assert code == 0, f"expected exit 0 (no Findings section to scan), got {code}: {out}{err}"
+
+
+def test_citation_presence_unreadable_list_file_exit2():
+    code, out, err = run("--skill", "code-review-verdict", "--files", str(FIX / "does_not_exist_list.txt"),
+                          str(FIX / "crv_general_pass.md"))
+    assert code == 2, f"expected exit 2, got {code}: {out}{err}"
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

@@ -96,10 +96,19 @@ ARGUMENT_HANDLING	src/user/claude-code/skills/ux-spec/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/prd/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/tdd/SKILL.md
 COLLISION_DIALOG	src/user/claude-code/skills/ux-spec/SKILL.md
+# adr's copy of SAVE_AND_RETURN no longer carries the collision-dialog Cancel
+# clause (adr has no collision dialog — it is absent from the COLLISION_DIALOG
+# rows above; Pre-flight step 5's atomic `--claim` makes a same-number
+# collision impossible by construction, so the clause was a dangling
+# reference). The 3rd-column strip transform below deletes that clause's two
+# lines from prd/tdd/ux-spec's copies before hashing (they DO implement a
+# live collision dialog and keep the clause on disk) so the comparison lands
+# on the shared body both variants now share; adr's row carries no transform
+# since its on-disk block is already in that reduced form.
 SAVE_AND_RETURN	src/user/claude-code/skills/adr/SKILL.md
-SAVE_AND_RETURN	src/user/claude-code/skills/prd/SKILL.md
-SAVE_AND_RETURN	src/user/claude-code/skills/tdd/SKILL.md
-SAVE_AND_RETURN	src/user/claude-code/skills/ux-spec/SKILL.md
+SAVE_AND_RETURN	src/user/claude-code/skills/prd/SKILL.md	/^On operator Cancel during the collision dialog:/d;/^`Cancelled — no file written\.` and end without writing\.$/d
+SAVE_AND_RETURN	src/user/claude-code/skills/tdd/SKILL.md	/^On operator Cancel during the collision dialog:/d;/^`Cancelled — no file written\.` and end without writing\.$/d
+SAVE_AND_RETURN	src/user/claude-code/skills/ux-spec/SKILL.md	/^On operator Cancel during the collision dialog:/d;/^`Cancelled — no file written\.` and end without writing\.$/d
 # Agent-file pointer-block families registered 2026-07-27 (E4).
 # SHUTDOWN-PROTOCOL-LOCAL deliberately EXCLUDES team-lead.md: its copy is
 # INTENTIONALLY DIVERGENT (team-lead sends shutdown_request / receives
@@ -121,3 +130,27 @@ SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/senior-engineer.md
 SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/distinguished-engineer.md
 SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/security-engineer.md
 SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/staff-engineer.md
+# DOCTRINE-SCRIPT-TRUST-LOCAL deliberately EXCLUDES team-lead.md: its copy is
+# INTENTIONALLY SHORTER (compact-LOCAL convention — points to "master §R6,
+# above", i.e. the R1/R3/R4/R6 LOCAL copy already inlined earlier in the same
+# file's RUNTIME-DISCIPLINE-LOCAL block, rather than restating the full
+# runtime-discipline.md path+repo pair that the other 7 carriers spell out)
+# — never add its row or force a strip-transform.
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/project-manager.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/security-engineer.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/sdet.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/staff-engineer.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/senior-engineer.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/ux-designer.md
+DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/distinguished-engineer.md
+# BANNER-CALLER-SIDE-EFFECT — commit/SKILL.md and review-and-comment/SKILL.md
+# each carry a full CRITICAL BANNER whose item (5) caller-side-effect clause
+# (disallowed-tools stripping Edit/Write/Agent/SendMessage from the caller)
+# is byte-identical; the surrounding items (1)-(4) are per-skill and not
+# comparable. The 3rd-column strip transform drops the `<!-- CRITICAL
+# BANNER -->` comment line, then truncates the blockquote line down to just
+# the "(5) Caller-side effect: ..." clause before hashing. The 4th column
+# ("BANNER") overrides the search marker since the in-file marker is
+# literally `CANONICAL:BANNER:BEGIN/END`, not `BANNER-CALLER-SIDE-EFFECT`.
+BANNER-CALLER-SIDE-EFFECT	src/user/claude-code/skills/commit/SKILL.md	/CRITICAL BANNER -->/d;s/^.*(5) Caller-side effect:/(5) Caller-side effect:/	BANNER
+BANNER-CALLER-SIDE-EFFECT	src/user/claude-code/skills/review-and-comment/SKILL.md	/CRITICAL BANNER -->/d;s/^.*(5) Caller-side effect:/(5) Caller-side effect:/	BANNER

@@ -243,6 +243,107 @@ def test_concurrent_claims_different_slugs_never_collide():
         shutil.rmtree(repo, ignore_errors=True)
 
 
+def test_release_deletes_empty_stub():
+    repo = make_repo()
+    try:
+        adr_dir = repo / "docs" / "adr"
+        adr_dir.mkdir(parents=True)
+        stub = adr_dir / "0001-example.md"
+        stub.write_text("")
+        code, out, err = run(repo, "--release", "docs/adr/0001-example.md")
+        assert code == 0, f"exit {code}: {err}"
+        assert not stub.exists(), "release must delete the zero-byte stub"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_non_empty_file_is_hard_error():
+    # Guards against accidentally deleting a real, already-authored doc that
+    # happens to share the {NNNN}-{slug}.md naming pattern.
+    repo = make_repo()
+    try:
+        adr_dir = repo / "docs" / "adr"
+        adr_dir.mkdir(parents=True)
+        stub = adr_dir / "0001-example.md"
+        stub.write_text("# Real content\n")
+        code, out, err = run(repo, "--release", "docs/adr/0001-example.md")
+        assert code != 0, f"exit {code}: {out}"
+        assert "non-empty" in err, err
+        assert stub.exists(), "release must not delete a non-empty file"
+        assert stub.read_text() == "# Real content\n", "release must not modify a non-empty file"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_leaves_lock_file_untouched():
+    # The AC's own named critical test: --claim creates both the stub and its
+    # .claim-{NNNN}.lock sibling; --release on the stub must leave the lock
+    # completely untouched (see header comment for why the lock is durable).
+    repo = make_repo()
+    try:
+        code, out, err = run(repo, "--claim", "docs/adr", "my-decision")
+        assert code == 0, f"exit {code}: {err}"
+        adr_dir = repo / "docs" / "adr"
+        stub = adr_dir / "0001-my-decision.md"
+        lock = adr_dir / ".claim-0001.lock"
+        assert stub.exists() and lock.exists(), "claim must create both stub and lock"
+        code, out, err = run(repo, "--release", "docs/adr/0001-my-decision.md")
+        assert code == 0, f"exit {code}: {err}"
+        assert not stub.exists(), "release must delete the stub"
+        assert lock.exists(), "release must never touch the sibling .lock file"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_invalid_dir_rejected():
+    repo = make_repo()
+    try:
+        prd_dir = repo / "docs" / "prd"
+        prd_dir.mkdir(parents=True)
+        stub = prd_dir / "0001-example.md"
+        stub.write_text("")
+        code, out, err = run(repo, "--release", "docs/prd/0001-example.md")
+        assert code != 0, f"exit {code}: {out}"
+        assert stub.exists(), "release must reject a path outside docs/tdd|docs/adr without touching it"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_malformed_filename_rejected():
+    repo = make_repo()
+    try:
+        adr_dir = repo / "docs" / "adr"
+        adr_dir.mkdir(parents=True)
+        stub = adr_dir / "not-numbered.md"
+        stub.write_text("")
+        code, out, err = run(repo, "--release", "docs/adr/not-numbered.md")
+        assert code != 0, f"exit {code}: {out}"
+        assert stub.exists(), "release must reject a malformed filename without touching it"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_missing_file_is_error():
+    repo = make_repo()
+    try:
+        (repo / "docs" / "adr").mkdir(parents=True)
+        code, out, err = run(repo, "--release", "docs/adr/0099-example.md")
+        assert code != 0, f"exit {code}: {out}"
+        assert "not a regular file" in err, err
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_release_missing_stub_path_usage_error():
+    repo = make_repo()
+    try:
+        code, out, err = run(repo, "--release")
+        assert code == 1, f"exit {code}: {out}"
+        assert "Usage: next_doc_number.sh" in err, err
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

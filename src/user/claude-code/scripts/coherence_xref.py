@@ -23,9 +23,21 @@ dimensions not selected on the `--dimensions` subset path emit `null` (per the
 schema's `[]`-vs-`null` contract).
 
 Usage:
-    coherence_xref.py [--dimensions d1,d3]
+    coherence_xref.py [--dimensions d1,d3] [--files PATH [PATH ...]]
         No argument: compute all four dimensions (all 8 keys).
-        Subset: keys for un-selected dimensions are emitted as `null`.
+        --dimensions subset: keys for un-selected dimensions are emitted as
+            `null`. Composes with --files.
+        --files PATH...: scope the four per-file CONFIRM-type builders
+            (skill_refs, frontmatter_skills, role_claims, rule_presence --
+            signals keyed to a specific agent/skill file) to entries touching
+            only the given paths. The other four builders (registry, ladders,
+            canonical_blocks, coupling_notes) answer fleet-wide ABSENCE/
+            consistency questions that inherently need the full corpus (e.g.
+            registry: does a referenced skill dir exist ANYWHERE; ladders/
+            coupling_notes/canonical_blocks: compare a definer against ALL
+            citations or sibling carriers) and always run unscoped, regardless
+            of --files. Paths are resolved relative to the caller's cwd, not
+            repo root.
 
 Exit codes: 0 = XREF emitted; 2 = a required input (a called leg script, the
 manifest) was missing or a called leg errored unexpectedly.
@@ -136,9 +148,11 @@ SKILL_CALL_RE = re.compile(r"Skill\(([a-z][a-z-]*)")
 BUNDLED_SKILLS = {"claude-in-chrome", "verify", "code-review"}
 
 
-def build_skill_refs():
+def build_skill_refs(files=None):
     refs = []
     for path in agent_files():
+        if files is not None and path not in files:
+            continue
         for i, line in enumerate(read_text(path).splitlines(), start=1):
             for token in SKILL_CALL_RE.findall(line):
                 if token == "name":  # documented placeholder, not a real ref
@@ -155,9 +169,11 @@ def build_skill_refs():
     return refs
 
 
-def build_frontmatter_skills():
+def build_frontmatter_skills(files=None):
     entries = []
     for path in agent_files():
+        if files is not None and path not in files:
+            continue
         agent = agent_name(path)
         lines = read_text(path).splitlines()
         in_fm = False
@@ -198,10 +214,12 @@ HARD_RE = re.compile(
 AGENT_TOKEN_RE = re.compile(r"@([a-z][a-z-]+)")
 
 
-def build_role_claims():
+def build_role_claims(files=None):
     claims = []
     for dir_name, _root, path in skill_dirs():
         skill_md = os.path.join(path, "SKILL.md")
+        if files is not None and skill_md not in files:
+            continue
         for i, line in enumerate(read_text(skill_md).splitlines(), start=1):
             if not ROLE_CLAIM_RE.search(line):
                 continue
@@ -448,9 +466,11 @@ def _rules_section(lines):
     return lines[start:end]
 
 
-def build_rule_presence():
+def build_rule_presence(files=None):
     out = []
     for path in agent_files():
+        if files is not None and path not in files:
+            continue
         agent = agent_name(path)
         text = read_text(path)
         scanned = OMISSION_PAREN_RE.sub("", text)
@@ -488,12 +508,35 @@ def resolve_dimensions(arg):
     return dims
 
 
+def resolve_files(paths, root):
+    """Repo-relative paths for --files, normalized against `root` so they
+    match the repo-relative strings agent_files()/skill_dirs() produce
+    regardless of the cwd --files' arguments were written relative to.
+    `os.path.abspath` resolves against the caller's cwd, so this MUST run
+    before `os.chdir(root)` in main()."""
+    if not paths:
+        return None
+    return {os.path.relpath(os.path.abspath(p), root) for p in paths}
+
+
 def main(argv):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dimensions",
         default=None,
         help="comma list subset of d1..d4; un-selected dimensions' keys emit null",
+    )
+    parser.add_argument(
+        "--files",
+        nargs="+",
+        default=None,
+        metavar="PATH",
+        help=(
+            "scope the per-file CONFIRM builders (skill_refs, "
+            "frontmatter_skills, role_claims, rule_presence) to only these "
+            "paths; the fleet-wide ABSENCE/consistency builders (registry, "
+            "ladders, canonical_blocks, coupling_notes) always run unscoped"
+        ),
     )
     args = parser.parse_args(argv)
     dims = resolve_dimensions(args.dimensions)
@@ -505,17 +548,18 @@ def main(argv):
             return 2
 
     root = repo_root()
+    files_filter = resolve_files(args.files, root)
     os.chdir(root)
 
     builders = {
         "registry": build_registry,
-        "skill_refs": build_skill_refs,
-        "frontmatter_skills": build_frontmatter_skills,
-        "role_claims": build_role_claims,
+        "skill_refs": lambda: build_skill_refs(files_filter),
+        "frontmatter_skills": lambda: build_frontmatter_skills(files_filter),
+        "role_claims": lambda: build_role_claims(files_filter),
         "ladders": build_ladders,
         "canonical_blocks": lambda: build_canonical_blocks(root),
         "coupling_notes": lambda: build_coupling_notes(root),
-        "rule_presence": build_rule_presence,
+        "rule_presence": lambda: build_rule_presence(files_filter),
     }
     selected_keys = set()
     for dim in dims:

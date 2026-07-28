@@ -42,7 +42,9 @@ Error: Skill(code-review-verdict) is restricted to @staff-engineer, @distinguish
 
 ## Argument Handling
 
-The argument is a single positional `<scope>` (free-text). No flags.
+The argument is a single positional `<scope>` (free-text) — the harness binds `\$ARGUMENTS` to this value. No flags.
+
+Scope for this invocation: $ARGUMENTS.
 
 If `<scope>` is missing or empty:
 

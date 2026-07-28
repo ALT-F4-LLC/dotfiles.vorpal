@@ -44,7 +44,9 @@ Error: Skill(simplify-scout) is restricted to @senior-engineer and to @distingui
 
 ## Argument Handling
 
-The argument is a single positional `<scope>` (free-text). No flags.
+The argument is a single positional `<scope>` (free-text) — the harness binds `\$ARGUMENTS` to this value. No flags.
+
+Scope for this invocation: $ARGUMENTS.
 
 If `<scope>` is missing or empty:
 

@@ -35,13 +35,60 @@ set -euo pipefail
 usage() {
     echo "Usage: next_doc_number.sh <docs/tdd|docs/adr>" >&2
     echo "       next_doc_number.sh --claim <docs/tdd|docs/adr> <slug>" >&2
+    echo "       next_doc_number.sh --release <stub-path>" >&2
     echo "  Prints the next available {NNNN} for the target dir to stdout." >&2
     echo "  Skipped (citation-hijacked) candidates are reported to stderr." >&2
     echo "  --claim also atomically reserves the number by creating an" >&2
     echo "  empty {dir}/{NNNN}-{slug}.md stub; a losing concurrent claim" >&2
     echo "  retries the next candidate instead of colliding." >&2
+    echo "  --release deletes an orphaned zero-byte stub left by an aborted" >&2
+    echo "  --claim (hard error on a non-empty file); the sibling" >&2
+    echo "  .claim-{NNNN}.lock is never touched." >&2
     exit 1
 }
+
+# --release <stub-path> deletes an orphaned zero-byte stub left by an
+# aborted --claim. It NEVER touches the stub's sibling .claim-{NNNN}.lock
+# file — see the header comment above for why the lock must stay durable.
+if [ "${1:-}" = "--release" ]; then
+    if [ "$#" -ne 2 ]; then
+        usage
+    fi
+    RELEASE_PATH="$2"
+
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+        echo "next_doc_number.sh: not inside a git repository" >&2
+        exit 1
+    }
+    cd "$REPO_ROOT"
+
+    release_dir=$(dirname -- "$RELEASE_PATH")
+    release_base=$(basename -- "$RELEASE_PATH")
+    case "$release_dir" in
+        docs/tdd|docs/adr) ;;
+        *)
+            echo "next_doc_number.sh: --release path must be {docs/tdd|docs/adr}/{NNNN}-{slug}.md (got: ${RELEASE_PATH})" >&2
+            exit 1
+            ;;
+    esac
+    if ! [[ "$release_base" =~ ^[0-9]{4}-[a-z0-9-]+\.md$ ]]; then
+        echo "next_doc_number.sh: --release path must be {docs/tdd|docs/adr}/{NNNN}-{slug}.md (got: ${RELEASE_PATH})" >&2
+        exit 1
+    fi
+
+    if [ ! -f "$RELEASE_PATH" ]; then
+        echo "next_doc_number.sh: --release target is not a regular file: ${RELEASE_PATH}" >&2
+        exit 1
+    fi
+
+    if [ -s "$RELEASE_PATH" ]; then
+        echo "next_doc_number.sh: --release refuses to delete non-empty file (not an orphaned stub): ${RELEASE_PATH}" >&2
+        exit 1
+    fi
+
+    rm -- "$RELEASE_PATH"
+    exit 0
+fi
 
 CLAIM=0
 SLUG=""

@@ -9,6 +9,12 @@
 # turning "was this regex ever run" into a mechanical fact instead of
 # reviewer diligence.
 #
+# `--content <path>` mode extends the same extraction/validation/execution
+# pipeline to a staged draft that has no diff yet (never committed): every
+# line of <path> is scanned as if it were a diff's +-added line, bypassing
+# the `git diff` extraction step entirely. Used by doc_stage_validate.sh to
+# run G5 against a not-yet-saved tdd draft.
+#
 # It ALSO statically flags the specific documented false-negative class:
 # under `grep -E`, a `\|` is a LITERAL escaped pipe character (BRE
 # alternation syntax), not ERE alternation -- `'a\|b'` matches the literal
@@ -36,12 +42,16 @@ set -euo pipefail
 
 usage() {
     echo "Usage: g5_check.sh <scope>" >&2
+    echo "       g5_check.sh --content <path>" >&2
     echo "  <scope>: \"staged\" | \"uncommitted\" | <branch-name> | <file-path> [<file-path> ...]" >&2
-    echo "  Extracts every backtick-quoted 'grep ...' command added (in the diff's" >&2
-    echo "  + lines) within docs/tdd/ or docs/spec/, validates + runs each for real" >&2
-    echo "  against the current working tree (never via a shell), and reports" >&2
-    echo "  [RAN <n> hits], [FAIL], [TIMEOUT], or [REJECTED: <reason>] per command," >&2
-    echo "  plus a [BRE-PIPE-WARNING] static flag for an escaped '\\|' under -E." >&2
+    echo "  --content <path>: treat every line of <path> as if it were one of a diff's" >&2
+    echo "  +-added lines, bypassing the git-diff extraction step entirely -- for a" >&2
+    echo "  staged draft that was never committed or diffed (e.g. a doc-authoring" >&2
+    echo "  skill validating a not-yet-saved draft)." >&2
+    echo "  Extracts every backtick-quoted 'grep ...' command found (in scope), validates" >&2
+    echo "  + runs each for real against the current working tree (never via a shell)," >&2
+    echo "  and reports [RAN <n> hits], [FAIL], [TIMEOUT], or [REJECTED: <reason>] per" >&2
+    echo "  command, plus a [BRE-PIPE-WARNING] static flag for an escaped '\\|' under -E." >&2
     echo "  Exit 0 = all candidates ran clean, no rejections/timeouts/warnings." >&2
     echo "  Exit 1 = a candidate failed, was rejected, timed out, or warned." >&2
     echo "  Exit 2 = no candidate regex commands found in scope." >&2
@@ -49,8 +59,17 @@ usage() {
 }
 
 [ "$#" -ge 1 ] || usage
-SCOPE="$1"
-shift
+
+CONTENT_MODE=0
+if [ "$1" = "--content" ]; then
+    [ "$#" -ge 2 ] || usage
+    CONTENT_MODE=1
+    CONTENT_PATH="$2"
+    shift 2
+else
+    SCOPE="$1"
+    shift
+fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
     echo "g5_check.sh: not inside a git repository" >&2
@@ -58,31 +77,40 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 cd "$REPO_ROOT"
 
-PATHSPEC=(-- 'docs/tdd/*' 'docs/spec/*')
+if [ "$CONTENT_MODE" -eq 1 ]; then
+    [ -r "$CONTENT_PATH" ] || {
+        echo "g5_check.sh: cannot read content file: ${CONTENT_PATH}" >&2
+        exit 2
+    }
+    CONTENT=$(cat "$CONTENT_PATH")
+    SCOPE="--content ${CONTENT_PATH}"
+else
+    PATHSPEC=(-- 'docs/tdd/*' 'docs/spec/*')
 
-case "$SCOPE" in
-    staged)
-        DIFF=$(git diff --staged "${PATHSPEC[@]}")
-        ;;
-    uncommitted)
-        DIFF=$(printf '%s\n%s' "$(git diff HEAD "${PATHSPEC[@]}")" "$(git diff --staged "${PATHSPEC[@]}")")
-        ;;
-    *)
-        if git rev-parse --verify "$SCOPE" >/dev/null 2>&1; then
-            DIFF=$(git diff "main...$SCOPE" "${PATHSPEC[@]}" 2>/dev/null || git diff "$SCOPE" "${PATHSPEC[@]}")
-        elif [ -e "$SCOPE" ]; then
-            FILES=("$SCOPE" "$@")
-            DIFF=$(git diff HEAD -- "${FILES[@]}"; git diff --staged -- "${FILES[@]}")
-        else
-            echo "g5_check.sh: could not resolve scope '${SCOPE}' (not staged/uncommitted, not a branch, not a file)" >&2
-            exit 2
-        fi
-        ;;
-esac
+    case "$SCOPE" in
+        staged)
+            DIFF=$(git diff --staged "${PATHSPEC[@]}")
+            ;;
+        uncommitted)
+            DIFF=$(printf '%s\n%s' "$(git diff HEAD "${PATHSPEC[@]}")" "$(git diff --staged "${PATHSPEC[@]}")")
+            ;;
+        *)
+            if git rev-parse --verify "$SCOPE" >/dev/null 2>&1; then
+                DIFF=$(git diff "main...$SCOPE" "${PATHSPEC[@]}" 2>/dev/null || git diff "$SCOPE" "${PATHSPEC[@]}")
+            elif [ -e "$SCOPE" ]; then
+                FILES=("$SCOPE" "$@")
+                DIFF=$(git diff HEAD -- "${FILES[@]}"; git diff --staged -- "${FILES[@]}")
+            else
+                echo "g5_check.sh: could not resolve scope '${SCOPE}' (not staged/uncommitted, not a branch, not a file)" >&2
+                exit 2
+            fi
+            ;;
+    esac
 
-if [ -z "$DIFF" ]; then
-    echo "g5_check.sh: no docs/tdd/ or docs/spec/ diff in scope '${SCOPE}'" >&2
-    exit 2
+    if [ -z "$DIFF" ]; then
+        echo "g5_check.sh: no docs/tdd/ or docs/spec/ diff in scope '${SCOPE}'" >&2
+        exit 2
+    fi
 fi
 
 # Extraction, validation, execution, and reporting all happen in a single
@@ -92,7 +120,9 @@ fi
 # invocation lets us capture python's real exit code as this script's own,
 # instead of `set -e` aborting the script on a nonzero (expected) exit.
 set +e
-G5_CHECK_DIFF="$DIFF" \
+G5_CHECK_MODE="$([ "$CONTENT_MODE" -eq 1 ] && echo content || echo diff)" \
+G5_CHECK_DIFF="${DIFF:-}" \
+G5_CHECK_CONTENT="${CONTENT:-}" \
 G5_CHECK_REPO_ROOT="$REPO_ROOT" \
 G5_CHECK_SCOPE="$SCOPE" \
 G5_CHECK_TIMEOUT="${G5_CHECK_TIMEOUT:-10}" \
@@ -103,7 +133,7 @@ import shlex
 import subprocess
 import sys
 
-diff = os.environ["G5_CHECK_DIFF"]
+mode = os.environ.get("G5_CHECK_MODE", "diff")
 repo_root = os.path.realpath(os.environ["G5_CHECK_REPO_ROOT"])
 scope = os.environ.get("G5_CHECK_SCOPE", "")
 timeout = float(os.environ.get("G5_CHECK_TIMEOUT", "10"))
@@ -111,12 +141,23 @@ timeout = float(os.environ.get("G5_CHECK_TIMEOUT", "10"))
 BT = chr(96)
 inline_re = re.compile(BT + r"([^" + BT + r"\n]+)" + BT)
 
+# content mode bypasses git-diff extraction entirely: every line of the
+# given file counts as "added" text, since the file has no diff yet (a
+# staged draft that was never committed). diff mode keeps the original
+# "+"-prefixed-added-lines-only extraction, unchanged.
+if mode == "content":
+    lines_to_scan = os.environ.get("G5_CHECK_CONTENT", "").split("\n")
+else:
+    diff = os.environ.get("G5_CHECK_DIFF", "")
+    lines_to_scan = []
+    for line in diff.split("\n"):
+        if not line.startswith("+") or line.startswith("+++"):
+            continue
+        lines_to_scan.append(line[1:])
+
 commands = []
 seen = set()
-for line in diff.split("\n"):
-    if not line.startswith("+") or line.startswith("+++"):
-        continue
-    added_text = line[1:]
+for added_text in lines_to_scan:
     for m in inline_re.finditer(added_text):
         span = m.group(1).strip()
         if not span or not span.startswith("grep"):
@@ -127,8 +168,8 @@ for line in diff.split("\n"):
 
 if not commands:
     print(
-        "g5_check.sh: no backtick-quoted 'grep ...' commands added in "
-        f"docs/tdd/ or docs/spec/ diff for scope '{scope}'",
+        "g5_check.sh: no backtick-quoted 'grep ...' commands found for "
+        f"scope '{scope}'",
         file=sys.stderr,
     )
     sys.exit(2)

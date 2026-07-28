@@ -37,6 +37,8 @@ Read costs ~2,000 lines of context. Apply these defaults:
   `-rn` ONLY when the line content itself IS the evidence you need.
 - Large files: use `Read(file, offset=N, limit=M)`, NOT a full-file `Read`, when you only need
   a section. Read the whole file ONLY when you must reason about whole-file structure.
+- `offset` and `limit` are each a SINGLE integer, not a two-element array — `{"offset": 218,
+  "limit": 12}` is correct; `{"offset": 218, 230}` is a malformed call the harness rejects.
 - `Read` takes a file path, not a directory — passing a directory path errors closed. Enumerate
   a directory's contents with `Glob` or `ls`/`find` via Bash first, then `Read` the specific
   file(s) you actually need.
@@ -79,6 +81,30 @@ R3. **SendMessage Terseness.** SendMessage payloads accumulate in BOTH endpoints
   no `summary` is harness-rejected. Object-form `message` (structured `shutdown_response` /
   `plan_approval_response` payloads) needs no `summary` — see shutdown-protocol.md SP-1 for that
   shape's schema.
+- **Highest-risk case — long-form/detailed status and vote-result messages.** A 7-day bug audit
+  found 6/6 sampled sessions dropped `summary` specifically on LONG, multi-paragraph status
+  updates and vote-result messages: attention goes to composing the body, and the metadata field
+  gets forgotten. The risk goes UP with message length, not down — the longer/more detailed the
+  message, the more deliberately check for `summary` before sending. WRONG (long message, no
+  `summary` — harness-rejected):
+  ```json
+  {"to": "team-lead",
+   "message": "Vote DKT-201 closed 4-1 in favor. Rationale: the majority found the proposed
+   schema migration path acceptable given the rollback plan documented in ADR-0042 covers the
+   failure mode raised in dissent. Dissenting voter flagged residual risk in the cutover window;
+   mitigation is a feature-flagged rollback path landing in the same PR. Proceeding to close the
+   proposal and notify affected consumers next."}
+  ```
+  RIGHT (same body, `summary` added):
+  ```json
+  {"to": "team-lead",
+   "summary": "Vote DKT-201 closed 4-1, approved",
+   "message": "Vote DKT-201 closed 4-1 in favor. Rationale: the majority found the proposed
+   schema migration path acceptable given the rollback plan documented in ADR-0042 covers the
+   failure mode raised in dissent. Dissenting voter flagged residual risk in the cutover window;
+   mitigation is a feature-flagged rollback path landing in the same PR. Proceeding to close the
+   proposal and notify affected consumers next."}
+  ```
 - Use `TaskUpdate` state transitions (in_progress / completed / blocked) instead of narrative
   status paragraphs.
 - Escape hatch: high-stakes events (re-plan triggers, scope deltas, blocker escalations) earn
@@ -119,17 +145,21 @@ anxiety is context bloat with no evidence value.
   explicit reviewer concern pointing at the specific file. Same discipline for lagging readers:
   once the owning authority confirms state (write acked by the live DB/system), STOP re-reading a possibly-stale reader to re-confirm it.
 - Banned-phrase extension (complements Rule 6): "let me also check", "to be safe I'll Read", "let me confirm by Read" — anxiety-driven bloat. Verifying a specific load-bearing claim is fine; Reading "to be sure" is not.
-- **Stable-script trust convention.** These 6 helper scripts are stable, already-deployed tooling
-  (repo `src/user/claude-code/scripts/`, deployed `~/.claude/scripts/`) — trust them without
-  per-invocation existence or usage verification (`test -e`, `--help`, `ls -la`):
-  `docket_create.sh`, `docket_write.sh`, `dor_check.py`, `plan_collision_check.py`,
-  `docket_claim.sh`, `dispatch_ledger.sh`. Invoke each directly per the calling agent's
-  documented argument contract; a defensive existence or `--help` check before calling one of
-  these is the exact anxiety-driven bloat this rule already bans (repetition-auditor finding R2,
-  evolve-coherence Phase 0, 2026-07-22 — DKT-59). This does NOT extend to the general
+- **Doctrine-pinned script trust convention.** Any script path cited by its exact path in your
+  own role's doctrine text (this master, your agent file, or a skill you're following) is already
+  pinned — version-controlled, deployed at a fixed location (repo `src/user/claude-code/scripts/`,
+  deployed `~/.claude/scripts/`), and cannot vary by repo or session. Invoke it directly; never
+  `ls`/`test -e`/`--help` it first to confirm it exists — a failed invocation reports the same
+  fact in one call, at the cost of the retry, not two. This generalizes the narrower "6 named
+  scripts" convention from DKT-59 (`docket_create.sh`, `docket_write.sh`, `dor_check.py`,
+  `plan_collision_check.py`, `docket_claim.sh`, `dispatch_ledger.sh` remain the canonical
+  example, but the rule covers ANY doctrine-cited script, not only these) — a repetition audit
+  found 113 sessions across 5+ roles still `ls`-checking doctrine-pinned paths outside that
+  named list, with the check never once changing an outcome (repetition-auditor finding R1,
+  evolve-agents cycle 2026-07-27 — DKT-149). This does NOT extend to the general
   Read-before-Edit gate or to file-existence verification at other trust boundaries (e.g.,
-  confirming an issue's attached file paths resolve on disk before citing them) — those
-  requirements are unrelated and stand unchanged.
+  confirming an issue's attached file paths resolve on disk before citing them, or a path not
+  cited anywhere in doctrine) — those requirements are unrelated and stand unchanged.
 - Escape hatch: after a long stretch of work or compaction, re-anchoring on the original brief
   is correct. The rule bans defensive re-checks of facts already in your turn context, not
   legitimate re-anchoring of context that has been lost.

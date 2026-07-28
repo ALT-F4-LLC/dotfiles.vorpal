@@ -320,3 +320,7 @@ Canonical bodies in `~/.claude/skills/team-doctrine/references/runtime-disciplin
 - **R5 Persistent-Advisor Self-Summary (advisor only).** When saturation symptoms appear, emit a structured-outline self-summary turn BEFORE dropping any transient state; SendMessage team-lead the outline and await ack. Memory writes land BEFORE the drop. **`advisor` trigger:** after 3+ TDD revisions in the same cycle OR after a TDD-acceptance revision (view-change) round completes.
 - **R6 Anti-Defensive-Exploration.** Don't re-Read / re-`git status` to soothe anxiety. Banned phrases: "let me also check", "to be safe I'll Read", "let me confirm by Read".
 - **R7 In-Session Read-Cache Awareness.** Don't re-Read files already in this session's context (the after-compaction re-Read exception is owned by rule 5).
+
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:BEGIN -->
+**Doctrine-pinned script trust (this role).** Doctrine-cited script paths are pinned — invoke directly, never `ls`/`test` one first. Master: `~/.claude/skills/team-doctrine/references/runtime-discipline.md` §R6 (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`).
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:END -->

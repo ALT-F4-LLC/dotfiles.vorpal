@@ -314,5 +314,9 @@ Canonical bodies in `~/.claude/skills/team-doctrine/references/runtime-disciplin
 - **R3 SendMessage Terseness.** One message per purpose, no quoting-back. Use TaskUpdate for state.
 - **R4 Iteration Cap.** Don't re-verify an AC once it's marked complete.
 - **R5 Persistent-Advisor Self-Summary (ux-advisor only).** On saturation symptoms, emit a structured-outline self-summary turn BEFORE dropping any transient state; SendMessage team-lead the outline and await ack. Memory writes land BEFORE the drop. **`ux-advisor` trigger:** after each design-QA verdict that surfaced a spec/implementation mismatch OR after 3+ design-review rounds on the same spec.
-- **R6 Anti-Defensive-Exploration.** Don't re-Read / re-`git status` to soothe anxiety. Banned phrases: "let me also check", "to be safe I'll Read", "let me confirm by Read". Doctrine-cited `~/.claude/scripts/` paths are version-controlled and repo-invariant — never `ls`-verify one before use.
+- **R6 Anti-Defensive-Exploration.** Don't re-Read / re-`git status` to soothe anxiety. Banned phrases: "let me also check", "to be safe I'll Read", "let me confirm by Read".
 - **R7 In-Session Read-Cache Awareness.** Don't re-Read files already in this session's context. Exceptions (both outrank this rule): after compaction, one Read per file before next Edit; and the Read-before-Edit gate's zero-intervening-tool-calls adjacency (master: senior-engineer.md §CANONICAL:READ-BEFORE-EDIT, per the Read-before-Edit/Write rule above).
+
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:BEGIN -->
+**Doctrine-pinned script trust (this role).** Doctrine-cited script paths are pinned — invoke directly, never `ls`/`test` one first. Master: `~/.claude/skills/team-doctrine/references/runtime-discipline.md` §R6 (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`).
+<!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:END -->

@@ -26,9 +26,12 @@ including the zero-entry case -- an empty (or whitespace-only) ledger is the
 legitimate "no actionable findings this cycle" output of
 findings_ledger_init.py and has nothing to gate on; 1 = at least one entry
 is OPEN or EVIDENCE-LESS; 2 = a precondition failure: the ledger file is
-missing/unreadable, or is non-blank but contains no parseable - <ID>: entry
+missing/unreadable, is non-blank but contains no parseable - <ID>: entry
 (content that is not the ledger grammar -- a mangled, mis-pathed, or hand-broken
-file, which must not be mistaken for "zero findings").
+file, which must not be mistaken for "zero findings"), or contains a column-0
+`- <ID>: ` bullet whose ID looks hand-typed but doesn't match the strict
+grammar (e.g. a hyphenated ID like `SDLC-S2`) -- flagged loudly instead of
+being silently absorbed into the preceding conforming entry's span.
 """
 import re
 import sys
@@ -42,9 +45,27 @@ DISPOSITIONS = (
 )
 
 ENTRY_START_RE = re.compile(r"^- ([A-Z][0-9]+): ")
+LIKELY_MISTYPED_ID_RE = re.compile(r"^- ([A-Z][A-Za-z0-9]*-[A-Za-z0-9]*[0-9]): ")
 DISPOSITION_RE = re.compile(
     r"(" + "|".join(DISPOSITIONS) + r")\s*\(([^)]*)\)"
 )
+
+
+def find_mistyped_entry_ids(text):
+    """Returns [(1-based line_no, id_text), ...] for column-0 bullets that look
+    like a finding ID (uppercase-letter-led, containing a hyphen -- e.g.
+    `SDLC-S2`) but don't match ENTRY_START_RE's strict grammar. Without this
+    check such a line is not recognized as a new entry boundary and its
+    content silently gets absorbed into the preceding conforming entry's
+    span instead of being checked on its own."""
+    suspects = []
+    for i, line in enumerate(text.splitlines(), start=1):
+        if ENTRY_START_RE.match(line):
+            continue
+        m = LIKELY_MISTYPED_ID_RE.match(line)
+        if m:
+            suspects.append((i, m.group(1)))
+    return suspects
 
 
 def parse_entries(text):
@@ -89,6 +110,18 @@ def main(argv):
     if not text.strip():
         print("0/0 dispositioned (empty ledger, nothing to gate)")
         return 0
+
+    mistyped = find_mistyped_entry_ids(text)
+    if mistyped:
+        for line_no, entry_id in mistyped:
+            print(
+                f"findings_ledger_check.py: line {line_no}: `{entry_id}` looks like a "
+                "finding ID but does not match the required <UPPERCASE-LETTER><digits> "
+                "grammar (e.g. H1, B2) -- it would otherwise be silently absorbed into "
+                "the preceding entry instead of checked on its own; fix the ID",
+                file=sys.stderr,
+            )
+        return 2
 
     entries = parse_entries(text)
     if not entries:

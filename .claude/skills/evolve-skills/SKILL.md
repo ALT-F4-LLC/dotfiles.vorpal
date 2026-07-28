@@ -203,7 +203,7 @@ Changelog arm ONLY — evolve-skills has no pitfalls arm; this phase never touch
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect, counted in the master's parity formula. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
-The compactor's report MUST evidence invariant checks 0-5 per the retention-compaction master (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, post-compaction budget) — formulas and hunk shapes live in the retention-compaction master; do not restate them. On any failed check the orchestrator rejects the compaction and the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or leaves the file untouched, with the failure flagged in the final report — never ship a partial compaction. Shut down the compactor before team cleanup.
+The compactor's report MUST evidence invariant checks 0-5 per the retention-compaction master (Pre-edit snapshot precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, post-compaction budget) — formulas and hunk shapes live in the retention-compaction master; do not restate them. On any failed check the orchestrator rejects the compaction and the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or leaves the file untouched, with the failure flagged in the final report — never ship a partial compaction. Shut down the compactor before team cleanup.
 
 ### Wrap-up & Team Cleanup
 
@@ -306,7 +306,9 @@ Evaluate <skill-path>/SKILL.md against ALL 8 dimensions in TWO ORDERED PASSES. P
 - **Read-only** — analyze and recommend only; orchestrator applies all edits.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 - **No peer-to-peer SendMessage** — orchestrator is the only relay.
+- **Scratch files**: any ad-hoc scratch file (e.g. byte-verification diffs) goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first — your spawn name is `review-<name>`), never bare `$TMPDIR` or `/tmp` — parallel Phase 1 reviewers share `$TMPDIR`, and a subdirectory keyed to your own spawn name prevents silent collisions with sibling reviewers.
 - **SendMessage orchestrator IMMEDIATELY** on (a) cross-cutting findings (include affected skill name AND which root: `.claude/skills/` or `src/user/claude-code/skills/`), (b) scope expansion beyond target, or (c) blocker.
+- **Deliver ALL output via SendMessage — never plain assistant text.** Your completion report (the Output Format block below) AND any reply to an orchestrator status/progress probe MUST be sent via `SendMessage` to the orchestrator; plain assistant text is invisible to the orchestrator and reads as a stall.
 
 ## Output Format
 ### Summary

@@ -4,35 +4,44 @@ that evolve-skills/evolve-agents currently hand-author at Phase 0 completion.
 
 Input contract (no prior consumer existed -- this is the reference definition,
 mirroring how findings_ledger_check.py documents itself as the reference for
-the ledger grammar): a directory containing the six Phase 0 auditor files at
+the ledger grammar): a directory containing the seven Phase 0 auditor files at
 `{scratchpad}/phase0/<auditor>.md`, each in the Output Format its spawn
 template (evolve-phase0-templates.md) defines:
-  - historical-auditor.md      -- per-skill `### Skill: <name>` blocks, one
-                                   `- Suggested focus areas: <bullets>` line each.
+  - historical-auditor.md      -- per-skill `### Skill: <name>` blocks (or
+                                   `### Agent: <name>` for evolve-agents-cycle
+                                   files), one `- Suggested focus areas:
+                                   <bullets>` line each.
   - bug-auditor.md              -- flat `FIX <n>: ...` / `PREVENT <n>: ...`
                                    findings (optionally with CLASS/SESSIONS/
                                    SUGGESTION fields, same or later lines).
   - repetition-auditor.md       -- flat `FIX <n>:` / `PREVENT <n>:` /
                                    `BENIGN-RACE <n>:` findings (BENIGN-RACE is
                                    correct-behavior noise, never a finding).
-  - innovation-scanner.md       -- per-skill blocks with four fixed lenses:
-                                   Rethink, Refactor & Automate, Retire,
-                                   Cross-Skill Leverage (each `<bullet>, or "none"`).
-  - model-routing-auditor.md    -- per-skill blocks, one
+  - innovation-scanner.md       -- per-skill (or per-agent) blocks with four
+                                   fixed lenses: Rethink, Refactor & Automate,
+                                   Retire, Cross-Skill Leverage (Cross-Agent
+                                   Leverage for evolve-agents-cycle files)
+                                   (each `<bullet>, or "none"`).
+  - model-routing-auditor.md    -- per-skill (or per-agent) blocks, one
                                    `- Routing recommendations: <bullets>` line each.
   - docs-researcher-phase0.md   -- flat `- **<capability>**: <relevance>`
                                    bullets grouped under a `Recommendations`
                                    heading (the other three headings are
                                    informational, not actionable findings).
+  - sdlc-role-researcher.md     -- numbered `1. <ADD|CHANGE|REMOVE> <role/tier>
+                                   -- <why> -- <evidence>` lines under a
+                                   `## Summary Recommendations (ranked)` heading
+                                   (the other headings are pre-rollup detail).
 A file that is missing, empty, or whose entire content is a `SKIPPED:` /
 `UNAVAILABLE:` sentinel (or the auditor's own no-findings literal, e.g.
 "No bug findings.") contributes zero findings -- not an error.
 
 Output: one `- <ID>: <summary>` bullet per actionable finding, ID = a
 single uppercase auditor-tag letter (H=historical, B=bug, R=repetition,
-I=innovation, M=model-routing, D=docs-research) + a 1-based sequence number
-scoped to that letter, matching the CANONICAL:IMPACT-CLASS convention
-("H1, B2, I3, ..."). No terminal disposition is written -- dispositions are
+I=innovation, M=model-routing, D=docs-research, S=sdlc-role-research) + a
+1-based sequence number scoped to that letter, matching the
+CANONICAL:IMPACT-CLASS convention ("H1, B2, I3, ..."). No terminal
+disposition is written -- dispositions are
 assigned during Phase 1 review, in place, on this same file. Running
 findings_ledger_check.py against this skeleton is therefore expected to
 report every entry OPEN (exit 1), which is the correct pre-Phase-1 state; a
@@ -41,8 +50,9 @@ guards against structurally (every emitted line matches the checker's
 `^- [A-Z][0-9]+: ` entry-start grammar).
 
 Exit codes: 0 = ledger written (including zero-finding runs); 2 = precondition
-failure (bad argv count, missing phase0-dir, or zero of the six auditor files
-found) -- matching findings_ledger_check.py's reservation of 2 for exactly
+failure (bad argv count, missing phase0-dir, zero of the seven auditor files
+found, or an AUDITOR_LETTERS letter with no matching build_entries() parser
+branch) -- matching findings_ledger_check.py's reservation of 2 for exactly
 this class, distinct from that script's 1 (OPEN findings remain).
 
 Usage: findings_ledger_init.py <phase0-dir> <output-ledger-path>
@@ -63,12 +73,19 @@ AUDITOR_LETTERS = {
 
 SENTINEL_RE = re.compile(r"^(SKIPPED|UNAVAILABLE):", re.IGNORECASE)
 NO_FINDINGS_LITERALS = {"no bug findings.", "no repetition findings."}
-SKILL_BLOCK_RE = re.compile(r"^###\s+Skill:\s*(.+?)\s*$")
+SKILL_BLOCK_RE = re.compile(r"^###\s+(?:Skill|Agent):\s*(.+?)\s*$")
 MARKER_RE = re.compile(r"^(FIX|PREVENT|BENIGN-RACE)\s+\d+:\s*(.*)$")
 CLASS_RE = re.compile(r"CLASS:\s*([A-Z-]+)")
 SUGGESTION_RE = re.compile(r"SUGGESTION:\s*(.+?)(?:\n|$)", re.DOTALL)
 DOCS_BULLET_RE = re.compile(r"^-\s+\*\*(.+?)\*\*:\s*(.+?)\s*$")
-INNOVATION_LENSES = ("Rethink", "Refactor & Automate", "Retire", "Cross-Skill Leverage")
+SDLC_REC_RE = re.compile(r"^\d+\.\s+(.+?)\s*$")
+INNOVATION_LENSES = (
+    "Rethink",
+    "Refactor & Automate",
+    "Retire",
+    "Cross-Skill Leverage",
+    "Cross-Agent Leverage",
+)
 
 
 def read_auditor_file(path):
@@ -82,22 +99,77 @@ def read_auditor_file(path):
 
 
 def field_bullets_by_skill(text, field_label):
-    """Extracts `- <field_label>: <value>` lines from `### Skill:` blocks.
+    """Extracts `<field_label>` values from `### Skill:`/`### Agent:` blocks.
+
+    Accepts two shapes: an inline `- <field_label>: <value>` line, which
+    always yields exactly ONE entry (even if <value> packs several items
+    behind its own separators); or a bare `- <field_label>:` line followed by
+    indented sub-bullets (any indentation depth, `-` or `*`), consumed until
+    the next non-blank line that isn't a sub-bullet (blank lines within or
+    trailing the nested list are skipped, not treated as scan-terminators --
+    several markdown formatters emit them around nested lists) or the next
+    `### Skill:`/`### Agent:` header, which yields ONE entry PER sub-bullet.
+    This asymmetry is deliberate, not inconsistent: the nested form states
+    its own cardinality one bullet at a time, while the inline form does not
+    and guessing at separators inside it would reintroduce ambiguity -- do
+    not "harmonize" the two shapes.
+
+    A field label present in a block with no inline value, no sub-bullets,
+    and not the literal "none" is a template violation (evolve-phase0-
+    templates.md mandates writing "none" for an empty category rather than
+    omitting the line) -- reported as a loud stderr warning naming the block
+    and field, then skipped (warn-and-proceed, matching changelog_normalize.py's
+    precedent; this script's exit 2 is reserved for precondition failures, not
+    content anomalies).
+
     Returns [(skill_name, value), ...], skipping literal "none" values."""
     findings = []
     current_skill = None
-    field_re = re.compile(rf"^-\s+{re.escape(field_label)}:\s*(.+?)\s*$")
-    for line in text.splitlines():
+    field_re = re.compile(rf"^-\s+{re.escape(field_label)}:\s*(.*)$")
+    sub_bullet_re = re.compile(r"^\s+[-*]\s+(.+?)\s*$")
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         m = SKILL_BLOCK_RE.match(line)
         if m:
             current_skill = m.group(1)
+            i += 1
             continue
         m = field_re.match(line)
-        if m:
-            value = m.group(1).strip()
-            if value.lower().startswith("none"):
+        if not m:
+            i += 1
+            continue
+        value = m.group(1).strip()
+        if value:
+            if not value.lower().startswith("none"):
+                findings.append((current_skill, value))
+            i += 1
+            continue
+        j = i + 1
+        sub_values = []
+        while j < len(lines):
+            if lines[j].strip() == "":
+                j += 1
                 continue
-            findings.append((current_skill, value))
+            sub_m = sub_bullet_re.match(lines[j])
+            if not sub_m:
+                break
+            sub_values.append(sub_m.group(1).strip())
+            j += 1
+        if sub_values:
+            for sub_value in sub_values:
+                if not sub_value.lower().startswith("none"):
+                    findings.append((current_skill, sub_value))
+        else:
+            block_desc = f"### Skill: {current_skill}" if current_skill else "(no skill/agent block)"
+            print(
+                f"findings_ledger_init.py: field '{field_label}' present with no value in "
+                f"{block_desc} -- expected inline text, indented sub-bullets, or the literal "
+                "'none'; skipping",
+                file=sys.stderr,
+            )
+        i = j
     return findings
 
 
@@ -162,8 +234,31 @@ def docs_research_findings(text):
     return findings
 
 
+def sdlc_recommendation_findings(text):
+    """Extracts numbered `1. <ADD|CHANGE|REMOVE> ...` lines from the
+    `## Summary Recommendations (ranked)` section only -- the Higher-Level/
+    Lower-Level Candidate(s) and Other SDLC Functions sections are pre-rollup
+    detail; parsing those too would double-count."""
+    findings = []
+    in_summary = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#") and stripped.strip("#").strip().lower().startswith("summary recommendations"):
+            in_summary = True
+            continue
+        if not in_summary:
+            continue
+        if stripped.startswith("#"):
+            in_summary = False
+            continue
+        m = SDLC_REC_RE.match(stripped)
+        if m:
+            findings.append(m.group(1).strip())
+    return findings
+
+
 def build_entries(phase0_dir):
-    """Returns [(id, summary_line), ...] across all six auditor files."""
+    """Returns [(id, summary_line), ...] across all seven auditor files."""
     entries = []
     for filename, letter in AUDITOR_LETTERS.items():
         text = read_auditor_file(phase0_dir / filename)
@@ -204,6 +299,15 @@ def build_entries(phase0_dir):
             for capability, relevance in docs_research_findings(text):
                 seq += 1
                 entries.append((f"D{seq}", f"{capability}: {relevance}"))
+        elif letter == "S":
+            for value in sdlc_recommendation_findings(text):
+                seq += 1
+                entries.append((f"S{seq}", value))
+        else:
+            raise ValueError(
+                f"findings_ledger_init.py: no parser branch for auditor letter {letter!r} "
+                f"(file={filename}) -- AUDITOR_LETTERS and build_entries() must stay in sync"
+            )
     return entries
 
 
@@ -229,7 +333,11 @@ def main(argv):
         )
         return 2
 
-    entries = build_entries(phase0_dir)
+    try:
+        entries = build_entries(phase0_dir)
+    except ValueError as exc:
+        print(f"findings_ledger_init.py: {exc}", file=sys.stderr)
+        return 2
     lines = [f"- {entry_id}: {summary}" for entry_id, summary in entries]
     output_path.write_text("\n".join(lines) + ("\n" if lines else ""))
 

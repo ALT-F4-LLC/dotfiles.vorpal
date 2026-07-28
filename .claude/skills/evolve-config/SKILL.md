@@ -212,7 +212,7 @@ Changelog arm ONLY — evolve-config has no pitfalls arm; this phase never touch
 
 Per over-budget file the compactor keeps the 10 most recent date-headed entries verbatim (keep-window, count pattern `^## 20`), compacts older entries oldest-first until under budget, and replaces each compacted entry with exactly one ledger line in a terminal `## Compacted history` section — any `Trial:` line is preserved verbatim in its ledger line (verbatim preservation takes precedence over the ≤160-char distillation cap). It then prepends one compaction entry recording the act — a normal Changelog Format entry in every respect. Only content reachable at HEAD (`git show HEAD:<file>`) may be compacted; uncommitted entries are never touched.
 
-The compactor's report MUST evidence invariant checks 0-5 per the retention-compaction master (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, post-compaction budget) — formulas and hunk shapes live in the retention-compaction master; do not restate them. On any failed check the orchestrator rejects the compaction and the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or leaves the file untouched, with the failure flagged in the final report — never ship a partial compaction. Shut down the compactor before team cleanup.
+The compactor's report MUST evidence invariant checks 0-5 per the retention-compaction master (Pre-edit snapshot precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, post-compaction budget) — formulas and hunk shapes live in the retention-compaction master; do not restate them. On any failed check the orchestrator rejects the compaction and the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or leaves the file untouched, with the failure flagged in the final report — never ship a partial compaction. Shut down the compactor before team cleanup.
 
 ### Wrap-up & Team Cleanup
 
@@ -260,7 +260,7 @@ Audit the git history of the FOUR config sources to surface churn, recent revers
 OUTPUT: a `### Config History` block — Recent churn, Dead setters (defined-but-uncalled), Broken calls, and 1-3 Suggested focus areas. SendMessage the orchestrator with the block verbatim.
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ```
 
 ### Phase 0: Historical Audit
@@ -356,6 +356,7 @@ For EACH surface, check:
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team. SendMessage the orchestrator for delegation.
 - **No peer-to-peer SendMessage** — orchestrator is the only relay.
 - **SendMessage orchestrator IMMEDIATELY** on (a) a change needing BOTH a claude_code.rs setter add AND a src/user.rs call, (b) a security-boundary surface (permissions/sandbox/secrets-scrub), or (c) a blocker.
+- **Deliver ALL output via SendMessage — never plain assistant text.** Your completion report (the Output Format block below) AND any reply to an orchestrator status/progress probe MUST be sent via `SendMessage` to the orchestrator; plain assistant text is invisible to the orchestrator and reads as a stall.
 
 ## Output Format
 ### Summary

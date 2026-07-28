@@ -193,7 +193,7 @@ If neither arm fires, no compactor is spawned and the Wrap-up report carries a s
 - **Changelogs**: keep the 10 most recent `^## 20` entries verbatim (keep-window); compact older entries oldest-first until under the 300-line budget; each compacted entry becomes one ledger line in a terminal `## Compacted history` section per the retention-compaction master's format; preserve every `Trial:` line verbatim inside its ledger line; prepend one compaction entry recording the act — a normal Changelog Format entry in every respect (the rule's sole scoped exception).
 - **Pitfalls**: each compactable entry becomes one ledger line under `## Harvested ledger (compacted)` immediately below the H1 per the retention-compaction master's format; undispositioned entries are never touched; cross-project pitfalls files (other repos) remain read-only ingest.
 
-The compactor's report MUST evidence, per file and in order, invariant checks 0-5 exactly as defined in the retention-compaction master (pure-addition precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, budget). On any failed check the orchestrator rejects that file's compaction: the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or the file is left untouched, and the Wrap-up report flags it — never ship a partial compaction silently. Shut down the compactor before team cleanup.
+The compactor's report MUST evidence, per file and in order, invariant checks 0-5 exactly as defined in the retention-compaction master (Pre-edit snapshot precondition, full-entry HEAD containment, diff-shape proof, parity formula, Trial preservation, budget). On any failed check the orchestrator rejects that file's compaction: the compactor reverts its own edits (leaving the cycle's pre-existing additions intact) or the file is left untouched, and the Wrap-up report flags it — never ship a partial compaction silently. Shut down the compactor before team cleanup.
 
 ### Wrap-up & Team Cleanup
 
@@ -299,7 +299,9 @@ Apply 4-check gate (Executable, Behavioral, Non-redundant, Concrete) — reject 
 - **READ-ONLY — never Edit/Write, never commit.** Return every change as an `OLD_STRING`/`NEW_STRING` CHANGE block for the ORCHESTRATOR to apply; do NOT edit your own definition file. Prevents the recurring Phase-1 failure: a reviewer self-edits its target and fabricates an "applied to disk" claim the orchestrator never wrote.
 - **No sub-agents**: Do NOT invoke `/vote`, `Skill()`, or `Agent()`; do not form/manage a team.
 - **No peer-to-peer SendMessage** — the orchestrator is the only relay.
+- **Scratch files**: any ad-hoc scratch file (e.g. byte-verification diffs) goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first — your spawn name is `review-<name>`), never bare `$TMPDIR` or `/tmp` — parallel Phase 1 reviewers share `$TMPDIR`, and a subdirectory keyed to your own spawn name prevents silent collisions with sibling reviewers.
 - **SendMessage orchestrator IMMEDIATELY** on (a) findings applicable to multiple agents, (b) scope expansion beyond target, or (c) conflicts with another agent's boundary.
+- **Deliver ALL output via SendMessage — never plain assistant text.** Your completion report (the Output Format block below) AND any reply to an orchestrator status/progress probe MUST be sent via `SendMessage` to the orchestrator; plain assistant text is invisible to the orchestrator and reads as a stall.
 
 ## Output Format
 ### Summary

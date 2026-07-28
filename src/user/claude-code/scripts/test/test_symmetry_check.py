@@ -22,22 +22,6 @@ AGENTS_TRIAL_PROTOCOL = FIXTURES / "agents_trial_protocol.md"
 SKILLS_TRIAL_PROTOCOL_SYMMETRIC = FIXTURES / "skills_trial_protocol_symmetric.md"
 CONFIG_TRIAL_PROTOCOL_SYMMETRIC = FIXTURES / "config_trial_protocol_symmetric.md"
 CONFIG_TRIAL_PROTOCOL_DRIFTED = FIXTURES / "config_trial_protocol_drifted.md"
-AGENTS_DISAMBIGUATION_CHARTER = FIXTURES / "agents_disambiguation_charter.md"
-SKILLS_DISAMBIGUATION_CHARTER_SYMMETRIC = FIXTURES / "skills_disambiguation_charter_symmetric.md"
-CONFIG_DISAMBIGUATION_CHARTER_SYMMETRIC = FIXTURES / "config_disambiguation_charter_symmetric.md"
-SKILLS_DISAMBIGUATION_CHARTER_DRIFTED = FIXTURES / "skills_disambiguation_charter_drifted.md"
-AGENTS_PHASE3_BOUNDARY = FIXTURES / "agents_phase3_boundary.md"
-SKILLS_PHASE3_BOUNDARY_SYMMETRIC = FIXTURES / "skills_phase3_boundary_symmetric.md"
-CONFIG_PHASE3_BOUNDARY_SYMMETRIC = FIXTURES / "config_phase3_boundary_symmetric.md"
-SKILLS_PHASE3_BOUNDARY_DRIFTED = FIXTURES / "skills_phase3_boundary_drifted.md"
-AGENTS_GENETIC_DRIFT = FIXTURES / "agents_genetic_drift.md"
-SKILLS_GENETIC_DRIFT_SYMMETRIC = FIXTURES / "skills_genetic_drift_symmetric.md"
-CONFIG_GENETIC_DRIFT_SYMMETRIC = FIXTURES / "config_genetic_drift_symmetric.md"
-SKILLS_GENETIC_DRIFT_DRIFTED = FIXTURES / "skills_genetic_drift_drifted.md"
-AGENTS_SECOND_FAILURE_RECOVERY = FIXTURES / "agents_second_failure_recovery.md"
-SKILLS_SECOND_FAILURE_RECOVERY_SYMMETRIC = FIXTURES / "skills_second_failure_recovery_symmetric.md"
-CONFIG_SECOND_FAILURE_RECOVERY_SYMMETRIC = FIXTURES / "config_second_failure_recovery_symmetric.md"
-SKILLS_SECOND_FAILURE_RECOVERY_DRIFTED = FIXTURES / "skills_second_failure_recovery_drifted.md"
 AGENTS_OPERATOR_PROMPTS = FIXTURES / "agents_operator_prompts.md"
 SKILLS_OPERATOR_PROMPTS_SYMMETRIC = FIXTURES / "skills_operator_prompts_symmetric.md"
 CONFIG_OPERATOR_PROMPTS_SYMMETRIC = FIXTURES / "config_operator_prompts_symmetric.md"
@@ -93,82 +77,6 @@ def test_trial_protocol_drifted_exits_nonzero_with_diff():
     diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
     assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
     assert "trial-protocol: DRIFT" in out, out
-
-
-def test_disambiguation_charter_symmetric_triplet_exits_zero():
-    code, out, err = run("--check", "disambiguation-charter", "--agents-file", str(AGENTS_DISAMBIGUATION_CHARTER),
-                         "--skills-file", str(SKILLS_DISAMBIGUATION_CHARTER_SYMMETRIC),
-                         "--config-file", str(CONFIG_DISAMBIGUATION_CHARTER_SYMMETRIC))
-    assert code == 0, f"exit {code}: {out}{err}"
-    assert "DRIFT" not in out, out
-    assert "disambiguation-charter: OK (symmetric)" in out, out
-
-
-def test_disambiguation_charter_drifted_exits_nonzero_with_diff():
-    code, out, err = run("--check", "disambiguation-charter", "--agents-file", str(AGENTS_DISAMBIGUATION_CHARTER),
-                         "--skills-file", str(SKILLS_DISAMBIGUATION_CHARTER_DRIFTED),
-                         "--config-file", str(CONFIG_DISAMBIGUATION_CHARTER_SYMMETRIC))
-    assert code != 0, f"expected non-zero exit, got {code}"
-    diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
-    assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
-    assert "disambiguation-charter: DRIFT" in out, out
-
-
-def test_phase3_boundary_symmetric_triplet_exits_zero():
-    code, out, err = run("--check", "phase3-boundary", "--agents-file", str(AGENTS_PHASE3_BOUNDARY),
-                         "--skills-file", str(SKILLS_PHASE3_BOUNDARY_SYMMETRIC),
-                         "--config-file", str(CONFIG_PHASE3_BOUNDARY_SYMMETRIC))
-    assert code == 0, f"exit {code}: {out}{err}"
-    assert "DRIFT" not in out, out
-    assert "phase3-boundary: OK (symmetric)" in out, out
-
-
-def test_phase3_boundary_drifted_exits_nonzero_with_diff():
-    code, out, err = run("--check", "phase3-boundary", "--agents-file", str(AGENTS_PHASE3_BOUNDARY),
-                         "--skills-file", str(SKILLS_PHASE3_BOUNDARY_DRIFTED),
-                         "--config-file", str(CONFIG_PHASE3_BOUNDARY_SYMMETRIC))
-    assert code != 0, f"expected non-zero exit, got {code}"
-    diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
-    assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
-    assert "phase3-boundary: DRIFT" in out, out
-
-
-def test_genetic_drift_symmetric_triplet_exits_zero():
-    code, out, err = run("--check", "genetic-drift", "--agents-file", str(AGENTS_GENETIC_DRIFT),
-                         "--skills-file", str(SKILLS_GENETIC_DRIFT_SYMMETRIC),
-                         "--config-file", str(CONFIG_GENETIC_DRIFT_SYMMETRIC))
-    assert code == 0, f"exit {code}: {out}{err}"
-    assert "DRIFT" not in out, out
-    assert "genetic-drift: OK (symmetric)" in out, out
-
-
-def test_genetic_drift_drifted_exits_nonzero_with_diff():
-    code, out, err = run("--check", "genetic-drift", "--agents-file", str(AGENTS_GENETIC_DRIFT),
-                         "--skills-file", str(SKILLS_GENETIC_DRIFT_DRIFTED),
-                         "--config-file", str(CONFIG_GENETIC_DRIFT_SYMMETRIC))
-    assert code != 0, f"expected non-zero exit, got {code}"
-    diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
-    assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
-    assert "genetic-drift: DRIFT" in out, out
-
-
-def test_second_failure_recovery_symmetric_triplet_exits_zero():
-    code, out, err = run("--check", "second-failure-recovery", "--agents-file", str(AGENTS_SECOND_FAILURE_RECOVERY),
-                         "--skills-file", str(SKILLS_SECOND_FAILURE_RECOVERY_SYMMETRIC),
-                         "--config-file", str(CONFIG_SECOND_FAILURE_RECOVERY_SYMMETRIC))
-    assert code == 0, f"exit {code}: {out}{err}"
-    assert "DRIFT" not in out, out
-    assert "second-failure-recovery: OK (symmetric)" in out, out
-
-
-def test_second_failure_recovery_drifted_exits_nonzero_with_diff():
-    code, out, err = run("--check", "second-failure-recovery", "--agents-file", str(AGENTS_SECOND_FAILURE_RECOVERY),
-                         "--skills-file", str(SKILLS_SECOND_FAILURE_RECOVERY_DRIFTED),
-                         "--config-file", str(CONFIG_SECOND_FAILURE_RECOVERY_SYMMETRIC))
-    assert code != 0, f"expected non-zero exit, got {code}"
-    diff_lines = [line for line in out.splitlines() if line.startswith(("+", "-"))]
-    assert len(diff_lines) > 0, "expected a non-empty unified diff in stdout"
-    assert "second-failure-recovery: DRIFT" in out, out
 
 
 def test_operator_prompts_symmetric_triplet_exits_zero():

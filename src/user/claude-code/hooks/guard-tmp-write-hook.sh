@@ -96,4 +96,4 @@ function is_sep(t) { return (t == ";" || t == "&&" || t == "||" || t == "|" || t
 
 [ "$MATCH" = "MATCH" ] || allow_default
 
-deny "Refusing a literal /tmp/ write target. The sandbox denies these; write scratch files under \$TMPDIR instead (e.g. \$TMPDIR/foo). The harness scratchpad prefixes /tmp/claude* and /private/tmp/claude* are exempt."
+deny "Refusing a literal /tmp/ write target. The sandbox denies these; write scratch files under \$TMPDIR instead (e.g. \$TMPDIR/foo). For anything a background/detached shell or a different sandbox mode must reopen, use /tmp/claude/<name> instead (also exempt from this guard). The harness scratchpad prefixes /tmp/claude* and /private/tmp/claude* are exempt."

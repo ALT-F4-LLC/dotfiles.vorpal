@@ -1,5 +1,112 @@
 # Changelog: tdd
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-12..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation pinned the referent of `updated_by` on a co-authored TDD, closing a silent skip of the security-track validator checks.
+
+### Changes
+- DISAMBIG (multi-reading): the `updated_by` field rule now names the document's TRACK owner rather than "whoever edited last" on a co-authored TDD, citing `doc_validate.py`'s exact-equality trigger on `@security-engineer` — the body author's identifier left in place silently no-ops the §4 Threat Model / Trust Boundaries / Security Considerations and §9 Abuse Cases checks.
+
+### Dimensions Evaluated
+Disambiguation: multi-reading (applied), confusable-name, overlapping-ownership.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Closed a live author-routing collision: the file named @distinguished-engineer as the default TDD author with no security carve-out, while distinguished-engineer.md categorically bars that seat from security-sensitive work and doc_validate.py gates security-track checks on updated_by: "@security-engineer". Also corrected one misdirected section cross-reference and trimmed three unactionable asides. Findings: 4 sub / 2 cos / 0 rej / 0 def. Net +27 bytes (24,226 / 65,000).
+
+### Changes
+- COHERENCE[SUBSTANTIVE][S6]: contract line — added the security carve-out (@security-engineer authors a security-dominated TDD; @distinguished-engineer barred per §Security Exclusion) and named updated_by as the validator's security-track selector.
+- COHERENCE[SUBSTANTIVE][S6]: When-to-Use bullet — collapsed the duplicated author attribution to a pointer, removing the second drift carrier.
+- COHERENCE[SUBSTANTIVE][S6]: Required Sections §4 — dropped the mixed-scope parenthetical carrying the stale @staff-engineer attribution and a duplicate authority pointer.
+- XREF[SUBSTANTIVE]: §11(c) — AC-evidence rule re-cited from §9 (which contains no such rule) to Authoring §5, making the §5↔§11 reference bidirectional.
+- TRIM[COSMETIC]: removed the sibling-PRD parity aside (Authoring §6) and the next_doc_number.sh descriptive clause (Pre-flight §2).
+- Deferred (Docket tracking): slug.sh truncation bug (H9/H13, 4-skill blast radius), next_doc_number.sh unbounded grep (H13); Phase-2 lockstep: mv-instead-of-second-Write SAVE_AND_RETURN proposal (I10).
+
+### Dimensions Evaluated
+All 8. Findings in Coherence/cross-reference accuracy (S6 + the §9 misdirection) and Redundancy/over-engineering (3 trims). No findings in Argument Handling, Failure Modes, Validation, or Output Contract structure.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-07-12..2026-07-12) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation pass: corrected the authoring default at both sites. The file named `@staff-engineer` as the typical author with `@distinguished-engineer` as the Medium+ variant, which is the inverse of live routing — and the sub-Medium case it implied staff covers produces no TDD at all.
+
+### Changes
+- DISAMBIG[SUBSTANTIVE][overlapping-ownership]: contract line — `@distinguished-engineer` named the default (TDDs are Medium+/TDD-bearing-only; that seat is gold on every such cycle), `@staff-engineer` scoped to gold-unavailable fallback and standalone use.
+- DISAMBIG[SUBSTANTIVE][overlapping-ownership]: When-to-Use bullet — same substitution, applied in lockstep so the file does not name two different defaults 43 lines apart.
+
+### Dimensions Evaluated
+Phase 3 two-arm boundary test. Arm 1 PASSES by explicit carve-out — soft "typically @X" doc skills are advisory, plausibility-only. Arm 2 FAILS against team-lead.md's gold-tier design-artifact-authoring bullet and its explicit "Small: no TDD" rule, plus staff-engineer.md's own "gold-unavailable fallback" framing. adr/SKILL.md's parallel line is CORRECT as-is (ADR authoring inherits the active seat's tier) — deliberately excluded from this fix.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Aligned the contract line with the file's own When-to-Use line on TDD-authoring seats, and closed the claim-laundering point-of-use gap in the §5 verification arms. I5 falsified by live reproduction (g5_check.sh cannot scope to a staged draft) and routed to Docket. Findings: 3 → 2 sub / 1 cos / 1 rej / 2 def / 0 enc.
+
+### Changes
+- COHERENCE[SUBSTANTIVE]: contract line names `@distinguished-engineer` on Medium+ cycles (OP-S2; ground truth team-lead.md:241,258,289 + distinguished-engineer.md:127-133).
+- AMPLIFY[SUBSTANTIVE]: §5 module/API arm extended — existence is not coverage; Read a named test's assertion body before citing it as coverage (historical-auditor: pattern recurs across 6 roles' pitfalls despite the upstream gate landing 2026-07-11).
+- TRIM[COSMETIC]: Authoring §6 stops restating the Validation checklist it points at (its copy had already drifted).
+- REJECTED: I5 — `g5_check.sh <staged-draft>` exits 128 (path outside repo) and its extractor reads a git diff, so an untracked draft yields no candidates. Blocked on a script content-mode; deferred to Docket with I6.
+
+### Dimensions Evaluated
+All 8. Coherence and Completeness carried the cycle. Over-Engineering: one defensible trim only — post-apply 24,017/65,000; the 2026-07-10 no-trim-slack finding still holds. Model routing unchanged (`effort: xhigh`; n=1 in-window, zero adverse signal).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -138,119 +245,6 @@ Completeness/Actionability (primary), Coherence (insertion-anchor + citation-gat
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 4 history compaction)
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
-
-### Summary
-Phase 2 coherence: relocated the 7-line TDD-specific insert (planning-consumer provenance, ephemerality, explicit Skill(verify-ac) note) from inside CANONICAL:SAVE_AND_RETURN to immediately below its END marker — content verbatim-preserved, block restored to byte-parity with adr/prd/ux-spec.
-
-### Changes
-- SAVE_AND_RETURN block now hashes identical across the 4 doc skills, matching evolve-coherence D4's "byte-identical within each set" invariant and enabling future manifest registration.
-
-### Dimensions Evaluated
-Coherence (CANONICAL parity).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 4 history compaction)
-
-### Summary
-Compacted 3 entries (2026-06-08..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 3 disambiguation pass)
-
-### Summary
-Trigger phrase made disjoint from ux-spec's design-spec triggers. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: trigger "write the design for {feature}" → "write the technical design for {feature}" — the old phrase co-fired with ux-spec's "design spec for the new CLI"/"produce a design spec" on user-facing features; a routing classifier could not pick a single owner
-
-### Dimensions Evaluated
-Disambiguation (confusable-name).
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Added a meta-TDD caveat to Validation §6's placeholder scan (docs documenting a doc-authoring skill need fenced/angle-bracket path templates, not inline-backtick literals) and a Path-citations bullet to Authoring §5, adopting `tdd_preflight.sh` (verified exists) with a migration/relocation caveat so target-state citations aren't flat-failed. Findings: 2 → 2 sub / 0 cos / 0 rej / 1 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Validation §6 placeholder scan — added a meta-TDD caveat (fenced blocks or `<slug>`/`<NNNN>-<slug>` phrasing for docs about doc-authoring skills; inline `{slug}` literals still trip the scan)
-- AMPLIFY[SUBSTANTIVE]: Authoring §5 — added a Path-citations bullet: verify inline-backtick citations resolve while drafting; the acceptance panel mechanizes this post-Write via `tdd_preflight.sh`, with a migration/relocation caveat (target-state paths report MISSING against the current tree — classify before treating as failure)
-
-### Dimensions Evaluated
-Actionability/Completeness (primary — both target documented recurring pitfalls). Deferred: `doc_validate.py`/`slug.sh` cross-skill extraction (anchored at adr, shared with prd/ux-spec). Follow-up flagged (script-logic, out of prose scope): `check_citations.py`/`tdd_preflight.sh` should classify MISSING-citation causes rather than flat-fail migration TDDs — the SKILL.md caveat is the prose mitigation, not the root-cause fix.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Compacted 3 entries (2026-06-05..2026-06-05) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Fixed the broken COLLISION_DIALOG "Overwrite" branch — it Wrote over an existing file without a prior Read, which the harness rejects. Cross-cutting: applied byte-identically across adr/prd/tdd/ux-spec (surfaced by the ux-spec reviewer, propagated in lockstep).
-
-### Changes
-- AMPLIFY: Overwrite branch now Reads `{output_path}` before Write to satisfy the harness read-before-overwrite gate. CANONICAL:COLLISION_DIALOG lockstep across the 4 doc-authoring siblings.
-
-### Dimensions Evaluated
-Completeness / Coherence (bug fix). No model/routing/drift change.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Full-cycle audit: NO-OP. Zero error/correction signals in window (19 clean invocations). §11-YAML AMPLIFY rejected: goal already served by existing stand-alone-distillation clause. validate_doc.py deferred to Phase-2 family-wide reconciliation.
-
-### Changes
-- None.
-
-### Dimensions Evaluated
-All 8. Over-Engineering HIGHEST — no trim slack without breaking format-authority determinism.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -293,3 +287,11 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Phase-2 family-wide: strengthened Validation §5 from mermaid presence-only to "presence & shape" (renderer-free diagram-type-keyword check). Applied byte-ide...
 - 2026-06-30: Phase-3 follow-on: widened the §5 mermaid diagram-type allow-list to non-exhaustive. Inline, net 0.
 - 2026-06-30: AMPLIFY sparse-repo prior-art discovery; net 0; no model-routing/frontmatter changes.
+- 2026-07-10: Compacted 3 entries (2026-06-05..2026-06-05) into Compacted history per the retention-compaction policy.
+- 2026-07-10: Fixed the broken COLLISION_DIALOG "Overwrite" branch — Wrote over an existing file without a prior Read; applied byte-identically across adr/prd/tdd/ux-spec.
+- 2026-07-10: Full-cycle audit: NO-OP. Zero error/correction signals in window (19 clean invocations). §11-YAML AMPLIFY rejected; validate_doc.py deferred to Phase-2.
+- 2026-07-12: Phase 3 disambiguation — trigger phrase collision with ux-spec fixed: "write the design for {feature}" → "write the technical design for {feature}".
+- 2026-07-12: Added meta-TDD caveat to Validation §6 placeholder scan and a Path-citations bullet to Authoring §5 adopting tdd_preflight.sh with a migration/relocation caveat.
+- 2026-07-12: Compacted 3 entries (2026-06-08..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-13: Phase 2 coherence — relocated TDD-specific insert below CANONICAL:SAVE_AND_RETURN END marker; block now byte-identical across 4 doc skills.
+- 2026-07-13: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.

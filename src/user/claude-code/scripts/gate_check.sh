@@ -11,7 +11,7 @@
 # sdet gate additionally scans the file-attachment list, since an abuse-case
 # artifact may be delivered as an attachment — per security-engineer.md Q4,
 # which greps both `docket issue comment list` and `docket issue file list`):
-#   design-qa   `[UX→team-lead] Design QA: <verdict>`   (ux-advisor)
+#   design-qa   `[UX→@team-lead] Design QA: <verdict>`   (ux-advisor)
 #   security    `[SEC→...]` verdict w/ a security recommendation literal
 #   sdet-abuse  an sdet-authored abuse-case artifact (comment or file)
 #
@@ -79,7 +79,7 @@ FILES=$(docket issue file list "$ISSUE_ID" 2>/dev/null || true)
 # Per-gate detection. Each function echoes the first matching line (proof) on
 # success and returns 0, or returns 1 if the gate's marker is absent.
 gate_design_qa() {
-    printf '%s\n' "$COMMENTS" | grep -m1 -F '[UX→team-lead] Design QA:' && return 0
+    printf '%s\n' "$COMMENTS" | grep -m1 -F '[UX→@team-lead] Design QA:' && return 0
     return 1
 }
 

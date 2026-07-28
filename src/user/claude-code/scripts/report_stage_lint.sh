@@ -18,7 +18,7 @@ set -euo pipefail
 
 usage() {
     echo "Usage: report_stage_lint.sh <skill-name> [--mode full|round-n|light] [<content-file>|-]" >&2
-    echo "  <skill-name>    code-review-verdict | verify-ac | design-review | design-qa" >&2
+    echo "  <skill-name>    code-review-verdict | verify-ac | design-review | design-qa | simplify-scout" >&2
     echo "  <content-file>  path to the drafted report; omit or pass - to read stdin" >&2
     exit 2
 }

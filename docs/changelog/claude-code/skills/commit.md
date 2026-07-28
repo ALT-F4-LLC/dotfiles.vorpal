@@ -1,5 +1,23 @@
 # Changelog: commit
 
+## 2026-07-27
+
+### Summary
+Closed the pre-commit stale-index gap (H14). Step 1's index precheck aborted on ANY non-empty index and asserted, without ever comparing, that the staged content was "not part of this commit's fileset" — false in the `MM` case (a path staged by an earlier fix round then edited again), which was a live condition in this tree at review time (10 `MM` entries). Step 1 now reads both porcelain status columns and partitions the staged set, blocking only on out-of-fileset paths. Net +771 bytes (20,800 → 21,571). Findings: 2 sub / 0 cos / 1 routed (I14) / 1 out-of-scope (I13)
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Step 1.2 switches `git status --short` → `--porcelain` (stable across git versions and user config per git-status(1)) and documents the X/Y column semantics, so `MM` is actually read rather than merely emitted.
+- AMPLIFY[SUBSTANTIVE]: Step 1.3 partitions `git diff --cached --name-only` against the fileset — in-fileset staged paths are the caller's own stale index and are refreshed by Step 4's `git add` (confirmed by Step 4's existing staged-set equality check); only out-of-fileset paths abort. Removes a false abort and an unverified claim in the `Blocked:` message.
+- ROUTED: I14 (CANONICAL:CALLER-SIDE-EFFECT parity with review-and-comment) → Phase 2; touches a second file outside this cycle's edit scope.
+- OUT OF SCOPE: I13 (`commit_execute.sh` consolidation) — new script, routed to Docket.
+- CONFIRMED NO-OP: S10 — this file's Step 0 "STOP:"/"Blocked:" wording is ground truth; the "ABORTs" drift is agent-side and already routed to evolve-agents.
+
+### Dimensions Evaluated
+Actionability (2 defects found, both fixed), Completeness, Coherence, Over-Engineering, Redundancy, Skill Design Quality, Orchestration, Byte Budget (20,800 → 21,571).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary

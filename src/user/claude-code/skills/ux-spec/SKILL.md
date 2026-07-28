@@ -6,6 +6,7 @@ description: >
   Trigger: "create UX spec", "draft UX spec", "author design spec", "design spec for the new CLI", "produce a design spec", "create UX design".
 argument-hint: "<topic>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->

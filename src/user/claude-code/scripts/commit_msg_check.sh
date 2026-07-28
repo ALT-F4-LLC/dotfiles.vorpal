@@ -52,7 +52,7 @@ check "Docket issue ID / issue-tracker reference" \
     '\b(UTF|SHA|RFC|ISO|TLS|SSL|AES|CVE)-[0-9]+\b'
 
 check "harness/orchestration metadata" \
-    '\b(session[_ -]?id|task[_ -]?id|vote[_ -]?id|teammate|docket)\b'
+    '\b(session[_ -]?id|task[_ -]?id|vote[_ -]?id|teammate|docket|team-lead|staff-engineer|senior-engineer|security-engineer|distinguished-engineer|project-manager|ux-designer|sdet|historical-auditor|bug-auditor|repetition-auditor|model-routing-auditor|docs-researcher|simplify-scout|innovation-scanner|coherence-reviewer|single-reviewer|tdd-author|docs-author)\b|\b(reviewer|design-review|design-qa)-[0-9]+\b|\bverifier-(criteria|integration)\b'
 
 check "Claude/Claude Code/Anthropic reference or AI-attribution trailer" \
     '\b(claude|anthropic)\b|generated (with|by)|co-authored-by'

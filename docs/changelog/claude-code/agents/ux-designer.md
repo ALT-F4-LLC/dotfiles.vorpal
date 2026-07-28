@@ -1,5 +1,53 @@
 # Changelog: ux-designer
 
+## 2026-07-27
+
+### Summary
+Compacted 4 entries (2026-07-11..2026-07-12) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: AskUserQuestion hedge corrected to the unconditional first-filter rule; CANONICAL:PITFALLS full body compacted to a PITFALLS-LOCAL pointer. Net -1.2KB.
+
+### Changes
+- FIX[SUBSTANTIVE]: "absent in the common team-mode spawn" -> "stripped from EVERY teammate and subagent spawn unconditionally (sub-agents.md first tool filter)".
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer; full body single-homed in the pitfalls master.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Fixed the design-QA verdict prefix divergence atomically across ux-designer.md and scripts/gate_check.sh (E2 Blocker), added the plan-protocol emitter constraint (E3), encoded three spec-validation gates from recorded rework incidents, corrected the falsified Task-tools claim (D1), and trimmed 3 redundant sections. Findings: 21 -> 8 sub / 4 cos / 6 rej / 1 def / 6 enc. Net +598 bytes (46,886 -> 47,484); gate_check.sh +2.
+
+### Changes
+- FIX[SUBSTANTIVE] (E2, Blocker): normalized `[UX->team-lead] Design QA:` -> `[UX->@team-lead] Design QA:` at both agent-file sites AND both scripts/gate_check.sh fixed-string matches in one atomic edit.
+- AMPLIFY[SUBSTANTIVE] (E3): plan-approval incoming trigger now states team-lead emits the `plan_approval_response`; this role never sends a plan-protocol message directly to an in-flight impl ephemeral.
+- AMPLIFY[SUBSTANTIVE] (reviewer, sourced from pitfalls): Design Spec Workflow step 4 gains three self-validate gates -- affordance predicates must mirror the backend handler precondition; columns/cells/sort keys must resolve against the real wire payload; backtick-quoted AC tokens get a literal grep -F check.
+- FIX[SUBSTANTIVE] (D1): Task-family envelope hedge corrected to UNSTRIPPABLE-for-teammates, CC 2.1.220 version-stamped.
+- AMPLIFY[SUBSTANTIVE] (R1): R6 bans ls-verification of doctrine-cited script paths.
+- CULL[COSMETIC] x3 (reviewer): mirrored gold/silver tier table -> pointer; Responsibility 3 deep-research trivia trimmed; duplicated TeammateIdle sentence in Shutdown Handling removed.
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment
+
+### Rename
+No rename -- sdlc-role-researcher confirms clean UX-design industry mapping.
+
 ## 2026-07-21
 
 ### Summary
@@ -162,64 +210,6 @@ Cross-Agent Coherence (vote plumbing, shutdown block, sandbox-recovery, deep-res
 ### Rename
 No rename.
 
-## 2026-07-12
-
-### Summary
-Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc. Surfaced post-implementation design QA in the frontmatter description (HA-UX1 promised-but-never-sent gate), noted `skills:` frontmatter is inert in teammate mode (DR1), and trimmed the ~12-line Go scratch-module recipe to a pointer into centralized pitfalls.md (IS-UX3). Net -120 bytes.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (HA-UX1): frontmatter description now names design QA on an implementation diff for any `docs/ux/`-spec'd surface — makes the gate discoverable at dispatch time.
-- CULL[SUBSTANTIVE] (IS-UX3): Go internal-package render-verification recipe trimmed to trigger+approach + pointer; full recipe retained verbatim in centralized pitfalls.md.
-- AMPLIFY[SUBSTANTIVE] (DR1): R2 states frontmatter skills don't auto-load in teammate mode; invoke each explicitly.
-
-### Dimensions Evaluated
-Completeness/Actionability, Consolidation & Trimming, Spec Alignment. Role Realism/Boundary Clarity/Capability Growth/Rename: RETAIN (SDLC research confirms fit; UX Researcher + Accessibility already absorbed).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): named the render mechanism per surface class for the design-QA render-to-image mandate — the file's most failure-prone gate was improvised per-session with no tooling named. Net +542 bytes.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: added a surface-class→mechanism table to Responsibility 5 (static-export → headless-browser screenshot→PNG→Read; TUI → existing scratch-module recipe; CLI → captured stdout/stderr). Fills the static-export mechanism gap and consolidates three scattered recipes into one lookup. Script codification deferred (`tui_render_probe.sh`, follow-up Docket item) — prose names categories only.
-
-### Dimensions Evaluated
-Actionability + Capability Growth (primary). SDLC role research confirms fit to industry UX Designer; accessibility already in-scope (Principle 6, design-review's six dimensions, QA workflow) — no change, checklist-depth work routes to evolve-skills. Consolidation/Role Realism/Boundary Clarity/Completeness/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +280,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
 - 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.
 - 2026-07-10: Scoped session-start reads to dispatched-surface slugs; made design-QA verdict terminal only via a durable Docket comment (DKT-76 near-miss). Net -72 bytes.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate): named the render mechanism per surface class for the design-QA render-to-image mandate. Net +542 bytes.
+- 2026-07-11: Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+- 2026-07-11: Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-12: Surfaced post-implementation design QA in the frontmatter description (HA-UX1), noted `skills:` frontmatter is inert in teammate mode (DR1), trimmed the Go scratch-module recipe to a pointer (IS-UX3). Net -120 bytes.

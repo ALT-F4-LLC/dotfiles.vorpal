@@ -71,18 +71,12 @@ provenance-record	docs/changelog	haiku	dated changelog/audit-log entry -- histor
 provenance-record	docs/changelog	opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	Opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	docs/changelog	Sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	docs/changelog	Haiku	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	claude-sonnet-5	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	claude-mythos-5	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	fable	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	Fable	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	opus	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	src/user/claude-code/docs/changelog	Opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	src/user/claude-code/docs/changelog	Sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	src/user/claude-code/docs/changelog	haiku	dated changelog/audit-log entry -- historical record, not a live model claim
-provenance-record	src/user/claude-code/docs/changelog	Haiku	dated changelog/audit-log entry -- historical record, not a live model claim
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-haiku-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-opus-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-sonnet-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
@@ -103,13 +97,12 @@ functional-value	src/user.rs	ANTHROPIC_DEFAULT_HAIKU_MODEL	env binding -- model 
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_OPUS_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_SONNET_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	.with_model("claude-sonnet-5")	model ID used as a literal builder argument
+functional-value	src/user.rs	\"model\": \"claude-sonnet-5\"	test assertion literal (DKT-94 render-target pinning test) -- model ID used as a test-fixture datum asserting serialized JSON output content, not a live routing decision
 provenance-record	src/user.rs	Closest to Fable 5	dated cross-product comparison citation (OpenCode tier mapping)
 provenance-record	src/user.rs	Closest to Opus 4.8	dated cross-product comparison citation (OpenCode tier mapping)
 provenance-record	src/user.rs	Closest to Sonnet 5	dated cross-product comparison citation (OpenCode tier mapping)
 functional-value	src/user/claude-code/scripts/coherence_xref.py	xref-builder` sonnet	names the tier of a specific (now-replaced) spawn
 deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	model or tier names (Sonnet, Opus, Fable, Haiku, or similar)	the commit-message ban-list itself
-product-capability-fact	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	via classifier fallback	classifier fallback behavior (non-pinned spawns resolve to a specific model)
-functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	claude-opus-4-8 (non-pinned)	illustrative template fill-in example data
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="sonnet"	template spawn-call example -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="fable"	template spawn-call example -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="opus"	template spawn-call example -- alias used as a literal argument
@@ -157,14 +150,10 @@ provenance-record	src/user/claude-code/skills/team-doctrine/SKILL.md	Fable-disti
 functional-value	src/user/claude-code/skills/init-specs/SKILL.md	model="sonnet", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	src/user/claude-code/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation
 provenance-record	src/user/opencode/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation
-provenance-record	.claude/agent-memory	fable	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	Fable	agent-memory narrative entry -- historical incident record, not a live model claim
 provenance-record	.claude/agent-memory	opus	agent-memory narrative entry -- historical incident record, not a live model claim
 provenance-record	.claude/agent-memory	Opus	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	sonnet	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	Sonnet	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	haiku	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	Haiku	agent-memory narrative entry -- historical incident record, not a live model claim
-deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	Sonnet, Opus, Fable, Haiku,	naming the model/tier-name category rule 3 forbids, not asserting any of them
+deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	`gold`, `silver`, `bronze`, `sonnet`, `opus`, `fable`,	naming the model/tier-name category rule 3 forbids, not asserting any of them (re-anchored after DKT-97's rewrite reordered/re-wrapped the enumeration across two lines; this row covers the first line)
+deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	`haiku`, `advisor`, `planner`, `investigator`, `verifier`) are deliberately	naming the model/tier-name category rule 3 forbids, not asserting any of them (re-anchored after DKT-97's rewrite reordered/re-wrapped the enumeration across two lines; this row covers the second line)
+functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade disambiguation-reviewer fable to opus	test assertion literal -- fixture input/expected-output text, not a live model claim
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	N× opus→<resolved>, M× sonnet→<resolved>	illustrative format-string fixture showing the script's real requested_model/resolved_model output shape, not a hardcoded model claim
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	both record bare ALIASES (`sonnet` / `opus` / `fable`)	naming the closed alias vocabulary this skill categorizes, not asserting a specific model

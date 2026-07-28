@@ -1,5 +1,33 @@
 # Changelog: ux-spec
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence fix (evolve-skills cycle): added `effort: xhigh` to complete design-artifact-authoring family parity (tdd/adr/code-review-verdict/verify-ac), grounded in team-lead.md's gold-tier authoring bullet which names UX spec alongside TDD and ADR.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: added `effort: xhigh` frontmatter. This skill is only ever invoked for authoring (review/QA cycles never invoke it), so the hint never lands on a silver-bound path.
+
+### Dimensions Evaluated
+Skill Design Quality (frontmatter), Coherence (family parity).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -230,34 +258,6 @@ None — History Compaction per ADR 0001, not a review cycle.
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L41) already states the identical ignore-silently rule. Applied identically to all 4 doc-authoring siblings (prd/tdd/adr/ux-spec, -1 each). Net -1 (296 lines).
-
-### Changes
-- Failure Modes: deleted last table row (intra-file duplication of the CANONICAL block; byte-identical removal across the family, grep-verified 0 survivors).
-
-### Dimensions Evaluated
-Coherence (family lockstep), Over-Engineering.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full 8-dimension review: NO changes. Zero invocations in audit window. All candidate findings confirmed resolved or correct-as-is: allowed-tools Glob/Grep present and legitimately used; {TYPE} substitution parity-locked with adr/prd/tdd; CANONICAL blocks intact; Failure Modes table self-referential. Net 0.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8. Over-Engineering (HIGHEST): no removable waste found. Coherence: allowed-tools sibling lockstep verified (all four siblings identical). Two PARITY-BOUND items (preview-field fragment; delivery-resolution accessibility triplicate) routed to Phase 2.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +290,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Mythos/Fable-5 cycle audit: NO changes. Reasoning-echo clean (rendered-effect lines are artifact-content guidance, not narration); $-escape clean; no over-pr...
 - 2026-06-09: Full-cycle audit: NO changes. 9 verification probes all clean: Glob/Grep present and used (c10195b restore — no phantom drift, pitfall #10 applied via git lo...
 - 2026-06-09: Compacted 9 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
+- 2026-06-10: Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row (dup of CANONICAL:ARGUMENT_HANDLING); applied identically to prd/tdd/adr/ux-spec. Net -1 (296 lines).
+- 2026-06-10: Full 8-dimension review: NO changes. Zero invocations in window; allowed-tools/TYPE substitution/CANONICAL blocks all verified intact. Net 0.

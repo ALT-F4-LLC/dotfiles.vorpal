@@ -1,5 +1,66 @@
 # Changelog: simplify-scout
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-05-29..2026-05-30) into Compacted history per the retention-compaction policy. First compaction for this file — created the terminal Compacted history section.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation widened the Save & Return next-steps owner to both legal callers, matching Role Detection and the Positioning table.
+
+### Changes
+- DISAMBIG (overlapping-ownership): Save & Return now names `@senior-engineer` and `@distinguished-engineer` in deep-impl mode as the next-steps owners, instead of narrowing to one of the two callers Role Detection admits.
+
+### Dimensions Evaluated
+Disambiguation: overlapping-ownership (applied), confusable-name, multi-reading.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation pass: made the `@distinguished-engineer` deep-impl-mode restriction EXECUTABLE. After this cycle's 3-site caller-set correction the file stated the mode condition three times declaratively and zero times in the gate an agent actually runs.
+
+### Changes
+- DISAMBIG[SUBSTANTIVE][multi-reading]: Role Detection — gate restated as two explicit tests (identifier, then `Mode:` == `deep-impl` for a `@distinguished-engineer` caller); non-caller DE modes (`advisor`, `tdd-author*`, `investigator`/`innovation-scanner`) named; ABORT string updated to say why and to surface `{mode}`.
+- DISAMBIG[SUBSTANTIVE][multi-reading]: Scan Procedure step 1 — point-of-use restatement now carries the mode condition instead of silently dropping it.
+
+### Dimensions Evaluated
+Phase 3 two-arm boundary test. Arm 1 PASSES: `distinguished-engineer.md §Mode 4` resolves, and D2 #4's caller-set union has no mode dimension, so no coherence invariant could detect this. Arm 2 FAILS: declarative sites contradicted the two operative sites. Mode is mechanically checkable via the spawn brief's `Mode:` field.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Stale cross-reference to code-review-verdict's caller set corrected at three sites (omitted @distinguished-engineer, asserted false exclusivity), and the unexecutable Monitor streaming instruction culled along with its dead tool grant. Findings: 5 sub / 0 cos / 0 rej / 0 def / 2 obs
+
+### Changes
+- FIX[SUBSTANTIVE]: contrast table (Caller row) — code-review-verdict's callers corrected to @staff-engineer / @distinguished-engineer / @security-engineer; "only" dropped. NET +23.
+- FIX[SUBSTANTIVE]: Role Detection ABORT string — same caller-set correction on emitted text an agent reads at the moment of mis-routing. NET +26.
+- FIX[SUBSTANTIVE]: "When NOT to Use" formal-review route — third site, found by sweep, not in the source finding. NET +23.
+- CULL[SUBSTANTIVE]: Scan Procedure step 4's Monitor streaming sentence — the scan runs only fast git diff / test -f / Glob / Read; no process to stream, no completion marker to watch, and the 50-file large-scope guard bounds the heaviest path. NET -127.
+- CULL[SUBSTANTIVE]: `Monitor` removed from allowed-tools — dead grant once the sentence goes; self-application of principle #12. Divergence from the report-family's Monitor grant is justified by logic, not drift. NET -11.
+
+### Dimensions Evaluated
+All 8. Coherence primary (caller-set sweep, fleet-wide). Over-Engineering (Monitor cull pays for the fixes; net -66). Skill Design Quality: `context: fork` evaluated and REJECTED; absent `effort:` evaluated and upheld as correct-by-design. Actionability/Completeness: no gap found.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -230,30 +291,10 @@ All 8; Over-Engineering (HIGHEST — no trim; table is value-adding lens, not du
 ### Rename
 No rename.
 
-## 2026-05-30
+## Compacted history
 
-### Summary
-No-change verdict. Re-verified against ground truth: the 12 code-philosophy principles lookup table matches agents/senior-engineer.md exactly; the report-only boundary vs the bundled /simplify (applies-fixes) and vs Skill(code-review) (verdict) holds; the confidence ladder stays disjoint from code-review's severity ladder.
+Entries below were compacted per the retention-compaction policy; full text in git
+history (see the compaction entry's date).
 
-### Changes
-- None.
-
-### Dimensions Evaluated
-Over-Engineering (HIGHEST — no trim candidates), Skill Design Quality, Actionability, Completeness, Orchestration (leaf), Coherence (12-principle match + boundary vs /simplify and code-review), Spec Alignment (docs/spec/ absent — N/A), Rename.
-
-### Rename
-No rename — "scout" suffix disambiguates from bundled /simplify and authoritative code-review.
-
-## 2026-05-29
-
-### Summary
-First review cycle (skill added 2026-05-28). Reviewed across all 8 dimensions; no changes applied. Validated as sound: report-only (leaf banner + Edit/Write absent from allowed-tools), grounded strictly in the 12 code-philosophy principles of agents/senior-engineer.md with no competing rubric, boundary vs Skill(code-review) explicit.
-
-### Changes
-- None. Confirmed the 12-principle lookup table matches agents/senior-engineer.md and adds a simplification-lens reframe rather than restating verbatim. `disallowed-tools` not adopted (report-emission-family-wide Phase 2 decision; the leaf banner remains enforcement — note: allowed-tools does not itself restrict the tool pool).
-
-### Dimensions Evaluated
-All 8: Skill Design Quality, Actionability, Completeness, Over-Engineering (HIGHEST — no trim candidates), Orchestration (leaf, no spawning), Coherence (grounds in senior-engineer.md; boundary vs code-review), Spec Alignment (docs/spec/ absent — N/A), Rename.
-
-### Rename
-No rename — the "scout" suffix disambiguates from the deprecated bundled `/simplify` (renamed → `/code-review` in 2.1.147) and from this repo's authoritative code-review.
+- 2026-05-29: First review cycle (skill added 2026-05-28) — no changes; validated report-only, grounded in the 12 code-philosophy principles, boundary vs Skill(code-review) explicit.
+- 2026-05-30: No-change verdict — re-verified 12-principle lookup table matches agents/senior-engineer.md; report-only boundary vs /simplify and code-review holds.

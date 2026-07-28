@@ -75,7 +75,17 @@ heading and the first ledger line, one after the last ledger line. A new entry b
 any column-0 line matching `^## ` or `^- ` that is OUTSIDE the ledger section and is not
 the H1; it extends to the line before the next entry start, the ledger heading, or EOF;
 trailing blank lines belong to the entry; the H1, any intro line, the ledger heading, and
-ledger lines are structural, not entries. A `^- [YYYY-MM-DD]` line outside the ledger
+ledger lines are structural, not entries. A `^## ` heading additionally absorbs its
+immediately-following contiguous run of `^- ` lines into the SAME entry span, tolerating
+at most one blank line between the heading and the first bullet (no blank between bullets
+in the run) — matching how these files are actually authored, with or without a blank
+separating the heading from its Symptom/Root-cause/Resolution bullets (e.g. the
+centralized security-engineer file mixes both shapes); a bare `^- ` line not preceded by
+such a heading (or preceded by 2+ blank lines) remains its own single-line entry. This
+absorption rule is implemented identically in both pitfalls_compactable.sh's
+candidate-enumeration loop and pitfalls_distill.sh's enumerate_entries — a fixture-driven
+parity test (`test_pitfalls_compactable.py::test_cross_script_entry_count_parity`) guards
+against the two copies diverging again. A `^- [YYYY-MM-DD]` line outside the ledger
 section is an ordinary entry start — grammar alone never classifies a line as a ledger
 line; only section membership does (this is load-bearing: the centralized
 distinguished-engineer file has live entries whose first line matches the ledger-line

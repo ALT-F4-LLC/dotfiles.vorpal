@@ -1,5 +1,53 @@
 # Changelog: project-manager
 
+## 2026-07-27
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: CANONICAL:PITFALLS compacted to a pointer; a stale non-resolving path fixed. (This file's AskUserQuestion hedge was already corrected in Phase 1, the source the fleet-wide fix propagated from.)
+
+### Changes
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer.
+- FIX[MECHANICAL]: `agents/team-lead.md` -> `team-lead.md` (non-resolving path literal).
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Corrected the tool-envelope claim that teammates may lack the Task family (falsified against sub-agents.md/agent-teams.md and this session's own live envelope), tightened the AskUserQuestion hedge, disambiguated "create tasks" -> "create Docket issues", added R1 script-path-trust and R3 `summary` reminders, and consolidated the thrice-stated Distillation Gate/P5 rule per the master's cite-don't-restate policy. Findings: 12 -> 5 sub / 1 cos / 2 rej / 1 def / 6 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (D1, B1b, revised): Task family is UNSTRIPPABLE for teammates (CC 2.1.220); the "not enabled" error is proof the harness is treating the spawn as background/report-only -- narrowed per SP-2's nested-context caveat (a NAMED spawn can still be harness-background) -- routing to SP-2's plain-text-and-end path (net now +237, 48,584 -> 48,821).
+- AMPLIFY[SUBSTANTIVE] (reviewer): AskUserQuestion stripped from every teammate/subagent spawn unconditionally, per the first tool filter.
+- AMPLIFY[SUBSTANTIVE] (B1a): section 5 now says "create Docket issues", removing the TaskCreate-misfire ambiguity.
+- AMPLIFY[SUBSTANTIVE] (R1): R1 trusts installation-pinned `~/.claude/scripts/` paths; verify-before-trust scoped to unpinned paths. NOTE: flagged in Phase 1 as a possible conflict with code-review-verdict/SKILL.md:369's own ls-mandate for report_stage_lint.sh — pending Phase 2 reconciliation.
+- AMPLIFY[SUBSTANTIVE] (B4): R3 names the required `summary` field on bare-string SendMessage.
+- CULL[COSMETIC] (reviewer): merged the mirrored Distillation Gate block and P5 into one pointer-plus-operative statement (-569 bytes), matching sdet.md's existing pointer form.
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment
+
+### Rename
+No rename — sdlc-role-researcher confirms TPM/PM-hybrid industry mapping.
+
 ## 2026-07-21
 
 ### Summary
@@ -175,50 +223,6 @@ Boundary Clarity / Role Realism (primary), Consolidation & Trimming. Inverted-fi
 ### Rename
 No rename — "project-manager" ≈ industry TPM, but a rename is pure churn (Content Gate Behavioral check fails); boundary now documented inline instead.
 
-## 2026-07-10
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
-
-### Changes
-- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Retired the hand-authored-Mermaid implication (CLI already generates it), fixed a vote `--threshold` fraction-vs-percentage trap, and de-duplicated a TDD-provenance restatement. Net +96 bytes.
-
-### Changes
-- CULL: "Mermaid diagrams are mandatory" reworded to embed `docket issue graph --mermaid` CLI output — hand-authoring was never required (innovation-scan Retire, docket-audit confirmed flag exists).
-- AMPLIFY: vote-creation guidance now states `--threshold` is a FRACTION (0.0–1.0), with a concrete `--threshold 0.75` example (bug-audit FIX-4, 4 sessions).
-- CULL: §9 TDD-provenance restatement trimmed to the ADR-line-ref distinction only (rest duplicated §8 Distillation Gate + P5).
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary), Actionability, Boundary Clarity. Role Realism/Completeness/Spec Alignment/Capability Growth/Rename: RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +292,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Aligned Claim Ritual to chained one-call (assignee first, then status), matching senior/team-lead/sdet convention.
 - 2026-07-01: Phase 2 coherence follow-up — added PM's local shutdown protocol copy (CANONICAL:SHUTDOWN-PROTOCOL-LOCAL for planner/planner-fix-{N} lifecycle, close evidence semantics).
 - 2026-07-01: Trial: PM delta planning and collision evidence -> applied — added planner-fix delta mode, deterministic Collision table, Worker Handoff, final PM close-state verification, situational Mermaid guidance.
+- 2026-07-10: Retired the hand-authored-Mermaid implication (CLI already generates it), fixed a vote `--threshold` fraction-vs-percentage trap, and de-duplicated a TDD-provenance restatement. Net +96 bytes.
+- 2026-07-10: Flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object (bug-audit FIX-9, fleet-wide sweep).
+- 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.

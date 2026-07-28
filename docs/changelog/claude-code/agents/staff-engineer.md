@@ -1,5 +1,119 @@
 # Changelog: staff-engineer
 
+## 2026-07-27
+
+### Summary
+Compacted 8 entries (2026-07-11..2026-07-15) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 8 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: terminal-state marker scoped to the teammate path, and the fingerprint escape hatch resolved so a missing `frozen:` value never reads as a waived gate or a skipped fingerprint.
+
+### Changes
+- FIX[SUBSTANTIVE] (DISAMBIG 2): ephemeral pre-idle checklist item (a) scoped TEAMMATE-path-only -- a report-only subagent (Task family absent per the Tool envelope check discriminator) ends plain-text and OMITS the marker, resolving the contradiction with line 54's plain-text-and-END path.
+- FIX[SUBSTANTIVE] (DISAMBIG 4): Moving-tree gate -- a GO with no `frozen:` value means only that its sender computed no fingerprint; the COMPARISON is unavailable, the GO gate is never waived, and `tree_fingerprint.sh` still runs once so the verdict's `+dirty:` field binds to the tree actually read.
+
+### Dimensions Evaluated
+Disambiguation (Phase 3): multi-reading
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: adopted the fleet-standard ephemeral terminal-state marker in the pre-idle checklist; wired the Moving-tree gate to re-check team-lead's frozen:<sha12> fingerprint; closed the C5 grep-pointer's templated-spawn blind spot.
+
+### Changes
+- FIX[SUBSTANTIVE] (I8): pre-idle checklist (a) leads the final report with the exact marker literal (master: senior-engineer.md Shutdown Handling step 3) -- team-lead reads completion from the report, not Docket-mirror inference.
+- FIX[SUBSTANTIVE] (I6): Moving-tree gate re-runs tree_fingerprint.sh and refuses the verdict on frozen:<sha12> mismatch; graceful pass-through for a GO with no frozen: value.
+- FIX[SUBSTANTIVE] (C5 follow-up): grep-pointer roster now names the grep-invisible templated review-<name> Phase 1 spawn class (evolve-agents:253).
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Roster de-enumerated to a regeneration grep (ground truth: 9 staff-typed spawn names, seed listed 7);
+deleted the unreachable Edit/Write fallback; corrected an unconditional auto-resume claim falsified
+against sub-agents.md:945; adopted the SendMessage `summary` schema by pointer. Net +1,566ish
+(63,684 -> 65,397).
+
+### Changes
+- FIX[SUBSTANTIVE] (C5): Lifecycle roster split into team-lead-dispatch (AUTHORITY = Per-Role Dispatch Table) and skill-spawned (regenerated via grep over both skill roots, not hand-enumerated).
+- CULL[SUBSTANTIVE] (D1): unreachable Edit/Write-absent `$TMPDIR` fallback deleted -- `memory: project` force-enables Read/Write/Edit; void only under the auto-memory kill switch.
+- FIX[SUBSTANTIVE] (D9): auto-resume claim qualified with the v2.1.191 operator-stop carve-out -- an operator-cancelled agent returns a refusal, not a stall.
+- AMPLIFY[SUBSTANTIVE] (I5, scoped): already-present check now names both grep paths plus the changelog's `## Compacted history` section; `already_present.sh` deferred (does not exist).
+- FIX[SUBSTANTIVE] (H7-derived): TDD step 8 open-question resolution split by mode -- AskUserQuestion is standalone-only.
+- FIX[SUBSTANTIVE] (B1, revised): ack rule now points at team-lead.md SP-1b for the SendMessage `summary` schema -- B1's prescribed ack-template site doesn't exist in this file.
+
+### Dimensions Evaluated
+Completeness, Actionability, Spec Alignment, Role Realism, Consolidation & Trimming, Capability Growth
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-11) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: AskUserQuestion hedge corrected to the unconditional first-filter rule; CANONICAL:PITFALLS full body compacted to a PITFALLS-LOCAL pointer (single-homed in team-doctrine/references/pitfalls.md). Net -1.2KB.
+
+### Changes
+- FIX[SUBSTANTIVE]: "absent in the common team-mode spawn" -> "stripped from EVERY teammate and subagent spawn unconditionally (sub-agents.md first tool filter)" -- hedge falsified against the primary doc.
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer with inline hard gate; full body single-homed in the pitfalls master; manifest re-registered under PITFALLS-LOCAL, verified via doctrine_check.sh.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Wired the orphaned xref_check.py into the numbered-cross-reference ritual (with a measured false-positive caveat), corrected a live-falsified Task-tools absence claim, added a parity-locked byte-surface gate, and consolidated tier-split mechanics from 5 sites to 1 authority. Findings: 6 → 3 sub / 4 cos / 0 rej / 0 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I1): Numbered-cross-reference reconciliation now mandates `xref_check.py DOC_A DOC_B`, with the measured caveat that its `enum` pattern yields mostly bare-paren noise on prose-heavy docs (20/22 rows) — reconcile structured rows, hand-grep only outside `PATTERNS`.
+- FIX[SUBSTANTIVE] (docs-researcher): Tool-envelope check split the Task-family claim — a teammate ALWAYS keeps TaskCreate/Update/List/Get regardless of `tools:`; only background report-only subagents lose them. Falsified live this session (TaskList succeeded as a teammate on CC 2.1.220).
+- AMPLIFY[SUBSTANTIVE]: New No Guessing gate — measure parity-locked bytes (`doctrine_check_manifest.tsv`) before accepting a TRIM/BALANCED mandate; "no legal trim here" is a valid verdict.
+- CULL[COSMETIC] (I2): Tier-split mechanics consolidated to §What You Are NOT; Operating context, Lifecycle, Responsibility 1 and Responsibility 2 reduced to pointers (-579 bytes).
+- AMPLIFY[SUBSTANTIVE] (D1 follow-up): Task-tool absence reframed as a teammate-vs-background-subagent discriminator routing to SP-2's plain-text-and-END shutdown path (+281 bytes; total net now +1486, 63,062 -> 64,548).
+
+### Dimensions Evaluated
+Completeness, Actionability, Spec Alignment, Consolidation & Trimming, Role Realism, Capability Growth
+
+### Rename
+No rename.
+
 ## 2026-07-21
 
 ### Summary
@@ -49,166 +163,6 @@ Compacted 5 entries (2026-06-21..2026-07-01) into Compacted history per the rete
 
 ### Changes
 - Replaced the 5 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Read-before-Edit rule → pointer to senior-engineer.md's new master (B3, reviewer-line-number delta retained); stale-dispatch-check pointer added (R3); vote wire form deduped (I4).
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (B3): Rule 5 → READ-BEFORE-EDIT pointer.
-- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on Rule 2.
-- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol.
-
-### Dimensions Evaluated
-Consolidation & Trimming, Cross-Communication.
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Self-review: no definition-file edits. All 4 findings (H13, H14, I11, D1) dispositioned without a change; file verified aligned to CC 2.1.210. Findings: 4 → 0 sub / 0 cos / 1 rej / 2 def / 1 enc
-
-### Changes
-None this cycle. H13 rejected as self-edit (dispatcher-side, routed to Coherence w/ project-manager H9). H14 deferred to Phase 4 History Compaction. I11 deferred — evidence-gate consolidation into Skill(code-review-verdict) needs the skill to gain the gates first (verified skill lacks them); routed to Coherence w/ distinguished-engineer. D1 already-encoded (line 159).
-
-### Dimensions Evaluated
-All 8 — Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation/Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename — no signal-backed edit found.
-
-### Rename
-No rename.
-
-## 2026-07-13 (DKT-270 Phase 3 disambiguation)
-
-### Summary
-Disambiguated the deep-research sanction: the unexplained `Skill(vote)` restriction-class pointer and the fused "team-lead/operator" routing target. Findings: 2 → 2 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: glossed "same restriction class as `Skill(vote)`" with the shared class itself (swarm-spawning entry points are main-session-only) — the trailing "no `Workflow` tool" primed a false mechanical reading
-- AMPLIFY[SUBSTANTIVE]: split "team-lead/operator" into "team-lead (team mode) or the operator (standalone)" — the slash-compound hid which target applies when
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
-## 2026-07-13 (DKT-270 correction)
-
-### Summary
-Corrected the deep-research sanction in TDD step 3 (Study precedent) — deep-research is a bundled Workflow, not a Skill, and is not directly teammate-invokable. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: replaced the "prefer `Skill(deep-research, ...)` — a registered bundled skill" clause — deep-research is a harness Workflow spawning dozens-to-~97 background subagents; a teammate has no `Workflow` tool (same class as `Skill(vote)`) so must route to team-lead/operator for a `/deep-research` run or hand-roll the WebSearch/WebFetch fan-out per this step's gates — cited DKT-270 investigation, independently corroborated via code.claude.com/docs/en/workflows
-
-### Dimensions Evaluated
-Actionability.
-
-### Rename
-No rename.
-
-## 2026-07-13
-
-### Summary
-Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 2 coherence: compacted the shutdown block to the master-pointer form; sanctioned `Skill(deep-research)` in the TDD precedent-study step (parity with distinguished-engineer.md).
-
-### Changes
-- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
-- AMPLIFY[SUBSTANTIVE]: TDD Creation Workflow step 3 gains a `Skill(deep-research)` preference for external-source-dominated precedent study.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (SHUTDOWN-PROTOCOL block parity; deep-research sanction parity with distinguished-engineer.md).
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc. Encoded the HA-STAFF1 authoring-time re-verification discipline into rule 6, adopted `vote_delegate.sh` (fixes omitted-`--threshold` bug), consolidated the duplicated tier-split AUTHORITY meta-statement. Net +109 bytes.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (HA-STAFF1): rule 6 broadened from "before sign-off" to "before an artifact leaves you — authoring OR sign-off"; adds the memory/relay-non-substitution crux and cross-references/decisions to the verify list. Addresses the top meta-lesson in the largest-of-8 pitfalls file.
-- CULL[SUBSTANTIVE] (IS-STAFF2): line-44 tier-split copy (near-verbatim duplicate of §What You Are NOT AUTHORITY) reduced to a pointer; AUTHORITY meta now stated exactly once.
-- REFACTOR[SUBSTANTIVE] (IS-TL4-STAFF): replaced hand-rolled `docket vote create` (omitted `--threshold`, inheriting the CLI's silent 0.67 default) with a `vote_delegate.sh` pointer.
-
-### Dimensions Evaluated
-Completeness/Actionability (rule 6), Consolidation & Trimming (tier-split), Capability Growth/Cross-Communication (vote_delegate.sh). Role Realism, Boundary Clarity, Spec Alignment, Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Compacted 4 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net -36 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): removed a dangling self-contradiction in Responsibility 2. Findings: 4 → 1 sub / 0 cos / 0 rej / 2 def / 1 enc.
-
-### Changes
-- CULL[SUBSTANTIVE]: removed "Update impacted specs per Responsibility 4 after the skill returns." from §Responsibility 2 Review output — Responsibility 4 explicitly disowns spec maintenance as a standing responsibility, making this directive a live self-contradiction on every review pass. Residual signal (spec-invalidating findings) already covered by System-Level Thinking + the scope-delta SendMessage trigger — cited by innovation-scanner RETIRE finding.
-
-### Dimensions Evaluated
-Boundary Clarity, Consolidation & Trimming. SDLC role research confirms strong fit to industry "Staff Engineer" (cross-team design docs, review floor, no implementation) — no charter change. Role Realism/Actionability/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
 
 ### Dimensions Evaluated
 History Compaction (retention-compaction policy)
@@ -289,3 +243,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: Phase 3 disambiguation follow-up — qualified mixed local/foreign rule citation ("staff rule 9, team-lead.md step-14 rules 3a/3b") and fixed 2 stale "Rule 8(e)" cross-references to "Rule 8(c)".
 - 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.
 - 2026-07-10: Consolidation-only cycle — trimmed redundant tier-split restatement in §Operating context (dup of §Lifecycle/§What You Are NOT). Net -32 bytes.
+- 2026-07-11: Compacted 4 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+- 2026-07-12: Phase 2 coherence: compacted the shutdown block to the master-pointer form; sanctioned `Skill(deep-research)` in the TDD precedent-study step (parity with distinguished-engineer.md).
+- 2026-07-12: Findings: 3 → 3 sub / 0 cos / 0 rej / 1 def / 0 enc. Encoded the HA-STAFF1 authoring-time re-verification discipline into rule 6, adopted `vote_delegate.sh` (fixes omitted-`--threshold` bug), consolidated the duplicated tier-split AUTHORITY meta-statement. Net +109 bytes.
+- 2026-07-13: Disambiguated the deep-research sanction (DKT-270): glossed the `Skill(vote)` restriction-class pointer and split the fused "team-lead/operator" routing target into "team-lead (team mode) or the operator (standalone)".
+- 2026-07-13: Corrected the deep-research sanction in TDD step 3 (DKT-270) — deep-research is a bundled Workflow, not a Skill, and is not directly teammate-invokable.
+- 2026-07-13: Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
+- 2026-07-15: Read-before-Edit rule -> pointer to senior-engineer.md's master (B3); stale-dispatch-check pointer added (R3); vote wire form deduped (I4).
+- 2026-07-15: Self-review: no definition-file edits. All 4 findings (H13, H14, I11, D1) dispositioned without a change; file verified aligned to CC 2.1.210.
+- 2026-07-10: Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle: removed a dangling self-contradiction in Responsibility 2 Review output (spec-maintenance directive conflicted with Responsibility 4's disownment).
+- 2026-07-11: Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net -36 bytes.

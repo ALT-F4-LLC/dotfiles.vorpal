@@ -1,5 +1,33 @@
 # Changelog: design-qa
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence fix (evolve-skills cycle): the "When NOT to Use" route to `code-review-verdict` omitted `@distinguished-engineer` from its caller set, breaking family lockstep after code-review-verdict's own caller set was corrected this cycle.
+
+### Changes
+- FIX[SUBSTANTIVE]: caller set for the code-review-verdict route now reads "@staff-engineer, @distinguished-engineer, or @security-engineer" — verified against code-review-verdict/SKILL.md:36,39,81,108. Family lockstep restored (report-emission COUPLING block).
+
+### Dimensions Evaluated
+Coherence only (Phase 2 cross-skill pass).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -229,35 +257,6 @@ All 8.
 ### Rename
 No rename.
 
-## 2026-06-20
-
-### Summary
-One non-parity trim; net -1 (212→211). Render-to-image gate confirmed already present (NO-OP on the Phase-0 signal). Doubling Rule + self-check removals deferred to Phase 2 (family-wide).
-
-### Changes
-- CULL: removed the "Long-running surface preparation" Pre-flight note — generic background+Monitor guidance already provided by the harness Bash tooling, not design-qa-specific.
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Added a classifier-block fallback to the Output Contract (Phase-2 family lockstep): a blocked Stage-2 invocation renders the QA report per this format authority.
-
-### Changes
-- AMPLIFY (Output Contract): if the harness blocks invocation (Stage-2 auto-mode classifier), render the QA report per THIS format authority — required sections + Pass / Pass with Issues / Fail ladder. Family extension of verify-ac's measured fallback. Net +1.
-- Drift (rate 7): all 7 SKIP — output section headers / verdict-ladder / ABORT lines.
-
-### Dimensions Evaluated
-Actionability, Completeness, Coherence, Over-Engineering, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +285,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Compacted 11 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
 - 2026-06-10: No changes applied. Reviewer proposed `disable-model-invocation: true` + When-to-Use trim, but the sibling design-review reviewer rejected the same flag and...
 - 2026-06-10: Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-7 → 3-6....
+- 2026-06-19: Added classifier-block fallback to Output Contract for blocked Stage-2 invocation (family lockstep). | Drift (rate 7): all 7 SKIP — output section headers / verdict-ladder / ABORT lines.
+- 2026-06-20: Removed the "Long-running surface preparation" Pre-flight note as redundant generic Monitor guidance (net -1, 212→211).

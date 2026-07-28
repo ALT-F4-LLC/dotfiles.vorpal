@@ -22,7 +22,10 @@
 #
 # Reuses the entry-boundary + ledger-section grammar defined in
 # pitfalls_distill.sh / retention-compaction.md (shared, not restated here
-# beyond the read-only subset needed for enumeration).
+# beyond the read-only subset needed for enumeration). The heading+bullet
+# absorption clause below must stay identical in shape to
+# pitfalls_distill.sh's enumerate_entries -- see
+# test_pitfalls_compactable.py::test_cross_script_entry_count_parity.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -117,11 +120,31 @@ END {
         }
     }
 
+    # A `## ` heading absorbs its immediately-following contiguous run of
+    # `- ` lines into the same entry, tolerating at most one blank line
+    # between the heading and the first bullet, but not two or more blanks.
+    # A bare `- ` line not preceded by such a heading is its own entry.
     c = 0
-    for (i = 1; i <= n; i++) {
-        if (i == 1 && h1_exists) continue
-        if (section_exists && i >= heading_idx && i <= section_end_idx) continue
-        if (is_entry_marker(lines[i])) { c++; entry_start[c] = i }
+    i = 1
+    while (i <= n) {
+        if (i == 1 && h1_exists) { i++; continue }
+        if (section_exists && i >= heading_idx && i <= section_end_idx) { i++; continue }
+        if (is_entry_marker(lines[i])) {
+            c++
+            entry_start[c] = i
+            if (substr(lines[i], 1, 3) == "## ") {
+                j = i + 1
+                if (j <= n && is_blank(lines[j]) && (j + 1) <= n && substr(lines[j + 1], 1, 2) == "- ") {
+                    j++
+                }
+                while (j <= n && substr(lines[j], 1, 2) == "- ") j++
+                i = j
+                continue
+            }
+            i++
+            continue
+        }
+        i++
     }
     entry_count = c
     for (i = 1; i <= entry_count; i++) {

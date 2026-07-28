@@ -1,5 +1,130 @@
 # Changelog: senior-engineer
 
+## 2026-07-27
+
+### Summary
+Compacted 7 entries (2026-07-12..2026-07-15) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 7 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: the terminal-state marker master now scopes its adopter list to the teammate path instead of qualifying sdet alone.
+
+### Changes
+- FIX[SUBSTANTIVE] (DISAMBIG 1): Ephemeral completion contract step 3 -- marker adopted "on the TEAMMATE path by staff-engineer.md, distinguished-engineer.md, and sdet.md"; a report-only subagent omits it rather than asserting an await that never resolves. Removes the reading that staff/DE adopt unconditionally while sdet adopts conditionally.
+
+### Dimensions Evaluated
+Disambiguation (Phase 3): multi-reading
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: terminal-state marker promoted to fleet-standard at its master with a do-not-reword adopter guard (staff/DE/sdet teammate paths now cite the exact literal).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I8): Ephemeral completion contract step 3 marker annotated fleet-standard with adopter list -- exact-string dependency now visible at the master.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Findings: 4 -> 3 sub / 0 cos / 1 rej / 0 def / 0 enc. Corrected the false `impl-*`-only spawn-name claim, deleted the unreachable Edit/Write-absent fallback, named the required SendMessage `summary` param at the ack template, and wired `ac_check.sh` into the Execution Workflow at both ends. Net +729 bytes (77,604 -> 78,333).
+
+### Changes
+- FIX[SUBSTANTIVE] (C3): Lifecycle now admits `docs-author`/`-{DOCKET-ID}` and the 4 senior-engineer-typed evolve-* auditors as legitimate spawn names; dropped the no-referent "all other spawns ephemeral" clause. Same narrowing fixed in the Shutdown ephemeral-completion contract.
+- CULL[SUBSTANTIVE] (D1): removed the Edit/Write-absent `$TMPDIR` script fallback -- `memory: project` force-enables Read/Edit/Write, so the branch was unreachable. Its dangling Runtime-Discipline back-reference and the doubled PA-mode tool-availability hedge went with it.
+- AMPLIFY[SUBSTANTIVE] (B1): ack template now shows the `summary` param; a bare-string `message` without it fails every time (2 of 6 fleet occurrences were agents following this template verbatim).
+- AMPLIFY[SUBSTANTIVE] (I4): step 2 runs `ac_check.sh <id> --pre` (an `[UNEXPECTED-PASS]` is a vacuous AC -> escalate before coding); step 5 runs `ac_check.sh <id>` (all `[PASS]`) before close. First agent-file citation of a script whose own header names this file as consumer.
+- CULL[COSMETIC] x2: compressed the claim-refusal no-op rationale; dropped the 4th restatement of the inline-OVERRIDE ban.
+- REJECTED: H5 multi-spawn-rate clarification -- already encoded by `impl-{DOCKET-ID}`; the discriminator's consumer is team-lead's stall probe.
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Compacted 4 entries (2026-07-10..2026-07-11) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: added the seat-name addressing convention that security-engineer.md, project-manager.md, sdet.md, and ux-designer.md already carry -- this was the one file without it despite being the heaviest consumer of the advisor consult path. Net +300 bytes.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: new sentence in What You Are NOT -- the file's thirteen @staff-engineer recipient rows mean the general-architecture SEAT (advisor), whose holder is @distinguished-engineer on Medium+ TDD-bearing cycles, not always @staff-engineer literally. One sentence retires all thirteen rows without editing each individually.
+
+### Dimensions Evaluated
+Overlapping-ownership (Phase 3, two-arm test)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: AskUserQuestion hedge corrected (file's own phrasing delta preserved); CANONICAL:PITFALLS compacted to a pointer; orphaned go_verify.sh wired into Build & Commit Hygiene.
+
+### Changes
+- FIX[SUBSTANTIVE]: "absent in the common team-mode spawn" -> "stripped from EVERY teammate and subagent spawn unconditionally (sub-agents.md first tool filter)".
+- AMPLIFY[SUBSTANTIVE]: new Build & Commit Hygiene bullet citing `go_verify.sh` (zero prior repo references; standardizes hand-rolled `go build`/`go vet` invocations).
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Findings: 5 -> 4 sub / 2 cos / 0 rej / 0 def / 1 enc, plus 6 reviewer-originated. Removed the commit-skill grant and the prose that told this role to invoke a skill whose caller gate aborts on it; de-duplicated the READ-BEFORE-EDIT master; stopped a class of pointless shutdown rejections. Net +60 bytes (77,675 -> 77,735).
+
+### Changes
+- CULL[SUBSTANTIVE] (E1): dropped `commit` from frontmatter `skills:` -- `commit/SKILL.md` Step 0 names `@senior-engineer` in its forbidden-caller list, so the grant could only ever abort.
+- AMPLIFY[SUBSTANTIVE] (E1): Commit-mode bullet no longer instructs `Skill(commit, ...)`. Under team-lead, request the commit; standalone with explicit operator authorization, draft it directly against `commit/SKILL.md` Step 2 grammar and gate it on `commit_msg_check.sh` before a scoped `git add`/`git commit -F`.
+- CULL[COSMETIC] (I6): collapsed two in-block restatements of the Read/Edit adjacency rule in CANONICAL:READ-BEFORE-EDIT to the single forcing-rule statement (block is not parity-locked; verified absent from doctrine_check_manifest.tsv).
+- AMPLIFY[SUBSTANTIVE]: shutdown ground 2 now excludes a stall-framed `shutdown_request` that crossed the completion report in flight -- approve it. Both of this role's in-window rejections were that shape and changed nothing.
+- AMPLIFY[SUBSTANTIVE] (repetition FIX 1): R6 now bans re-`ls`-ing doctrine-cited `~/.claude/scripts/*.sh` paths (113 sessions fleet-wide).
+- AMPLIFY[SUBSTANTIVE] (B5): R1 states Read's `limit` is a COUNT, not an end line.
+- FIX[COSMETIC]: docket_claim.sh described as verifying "the claim landed" rather than `updated_at` -- the staged script fix replaces updated_at comparison with status/assignee.
+- CULL[COSMETIC] x4: duplicated rework-signal rationale, PITFALLS bridge pointer, scout-pass restatement, docket `edit -f` semantics (stated in the DOCKET-CLI block below it).
+
+### Dimensions Evaluated
+Boundary Clarity, Actionability, Spec Alignment, Capability Growth & Cross-Communication, Consolidation & Trimming. ALREADY-ENCODED: B3 (literal `/tmp` -- CRITICAL banner item 3 is already line 20, the most prominent placement in the file; remaining gap is mechanical, coherence-flagged).
+
+### Rename
+No rename.
 ## 2026-07-21
 
 ### Summary
@@ -42,170 +167,6 @@ Findings: 5 → 3 sub / 1 cos / 0 rej / 2 def / 0 enc. Adopted the shared phase_
 
 ### Dimensions Evaluated
 Actionability, Boundary Clarity, Capability Growth & Cross-Communication, Consolidation & Trimming. Deferred: B4 (READ-BEFORE-EDIT block already sharp, execution-leak not definition gap), D9 (teammate skills-inert caveat already correct).
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Compacted 4 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Stale-dispatch check gains a scope discriminator (duplicate dispatch vs a new contradicting directive — overlapping trigger conditions had opposite prescribed responses); R7 now names the Read-before-Edit adjacency rule as a second outranking exception; master gains the missing empty-Read/new-path clause two citing files had assumed.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: CANONICAL:STALE-DISPATCH-CHECK gains a Scope sentence distinguishing a duplicate dispatch (reply-once, never re-execute) from a new directive contradicting closed work (evidence + ask-which-is-final).
-- AMPLIFY[SUBSTANTIVE]: R7 one-liner now names the READ-BEFORE-EDIT adjacency rule as a second exception that outranks it.
-- AMPLIFY[SUBSTANTIVE]: CANONICAL:READ-BEFORE-EDIT master gains the new-path/empty-Read-satisfies-the-gate clause (staff-engineer.md and distinguished-engineer.md already cited this as master content it didn't contain).
-
-### Dimensions Evaluated
-Disambiguation (multi-reading ×3).
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Hosts two new fleet-wide masters: `CANONICAL:READ-BEFORE-EDIT` (B3, 50-session fleet-wide failure class) and `CANONICAL:STALE-DISPATCH-CHECK` (R3, receiving-side crossed-in-flight convention); vote wire-form paragraph deduped to a Skill(vote) citation (I4).
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (B3): wrapped the existing Read-before-Edit paragraph (content unchanged, verified strongest copy) in `CANONICAL:READ-BEFORE-EDIT` markers so 6 other agent files can point to it.
-- AMPLIFY[SUBSTANTIVE] (R3): new `CANONICAL:STALE-DISPATCH-CHECK` block — receiving-side convention for a stale inbound task_assignment.
-- CULL[COSMETIC] (I4): vote wire-form paragraph replaced with a citation to `Skill(vote)`'s §Delegation Protocol (Team Path), which is the authoritative master.
-
-### Dimensions Evaluated
-Consolidation & Trimming, Cross-Communication (fleet-wide masters).
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Wired the orphaned self_review_scan.sh into self-review step 5; added a terminal-state marker to the completion report to reduce the operator-reported team-lead idle gap. Findings: 5 → 2 sub / 0 cos / 1 rej / 0 def / 2 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (I5): step 5 runs `self_review_scan.sh` as its mechanical first substep (debug/TODO/commented-code/merge-marker scan) before the manual re-read for error-handling/logic. Verified script existed (5570B) and was unreferenced.
-- AMPLIFY[SUBSTANTIVE] (idle-pain, reviewer-originated): completion report now leads with a `DONE — awaiting shutdown_request` terminal marker so team-lead distinguishes finished from mid-work without probing.
-- I9 rejected as a senior-engineer change — already-encoded via `regression_diff.sh baseline` mode (see sdet.md); routed as coherence.
-
-### Dimensions Evaluated
-Actionability, Capability Growth & Cross-Communication (all 8 evaluated). B3/B4/D1 already-encoded; 66% reinvocation rate assessed as legitimate ephemeral-lifecycle structure, not fix-loop churn.
-
-### Rename
-No rename.
-
-## 2026-07-13
-
-### Summary
-Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 2 coherence: migrated the hand-rolled team-mode vote proposal to `vote_delegate.sh` (fixes silent 0.67 threshold default — a real bug); compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: §Using `/vote` for Consensus now runs `vote_delegate.sh @senior-engineer` — fixes omitted `--threshold` bug; Wire-form warning preserved.
-- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition — content fully covered by the shutdown-protocol master.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (vote plumbing parity with 4 already-fixed files; SHUTDOWN-PROTOCOL block parity across the fleet).
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Findings: 3 → 3 sub / 0 cos / 0 rej / 3 def / 2 enc. Applied 3 verified bug-audit/docs-research findings to the highest-volume role's Read-before-Edit and tool-envelope rules. Net +811 bytes.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (BA-FIX2, DR1): widened Tool-envelope-check note — before calling ANY tool confirm it's in the actual system-prompt list (Grep/Glob/AskUserQuestion/TaskStop/MCP fall back to Bash equivalents); noted `skills:`/`mcpServers:` frontmatter is inert in teammate mode.
-- AMPLIFY[SUBSTANTIVE] (BA-PREVENT4): extended Shared/appended-files rule to name `docs/tdd/*.md` & `docs/adr/*.md` as the dominant stale-read hotspot (109 occ/12 sessions) and promoted the `stat -f '%Sm %z'` mtime-stability check into canonical text.
-- AMPLIFY[SUBSTANTIVE] (BA-PREVENT7): extended the `ls -d` doc-dir probe to also cover docs/tdd & docs/adr.
-
-### Dimensions Evaluated
-Actionability (all 3), Completeness/Boundary Clarity (DR1). BA-PREVENT5 (highest-volume bug): no new reminder added per its own guidance — dispatch-time fix owned by team-lead.md. Role Realism/Consolidation/Spec Alignment/Capability Growth/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Compacted 3 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): fixed a confirmed docket CLI drift and added docs-author hosting for the one genuine SDLC gap identified this cycle (end-user documentation). Net +685 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: corrected "-f flag exists only on `create`" — `docket issue edit` also accepts `-f` (replaces attachments rather than appending); internal inconsistency with project-manager.md's own reference block.
-- AMPLIFY[SUBSTANTIVE]: added a "Host for `docs-author`" bullet in What-You-Are-NOT, assigning end-user documentation (README/usage/API docs) ownership to this role — the one genuine gap identified by this cycle's SDLC role research (no existing owner; docs-researcher is retrieval-only). Phrased as "when dispatched to author end-user docs" rather than presupposing a specific team-lead.md dispatch-table row, pending Phase 2 reconciliation.
-
-### Dimensions Evaluated
-Actionability (CLI fix), Completeness / Boundary Clarity (docs-author). Read-before-Edit and build/commit hygiene already strongly stated — no duplication added. Role Realism/Consolidation/Spec Alignment/Capability Growth/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
 
 ### Rename
 No rename.
@@ -285,3 +246,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-01: Close handling drains background tasks pre-report; Plan mode dispatch claims-then-waits for proceed/revise; Docket file-attach example fixed. Trial: close-safety and plan-mode dispatch -> applied.
 - 2026-07-10: Coordination & tool-correctness fixes (shared/appended-files rule, docket create -f vs file add, premise-check widened) offset by redundancy trims. Net +119 bytes.
 - 2026-07-10: Phase 2 coherence follow-up — flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object; matches team-lead.md bug-audit FIX-9.
+- 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate): fixed a confirmed docket CLI drift (`docket issue edit` also accepts `-f`) and added docs-author hosting for end-user documentation. Net +685 bytes.
+- 2026-07-11: Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+- 2026-07-11: Compacted 3 entries (2026-06-09..2026-06-10) into Compacted history per the retention-compaction policy.
+- 2026-07-12: Phase 2 coherence: migrated the hand-rolled team-mode vote proposal to `vote_delegate.sh` (fixes silent 0.67 threshold default); compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form.
+- 2026-07-12: Findings: 3 → 3 sub / 0 cos / 0 rej / 3 def / 2 enc. Widened Tool-envelope-check note (Grep/Glob/AskUserQuestion/TaskStop/MCP fall back to Bash equivalents); extended Shared/appended-files rule to docs/tdd & docs/adr with the `stat -f '%Sm %z'` mtime-stability check. Net +811 bytes.
+- 2026-07-13: Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
+- 2026-07-15: Compacted 4 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+- 2026-07-15: Stale-dispatch check gains a scope discriminator (duplicate dispatch vs a new contradicting directive); R7 names the Read-before-Edit adjacency rule as a second outranking exception; CANONICAL:READ-BEFORE-EDIT master gains the missing empty-Read/new-path clause.
+- 2026-07-15: Hosts two new fleet-wide masters: `CANONICAL:READ-BEFORE-EDIT` (B3) and `CANONICAL:STALE-DISPATCH-CHECK` (R3, receiving-side crossed-in-flight convention); vote wire-form paragraph deduped to a Skill(vote) citation (I4).
+- 2026-07-15: Wired the orphaned self_review_scan.sh into self-review step 5; added a terminal-state marker to the completion report to reduce the operator-reported team-lead idle gap.

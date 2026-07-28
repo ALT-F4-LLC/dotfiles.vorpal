@@ -14,7 +14,7 @@ demand only — never `Skill(team-doctrine)`.
 
 ## Runtime Discipline (R1-R7)
 
-Canonical R-rule bodies for the team. Other agents include rule bodies inline only where the rule applies; cross-agent pointers resolve here. Per-agent applicability per the matrix below; team-lead itself uses R2/R5/R7 via pointer style (▾) and the rest as bodies. This file is the source of truth for the R-rule bodies.
+Canonical R-rule bodies for the team. Agent files carry a one-line reminder per applicable rule plus a pointer here, not a copy of the body; cross-agent pointers resolve to this file. Per-agent applicability per the matrix below; team-lead is the sole exception, carrying compact LOCAL bodies for R1/R3/R4/R6 and a grouped pointer for R2/R5/R7 (▾). This file is the source of truth for the R-rule bodies.
 
 | Rule | tl | st | de | se | pm | ux | sd | sr | Lines |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -26,7 +26,7 @@ Canonical R-rule bodies for the team. Other agents include rule bodies inline on
 | **R6 Anti-Defensive-Exploration** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
 | **R7 In-Session Read-Cache Awareness** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~3 |
 
-✓ = full body; ▾ = pointer (`see skills/team-doctrine/references/runtime-discipline.md §R{N}`); — = omit; ✓* = canonical body + per-advisor variant trigger.
+✓ = inline per-rule entry: a one-line reminder plus a section-level pointer to this master, never a copy of the body (team-lead's four ✓ cells are the one exception — compact LOCAL bodies inside its `CANONICAL:RUNTIME-DISCIPLINE-LOCAL` block); ▾ = named in a grouped pointer sentence, no per-rule reminder; — = omit; ✓* = the ✓ form plus the per-advisor variant trigger below.
 
 ### R1 — Tool-Use Parsimony
 

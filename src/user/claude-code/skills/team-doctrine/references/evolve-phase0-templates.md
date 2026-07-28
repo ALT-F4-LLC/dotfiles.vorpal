@@ -223,7 +223,7 @@ If a category is empty, write `none` — do not omit the line. Any quantified cl
 
 ## 4. Repetition Audit — shared template
 
-Consumers: evolve-agents, evolve-skills. No spawn-time tokens (fenced body byte-identical across both); runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`) pass through. The per-cycle "Scope is GLOBAL … unlike historical-auditor's per-agent/per-skill grep" wording stays in each consumer's pre-fence prose stub.
+Consumers: evolve-agents, evolve-skills, evolve-config. No spawn-time tokens (fenced body byte-identical across all three); runtime tokens (`{history_days}`, `{history_cutoff_iso}`, `{history_cutoff_epoch_ms}`) pass through. The per-cycle "Scope is GLOBAL … unlike historical-auditor's per-agent/per-skill grep" wording stays in each consumer's pre-fence prose stub.
 
 ````
 Agent(name="repetition-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")
@@ -248,7 +248,7 @@ For each finding: `<FIX|PREVENT|BENIGN-RACE> <n>: <what repeated>` / `SESSIONS:`
 
 ## 5. Bug Audit — shared template
 
-Consumers: evolve-agents, evolve-skills. No spawn-time tokens (fenced body byte-identical across both); runtime tokens pass through as in §4.
+Consumers: evolve-agents, evolve-skills, evolve-config. No spawn-time tokens (fenced body byte-identical across all three); runtime tokens pass through as in §4.
 
 ````
 Agent(name="bug-auditor", subagent_type="senior-engineer", model="sonnet", prompt="...")

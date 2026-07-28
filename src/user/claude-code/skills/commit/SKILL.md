@@ -99,18 +99,28 @@ and scoping guarantees once authorization already exists.
    `-A`/`--all` tokens — pathspecs must name real files or directories, not a
    blanket wildcard (`src/user/claude-code/agents/senior-engineer.md`,
    "Shared-tree diff scoping": *"Never `git add` to 'clean up'"*).
-2. `git status --short -- <files>` scoped to exactly those paths — confirms
-   each path has an actual pending change and surfaces its state
-   (modified/untracked/deleted).
+2. `git status --porcelain -- <files>` scoped to exactly those paths (use
+   `--porcelain`, not `--short` — same two-column format but guaranteed
+   stable across git versions and user config). Read BOTH columns: X (left)
+   is index-vs-HEAD, Y (right) is worktree-vs-index. `MM` means the path has
+   staged content from an earlier round AND newer unstaged edits — Step 4's
+   `git add` refreshes it, so it is not a blocker, but a bare `git diff`
+   would have looked clean while the index held stale content. Empty output
+   for a path means it has no pending change at all.
 3. `git diff --cached --name-only` — if this is non-empty *before* you stage
-   anything, the index already holds staged content (possibly a sibling
-   agent's in-progress work in a shared tree). Do not touch it and do not
-   commit through it:
+   anything, the index already holds staged content. Partition that list
+   against Step 1's path list before deciding; non-empty alone is not an
+   abort. Paths INSIDE the fileset are your own stale index (the `MM` case
+   above) — leave them: Step 4's `git add` refreshes them from the worktree
+   and Step 4's staged-set equality check confirms the result. Paths OUTSIDE
+   the fileset are possibly a sibling agent's in-progress work in a shared
+   tree — do not touch the index and do not commit through it:
 
    ```
-   Blocked: index already has staged changes ({staged files}) that are not
-   part of this commit's fileset. Resolve (unstage or hand off) before
-   invoking Skill(commit) — never commit through someone else's staged work.
+   Blocked: index already has staged changes ({out-of-fileset staged files})
+   that are not part of this commit's fileset. Resolve (unstage or hand off)
+   before invoking Skill(commit) — never commit through someone else's
+   staged work.
    ```
 
 ## Step 2 — Draft the message
@@ -235,12 +245,27 @@ Mechanize the check rather than eyeballing it:
    `CVE-2024-…` — never count as matches; a surviving rule-2 hit is
    therefore a genuine issue-tracker ID and must be removed.)
 
-**Exit 0 is necessary but not sufficient for rule 3.** The script's rule-3
-pattern matches only `session_id`/`task_id`/`vote_id`/`teammate`/`docket` as
-literal tokens; model and tier names (Sonnet, Opus, Fable, Haiku,
-gold/silver) and bare teammate names (`advisor`, `reviewer-2`, `tdd-author`)
-are inside rule 3's documented scope but are NOT pattern-checked. Read the
-drafted subject and body once for those two categories before staging.
+**Rule 3 is mechanized for compound persona/session names, not for
+single-word tier/model/role nouns.** The script's rule-3 pattern covers
+`session_id`/`task_id`/`vote_id`/`teammate`/`docket`, the core role names
+(`team-lead`, `staff-engineer`, `senior-engineer`, `security-engineer`,
+`distinguished-engineer`, `project-manager`, `ux-designer`, `sdet`), and
+other compound/hyphenated ephemeral or skill names (`historical-auditor`,
+`bug-auditor`, `repetition-auditor`, `model-routing-auditor`,
+`docs-researcher`, `simplify-scout`, `innovation-scanner`,
+`coherence-reviewer`, `single-reviewer`, `tdd-author`, `docs-author`,
+`reviewer-{N}`, `design-review-{N}`, `design-qa-{N}`, `verifier-criteria`,
+`verifier-integration`) as literal or numeric-suffixed tokens. Single-word
+tier/model/role nouns (`gold`, `silver`, `bronze`, `sonnet`, `opus`, `fable`,
+`haiku`, `advisor`, `planner`, `investigator`, `verifier`) are deliberately
+NOT in the regex — they collide too often with ordinary English and this
+repo's own prose-heavy doctrine vocabulary (demonstrated: `gold-standard`,
+"shared planner helper") to gate on without training reflexive
+stoplist-padding, the same tradeoff `model_census.sh`'s report-only arm-3
+backstop already made for its capitalized-token heuristic. Exit 0 means the
+mechanized categories passed — still eyeball the draft for a stray bare
+tier/model/role noun before staging; it remains a residual, not a solved
+category.
 
 ### Preemptable false-positive triggers (pick wording up front)
 

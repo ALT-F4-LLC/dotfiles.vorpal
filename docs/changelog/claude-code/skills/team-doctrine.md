@@ -1,5 +1,36 @@
 # Changelog: team-doctrine
 
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation (coherence-class route, CC-3): the `evolve-orchestration-core.md` reference row's "Cited by" column under-listed its carriers.
+
+### Changes
+- FIX[SUBSTANTIVE]: "Cited by" column for `references/evolve-orchestration-core.md` expanded from 3 to 5 skills — added `evolve-coherence` (2 live refs) and `evolve-model-distribution` (2 live refs), both confirmed via `grep -rl` against the live file set; the adjacent retention-compaction.md row already enumerated its 4th carrier correctly, so the omission was local to this row.
+
+### Dimensions Evaluated
+Coherence: reference accuracy (Cited-by column completeness — not mechanized by doctrine_check.sh, which covers row count and Master pointer resolution only).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Closed two self-contradictions in the reference library: team-conventions.md's stale "Rules 1-9" live count (now scoped as a DKT-59 historical snapshot) and runtime-discipline.md's R-matrix legend, which claimed ✓ meant "full body" when only team-lead carries bodies at all. Repaired a 5th "Cited by" drift in SKILL.md's index. Findings: 5 sub / 0 cos / 0 rej / 16 verified-accurate
+
+### Changes
+- FIX[SUBSTANTIVE]: team-conventions.md:17 (OP-C8) — "still Rules 1-9" re-scoped as the DKT-59 relocation snapshot; :26's live 1-11 count named authoritative. Relocation provenance preserved.
+- FIX[SUBSTANTIVE]: runtime-discipline.md:29 (OP-C11) — legend reworded; ✓ = inline one-line reminder + master pointer (team-lead's four ✓ cells the sole compact-body exception), ▾ = grouped pointer sentence. Also drops a bare-root self-citation path.
+- FIX[SUBSTANTIVE]: runtime-discipline.md:17 (OP-C11) — table-intro prose carried the same "rule bodies inline" error one paragraph above the legend.
+- FIX[SUBSTANTIVE]: SKILL.md index (I3) — sandbox-recovery row +distinguished-engineer.md (real CANONICAL:SANDBOX-RECOVERY-LOCAL block at :58-60, staged-not-committed, which is why the 2026-07-24 hand-audit missed it); runtime-discipline row "full bodies where applicable" → "one-line reminder + pointer".
+
+### Dimensions Evaluated
+Coherence (both pre-verified contradictions + 1 drifted citer set, all confirmed by live grep/Read of all 8 agent files), Actionability (legend now describes what an auditor will actually find). Spec Alignment: matrix ✓/▾/—/✓* markings independently verified correct against every agent file — no contradiction with the reworded legend. Skill Design Quality / frontmatter / description dimensions: N/A for references/ files. Index invariant 17==17; doctrine_check.sh all arms PASS.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary

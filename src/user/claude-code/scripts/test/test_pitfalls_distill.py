@@ -189,6 +189,145 @@ def test_heading_style_entries():
 
 
 # ---------------------------------------------------------------------------
+# 3b. DKT-126: a `## heading` + its immediately-following contiguous run of
+#     `- ` bullets (Symptom/Root cause/Resolution shape) is ONE entry span —
+#     a single distill call removes the whole pitfall, one ledger line, no
+#     orphaned bullets. A sibling bare `- ` entry survives untouched.
+# ---------------------------------------------------------------------------
+def test_heading_with_bullets_grouped_as_one_entry():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "sdet")
+    write(pf,
+          "# sdet pitfalls (in-repo)\n\n"
+          "## Background-task exit code masked\n"
+          "- **Symptom:** launched a long test in the background.\n"
+          "- **Root cause:** the reported exit code was the trailing echo, not the real command.\n"
+          "- **Resolution:** capture the real exit in the same subshell as the command.\n\n"
+          "- symptom: a second, unrelated bare entry that must survive untouched.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+
+    code, out, err = run_distill(repo, [
+        "sdet", "in-repo",
+        "--entry", "## Background-task exit code masked",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+        "--summary", "Background-task exit code masked",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    # heading + all 3 bullets removed in ONE call -> ONE ledger line (E3).
+    assert "PARITY: entries 2->1, ledger 0->1" in out, out
+    # E1: the full span (heading + all 3 bullets) is emitted verbatim.
+    assert "## Background-task exit code masked" in out, out
+    assert "**Symptom:**" in out and "**Root cause:**" in out and "**Resolution:**" in out, out
+
+    content = read_text(pf)
+    assert "## Background-task exit code masked" not in content, content
+    assert "**Symptom:**" not in content, content
+    assert "**Root cause:**" not in content, content
+    assert "**Resolution:**" not in content, content
+    assert content.count("- [2026-07-14] Background-task exit code masked") == 1, content
+    assert "- symptom: a second, unrelated bare entry that must survive untouched." in content, content
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# 3c. DKT-126 fix-round widening: a heading followed by exactly ONE blank
+#     line then a bullet run IS absorbed into the same entry span (matches
+#     the real ~/.claude/agent-memory/security-engineer/pitfalls.md shape,
+#     e.g. its "govulncheck fails with..." entry). A sibling bare entry
+#     survives untouched.
+# ---------------------------------------------------------------------------
+def test_heading_with_one_blank_before_bullets_is_absorbed():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "sdet")
+    write(pf,
+          "# sdet pitfalls (in-repo)\n\n"
+          "## a heading with one blank line before its bullet\n\n"
+          "- **Symptom:** one blank line is tolerated before the bullet run.\n\n"
+          "- symptom: a second, unrelated bare entry that must survive untouched.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+
+    code, out, err = run_distill(repo, [
+        "sdet", "in-repo",
+        "--entry", "## a heading with one blank line before its bullet",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    assert "PARITY: entries 2->1, ledger 0->1" in out, out
+    content = read_text(pf)
+    assert "## a heading with one blank line before its bullet" not in content, content
+    assert "- **Symptom:** one blank line is tolerated" not in content, content
+    assert "- symptom: a second, unrelated bare entry that must survive untouched." in content, content
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# 3c2. Contiguity boundary: TWO blank lines between heading and bullet is
+#      still NOT absorbed — proves the tolerance is "at most one" blank, not
+#      unbounded.
+# ---------------------------------------------------------------------------
+def test_heading_with_two_blanks_before_bullet_not_absorbed():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "sdet")
+    write(pf,
+          "# sdet pitfalls (in-repo)\n\n"
+          "## a heading with two blank lines before its bullet\n\n\n"
+          "- **Symptom:** this bullet is still not contiguous under the widened rule.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+
+    code, out, err = run_distill(repo, [
+        "sdet", "in-repo",
+        "--entry", "## a heading with two blank lines before its bullet",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    assert "PARITY: entries 2->1, ledger 0->1" in out, out
+    content = read_text(pf)
+    assert "- **Symptom:** this bullet is still not contiguous under the widened rule." in content, content
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# 3d. E4 re-verification: Trial:/Drift: lines inside an absorbed bullet run
+#     are still preserved verbatim in the ledger line under the new grouping.
+# ---------------------------------------------------------------------------
+def test_heading_with_bullets_trial_drift_preserved():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "sdet")
+    write(pf,
+          "# sdet pitfalls (in-repo)\n\n"
+          "## grouped entry carrying a trial/drift bullet\n"
+          "- **Symptom:** grouped-entry case for E4 coverage.\n"
+          "- **Resolution:** apply the grouped fix.\n"
+          "Trial: attempted the naive fix, regressed a sibling case.\n"
+          "Drift: definition now covers both cases explicitly.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+
+    code, out, err = run_distill(repo, [
+        "sdet", "in-repo",
+        "--entry", "## grouped entry carrying a trial/drift bullet",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    content = read_text(pf)
+    ledger_line = [l for l in content.splitlines() if l.startswith("- [2026-07-14]")][0]
+    assert "Trial: attempted the naive fix, regressed a sibling case." in ledger_line, ledger_line
+    assert "Drift: definition now covers both cases explicitly." in ledger_line, ledger_line
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
 # 4. No-H1 file (distinguished-engineer shape): section lands at top-of-file
 # ---------------------------------------------------------------------------
 def test_no_h1_file_section_at_top():
@@ -470,6 +609,62 @@ def test_recovery_channel_git_history():
     ])
     assert code == 0, f"exit {code}: {err}"
     assert "RECOVERY-CHANNEL: git-history" in out, out
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# 9a. RECOVERY-CHANNEL over an absorbed span with an interior blank line
+#     (DKT-126 fix-round: the widened heading+one-blank+bullets absorption
+#     must still byte-match HEAD across the interior blank; and a post-commit
+#     edit to the bullet must correctly fall back to record-mirror-only).
+# ---------------------------------------------------------------------------
+def test_recovery_channel_git_history_interior_blank():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "staff-engineer")
+    write(pf,
+          "# Pitfalls: staff-engineer\n\n"
+          "## a heading with one blank line before its bullet\n\n"
+          "- **Symptom:** committed together with its heading, interior blank included.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+
+    code, out, err = run_distill(repo, [
+        "staff-engineer", "in-repo",
+        "--entry", "## a heading with one blank line before its bullet",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    assert "RECOVERY-CHANNEL: git-history" in out, out
+    shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_recovery_channel_record_mirror_only_interior_blank_edited():
+    repo = new_repo()
+    pf = pitfalls_path(repo, "staff-engineer")
+    write(pf,
+          "# Pitfalls: staff-engineer\n\n"
+          "## a heading with one blank line before its bullet\n\n"
+          "- **Symptom:** original bullet text before the post-commit edit.\n")
+    enc = base_encoded_in(repo)
+    commit_all(repo)
+    # Edit the bullet in place (uncommitted) -- the absorbed span no longer
+    # byte-matches HEAD, so the recovery channel must fall back.
+    write(pf,
+          "# Pitfalls: staff-engineer\n\n"
+          "## a heading with one blank line before its bullet\n\n"
+          "- **Symptom:** EDITED bullet text after commit.\n")
+
+    code, out, err = run_distill(repo, [
+        "staff-engineer", "in-repo",
+        "--entry", "## a heading with one blank line before its bullet",
+        "--encoded-in", enc,
+        "--evidence", "the lesson now",
+        "--date", "2026-07-14",
+    ])
+    assert code == 0, f"exit {code}: {err}"
+    assert "RECOVERY-CHANNEL: record-mirror-only" in out, out
     shutil.rmtree(repo, ignore_errors=True)
 
 

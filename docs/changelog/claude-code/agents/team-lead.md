@@ -1,5 +1,109 @@
 # Changelog: team-lead
 
+## 2026-07-27
+
+### Summary
+Compacted 6 entries (2026-07-13..2026-07-15) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 6 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: root-cause routing now names a single owner (investigator executes, advisor consults), and the Moving-tree GO cites the seated advisor's gate on either tier rather than staff's alone; folded in one Phase-2-class self-consistency fix (bare "Subagent" mechanism label).
+
+### Changes
+- FIX[SUBSTANTIVE] (DISAMBIG 7): No-Direct-Debugging Required-routing bullet routes root-cause diagnosis/hypothesis/discriminating-test DESIGN to an ephemeral `investigator` (@distinguished-engineer, gold) per the Gold-first routing reflex; the seated `advisor` is named as the CONSULT seat, never the first-pass diagnostician -- removes the advisor-vs-investigator ownership collision with line 197.
+- FIX[SUBSTANTIVE] (DISAMBIG 6): step-14 routine-review GO cites the SEATED advisor's Moving-tree gate (distinguished-engineer.md Mode 2 / staff-engineer.md Review Workflow step 1) and states the `frozen:` embed binds on either tier.
+- FIX[COSMETIC] (COH-A): V/I/SR pattern's `mechanism:` label changed from bare "Subagent" to "Report-only subagent" -- self-violated the file's own Distribution-Mechanism-Gate naming rule (line 109).
+
+### Dimensions Evaluated
+Disambiguation (Phase 3): overlapping-ownership; Coherence & Cross-Communication (Phase 2, self-consistency)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+TRIM cycle. Closed an unsatisfiable DE-spawn contract (no `Mode:` field was ever emitted), corrected the death-evidence ladder so a SendMessage REFUSAL no longer authorizes a duplicate spawn, killed the dispatch-ledger flag ambiguity behind 3 failed sessions, adopted 3 harness facts (sibling-roster snapshot, return scanning, spawn caps), and made the GO freeze claim evidence-based. Paid for with 19 consolidations: 6 duplicate restatements collapsed to pointers, 5 rationale passages compressed, 3 non-executable inventories culled. Findings: 11 applied / 1 rejected / 3 deferred / 1 already-encoded. Net -204 bytes (134,033 -> 133,829).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (C1): `Mode: <tdd-author|advisor|investigator|deep-impl>` added to Common context-block elements -- distinguished-engineer.md:85 and simplify-scout/SKILL.md:39,170 both gate on a field team-lead never emitted (grep count was 1, and that hit was `permissionMode:` frontmatter).
+- AMPLIFY[SUBSTANTIVE] (D9/docs-researcher unnumbered): a SendMessage refusal is NOT D3 death evidence -- name-collision (v2.1.199) and operator-stopped cancellation (v2.1.191, sub-agents.md:945) both mean alive-or-shadowed; both unconditional auto-resume claims bounded. Prevents a Rule 7 duplicate-spawn violation.
+- AMPLIFY[SUBSTANTIVE] (I6): GO trigger now embeds `frozen:<sha12>` from `tree_fingerprint.sh`, matching the `+dirty:` field reviewers already emit -- the freeze claim becomes checkable instead of asserted. Peer Moving-tree gates remain Phase-2-coordinated.
+- AMPLIFY[SUBSTANTIVE] (B6): `[triggers:...]` removed from the dispatch_ledger command line; the script accepts only the flags shown and trigger letters go in `--note=` (verified against its arg parser).
+- AMPLIFY[SUBSTANTIVE] (D2/D3/D7): sibling-roster snapshot semantics (a failed peer send is a roster gap, not a stall), v2.1.210 return-scanning annotations (harness-inserted, non-byte-exact), and the 200/session + 20-concurrent caps with the teammate exemption.
+- AMPLIFY[SUBSTANTIVE] (B1): `summary` requirement moved to R3, the composition point -- 3 "main"-authored hits were ad-hoc relays no template could cover.
+- CULL[SUBSTANTIVE] (H2): TeammateIdle demoted from "canonical" stall signal -- it fires on ~95-100% of ALL spawns uniformly (model-routing-auditor), so it triggers the idle ladders, never a verdict.
+- CULL[COSMETIC]: effort census, investigator-brief Fable duplicate, and the sixth no-new-authority disclaimer removed; SendMessage contract, CLOSED-set, Name/background, Rule 7 name list, and the step-14 promised-gate check collapsed to pointers; DKT-65, benign-late, skill-strip, Rule 2 prefix, and opencode-provenance passages compressed.
+- MECHANICAL (C6): `sdet-{ID}` -> `sdet-{DOCKET-ID}` at both tier bullets; `docs-author*` added to Rule 7's ephemeral list.
+
+### Dimensions Evaluated
+Role Realism, Actionability, Boundary Clarity, Completeness, Consolidation & Trimming (Pass B), Capability Growth & Cross-Communication, Spec Alignment, Rename
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: 4 sites let a reader name the wrong owner or actor at a decision point -- the V/I/SR advisor tier, the "Direct" mechanism's actor, the fix-round security reviewer's name, and the plan-review authority pointer. Net +194 bytes.
+
+### Changes
+- FIX[SUBSTANTIVE]: root-cause routing line now carves out V/I/SR explicitly -- a standalone V/I/SR task is never TDD-bearing, so its advisor is @staff-engineer at silver, not the ambiguous "on Medium+ cycles" phrasing that named a seat the same file's other 3 sites forbid for this branch.
+- FIX[COSMETIC]: Distribution-Mechanism Gate item 1 relabelled "Direct (lead-driven, one worker, no peer comms)" -- the old label read as team-lead doing the work, which the same file's write-boundary and No-Direct-Debugging Boundary forbid.
+- FIX[MECHANICAL]: fix-round security delta reviewer renamed security-reviewer-fix-{N}, aligning with security-engineer.md's own roster and the fleet -fix-{N} convention (was security-reviewer-2, a same-name-respawn hazard).
+- FIX[COSMETIC]: triage note (a)'s "(iii) SUPERSEDES..." disambiguated from a duplicate list label to "That (iii) SUPERSEDES...".
+- FIX[SUBSTANTIVE]: PA overlay's plan-conformance-review citation now tier-aware (distinguished-engineer.md Mode 2 on TDD-bearing cycles / staff-engineer.md Responsibility 2 sub-Medium) instead of citing only the sub-Medium holder's file for a TDD-bearing (Medium+) case.
+
+### Dimensions Evaluated
+Overlapping-ownership, multi-reading, confusable-name (Phase 3, two-arm test)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: two non-resolving `scripts/` path literals normalized to full repo paths. Net +50B. (The tool-envelope.md master extraction proposed in Phase 1 was DEFERRED by the coherence-reviewer: this cycle's own D1 edits landed 7 intentionally-divergent paragraph variants, falsifying the byte-identity premise the extraction needed.)
+
+### Changes
+- FIX[MECHANICAL]: `scripts/model_census_exemptions.tsv` / `scripts/model_census.sh` -> `src/user/claude-code/scripts/...` (line 240; non-resolving from either repo root or deployment).
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+TRIM cycle. Corrected a FALSE harness claim (teammates DO keep the Task tools -- the fused v2.1.217 stamp split into per-claim stamps) and a false skill-strip claim; wired the orphaned docket_promote.sh into all 5 promotion sites; retired the DKT-61 empirical narrative and the model-tier exempt-category duplication; replaced the GNU-only shuf spot-check picker with a tested portable python3 sampler. Findings: 13 -> 8 sub / 3 cos / 1 rej / 3 def / 2 enc. Net -1,650 bytes (135,441 -> 133,791; still ~54KB over the 80,000-byte target -- the tool-envelope master extraction, conditional on Phase 2, is the next lever).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (D1/I8): triage note (a) split into per-claim version stamps; teammate Task-tool claim corrected (agent-teams.md:255, sub-agents.md:338, live CC 2.1.220); Agent-at-depth re-grounded on agent-teams.md:425/426, depth-based justification retired. 3-site restatement collapsed to pointers.
+- AMPLIFY[SUBSTANTIVE] (E1): Skill(commit) removed from the teammate-invocable list; stated team-lead-exclusive per commit/SKILL.md Step 0.
+- AMPLIFY[SUBSTANTIVE] (D3): Skill(session-metrics) strips Agent+SendMessage only, not the Task family; commit/review-and-comment's Edit+Write strip named.
+- AMPLIFY[SUBSTANTIVE] (B9): portable python3 random-sample replaces `shuf -n 2` (verified absent on this host); sort -R explicitly excluded.
+- AMPLIFY[SUBSTANTIVE] (H1): idle checks ordered BEFORE the stall probe -- closes the probe-crosses-completion-report race behind 2 of 3 fleet shutdown-rejections.
+- CULL[SUBSTANTIVE] (I9): docket_promote.sh cited at all 5 sites; one canonical gate paragraph at step 11, pointers at steps 14/15.
+- CULL[SUBSTANTIVE] (I10): DKT-61 narrative reduced to its Discriminator; exempt-category definitions cite model_census_exemptions.tsv.
+- CULL[COSMETIC] x3 (Pass B): redundant step-15 Promised-gate block deleted; Rule 8's paraphrase of step 14's rules 1-6 and its duplicate degraded-fallback sentence collapsed to pointers; "consume both" -> "consume all four" arity fix.
+
+### Dimensions Evaluated
+Consolidation & Trimming (priority), Actionability, Completeness/Doctrine Accuracy, Boundary Clarity, Capability Growth. Deferred: tool-envelope master (Phase 2 lockstep), R1 script-existence checks (fleet doctrine, outside 8-file scope).
+
+### Rename
+No rename.
 ## 2026-07-24
 
 ### Summary
@@ -74,177 +178,6 @@ Actionability (I-tl3/I-tl4), Consolidation & Trimming (priority — 5 trims), Ca
 ### Rename
 No rename.
 
-## 2026-07-15
-
-### Summary
-Compacted 5 entries (2026-06-30..2026-07-01) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 5 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Added a Read-before-Edit pointer (B3, team-lead-main-session was in the failure set) and a bidirectional cross-ref naming the new receiving-side stale-dispatch convention (R3); vote relay-contract wire-form tail deduped to a Skill(vote) citation (I4). Byte budget still ~35KB over — flagged, not fixed this cycle (Remaining Issue).
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (B3): added a Read-before-Edit pointer at the sanctioned-write-paths sentence.
-- AMPLIFY[SUBSTANTIVE] (R3): Pre-dispatch completion check now cross-references senior-engineer.md's new receiving-side convention.
-- CULL[COSMETIC] (I4): relay-contract wire-form tail replaced with a citation to Skill(vote)'s Delegation Protocol (~90 bytes saved).
-
-### Dimensions Evaluated
-Consolidation & Trimming, Cross-Communication.
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Landed the cycle's top-priority operator-pain fix: a HARD anti-idle turn-end invariant banning bare-sleep placeholders and zero-armed-watch turn-ends while teammates are outstanding. Merged SendMessage-schema + shutdown-typo guards into SP-1b (scope adjusted from the reviewer's proposal — kept schema content, verified no cross-agent parity break). Brief Done-state now names the issue-close disposition. Funded via consolidation of 6 dense paragraphs. Still ~35KB over budget — needs Phase 2 cross-file relocation. Findings: 14 → 6 sub / 5 cos / 0 rej / 5 def / 1 enc. Net -151B.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (H1/B1/R4/I3/I1): anti-idle invariant in the Monitor LOCAL block.
-- AMPLIFY[SUBSTANTIVE] (B2/H2): SP-1b gains bare-string/`summary`-required example, union-shape/no-ad-hoc-fields callout, shutdown-namespace-typo guard.
-- AMPLIFY[SUBSTANTIVE] (H3): brief Done-state must name move-to-done vs leave-open.
-- CULL[COSMETIC] ×5 (reviewer Pass B): consolidated Gold-first reflex, Pre-dispatch check, Liveness Gate, 2 blockquotes (terseness/optimization, alignment-verification), report-only disambig note, deduped Large-diagram advisor footnote.
-
-### Dimensions Evaluated
-Completeness/Capability Growth (idle-stall), Actionability (schema), Consolidation (Pass B). No change: Role Realism, Boundary Clarity, Spec Alignment.
-
-### Rename
-No rename.
-
-## 2026-07-13 (DKT-270 Phase 3 disambiguation)
-
-### Summary
-Disambiguated the Gold-first routing reflex's `Skill(vote)` restriction-class pointer, aligning with the same gloss applied to the 3 sanctioned-role files. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: glossed "same restriction class as `Skill(vote)`" with the shared class itself (swarm-spawning entry points are main-session-only) — "here" (team-lead's own routing target) ruled already clear, no split needed
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
-## 2026-07-13 (DKT-270 Phase 2 coherence)
-
-### Summary
-Phase 2 coherence (DKT-270): corrected the stale `Skill(deep-research)` parenthetical in the Gold-first routing reflex — deep-research is a bundled Workflow, not a teammate-invokable Skill. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: the work-SHAPE vs sub-step disambiguation now states the corrected mechanics — no `Workflow` tool for teammates (same restriction class as `Skill(vote)`); sanctioned roles hand-roll the fan-out at their own tier or route to team-lead for a main-session `/deep-research` run. Aligns with the DKT-270 correction landed in distinguished-engineer.md, staff-engineer.md, ux-designer.md.
-
-### Dimensions Evaluated
-Coherence (4th-file sweep caught this reference; team-lead.md itself consumes the sentence for routing decisions).
-
-### Rename
-No rename.
-
-## 2026-07-13
-
-### Summary
-Compacted 4 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 3 disambiguation: 3 fixes resolving multi-reading/ownership ambiguity introduced or exposed by this cycle's edits — the V/I/SR consult-advisor conditional, the "deep research" work-shape vs `Skill(deep-research)` sub-step naming collision, and a missing explicit-`--threshold` mandate on team-lead's own direct vote-create path.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: V/I/SR pattern's consult-advisor pinned to `@staff-engineer`/`silver` with a table citation — the prior Medium+/otherwise conditional could be misread as sanctioning a `gold` DE advisor beside the `gold` DE investigator (double gold spend).
-- AMPLIFY[SUBSTANTIVE]: Gold-first routing reflex now distinguishes the "deep research" gold-routed work-SHAPE from `Skill(deep-research)`, the silver-tier sub-step tool this cycle sanctioned in 3 files.
-- AMPLIFY[SUBSTANTIVE]: Consensus Integration's direct `docket vote create` path gains the explicit `--threshold` mandate every teammate file already carries — closes the silent-0.67-default trap for team-lead's own uncovered proposer path.
-
-### Dimensions Evaluated
-Disambiguation (multi-reading, overlapping-ownership) — post-Phase-2 genome re-read fresh; two-arm test applied to all candidates.
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Findings: 11 → 5 sub / 10 cos / 0 rej / 6 def / 3 enc. TRIM cycle: applied 6 Phase-0 findings (docket-cli pointer, cycle_metrics wiring, Monitor-driven sweep, fresh-context Read, repo-root-sweep rule, no-report-file) funded by 10 prose consolidations. Net -1,325 bytes (113,686→112,361). File remains ~32KB over the 80KB budget — bulk reduction needs a coordinated relocation of full-text sections to team-doctrine masters, out of this cycle's single-pass scope.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (RA-FIX1): added CANONICAL:DOCKET-CLI-LOCAL pointer — team-lead was the sole high-volume docket-CLI-rediscovery role without it (53/62 re-probe sessions this week).
-- AMPLIFY[SUBSTANTIVE] (IS-TL2): wired `cycle_metrics.py` into step-16 wrap-up (blown threshold → operator-facing line).
-- FIX[SUBSTANTIVE] (IS-TL3): step-13 shutdown sweep is now Monitor-driven with a once-per-phase manual fallback — resolves a live contradiction with the monitor-orchestration master.
-- AMPLIFY[SUBSTANTIVE] (BA-PREVENT5, HA-TL1): dispatch hygiene now states fresh spawns have Read no file yet, and mandates repo-root-grep-with-exemptions over directory enumeration for sweeps.
-- AMPLIFY[SUBSTANTIVE] (BA-PREVENT6): report-only subagent briefs must forbid Write of report/summary files.
-- CULL[COSMETIC] ×10: shutdown paragraph, Rule-8 script schemas, model-routing intro + resolution-order, git-verification caveats, transition/experimental caveat, effort teammate bullet, alignment orthogonality, named-mechanism fidelity, agent-blocked-diagnostic, ground-truth brief — all reworded for brevity with no behavioral loss.
-
-### Dimensions Evaluated
-Actionability (findings), Spec Alignment (IS-TL3 contradiction resolved), Consolidation & Trimming (10 cuts). Role Realism/Boundary Clarity/Rename: RETAIN (SDLC split reconfirmed). BA-FIX1/HA-TL2/HA-UX1/IS-TL4-relay/DR2 verified — no gap found, no change (already-encoded or correctly declined).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Phase 3 disambiguation fix: the new `docs-author` dispatch-table row didn't disambiguate against the confusably-named `docs-researcher` bronze role. Net +150 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: added a "NOT doc RETRIEVAL → `docs-researcher`" clause to the `docs-author` Per-Role Dispatch Table row — both are `docs-*`/bronze and share the "documentation" trigger surface, but `docs-researcher` has no table row of its own (lives inline elsewhere), so the author-vs-retrieve discriminator needed to live in-row.
-
-### Dimensions Evaluated
-Boundary Clarity (confusable-name, Phase 3 disambiguation). SP-1/SP-1b adjacency, the 3-site effort-lever correction, and the DE/PM naming-note asymmetry were all checked and cleared as unambiguous.
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): TRIM cycle grounded in SDLC role research + bug/docs audits. Net -39 bytes (8 adds paid by 12 prose consolidations).
-
-### Changes
-- FIX[SUBSTANTIVE]: effort third-lever correction at 3 sites (§Effort intro, TEAMMATE bullet, Per-model brief deltas) — a skill's own `effort:` frontmatter overrides session effort even on a teammate running that skill; the prior text claimed this lever didn't exist.
-- ADD[SUBSTANTIVE] SP-1b: outgoing `shutdown_request` construction rule — omit `reason` (never `null`), no top-level `type`/`recipient` (bug audit, 21 sessions).
-- FIX[SUBSTANTIVE] SP-2 + line-209 Name/background exclusivity: `name=` is the sole teammate/subagent discriminator; subagents run background-by-default since v2.1.198 (docs research).
-- ADD[SUBSTANTIVE]: `docs-author` ephemeral dispatch row (@senior-engineer, bronze) — the one genuine SDLC functional gap identified this cycle (user-facing docs); ephemeral row on an existing agent, not a Speciation event.
-- ADD[SUBSTANTIVE]: report-only subagents cannot invoke AskUserQuestion (UI-dependent) — folded into the Distribution-Mechanism Gate caveat.
-- CULL[COSMETIC] ×12: prose consolidations (anti-staleness rule, Gold-first failure-mode, stale-pair shutdown passage, named-mechanism fidelity, ground-truth consult briefs, dispatch hygiene, Rule-8 cargo-audit tail, git-verification caveats a/b, Durable Fable caveat, promised-gate delivery check, cycle-bloat surfacing, V/I/SR rationale).
-
-### Dimensions Evaluated
-Actionability (effort correction + SP-1b), Spec Alignment (SP-2 v2.1.198), Completeness (docs-author SDLC gap), Boundary Clarity (AskUserQuestion note), Consolidation & Trimming (12 trims, TRIM-mode compliant). Role Realism: SDLC research confirms the coordination/technical-direction Tech-Lead split (team-lead + advisor) is deliberate, not a gap. Rename: RETAIN.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -301,3 +234,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: TRIM-mode cycle — Rule-8 lettering fix, 3 BAD-PARAM bug fixes (FIX-9 vote-delegation payload, FIX-13 model=[1m] rejected, FIX-4 threshold fraction), brief-block fast path, liveness-gate pre-respawn check hardened. Net +387.
 - 2026-07-10: Phase 3 disambiguation follow-up — unified `V/I/SR` pattern abbreviation (dispatch-ledger `VISR` token changed to match prose usage everywhere else).
 - 2026-07-10: Compacted 3 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate): TRIM cycle grounded in SDLC role research + bug/docs audits — effort third-lever correction, SP-1b outgoing shutdown_request rule, SP-2 name/background exclusivity fix, docs-author dispatch row, AskUserQuestion report-only caveat. Net -39 bytes.
+- 2026-07-11: Phase 3 disambiguation fix: the new `docs-author` dispatch-table row didn't disambiguate against the confusably-named `docs-researcher` bronze role. Net +150 bytes.
+- 2026-07-11: Compacted 3 entries (2026-06-17..2026-06-20) into Compacted history per the retention-compaction policy.
+- 2026-07-12: Findings: 11 → 5 sub / 10 cos / 0 rej / 6 def / 3 enc. TRIM cycle: applied 6 Phase-0 findings (docket-cli pointer, cycle_metrics wiring, Monitor-driven sweep, fresh-context Read, repo-root-sweep rule, no-report-file) funded by 10 prose consolidations. Net -1,325 bytes.
+- 2026-07-12: Phase 3 disambiguation: 3 fixes resolving multi-reading/ownership ambiguity — V/I/SR consult-advisor conditional, deep-research work-shape vs Skill(deep-research) naming collision, missing explicit-`--threshold` mandate on team-lead's direct vote-create path.
+- 2026-07-13: Phase 3 disambiguation (DKT-270): Gold-first routing reflex's `Skill(vote)` restriction-class pointer glossed, aligning with the same gloss applied to the 3 sanctioned-role files.
+- 2026-07-13: Phase 2 coherence (DKT-270): corrected the stale `Skill(deep-research)` parenthetical in the Gold-first routing reflex — deep-research is a bundled Workflow, not a teammate-invokable Skill.
+- 2026-07-13: Compacted 4 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
+- 2026-07-15: Compacted 5 entries (2026-06-30..2026-07-01) into Compacted history per the retention-compaction policy.
+- 2026-07-15: Added a Read-before-Edit pointer (B3) and a bidirectional stale-dispatch cross-ref (R3); vote relay-contract wire-form tail deduped to a Skill(vote) citation (I4). Byte budget still ~35KB over.
+- 2026-07-15: Landed a HARD anti-idle turn-end invariant (bans bare-sleep placeholders / zero-armed-watch turn-ends while teammates outstanding); merged SendMessage-schema + shutdown-typo guards into SP-1b; brief Done-state names issue-close disposition. Net -151B.

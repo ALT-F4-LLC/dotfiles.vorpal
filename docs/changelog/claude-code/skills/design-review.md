@@ -1,5 +1,47 @@
 # Changelog: design-review
 
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation classified the "Incremental Improvement" recommendation, which read approve-class in the ladder while the validator treats it as changes-required.
+
+### Changes
+- DISAMBIG (multi-reading): the Incremental Improvement ladder row now states its severity implication (changes required, satisfies the any-Blocker constraint alongside Block/Redesign, not approve-class) — bringing it in line with every sibling row and with design-qa's fully-annotated verdict ladder.
+
+### Dimensions Evaluated
+Disambiguation: multi-reading (applied), confusable-name, overlapping-ownership.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence fix (evolve-skills cycle): the "When NOT to Use" route to `code-review-verdict` omitted `@distinguished-engineer` from its caller set, breaking family lockstep after code-review-verdict's own caller set was corrected this cycle.
+
+### Changes
+- FIX[SUBSTANTIVE]: caller set for the code-review-verdict route now reads "@staff-engineer, @distinguished-engineer, or @security-engineer" — verified against code-review-verdict/SKILL.md:36,39,81,108. Family lockstep restored (report-emission COUPLING block).
+
+### Dimensions Evaluated
+Coherence only (Phase 2 cross-skill pass).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -216,51 +258,6 @@ Phase 3 Disambiguation: overlapping-ownership.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Tightened self-check to prevent silent completion in report-emission family, net 0.
-
-### Changes
-- AMPLIFY: self-check now requires the structured verdict body to be sent before idling or marking complete.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Disambiguation + efficiency; net -1 (243→242). Severity ladder + Doubling Rule deferred to Phase 2.
-
-### Changes
-- AMPLIFY: added an "Invoke BEFORE implementation / use Skill(design-qa) for post-impl verification" qualifier to the description — cited Phase-0 design-review-vs-design-qa conflation signal (design-qa already reciprocates the cross-link).
-- CULL: collapsed Pre-flight step 4's Grep + Glob into one `grep -rl` — `docs/tdd/adr/` is under `docs/tdd/`, so the ADR Glob was redundant (one fewer tool call, zero info loss).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Phase-2 coherence: aligned the silent-completion self-check to the family anchor and added a classifier-block fallback to the Output Contract.
-
-### Changes
-- AMPLIFY (silent-completion self-check): replaced "closed-loop failure" with the family-anchored "silent-completion — the dominant defect class across this skill family (code-review-verdict, verify-ac, design-review, design-qa)". Net 0.
-- AMPLIFY (Output Contract): if the harness blocks invocation (Stage-2 auto-mode classifier), render the review per THIS format authority — required sections + Approve / Approve with follow-up / Block / Redesign / Incremental Improvement ladder. Family extension. Net +1.
-- Drift (rate 7): all 7 SKIP — descriptive / format-authority tokens.
-
-### Dimensions Evaluated
-Coherence, Actionability, Completeness, Over-Engineering, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -288,3 +285,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Inlined the empty-artifact abort guard at Pre-flight step 6 (matching design-qa's inline Empty-implementation guard structure) and removed the now-redundant...
 - 2026-06-10: Phase 2 coherence: removed dead `{today_date}` Pre-flight variable (grep-confirmed 1 definition, 0 template uses) and renumbered Pre-flight steps 4-6 → 3-5....
 - 2026-06-10: Compacted 10 entries (2026-05-16..2026-05-29) into Compacted history per ADR 0001.
+- 2026-06-19: Phase-2 coherence: aligned silent-completion self-check to family anchor; added classifier-block fallback to Output Contract. | Drift (rate 7): all 7 SKIP — descriptive / format-authority tokens.
+- 2026-06-20: Disambiguation + efficiency: added pre-impl-vs-design-qa qualifier to description; collapsed Pre-flight step 4's Grep+Glob into one grep -rl (net -1, 243→242).
+- 2026-06-30: Tightened self-check to prevent silent completion in report-emission family (structured verdict body required before idling/marking complete), net 0.

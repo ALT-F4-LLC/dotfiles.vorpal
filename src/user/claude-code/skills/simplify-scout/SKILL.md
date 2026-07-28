@@ -8,7 +8,7 @@ description: >
   applies no edits. NOT a formal review verdict (that is Skill(code-review-verdict)).
   Trigger: "simplify scout", "scout for simplifications", "find refactor opportunities", "scan for cleanup".
 argument-hint: "<scope>"
-allowed-tools: ["Bash", "Glob", "Grep", "Read", "Monitor"]
+allowed-tools: ["Bash", "Glob", "Grep", "Read"]
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -27,7 +27,7 @@ This is a **self-service implementation-hygiene aid** that `@senior-engineer` ru
 
 | | `simplify-scout` (this skill) | `code-review-verdict` |
 |---|---|---|
-| Caller | `@senior-engineer` / `@distinguished-engineer` (deep-impl) | `@staff-engineer` / `@security-engineer` only |
+| Caller | `@senior-engineer` / `@distinguished-engineer` (deep-impl) | `@staff-engineer` / `@distinguished-engineer` / `@security-engineer` |
 | Purpose | Surface idiomatic-clarity opportunities to the author | Authoritative merge-gating verdict |
 | Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
 | Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
@@ -36,10 +36,10 @@ This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, a
 
 ## Role Detection
 
-This skill is callable by `@senior-engineer` or `@distinguished-engineer` (deep-impl mode only — adopts senior's execution contract by reference, `distinguished-engineer.md §Mode 4`). Match the calling agent's identifier (from prompt context); if it does not match, ABORT with:
+This skill is callable by `@senior-engineer` (any spawn) or by `@distinguished-engineer` **in `deep-impl` mode only** — that mode adopts senior's execution contract by reference (`distinguished-engineer.md §Mode 4`); the `advisor`, `tdd-author*`, and `investigator`/`innovation-scanner` modes are NOT callers. The gate is TWO tests, not one: (1) match the calling agent's identifier from prompt context; (2) if that identifier is `@distinguished-engineer`, also confirm its spawn brief's `Mode:` field reads `deep-impl`. ABORT if either test fails:
 
 ```
-Error: Skill(simplify-scout) is restricted to @senior-engineer and @distinguished-engineer. Calling agent: {agent}. Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @security-engineer).
+Error: Skill(simplify-scout) is restricted to @senior-engineer and to @distinguished-engineer in deep-impl mode. Calling agent: {agent} (mode: {mode}). Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @distinguished-engineer / @security-engineer).
 ```
 
 ## Argument Handling
@@ -84,7 +84,7 @@ If extra positional args follow a resolved `<scope>`, ignore them silently.
 
 ## When NOT to Use
 
-- **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@security-engineer` only). This scout is advisory and never blocks.
+- **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@distinguished-engineer` / `@security-engineer`). This scout is advisory and never blocks.
 - **Applying** simplifications automatically — this skill is report-only by design; the implementer edits the tree themselves after reading the report. The bundled `/simplify` skill applies fixes directly under its own rubric — distinct from this scout, which grounds in the 12 principles and never edits.
 - Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
 - Design QA / peer design review of user-facing surfaces — use `Skill(design-qa, ...)` / `Skill(design-review, ...)` (`@ux-designer`).
@@ -167,10 +167,10 @@ When clarity and length point in opposite directions, **clarity wins and you sta
 
 ## Scan Procedure
 
-1. **Detect role** per Role Detection. ABORT if the caller is neither `@senior-engineer` nor `@distinguished-engineer`.
+1. **Detect role** per Role Detection — BOTH of its tests. ABORT if the caller is neither `@senior-engineer` nor a `@distinguished-engineer` whose spawn brief's `Mode:` field reads `deep-impl`.
 2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable. Apply the large-scope guard for directory scopes.
 3. **Empty-scope guard**: if the resolved scope yields no source lines (empty diff, empty file set, directory with no source files), short-circuit to the empty-scope output below — do NOT fabricate findings.
-4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file. Stream long scans (>30s, large directory) via `Monitor` with an until-loop on a completion marker rather than a blocking poll.
+4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file.
 5. **Scan for opportunities** against the 12-principle rubric, prioritizing #1/#3/#9/#12 and the junior-tells. For each candidate, apply the Calibration rule: keep it ONLY if the idiomatic form is genuinely clearer. Drop anything that trades scannability for line count, and anything that does not map to a principle in `1–12`.
 6. **Assign a confidence rung** (see Output Contract) to each kept finding.
 7. **Validate, then emit** per Validation Before Emit and Output Contract.
@@ -261,4 +261,4 @@ Then mechanically validate everything else text-decidable — sections present a
 
 No file is written and no edit is applied (this is the report-only guarantee). The findings report ends with the confirmation line carried in the Output Contract template (`{count}` = number of findings) — it is part of the linted body, not appended after. The empty/trivial-scope short-circuit is emitted ALONE with NO confirmation line: the linter matches that single line as a whole-body short-form, so appending one drops it into full validation and fails `section-order`.
 
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent (`@senior-engineer`) owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.
+**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent — `@senior-engineer`, or `@distinguished-engineer` in `deep-impl` mode (Role Detection) — owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.

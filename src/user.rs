@@ -192,224 +192,9 @@ impl UserEnvironment {
 
         let claude_code_config_name = format!("{}-claude-code", &self.name);
         let claude_code_config =
-            ClaudeCodeConfig::new(claude_code_config_name.as_str(), self.systems.clone())
-                .with_agent("team-lead")
-                .with_always_thinking_enabled(true)
-                .with_attribution_commit("")
-                .with_attribution_pr("")
-                .with_auto_updates_channel("latest")
-                .with_away_summary_enabled(false)
-                .with_cleanup_period_days(14)
-                .with_effort_level("xhigh")
-                .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
-                .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
-                .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
-                .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
-                .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
-                .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-                .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
-                .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
-                .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5")
-                .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
-                .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
-                .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
-                .with_env(
-                    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-                    OTEL_METRICS_ENDPOINT_MIMIR,
-                )
-                .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
-                .with_env(
-                    "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
-                    "cumulative",
-                )
-                .with_env("OTEL_LOGS_EXPORTER", "otlp")
-                .with_env("OTEL_LOGS_EXPORT_INTERVAL", "15000")
-                .with_env("OTEL_METRICS_EXPORTER", "otlp")
-                .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
-                .with_feedback_survey_rate(0.0)
-                .with_hook(
-                    "PreToolUse",
-                    Some("Bash"),
-                    "bash ~/.claude/hooks/guard-no-commit-hook.sh",
-                    "command",
-                )
-                .with_hook(
-                    "PreToolUse",
-                    Some("Bash"),
-                    "bash ~/.claude/hooks/guard-tmp-write-hook.sh",
-                    "command",
-                )
-                .with_hook(
-                    "TaskCompleted",
-                    None,
-                    "bash ~/.claude/hooks/task-completed-hook.sh",
-                    "command",
-                )
-                .with_hook(
-                    "TeammateIdle",
-                    None,
-                    "bash ~/.claude/hooks/teammate-idle-hook.sh",
-                    "command",
-                )
-                .with_hook(
-                    "SubagentStop",
-                    None,
-                    "bash ~/.claude/hooks/subagent-report-hook.sh",
-                    "command",
-                )
-                .with_hook(
-                    "Stop",
-                    None,
-                    "bash ~/.claude/hooks/stop-guard-hook.sh",
-                    "command",
-                )
-                .with_include_git_instructions(false)
-                .with_model("claude-sonnet-5")
-                .with_output_style("Proactive")
-                .with_permission_allow("Bash(bun run:*)")
-                .with_permission_allow("Bash(bun test:*)")
-                .with_permission_allow("Bash(cargo build:*)")
-                .with_permission_allow("Bash(cargo check:*)")
-                .with_permission_allow("Bash(cargo clippy:*)")
-                .with_permission_allow("Bash(cargo fmt:*)")
-                .with_permission_allow("Bash(cargo outdated:*)")
-                .with_permission_allow("Bash(cargo run:*)")
-                .with_permission_allow("Bash(cargo search:*)")
-                .with_permission_allow("Bash(cargo test:*)")
-                .with_permission_allow("Bash(cargo tree:*)")
-                .with_permission_allow("Bash(cargo update:*)")
-                .with_permission_allow("Bash(cat:*)")
-                .with_permission_allow("Bash(chmod:*)")
-                .with_permission_allow("Bash(cue:*)")
-                .with_permission_allow("Bash(docker images:*)")
-                .with_permission_allow("Bash(docker logs:*)")
-                .with_permission_allow("Bash(docker ps:*)")
-                .with_permission_allow("Bash(docket:*)")
-                .with_permission_allow("Bash(find:*)")
-                .with_permission_allow("Bash(gh pr diff:*)")
-                .with_permission_allow("Bash(gh pr list:*)")
-                .with_permission_allow("Bash(gh pr view:*)")
-                .with_permission_allow("Bash(git branch:*)")
-                .with_permission_allow("Bash(git diff:*)")
-                .with_permission_allow("Bash(git log:*)")
-                .with_permission_allow("Bash(git remote get-url:*)")
-                .with_permission_allow("Bash(git show:*)")
-                .with_permission_allow("Bash(git status:*)")
-                .with_permission_allow("Bash(go build:*)")
-                .with_permission_allow("Bash(go doc:*)")
-                .with_permission_allow("Bash(go list:*)")
-                .with_permission_allow("Bash(go mod tidy:*)")
-                .with_permission_allow("Bash(go test:*)")
-                .with_permission_allow("Bash(go version:*)")
-                .with_permission_allow("Bash(go vet:*)")
-                .with_permission_allow("Bash(gofmt:*)")
-                .with_permission_allow("Bash(grep:*)")
-                .with_permission_allow("Bash(head:*)")
-                .with_permission_allow("Bash(jq:*)")
-                .with_permission_allow("Bash(ls:*)")
-                .with_permission_allow("Bash(make:*)")
-                .with_permission_allow("Bash(npm run build:*)")
-                .with_permission_allow("Bash(npm run lint:*)")
-                .with_permission_allow("Bash(npm run test:*)")
-                .with_permission_allow("Bash(npx tsc:*)")
-                .with_permission_allow("Bash(rg:*)")
-                .with_permission_allow("Bash(sort:*)")
-                .with_permission_allow("Bash(staticcheck:*)")
-                .with_permission_allow("Bash(tail:*)")
-                .with_permission_allow("Bash(tar:*)")
-                .with_permission_allow("Bash(test:*)")
-                .with_permission_allow("Bash(tree:*)")
-                .with_permission_allow("Bash(vorpal build:*)")
-                .with_permission_allow("Bash(vorpal inspect:*)")
-                .with_permission_allow("Bash(vorpal run:*)")
-                .with_permission_allow("Bash(wc:*)")
-                .with_permission_allow("Bash(xargs:*)")
-                .with_permission_allow("Bash(yarn build:*)")
-                .with_permission_allow("Bash(yarn lint:*)")
-                .with_permission_allow("Bash(yarn test:*)")
-                .with_permission_allow("WebFetch(domain:api.github.com)")
-                .with_permission_allow("WebFetch(domain:claude.ai)")
-                .with_permission_allow("WebFetch(domain:code.claude.com)")
-                .with_permission_allow("WebFetch(domain:crates.io)")
-                .with_permission_allow("WebFetch(domain:docs.claude.ai)")
-                .with_permission_allow("WebFetch(domain:github.com)")
-                .with_permission_allow("WebFetch(domain:mimir.bulbasaur.altf4.domains)")
-                .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
-                .with_permission_allow("WebSearch")
-                .with_permission_ask("Bash(chown:*)")
-                .with_permission_ask("Bash(git add:*)")
-                .with_permission_ask("Bash(git commit:*)")
-                .with_permission_ask("Bash(git push:*)")
-                .with_permission_ask("Bash(rm:*)")
-                .with_permission_deny("Bash(git checkout:*)")
-                .with_permission_deny("Bash(git reset:*)");
-        let claude_code_config = deny_sensitive_paths(
-            claude_code_config,
-            |p| format!("Edit({p})"),
-            SENSITIVE_PATHS.iter().copied(),
-        );
-        let claude_code_config = deny_sensitive_paths(
-            claude_code_config,
-            |p| format!("Read({p})"),
-            SENSITIVE_PATHS
-                .iter()
-                .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
-                .copied(),
-        );
-        let claude_code_config = deny_sensitive_paths(
-            claude_code_config,
-            |p| format!("Edit({p})"),
-            SENSITIVE_PATHS.iter().copied(),
-        );
-        let claude_code_config = claude_code_config
-            .with_permission_default_mode("auto")
-            .with_permission_disable_bypass_permissions_mode("disable")
-            .with_preferred_notif_channel("ghostty")
-            .with_show_thinking_summaries(true)
-            .with_skill_listing_budget_fraction(0.02)
-            .with_spinner_tips_enabled(false)
-            .with_status_line("bash ~/.claude/statusline.sh")
-            .with_status_line_padding(0)
-            .with_sandbox_enabled(true)
-            .with_sandbox_fail_if_unavailable(true)
-            .with_sandbox_auto_allow_bash(true)
-            .with_sandbox_allow_unsandboxed_commands(true)
-            .with_sandbox_excluded_commands(vec![
-                "aws".to_string(),
-                "docker".to_string(),
-                "gh".to_string(),
-                "git".to_string(),
-                "kubectl".to_string(),
-                "uv".to_string(),
-                "vorpal".to_string(),
-                "xcrun".to_string(),
-            ])
-            .with_sandbox_filesystem_allow_write(
-                SANDBOX_TOOLCHAIN_CACHE_PATHS
-                    .iter()
-                    .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
-                    .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
-                    .map(|p| p.to_string())
-                    .collect(),
-            )
-            .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
-            .with_sandbox_network_allowed_domains(vec![
-                "crates.io".to_string(),
-                "static.crates.io".to_string(),
-                "github.com".to_string(),
-                "api.github.com".to_string(),
-            ])
-            // 1Password requires per-use approval for SSH-agent signing operations, so
-            // allowlisting only this socket (not `allow_all_unix_sockets`) keeps that
-            // approval prompt as the safety gate for sandboxed `git commit` signing.
-            .with_sandbox_network_allow_unix_sockets(vec![
-                "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
-            ])
-            .with_sandbox_network_allow_local_binding(false)
-            .with_teammate_mode("in-process")
-            .with_tui("fullscreen")
-            .build(context)
-            .await?;
+            build_claude_code_config(claude_code_config_name.as_str(), self.systems.clone())
+                .build(context)
+                .await?;
         let claude_code_config_path = format!(
             "{}/{claude_code_config_name}",
             get_output_path("library", &claude_code_config)
@@ -1276,6 +1061,224 @@ impl UserEnvironment {
     }
 }
 
+// Builds the production Claude Code config, minus the final `.build(context)` call. Factoring
+// this out of `UserEnvironment::build` lets a plain unit test construct and serialize the exact
+// same settings offline (no `ConfigContext`/network needed) — the render target `config_render_diff.sh`
+// diffs against (see the `tests` module below).
+fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeCodeConfig {
+    let claude_code_config = ClaudeCodeConfig::new(name, systems)
+        .with_agent("team-lead")
+        .with_always_thinking_enabled(true)
+        .with_attribution_commit("")
+        .with_attribution_pr("")
+        .with_auto_updates_channel("latest")
+        .with_away_summary_enabled(false)
+        .with_cleanup_period_days(14)
+        .with_effort_level("xhigh")
+        .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
+        .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
+        .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
+        .with_env("CLAUDE_CODE_ENABLE_TELEMETRY", "1")
+        .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+        .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
+        .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5")
+        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-4-5")
+        .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5")
+        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5")
+        .with_env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", OTEL_LOGS_ENDPOINT_LOKI)
+        .with_env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", OTEL_OTLP_PROTOCOL)
+        .with_env(
+            "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+            OTEL_METRICS_ENDPOINT_MIMIR,
+        )
+        .with_env("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", OTEL_OTLP_PROTOCOL)
+        .with_env(
+            "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+            "cumulative",
+        )
+        .with_env("OTEL_LOGS_EXPORTER", "otlp")
+        .with_env("OTEL_LOGS_EXPORT_INTERVAL", "15000")
+        .with_env("OTEL_METRICS_EXPORTER", "otlp")
+        .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000")
+        .with_feedback_survey_rate(0.0)
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/guard-no-commit-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/guard-tmp-write-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "TaskCompleted",
+            None,
+            "bash ~/.claude/hooks/task-completed-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "TeammateIdle",
+            None,
+            "bash ~/.claude/hooks/teammate-idle-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "SubagentStop",
+            None,
+            "bash ~/.claude/hooks/subagent-report-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "Stop",
+            None,
+            "bash ~/.claude/hooks/stop-guard-hook.sh",
+            "command",
+        )
+        .with_include_git_instructions(false)
+        .with_model("claude-sonnet-5")
+        .with_output_style("Proactive")
+        .with_permission_allow("Bash(bun run:*)")
+        .with_permission_allow("Bash(bun test:*)")
+        .with_permission_allow("Bash(cargo build:*)")
+        .with_permission_allow("Bash(cargo check:*)")
+        .with_permission_allow("Bash(cargo clippy:*)")
+        .with_permission_allow("Bash(cargo fmt:*)")
+        .with_permission_allow("Bash(cargo outdated:*)")
+        .with_permission_allow("Bash(cargo run:*)")
+        .with_permission_allow("Bash(cargo search:*)")
+        .with_permission_allow("Bash(cargo test:*)")
+        .with_permission_allow("Bash(cargo tree:*)")
+        .with_permission_allow("Bash(cargo update:*)")
+        .with_permission_allow("Bash(cat:*)")
+        .with_permission_allow("Bash(chmod:*)")
+        .with_permission_allow("Bash(cue:*)")
+        .with_permission_allow("Bash(docker images:*)")
+        .with_permission_allow("Bash(docker logs:*)")
+        .with_permission_allow("Bash(docker ps:*)")
+        .with_permission_allow("Bash(docket:*)")
+        .with_permission_allow("Bash(find:*)")
+        .with_permission_allow("Bash(gh pr diff:*)")
+        .with_permission_allow("Bash(gh pr list:*)")
+        .with_permission_allow("Bash(gh pr view:*)")
+        .with_permission_allow("Bash(git branch:*)")
+        .with_permission_allow("Bash(git diff:*)")
+        .with_permission_allow("Bash(git log:*)")
+        .with_permission_allow("Bash(git remote get-url:*)")
+        .with_permission_allow("Bash(git show:*)")
+        .with_permission_allow("Bash(git status:*)")
+        .with_permission_allow("Bash(go build:*)")
+        .with_permission_allow("Bash(go doc:*)")
+        .with_permission_allow("Bash(go list:*)")
+        .with_permission_allow("Bash(go mod tidy:*)")
+        .with_permission_allow("Bash(go test:*)")
+        .with_permission_allow("Bash(go version:*)")
+        .with_permission_allow("Bash(go vet:*)")
+        .with_permission_allow("Bash(gofmt:*)")
+        .with_permission_allow("Bash(grep:*)")
+        .with_permission_allow("Bash(head:*)")
+        .with_permission_allow("Bash(jq:*)")
+        .with_permission_allow("Bash(ls:*)")
+        .with_permission_allow("Bash(make:*)")
+        .with_permission_allow("Bash(npm run build:*)")
+        .with_permission_allow("Bash(npm run lint:*)")
+        .with_permission_allow("Bash(npm run test:*)")
+        .with_permission_allow("Bash(npx tsc:*)")
+        .with_permission_allow("Bash(rg:*)")
+        .with_permission_allow("Bash(sort:*)")
+        .with_permission_allow("Bash(staticcheck:*)")
+        .with_permission_allow("Bash(tail:*)")
+        .with_permission_allow("Bash(tar:*)")
+        .with_permission_allow("Bash(test:*)")
+        .with_permission_allow("Bash(tree:*)")
+        .with_permission_allow("Bash(vorpal build:*)")
+        .with_permission_allow("Bash(vorpal inspect:*)")
+        .with_permission_allow("Bash(vorpal run:*)")
+        .with_permission_allow("Bash(wc:*)")
+        .with_permission_allow("Bash(xargs:*)")
+        .with_permission_allow("Bash(yarn build:*)")
+        .with_permission_allow("Bash(yarn lint:*)")
+        .with_permission_allow("Bash(yarn test:*)")
+        .with_permission_allow("WebFetch(domain:api.github.com)")
+        .with_permission_allow("WebFetch(domain:claude.ai)")
+        .with_permission_allow("WebFetch(domain:code.claude.com)")
+        .with_permission_allow("WebFetch(domain:crates.io)")
+        .with_permission_allow("WebFetch(domain:docs.claude.ai)")
+        .with_permission_allow("WebFetch(domain:github.com)")
+        .with_permission_allow("WebFetch(domain:mimir.bulbasaur.altf4.domains)")
+        .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
+        .with_permission_allow("WebSearch")
+        .with_permission_ask("Bash(chown:*)")
+        .with_permission_ask("Bash(git add:*)")
+        .with_permission_ask("Bash(git commit:*)")
+        .with_permission_ask("Bash(git push:*)")
+        .with_permission_ask("Bash(rm:*)")
+        .with_permission_deny("Bash(git checkout:*)")
+        .with_permission_deny("Bash(git reset:*)");
+    let claude_code_config = deny_sensitive_paths(
+        claude_code_config,
+        |p| format!("Edit({p})"),
+        SENSITIVE_PATHS.iter().copied(),
+    );
+    let claude_code_config = deny_sensitive_paths(
+        claude_code_config,
+        |p| format!("Read({p})"),
+        SENSITIVE_PATHS
+            .iter()
+            .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
+            .copied(),
+    );
+    claude_code_config
+        .with_permission_default_mode("auto")
+        .with_permission_disable_bypass_permissions_mode("disable")
+        .with_preferred_notif_channel("ghostty")
+        .with_show_thinking_summaries(true)
+        .with_skill_listing_budget_fraction(0.02)
+        .with_spinner_tips_enabled(false)
+        .with_status_line("bash ~/.claude/statusline.sh")
+        .with_status_line_padding(0)
+        .with_sandbox_enabled(true)
+        .with_sandbox_fail_if_unavailable(true)
+        .with_sandbox_auto_allow_bash(true)
+        .with_sandbox_allow_unsandboxed_commands(true)
+        .with_sandbox_excluded_commands(vec![
+            "aws".to_string(),
+            "docker".to_string(),
+            "gh".to_string(),
+            "git".to_string(),
+            "kubectl".to_string(),
+            "uv".to_string(),
+            "vorpal".to_string(),
+            "xcrun".to_string(),
+        ])
+        .with_sandbox_filesystem_allow_write(
+            SANDBOX_TOOLCHAIN_CACHE_PATHS
+                .iter()
+                .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
+                .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
+                .map(|p| p.to_string())
+                .collect(),
+        )
+        .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
+        .with_sandbox_network_allowed_domains(vec![
+            "crates.io".to_string(),
+            "static.crates.io".to_string(),
+            "github.com".to_string(),
+            "api.github.com".to_string(),
+        ])
+        // 1Password requires per-use approval for SSH-agent signing operations, so
+        // allowlisting only this socket (not `allow_all_unix_sockets`) keeps that
+        // approval prompt as the safety gate for sandboxed `git commit` signing.
+        .with_sandbox_network_allow_unix_sockets(vec![
+            "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
+        ])
+        .with_sandbox_network_allow_local_binding(false)
+        .with_teammate_mode("in-process")
+        .with_tui("fullscreen")
+}
+
 // Applies a `deny` permission rule for each sensitive path, formatted via `wrap` (e.g.
 // `Edit({path})`), in sorted order to match the existing deny-list convention.
 fn deny_sensitive_paths(
@@ -1360,5 +1363,34 @@ fn opencode_agent(
         description: Some(description.to_string()),
         prompt: Some(prompt.to_string()),
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Render target for `config_render_diff.sh` (DKT-94): prints the exact production Claude
+    // Code config's rendered JSON, so a git-worktree byte-diff catches setter changes to
+    // `build_claude_code_config` that don't actually change the serialized output. Run via:
+    //   cargo test --lib user::tests::prints_rendered_claude_code_config -- --nocapture
+    #[test]
+    fn prints_rendered_claude_code_config() {
+        let content =
+            serde_json::to_string_pretty(&build_claude_code_config("claude-code", Vec::new()))
+                .expect("claude code config should serialize to JSON");
+
+        println!("{content}");
+    }
+
+    #[test]
+    fn claude_code_config_serializes_current_settings() {
+        let content =
+            serde_json::to_string_pretty(&build_claude_code_config("claude-code", Vec::new()))
+                .expect("claude code config should serialize to JSON");
+
+        assert!(content.contains("\"model\": \"claude-sonnet-5\""));
+        assert!(content.contains("\"defaultMode\": \"auto\""));
+        assert!(content.contains("\"tui\": \"fullscreen\""));
     }
 }

@@ -10,7 +10,15 @@
 #     `^- \[YYYY-MM-DD\] `. At most one such section per file.
 #   - Entry = any column-0 line matching `^## ` or `^- ` that is outside the
 #     ledger section and is not the H1; spans to the line before the next
-#     entry, the heading, or EOF (trailing blanks belong to the entry).
+#     entry, the heading, or EOF (trailing blanks belong to the entry). A
+#     `^## ` heading additionally absorbs its immediately-following
+#     contiguous run of `^- ` lines into the SAME entry span, tolerating at
+#     most one blank line between the heading and the first bullet (no
+#     blank between bullets in the run) — matching how these files are
+#     actually authored, with or without a blank separating the heading
+#     from its Symptom/Root-cause/Resolution bullets; a bare `^- ` line not
+#     preceded by such a heading (or preceded by 2+ blank lines) remains its
+#     own single-line entry.
 #   - Writer layout invariant: no blanks between ledger lines; exactly one
 #     blank before the heading, one between heading and first ledger line,
 #     one after the last ledger line.
@@ -178,15 +186,36 @@ function parse_structure(arr, cnt,   i, after_heading, idx) {
 
 # Enumerates entries in arr[1..cnt] (outside the section found by the last
 # parse_structure() call on the same array) into p_entry_start/p_entry_end.
-function enumerate_entries(arr, cnt,   i, c, e_end) {
+# A `## ` heading absorbs its immediately-following contiguous run of `- `
+# lines into the same entry, tolerating at most one blank line between the
+# heading and the first bullet (two+ blanks do not absorb); a bare `- `
+# line not preceded by such a heading is still its own single-line entry.
+# Must stay identical in shape to the copy of this absorption rule in
+# pitfalls_compactable.sh (the shared-grammar contract in
+# retention-compaction.md) — see
+# test_pitfalls_compactable.py::test_cross_script_entry_count_parity.
+function enumerate_entries(arr, cnt,   i, c, j, e_end) {
     c = 0
-    for (i = 1; i <= cnt; i++) {
-        if (i == 1 && p_h1_exists) continue
-        if (p_section_exists && i >= p_heading_idx && i <= p_section_end_idx) continue
+    i = 1
+    while (i <= cnt) {
+        if (i == 1 && p_h1_exists) { i++; continue }
+        if (p_section_exists && i >= p_heading_idx && i <= p_section_end_idx) { i++; continue }
         if (is_entry_marker(arr[i])) {
             c++
             p_entry_start[c] = i
+            if (substr(arr[i], 1, 3) == "## ") {
+                j = i + 1
+                if (j <= cnt && is_blank(arr[j]) && (j + 1) <= cnt && substr(arr[j + 1], 1, 2) == "- ") {
+                    j++
+                }
+                while (j <= cnt && substr(arr[j], 1, 2) == "- ") j++
+                i = j
+                continue
+            }
+            i++
+            continue
         }
+        i++
     }
     p_entry_count = c
     for (i = 1; i <= p_entry_count; i++) {

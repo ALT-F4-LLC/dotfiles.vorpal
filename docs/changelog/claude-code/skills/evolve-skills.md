@@ -1,5 +1,66 @@
 # Changelog: evolve-skills
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-07-17..2026-07-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: scoped two ownership claims in the DKT-106 shared orchestration-core reference (recorded here as this cycle's driver — the reference file has no dedicated changelog family).
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: Hybrid-block note now states that "fully single-homed" describes the CANONICAL BLOCK, not the whole carrier section, and points at §Genetic-Drift Operator's carve-out — the unqualified claim invited trimming protected carrier-local prose.
+- AMPLIFY[SUBSTANTIVE]: §Crash & Stall Recovery gained a carrier-scope carve-out — each carrier's like-named heading also hosts the §Second-Failure Recovery pointer and a local-only Compaction-recovery bullet; ownership reads off per-bullet pointers, not the heading. Cited signal: this cycle's Phase 2 had to restore a dropped Compaction-recovery bullet in evolve-agents.
+
+### Dimensions Evaluated
+Multi-reading, overlapping-ownership (both applied); confusable-name (none found in this file).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: trimmed the un-parity-enforced Crash & Stall detection-triad restatement to a bare pointer per the shared doc's fully-single-homed design.
+
+### Changes
+- Crash & Stall: bare pointer + Phase-0 read-once/ABORT clause replaces the inline triad (applied lockstep with evolve-config's identical paragraph).
+
+### Dimensions Evaluated
+Coherence, shared conventions.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+DKT-106: single-homed Scientific Trial Protocol (compressed hybrid), Genetic-Drift Operator (full extraction), Shutdown Protocol, Crash & Stall Recovery, Second-Failure Recovery, and Phase 3 Disambiguation Charter/Boundary into the new shared evolve-orchestration-core.md, mirroring this file's own existing Phase-0 template-sourcing convention. Net -2,686 bytes (60,641 → 57,955). Findings: 15 → 7 sub / 0 cos / 1 rej / 5 def / 2 enc
+
+### Changes
+- CULL[SUBSTANTIVE][DKT-106]: Trial-Protocol compressed to a hybrid restatement (HARD GATE scope stays inline); Genetic-Drift-Operator fully extracted (its own per-carrier target-selection paragraph stays local, not extraction-safe); Shutdown+Crash&Stall+Second-Failure and Phase 3 charter/boundary/mechanism fully extracted; Operator-Prompts-Convention restored inline as a hybrid restatement after cross-reviewer reconciliation (API-shape constraints stay visible).
+- AMPLIFY[SUBSTANTIVE][D1/D2/D3]: dimension 1 gains `when_to_use` + the 1,536-char combined cap, the `context: fork`/`background: false` tool-stripping guardrail, and the 5,000-token retention cap as the byte budget's platform-mechanical rationale.
+- AMPLIFY[SUBSTANTIVE][I1]: phase gates wired as `addBlockedBy` edges at TaskCreate time — zero usage before.
+- I9/I10/I11/D6 DEFERRED (script/registry follow-ups, family-wide frontmatter); D4 REJECTED (no Bash() rules to substitute into); H8/D7 ALREADY-ENCODED.
+- The untagged compaction-recovery bullet was explicitly NOT reconciled — it is a recorded 2026-06-19 DRIFT allele (seed 6f0ab504, pick 4) in evolve-config's compacted history; extracting/reconciling it would have silently reverted an operator-approved trial.
+
+### Dimensions Evaluated
+All 8. Spec Alignment vacuous (docs/spec/ absent repo-wide). Rename: none.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -151,64 +212,6 @@ Coherence (accurate references); Actionability. Byte budget: 58,570 → 59,126 (
 ### Rename
 No rename.
 
-## 2026-07-17 (Phase 4 history compaction)
-
-### Summary
-Compacted 4 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-17
-
-### Summary
-coherence-reviewer's Phase 2 pass verified the rename/parity fixes landed clean and proposed one additional parity-bound fix: mechanize the Phase 2 byte-identity check with doctrine_check.sh.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: appended a `doctrine_check.sh` (exit 0 required) invocation after the manual grep-based byte-identity check in the Phase 2 apply instructions - its byte-parity arm re-verifies ALL manifest-registered CANONICAL blocks, catching a diverged carrier the single-line grep misses. Parity-bound with evolve-agents (identical appended clause).
-
-### Dimensions Evaluated
-Mechanical verification coverage; family parity.
-
-### Rename
-No rename.
-
-## 2026-07-17
-
-### Summary
-Phase 2 family-wide lockstep application: the docs-researcher rename (P1) and 2 parity-bound findings (I4, I5b) deferred from this cycle's Phase 1 self-review, applied identically across evolve-agents + evolve-skills (+ the shared canonical template + evolve-config for the rename).
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: renamed evolve Phase-0 auditor `docs-researcher` -> `docs-researcher-phase0` (8 occurrences) - lockstep with the canonical evolve-phase0-templates.md:422 template + evolve-agents (8 occ) + evolve-config (9 occ, bespoke copy). team-lead.md's bronze docs-researcher untouched (P1).
-- AMPLIFY[SUBSTANTIVE]: Phase 2 gate now runs findings_ledger_check.py mechanically (I4) - byte-identical wiring applied to evolve-agents too; verified via grep post-apply.
-- CULL[COSMETIC]: stripped settled innovation-scanner-relocation clause from symmetry_check step (I5b) - byte-identical strip applied to evolve-agents too; verified via grep post-apply.
-
-### Dimensions Evaluated
-Rename, Coherence, Actionability.
-
-### Rename
-docs-researcher -> docs-researcher-phase0 (Phase-0 auditor instance; team-lead.md's docs-researcher is a separate, untouched agent).
-
-## 2026-07-17
-
-### Summary
-Targeted cycle (self-review, one of 4 sibling skills sharing a 3-item mandate). Applied I5(a) cosmetic strip now; P3 tier-split confirmed already-correct (gold, no edit needed); rename (P1) and the byte-identical I4/I5(b) parity fixes deferred to Phase 2 for family-wide lockstep. Findings: 12 -> 1 sub / 1 cos / 1 rej / 6 def / 3 enc (rename+I4+I5b apply in Phase 2, not counted here).
-
-### Changes
-- CULL[COSMETIC]: stripped the settled legacy-carve-out parenthetical from the Self-budget line (I5a) - evolve-agents-unique wording confirmed not parity-bound.
-
-### Dimensions Evaluated
-Over-Engineering, Coherence, Rename (P1 recommended, Phase 2), Actionability.
-
-### Rename
-Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (8 occurrences), lockstep with evolve-phase0-templates.md:422 + evolve-agents + evolve-config.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -289,3 +292,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-14: Wired check_citations.py into the Phase-2 coherence check to mechanize stale repo-layout path-literal detection. Findings: 7 → 1 sub / 0 cos / 0 rej / 3 def...
 - 2026-07-14: Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery; added a post-cycle /evolve-coherence pointer to Wrap-up...
 - 2026-07-14: Compacted 3 entries (2026-06-19..2026-06-20) into Compacted history per the retention-compaction policy.
+- 2026-07-17: Targeted cycle (self-review, 1 of 4 sibling skills sharing a 3-item mandate) — applied I5(a) cosmetic strip, confirmed P3 gold tier-split already correct; docs-researcher rename + I4/I5b parity fixes deferred to Phase 2.
+- 2026-07-17: Phase 2 family-wide lockstep: applied docs-researcher→docs-researcher-phase0 rename + 2 parity-bound findings (I4 findings_ledger_check.py wiring, I5b innovation-scanner-relocation clause strip) across evolve-agents/evolve-skills/evolve-config/template.
+- 2026-07-17: coherence-reviewer Phase 2 pass added mechanized doctrine_check.sh byte-identity check after the manual grep-based check in Phase 2 apply instructions; parity-bound with evolve-agents.
+- 2026-07-17: Compacted 4 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.

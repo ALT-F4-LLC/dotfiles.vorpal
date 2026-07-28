@@ -84,7 +84,7 @@ Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, an
 
 <!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - QA of shipped implementation against an accepted UX spec — that's `Skill(design-qa, ...)`.
-- Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+- Production code review against engineering dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer`, `@distinguished-engineer`, or `@security-engineer`.
 - Acceptance-criteria verification — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
 - Authoring a new UX spec — use `Skill(ux-spec, ...)`.
 - Multi-agent consensus voting on a design — use `Skill(vote, ...)` after this skill produces a review.
@@ -145,7 +145,7 @@ Each dimension is anchored to named Apple HIG design principles — definitions 
 | Approve with follow-up | Real issues exist but are low-impact polish; calling agent annotates follow-up |
 | Block | One or more Blockers; cannot ship until resolved |
 | Redesign | Fundamental interaction model is wrong; incremental edits won't fix it — proposes restart — a fundamentally wrong interaction model is a Purpose failure (HIG: Purpose) |
-| Incremental Improvement | Foundation is sound and users have existing muscle memory; recommend bounded improvements rather than a redesign |
+| Incremental Improvement | Changes required, but bounded: Blockers/Concerns exist AND the foundation is sound (users have existing muscle memory), so they are fixed in place rather than by restarting. Satisfies the validator's any-Blocker constraint alongside Block and Redesign — it is NOT an approve-class verdict |
 
 ### Common Discipline
 

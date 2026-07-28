@@ -114,7 +114,7 @@ Emit one block per target agent, then SendMessage the orchestrator with all bloc
 If a category is empty for an agent, write `none` — do not omit the line. Any quantified claim (a specific number, ratio, or count) in a finding — including inside `Suggested focus areas` bullets — MUST be accompanied by the exact grep/jq/count command that produced it, inline in the finding's own text; a bare number with no reproducible command is unverifiable and must be treated as an estimate, explicitly labeled as such. After the per-agent blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-agent grep mandatory — never load wholesale. Do not cluster/rank across agents. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ### 3b. Historical Audit — evolve-skills variant
@@ -166,7 +166,7 @@ Emit one block per target skill, then SendMessage the orchestrator with all bloc
 If a category is empty for a skill, write `none` — do not omit the line. Any quantified claim (a specific number, ratio, or count) in a finding — including inside `Suggested focus areas` bullets — MUST be accompanied by the exact grep/jq/count command that produced it, inline in the finding's own text; a bare number with no reproducible command is unverifiable and must be treated as an estimate, explicitly labeled as such. After the per-skill blocks, append the verbatim **CROSS-PROJECT PITFALLS MANIFEST** — the full sorted `find` output grouped by repo root (the ingest set for lesson analysis). If the scan found nothing, write `CROSS-PROJECT PITFALLS MANIFEST: none`.
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-skill grep mandatory — never load wholesale. Do not cluster/rank across skills. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ### 3c. Historical Audit — evolve-config variant
@@ -218,7 +218,7 @@ If a category is empty, write `none` — do not omit the line. Any quantified cl
 ## Rules
 - Read-only. Do NOT use Edit/Write. Do NOT commit.
 - No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. SendMessage the orchestrator for delegation.
-- No peer-to-peer SendMessage — orchestrator only. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- No peer-to-peer SendMessage — orchestrator only. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ## 4. Repetition Audit — shared template
@@ -243,7 +243,7 @@ Mine for actions UNINTENTIONALLY REPEATED across sessions — the same or near-i
 For each finding: `<FIX|PREVENT|BENIGN-RACE> <n>: <what repeated>` / `SESSIONS:` (distinct sessionId count + 1-2 example refs) / `SUGGESTION:` (dedupe/cache/automate action, or "None — correct behavior" for BENIGN-RACE). Tag every finding exactly `FIX` (already-repeated: correct/dedupe/automate now), `PREVENT` (repeat-prone pattern, not yet repeated many times), or `BENIGN-RACE` (a crossed-in-flight duplicate correctly recognized and dismissed as stale — logged for pattern-frequency visibility only). If the SAME race recurs ≥2 times for the same pair of roles, tag it `PREVENT` instead (with a coordination-fix suggestion, e.g. an ack-before-dispatch convention) rather than `BENIGN-RACE`. SendMessage the orchestrator with all findings verbatim, or "No repetition findings."
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ## 5. Bug Audit — shared template
@@ -268,7 +268,7 @@ Mine for BUGS surfaced during tool use — failed tool calls, incorrect paramete
 For each finding: `<FIX|PREVENT> <n>: <what failed>` / `CLASS:` (BAD-PARAM | WRONG-PATH | PERMISSION | OTHER) / `SESSIONS:` (distinct sessionId count + 1-2 example refs, incl. tool name + the offending parameter/path) / `SUGGESTION:` (definition fix — e.g. correct an example, tighten a parameter description, add a pre-check). Tag every finding exactly `FIX` (already-recurring: correct the definition now) or `PREVENT` (isolated but definition-fixable, not yet recurring). SendMessage the orchestrator with all findings verbatim, or "No bug findings."
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Per-source grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ## 6. Model Routing Audit — tokenized template (+ config variant)
@@ -288,8 +288,8 @@ Window: last {history_days} days (cutoff {history_cutoff_iso}, epoch-ms {history
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes. Report only factual, evidence-cited findings.
 
 1. **Per-spawn model distribution** — across the audit window, run:
-   `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
-   Report DISTINCT counts per model per {TARGET_NOUN} role. This is ground truth — do NOT assume inherit semantics.
+   `bash src/user/claude-code/scripts/spawn_model_join.sh {history_days}`
+   (NB: unlike `evolve_signals.py --since {history_cutoff_iso}`, this script's window arg is the DAY-COUNT `{history_days}`, not the ISO cutoff.) Each output row is `role<TAB>requested<TAB>resolved<TAB>session` for one spawn instance — `role` is the spawn's actual `.meta.json` `name` (e.g. `tdd-author-2`, `reviewer-2`), preserving distinct role instances that `evolve_signals.py --distribution` collapses into one label (verified lossy). Report DISTINCT counts per model per {TARGET_NOUN} role/instance, and flag any row where `requested` != `resolved` (fallback drift). This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — for each {TARGET_NOUN}/model pair observed, correlate with:
    - Stall signals: `grep -nE '"TeammateIdle"' <transcript>` within ±5 lines of the {TARGET_NOUN} name; count distinct events by `name`+`sessionId`.
@@ -324,7 +324,7 @@ Emit one block per target {TARGET_NOUN}, then SendMessage the orchestrator with 
 If a category is empty for {A_TARGET_NOUN}, write `none` — do not omit the line.
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-{TARGET_NOUN} grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. Per-{TARGET_NOUN} grep mandatory — never load wholesale. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ### 6b. Model Routing Audit — evolve-config variant
@@ -342,8 +342,8 @@ Target: the Claude Code config genome — specifically `model`, `effort_level`, 
 Mine read-only sources to measure ACTUAL model distribution per spawn/role and correlate with observed outcomes, to inform the config's model/effort env settings. Report only factual, evidence-cited findings.
 
 1. **Per-spawn model distribution** — across the audit window:
-   `python3 src/user/claude-code/scripts/evolve_signals.py --distribution --since {history_cutoff_iso}`
-   Report DISTINCT counts per model. This is ground truth — do NOT assume inherit semantics.
+   `bash src/user/claude-code/scripts/spawn_model_join.sh {history_days}`
+   (NB: unlike `evolve_signals.py --since {history_cutoff_iso}`, this script's window arg is the DAY-COUNT `{history_days}`, not the ISO cutoff.) Each output row is `role<TAB>requested<TAB>resolved<TAB>session` for one spawn instance — `role` is the spawn's actual `.meta.json` `name`, preserving distinct role instances that `evolve_signals.py --distribution` collapses into one label (verified lossy). Report DISTINCT counts per model, and flag any row where `requested` != `resolved` (fallback drift). This is ground truth — do NOT assume inherit semantics.
 
 2. **Outcome signals per model** — correlate each model with:
    - Stall signals: `grep -nE '"TeammateIdle"' <transcript>`; count distinct events by `name`+`sessionId`.
@@ -378,7 +378,7 @@ Emit one findings block, then SendMessage the orchestrator verbatim:
 If a category is empty, write `none` — do not omit the line.
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only for delegation. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````
 
 ## 7. Innovation Scan — tokenized template
@@ -429,7 +429,7 @@ PINNED INSTALLED-VERSION + CHANGELOG DIGEST (orchestrator-fetched; if `SKIPPED:`
 
 **Cache-first fetching (avoid redundant re-fetches; needs Bash — degrade gracefully to direct WebFetch if Bash or the cache dir is unavailable).** Static doc surfaces are mtime-gated at 24h — reuse a local cache when fresh, refresh it when stale or absent:
 - CHANGELOG: the orchestrator already pins it cache-first as `{latest_features_digest}` above (from `~/.claude/cache/changelog.md`). Only re-fetch it yourself when the digest reads `SKIPPED:`; when you do, read `~/.claude/cache/changelog.md` first if `find ~/.claude/cache/changelog.md -mtime -1` reports it (mtime under 24h) and skip the network, else `curl -fsSL https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md -o ~/.claude/cache/changelog.md` (a sandbox write-denial is non-fatal — proceed with the fetched content).
-- `code.claude.com/docs/en/*` pages (e.g. sub-agents, agent-teams, hooks, skills): cache each under `~/.claude/cache/docs/<page-slug>.md` (`mkdir -p ~/.claude/cache/docs` if absent). Before WebFetching a page, read its cache file when its mtime is under 24h (`find ~/.claude/cache/docs/<page-slug>.md -mtime -1`) and skip the network; otherwise WebFetch, then best-effort-write the fetched text to that cache file (write-denial non-fatal).
+- `code.claude.com/docs/en/*` pages (e.g. sub-agents, agent-teams, hooks, skills, commands): cache each under `~/.claude/cache/docs/<page-slug>.md` (`mkdir -p ~/.claude/cache/docs` if absent). Before WebFetching a page, read its cache file when its mtime is under 24h (`find ~/.claude/cache/docs/<page-slug>.md -mtime -1`) and skip the network; otherwise WebFetch, then best-effort-write the fetched text to that cache file (write-denial non-fatal).
 
 FOCUS AREAS: {FOCUS_AREAS}
 
@@ -484,5 +484,5 @@ CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | RE
 ```
 
 ## Rules
-- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. WebSearch/WebFetch for external research is REQUIRED — do not answer from memory alone; if you cannot verify a claim via search, mark it "unverified — inference only, not measurement" per epistemic discipline. Every finding must cite either a search source or a repo grep/read, not assumption. Any scratch file goes under `$TMPDIR`, never `/tmp` (sandbox denies `/tmp` writes).
+- Read-only (no Edit/Write, no commit). No sub-agents: do NOT invoke /vote, Skill(), or Agent(); do not form/manage a team. No peer-to-peer SendMessage — orchestrator only. WebSearch/WebFetch for external research is REQUIRED — do not answer from memory alone; if you cannot verify a claim via search, mark it "unverified — inference only, not measurement" per epistemic discipline. Every finding must cite either a search source or a repo grep/read, not assumption. Any scratch file goes under `$TMPDIR/<your-agent-name>/` (create the subdirectory first), never bare `$TMPDIR` or `/tmp` (sandbox denies `/tmp` writes) — parallel Phase 0 auditors share `$TMPDIR`, so a subdirectory keyed to your own spawn name is required to avoid silent collisions with sibling auditors.
 ````

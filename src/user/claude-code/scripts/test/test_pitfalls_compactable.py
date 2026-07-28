@@ -146,6 +146,122 @@ def test_usage_errors():
     assert code == 2, f"exit {code}: {out}{err}"
 
 
+# ---------------------------------------------------------------------------
+# DKT-126 fix-round: pitfalls_compactable.sh's enumerate loop must absorb a
+# `## ` heading's immediately-following contiguous `- ` bullet run (with or
+# without one intervening blank line) into ONE candidate, matching
+# pitfalls_distill.sh's enumerate_entries -- the Blocker this port closes.
+# ---------------------------------------------------------------------------
+def test_heading_with_bullets_is_one_candidate():
+    repo = new_repo()
+    write(
+        pitfalls_path(repo),
+        "# testrole pitfalls\n\n"
+        "## Background-task exit code masked\n"
+        "- **Symptom:** launched a long test in the background.\n"
+        "- **Root cause:** the reported exit code was the trailing echo, not the real command.\n"
+        "- **Resolution:** capture the real exit in the same subshell as the command.\n\n"
+        "## a heading with one blank line before its bullet\n\n"
+        "- **Symptom:** one blank line is tolerated before the bullet run too.\n",
+    )
+    commit_all(repo)
+    code, out, err = run_script(repo, ROLE, "in-repo")
+    assert code == 1, f"exit {code}: {out}{err}"
+    candidate_lines = [l for l in out.splitlines() if l]
+    assert len(candidate_lines) == 2, out
+    assert candidate_lines[0] == "## Background-task exit code masked", out
+    assert candidate_lines[1] == "## a heading with one blank line before its bullet", out
+
+
+def test_interior_blank_entry_committed_is_candidate():
+    repo = new_repo()
+    write(
+        pitfalls_path(repo),
+        "# testrole pitfalls\n\n"
+        "## a heading with one blank line before its bullet\n\n"
+        "- **Symptom:** committed together with its heading, interior blank included.\n",
+    )
+    commit_all(repo)
+    code, out, err = run_script(repo, ROLE, "in-repo")
+    assert code == 1, f"exit {code}: {out}{err}"
+    assert "## a heading with one blank line before its bullet" in out, out
+
+
+def test_interior_blank_entry_edited_after_commit_not_candidate():
+    repo = new_repo()
+    path = pitfalls_path(repo)
+    write(
+        path,
+        "# testrole pitfalls\n\n"
+        "## a heading with one blank line before its bullet\n\n"
+        "- **Symptom:** original bullet text before the post-commit edit.\n",
+    )
+    commit_all(repo)
+    # Edit the bullet in place (uncommitted) -- the absorbed span's FULL
+    # text (heading + blank + bullet) no longer byte-matches HEAD, so it
+    # must not be reported as a compaction candidate.
+    write(
+        path,
+        "# testrole pitfalls\n\n"
+        "## a heading with one blank line before its bullet\n\n"
+        "- **Symptom:** EDITED bullet text after commit.\n",
+    )
+    code, out, err = run_script(repo, ROLE, "in-repo")
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert out == "", out
+
+
+DISTILL_SCRIPT = HERE.parent / "pitfalls_distill.sh"
+
+
+def run_distill_script(repo, args):
+    proc = subprocess.run(
+        ["bash", str(DISTILL_SCRIPT), *args], cwd=repo, capture_output=True, text=True
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def test_cross_script_entry_count_parity():
+    """The Blocker this port closes: pitfalls_compactable.sh's candidate
+    count and pitfalls_distill.sh's ENTRIES_BEFORE count must agree for an
+    identical fixture mixing all three absorbed shapes (no-blank
+    heading+bullets, one-blank heading+bullets, bare bullet)."""
+    fixture = (
+        "# testrole pitfalls (in-repo)\n\n"
+        "## no-blank heading with bullets\n"
+        "- **Symptom:** immediate bullet run, no blank.\n"
+        "- **Resolution:** absorbed as one entry.\n\n"
+        "## one-blank heading with bullets\n\n"
+        "- **Symptom:** one blank tolerated before the bullet run.\n"
+        "- **Resolution:** absorbed as one entry too.\n\n"
+        "- symptom: a bare bullet entry with no owning heading.\n"
+    )
+
+    repo_c = new_repo()
+    write(pitfalls_path(repo_c), fixture)
+    commit_all(repo_c)
+    code_c, out_c, err_c = run_script(repo_c, ROLE, "in-repo")
+    assert code_c == 1, f"exit {code_c}: {out_c}{err_c}"
+    candidate_lines = [l for l in out_c.splitlines() if l]
+    assert len(candidate_lines) == 3, out_c
+
+    repo_d = new_repo()
+    pf_d = pitfalls_path(repo_d)
+    write(pf_d, fixture)
+    enc_rel = "src/user/claude-code/scripts/parity_check.md"
+    write(os.path.join(repo_d, enc_rel), "Parity check encoded lesson.\n")
+    commit_all(repo_d)
+    code_d, out_d, err_d = run_distill_script(repo_d, [
+        ROLE, "in-repo",
+        "--entry", "## no-blank heading with bullets",
+        "--encoded-in", enc_rel,
+        "--evidence", "Parity check encoded",
+        "--date", "2026-07-25",
+    ])
+    assert code_d == 0, f"exit {code_d}: {err_d}"
+    assert "PARITY: entries 3->2" in out_d, out_d
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

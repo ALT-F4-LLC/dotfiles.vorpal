@@ -149,38 +149,6 @@ CHECKS = {
         "reference": "agents",
         "normalize": {},
     },
-    "disambiguation-charter": {
-        "start": r"^<!-- CANONICAL:DISAMBIGUATION-CHARTER:BEGIN -->$",
-        "end": r"^<!-- CANONICAL:DISAMBIGUATION-CHARTER:END -->$",
-        "include_end": True,
-        "files": ["agents", "skills", "config"],
-        "reference": "agents",
-        "normalize": {},
-    },
-    "phase3-boundary": {
-        "start": r"^<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:BEGIN -->$",
-        "end": r"^<!-- CANONICAL:PHASE3-DISAMBIGUATION-BOUNDARY:END -->$",
-        "include_end": True,
-        "files": ["agents", "skills", "config"],
-        "reference": "agents",
-        "normalize": {},
-    },
-    "genetic-drift": {
-        "start": r"^<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:BEGIN -->$",
-        "end": r"^<!-- CANONICAL:GENETIC-DRIFT-OPERATOR:END -->$",
-        "include_end": True,
-        "files": ["agents", "skills", "config"],
-        "reference": "agents",
-        "normalize": {},
-    },
-    "second-failure-recovery": {
-        "start": r"^<!-- CANONICAL:SECOND-FAILURE-RECOVERY:BEGIN -->$",
-        "end": r"^<!-- CANONICAL:SECOND-FAILURE-RECOVERY:END -->$",
-        "include_end": True,
-        "files": ["agents", "skills", "config"],
-        "reference": "agents",
-        "normalize": {},
-    },
     "operator-prompts": {
         "start": r"^<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:BEGIN -->$",
         "end": r"^<!-- CANONICAL:OPERATOR-PROMPTS-CONVENTION:END -->$",
@@ -204,13 +172,13 @@ CHECKS = {
 ALL_CHECKS = [
     "impact-class",
     "trial-protocol",
-    "disambiguation-charter",
-    "phase3-boundary",
-    "genetic-drift",
-    "second-failure-recovery",
     "operator-prompts",
     "mimir-note",
 ]
+# disambiguation-charter, phase3-boundary, genetic-drift, and second-failure-recovery
+# were retired by DKT-106 — those blocks are fully single-homed in
+# src/user/claude-code/skills/team-doctrine/references/evolve-orchestration-core.md
+# with no local CANONICAL markers left in any carrier to parity-check.
 
 
 def _check_labels(spec: dict) -> "list[str]":

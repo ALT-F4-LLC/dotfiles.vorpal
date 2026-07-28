@@ -61,11 +61,15 @@ cd "$REPO_ROOT"
 
 DEBUG_RE='(^|[^[:alnum:]_])(dbg!|e?println!|console\.(log|debug|error|warn)|fmt\.Print(ln|f)?)'
 MERGE_RE='^(<<<<<<<|=======|>>>>>>>)'
-# A comment line whose payload looks like code: a //, #, or -- comment leader
-# followed by text that ends in ; { } or contains an assignment / call shape.
-# The -- leader requires a trailing space so shell `--flag)` case patterns are
-# not mistaken for SQL/Lua `-- comment` lines (heuristic — false positives on
-# prose that ends in a semicolon are expected).
+# Canonical definition (this line is the single source of truth repo-wide —
+# no other file defines this heuristic; pin new expectations in
+# test/test_self_review_scan.py rather than hand-deriving the pattern
+# elsewhere). A comment line whose payload looks like code: a //, #, or --
+# comment leader followed by text that ends in ; { } or contains an
+# assignment / call shape. The -- leader requires a trailing space so shell
+# `--flag)` case patterns are not mistaken for SQL/Lua `-- comment` lines
+# (heuristic — false positives on prose that ends in a semicolon are
+# expected).
 COMMENTED_RE='^[[:space:]]*(//|#|-- )[[:space:]]*[[:alnum:]_].*([;{}]|[[:alnum:]_]+[[:space:]]*[=(])[[:space:]]*$'
 
 FOUND=0

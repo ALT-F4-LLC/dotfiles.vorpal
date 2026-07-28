@@ -3,8 +3,9 @@ name: code-review-verdict
 description: >
   Conduct a code review on a scoped artifact (PR, branch, uncommitted, staged, or files).
   Loaded into the calling agent's context; the calling agent applies the role-appropriate
-  playbook — @staff-engineer runs the 6-dimension general review, @security-engineer runs
-  the security-dimension review. The format authority for both roles' output lives here.
+  playbook — @staff-engineer or @distinguished-engineer (the Medium+ general-review advisor
+  seat) runs the 6-dimension general review, @security-engineer runs the security-dimension
+  review. The format authority for all three roles' output lives here.
   NOT the bundled /code-review skill (which can edit the working tree via --fix); this project
   skill was renamed away from "code-review" to avoid that collision. Emits a structured verdict
   into the calling agent's context only — it does NOT post to the PR; to post findings as inline
@@ -21,7 +22,7 @@ effort: xhigh
 
 # Code Review Verdict — Conduct a Role-Scoped Review
 
-You are the **Reviewer**. You conduct a code review on the artifact named by `<scope>` and emit a structured report back to the calling agent's context. No file is written. The review is role-aware: `@staff-engineer` applies the general 6-dimension playbook; `@security-engineer` applies the security-dimension playbook. `@distinguished-engineer` (the Medium+ advisor seat) applies the SAME general 6-dimension playbook as `@staff-engineer` (`distinguished-engineer.md` §Mode 2 — Code review). The format authority — dimensions, severity ladders, output sections, validation rules — lives here.
+You are the **Reviewer**. You conduct a code review on the artifact named by `<scope>` and emit a structured report back to the calling agent's context. No file is written. The review is role-aware; playbook selection is Pre-flight step 3 (`@distinguished-engineer`, the Medium+ advisor seat, applies the general playbook per `distinguished-engineer.md` §Mode 2 — Code review). The format authority — dimensions, severity ladders, output sections, validation rules — lives here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
@@ -86,7 +87,8 @@ If extra positional args follow `<scope>`, ignore them silently.
 
 Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, verdict reconciliation, and the degraded-single-reviewer annotation are owned by `~/.claude/agents/team-lead.md` Rule 8 / Rule 7 / step 14 — read them there, do not restate them here. Skill-specific delta only:
 
-- **Seats**: single (default) = persistent `advisor`, verdict final; doubled = `advisor` + one ephemeral `reviewer-2` (general track), `security-advisor` + one ephemeral `security-reviewer-2` (security track).
+- **Seats (general track)**: single (default) = persistent `advisor`, verdict final; doubled = `advisor` + one ephemeral `reviewer-2`, only when a Rule 8 (a)/(b)/(c) opt-up trigger fires.
+- **Seats (security track)**: `security-advisor` + one ephemeral `security-reviewer-2` is an INDEPENDENT DEFAULT whenever the diff touches a security-sensitive surface (Rule 8 C3) — never an opt-up. The security flag does NOT force-double the general track; a security-sensitive diff that ALSO trips a general trigger lands at 4 reviewers.
 - **Independent emission**: each reviewer invokes this skill independently and emits its own structured report — this skill is the single-reviewer output-format authority, never the panel-reconciliation authority.
 - **Fix-round delta**: a Rule 8 C4 fix-round re-review emits the compact §Round-N Re-Review format below, not the full template.
 - Standalone-mode invocations follow the calling agent's own discretion.
@@ -224,7 +226,7 @@ For substantive changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} ({git diff --stat one-line summary})
-- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12> — first 12 chars of `git diff HEAD | shasum` — for uncommitted/staged] — the tree this verdict binds to; a Round-N delta re-review checks carry-forward via `git diff --stat {recorded}..HEAD` plus, on a dirty tree, re-hashing `git diff HEAD` against the recorded dirty-hash (HEAD alone cannot detect working-tree change between dirty rounds).
+- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12> — `~/.claude/scripts/tree_fingerprint.sh` output (repo: `src/user/claude-code/scripts/tree_fingerprint.sh`) — for uncommitted/staged] — the tree this verdict binds to; a Round-N re-review feeds this recorded fingerprint to `verify_carry_forward.sh` (§Round-N Re-Review) to decide carry-forward.
 - Reference docs: {TDDs, specs consulted — or "None applicable"}
 
 ### Risk Assessment
@@ -301,7 +303,7 @@ For substantive security-relevant changes:
 ### Scope Reviewed
 - Source: {PR # / branch / uncommitted / staged / files}
 - Files changed: {N} (security-touched paths called out)
-- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12>] — same fingerprint and carry-forward recipe as the general template above
+- Tree state: {git rev-parse --short HEAD}[+dirty:<sha12>] — same fingerprint and carry-forward rules as the general template above (§Round-N Re-Review)
 - Reference docs: {the issue's distilled security contracts, `docs/adr/` security records, docs/spec/security.md sections — or "None applicable"}
 
 ### Threat Model (assumed)
@@ -362,11 +364,11 @@ Code review emitted ({recommendation}).
 
 On re-invocation against a fixed diff (the dominant call pattern — fix→re-review loops), skip the full template: emit `## Re-Review Round-{N} ({role})` with three sections — **Prior Findings Disposition** (one row per prior Blocker/Concern/Critical/High → `resolved | outstanding | regressed` + evidence), **New Findings (delta only)** (by severity, or "None"), **Recommendation** (role allow-list value), ending with the trailing confirmation line `Code review emitted ({recommendation}).` — the validator requires it under `--mode round-n` too. Revert to the full template if the fix introduces a new Blocker/Critical.
 
-**G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `git diff --stat {prior-round Tree state}..HEAD` shows BOTH the AC regex block AND its named target files untouched since that round AND, when the prior fingerprint carries `+dirty:<sha12>`, a fresh `git diff HEAD | shasum` (first 12 chars) matches it — cite it as `G5 PASS — unchanged since round {N}`. Never carry a prior G5 Blocker forward (re-run it); never carry forward when either the regex or any target file moved.
+**G5 carry-forward.** A prior-round G5 PASS is reusable without re-running the regex ONLY when `~/.claude/scripts/verify_carry_forward.sh <prior-round Tree state> <current fingerprint> <AC-regex file> <target file …>` (repo: `src/user/claude-code/scripts/verify_carry_forward.sh` — the same script sibling `verify-ac` runs at its Pre-flight §3a) reports `[CARRY-FORWARD]` for EVERY path; it mechanizes both fingerprint components (rev-range `git diff --name-only`, plus hash-equality on `+dirty:<sha12>`). Compute `<current fingerprint>` as `git rev-parse --short HEAD` plus `+dirty:<sha12>` from `~/.claude/scripts/tree_fingerprint.sh` when the tree is dirty. Cite as `G5 PASS — unchanged since round {N}`. Any `[RE-VERIFY]` line (exit 1) means re-run the regex; never carry a prior G5 Blocker forward (re-run it).
 
 ## Validation Before Emit
 
-Mechanically validate the drafted review before emitting it. **Do NOT hand-roll `mktemp` or use `$$` across separate Bash calls to stage the draft.** Each Bash tool call is a fresh shell process, so `$$` and any locally-computed temp path are not stable across calls — this is what causes `mktemp: File exists` races, missing trailing-confirmation appends, and "no recognized review banner" failures when staging and linting are split across turns. The SOLE prescribed path is a SINGLE Bash invocation of the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`; verify it exists first: `ls -la ~/.claude/scripts/report_stage_lint.sh`) — it stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` internally — parallel panel reviewers (advisor + `reviewer-2`, or the 3-way security panel) share one `$TMPDIR`, so a fixed name would race: one reviewer's staging write could clobber another's and the validator would lint the wrong body — then runs `~/.claude/scripts/report_lint.py` against the staged copy, all within that one call:
+Mechanically validate the drafted review before emitting it. **Do NOT hand-roll `mktemp` or use `$$` across separate Bash calls to stage the draft.** Each Bash tool call is a fresh shell process, so `$$` and any locally-computed temp path are not stable across calls — this is what causes `mktemp: File exists` races, missing trailing-confirmation appends, and "no recognized review banner" failures when staging and linting are split across turns. The SOLE prescribed path is a SINGLE Bash invocation of the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`) — it stages the content to a UNIQUE-per-invocation `mktemp` path under `$TMPDIR` (parallel panel reviewers share one `$TMPDIR`; a fixed name races), then runs `~/.claude/scripts/report_lint.py` against the staged copy, all within that one call:
 
 ```
 ~/.claude/scripts/report_stage_lint.sh code-review-verdict [--mode round-n] "$DRAFT_FILE"
@@ -386,7 +388,7 @@ The validator mechanizes the shared, text-decidable checks: heading matches the 
 Two checks stay the calling agent's responsibility — they need Pre-flight diff state the review text does not carry:
 
 - **Override recognition (verbatim-match arm)** — if an `OVERRIDE: code-philosophy/<id>` comment is present in the diff for an otherwise-gated symptom, that occurrence MUST appear in `Overrides Recognized` (verbatim text + file:line) AND must NOT appear as a Blocker for the same gate. Silent honoring of an override is a defect. (The bucket's mere presence — empty vs itemized — is validator-mechanized above; only the diff-cross-referenced verbatim match stays here.)
-- **Citation-presence scan** — every `file:line` cited in a Finding names a file present in the resolved diff's file list (captured at Pre-flight step 4). A citation to a file absent from the diff is a fabricated-verification defect — "VERIFIED" for a hunk that does not exist.
+- **Citation-presence scan** — before emitting, cross-check every `file:line` cited in a Finding against the resolved scope's file list (captured at Pre-flight step 4); a cited path absent from that list is a fabricated-verification defect ("VERIFIED" for a hunk that does not exist). Do NOT emit such a finding: re-derive it from the file's real diff, or drop it and say so. Not yet mechanized — the linter never sees the file list.
 
 ## Save & Return
 

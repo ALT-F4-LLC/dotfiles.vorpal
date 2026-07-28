@@ -21,12 +21,14 @@ definition for the format the orchestrator Writes and this script Reads):
     EVIDENCE-LESS (per the "disposition missing its parenthesized evidence
     is INVALID" rule) -- both are reject-class and non-zero-exit findings.
 
-Exit codes: 0 = every entry present carries a valid disposition + evidence
-(including the case of zero entries -- an empty ledger has nothing to gate
-on); 1 = at least one entry is OPEN or EVIDENCE-LESS; 2 = the ledger file is
-missing, empty, or has no parseable entries at all (a precondition failure,
-distinct from "zero findings this cycle" -- an evolve cycle always Writes
-the file, even if empty, at Phase 0 completion).
+Exit codes: 0 = every entry present carries a valid disposition + evidence,
+including the zero-entry case -- an empty (or whitespace-only) ledger is the
+legitimate "no actionable findings this cycle" output of
+findings_ledger_init.py and has nothing to gate on; 1 = at least one entry
+is OPEN or EVIDENCE-LESS; 2 = a precondition failure: the ledger file is
+missing/unreadable, or is non-blank but contains no parseable - <ID>: entry
+(content that is not the ledger grammar -- a mangled, mis-pathed, or hand-broken
+file, which must not be mistaken for "zero findings").
 """
 import re
 import sys
@@ -83,6 +85,10 @@ def main(argv):
     except OSError as exc:
         print(f"findings_ledger_check.py: cannot read {path}: {exc}", file=sys.stderr)
         return 2
+
+    if not text.strip():
+        print("0/0 dispositioned (empty ledger, nothing to gate)")
+        return 0
 
     entries = parse_entries(text)
     if not entries:

@@ -1,5 +1,55 @@
 # Changelog: code-review-verdict
 
+## 2026-07-27
+
+### Summary
+Frontmatter description now names all three callers (S5) — @distinguished-engineer holds the Medium+ general-review advisor seat and the "both roles" phrasing excluded it on the pre-load surface. G5 carry-forward wired to the existing verify_carry_forward.sh (I9 prose half), retiring the hand-rolled fingerprint compare. Findings: 5 — 3 sub / 2 cos / 0 rej / 1 def (I8 script half). Net +104 bytes (42,035 / 65,000).
+
+### Changes
+- FIX[SUBSTANTIVE]: frontmatter description names @staff-engineer / @distinguished-engineer / @security-engineer and drops "both roles" — Role Detection (:36) already admits three callers and team-lead.md's dispatch table seats @distinguished-engineer as the Medium+ `advisor` running this skill's general playbook (S5). Folds to 864 chars, under the 1,536 description+when_to_use cap.
+- FIX[SUBSTANTIVE]: §Round-N Re-Review G5 carry-forward runs `~/.claude/scripts/verify_carry_forward.sh` — the script whose own header already names this recipe — instead of a hand-executed `git diff --stat` + dirty-hash compare; matches sibling verify-ac Pre-flight §3a (I9 prose half).
+- CULL[SUBSTANTIVE]: general-output Tree state field drops its duplicated carry-forward recipe for a pointer to §Round-N Re-Review, removing the now-conflicting hand-rolled form.
+- CULL[COSMETIC]: Validation Before Emit mktemp-race rationale compressed; prohibition, single-invocation prescription, and exit-code triple unchanged.
+- CLARIFY[COSMETIC]: security-output Tree state pointer names §Round-N Re-Review directly so it does not dangle after the general-template trim.
+- Deferred: I8 (`--scope` on report_stage_lint.sh mechanizing the override verbatim-match + citation-presence arms) needs new script authoring — routed to Docket tracking.
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Actionability, Coherence, Skill Design Quality, Orchestration, Spec Alignment, Rename — all 8.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 3 entries (2026-06-30..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 3 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Split the Doubling Rule's Seats bullet so the security track reads as the independent Rule 8 C3 default it is, not an opt-up parallel to the general track; converted the citation-presence scan from a declarative invariant to an imperative with a failure disposition; collapsed a duplicated playbook-selection sentence. Findings: 3 — 2 sub / 1 cos / 0 rej / 1 def (I9 script half) / 1 noted (I10).
+
+### Changes
+- FIX[SUBSTANTIVE]: Doubling Rule Seats split into general-track and security-track bullets — the single-sentence form invited reading `security-advisor` + `security-reviewer-2` as opt-up-gated; team-lead.md:478 makes it an independent default that does not force-double the general track (OP-S7).
+- FIX[SUBSTANTIVE]: citation-presence scan now directs the reviewer to run the cross-check before emitting and to re-derive or drop a failing finding, and marks itself not-yet-mechanized (I9 prose half; script half deferred to Docket).
+- CULL[COSMETIC]: role → playbook mapping stated once at Pre-flight step 3; intro reduced to a pointer plus the distinguished-engineer.md §Mode 2 citation.
+- No action (verified still fixed, per Phase 0 historical audit): LOAD-time `!`+backtick crash (0 matches), BSD mktemp (report_stage_lint.sh prescribed at :369), untracked-file blind spot (`git status --short` at :60 and :109).
+
+### Dimensions Evaluated
+Over-Engineering, Completeness, Actionability, Coherence, Skill Design Quality, Orchestration, Spec Alignment, Rename — all 8.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -211,49 +261,6 @@ Operations/Coherence/Over-Engineering (primary — root-cause removal of a load-
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 3 disambiguation: added a description clause distinguishing code-review-verdict (in-context verdict) from review-and-comment (posts inline PR comments), restoring reciprocity with review-and-comment's existing back-reference.
-
-### Changes
-- Description: appended "emits a verdict into context only; to post inline PR comments use Skill(review-and-comment)" — resolves shared "review this PR" trigger overlap (overlapping-ownership). Placed in description, not the family-lockstepped When-NOT-to-Use list, to preserve report-emission-family parity.
-
-### Dimensions Evaluated
-Disambiguation (overlapping-ownership). Confusable-name and multi-reading: none found.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Folded the redundant @distinguished-engineer playbook-mapping parenthetical in Pre-flight step 3 into the selection sentence's label — the parenthetical restated the preceding sentence; its unique content (severity/output extension) preserved inline. Net -79.
-
-### Changes
-- CULL: collapsed the distinguished→staff restatement parenthetical into the Playbook-selection label — cited Over-Engineering-HIGHEST + self-evident intra-step restatement.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST) primary. Cross-cutting validate_report.py proposal (spans 5 report-emission skills) routed to Phase 2.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Added vote-compatible Findings JSON contract while keeping skill at 393 lines.
-
-### Changes
-- AMPLIFY: added Staff/Security Findings JSON blocks and parse/count validation.
-- CULL: compressed duplicated delivery/vote routing prose.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -286,3 +293,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: Full-cycle audit: NO changes (396/500). Both Phase 0 focus signals verified already-resolved against live content.
 - 2026-06-19: Added a G5 Round-N carry-forward rule to cut redundant regex re-execution on the dominant fix→re-review loop.
 - 2026-06-20: Over-engineering merge; net -2 (398→396). Doubling Rule + silent-completion self-check deferred to Phase 2 (family-wide).
+- 2026-06-30: Added vote-compatible Findings JSON contract while keeping skill at 393 lines (Staff/Security Findings JSON blocks + parse/count validation).
+- 2026-07-10: Folded the redundant @distinguished-engineer playbook-mapping parenthetical in Pre-flight step 3 into the selection sentence's label. Net -79.
+- 2026-07-10: Phase 3 disambiguation — added description clause distinguishing code-review-verdict (in-context verdict) from review-and-comment (posts inline PR comments).

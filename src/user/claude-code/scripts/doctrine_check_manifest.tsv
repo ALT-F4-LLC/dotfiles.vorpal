@@ -18,48 +18,43 @@
 # marker (`BANNER`) so extraction still finds the block.
 # Append new tags/carriers as new lines; comments (#) and blank lines are
 # ignored. A tag needs at least 2 carrier lines to be checkable.
-PITFALLS	src/user/claude-code/agents/ux-designer.md
-PITFALLS	src/user/claude-code/agents/project-manager.md
-PITFALLS	src/user/claude-code/agents/senior-engineer.md
-PITFALLS	src/user/claude-code/agents/security-engineer.md
-PITFALLS	src/user/claude-code/agents/sdet.md
-PITFALLS	src/user/claude-code/agents/distinguished-engineer.md
-PITFALLS	src/user/claude-code/agents/staff-engineer.md
-PITFALLS	src/user/claude-code/skills/team-doctrine/references/pitfalls.md
+# PITFALLS retired as a full-body parity family (2026-07-27): the 7 agent
+# carriers were compacted to CANONICAL:PITFALLS-LOCAL pointer blocks (rows
+# below); the full body is single-homed in
+# src/user/claude-code/skills/team-doctrine/references/pitfalls.md (its own
+# CANONICAL:PITFALLS markers remain but have no parity peers to check).
+PITFALLS-LOCAL	src/user/claude-code/agents/ux-designer.md
+PITFALLS-LOCAL	src/user/claude-code/agents/project-manager.md
+PITFALLS-LOCAL	src/user/claude-code/agents/senior-engineer.md
+PITFALLS-LOCAL	src/user/claude-code/agents/security-engineer.md
+PITFALLS-LOCAL	src/user/claude-code/agents/sdet.md
+PITFALLS-LOCAL	src/user/claude-code/agents/distinguished-engineer.md
+PITFALLS-LOCAL	src/user/claude-code/agents/staff-engineer.md
 EVOLUTION-MODEL	.claude/skills/evolve-agents/SKILL.md
 EVOLUTION-MODEL	.claude/skills/evolve-skills/SKILL.md
 EVOLUTION-MODEL	.claude/skills/evolve-coherence/SKILL.md
 EVOLUTION-MODEL	.claude/skills/evolve-config/SKILL.md
-DISAMBIGUATION-CHARTER	.claude/skills/evolve-agents/SKILL.md
-DISAMBIGUATION-CHARTER	.claude/skills/evolve-config/SKILL.md
-DISAMBIGUATION-CHARTER	.claude/skills/evolve-skills/SKILL.md
 # evolve-config's config-blast-radius sentence sits OUTSIDE the CANONICAL block
 # (a separate <!-- CONFIG-ONLY --> line after :END), so the block itself is
-# byte-identical across all three carriers and IS registered below.
+# byte-identical across all three carriers and IS registered below. This block
+# is a deliberate compressed restatement (DKT-106) pointing at
+# src/user/claude-code/skills/team-doctrine/references/evolve-orchestration-core.md
+# §Scientific Trial Protocol for full procedural detail — stays registered
+# because the HARD GATE trigger must remain visible inline, not behind a Read.
 SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-agents/SKILL.md
 SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-skills/SKILL.md
 SCIENTIFIC-TRIAL-PROTOCOL	.claude/skills/evolve-config/SKILL.md
-# evolve-* orchestrator family — CANONICAL blocks shared verbatim across the
-# team-spawning evolve skills (mechanized separately by symmetry_check.py; also
-# registered here so doctrine_check.sh enforces them in one place).
-GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-agents/SKILL.md
-GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-skills/SKILL.md
-GENETIC-DRIFT-OPERATOR	.claude/skills/evolve-config/SKILL.md
+# OPERATOR-PROMPTS-CONVENTION — same DKT-106 hybrid-block rationale as
+# SCIENTIFIC-TRIAL-PROTOCOL above: a compressed inline restatement of the
+# API-shape constraints, pointing at evolve-orchestration-core.md §Operator
+# prompts for full procedural detail.
 OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-agents/SKILL.md
 OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-skills/SKILL.md
 OPERATOR-PROMPTS-CONVENTION	.claude/skills/evolve-config/SKILL.md
-SECOND-FAILURE-RECOVERY	.claude/skills/evolve-agents/SKILL.md
-SECOND-FAILURE-RECOVERY	.claude/skills/evolve-skills/SKILL.md
-SECOND-FAILURE-RECOVERY	.claude/skills/evolve-config/SKILL.md
-# CRASH-STALL-CORE — detection paragraph + nudge + re-spawn bullets preceding
-# SECOND-FAILURE-RECOVERY. evolve-model-distribution's variant is intentionally
-# divergent (different resume-context/second-failure semantics) — not a carrier.
-CRASH-STALL-CORE	.claude/skills/evolve-agents/SKILL.md
-CRASH-STALL-CORE	.claude/skills/evolve-skills/SKILL.md
-CRASH-STALL-CORE	.claude/skills/evolve-config/SKILL.md
-PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-agents/SKILL.md
-PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-skills/SKILL.md
-PHASE3-DISAMBIGUATION-BOUNDARY	.claude/skills/evolve-config/SKILL.md
+# DISAMBIGUATION-CHARTER, GENETIC-DRIFT-OPERATOR, SECOND-FAILURE-RECOVERY,
+# CRASH-STALL-CORE, and PHASE3-DISAMBIGUATION-BOUNDARY were retired from this
+# manifest by DKT-106 — fully single-homed into evolve-orchestration-core.md,
+# no local CANONICAL markers remain in any carrier to parity-check.
 IMPACT-CLASS	.claude/skills/evolve-agents/SKILL.md
 IMPACT-CLASS	.claude/skills/evolve-skills/SKILL.md
 BANNER	.claude/skills/evolve-agents/SKILL.md
@@ -105,3 +100,24 @@ SAVE_AND_RETURN	src/user/claude-code/skills/adr/SKILL.md
 SAVE_AND_RETURN	src/user/claude-code/skills/prd/SKILL.md
 SAVE_AND_RETURN	src/user/claude-code/skills/tdd/SKILL.md
 SAVE_AND_RETURN	src/user/claude-code/skills/ux-spec/SKILL.md
+# Agent-file pointer-block families registered 2026-07-27 (E4).
+# SHUTDOWN-PROTOCOL-LOCAL deliberately EXCLUDES team-lead.md: its copy is
+# INTENTIONALLY DIVERGENT (team-lead sends shutdown_request / receives
+# _response; teammates do the reverse) — never add its row or force a
+# strip-transform.
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/staff-engineer.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/senior-engineer.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/distinguished-engineer.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/security-engineer.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/sdet.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/project-manager.md
+VORPAL-TOOLS-LOCAL	src/user/claude-code/agents/ux-designer.md
+LAZINESS-DISCIPLINE-LOCAL	src/user/claude-code/agents/senior-engineer.md
+LAZINESS-DISCIPLINE-LOCAL	src/user/claude-code/agents/sdet.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/project-manager.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/ux-designer.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/sdet.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/senior-engineer.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/distinguished-engineer.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/security-engineer.md
+SHUTDOWN-PROTOCOL-LOCAL	src/user/claude-code/agents/staff-engineer.md

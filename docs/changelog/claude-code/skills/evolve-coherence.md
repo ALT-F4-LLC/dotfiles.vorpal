@@ -1,5 +1,119 @@
 # Changelog: evolve-coherence
 
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation resolved the `<n>` placeholder collision in the per-finding report format, where one token denoted both the finding ordinal and the dimension number.
+
+### Changes
+- DISAMBIG (confusable-name): `FINDING <n>` → `FINDING <i>` in the Coherence Report per-finding block and the Phase 1 spawn template, with an inline gloss distinguishing the finding ordinal from the dimension number — the file's own Phase 1 substitution note already reserves `<n>` for "the dimension in prose".
+
+### Dimensions Evaluated
+Disambiguation: confusable-name (applied), multi-reading, overlapping-ownership.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: corrected the D2 #1 tdd/adr ownership map to the post-edit author-attribution contracts; single-homed the Phase 2 reconciler task list in its spawning template.
+
+### Changes
+- D2 #1: tdd/adr now map to `@distinguished-engineer` (default, Medium+ cycles) + `@staff-engineer` (fallback/standalone) + security carve-out — was the stale "@staff-engineer" premise the model-routing-auditor tripped on (M1).
+- §Phase 2 body: 3-step reconciler checklist trimmed to a pointer at the spawning template (drifted duplicate — template carried 1:1-invariant/Blockers-first/DEGRADED clauses the body copy lacked).
+
+### Dimensions Evaluated
+Cross-skill coherence (Phase 2): terminology accuracy, reference accuracy, body/template single-homing.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Pass A applied six confirmed audit findings, all re-verified live: three of the rubric's carve-outs rested on premises that are false at HEAD (a "sole" token count that is 4, a banner that carries no CRITICAL, and three dead quotes behind a cross-grep that returns zero hits on every target), and three detection mechanisms under-scoped (agent-root-only Skill() refs, an unexcluded x placeholder, a frozen 14-name ephemeral list missing 20+ live names). Pass B relocated the no-edit attestation into the first 20KB per the post-compaction placement rule. Net +1,643 bytes (50,450 → 52,093).
+
+### Changes
+- FIX[SUBSTANTIVE]: §Team Setup line 160 — full restatement of the single-homed evolve-orchestration-core.md §Shutdown Protocol (carrying its own explicitly-REJECTED wording variant) replaced by the citation, byte-identical to evolve-agents:137.
+- FIX[SUBSTANTIVE]: D2 #4 — "the sole Skill(code-review-verdict) token … in its CRITICAL banner" replaced by the property test; live counts are 4 tokens and 0 CRITICAL.
+- FIX[SUBSTANTIVE]: D2 #2 + its seed — issue-creation constraint re-anchored on the three live carriers (sdet.md:282, project-manager.md:12, verify-ac:249); the prior cross-grep's four phrasings were all dead, making it unfalsifiable.
+- FIX[SUBSTANTIVE]: D1 #1 + Refs seed — placeholder `x` excluded (live 3× in this file's own prose) and ref scope widened from agents-only to both skill roots (99 live skill→skill refs).
+- FIX[SUBSTANTIVE]: D3 #5 + its seed — frozen 14-name ephemeral list replaced by a re-derivation instruction (union grep + team-lead §Per-Role Dispatch Table).
+- MOVE[SUBSTANTIVE]: mechanized `git status --porcelain` no-edit attestation relocated from Wrap-up (byte ~41.2K) into §No-Edit Guard (byte ~10.9K), inside the post-compaction re-attachment window.
+- Companion fix: the D1 #6 carrier-pin list's `evolve-model-distribution` line citation updated 104 → 108 to match that skill's own S1 fix landing this cycle. The `evolve-coherence`:160 self-pin needed no correction (0 net line-count delta across all 10 edits).
+- No-change: H1 (D1 #6 emitter direction re-verified CLEAN at HEAD); H2 (no fitness problem this window). Rejected: I2 (retire reconciler spawn — capability downgrade, not mechanization, disanalogous to the xref-builder precedent). Routed out: I1 (coherence_xref.py rule_matrix key — script change, outside this cycle's 7-SKILL.md scope, needs script+schema landed together).
+
+### Dimensions Evaluated
+All 8. Findings under Coherence (1), Actionability (3), Completeness (4), Skill Design Quality/Over-Engineering (2, paired). Orchestration & Agent Teams: reconciler-retirement proposal evaluated and REJECTED. Spec Alignment and Rename: clean.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 8 entries (2026-07-10..2026-07-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 8 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation pass: resolved two residual multi-readings in the rubric this cycle rewrote — D1 #6(a)'s bare `team-lead` addressee token (which would emit false Blockers against 4 live skill carriers) and D2 #4's verb-coupled hard-restriction property (which excludes the one skill it cites as the missed case).
+
+### Changes
+- DISAMBIG[SUBSTANTIVE][multi-reading]: D1 #6(a) — `shutdown_response` addressee re-anchored from the literal token `team-lead` to "its own spawner", with both correct carrier spellings named (agent files "addressed to team-lead"; evolve-* skills "addressed to the orchestrator") and marked as NOT drift against each other.
+- DISAMBIG[SUBSTANTIVE][multi-reading]: D2 #4 — hard-restriction property restated as REFUSAL-to-proceed rather than the verbs `HALTS/ABORTs`; `commit`'s Step-0 gate cited as the verified case that uses "STOP"/"Blocked:" and neither verb, with an explicit ban on deciding membership by grepping for the literal verbs.
+
+### Dimensions Evaluated
+Phase 3 two-arm boundary test only. Both findings verified Arm-1 PASS (references resolve, role claims map to real owners, no CANONICAL block or ladder/name touched) and Arm-2 FAIL. No CANONICAL block modified.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence pass (same cycle as the Phase 1 entry below): fixed two self-inflicted drift sites this file's own D4 rubric introduced — a stale legend restatement and a dead pre-DKT-59 detection-seed phrase, both now pointing at live sources of truth instead of hand-copied text.
+
+### Changes
+- FIX[SUBSTANTIVE]: D4 invariant 1's "✓ body / ▾ pointer" restatement replaced with a pointer to the master legend — the restatement went stale when this cycle's own team-doctrine dispatch reworded the master's ✓ semantics.
+- FIX[SUBSTANTIVE]: D4 detection seed's dead `see team-lead.md §Runtime Discipline R{N}` anchor (0 hits across all 8 agent files) replaced with the live master-path substring anchor, verified present in all 8 files.
+
+### Dimensions Evaluated
+Coherence (self-referential drift caught by the Phase 2 cross-skill pass). Mechanized checks: symmetry_check.py --check all (exit 0), --check mimir-note (exit 0), check_citations.py fleet-wide (zero genuine stale paths).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Corrected a false protocol invariant that inverted the shutdown emitter direction, replaced two frozen enumerations and two dead citations with derivation rules, and closed three false-positive classes (bundled skills, docket's no-banner status, init-specs's inapplicable coupling leg). Findings: 12 → 10 sub / 2 cos / 0 rej / 2 def / 0 enc
+
+### Changes
+- CULL[SUBSTANTIVE][OP-X1,D1]: D1 #6 asserted "only the spawner emits a `_response`" for both protocols — true for plan_approval, INVERTED for shutdown (team-lead.md:439 "team-lead SENDS shutdown_request and RECEIVES shutdown_response"; 6 agent files carry "always addressed to team-lead"). Split into (a) shutdown and (b) plan_approval with explicit directions + drift tests.
+- AMPLIFY[SUBSTANTIVE][OP-C1,D1]: bundled-skill Exception added to D1 #1 and #5, mirroring D3 #1 — `Skill(claude-in-chrome)` (ux-designer.md:249) has no dir under either root and falsely read as unresolved.
+- CULL[SUBSTANTIVE][OP-C4,OP-S4,D2]: D2 #4's frozen hard-restriction list redefined by PROPERTY (ABORT-on-caller-mismatch) — it omitted `commit`; seed regex widened to all three live ONLY-by spellings; dead `Skill(verify-ac)`-in-staff-engineer example re-pointed to the live team-lead.md:22 `Skill(code-review-verdict)` case.
+- CULL[SUBSTANTIVE][OP-C10,OP-C7,D4]: D4 #2's "sole non-registered family" claim replaced by the derivation rule (3 named tags are now manifest-registered); D4 #3's restated per-agent rule counts replaced by a pointer to team-conventions.md — team-lead's hardcoded 1–10 had gone stale against the live 1–11, and team-lead.md Rule 5 is now only a tombstone.
+- AMPLIFY[SUBSTANTIVE][OP-S1,OP-S5,OP-S8]: stale R2 placeholder citation re-pointed to runtime-discipline.md and generalized; leg (iii) marked INAPPLICABLE (not vacuous) for init-specs; `docket` added to the no-banner whitelist.
+- AMPLIFY[COSMETIC][OP-S6]: Phase 1 spawn literal normalized to `review-d{n}`, matching lines 157/183 and the `{token}` naming convention; `<n>` retained for in-prose dimension refs.
+- CULL[COSMETIC]: dropped the sixth restatement of "Phase 0 is not a spawn" (§Spawning Templates preamble), keeping the instance that carries the anti-revert rationale.
+
+### Dimensions Evaluated
+All 8. Coherence + Completeness primary; Over-Engineering secondary (one cull; the No-Edit Guard's 9-site redundancy is deliberate defense-in-depth, retained per 2026-07-24). Spec Alignment N/A (no `docs/spec/` in-repo; file cites none). `context: fork`/`background` N/A — repo-wide 0 hits and this skill spawns a team. Two innovation findings deferred to Docket (need new script capability). No CANONICAL block touched.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -149,121 +263,6 @@ None — History Compaction per the retention-compaction policy, not a review cy
 ### Rename
 No rename.
 
-## 2026-07-17
-
-### Summary
-Coherence-class fix surfaced by the evolve-skills cycle's Phase 2 coherence-reviewer: the ephemeral-name-consistency invariant went stale after evolve-* renamed its Phase-0 docs-researcher auditor to docs-researcher-phase0.
-
-### Changes
-- Naming invariant (D3 #5) now lists `docs-researcher` (team-lead's retrieval-only ephemeral) and `docs-researcher-phase0` (the evolve-* Phase 0 doc-research ephemeral) as distinct names, so the intentional split is not flagged as an inconsistency.
-
-### Dimensions Evaluated
-D3 (naming & rename drift) - accurate references, consistent terminology.
-
-### Rename
-No rename (this file itself was not renamed; it documents a rename in sibling skills).
-
-## 2026-07-14 (Phase 4 history compaction)
-
-### Summary
-Compacted 4 entries (2026-06-04..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per the retention-compaction policy, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Refreshed D4 rubric's manifest-enumeration prose after doc-authoring + evolve-* families were registered in doctrine_check_manifest.tsv this cycle (self-consistency fix for drift my own manifest edit introduced).
-
-### Changes
-- AMPLIFY: D4 CANONICAL-parity bullet — dropped the stale "currently PITFALLS/EVOLUTION-MODEL/DISAMBIGUATION-CHARTER" hand-count; ARGUMENT_HANDLING/COLLISION_DIALOG/SAVE_AND_RETURN + evolve-* families now noted as registered.
-
-### Dimensions Evaluated
-Coherence (self-consistency after shared-infra edit).
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-D4 #2 now reads manifest-registered CANONICAL carrier SETS from doctrine_check_manifest.tsv (source of truth doctrine_check.sh enforces) instead of hand-counting them — resolves recurring stale-enumeration drift (H8) and a live instance: the inline "7 carriers" for PITFALLS under-counted the manifest's registered set (omitted the team-doctrine reference carrier). Findings: 7 → 1 sub / 0 cos / 1 rej / 3 def / 0 enc (+ M4 no-change)
-
-### Changes
-- CULL/REDIRECT[SUBSTANTIVE][H8]: replaced hardcoded carrier counts for PITFALLS/EVOLUTION-MODEL/DISAMBIGUATION-CHARTER with a manifest pointer; HARVEST + doc-family stay inline (not yet manifest-registered). Net +69.
-
-### Dimensions Evaluated
-All 8. Coherence (6) + Over-Engineering (4) primary. Report-and-route-only charter verified intact (4 enforcement layers). No routing change (M4: zero usage, no evidence). Rejected I16 (scratchpad-write conflicts with disallowed-tools no-write design); deferred I17/I19 (cross-skill script builds), partial-applied I18.
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
-
-### Summary
-Phase 2 coherence: D4 rubric re-grounded against the live CANONICAL carrier map — HARVEST single-homing, BANNER-outsider whitelist, orchestrator-family enumeration; EVOLUTION-MODEL lockstep.
-
-### Changes
-- D4 #2: HARVEST claim corrected to single-homed in evolve-phase0-templates.md §2 (was: 3 skill carriers — false, would emit 3 phantom missing-carrier findings).
-- D4 #2: BANNER outsiders now review-and-comment + session-metrics (+ team-doctrine no-banner-by-design); orchestrator family enumerates all identical carriers.
-- CANONICAL:EVOLUTION-MODEL header now names all 4 carriers (lockstep).
-
-### Dimensions Evaluated
-Coherence (carrier-set accuracy, CANONICAL parity).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 3 disambiguation pass)
-
-### Summary
-Removed a dead reference to a nonexistent "evolve-suite" skill from the description (confirmed via repo-wide grep — no such skill exists). Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
-
-### Changes
-- CULL[SUBSTANTIVE]: description no longer claims "(evolve-suite runs it automatically)" — no `evolve-suite` skill exists anywhere in the repo
-
-### Dimensions Evaluated
-Coherence (dead reference). Flagged for a future cycle (shared with evolve-agents' 29-occurrence issue): this file's own description also carries the stale `agents/*.md` / bare `skills/*` path literals — not touched this pass, kept narrowly scoped to the confirmed dead reference.
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Collapsed the duplicated intentional-variants whitelist to one canonical source — the Phase 1 spawn template now points to the rubric's inline `(D<n> #<m>)` carve-outs instead of re-enumerating all 9, removing a self-inflicted parity-drift hazard in a skill whose purpose is detecting parity drift. Rejected a Rethink to replace the LLM xref-builder with a deterministic script (embeds fuzzy prose-judgment it cannot safely mechanize). Findings: 2 → 1 sub / 0 cos / 1 rej / 0 def / 0 enc
-
-### Changes
-- CULL[SUBSTANTIVE]: Phase 1 spawn template §Task + rubric line-137 note — replaced the 9-item re-enumerated whitelist with a pointer to the rubric's own inline carve-outs, applied in lockstep across both locations to avoid a stale cross-reference
-
-### Dimensions Evaluated
-Coherence (6), Over-Engineering (4) — primary. Orchestration verified clean (REPORT-AND-ROUTE-ONLY charter enforced at 4 layers: description, banner, No-Edit Guard, `disallowed-tools`). Rejected: xref-builder → deterministic script (D1 prose-skill-name resolution and D2 claimed-agent extraction are fuzzy judgment calls that a script cannot reliably replace; XREF is already signals-to-verify, re-confirmed downstream).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Redundancy + roster-drift trim on a zero-invocation organism. Two CULLs, no additions; net -165 bytes. Report-and-route boundary unchanged.
-
-### Changes
-- CULL: dropped the stale hardcoded "(7 agents + 13+ skills)" parenthetical in the Scope-confirmation HARD GATE — ground-truth is 8 agents now (distinguished-engineer added); a hardcoded roster count is the exact drift class D3 polices, so removed rather than re-pinned.
-- CULL: removed the redundant "Canonical excluded instance: Skill(verify-ac)…" restatement in the D2 detection seed — fully subsumed by the general frontmatter-cross-check heuristic on the same bullet; guard stays double-covered via invariant #4 + Phase 1 whitelist (Content Gate Non-redundant).
-
-### Dimensions Evaluated
-All 8. Over-Engineering (primary): one redundant restatement culled. Coherence: stale roster count culled. Report-and-route invariant preserved; no model/routing change.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git
@@ -285,3 +284,11 @@ history (see the compaction entry's date).
 - 2026-06-30: Encoded the cited ranged-Read confirmation efficiency gain at both binding sites with an absence/coverage grep carve-out. RETAIN otherwise (no-signal organis...
 - 2026-06-30: Phase-2 coherence: fixed a high-risk glob-abort in the Phase-0 inventory command. Inline, net 0 (stays 328).
 - 2026-06-30: Phase-1 coherence follow-up: expanded D1 lifecycle ownership into lifecycle + report-delivery ownership, added report-delivery obligations to the XREF schema...
+- 2026-07-10: Redundancy + roster-drift trim on a zero-invocation organism. Two CULLs, no additions; net -165 bytes. Report-and-route boundary unchanged.
+- 2026-07-12: Collapsed the duplicated intentional-variants whitelist to one canonical source (Phase 1 spawn template now points to rubric's inline carve-outs). Rejected xref-builder→script Rethink.
+- 2026-07-12: Phase 3 disambiguation: removed a dead reference to a nonexistent "evolve-suite" skill from the description (repo-wide grep confirmed no such skill exists).
+- 2026-07-13: Phase 2 coherence: D4 rubric re-grounded against the live CANONICAL carrier map — HARVEST single-homing, BANNER-outsider whitelist, orchestrator-family enumeration.
+- 2026-07-14: Compacted 4 entries (2026-06-04..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-14: Refreshed D4 rubric's manifest-enumeration prose after doc-authoring + evolve-* families were registered in doctrine_check_manifest.tsv this cycle.
+- 2026-07-14: D4 #2 now reads manifest-registered CANONICAL carrier sets from doctrine_check_manifest.tsv instead of hand-counting (H8) — fixed a live under-count of the PITFALLS carrier set.
+- 2026-07-17: Coherence-class fix: ephemeral-name-consistency invariant (D3 #5) now lists docs-researcher and docs-researcher-phase0 as distinct, intentional names.

@@ -139,6 +139,62 @@ case_backstop_always_exits_zero() {
     teardown_fixture
 }
 
+case_arm4_pass_substring_present() {
+    setup_fixture
+    printf 'Use the Opus tier for this task.\n' > "${FIXTURE_REPO}/notes.md"
+    printf 'functional-value\tnotes.md\tOpus tier\tfixture exemption\n' > "$FIXTURE_EXEMPTIONS"
+
+    local out rc
+    out=$(run_model_census); rc=$?
+    assert_exit 0 "$rc" "arm4: pass when exemption substring still present under its path"
+    assert_contains "$out" "arm4 (stale-exemption-row) PASS" "arm4: pass when exemption substring still present under its path"
+
+    teardown_fixture
+}
+
+case_arm4_fail_stale_row() {
+    setup_fixture
+    printf 'This file has nothing to do with tiers.\n' > "${FIXTURE_REPO}/notes.md"
+    printf 'functional-value\tnotes.md\tOpus tier\tfixture exemption\n' > "$FIXTURE_EXEMPTIONS"
+
+    local out rc
+    out=$(run_model_census); rc=$?
+    assert_exit 1 "$rc" "arm4: fail when exemption substring no longer found under its path"
+    assert_contains "$out" "FAIL: 1 stale exemption row" "arm4: fail when exemption substring no longer found under its path"
+    assert_contains "$out" "Opus tier" "arm4: fail when exemption substring no longer found under its path"
+
+    teardown_fixture
+}
+
+case_arm5_pass_canonical_alias() {
+    setup_fixture
+    printf 'spawn_agent(model="sonnet")\n' > "${FIXTURE_REPO}/agent.go"
+
+    local out invented
+    out=$(run_model_census --json)
+    invented=$(printf '%s' "$out" | jq '.invented_alias_count' 2>/dev/null)
+    if [ "$invented" = "0" ]; then
+        pass "arm5: canonical alias model=\"sonnet\" produces 0 invented-alias hits"
+    else
+        fail "arm5: canonical alias model=\"sonnet\" unexpectedly flagged (invented_alias_count=${invented})"
+    fi
+
+    teardown_fixture
+}
+
+case_arm5_fail_invented_alias() {
+    setup_fixture
+    printf 'spawn_agent(model="mythos")\n' > "${FIXTURE_REPO}/agent.go"
+
+    local out rc
+    out=$(run_model_census); rc=$?
+    assert_exit 1 "$rc" "arm5: fail on non-canonical model=\"mythos\" value"
+    assert_contains "$out" "FAIL: 1 invented-alias hit" "arm5: fail on non-canonical model=\"mythos\" value"
+    assert_contains "$out" 'model="mythos"' "arm5: fail on non-canonical model=\"mythos\" value"
+
+    teardown_fixture
+}
+
 # Expected to FAIL at this phase: model_census_exemptions.tsv is a zero-row
 # skeleton (a later phase populates real rows against the live tree), so
 # arms 1+2 will legitimately find unexempted real-repo hits. Not weakened to
@@ -160,6 +216,10 @@ case_arm2_closed_list_hit
 case_exemption_suppresses_hit
 case_json_closed_arithmetic
 case_backstop_always_exits_zero
+case_arm4_pass_substring_present
+case_arm4_fail_stale_row
+case_arm5_pass_canonical_alias
+case_arm5_fail_invented_alias
 case_real_repo_pass
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

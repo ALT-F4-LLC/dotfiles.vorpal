@@ -469,14 +469,14 @@ assignee-first-then-status claim contract and the close-then-verify contract:
 | `vote_record.sh` | `<vote-id> <voter> <role> <report-file>` | parses a reviewer report's Verdict/Confidence/Domain-Relevance/Findings sections and casts via `vote cast`, streaming findings through stdin instead of argv |
 | `docket_ref_check.sh` | `[skill-md-path]` | Diffs this file's flag tables against installed `docket <cmd> --help` output per subcommand; exits nonzero on drift — run during evolve-skills Phase 0 when auditing this skill |
 
-> **`docket_claim.sh` exit 1 is not proof the claim failed.** Its guard
-> compares `updated_at` before and after, but `updated_at` is
-> second-granularity (`2026-07-25T00:36:06Z`), so a promote-then-claim
-> completing inside one wall-clock second leaves the two equal and the
-> script reports `claim did not take effect` on a claim that fully
-> succeeded. On that error, confirm with `docket issue show <id> --json`
-> before retrying — if `.data.status` is `in-progress` and `.data.assignee`
-> is `@<role>`, the claim landed and a retry is a no-op.
+> **`docket_claim.sh` verifies against `status`/`assignee`, not `updated_at`.**
+> An earlier version gated success on `updated_at` inequality, but
+> `updated_at` is second-granularity (`2026-07-25T00:36:06Z`), so a
+> promote-then-claim completing inside one wall-clock second left the two
+> equal and the script reported a false-negative `claim did not take
+> effect`. The script now re-reads `.data.status`/`.data.assignee` after the
+> claim and only fails if they don't match `in-progress`/`@<role>`, so
+> same-second claims verify correctly.
 
 ---
 

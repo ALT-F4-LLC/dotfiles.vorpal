@@ -1,5 +1,33 @@
 # Changelog: vote
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-20..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation replaced the hardcoded delivery address in the standalone reviewer template with a role-first form, adopting the pattern init-specs already uses.
+
+### Changes
+- DISAMBIG (confusable-name): the Reviewer Prompt Template's Delivery instruction now addresses "the coordinator that spawned you", with `team-lead` and the operator `/vote` invoking session given as entry-conditional examples — the literal name alone was correct on only one of the two standalone entries, and a mis-addressed review is a failed review by this file's own definition.
+
+### Dimensions Evaluated
+Disambiguation: confusable-name (applied), multi-reading, overlapping-ownership.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -207,35 +235,6 @@ All 8.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Two cited robustness fixes (both net 0, verified against live docket b59dd2f): Pre-flight DB-existence detection and an operational findings-JSON heredoc mandate + retry guard. Stays 340 lines.
-
-### Changes
-- AMPLIFY: Pre-flight step 1 now detects a missing docket DB (`docket vote list` probe → exit 2) and prompts (standalone `AskUserQuestion docket init`/abort) or escalates to team-lead (team mode) instead of hard-failing later at `docket vote create`. DB-creation location stays an operator/orchestrator decision. Cited HISTORICAL signal (2).
-- AMPLIFY: Recording Votes now mandates the stdin heredoc (`--findings-json -`/`--findings -`), NEVER inline `--findings-json "..."` (reviewer prose `!`/backslash corrupts the payload, exit 3), and retries with plaintext `--findings -` on a JSON parse error. Cited HISTORICAL signal (1). `@file` rejected — unsupported by CLI (stdin `-` only, verified).
-
-### Dimensions Evaluated
-All 8. Over-Engineering (highest): net 0, temp-file approach rejected as over-engineered. No model/routing change (reviewer template stays opus — the sonnet hypothesis had no data); no drift; no unescaped `$`+digit. Phase-2 deferrals: delegation-protocol CANONICAL (shared with team-lead.md); BANNER family block.
-
-### Rename
-No rename.
-
-## 2026-06-20
-
-### Summary
-Closed the model= dispatch defect; net 0 (stays 340). BANNER (vote singleton) + Delegation Protocol anchor deferred to Phase 2.
-
-### Changes
-- AMPLIFY: pinned `model="opus"` on the standalone reviewer Agent() spawn template — omitted model= resolved non-deterministically (dispatch defect per team-lead.md); opus matches decision-review depth for the high-stakes calls vote gates (operator-approved per-tier pinning).
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -290,3 +289,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-10: NO-OP, all 8 dimensions clean — docket vote cast/create CLI zero-drift; silent-idle verdict capture hardened on correct mechanism.
 - 2026-06-17: AC-reconciliation check after commit, deferred-vs-cancelled disposition-clarity rule, and corrected inverted reviewer-template shutdown direction. | Trial: AC-reconciliation / disposition-clarity / shutdown-direction → adopted.
 - 2026-06-19: Added a post-vote citation note: a committed outcome seals the voted artifact as canonical authority, so downstream references cite it verbatim.
+- 2026-06-20: Closed the model= dispatch defect — pinned `model="opus"` on the standalone reviewer Agent() spawn template (was resolving non-deterministically). Net 0.
+- 2026-06-30: Pre-flight DB-existence detection (missing docket DB probe) and a findings-JSON stdin-heredoc mandate + retry guard (inline `--findings-json` corrupted by reviewer prose). Net 0.

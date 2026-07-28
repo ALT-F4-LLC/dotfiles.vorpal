@@ -84,21 +84,30 @@ Present ALL drafts to the operator as a numbered list, each showing `file:line �
 
 ## Step 8 — Post approved comments
 
-Post each approved comment as a standalone inline review comment (not a formal approve/request-changes verdict unless asked). Use the shared script `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`) — one call per approved finding:
+Post each approved comment as a standalone inline review comment (not a formal approve/request-changes verdict unless asked). Use the shared script `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`) — one call per approved finding, preceded by a fresh dedupe check for that exact `path:line`:
 
 ```
-B=$(cat <<'EOF'
+~/.claude/scripts/gh_inline_comment.sh --existing <owner/repo> <num> <path> <line>; rc=$?
+if [ "$rc" -eq 2 ]; then
+    echo "STOP: could not verify whether <path>:<line> already has a comment (gh api/jq lookup failed) — do not post; ask the operator before proceeding" >&2
+elif [ "$rc" -eq 0 ]; then
+    echo "skipping <path>:<line> — comment already exists"
+else
+    B=$(cat <<'EOF'
 <comment body>
 EOF
-)
-echo "$B" | ~/.claude/scripts/gh_inline_comment.sh <owner/repo> <num> <head_sha> <path> <line>
+    )
+    echo "$B" | ~/.claude/scripts/gh_inline_comment.sh <owner/repo> <num> <head_sha> <path> <line>
+fi
 ```
 
-Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal — the script pipes it into `jq --arg`, which handles JSON escaping. Run with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account. On success the script prints `OK <path>:<line> -> <html_url>`.
+Run the `--existing` check immediately before every post, even though Step 7 already fetched a snapshot for the operator's preview — this re-check catches comments posted between the preview and now (e.g. a concurrent reviewer, or approved items posted in sequence over a long session) and is the authoritative dedupe guard. The check has three outcomes: exit 0 (`EXISTS`) — skip (do not post, and note the skip in the Step 9 report); exit 1 (`NONE`) — safe to post; exit 2 (lookup itself failed — auth/network/rate-limit/parse error, existence genuinely unknown) — do NOT post and do NOT silently skip either; surface it to the operator (e.g. "could not verify whether a comment already exists at `<path>:<line>` — gh api/jq lookup failed; want me to retry, check manually, or post anyway?") and wait for their call before touching that item.
+
+Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal — the script pipes it into `jq --arg`, which handles JSON escaping. Run both calls with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account. On success the script prints `OK <path>:<line> -> <html_url>`.
 
 ## Step 9 — Clean up & report
 
-`rm -rf <CLONE_DIR> <DIFF_FILE>` — substitute the literal paths Step 1 printed; shell variables do not survive between Bash calls, so an unset one expands empty and `rm -rf ""` exits 0 silently, leaving the clone behind. Report a table of posted comments (file:line + discussion URL), confirm nothing was committed and no PR verdict was submitted, and offer to post any deferred/optional comments.
+`rm -rf <CLONE_DIR> <DIFF_FILE>` — substitute the literal paths Step 1 printed; shell variables do not survive between Bash calls, so an unset one expands empty and `rm -rf ""` exits 0 silently, leaving the clone behind. Report a table of posted comments (file:line + discussion URL), list any items skipped as duplicates by the Step 8 `--existing` check, list any items left unposted because `--existing` could not determine duplicate status (exit 2) and still need the operator's call, confirm nothing was committed and no PR verdict was submitted, and offer to post any deferred/optional comments.
 
 ## When to escalate instead
 

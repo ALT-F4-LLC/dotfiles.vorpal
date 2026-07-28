@@ -7,14 +7,27 @@
 # bare-`!`/stray-backslash corruption documented in vote/SKILL.md's
 # Recording Votes section. Falls back from --findings-json to plaintext
 # --findings when the parsed JSON is missing or malformed.
+#
+# --non-vote mode records a documented decision made without a formal quorum
+# vote (see vote/SKILL.md's Non-Vote Decisions section for when to use it).
+# It parses Decision/Rationale/Summary instead, and streams the assembled
+# body through `docket doc create -d @<tmpfile>` — the file-based equivalent
+# of the vote-cast path's stdin redirection — for the same reason: freeform
+# prose (decision/rationale text) never touches argv or a heredoc.
 set -euo pipefail
 
 usage() {
     echo "Usage: vote_record.sh <vote-id> <voter> <role> <report-file>" >&2
+    echo "       vote_record.sh --non-vote <decision-id> <recorder> <role> <report-file> [issue-id]" >&2
     echo "  vote-id:     e.g. DKT-V1" >&2
     echo "  voter:       voter identity, e.g. DKT-V1-reviewer-1" >&2
-    echo "  role:        reviewer agent type, e.g. staff-engineer" >&2
-    echo "  report-file: path to the reviewer's structured report" >&2
+    echo "  decision-id: short label for the decision, e.g. DKT-95-caching-approach" >&2
+    echo "  recorder:    identity recording the decision, e.g. team-lead" >&2
+    echo "  role:        reviewer or recorder agent type, e.g. staff-engineer" >&2
+    echo "  report-file: path to the structured report (vote: Verdict/Confidence/" >&2
+    echo "               Domain Relevance/Findings/Summary; non-vote: Decision/" >&2
+    echo "               Rationale/Summary)" >&2
+    echo "  issue-id:    optional Docket issue to link the decision doc to (non-vote only)" >&2
     exit 1
 }
 
@@ -22,14 +35,30 @@ if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
     usage
 fi
 
-if [ "$#" -ne 4 ]; then
-    usage
+NON_VOTE=0
+if [ "$#" -ge 1 ] && [ "$1" = "--non-vote" ]; then
+    NON_VOTE=1
+    shift
 fi
 
-VOTE_ID="$1"
-VOTER="$2"
-ROLE="$3"
-REPORT_FILE="$4"
+if [ "$NON_VOTE" -eq 1 ]; then
+    if [ "$#" -ne 4 ] && [ "$#" -ne 5 ]; then
+        usage
+    fi
+    DECISION_ID="$1"
+    RECORDER="$2"
+    ROLE="$3"
+    REPORT_FILE="$4"
+    ISSUE_ID="${5:-}"
+else
+    if [ "$#" -ne 4 ]; then
+        usage
+    fi
+    VOTE_ID="$1"
+    VOTER="$2"
+    ROLE="$3"
+    REPORT_FILE="$4"
+fi
 
 if [ ! -f "$REPORT_FILE" ]; then
     echo "vote_record.sh: report file not found: $REPORT_FILE" >&2
@@ -68,6 +97,59 @@ extract_json_fence() {
     '
 }
 
+if [ "$NON_VOTE" -eq 1 ]; then
+    DECISION=$(extract_section "### Decision" "$REPORT_FILE" | grep -v '^[[:space:]]*$' | tr '\n' ' ' | sed -e 's/[[:space:]]\{2,\}/ /g' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') || true
+    if [ -z "$DECISION" ]; then
+        echo "vote_record.sh: could not parse a Decision from $REPORT_FILE" >&2
+        exit 1
+    fi
+
+    RATIONALE=$(extract_section "### Rationale" "$REPORT_FILE")
+    if [ -z "$RATIONALE" ]; then
+        echo "vote_record.sh: could not parse a Rationale from $REPORT_FILE" >&2
+        exit 1
+    fi
+
+    SUMMARY=$(extract_section "### Summary" "$REPORT_FILE" | grep -v '^[[:space:]]*$' | tr '\n' ' ' | sed -e 's/[[:space:]]\{2,\}/ /g' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') || true
+    if [ -z "$SUMMARY" ]; then
+        SUMMARY="(no summary section found in report)"
+    fi
+
+    TMP_BODY=$(mktemp "${TMPDIR:-/tmp}/vote_record.XXXXXX")
+    trap 'rm -f "$TMP_BODY"' EXIT
+
+    {
+        printf 'Decision: %s\n\n' "$DECISION"
+        printf 'Recorded by: %s (%s)\n\n' "$RECORDER" "$ROLE"
+        printf 'Rationale:\n%s\n\n' "$RATIONALE"
+        printf 'Summary: %s\n' "$SUMMARY"
+    } >"$TMP_BODY"
+
+    DOC_JSON=$(docket doc create \
+        -T decision \
+        -t "Non-vote decision: $DECISION_ID" \
+        -d "@$TMP_BODY" \
+        --json) || {
+        echo "vote_record.sh: docket doc create failed" >&2
+        exit 1
+    }
+    echo "$DOC_JSON"
+
+    if [ -n "$ISSUE_ID" ]; then
+        DOC_ID=$(printf '%s' "$DOC_JSON" | jq -r '.data.id')
+        if [ -z "$DOC_ID" ] || [ "$DOC_ID" = "null" ]; then
+            echo "vote_record.sh: could not parse doc id from docket doc create output; skipping issue link" >&2
+            exit 1
+        fi
+        docket doc link add "$DOC_ID" --issue "$ISSUE_ID" || {
+            echo "vote_record.sh: docket doc link add failed for $DOC_ID -> $ISSUE_ID" >&2
+            exit 1
+        }
+    fi
+
+    exit 0
+fi
+
 VERDICT=$(extract_section "### Verdict" "$REPORT_FILE" | tr '[:upper:]' '[:lower:]' | grep -oE 'approve-with-concerns|approve|reject' | head -1)
 if [ -z "$VERDICT" ]; then
     echo "vote_record.sh: could not parse a Verdict (approve|approve-with-concerns|reject) from $REPORT_FILE" >&2
@@ -86,7 +168,7 @@ if [ -z "$DOMAIN_RELEVANCE" ]; then
     exit 1
 fi
 
-SUMMARY=$(extract_section "### Summary" "$REPORT_FILE" | grep -v '^[[:space:]]*$' | tr '\n' ' ' | sed -e 's/[[:space:]]\{2,\}/ /g' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+SUMMARY=$(extract_section "### Summary" "$REPORT_FILE" | grep -v '^[[:space:]]*$' | tr '\n' ' ' | sed -e 's/[[:space:]]\{2,\}/ /g' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') || true
 if [ -z "$SUMMARY" ]; then
     SUMMARY="(no summary section found in report)"
 fi

@@ -2,8 +2,10 @@
 
 **LOCAL-copy consumers:** the 7 team agents (`staff-engineer.md`, `security-engineer.md`,
 `senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
-`distinguished-engineer.md`), each carrying a byte-identical copy of this
-`CANONICAL:PITFALLS` block plus its own role-specific "What to save here" line.
+`distinguished-engineer.md`), each carrying a byte-identical `CANONICAL:PITFALLS-LOCAL`
+pointer block (inline hard gate + master pointer; parity-registered in
+`doctrine_check_manifest.tsv`), most followed by a role-specific "What to save here"
+line. The full body below is single-homed HERE.
 `team-lead.md` does **not** carry the block — it uses three bespoke lines instead
 (write-scope, "Persistent memory" categories, "Recurring-pitfalls memory") that
 independently reflect the two-homes split below. Relocated from

@@ -1,9 +1,9 @@
 # Sandbox Permission-Denial Recovery — Maintained Master
 
 **LOCAL-copy consumers:** `senior-engineer.md`, `sdet.md`, `staff-engineer.md`,
-`security-engineer.md` — each carries a compact, role-scoped
-`CANONICAL:SANDBOX-RECOVERY-LOCAL` copy replacing what was previously 4 divergent inline
-doctrines (DKT-183 consolidation). Deployed at
+`security-engineer.md`, `ux-designer.md`, `distinguished-engineer.md` — each carries a compact,
+role-scoped `CANONICAL:SANDBOX-RECOVERY-LOCAL` copy replacing what was previously 4 divergent
+inline doctrines (DKT-183 consolidation). Deployed at
 `~/.claude/skills/team-doctrine/references/sandbox-recovery.md` — repo:
 `src/user/claude-code/skills/team-doctrine/references/sandbox-recovery.md`. Read on demand
 only — never `Skill(team-doctrine)`.
@@ -87,6 +87,13 @@ harness artifact, NOT a bug to "fix" in the script:
    any command) output through `tail`, the trailing pipeline stage's exit masks the real one —
    use `set -o pipefail` or grep the tail output for the actual pass/fail line rather than
    trusting `$?`.
+8. **`golangci-lint` "no go files to analyze"** — `golangci-lint run` (directly or via
+   `just check`/`make lint`) can fail with `context loading failed: no go files to analyze:
+   running \`go mod tidy\` may solve the problem` even though `go vet ./...`/`go list ./...`
+   just succeeded — the real cause is a denied cache/tempdir write, not a missing-files
+   condition. Rerun the SAME command with `dangerouslyDisableSandbox: true` before treating it
+   as a real lint/build failure; do not run `go mod tidy` (the error text's suggested fix is a
+   red herring here) or otherwise modify the module.
 
 **Connectivity/socket verification — 3-bucket classify, never 2.** An unreachable endpoint is
 OPENED / FAILED / INDETERMINATE (sandbox-blocked, TLS artifact, timeout) — a sandbox/TLS

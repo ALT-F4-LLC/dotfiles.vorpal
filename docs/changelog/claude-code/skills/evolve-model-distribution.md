@@ -1,5 +1,155 @@
 # Changelog: evolve-model-distribution
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 6 entries (2026-06-30..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 6 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: healed drift between the routing-proposer template's step 2b and the body's Spawn-source-authority branch by single-homing the branch in the body; scoped the stale "not a DKT-106 consumer" claim.
+
+### Changes
+- routing-proposer step 2b: now Reads the body's Spawn-source-authority branch verbatim — the condensed template copy had dropped the UNCLASSIFIED authoring bucket and the bare-name-grep fallback, which never reached the teammate.
+- Crash & Stall preamble: "not a DKT-106 consumer" scoped to the Crash/Stall sections; names the live §Shutdown Protocol bare-pointer dependency.
+
+### Dimensions Evaluated
+Cross-skill coherence (Phase 2): body/template single-homing, reference accuracy.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Single-homed the shutdown protocol to a bare citation (dropping the wording variant the master flags as rejected drift), disambiguated this skill's own changelog from its Writes target, and hoisted the post-compaction gate warning above the re-attachment cut it describes. Net +458 bytes (51,189 → 51,647).
+
+### Changes
+- FIX[SUBSTANTIVE] (S1, coherence): line 104's restated §Shutdown Protocol body replaced with the bare citation used verbatim by evolve-config/evolve-skills — the master declares the section "fully single-homed — cite it, never restate it" and names the local "read the `reason`, address it, re-request" phrasing as the rejected drift. Adds the missing blank line before `### Phase 0`. (-317 B)
+- ADD[SUBSTANTIVE] (H4): a note after the DOCS-PATHS block stating this skill's own history lives at `docs/changelog/claude-code/skills/evolve-model-distribution.md`, not the `model-distribution/team-lead.md` Writes target — the confusion recurred across 3 agent-memory files because the target directory is this skill's name minus `evolve-`. (+366 B)
+- ADD[SUBSTANTIVE] (docs-researcher Rec #1): post-compaction re-Read note hoisted into the intro (byte ~1.9 K). Measured: the ~20 KB re-attachment cut lands inside Phase 1, leaving the Improvement-Only Mandate, both Phase-2 gates, Phase 3, Crash & Stall, and the build-deploy-lag reminder out of context — and the pre-existing warning sat at byte 49,903, below its own cut. (+572 B)
+- TRIM[COSMETIC]: Crash & Stall compaction bullet reduced to a pointer at the hoisted note. (-137 B)
+- FIX[SUBSTANTIVE] (coherence): Phase-2 Step 3's static hard-floor role list replaced with the live-source rule — line 296 already forbids relying on a static copy of a set it states "drifts". (-26 B)
+- Companion (other file): `evolve-coherence/SKILL.md`'s D1 rubric pin for `evolve-model-distribution` line number updated to match the new post-edit line (104 → 108).
+- No routing recommendation: model-routing-auditor measured ZERO in-window full-cycle spawns of this skill's own roles — insufficient volume to ground one.
+- Deferred (Docket tracking): I3 (retire distribution-auditor spawn), I4 (spawn_owner_lookup.sh — highest priority, 3 fix-rounds in one day), I5 (evolve_signals.py lossy, cross-file). Deferred (Phase 2): CLAUDE_PROJECT_DIR parity (3-of-5 evolve-* skills in scope), master consumer-list gap.
+
+### Dimensions Evaluated
+All 8. Findings in Coherence (S1 + the static-list self-contradiction), Completeness/Actionability (H4), Skill Design Quality (compaction reachability), Over-Engineering (2 trims). Actionability, Orchestration & Agent Teams, Spec Alignment, Rename: clean.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+History compaction: compacted the 2 oldest entries (2026-06-30, 2026-07-10) into `## Compacted history` per the retention-compaction policy — file was 304 lines, over the 300-line budget.
+
+### Changes
+- Compacted 2 entries (2026-06-30, 2026-07-10) into one-line ledger entries under a new terminal `## Compacted history` section; full text recoverable via git history.
+
+### Dimensions Evaluated
+N/A — mechanical retention-compaction pass, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation of the new spawn-source-authority branch and the OWNING-SKILL REFERRAL disposition: five residual-ambiguity fixes, plus one coherence-class fix (### Routing Changes lead sentence) and one suffix-inventory gap (`-retry`), both surfaced by Phase 3 but applied directly as small, precisely-diagnosed, single-file fixes rather than re-spawning Phase 2.
+
+### Changes
+- DISAMBIG[multi-reading]: branch step 3 now names the class floor as a SEPARATE axis from the Tier-invariant floor, reads `hard-floor role` as `review-class role` on-branch, and states REFERRAL overrides every per-class default disposition (class 1/4 REPORT included).
+- DISAMBIG[multi-reading]: branch step 2 replaced the closed six-word function list with a judges/proposes-vs-gathers/transforms TEST plus an UNCLASSIFIED arm — five roles in the branch's own population (`reconciler`, `history-compactor`, `docs-researcher-phase0`, `sdlc-role-researcher`, `spec-*`) matched neither bucket.
+- DISAMBIG[confusable-name]: distinguished `coherence-reviewer` (siblings' Phase-2 seat) from this skill's `coherence-verifier` (Phase-3) where both appear in the non-declared population list.
+- DISAMBIG[multi-reading]: "both anchors" retitled to "both declaration sites" with the missing Per-Role Dispatch Table grep — `docs-author` is declared only there and would otherwise route into the branch wrongly.
+- DISAMBIG[multi-reading]: RUNTIME-DISCIPLINE REPORT given an explicit changelog home (`REPORT:` under `### Routing Changes`), the one disposition that had none.
+- FIX[SUBSTANTIVE] (coherence-class, applied directly): `### Routing Changes` lead sentence no longer contradicted its own body (said "one bullet per applied edit" while housing `Trial:`/`REPORT:`/`REFERRAL:`, none of which are edits) — reworded to "one bullet per operator-dispositioned proposal".
+- FIX[SUBSTANTIVE] (coherence-class, applied directly): branch step 1's stem-suffix inventory gained `-retry` (vote/SKILL.md:188's live retry convention) alongside `-r2`/`-fix-{N}`.
+
+### Dimensions Evaluated
+Coherence (Arm 1 pre-check on every finding); confusable-name; multi-reading; overlapping-ownership (evaluated — one unresolvable finding routed to a Docket tracking issue, see next entry / operator report).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence pass on the DKT-73 changes: generalized the REFERRAL changelog wording and hardened the spawn-source-authority branch's recovery anchors.
+
+### Changes
+- FIX[COSMETIC]: `### Routing Changes` REFERRAL sentence generalized from "evolve-*-internal" to any spawn-source divergence (non-evolve owners included) — the disposition's own definition already covers any owning skill.
+- FIX[COSMETIC]: `spec-<name>` → `spec-{filename-without-ext}` to match the init-specs literal grep anchor.
+- FIX[SUBSTANTIVE]: added `model-routing-auditor`/`sdlc-role-researcher`/`config-history-auditor` to the undeclared-role population list — all three are measured-population members with zero team-lead.md hits, the exact class the list enumerates.
+- FIX[SUBSTANTIVE]: branch step 1 gains a bare-name grep fallback for roster/prose-declared spawns (the `history-compactor` case — no `Agent(name=` literal exists for it in either root, so step 1 + stem-retry both missed it despite it being a known owner).
+- FIX[COSMETIC]: fixture-harness comment path made repo-root-relative (was skill-dir-relative, non-resolving).
+
+### Dimensions Evaluated
+Coherence; reference accuracy (check_citations: 4 false positives adjudicated — docs/spec/, subagents/** runtime glob, both PHANTOM-PATH-GUARD negative citations); terminology consistency (6 REFERRAL sites, zero cross-skill collisions); symmetry checks (all PASS); Phase-0 pin duplicated-state independently confirmed in agreement.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+DKT-73: closed the self-referential audit blind spot. Phase 1 gains a spawn-source-authority branch that classifies evolve-*-internal roles (this skill's own three included) against the silver-floor doctrine, and a new OWNING-SKILL REFERRAL disposition routes any divergence to the owning skill under operator approval instead of a team-lead.md edit. Net +4,538 bytes (43,709 → 48,247).
+Findings: 23 → 4 sub / 0 cos / 5 rej / 10 def / 4 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE][I1,M1]: spawn-source-authority branch added to the Categorization AUTHORITY rule — roles matching no Tiers bullet and no Per-Role Dispatch Table row were silently unclassifiable and dropped from the audit (30+ such rows measured across 12 role names in the 7-day window). Recovers the pinned literal by grep across BOTH skill roots, classifies by function (proposer/verifier/reviewer = review-class floor silver; auditor/builder/collector = collection-class bronze OK).
+- AMPLIFY[SUBSTANTIVE][I1]: OWNING-SKILL REFERRAL threaded through the divergence-class preamble, proposer task 2b + Output Format, Phase 2 Step 3, and the Changelog Format. Rejected I1's second-surface FILE-EDIT proposal against DKT-73's constraint — editing another skill's model= literal from this cycle bypasses that skill's own review.
+- FIX[SUBSTANTIVE][I1]: corrected the proposed grep's scope. `.claude/skills/*/SKILL.md` alone misses the shared evolve-phase0-templates.md (authoritative for 7 Phase-0 auditor pins) and every non-evolve spawner (vote, init-specs), re-creating the same silent drop.
+- AMPLIFY[SUBSTANTIVE][D4]: compaction-recovery bullet now names the ~5,000-token retention boundary (measured: line 178) and mandates re-Reading the active phase section.
+- AMPLIFY[SUBSTANTIVE][B1]: Team Setup marks the task plane best-effort, cross-referencing team-lead.md's not-enabled-in-this-context triage.
+- CULL[SUBSTANTIVE]: Policy-stale tombstone subsection deleted (-666) — its payload is already stated at divergence class 5 and proposer task 1.
+
+### Dimensions Evaluated
+All 8. Completeness/Correctness primary (DKT-73 mechanism); Over-Engineering (Pass B, one cull); Coherence (live re-verification of both team-lead.md anchors, the shared template pins, and the SKILL.md restatements). Content Gate clean — no unescaped $+digit.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation (DKT-106, evolve-skills cycle): corrected the scope of the Crash & Stall local-copy mirror anchor.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: the anchor now names both mirrored master sections (§Crash & Stall Recovery AND §Second-Failure Recovery) and marks the Compaction-recovery bullet local-only — the single-section anchor left two of four bullets with no discoverable owner, indistinguishable from drift to a future auditor.
+
+### Dimensions Evaluated
+Overlapping-ownership (applied); confusable-name, multi-reading (none found).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence (DKT-106, evolve-skills cycle): repointed the Crash & Stall "Mirrors evolve-agents" anchor at the DKT-106 shared doc — evolve-agents no longer carries the mirrored text.
+
+### Changes
+- "Mirrors evolve-agents" → mirrors §Crash & Stall Recovery in evolve-orchestration-core.md (local copy; not a DKT-106 consumer).
+
+### Dimensions Evaluated
+Accurate references.
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -131,88 +281,14 @@ All 8. Over-Engineering (Pass B) drove the one change. I1 (evolve_signals.py swa
 ### Rename
 No rename.
 
-## 2026-07-13 (Phase 2 coherence pass, evolve-skills cycle)
+## Compacted history
 
-### Summary
-Phase 2 coherence: fixed the dead `agents/team-lead.md` citation in the shutdown protocol to `src/user/claude-code/agents/team-lead.md`.
+Entries below were compacted per the retention-compaction policy; full text in git
+history (see the compaction entry's date).
 
-### Changes
-- Stale pre-migration root replaced with the resolvable repo path (matches evolve-agents' form).
-
-### Dimensions Evaluated
-Coherence (reference accuracy).
-
-### Rename
-No rename.
-
-## 2026-07-12 (Phase 3 disambiguation pass)
-
-### Summary
-Two multi-reading/confusable-name fixes, no behavioral change to the pipeline.
-
-### Routing Changes
-None (prose disambiguation only): Changelog Format parenthetical now pins `<target>` = `team-lead` (was readable as `team-lead.md` → `team-lead.md.md`); description now names the edit target as the BUILD SOURCE (src/user/claude-code/agents/), matching the body's build-deploy-lag reminder.
-
-### Evidence
-Phase 3 disambiguation review 2026-07-12; DOCS-PATHS-LOCAL block is the path authority both fixes align to.
-
-### Rejected
-None.
-
-## 2026-07-12
-
-### Summary
-Corrected the embedded hard-floor role set (4 sites) to match live team-lead.md: added `ux-*`, dropped blanket `verifier*` (routine verifier is legitimately bronze; only new-arch verifier-criteria/verifier-integration are silver), and made the coherence-verifier check re-read the live floor prose instead of a static list. Findings: 3 → 1 sub / 0 cos / 1 rej / 1 def / 0 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: hard-floor set `tdd-author*/reviewer*/verifier*/security-*` → `tdd-author*/reviewer*/security-*/ux-*` + new-arch verifier only, at 4 sites — cited drift vs live team-lead.md floor (escape-hatch prose + Tiers `silver` bullet), verified live via grep
-
-### Dimensions Evaluated
-Spec Alignment, Coherence (primary). Rejected the evolve_signals.py `--distribution` swap (verified categorization regression — script's role field drops instance name, would collapse tdd-author*/reviewer-2 into one row). Declined self-logging suggestion (scope creep — changelog already the durable record). Flagged `mimir_query.sh` cross-skill leverage (shared with evolve-agents/evolve-skills/evolve-config) as DEFERRED.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference.
-
-### Changes
-- Docs-paths citation → `…/team-doctrine/references/docs-paths.md` (was team-lead.md §copy).
-
-### Dimensions Evaluated
-Cross-reference accuracy.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Culled the stale-by-definition ILLUSTRATIVE SNAPSHOT category→tier table + disclaimer from §Phase 1 — confirmed drift vs live team-lead.md Tiers (Large/long-horizon row and a `haiku` row both contradicted the live gold/silver/bronze system). Net -938.
-
-### Changes
-- CULL: removed the ILLUSTRATIVE SNAPSHOT table + 3-sentence disclaimer — cited innovation-scanner Retire + verified drift; the mandated live-Tiers grep recipe (kept) is the actual classification input.
-
-### Dimensions Evaluated
-All 8. Over-Engineering primary; Actionability/Completeness/Orchestration strong, no change.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Retargeted categorization from obsolete sonnet/opus Tiers anchors to the current GPT-5.x sizing table, culled the optional model-policy-researcher and Policy-stale class, and labeled TSV fields. Net 0.
-
-### Changes
-- AMPLIFY: retargeted categorization to the live GPT-5.x sizing table — cited current routing-table authority drift.
-- CULL: removed the optional model-policy-researcher and Policy-stale class — cited obsolete alias-policy branch with no measured comparator evidence.
-- AMPLIFY: labeled per-spawn TSV fields explicitly — cited report-consumption clarity.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
+- 2026-06-30: Retargeted categorization to GPT-5.x sizing table; culled model-policy-researcher/Policy-stale class; labeled TSV fields. Net 0.
+- 2026-07-10: Culled stale ILLUSTRATIVE SNAPSHOT category-tier table + disclaimer from Phase 1 (drifted vs live team-lead.md Tiers). Net -938.
+- 2026-07-10: Phase 2 coherence pass: aligned docs-paths master citation to the relocated team-doctrine reference.
+- 2026-07-12: Corrected embedded hard-floor role set (4 sites) to match live team-lead.md — added ux-*, dropped blanket verifier*, re-reads live floor prose.
+- 2026-07-12: Phase 3 disambiguation — pinned Changelog Format `<target>` = `team-lead`; description now names BUILD SOURCE as the edit target.
+- 2026-07-13: Phase 2 coherence: fixed dead `agents/team-lead.md` citation in shutdown protocol to `src/user/claude-code/agents/team-lead.md`.

@@ -19,20 +19,17 @@
 # render <target>` subcommand, etc.) and diffs its stdout, byte-for-byte,
 # net of cargo's own build-process chatter (see normalize() below).
 #
-# IMPORTANT: as of this writing, NEITHER src/user/codex.rs (whose tests
-# only `assert!` on rendered content -- see serializes_current_config_shape
-# -- never print it, even under --nocapture) NOR src/user/claude_code.rs
-# (no test at all yet) expose a render target that prints the full config.
-# This script is the harness; its first real consumer is gated on that
-# render-target follow-up landing (tracked as a Discovered comment on
-# DKT-309, out of scope for this script-authoring issue). Driving it today
-# against an assert-only command like `cargo test
-# serializes_current_config_shape -- --nocapture` will correctly detect
-# DIFFERS only when the change also breaks that test's own assertion
-# (visible failure diff) -- a passing assert-only test prints nothing on
-# success, so a lockstep setter+assertion edit is invisible to a stdout
-# diff. That's a property of the render command supplied, not a bug in
-# this script.
+# `src/user.rs`'s `user::tests::prints_rendered_claude_code_config` (DKT-94) is the first live
+# render target: it builds the exact production Claude Code config (via `build_claude_code_config`,
+# shared with `UserEnvironment::build`) and `println!`s its full serialized JSON. Drive it via:
+#   cargo test --lib user::tests::prints_rendered_claude_code_config -- --nocapture
+#
+# NOTE: src/user/codex.rs's tests only `assert!` on rendered content (see
+# serializes_current_config_shape) -- they never print it, even under --nocapture. Driving this
+# script against an assert-only command will correctly detect DIFFERS only when the change also
+# breaks that test's own assertion (visible failure diff) -- a passing assert-only test prints
+# nothing on success, so a lockstep setter+assertion edit is invisible to a stdout diff. That's a
+# property of the render command supplied, not a bug in this script.
 #
 # The "before" state is ALWAYS rendered from an isolated `git worktree add`
 # checkout -- never a `git stash`/`git checkout` on the shared working tree

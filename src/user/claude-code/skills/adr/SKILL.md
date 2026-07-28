@@ -7,6 +7,7 @@ description: >
   Trigger: "create ADR", "record this decision", "draft an architecture decision record", "log architectural decision".
 argument-hint: "<topic>"
 allowed-tools: ["Bash", "Grep", "Read", "Write"]
+effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -16,10 +17,14 @@ allowed-tools: ["Bash", "Grep", "Read", "Write"]
 # ADR — Author an Architecture Decision Record
 
 You are the **ADR Author**. You produce a single Architecture Decision Record at
-`docs/adr/{NNNN}-{slug}.md` and return. The calling agent (typically
-`@staff-engineer`) drafts the content; this skill is the format authority — section
-list, frontmatter contract, output path, ADR numbering, and collision handling all
-live here.
+`docs/adr/{NNNN}-{slug}.md` and return. The calling agent drafts the content —
+`@distinguished-engineer` by DEFAULT on Medium+ cycles (the gold seat that carries
+design authorship there), with `@staff-engineer` as the gold-unavailable fallback
+author and the author on sub-Medium cycles and in standalone use; or
+`@security-engineer` for a **security ADR** (its charter makes it the sole author
+of security ADRs; @distinguished-engineer never takes security-sensitive work).
+This skill is the format authority — section list, frontmatter contract, output
+path, ADR numbering, and collision handling all live here.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md` (maintained copy).
@@ -55,8 +60,8 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 - A single architectural or design decision needs to be recorded as an immutable
   artifact at `docs/adr/{NNNN}-{slug}.md` (numbered chronologically) so future
   readers can trace the why.
-- The calling agent (typically `@staff-engineer`, or `@distinguished-engineer` on Medium+ cycles) is logging a decision that emerged
-  during design, review, or implementation and that future work will need to reference.
+- The calling agent is logging a decision that emerged during design, review, or
+  implementation and that future work will need to reference.
 - The decision has long-term consequences (e.g., choice of library, protocol, schema
   shape, naming convention) and a one-line note in a TDD or PR is not enough.
 - ADRs are DURABLE records — exempt from TDD ephemerality (docs-paths.md §Persistence
@@ -103,7 +108,24 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
       and a skip cannot tell a competing citation from this decision's own forward
       reference, so it will skip a number an upstream TDD or plan mandated. When the
       calling agent was handed an exact target number or filename, compare it against
-      `{next_num}` and report a mismatch rather than proceeding silently.
+      `{next_num}`. On mismatch, branch on whether the mandated number appears in THIS
+      `--claim` invocation's stderr on an `already cited (citation-hijack)` line —
+      that exact line form only. The script emits a SECOND, unrelated candidate-skip
+      line, `lost the atomic claim (...), retrying`, which also names a number; a
+      number appearing only there is NOT citation-hijacked and takes the
+      **Not listed** branch:
+      - **Listed** — it was free on disk but skipped because an upstream TDD or plan
+        cites it (the self-forward-reference false positive). ABORT: writing at
+        `{next_num}` would leave every upstream citation dangling, and this skill
+        cannot rewrite the upstream doc. Report the orphaned stub per step 4.4:
+
+        ```
+        Error: {mandated} was mandated upstream but skipped as citation-hijacked; claimed {next_num} instead — reconcile the citation and re-invoke.
+        ```
+
+      - **Not listed** — a real file already holds the mandated number, so the mandate
+        is stale. Proceed at `{next_num}` and report the mismatch so the calling agent
+        updates the stale citation.
    2. On failure (non-zero exit — existing filenames in `docs/adr/` don't match
       `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`), ABORT using the
       script's stderr as `{detail}`:
@@ -114,8 +136,9 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 
    3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`. This file already exists on
       disk as the empty claimed stub from step 4.1 — expected, not a collision.
-   4. **Abort-after-claim caveat**: if the skill aborts anywhere past this point
-      (Authoring Procedure, Validation Before Save), the empty stub at `{output_path}`
+   4. **Abort-after-claim caveat**: if the skill aborts anywhere at or after step 4.1
+      (mandated-number mismatch, Authoring Procedure, Validation Before Save), the
+      empty stub at `{output_path}`
       is left on disk as an orphaned reservation of `{next_num}` — a re-invocation does
       not reclaim it and instead claims the number above it. Note the orphaned stub
       path in the abort report so the operator can delete it manually if unwanted.
@@ -264,8 +287,7 @@ step 4 — so the harness's unread-overwrite guard applies. Insert one
 `Read {output_path}` between canonical steps 1 and 2 to satisfy it (the stub is empty;
 there is nothing to review). Because the number was reserved atomically at Pre-flight
 step 4 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
-interim — the pre-Write/post-Write race-detection Globs the prior non-atomic design
-needed to catch that race are no longer necessary and have been removed. On a clean
+interim, so no pre-Write/post-Write race-detection Glob is needed. On a clean
 Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 
 ## Failure Modes
@@ -276,6 +298,7 @@ Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
 | `next_doc_number.sh --claim docs/adr {slug}` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
 | A peer claims a candidate `{NNNN}` before this invocation does | Handled transparently inside `next_doc_number.sh --claim` (retries the next candidate); never surfaces as a failure to this skill. |
+| `{next_num}` differs from an upstream-mandated number that the script's stderr lists as citation-hijacked | Abort: `Error: {mandated} was mandated upstream but skipped as citation-hijacked; claimed {next_num} instead — reconcile the citation and re-invoke.` The claimed stub is orphaned — report its path per the abort-after-claim caveat. |
 | Prior-art Grep finds a predecessor already recording this decision | Abort: `Error: {path} already records this decision — update or supersede it instead.` The claimed stub is orphaned — report its path per the abort-after-claim caveat. |
 | Read of `{output_path}` (the claimed stub) fails before Write (stub deleted or unreadable between claim and Save & Return) | Surface raw error: `Error: Read failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |

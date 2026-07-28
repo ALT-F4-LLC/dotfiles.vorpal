@@ -81,7 +81,7 @@ Panel sizing, opt-up triggers, same-turn eager dispatch, ephemeral lifecycle, an
 <!-- COUPLING: this skill is part of the report-emission family (code-review-verdict, verify-ac, design-qa, design-review). The "When NOT to Use" delegation routes below MUST stay in sync across the family — update all 4 in lockstep when adding/removing a sibling skill. The Doubling Rule section is also part of this family — keep its shape in sync across siblings per `src/user/claude-code/agents/team-lead.md` Rule 8 (verify-ac's Doubling Rule is intentionally delegation-only — verifier pairing is owned by the calling layer, so it carries no Seats/dedupe/degraded bullets; never normalize it to the three-bullet delta shape). The Save & Return silent-completion self-check is family-synced too — shared sentence structure, per-skill delivery-channel tail; verify-ac's tail is mode-aware (its default lone `verifier` has NO SendMessage per sdet.md SP-2) and must NEVER be flattened to a SendMessage-only shape. -->
 - Peer review of a draft UX spec or design proposal (no implementation yet to verify against) — that's `Skill(design-review, ...)`.
 - Acceptance-criteria verification against an issue's criteria list — that's `Skill(verify-ac, ...)`, callable by `@sdet`.
-- Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer` or `@security-engineer`.
+- Production code-quality review against design dimensions — that's `Skill(code-review-verdict, ...)`, callable by `@staff-engineer`, `@distinguished-engineer`, or `@security-engineer`.
 - Authoring or revising the UX spec itself — use `Skill(ux-spec, ...)`.
 
 ## Pre-flight

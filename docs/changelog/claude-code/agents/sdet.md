@@ -1,5 +1,119 @@
 # Changelog: sdet
 
+## 2026-07-27
+
+### Summary
+Compacted 7 entries (2026-07-12..2026-07-15) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 7 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: the cross-cutting re-sweep is restated as the verifier's own duty rather than an inert brief-side obligation.
+
+### Changes
+- FIX[SUBSTANTIVE] (DISAMBIG 10): Verifier Composition -- "Default-verifier brief phrasing" retitled "Cross-cutting-sweep re-sweep duty -- YOURS, whether or not the brief says it"; the verifier re-sweeps the whole tree unconditionally, with team-lead.md step 15 named as the brief-side half. @sdet authors no brief, so the prior phrasing left the duty ownerless.
+
+### Dimensions Evaluated
+Disambiguation (Phase 3): overlapping-ownership
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: teammate-path verdict adopts the fleet-standard terminal-state marker (report-only verifier explicitly excluded); incoming testability consult recognizes the Medium+ @distinguished-engineer author seat.
+
+### Changes
+- FIX[SUBSTANTIVE] (I8): Shutdown-by-mode teammate precondition leads the verdict SendMessage with the exact marker literal (master: senior-engineer.md Shutdown Handling step 3); report-only path excluded -- its plain-text-and-END contract has no shutdown await.
+- FIX[SUBSTANTIVE] (bidirectionality): incoming testability-consult trigger extended to @distinguished-engineer (tdd-author / Medium+ advisor), matching DE's outbound consult-@sdet trigger.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Normalized `sdet-{ID}` -> `sdet-{DOCKET-ID}`, deleted the unreachable Edit/Write-absent fallback,
+fixed ack templates to require SendMessage's `summary`, added an unscripted edge-probing pass, and
+fixed a Testing Philosophy contradiction. Net +727 (60,374 -> 61,101).
+
+### Changes
+- FIX[COSMETIC] (C6): `sdet-{ID}` -> `sdet-{DOCKET-ID}` at both sites.
+- CULL[SUBSTANTIVE] (D1): removed the unreachable Edit/Write-absent `$TMPDIR` fallback -- `memory: project` force-enables Read/Write/Edit; retained the still-live zsh heredoc warning.
+- FIX[SUBSTANTIVE] (B1): ack templates now require `summary` on a plain-string `message`.
+- AMPLIFY[SUBSTANTIVE]: new unscripted edge-probing pass (<=5 probes outside ACs, non-UX surfaces) -- closes the one industry QA function with zero prior coverage (sdlc-role-researcher).
+- CULL[COSMETIC]: dropped a redundant LIGHT/FULL restatement the same sentence forbids duplicating.
+- FIX[SUBSTANTIVE]: Greenfield strategy no longer orders snapshots before unit tests, which contradicted Testing Philosophy's rule-out of unverified snapshots.
+
+### Dimensions Evaluated
+Completeness, Consolidation & Trimming, Spec Alignment, Capability Growth, Actionability
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Compacted 4 entries (2026-07-10..2026-07-11) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: AskUserQuestion hedge corrected; CANONICAL:PITFALLS compacted to a pointer; orphaned red_green_verify.sh wired into the red-green discipline bullet; a stale non-resolving path fixed.
+
+### Changes
+- FIX[SUBSTANTIVE]: "absent in the common team-mode spawn" -> "stripped from EVERY teammate and subagent spawn unconditionally (sub-agents.md first tool filter)".
+- AMPLIFY[SUBSTANTIVE]: red-green bullet now cites `red_green_verify.sh` (stale I-sdet1 deferral: script now exists, wraps regression_diff.sh mechanics into a one-call red-then-green proof).
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer.
+- FIX[MECHANICAL]: `agents/senior-engineer.md` -> `senior-engineer.md` (non-resolving path literal).
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Consolidated the report-only-vs-teammate mode split from 7 restatement sites to §Lifecycle as sole authority (I7), and paid the savings into a Task-family mode self-check, the foreground-pipe false-GREEN trap, the empty-`-m` editor hang, and R1 script-path trust. Net +959 (59,991 -> 60,950).
+
+### Changes
+- CULL[SUBSTANTIVE] (I7): §Lifecycle designated the file's single mode-split authority; comm rule 6, comm-rule preamble, Verifier Composition default, Inter-Agent preamble, Execution step 5, and Shutdown by mode reduced to pointers with all mode-specific uniques preserved (-1,029).
+- AMPLIFY[SUBSTANTIVE] (D1): §Lifecycle gains a Task-family mode self-check (teammates always keep the task tools; the background filter strips them) and labels report-only SendMessage silence a DOCTRINE choice, not a harness limit.
+- FIX[SUBSTANTIVE] (D1): Execution step 4 no longer instructs the default report-only mode to use TaskCreate/TaskUpdate; the Tool envelope Task-family hedge is now a rule, not "absent in some spawn contexts".
+- AMPLIFY[SUBSTANTIVE]: foreground `<cmd> | tail; echo $?` reports tail's exit -- a failing suite reads as a clean PASS; never measure a verdict-bearing exit through a pipe.
+- AMPLIFY[SUBSTANTIVE]: an empty `docket ... -m` value opens `$EDITOR` and hangs to timeout; stage-and-post in ONE Bash call and echo `${#VAR}` first.
+- AMPLIFY[SUBSTANTIVE] (R1): R1 now says to trust doctrine-cited `~/.claude/scripts/*.sh` paths without an existence check.
+
+### Dimensions Evaluated
+Consolidation & Trimming, Completeness, Actionability, Spec Alignment, Capability Growth, Role Realism, Boundary Clarity
+
+### Rename
+No rename -- sdlc-role-researcher confirms QA/SDET industry mapping.
+
 ## 2026-07-21
 
 ### Summary
@@ -51,170 +165,6 @@ Compacted 4 entries (2026-06-30..2026-07-01) into Compacted history per the rete
 
 ### Changes
 - Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-READ-BEFORE-EDIT pointer's "on every test file or fixture" scoping rephrased file-class-agnostic (was excludable-reading of shared/appended files, the master's dominant failure class); R7 gains the adjacency-gate outranking exception.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: comm rule 9 rephrased — the gate binds every file; test files/fixtures are the common case, not the scope; pitfalls.md explicitly named as binding identically.
-- AMPLIFY[SUBSTANTIVE]: R7 one-liner gains the Read-before-Edit adjacency rule as a second outranking exception.
-
-### Dimensions Evaluated
-Disambiguation (multi-reading ×2).
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Read-before-Edit rule → pointer to senior-engineer.md's new master (B3); stale-dispatch-check pointer added (R3); vote wire form deduped to Skill(vote) citation (I4).
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (B3): Rule 9 now points to senior-engineer.md §CANONICAL:READ-BEFORE-EDIT (inherits the adjacency/hot-file rules this file's copy lacked).
-- AMPLIFY[SUBSTANTIVE] (R3): added stale-dispatch-check pointer on the report-only-verifier ack sentence.
-- CULL[COSMETIC] (I4): wire-form paragraph replaced with a citation to Skill(vote)'s Delegation Protocol.
-
-### Dimensions Evaluated
-Consolidation & Trimming, Cross-Communication.
-
-### Rename
-No rename.
-
-## 2026-07-15
-
-### Summary
-Fixed the unexecutable regression-baseline "capture before" instruction (verifier spawns post-impl) by pointing it at `regression_diff.sh`'s existing self-serve `baseline` mode (git-worktree reconstruction), reconciling a conflict between this review's own proposal and senior-engineer's independently-verified finding that `baseline` already closes the gap. Findings: 5 → 1 sub / 0 cos / 1 rej / 1 def / 2 enc
-
-### Changes
-- AMPLIFY[SUBSTANTIVE] (I9): step 3(b) now uses `regression_diff.sh baseline before` (self-serve, no cross-role handoff — supersedes this review's own originally-proposed ownership-reassignment text, which the orchestrator rejected after verifying `baseline` mode already exists for exactly this purpose) + `capture after` + `compare`; missing-baseline case now escalates to team-lead as a coverage gap instead of silently trusting the targeted run.
-- H7 routed to Coherence (team-lead dispatch-template wording, not this file). H8/D1 already-encoded. I8 (fixture_shape_check.sh) deferred as infra.
-
-### Dimensions Evaluated
-Actionability (unexecutable-instruction fix), Capability Growth (missing-baseline escalation), Cross-Communication (capture-before ownership resolved via existing tooling, not a new handoff).
-
-### Rename
-No rename.
-
-## 2026-07-13
-
-### Summary
-Compacted 5 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 5 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 3 disambiguation: 3 fixes — named the `sdet-{ID}` test-infrastructure spawn class (previously only in team-lead.md, causing a plausible wrongful refusal under the "only three verifier names allowed" rule), and closed a vote Fallback path that instructed exactly the bare `docket vote create` the same section warns diverges from doctrine.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: verifier-name refusal rule scoped explicitly to VERIFICATION dispatches; `sdet-{ID}` test-infrastructure dispatches are named as a distinct, non-refusable class.
-- AMPLIFY[SUBSTANTIVE]: Lifecycle's spawn-name enumeration now names the `sdet-{ID}` class alongside the three verifier names, closing the same ambiguity at its second occurrence.
-- FIX[SUBSTANTIVE]: vote Fallback now routes through `vote_delegate.sh` (or an explicit `--threshold`) instead of instructing a bare `docket vote create` two sentences after warning it silently defaults to 0.67.
-
-### Dimensions Evaluated
-Disambiguation (confusable-name, multi-reading) — two findings share one root cause (an unmarked narrow reading of "canonical spawn names").
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 2 coherence: compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form (parity with the fleet-wide compaction).
-
-### Changes
-- CULL[SUBSTANTIVE]: §Shutdown Handling's 19-line SP-1/SP-2 spell-out reduced to a 3-line master pointer + Precondition.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (SHUTDOWN-PROTOCOL block byte-parity across all 7 non-team-lead agents).
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-evolve-agents self-review: wired two verified-existing unreferenced scripts into workflow, retired single-investigation depth, added teammate-frontmatter-inert note. Net −1067 bytes.
-
-### Changes
-- WIRE[SUBSTANTIVE]: §Test Failure Diagnosis step 3 flaky-classification now points to `flaky_confirm.sh` (VERIFIED exists, cited sdet but referenced by zero agents) instead of manual "run 3-5x". [IS-SDET2]
-- WIRE[SUBSTANTIVE]: §Using /vote team-mode now calls `vote_delegate.sh` (VERIFIED exists) — fixes the omitted `--threshold` bug (bare `docket vote create` silently defaults 0.67, diverging from the vote skill's Criticality table). [IS-TL4-SDET]
-- RETIRE[SUBSTANTIVE]: removed the ~1330-byte "Verifying nested `claude -p` / subprocess-containment claims" paragraph — single-investigation depth bloating every verifier spawn. [IS-SDET3]
-- ADD[SUBSTANTIVE]: R2 note that teammate mode does not auto-load `skills:`/`mcpServers:` frontmatter — invoke via explicit `Skill(<name>)`. [DR1]
-- ADD[SUBSTANTIVE]: sandbox-recovery LOCAL block gains a verdict gate — rerun with `dangerouslyDisableSandbox` before raising a BLOCK on a possibly-sandbox-induced tool failure. [HA-SDET1]
-
-### Dimensions Evaluated
-Completeness/Actionability (script wire-ins), Consolidation (retire single-investigation depth), Spec Alignment (teammate frontmatter envelope), Capability Growth (sandbox verdict gate).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): verification-only pass, no content changes. All three memory-excerpt fixes confirmed wired into workflow text; charter confirmed matching industry SDET; model-tier retained (already the roster's best-diversified role, 54.8%/45.2%).
-
-### Changes
-(none — RETAIN across the board; see Dimensions Evaluated)
-
-### Dimensions Evaluated
-Role Realism: SDLC research confirms modern consolidated industry SDET fit (test infra + automation + AC verification, manual-QA-below-SDET correctly not adopted, matching the industry trend). Confirmed present: "read the ENTIRE issue body" false-BLOCK fix, background exit-code/$TMPDIR-loss guard, nested `claude -p` config-leak warning. Actionability/Boundary Clarity/Completeness/Consolidation/Spec Alignment: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
 
 ### Dimensions Evaluated
 History Compaction (retention-compaction policy)
@@ -295,3 +245,14 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-01: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per ADR 0001.
 - 2026-07-10: Phase 2 coherence follow-up — fixed vote-delegation `message: {object}` bug (rewrote to plain-text string); only fleet-wide instance of a JSON object literally assigned to SendMessage's `message:` param (bug-audit FIX-9).
 - 2026-07-10: Documented `docket vote cast --findings-json` array-of-STRINGS shape (not objects) to prevent a recurring BAD-PARAM class. Net +119 bytes.
+- 2026-07-10: Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate): verification-only pass, no content changes; charter confirmed matching industry SDET, model-tier retained (54.8%/45.2%).
+- 2026-07-11: Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
+- 2026-07-11: Compacted 3 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
+- 2026-07-12: Phase 3 disambiguation: named the `sdet-{ID}` test-infrastructure spawn class as distinct from the three verifier names (closing a wrongful-refusal risk); closed a vote Fallback path that instructed a bare `docket vote create`.
+- 2026-07-12: Phase 2 coherence: compacted the SHUTDOWN-PROTOCOL-LOCAL block to the master-pointer form (parity with the fleet-wide compaction).
+- 2026-07-12: evolve-agents self-review: wired `flaky_confirm.sh` and `vote_delegate.sh` into workflow, retired single-investigation depth, added teammate-frontmatter-inert note. Net −1067 bytes.
+- 2026-07-13: Compacted 5 entries (2026-06-19..2026-06-30) into Compacted history per the retention-compaction policy.
+- 2026-07-15: READ-BEFORE-EDIT pointer's file-class scoping rephrased file-class-agnostic (was excludable via shared/appended-files reading); R7 gains the adjacency-gate outranking exception.
+- 2026-07-15: Read-before-Edit rule -> pointer to senior-engineer.md's master (B3); stale-dispatch-check pointer added (R3); vote wire form deduped to Skill(vote) citation (I4).
+- 2026-07-15: Fixed the unexecutable regression-baseline "capture before" instruction by pointing it at `regression_diff.sh`'s self-serve `baseline` mode; missing-baseline case now escalates to team-lead as a coverage gap.

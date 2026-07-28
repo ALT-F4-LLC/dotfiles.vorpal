@@ -88,6 +88,18 @@ def test_multiline_entry_disposition_found_anywhere_in_entry():
     assert "[FAIL] B2: OPEN" in out, out
 
 
+def test_empty_ledger_exits_zero():
+    code, out, err = run("")
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert "0/0 dispositioned" in out, out
+
+
+def test_whitespace_only_ledger_exits_zero():
+    code, out, err = run("\n\n   \n")
+    assert code == 0, f"exit {code}: {out}{err}"
+    assert "0/0 dispositioned" in out, out
+
+
 def test_no_entries_found_exits_two():
     text = "Just prose, no ledger entries here.\n"
     code, out, err = run(text)

@@ -20,6 +20,8 @@ jobs:
 
       - run: bash tests/model_census.test.sh
 
+      - run: bash tests/drift_guard_check.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

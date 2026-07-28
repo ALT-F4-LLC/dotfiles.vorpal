@@ -1,5 +1,53 @@
 # Changelog: security-engineer
 
+## 2026-07-27
+
+### Summary
+Compacted 4 entries (2026-07-01..2026-07-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: AskUserQuestion hedge corrected to the unconditional first-filter rule; code-review-verdict/SKILL.md's ls-mandate contradiction with this file's R6 script-trust clause resolved by softening the skill; CANONICAL:PITFALLS compacted to a PITFALLS-LOCAL pointer. Net -1.2KB.
+
+### Changes
+- FIX[SUBSTANTIVE]: "absent in the common team-mode spawn" -> "stripped from EVERY teammate and subagent spawn unconditionally (sub-agents.md first tool filter)".
+- FIX[SUBSTANTIVE] (cross-file): code-review-verdict/SKILL.md's `ls -la` pre-check on report_stage_lint.sh removed -- it contradicted this file's own R6 script-trust clause added in Phase 1; resolved in favor of trust (113 sessions observed, the check never changed an outcome).
+- CULL[SUBSTANTIVE]: CANONICAL:PITFALLS (2,811B) -> CANONICAL:PITFALLS-LOCAL pointer; full body single-homed in the pitfalls master.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Added the plan-protocol emitter constraint (E3) countering SendMessage's generic `_response` default; redirected the CVE-lookup gap for non-Rust/Go ecosystems to a probe-verified `gh api /advisories` query (osv_query.sh does not exist); added an R6 script-path-trust clause; compacted the redundant Tier note. Findings: 3 -> 3 sub / 1 cos / 0 rej / 0 def / 5 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (E3): incoming plan-approval trigger now states team-lead emits the `plan_approval_response` and this role never sends a plan-protocol message directly to an in-flight impl ephemeral.
+- AMPLIFY[SUBSTANTIVE] (I4, redirected mechanism): "Dependency CVEs" gains `gh api /advisories -f ecosystem=<eco> -f affects=<pkg>` for non-Rust/Go ecosystems (probe-verified npm/pip this session), with sandbox-TLS retry and INDETERMINATE classification. `osv_query.sh` does not exist and api.osv.dev is not sandbox-allowlisted -- substituted a working mechanism instead.
+- AMPLIFY[SUBSTANTIVE] (R1): R6 now bans `ls`-ing a doctrine-cited script before invoking it. NOTE: flagged as a possible conflict with code-review-verdict/SKILL.md:369's own ls-mandate for report_stage_lint.sh -- pending Phase 2 reconciliation.
+- CULL[COSMETIC]: Tier note compacted 868->530 bytes to a routing-authority pointer.
+- AMPLIFY[SUBSTANTIVE] (D1 follow-up): Task-tool absence claim corrected to UNSTRIPPABLE-for-teammates, CC 2.1.220 stamped (+211 bytes; total net now +837, 55,714 -> 56,551).
+
+### Dimensions Evaluated
+Boundary Clarity, Actionability, Completeness, Consolidation & Trimming, Capability Growth & Cross-Communication
+
+### Rename
+No rename -- sdlc-role-researcher confirms AppSec industry mapping.
+
 ## 2026-07-24
 
 ### Summary
@@ -203,62 +251,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-10
-
-### Summary
-Phase 3 disambiguation follow-up: fixed a confusable peer-name in a shutdown-routing example.
-
-### Changes
-- DISAMBIG: shutdown-routing WRONG-example `to="reviewer-staff-2"` corrected to `to="reviewer-2"` — the fabricated name matched no real roster seat, leaving a reader unable to tell whether it was real or illustrative.
-
-### Dimensions Evaluated
-Boundary Clarity (confusable-name).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload.
-
-### Changes
-- AMPLIFY: appended a wire-form clarification to the vote-delegation paragraph — the JSON is sent as a plain-text string, never SendMessage's structured `message` object (`delegation_*` are vote-skill conventions, not real `message.type` values). Matches team-lead.md:360's receiving-side fix (bug-audit FIX-9, fleet-wide sweep).
-
-### Dimensions Evaluated
-Actionability (cross-agent coherence sweep).
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Trimmed a third redundant SP-1 restatement in §Shutdown Handling. Net -69 bytes. (The vote-delegation bare-object FIX-9 finding — confirmed against vote/SKILL.md L42-44 as a real `invalid_union` rejection — is deferred to a fleet-wide Phase 2 fix rather than applied per-file, since it's shared/parity-bound across all 8 agents.)
-
-### Changes
-- CULL: removed redundant "Approve with NO reason (SP-1...)" sentence from the security-advisor shutdown bullet — already stated in the CANONICAL:SHUTDOWN-PROTOCOL block and Communication Discipline rule 6.
-
-### Dimensions Evaluated
-Consolidation & Trimming (primary). Actionability (FIX-9 deferred to Phase 2). Role Realism/Boundary/Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-01
-
-### Summary
-Phase 3 Disambiguation follow-up: normalized security shutdown report fields.
-
-### Changes
-- DISAMBIG: updated local SP-1 to require scope or changed files, checks run, unresolved risks, and explicit `safe_to_close` close readiness.
-
-### Dimensions Evaluated
-Phase 3 Disambiguation; shutdown schema.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -301,3 +293,7 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-30: Phase 2 PA: landed shift-left review triggers (outgoing recommend plan-approval mode; incoming pre-impl security review). Trial: PA plan-approval → applied.
 - 2026-07-01: Trial: security plan handoffs and risk acceptance fields -> applied — added plan-phase abuse-case + plan-approval security PLAN handoffs; CVE evidence resolves Cargo.lock/cargo tree; risk_acceptance_vote_required for Blocks/deferrals/downgrades.
 - 2026-07-01: Phase 2 coherence follow-up — aligned security local shutdown copy with master cleanup-evidence semantics (close ack alone is not cleanup evidence).
+- 2026-07-01: Phase 3 Disambiguation follow-up: normalized security shutdown report fields (SP-1 requires scope/changed files, checks run, unresolved risks, explicit `safe_to_close`).
+- 2026-07-10: Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object (bug-audit FIX-9, fleet-wide sweep).
+- 2026-07-10: Trimmed a third redundant SP-1 restatement in §Shutdown Handling. Net -69 bytes.
+- 2026-07-10: Phase 3 disambiguation follow-up: fixed a confusable peer-name in a shutdown-routing example (`reviewer-staff-2` -> `reviewer-2`).

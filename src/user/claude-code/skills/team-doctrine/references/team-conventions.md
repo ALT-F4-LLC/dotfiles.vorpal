@@ -14,7 +14,9 @@ policy referenced by reviewers." Post-refactor (DKT-59 Phase P3), that policy's 
 `senior-engineer.md` as `CANONICAL:CODE-COMMENTS` (senior-engineer authors code and owns the
 policy; staff-engineer/security-engineer reviewers already carry enforcement copies) —
 team-lead's Rule 9 becomes a one-line pointer to that new home instead of hosting the full
-policy text. team-lead's rule COUNT is unchanged by this refactor (still Rules 1-9): Rule 5
+policy text. team-lead's rule COUNT was unchanged by this refactor — at the DKT-59 relocation
+snapshot team-lead carried Rules 1-9. That is a HISTORICAL count, not the live one; the
+convention section below states the live count and is authoritative. Rule 5
 (this convention) relocates wholesale to this file, leaving a tombstone in team-lead's Rules
 section rather than inline prose; Rule 9's content shrinks to a pointer as just described;
 Rules 1-4 and 6-8 are unaffected.

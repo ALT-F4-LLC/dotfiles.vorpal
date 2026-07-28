@@ -1,5 +1,33 @@
 # Changelog: verify-ac
 
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-10..2026-06-10) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence fix (evolve-skills cycle): the "When NOT to Use" route to `code-review-verdict` omitted `@distinguished-engineer` from its caller set, breaking family lockstep after code-review-verdict's own caller set was corrected this cycle.
+
+### Changes
+- FIX[SUBSTANTIVE]: caller set for the code-review-verdict route now reads "@staff-engineer, @distinguished-engineer, or @security-engineer" — verified against code-review-verdict/SKILL.md:36,39,81,108. Family lockstep restored (report-emission COUPLING block).
+
+### Dimensions Evaluated
+Coherence only (Phase 2 cross-skill pass).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -236,34 +264,6 @@ All 8; Over-Engineering (HIGHEST); Completeness (both pitfalls focus areas grep-
 ### Rename
 No rename.
 
-## 2026-06-10
-
-### Summary
-Compacted 10 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 10 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Full-cycle audit: NO changes. Healthiest skill in window (3 sessions, 8 invocations, zero errors across sonnet/fable/opus tiers). `round=N --prior` argument suggestion rejected — §4a comment-list carry-forward has zero observed failures; new flag surface unjustified.
-
-### Changes
-- None (NO-OP verdict).
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — innovation declined); Completeness (literal-command-AC rule, OUT-OF-SCOPE deferral, §7a contamination guard all verified present); Coherence (COUPLING family parity, docket CLI usage matches sdet closeout contracts).
-
-### Rename
-No rename. verify→verify-ac rename rationale stands.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -291,3 +291,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Closed the refuted literal-command-AC gap: FULL-mode item 1 now mandates running an AC's named literal command VERBATIM — equivalents leave the named path un...
 - 2026-06-09: Removed one Failure Modes row duplicating the "ignore extras silently" rule already at Argument Handling L70 and violating the table's own abort-path scope....
 - 2026-06-09: Compacted 4 entries (2026-05-16..2026-05-18) into Compacted history per ADR 0001.
+- 2026-06-10: Compacted 10 entries (2026-05-19..2026-05-30) into Compacted history per ADR 0001.
+- 2026-06-10: Full-cycle audit: NO changes. Healthiest skill in window (3 sessions, 8 invocations, zero errors across sonnet/fable/opus tiers). `round=N --prior` flag suggestion rejected.

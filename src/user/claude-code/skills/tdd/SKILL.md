@@ -16,9 +16,15 @@ effort: xhigh
 # TDD — Author a Technical Design Document
 
 You are the **TDD Author**. You produce a single Technical Design Document at
-`docs/tdd/{slug}.md` and return. The calling agent (typically `@staff-engineer`)
-drafts the content; this skill is the format authority — section list, frontmatter
-contract, output path, and collision handling all live here.
+`docs/tdd/{slug}.md` and return. The calling agent drafts the content —
+`@distinguished-engineer` by DEFAULT (TDDs exist only on Medium+/TDD-bearing
+cycles, and that seat is gold on every such cycle), with `@staff-engineer` as the
+gold-unavailable fallback author or in standalone use. **Security carve-out:** a
+security-dominated TDD is authored by `@security-engineer`; `@distinguished-engineer`
+is categorically barred from security-sensitive work (`distinguished-engineer.md`
+§Security Exclusion), and `updated_by` is what selects the validator's security
+track (Required Sections §4, §9). This skill is the format authority — section
+list, frontmatter contract, output path, and collision handling all live here.
 
 > **Note — "TDD" here means Technical Design Document, NOT Test-Driven Development.**
 
@@ -58,8 +64,9 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
   `docs/tdd/{slug}.md` as the authoritative design record. Pick TDD over PRD when
   *how* is the question — the what/why is settled and architecture is the open work
   (the inverse of prd's "scope precedes architecture" boundary).
-- The calling agent (typically `@staff-engineer`, or `@distinguished-engineer` on Medium+ cycles) is producing a design that needs to
-  go through the `status` lifecycle (see Required Frontmatter).
+- The calling agent (author attribution per the contract paragraph above) is
+  producing a design that needs to go through the `status` lifecycle (see
+  Required Frontmatter).
 - The team-lead orchestrator's Medium Task pattern asks for a TDD without a separate
   PRD — this skill is the canonical path.
 
@@ -81,8 +88,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 2. **Resolve `{output_path}`** as `docs/tdd/{slug}.md`. The output directory
    `{output_dir}` is `docs/tdd/`. **No numbering step** — unlike `docs/adr/{NNNN}-{slug}.md`, TDD
    filenames are never number-prefixed (docs-paths.md master, `docs/tdd/` row);
-   `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`;
-   the shared {NNNN} allocation + citation-hijack script) is `src/user/claude-code/skills/adr/SKILL.md`'s numbering
+   `~/.claude/scripts/next_doc_number.sh` (repo: `src/user/claude-code/scripts/next_doc_number.sh`) is `src/user/claude-code/skills/adr/SKILL.md`'s numbering
    step, not this skill's — do not invoke it here.
 3. **Resolve context**:
    - `{today_date}` = `Bash date +%Y-%m-%d`.
@@ -169,7 +175,10 @@ malformed frontmatter.
      fact: `Grep` the committed artifact that owns it and confirm they match — a tag
      vs. the workflow's pin, a diagram count vs. the assets actually referenced.
    - **Module / API / test-infra reference**: `Grep` the codebase to confirm the
-     target exists and its signature matches before writing it as settled.
+     target exists and its signature matches before writing it as settled. Existence
+     is not coverage — before asserting what a named test ASSERTS, `Read` its
+     assertion body; N mutually-citing docs, changelogs, or peer summaries are still
+     zero observations (corroboration-is-not-verification, authoring-verification-gates.md).
    - **Enumerated set** stated as complete (every blocking gate, every carrier file,
      every affected call site): derive the members by `Grep` and record the command
      and count — never from memory or a peer's summary. A set asserted complete but
@@ -188,9 +197,8 @@ malformed frontmatter.
      `~/.claude/scripts/tdd_preflight.sh` (repo: `src/user/claude-code/scripts/tdd_preflight.sh`);
      see Validation §4 for the run and the `MISSING`-hit classification (target-state,
      glob-literal, or genuinely-broken).
-6. **Proceed to Validation Before Save** — that step is the single source of
-   truth for frontmatter, sections, alternatives count, Mermaid, and placeholder
-   checks (matches sibling PRD's §6).
+6. **Proceed to Validation Before Save** — the single source of truth for every
+   pre-Write check.
 
 ## Output Contract
 
@@ -215,7 +223,7 @@ Field rules:
 - `project` = `basename $(git rev-parse --show-toplevel)`.
 - `maturity` describes how settled the content is (`proof-of-concept | draft | experimental | stable`). `status` describes where the doc sits in the review-and-vote lifecycle (see `status` rule below). The two are orthogonal — a TDD can be `status: accepted` while `maturity: experimental` (design signed off, approach still provisional).
 - `last_updated` is ISO date `YYYY-MM-DD`.
-- `updated_by` is the calling agent identifier (`@staff-engineer`, etc.).
+- `updated_by` is the calling agent identifier (`@staff-engineer`, etc.). **On a co-authored TDD (Authoring §3) it names the agent whose TRACK the document must validate against — not whoever edited last:** when `@security-engineer` appends the Threat Model / Trust Boundaries / Security Considerations sections, set `updated_by: "@security-engineer"`. `doc_validate.py` fires the security-track checks on exact equality with that value, so leaving the body author's identifier in place skips them silently on a document that carries security sections.
 - `scope` is a one-line description of what the doc covers — populated by the
   calling agent.
 - `owner` is the responsible agent or team handle.
@@ -246,9 +254,8 @@ numbers below are NOT part of the heading (`## Problem Statement`, never
    three `###` subsections — `Threat Model`, `Trust Boundaries`, and
    `Security Considerations` — enforced by the validator's `security-subsections`
    check. Non-security TDDs
-   may omit them. (Mixed-scope routing — when @security-engineer appends
-   these to a @staff-engineer TDD via the Threat-Model Annotation pattern
-   — is owned by `~/.claude/agents/security-engineer.md` (repo: `src/user/claude-code/agents/security-engineer.md`), not this skill.)
+   may omit them. Mixed-scope co-authoring is owned by
+   `src/user/claude-code/agents/security-engineer.md`, not this skill (Authoring §3).
 5. **Data Models & Storage** — schemas, persistence, migrations. May be `N/A.`
    with one-line justification if the design has no data plane.
 6. **API Contracts** — request/response shapes, RPC contracts, CLI invocation
@@ -274,7 +281,7 @@ numbers below are NOT part of the heading (`## Problem Statement`, never
     directly. Each phase MUST specify: (a) one-line phase goal, (b) file scope
     (paths affected), (c) per-phase acceptance criteria — a grep/regex-based AC
    must embed the exact command and its expected hit count (run it; the count is
-   the evidence) per §9 and staff-engineer.md rule 6; for a MEASURED or RENDERED
+   the evidence) per Authoring §5 and staff-engineer.md rule 6; for a MEASURED or RENDERED
    value (timing, byte/pixel size, sampled count) use a tolerance band or range,
    NOT exact-match — exact ACs on non-deterministic values fail ~15-20% of runs
    intermittently, while deterministic grep/regex hit counts stay exact; an AC whose meaning depends on

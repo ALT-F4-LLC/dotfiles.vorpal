@@ -1,5 +1,99 @@
 # Changelog: adr
 
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation gave the author list an explicit default/fallback precedence, matching the framing the sibling tdd skill already carries.
+
+### Changes
+- DISAMBIG (overlapping-ownership): author precedence stated explicitly — `@distinguished-engineer` by default on Medium+ cycles, `@staff-engineer` as gold-unavailable fallback and on sub-Medium/standalone, `@security-engineer` for security ADRs. The prior unordered list read as staff-first, contradicting the tdd sibling and evolve-coherence D2 #1.
+
+### Dimensions Evaluated
+Disambiguation: overlapping-ownership (applied), confusable-name, multi-reading.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+S6 applied: the author roster named only @staff-engineer/@distinguished-engineer, silently routing a security ADR to the one agent categorically barred from security work. Roster now names @security-engineer and is single-homed. Net +76 bytes (17,966 → 18,042).
+Findings: 5 → 1 sub / 0 cos / 1 rej / 3 def / 0 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: S6 — contract line now names `@security-engineer` as the author of a security ADR, with @distinguished-engineer's security exclusion stated. Verified: security-engineer.md holds `adr` in frontmatter `skills:` (:19), claims security-ADR authorship (:5, :29), invokes `Skill(adr, ...)` (:187); distinguished-engineer.md:102 bars it from security-sensitive work.
+- CULL[COSMETIC]: S6 drift-prevention — deleted the duplicate roster parenthetical from the When-to-Use bullet. A third author would have made the duplicate copy stale on the spot; roster now single-homed on the contract line.
+- REJECTED: H11 (docs/**/adr discovery step) — re-raise of an already-REJECTED finding; re-verified neither `docs/adr/` nor `docs/tdd/adr/` diverges (ADRs consolidated per 120b273).
+- DEFERRED (Docket tracking): H12 (prior-art Grep before the atomic claim), H13 (slug.sh truncation; dedupes with tdd's H9).
+- DEFERRED (Phase 2 lockstep): I12 (dead collision-dialog clause in CANONICAL:SAVE_AND_RETURN — premise confirmed falsified; manifest strip-transform mechanism already exists and is live elsewhere), sequenced with tdd's I10 (same shared block).
+
+### Dimensions Evaluated
+All 8. Coherence carried the cycle (S6 role-routing gap plus its duplicate-roster drift vector). Over-Engineering: one trim only, doubling as the S6 byte offset.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 2 entries (2026-06-17..2026-06-19) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 2 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 4 entries (2026-06-10..2026-06-30) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 4 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation pass: pinned WHERE and WHEN to read the citation-hijack list that this cycle's new two-branch mismatch disposition keys on. `next_doc_number.sh` emits two different candidate-skip stderr lines, and the branch condition named neither form.
+
+### Changes
+- DISAMBIG[SUBSTANTIVE][confusable-name]: Pre-flight 4.1 — branch condition scoped to THIS `--claim` invocation's stderr and to the `already cited (citation-hijack)` line form only, with the script's second skip line (`lost the atomic claim (...), retrying`) called out as NOT a hijack and routed to the **Not listed** branch.
+
+### Dimensions Evaluated
+Phase 3 two-arm boundary test. Arm 1 PASSES: script exists, both branch arms internally consistent, Failure Modes row agrees with the prose. Arm 2 FAILS: both stderr lines share a common prefix, so a reader scanning for the mandated number matches both and a lock-contention hit wrongly routes to ABORT. Verified live: `next_doc_number.sh:111` (hijack line) vs `:125` (lock-contention line).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Aligned the contract line to the file's own When-to-Use (@distinguished-engineer authors ADRs on Medium+ cycles), defined the previously-undefined mandated-number mismatch disposition as a verified two-branch rule, and added `effort: xhigh`. Net +1,128 bytes (16,527 → 17,655).
+
+### Changes
+- FIX[SUBSTANTIVE]: OP-S2 — lines 19-20 said "typically @staff-engineer" while line 58 correctly added "or @distinguished-engineer on Medium+ cycles". Re-verified against team-lead.md's gold bullet ("ADR authoring inherits the active authoring seat's tier") and distinguished-engineer.md §Mode 1 ("TDD & ADR Authoring"). Companion tdd:19 fix is a separate dispatch.
+- FIX[SUBSTANTIVE]: Pre-flight 4.1's "report a mismatch rather than proceeding silently" left the disposition undefined ("report, then proceed" satisfied it literally). Now branches on the script's citation-hijack stderr list: **listed** → ABORT (the self-forward-reference false positive from senior-engineer/pitfalls.md; proceeding would dangle every upstream citation); **not listed** → the mandate is merely stale, proceed and report. Verified next_doc_number.sh emits the discriminating stderr only for the first case.
+- CLARIFY[COSMETIC]: step 4.4's abort-after-claim caveat rescoped from "past this point" to "at or after step 4.1" — the stub is created in 4.1, so the new abort fell outside the caveat covering it. New Failure Modes row for the abort branch, restoring the table's every-abort-has-a-row invariant.
+- AMPLIFY[SUBSTANTIVE]: added `effort: xhigh` (family parity with tdd/code-review-verdict/verify-ac). team-lead.md names ADR as gold-tier design-artifact authoring, and a teammate ignores agent-frontmatter effort — the skill's own `effort:` is the only depth lever for this dispatch.
+- CULL[COSMETIC]: dropped changelog narration of the removed pre/post-Write race-detection Globs; the operative noclobber guarantee is retained.
+- DEFERRED-script: I7 (`next_doc_number.sh --release`) and I8 (`doc_stage_validate.sh`) — both verified genuinely absent, both script authoring, routed to Docket.
+
+### Dimensions Evaluated
+All 8. Coherence (OP-S2, 4.4 scope, family effort parity); Completeness (mismatch disposition, Failure Modes row); Skill Design Quality (frontmatter); Over-Engineering (-92 historical narration).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -161,95 +255,6 @@ All 8; Over-Engineering (HIGHEST) — no CULL with a cited signal found.
 ### Rename
 No rename.
 
-## 2026-06-30
-
-### Summary
-Missing documentation directories explicitly non-fatal in ADR numbering and prior-art discovery, net -1.
-
-### Changes
-- AMPLIFY: treat absent/no-match ADR directory as an empty ADR set.
-- AMPLIFY: prior-art searches existing dirs only.
-
-### Dimensions Evaluated
-All 8.
-
-### Rename
-No rename.
-
-## 2026-06-30
-
-### Summary
-Removed a mis-homed multi-agent coordination block that contradicted the leaf BANNER and single-author invariant; verified the cited self-validation path-fragility fix is already applied. Net -2 (273→271).
-
-### Changes
-- CULL: removed the "Multi-agent coordination (when applicable)" block — it prescribed a `SendMessage` handoff ("token is yours") that the CANONICAL BANNER forbids a leaf skill from doing, and contradicted "ADR authoring is single-author"; cross-agent coordination is the calling agent's concern (already delegated). Source: internal contradiction (file-cited signal).
-- NO-OP (verified already-fixed): the cited fragile self-validation `cd docs/tdd/adr && f=0001-*.md && grep -n '^## '` no longer exists; validation is context-based and the race guard uses a repo-root-relative Glob.
-
-### Dimensions Evaluated
-All 8. Over-Engineering (highest): net -2. OPTIONAL-mermaid stance left intact (no parse mandate). No model/routing/drift change; no unescaped `$`+digit. Routed to evolve-agents (out of scope here): the removed stale-state-storm guidance may belong in agents/staff-engineer.md.
-
-### Rename
-No rename.
-
-## 2026-06-19
-
-### Summary
-Collapsed the ADR-specific dual-Glob (pre-Write renumber + post-Write race-detection) to a single post-Write race-detection Glob.
-
-### Changes
-- CULL: removed the pre-Write "Before Write: Re-run Pre-flight step 5" re-Glob — it defended against concurrent ADR authors at the same {NNNN}, a race the single-author topology precludes (parallel staff-engineer spawns are reviewers, not authors). The post-Write Glob remains as the sole detect-and-abort backstop. Tightened the full-sequence line to `mkdir → Write → race-detection Glob → Emit`. Signal: Phase-0 innovation (redundant prevention step). Net -4.
-- Drift (rate 7): all 7 SKIP — ordered-list ordinals + slug pseudo-code (parity).
-
-### Dimensions Evaluated
-Over-Engineering, Redundancy, Coherence, Content Gate, Rename.
-
-### Rename
-No rename.
-
-## 2026-06-17
-
-### Summary
-Added a multi-agent single-writer baton guard and the COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / inert-caveat → adopted.
-
-### Changes
-- AMPLIFY: multi-agent coordination guard in Save & Return — file-on-disk is the sole handoff-state source; send path/token exactly once per handoff (prevents stale-state re-send storms).
-- AMPLIFY: COLLISION_DIALOG teammate-context caveat (lockstep across adr/prd/tdd/ux-spec).
-- Note: the re-Glob redundancy optimization was CULLED by the reviewer as over-engineering (AskUserQuestion latency is a real race gap; two-Glob guard retained).
-
-### Dimensions Evaluated
-Completeness / Correctness (AMPLIFY), Over-Engineering (RETAIN), others RETAIN.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-No changes needed. Full 8-dimension audit at 271 lines; Phase 0 signals verified against live file.
-
-### Changes
-- None (NO-OP verdict). Triple-Glob re-evaluated — each Glob serves a distinct safety purpose; line-budget pitfall inapplicable (no budget claim in body); proof-form pitfall already encoded at Authoring step 4.
-
-### Dimensions Evaluated
-All 8; Over-Engineering (HIGHEST — no removable slack); Coherence ($-escape clean, CANONICAL blocks intact and family-aligned); when_to_use migration + CANONICAL shared-include extraction routed to Phase 2 as parity-bound.
-
-### Rename
-No rename.
-
-## 2026-06-10
-
-### Summary
-Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
-
-### Changes
-- Replaced the 11 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
-
-### Dimensions Evaluated
-None — History Compaction per ADR 0001, not a review cycle.
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -285,3 +290,9 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-06-09: Compacted 10 entries (2026-05-06..2026-05-09) into Compacted history per ADR 0001.
 - 2026-06-10: No changes needed. Verified live file state against all 8 dimensions; `allowed-tools` (Glob/Grep) confirmed correct and genuinely used in body. Triple-Glob p...
 - 2026-06-10: Phase 2 lockstep trim: removed the redundant "additional positional args" Failure-Mode row — CANONICAL:ARGUMENT_HANDLING body (L43) already states the identi...
+- 2026-06-10: No changes needed. Full 8-dimension audit at 271 lines; Phase 0 signals verified against live file (Triple-Glob re-evaluated, retained; NO-OP verdict).
+- 2026-06-10: Compacted 11 entries (2026-05-09..2026-06-04) into Compacted history per ADR 0001.
+- 2026-06-17: Added a multi-agent single-writer baton guard and the COLLISION_DIALOG teammate-context caveat (lockstep). Trial: baton / inert-caveat → adopted.
+- 2026-06-19: Collapsed the ADR-specific dual-Glob (pre-Write renumber + post-Write race-detection) to a single post-Write race-detection Glob. Drift (rate 7): all 7 SKIP — ordered-list ordinals + slug pseudo-code (parity).
+- 2026-06-30: Missing documentation directories explicitly non-fatal in ADR numbering and prior-art discovery, net -1.
+- 2026-06-30: Removed a mis-homed multi-agent coordination block contradicting the leaf BANNER and single-author invariant; verified self-validation path-fragility fix already applied. Net -2 (273→271).

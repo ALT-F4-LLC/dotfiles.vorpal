@@ -1,5 +1,89 @@
 # Changelog: evolve-config
 
+## 2026-07-27
+
+### Summary
+Pass A applied S7 (full retention-compaction path at first mention), I7 (experience-feedback survey → default-skip, with a corrected trigger), I6 (biodiversity invariant → ref_census.sh closed arithmetic); Pass B removed a vestigial Phase-0 token contract, a drifted Phase-2 body/template duplication, and a drift_target.sh internals restatement. Net -289 bytes (58825 → 58536).
+
+### Changes
+- AMPLIFY[COSMETIC][S7]: first "retention-compaction master" mention now spells the full master path once; later bare-name uses left as established shorthand.
+- CULL[SUBSTANTIVE][I7]: pre-flight step 2 is default-skip — fires only when step 1 selected "Address operator-reported friction" and no `experience_feedback` was supplied. The ledger's proposed "transcript probe" gate was unevaluable at step 2 (probe resolves at step 6); step 1's existing branch is the ordering-safe gate. Phase 0's bug-auditor already mines the signal the survey duplicated.
+- AMPLIFY[SUBSTANTIVE][I6]: Biodiversity invariant S3 swaps the hand-run three-root grep for `ref_census.sh`, closing the CULL decision on `total == exempt_count + actionable_count` and widening the sweep to repo-root.
+- CULL[SUBSTANTIVE]: Phase 0 dropped the seven `{*_findings}` tokens and the "for Phase 1 template substitution" contract — six of seven had exactly one occurrence (their own declaration) and no template has consumed them since the scratchpad-file refactor; the duplicate auditor roster went with them.
+- CULL[SUBSTANTIVE]: Phase 2 body steps 1-2 trimmed to a summary pointing at the spawning template (the single home) — the two copies had already drifted, the body lacking the template's dead-setter clause.
+- CULL[COSMETIC]: drift operator no longer restates `drift_target.sh` internals; the following sentence already carried the fitness-independence argument.
+- No-change: H5 (zero usage, cadence question not a defect); H6 (ALREADY-ENCODED — Phase 1 step 3 already carries the static-vs-runtime AC methodology verbatim).
+- Deferred (Phase 2 lockstep): CLAUDE_PROJECT_DIR adoption (all 5 evolve-* skills); the ~20KB placement gate (Speciation/Biodiversity invariant falls outside it — recommend extracting §Spawning Templates to a references/ companion family-wide rather than a zero-sum in-file shuffle); Phase-2 body/template duplication check across the other 4 evolve-* skills.
+
+### Dimensions Evaluated
+Cross-reference accuracy (S7); over-engineering/redundancy (3 Pass-B findings); operator-interaction cost (I7); mechanization (I6). Placement audit: Content Gate in range, Speciation/Biodiversity gate out — routed to Phase 2 as structural.
+
+### Rename
+No rename.
+
+## 2026-07-27 (Phase 4 history compaction)
+
+### Summary
+Compacted 5 entries (2026-07-13..2026-07-17) into Compacted history per the retention-compaction policy.
+
+### Changes
+- History Compaction: replaced the 5 oldest committed entries with one ledger line each in the terminal Compacted history section; full text recoverable via git history.
+
+### Dimensions Evaluated
+None — History Compaction per the retention-compaction policy, not a review cycle.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 3 disambiguation: disambiguated the reviewer-tier note's "(P3" tag from "Phase 3"; Coherence-Class fix trimmed the Second-Failure Recovery restatement to a bare pointer.
+
+### Changes
+- AMPLIFY[SUBSTANTIVE]: expanded the tier-note parenthetical to "prior-cycle finding P3 … governs BOTH reviewer seats, Phase 2 and Phase 3" — P3 is a Findings-Ledger ID, but collided with the live "Phase 3" concept the note's own first clause names, risking a false-drift "fix" to the Phase-2 silver seat the note forbids.
+- CULL[SUBSTANTIVE][COH-1]: Second-Failure Recovery bullet trimmed from a restatement to a bare cite-only pointer, matching evolve-agents (the master says "cite it, never restate it"; two of three carriers were restating it).
+
+### Dimensions Evaluated
+Confusable-name (applied); Coherence (COH-1); multi-reading, overlapping-ownership (no carrier-local findings).
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+Phase 2 coherence: trimmed un-parity-enforced restatements of fully-single-homed core sections to bare pointers per the shared doc's stated design.
+
+### Changes
+- Crash & Stall: bare pointer + Phase-0 read-once/ABORT clause replaces the inline detection-triad restatement (drift hazard; family-uniform with evolve-agents).
+- Phase 3: trimmed the charter/boundary restatement (already drifted: "finding" vs core "target") and converted the Mechanism paragraph to the sibling-standard **evolve-config delta** form.
+
+### Dimensions Evaluated
+Coherence, shared conventions, accurate references.
+
+### Rename
+No rename.
+
+## 2026-07-27
+
+### Summary
+DKT-106: single-homed 6 evolve-3-exclusive CANONICAL blocks plus the unregistered Shutdown-protocol paragraph into the new shared evolve-orchestration-core.md; restored Operator-Prompts-Convention as a hybrid compressed block after cross-reviewer reconciliation. Added the shared Repetition + Bug Phase-0 auditors, mechanized the 3-step verification chain (new `config_verify.sh`), and baked the static-AC rule into Phase 1. Net -1,956 bytes (61,412 → 59,456).
+
+### Changes
+- CULL[SUBSTANTIVE][DKT-106]: 6 CANONICAL blocks + the never-registered Shutdown-protocol paragraph replaced by source-by-reference stubs; Trial-Protocol and Operator-Prompts-Convention kept as hybrid compressed restatements (HARD GATE / API-shape constraints stay visible inline). Cited signal: the unregistered shutdown paragraph had already drifted between evolve-agents and evolve-config/evolve-skills — the exact failure the extraction prevents.
+- AMPLIFY[SUBSTANTIVE][I5]: Phase 0 grows from FIVE to SEVEN auditors via the shared token-free Repetition + Bug templates — bug-auditor mines permission-prompt/sandbox-denial signals, previously unmined for this organism.
+- AMPLIFY[SUBSTANTIVE][I6]: Phase 1 step 3's hand-sequenced verification chain replaced by one `config_verify.sh` call (cargo check → config_render_diff.sh → bash -n), new script authored this cycle.
+- AMPLIFY[SUBSTANTIVE][H5]: permission/sandbox ACs must be phrased as static checks; records why an in-session runtime probe is misleading, not merely weak.
+- AMPLIFY[I8]: changelog Summary gains the `Findings:` ledger line.
+- I1/I7 DEFERRED (family-wide / needs a companion script cycle); D1/D2/D4/D7 REJECTED (no applicable site in this organism); D6/H4 escalated to operator (discoverability question, not resolved unilaterally).
+
+### Dimensions Evaluated
+Over-Engineering (primary — the extraction); Coherence (Phase-3 self-pointer, registry asymmetry surfaced); Completeness (I5); Actionability (I6, H5).
+
+### Rename
+No rename.
+
 ## 2026-07-24
 
 ### Summary
@@ -190,81 +274,6 @@ Rename, Coherence.
 ### Rename
 docs-researcher -> docs-researcher-phase0 (bespoke inline Phase-0 auditor instance; team-lead.md's docs-researcher is a separate, untouched agent).
 
-## 2026-07-17
-
-### Summary
-Targeted cycle (one of 4 sibling skills sharing a 3-item mandate). Applied I9 (retired self-contradicting hardcoded CANONICAL enumeration, 2 sites), P3 rationale (KEEP silver - grounded in staff-engineer.md's own spawn list), and H9 (symmetric forward-fitness-signal gate on wiring a dead setter). Rename (P1, bespoke inline copy, 9 occurrences) deferred to Phase 2 for lockstep with the shared template + siblings.
-
-### Changes
-- CULL[SUBSTANTIVE]: deleted the hardcoded 8-block CANONICAL enumeration at 2 sites (Phase 2 prose + template) - self-contradicted the "manifest-is-authority, not a hand-count" instruction it prefaced (I9; subsumes phantom-HARVEST H8, already-fixed).
-- AMPLIFY[SUBSTANTIVE]: reviewer-tier rationale note documenting the intentional silver-here/gold-there split (P3) - grounded in staff-engineer.md:48 owning coherence-reviewer; distinguished-engineer.md owns neither reviewer.
-- AMPLIFY[SUBSTANTIVE]: symmetric forward-fitness-signal gate on WIRING a dead setter, not just CULLing one (H9, staff-engineer/pitfalls.md:595).
-
-### Dimensions Evaluated
-Rename (P1, Phase 2), Coherence, Over-Engineering, Actionability, Orchestration & Agent Teams.
-
-### Rename
-Deferred to Phase 2: docs-researcher -> docs-researcher-phase0 (9 occurrences, bespoke inline copy), lockstep with evolve-phase0-templates.md + evolve-agents + evolve-skills.
-
-## 2026-07-14
-
-### Summary
-Coherence-class fix surfaced during Phase 3: replaced two stale "five CANONICAL blocks" hand-counts with a manifest-anchored instruction — this cycle's doctrine_check_manifest.tsv edit registered this file as a carrier of 8 tags, not 5.
-
-### Changes
-- Phase 2 prose + coherence-reviewer template (2 locations): "the five CANONICAL blocks... (list)" → verify every `CANONICAL:<TAG>` this file carries against `doctrine_check_manifest.tsv`, naming the 8 currently-registered families explicitly.
-
-### Dimensions Evaluated
-Coherence (accurate references — routed from Phase 3 as coherence-class, not disambiguation).
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery (findings-ledger half not applicable — evolve-config produces no findings-ledger.md).
-
-### Changes
-- AMPLIFY: Crash & Stall Recovery gains (d) API-error self-report crash signal + a nudge-before-respawn bullet (lockstep from evolve-agents).
-
-### Dimensions Evaluated
-Coherence (family lockstep).
-
-### Rename
-No rename.
-
-## 2026-07-14
-
-### Summary
-Extended the Hooks & scripts checklist with the Notification hook's background-agent events, documented a static-vs-runtime verification split, and guarded the CULL gate against dead-setter false signals. Findings: 5 → 3 sub / 0 cos / 1 rej / 1 def
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: added `Notification` hook `agent_needs_input`/`agent_completed` to item-4 hook-event checklist (I14) — cited innovation+docs signal, verified live at code.claude.com/docs/en/hooks.
-- AMPLIFY[SUBSTANTIVE]: Phase 1 step 3 now states serialization checks are static-only; enforcement is runtime, deferred to next-cycle Phase 0 (H3) — cited sdet/pitfalls.md:78-80.
-- AMPLIFY[SUBSTANTIVE]: Phase 1 template CULL gate now excludes bare dead-setter observations as fitness signals (H4) — cited staff-engineer/pitfalls.md:595 / DKT-282.
-
-### Dimensions Evaluated
-Skill Design, Actionability, Completeness, Over-Engineering, Orchestration, Coherence, Spec Alignment, Rename — all 8.
-
-### Rename
-No rename.
-
-## 2026-07-13 (Phase 3 disambiguation pass, evolve-skills cycle)
-
-### Summary
-Phase 3 disambiguation (evolve-skills cycle): charter pointer made self-resolving; two spawn-prompt openers no longer read as delegation instructions. Findings: 3 → 3 sub
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: Phase 3 template charter citation names `.claude/skills/evolve-config/SKILL.md` §Phase 3 (was a dangling "section above")
-- AMPLIFY[SUBSTANTIVE]: Phase 2/3 spawn-prompt openers "Use the @staff-engineer agent to X" → direct imperative "X" — the old form reads as a delegation instruction to the recipient, contradicting the template's own no-sub-agents rule; siblings already use the imperative
-
-### Dimensions Evaluated
-Disambiguation (multi-reading).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per the retention-compaction policy; full text in git history (see the compaction entry's date).
@@ -283,3 +292,8 @@ Entries below were compacted per the retention-compaction policy; full text in g
 - 2026-07-12: Adopted cache-first changelog fetch in lockstep with evolve-agents/evolve-skills. Findings: 1 → 1 sub / 0 cos / 0 rej / 0 def / 0 enc
 - 2026-07-12: Trigger scoped to the skill's actual target; corrected a stale CANONICAL-block count (said four, file carries six); aligned the `day=N` alias with evolve-ski...
 - 2026-07-13: Phase 2 coherence: corrected the six→five CANONICAL-block self-description (HARVEST is single-homed in evolve-phase0-templates.md §2, not carried here); fixe...
+- 2026-07-13: Phase 3 disambiguation (evolve-skills cycle): made charter pointer self-resolving; reworded 2 spawn-prompt openers from delegation-instruction phrasing to direct imperative.
+- 2026-07-14: Extended Hooks & scripts checklist with Notification hook background-agent events; documented static-vs-runtime verification split; guarded CULL gate against dead-setter false signals.
+- 2026-07-14: Propagated nudge-before-respawn + API-error crash signal from evolve-agents' Crash & Stall Recovery (findings-ledger half N/A — evolve-config produces none).
+- 2026-07-14: Replaced two stale "five CANONICAL blocks" hand-counts with a manifest-anchored instruction (doctrine_check_manifest.tsv registers 8 tags for this file).
+- 2026-07-17: Targeted cycle — retired self-contradicting hardcoded CANONICAL enumeration (I9); added reviewer-tier rationale note (P3); symmetric forward-fitness-signal gate on wiring a dead setter (H9). Rename deferred to Phase 2.

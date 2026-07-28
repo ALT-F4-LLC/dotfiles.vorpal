@@ -180,10 +180,13 @@ def build_frontmatter_skills():
 # --------------------------------------------------------------------------- D2
 
 ROLE_CLAIM_RE = re.compile(
-    r"driven by|format authority|callable ONLY by|restricted to|typically .@|Role Detection",
+    r"driven by|format authority|(?:callable|invokable|invoked) ONLY by|restricted to|typically .@|Role Detection",
     re.IGNORECASE,
 )
-HARD_RE = re.compile(r"callable ONLY by|restricted to|Role Detection|ABORT", re.IGNORECASE)
+HARD_RE = re.compile(
+    r"(?:callable|invokable|invoked) ONLY by|restricted to|Role Detection|ABORT|STOP:|Blocked:",
+    re.IGNORECASE,
+)
 AGENT_TOKEN_RE = re.compile(r"@([a-z][a-z-]+)")
 
 

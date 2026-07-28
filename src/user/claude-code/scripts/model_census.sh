@@ -3,11 +3,11 @@
 # mentions (the class of miss that let claude-mythos-5 through a manual
 # sweep). Calls ref_census.sh as the sweep primitive per arm, then subtracts
 # content-anchored (path-prefix + line-substring) exemptions read from
-# model_census_exemptions.tsv from ref_census.sh's actionable_hits. Arms 1+2
-# are the CI-enforced default invocation; arm 3 is a report-only backstop
-# (--backstop), never CI-gated — its capitalized-token heuristic has an
-# irreducible false-positive rate on prose-heavy doctrine, and gating on it
-# would train reflexive stoplist-padding.
+# model_census_exemptions.tsv from ref_census.sh's actionable_hits. Arms
+# 1+2+4+5 are the CI-enforced default invocation; arm 3 is a report-only
+# backstop (--backstop), never CI-gated — its capitalized-token heuristic
+# has an irreducible false-positive rate on prose-heavy doctrine, and gating
+# on it would train reflexive stoplist-padding.
 set -euo pipefail
 
 usage() {
@@ -15,15 +15,19 @@ usage() {
     echo "  (no flags)   Run arm 1 (structural claude-[a-z]+-[0-9] sweep) +" >&2
     echo "               arm 2 (closed-list alias/product-word sweep)," >&2
     echo "               both exemption-filtered against" >&2
-    echo "               model_census_exemptions.tsv. Exit 1 on any" >&2
-    echo "               actionable (post-exemption) hit, 0 otherwise." >&2
-    echo "               This is the CI-enforced invocation." >&2
+    echo "               model_census_exemptions.tsv, plus arm 4 (stale-" >&2
+    echo "               exemption-row sweep) and arm 5 (invented-alias" >&2
+    echo "               sweep). Exit 1 on any actionable hit from any of" >&2
+    echo "               these arms, 0 otherwise. This is the CI-enforced" >&2
+    echo "               invocation." >&2
     echo "  --backstop   Run arm 3 only: report-only residual capitalized-" >&2
     echo "               token sweep, filtered to tokens co-occurring with" >&2
     echo "               tier vocabulary. Always exits 0. Never wired to CI." >&2
     echo "  --json       Emit closed-arithmetic JSON for arms 1+2" >&2
     echo "               (total == exempt_count + actionable_count)," >&2
-    echo "               matching ref_census.sh's output shape." >&2
+    echo "               matching ref_census.sh's output shape, plus" >&2
+    echo "               stale_exemption_count/rows and" >&2
+    echo "               invented_alias_count/hits for arms 4+5." >&2
     exit 1
 }
 
@@ -137,6 +141,99 @@ apply_exemptions() {
     done <<< "$hits"
 }
 
+# --- Arm 4: stale-exemption-row sweep (CI-enforced) --------------------------
+
+# Flags any model_census_exemptions.tsv row whose match-substring no longer
+# appears anywhere under its cited path-prefix (a single file, or a
+# directory's full subtree). Deterministic containment check (grep -F, no
+# heuristic), so unlike arm 3 this is folded into the CI-enforced default
+# invocation alongside arms 1+2. A row whose path-prefix no longer exists at
+# all is also stale (the cited file/dir was renamed or removed).
+# Sets ARM4_STALE (newline-joined "category<TAB>prefix<TAB>substring" rows)
+# and ARM4_STALE_COUNT.
+run_arm4_stale_exemptions() {
+    local stale="" cat prefix substr rationale target found row
+    while IFS=$'\t' read -r cat prefix substr rationale; do
+        case "$cat" in
+            ''|'#'*) continue ;;
+        esac
+        target="${prefix%/}"
+        found=0
+        if [ -f "$target" ]; then
+            grep -qIF -- "$substr" "$target" 2>/dev/null && found=1
+        elif [ -d "$target" ]; then
+            grep -rqIF --exclude-dir=.git -- "$substr" "$target" 2>/dev/null && found=1
+        fi
+        if [ "$found" -eq 0 ]; then
+            row=$(printf '%s\t%s\t%s' "$cat" "$target" "$substr")
+            stale="${stale:+${stale}$'\n'}${row}"
+        fi
+    done < "$EXEMPTIONS_TSV"
+    ARM4_STALE="$stale"
+    ARM4_STALE_COUNT=$(count_lines "$stale")
+}
+
+# --- Arm 5: invented-alias sweep (CI-enforced) -------------------------------
+
+# Canonical routing-vocabulary aliases per team-lead.md's Tiers block
+# (gold/silver/bronze resolve to fable/opus/sonnet respectively); `haiku` is
+# deliberately excluded -- suspended from the routing vocabulary (revisit
+# 2026-09-01), not a valid `model="..."` value.
+CANONICAL_MODEL_ALIASES=(fable opus sonnet)
+
+is_canonical_alias() {
+    local v="$1" c
+    for c in "${CANONICAL_MODEL_ALIASES[@]}"; do
+        [ "$v" = "$c" ] && return 0
+    done
+    return 1
+}
+
+# src/user/codex targets an entirely different agent framework (OpenAI/GPT
+# worker models via spawn_agent's model="gpt-*"), structurally incapable of
+# carrying an invented Claude tier alias -- same whole-path-out-of-scope
+# rationale as SWEEP_EXEMPT_PATHS above, not a new exemption category.
+ARM5_EXEMPT_PATHS=("${SWEEP_EXEMPT_PATHS[@]}" src/user/codex)
+
+run_ref_census_arm5() {
+    local -a exempt_flags=()
+    local p
+    for p in "${ARM5_EXEMPT_PATHS[@]}"; do
+        exempt_flags+=(-e "$p")
+    done
+    bash "$REF_CENSUS" -p "$1" "${exempt_flags[@]}"
+}
+
+# Sweeps for `model="<value>"` literals (spawn-call argument shape) and
+# flags any hit whose captured value isn't one of CANONICAL_MODEL_ALIASES.
+# The character class ([a-zA-Z][a-zA-Z0-9_-]*) deliberately excludes spaces
+# and angle brackets, so prose placeholders like
+# `model="<per the routing rule below>"` never match at all. Sets
+# ARM5_INVENTED (newline-joined hit lines) and ARM5_INVENTED_COUNT.
+run_arm5_invented_alias() {
+    local raw_json hits filtered=""
+    raw_json=$(run_ref_census_arm5 'model="[a-zA-Z][a-zA-Z0-9_-]*"')
+    hits=$(printf '%s' "$raw_json" | jq -r '.actionable_hits[]?')
+    if [ -n "$hits" ]; then
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            local rest content values val bad
+            rest="${line#*:}"
+            content="${rest#*:}"
+            values=$(printf '%s' "$content" | grep -oE 'model="[a-zA-Z][a-zA-Z0-9_-]*"' | sed -E 's/model="([^"]*)"/\1/')
+            [ -z "$values" ] && continue
+            bad=0
+            while IFS= read -r val; do
+                [ -z "$val" ] && continue
+                is_canonical_alias "$val" || bad=1
+            done <<< "$values"
+            [ "$bad" -eq 1 ] && filtered="${filtered:+${filtered}$'\n'}${line}"
+        done <<< "$hits"
+    fi
+    ARM5_INVENTED="$filtered"
+    ARM5_INVENTED_COUNT=$(count_lines "$filtered")
+}
+
 # --- Arm 3: report-only backstop (--backstop) -------------------------------
 
 # Genuinely open dimension (not prescribed by the design contract): the exact
@@ -236,6 +333,9 @@ ACTIONABLE_COUNT=$(count_lines "$FILTERED_ACTIONABLE")
 EXEMPT_COUNT="$FILTERED_EXEMPT_COUNT"
 TOTAL=$((ACTIONABLE_COUNT + EXEMPT_COUNT))
 
+run_arm4_stale_exemptions
+run_arm5_invented_alias
+
 if [ "$JSON" -eq 1 ]; then
     EXEMPT_PATHS=$(awk -F'\t' '!/^#/ && NF>=2 && $1!="" {print $2}' "$EXEMPTIONS_TSV" | sort -u)
     jq -n \
@@ -246,21 +346,47 @@ if [ "$JSON" -eq 1 ]; then
         --argjson exemptCount "$EXEMPT_COUNT" \
         --argjson actionableCount "$ACTIONABLE_COUNT" \
         --arg actionableHitsRaw "$FILTERED_ACTIONABLE" \
+        --argjson staleCount "$ARM4_STALE_COUNT" \
+        --arg staleRowsRaw "$ARM4_STALE" \
+        --argjson inventedCount "$ARM5_INVENTED_COUNT" \
+        --arg inventedHitsRaw "$ARM5_INVENTED" \
         '{
             pattern: [$arm1, $arm2],
             exempt_paths: $exemptPaths,
             total: $total,
             exempt_count: $exemptCount,
             actionable_count: $actionableCount,
-            actionable_hits: (if $actionableHitsRaw == "" then [] else ($actionableHitsRaw | split("\n")) end)
+            actionable_hits: (if $actionableHitsRaw == "" then [] else ($actionableHitsRaw | split("\n")) end),
+            stale_exemption_count: $staleCount,
+            stale_exemption_rows: (if $staleRowsRaw == "" then [] else ($staleRowsRaw | split("\n")) end),
+            invented_alias_count: $inventedCount,
+            invented_alias_hits: (if $inventedHitsRaw == "" then [] else ($inventedHitsRaw | split("\n")) end)
         }'
 else
     if [ "$ACTIONABLE_COUNT" -eq 0 ]; then
-        echo "model_census.sh: all arms PASS (arm1+arm2; total=${TOTAL}, exempt=${EXEMPT_COUNT}, actionable=0)"
+        echo "model_census.sh: arm1+arm2 PASS (total=${TOTAL}, exempt=${EXEMPT_COUNT}, actionable=0)"
     else
         echo "FAIL: ${ACTIONABLE_COUNT} actionable untiered model-name mention(s) (total=${TOTAL}, exempt=${EXEMPT_COUNT})"
         printf '%s\n' "$FILTERED_ACTIONABLE"
     fi
+
+    if [ "$ARM4_STALE_COUNT" -eq 0 ]; then
+        echo "model_census.sh: arm4 (stale-exemption-row) PASS (0 stale rows)"
+    else
+        echo "FAIL: ${ARM4_STALE_COUNT} stale exemption row(s) in ${EXEMPTIONS_TSV} (match-substring no longer found under cited path)"
+        printf '%s\n' "$ARM4_STALE"
+    fi
+
+    if [ "$ARM5_INVENTED_COUNT" -eq 0 ]; then
+        echo "model_census.sh: arm5 (invented-alias) PASS (0 non-canonical model=\"...\" values)"
+    else
+        echo "FAIL: ${ARM5_INVENTED_COUNT} invented-alias hit(s) (model=\"...\" value outside {${CANONICAL_MODEL_ALIASES[*]}})"
+        printf '%s\n' "$ARM5_INVENTED"
+    fi
+
+    if [ "$ACTIONABLE_COUNT" -eq 0 ] && [ "$ARM4_STALE_COUNT" -eq 0 ] && [ "$ARM5_INVENTED_COUNT" -eq 0 ]; then
+        echo "model_census.sh: all arms PASS (arm1+arm2+arm4+arm5)"
+    fi
 fi
 
-[ "$ACTIONABLE_COUNT" -eq 0 ]
+[ "$ACTIONABLE_COUNT" -eq 0 ] && [ "$ARM4_STALE_COUNT" -eq 0 ] && [ "$ARM5_INVENTED_COUNT" -eq 0 ]

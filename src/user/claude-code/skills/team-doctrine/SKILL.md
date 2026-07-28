@@ -24,7 +24,7 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 
 | Reference file | Master for | Cited by (LOCAL-copy consumers) |
 |---|---|---|
-| `references/runtime-discipline.md` | R1-R7 canonical bodies + per-agent applicability matrix | all 7 agents (full bodies where applicable) + `team-lead.md` (LOCAL bodies for R1/R3/R4/R6, pointer for R2/R5/R7) |
+| `references/runtime-discipline.md` | R1-R7 canonical bodies + per-agent applicability matrix | all 7 agents (one-line reminder + pointer) + `team-lead.md` (compact LOCAL bodies for R1/R3/R4/R6, pointer for R2/R5/R7) |
 | `references/truth-first-debugging.md` | Truth-First Debugging (TFD-1..5, pre-fix gate) | all 7 agents + `team-lead.md` |
 | `references/docs-paths.md` | Docs-Path Taxonomy (`docs/` output-path ownership) | all 7 agents + `team-lead.md` + 13 docs-path-touching skills (`adr`, `code-review-verdict`, `design-qa`, `design-review`, `evolve-agents`, `evolve-config`, `evolve-model-distribution`, `evolve-skills`, `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`) |
 | `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | all 7 agents + `team-lead.md` |
@@ -38,5 +38,6 @@ doing so would violate R2 Skill Invocation Restraint (`references/runtime-discip
 | `references/fable-completeness-heuristics.md` | Fable-distilled completeness heuristics (provenance, honest scope, full bullet bodies) | `team-lead.md` (compact LOCAL copy) |
 | `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` (compact LOCAL copy) |
 | `references/authoring-verification-gates.md` | Authoring verification gates for TDD/review authors (executable-claim, negative-claim re-grep, insertion-anchor, byte-budget) | `staff-engineer.md`, `distinguished-engineer.md` |
-| `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md`, `ux-designer.md` |
+| `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `distinguished-engineer.md`, `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md`, `ux-designer.md` |
 | `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates — auditors plus evolve-agents' SDLC Role Research (§9) (spawn-TEMPLATE store: paste-at-spawn-time, token-contracted; NOT a doctrine master with LOCAL copies) | `evolve-agents`, `evolve-skills`, `evolve-config` skills (Read-once at Phase-0 spawn) |
+| `references/evolve-orchestration-core.md` | Shared evolve-* orchestration-core prose (DKT-106) — Scientific Trial Protocol, Genetic-Drift Operator, Operator prompts, Crash & Stall Recovery, Second-Failure Recovery, Shutdown Protocol, Phase 3 Disambiguation Charter/Boundary | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` skills (Read-once at the point each section is needed; two sections are hybrid — a compressed CANONICAL restatement stays local, parity-enforced) |

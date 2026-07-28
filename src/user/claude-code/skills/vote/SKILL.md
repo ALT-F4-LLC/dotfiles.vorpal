@@ -198,6 +198,43 @@ After each reviewer returns via SendMessage, write its COMPLETE structured revie
 
 The script parses Verdict/Confidence/Domain Relevance/Findings/Summary directly out of the report file's `### <heading>` sections and invokes `docket vote cast` itself, streaming the findings payload through a temp file via stdin redirection rather than interpolating reviewer prose into a command-line argument or heredoc body — this is what prevents the previously-documented corruption mode (a bare `!` or stray backslash in reviewer prose breaking an inlined `--findings-json` and surfacing as `--findings-json is not valid JSON: invalid character ... in string escape code`, exit 3). It automatically falls back from `--findings-json` to plaintext `--findings -` whenever the parsed `### Findings JSON` block is missing or fails a `jq empty` validity check (and retries with plaintext again if docket itself still rejects the JSON cast) — do not skip recording the vote on a fallback; it is handled for you. A non-zero exit means BOTH the JSON and plaintext casts failed — treat the reviewer as failed per Handling Reviewer Failures below, not a silent skip. The full `docket vote cast` flag set the script wraps is documented in `Skill(docket)`'s `docket vote cast <id>` reference (docket/SKILL.md).
 
+### Non-Vote Decisions
+
+Not every documented decision needs a formal quorum vote. Use `vote_record.sh --non-vote` instead of the full Pre-flight → Phase 1-3 protocol when:
+
+- The decision is reversible, single-owner, and stays within an already-approved plan/epic — the kind of judgment call the Decision-Making Framework (e.g. `~/.claude/agents/senior-engineer.md`) already permits without escalation.
+- None of the "When to invoke (high bar)" criteria above apply — not irreversible/long-blast-radius, no unresolved reviewer disagreement, not `criticality: critical` security-sensitive.
+- You still want a durable, auditable record of *what* was decided and *why*, without paying for reviewer spawns, quorum math, or a `docket vote create` proposal.
+
+Use a formal vote instead the moment any "When to invoke (high bar)" criterion applies.
+
+**Recording mechanism.** `vote_record.sh --non-vote` parses a Decision/Rationale/Summary report (same `### <heading>` convention as the vote-cast path) and records it as a `docket doc` (type `decision`) — NOT a `docket vote` proposal — so it can never be mistaken for a quorum outcome in `docket vote list`. It reuses the identical safe-quoting discipline as the vote-cast path: the assembled body streams through `docket doc create -d "@<tmpfile>"` rather than being interpolated into argv or a heredoc.
+
+```bash
+~/.claude/scripts/vote_record.sh --non-vote "{decision-id}" "{recorder}" "{role}" "{report-file}" ["{issue-id}"]
+```
+
+- `decision-id`: a short label (e.g. `DKT-95-caching-approach`) used in the doc title — NOT a docket vote-id.
+- `recorder`: identity recording the decision (e.g. `team-lead`, `senior-engineer`).
+- `role`: the recorder's agent type.
+- `report-file`: a file with `### Decision` and `### Rationale` sections (both required) and an optional `### Summary`.
+- `issue-id` (optional): a Docket issue to link the resulting doc to via `docket doc link add`.
+
+Report format:
+
+```
+### Decision
+One-line statement of what was decided.
+
+### Rationale
+Why this was decided without a formal quorum vote — the constraint, judgment call, or prior-approval context.
+
+### Summary
+One paragraph summarizing the outcome (optional — defaults to a placeholder if omitted).
+```
+
+View recorded non-vote decisions with `docket doc list --json` (filter by `type: decision`) or `docket doc show {doc-id}` — distinct from `docket vote list`'s quorum records by design.
+
 ### Reviewer Prompt Template (Standalone Mode Only)
 
 ````
@@ -261,7 +298,7 @@ Emit `[]` for any category with no items.
 One paragraph summarizing your overall assessment.
 
 ## Delivery (MANDATORY)
-SendMessage the COMPLETE structured review above to team-lead (your coordinator) — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then go idle AWAITING the coordinator's `shutdown_request` and reply `shutdown_response` (approve) when it arrives (lead-initiated per canonical protocol).
+SendMessage the COMPLETE structured review above to the coordinator that spawned you — the agent that sent you this prompt: `team-lead` on its `vote_id`-relay entry, or the invoking session as its name appears in your team roster on an operator `/vote` entry — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then go idle AWAITING the coordinator's `shutdown_request` and reply `shutdown_response` (approve) when it arrives (lead-initiated per canonical protocol).
 
 ## Domain-Specific Checklist
 {Insert the relevant checklist below based on the reviewer's agent type}

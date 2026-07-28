@@ -137,7 +137,7 @@ Lossy-safety invariant section below:
 
 | Compactor check (batch path) | Edit-time equivalent (this path) |
 |---|---|
-| (0) pure-addition precondition | Not needed: single atomic run on one entry; unrelated content is carried over byte-unchanged by construction (E0) and the write is crash-atomic |
+| (0) Pre-edit snapshot precondition | Not needed: single atomic run on one entry; unrelated content is carried over byte-unchanged by construction (E0) and the write is crash-atomic |
 | (1) full-entry HEAD containment | **E1 full-text preservation** — removed entry emitted verbatim on stdout; caller MUST mirror it into the change's durable record; `RECOVERY-CHANNEL: git-history` reported when HEAD containment additionally holds. HEAD containment cannot be a *precondition* here — the files are untracked today and fresh entries are legitimately uncommitted; making it a hard gate would recreate the exact dead-mechanism failure this design fixes |
 | — (new) | **E2 encoded-resolution precondition** — the lesson's operative content verifiably persists in a git-*tracked* definition (`--encoded-in` tracked + `--evidence` hit; centralized home additionally requires the deploying tree, exit 8) before the narrative may be removed; the tracked definition becomes the durable carrier, the ledger line the tombstone |
 | (2) diff-shape proof | **E0 reconstruction-equivalence** — new file = old file with exactly (i) the selected entry span removed, (ii) the ledger line (+ section heading on first use) inserted per the layout, and (iii) the insertion-seam blank normalized to exactly one; all other bytes identical |
@@ -155,30 +155,43 @@ independent triggers.
 
 Per file, the compactor's report to the orchestrator MUST evidence, in order:
 
-- **(0) Pure-addition precondition** — before editing, every hunk in `git diff HEAD --
-  <file>` is pure addition (this cycle's prepended changelog entry, or pitfalls entries
-  appended by agents mid-cycle); any modified or deleted HEAD line aborts compaction for
-  that file this cycle. A strict `git diff --quiet HEAD -- <file>` (byte-identical-to-HEAD)
-  precondition was considered and rejected as unworkable: Phase 1 prepends an entry to
+- **(0) Pre-edit snapshot precondition** — before editing, the compactor captures the
+  file's current content as the pre-edit working-file snapshot; check (2) below proves
+  reconstruction-equivalence against this snapshot, not against `git diff HEAD`. The
+  original mechanism gated on every hunk in `git diff HEAD -- <file>` being pure addition
+  (this cycle's prepended changelog entry, or pitfalls entries appended by agents
+  mid-cycle), aborting compaction on any modified or deleted HEAD line — but this is
+  unsatisfiable once any prior evolve-agents cycle has compacted the file uncommitted in
+  the same working tree, since that pass's deletion hunks stay permanently in `git diff
+  HEAD` until an actual commit lands. HEAD is fixed between cycles, so every entry any
+  prior pass removed remains byte-present in `git show HEAD:<file>` and check (1)
+  continues to hold for it — re-baselining off HEAD loses no recoverability. Two
+  alternatives were considered and rejected: a strict `git diff --quiet HEAD -- <file>`
+  (byte-identical-to-HEAD) precondition, unworkable because Phase 1 prepends an entry to
   every target changelog before the terminal phase runs (and agents append pitfalls
   entries mid-cycle per the CANONICAL block), so byte-identity with HEAD would defer
-  compaction forever; pure-addition plus check (1) yields the same recovery guarantee.
+  compaction forever; and a commit checkpoint after every Phase 4 compaction to keep HEAD
+  fresh, rejected because it makes a mechanical safety gate depend on an action agents are
+  categorically forbidden to take, it contradicts the Distill-time ledgering section's note
+  that the cycle "remains in-repo-only ... until the operator commits the memory tree," and
+  it is operationally unscoped between sweeping in unrelated Phase 1-3 work or fragmenting
+  the cycle into partial commits.
 - **(1) Full-entry HEAD containment** — every entry selected for compaction is
   byte-present in `git show HEAD:<file>` as its FULL text (every line from heading/bullet
   through entry end). Never a date-string spot-check: date headings are non-unique
   (`docs/changelog/claude-code/agents/senior-engineer.md` carries three `## 2026-07-10` entries), so a
   date match cannot prove that an uncommitted same-date entry is safe to remove.
-- **(2) Diff-shape proof** — after compaction, `git diff HEAD -- <file>` consists SOLELY
-  of four hunk shapes: (i) the pre-existing same-cycle pure additions from check 0; (ii)
-  deletions exactly matching the selected entries; (iii) additions forming the ledger
-  section/lines; (iv) for changelogs, one added compaction entry. Any other change —
+- **(2) Diff-shape proof** — after compaction, the diff between the post-compaction file
+  and the pre-edit working-file snapshot (check 0) consists SOLELY of three hunk shapes:
+  (i) deletions exactly matching the selected entries; (ii) additions forming the ledger
+  section/lines; (iii) for changelogs, one added compaction entry. Any other change —
   including any touch of a surviving entry between the keep-window and the compacted band
   — fails the check. This is also the byte-untouched proof for all surviving entries:
   their absence from the diff IS the evidence. Accepted mechanization:
-  reconstruction-equivalence — byte-equality of the post-compaction file with HEAD content
-  minus the selected entries, plus the prepended compaction entry and the ledger
-  additions — proves the SOLELY property without enumerating raw diff hunks (git
-  context-matching splits hunks on blank lines and same-date headings, making literal
+  reconstruction-equivalence — byte-equality of the post-compaction file with the pre-edit
+  working-file snapshot minus the selected entries, plus the prepended compaction entry
+  and the ledger additions — proves the SOLELY property without enumerating raw diff hunks
+  (git context-matching splits hunks on blank lines and same-date headings, making literal
   hunk-shape enumeration unreliable as evidence).
 - **(3) Parity formula** — changelogs: with count pattern `^## 20` (date-headed entries
   only; the `## Compacted history` heading does not match), expected after-count =

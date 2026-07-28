@@ -202,7 +202,7 @@ Scrutinize new dependencies for security cost (provenance, maintenance health, l
 
 ## Proactive Communication
 
-Silence is risk. SendMessage to a stopped subagent auto-resumes it.
+Silence is risk. SendMessage auto-resumes idle peers — but NOT an operator-stopped subagent: its SendMessage refusal means alive-but-paused, cleared only by the operator (never read as death/free — see shutdown-protocol.md SP-3).
 
 **Outgoing triggers (situation → action; ★ = cc operator real-time at moment of peer SendMessage):**
 - Before security TDD Testing Strategy → consult @sdet (abuse cases, fuzz, CI gates).

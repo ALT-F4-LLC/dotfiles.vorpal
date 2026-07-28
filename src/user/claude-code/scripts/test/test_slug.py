@@ -55,6 +55,41 @@ def test_no_boundary_hard_cut_at_sixty():
     assert out.strip() == "a" * 60, out
 
 
+def test_under_sixty_no_truncation():
+    # DKT-161: trimmed slug is 54 chars, under the 60-char cap. A hyphen sits
+    # in [40,60) — the truncation gate must not fire, or it silently drops
+    # the trailing "-ok".
+    topic = "short slug test with a hyphen at position forty two ok"
+    code, out, err = run(topic)
+    assert code == 0, f"exit {code}: {err}"
+    expected = "short-slug-test-with-a-hyphen-at-position-forty-two-ok"
+    assert len(expected) == 54, expected
+    assert out.strip() == expected, out
+
+
+def test_exactly_sixty_no_truncation():
+    # DKT-161: trimmed slug is exactly 60 chars (at, not over, the cap) — the
+    # truncation gate is `> 60`, so this must pass through untouched.
+    topic = "short slug test with a hyphen at position forty two ok abcde"
+    code, out, err = run(topic)
+    assert code == 0, f"exit {code}: {err}"
+    expected = "short-slug-test-with-a-hyphen-at-position-forty-two-ok-abcde"
+    assert len(expected) == 60, expected
+    assert out.strip() == expected, out
+
+
+def test_sixty_one_boundary_truncation():
+    # DKT-161: trimmed slug is 61 chars (over the cap) — truncation must
+    # still fire and prefer the word boundary, per existing behavior.
+    topic = "short slug test with a hyphen at position forty two ok abcdef"
+    code, out, err = run(topic)
+    assert code == 0, f"exit {code}: {err}"
+    expected = "short-slug-test-with-a-hyphen-at-position-forty-two-ok"
+    assert len(expected) == 54, expected
+    assert out.strip() == expected, out
+    assert len(out.strip()) <= 60, out
+
+
 def test_all_punctuation_aborts():
     code, out, err = run("!!!___###")
     assert code == 1, f"exit {code}: {out}"

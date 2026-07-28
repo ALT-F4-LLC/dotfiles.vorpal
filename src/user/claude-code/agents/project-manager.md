@@ -110,7 +110,7 @@ Incorporate specific file paths and details from exploration into issue descript
 
 **Visibility contract**: mirror SendMessage as Docket comment with prefix `[PM→@agent]` (or `[PM→@team-lead]` for escalations) on the most-relevant issue — see team-lead.md Rule 2. When no single issue applies (cross-workstream plan revision, fleet-wide scope-cut call), pick the issue most affected by the decision and note the broader scope in the comment body.
 
-**Consult peers directly** when an answer unblocks planning. SendMessage auto-resumes idle peers; ping proactively. State: what you need, why it blocks planning, what you already explored.
+**Consult peers directly** when an answer unblocks planning. SendMessage auto-resumes idle peers — but NOT an operator-stopped one: its refusal means alive-but-paused, not dead (see shutdown-protocol.md SP-3); ping proactively. State: what you need, why it blocks planning, what you already explored.
 - **`advisor`** (the persistent general-architecture seat — @distinguished-engineer on Medium+ (TDD-bearing) cycles, @staff-engineer sub-Medium; address the seat NAME, not a role): architectural tradeoffs, hidden coupling, TDD-needed uncertainty, ambiguous spike findings.
 - **@security-engineer** (canonical persistent name: `security-advisor`): security-feasibility consults during planning, CVE remediation scoping.
 - **@ux-designer** (canonical persistent name: `ux-advisor`): user-facing ergonomic checks, `docs/ux/` spec conflicts.

@@ -10,6 +10,12 @@ Evaluated / Rename), delete extra/unrecognized sections, and truncate the
 entry to at most 20 lines. Operates ONLY on the topmost `## YYYY-MM-DD` entry
 -- the one most recently prepended -- and never on any entry below it.
 
+Truncation is structure-aware: it only ever removes lines from the `### Changes`
+bullet list, never from `### Summary`, `### Dimensions Evaluated`, or
+`### Rename`. If the entry can't be brought under the line limit without
+cutting into those other sections, truncation is skipped entirely. Any cut
+emits a visible warning on stderr naming what was dropped -- never silent.
+
 Diff-guard (hard invariant): before writing, the freshly normalized text is
 re-scanned with the same entry-boundary detector used to extract the topmost
 entry, and the resulting "everything below the topmost entry" region is
@@ -107,16 +113,67 @@ def normalize_h3_sections(entry_text: str) -> str:
     return "".join(out)
 
 
-def truncate_entry(entry_text: str, max_lines: int) -> str:
+def truncate_entry(entry_text: str, max_lines: int) -> "tuple[str, str | None]":
+    """Truncate `entry_text` to at most `max_lines` lines, cutting only within
+    the '### Changes' bullet list. '### Summary', '### Dimensions Evaluated',
+    and '### Rename' are never touched -- if the entry can't be brought under
+    the limit without cutting into them, it is left un-truncated instead.
+
+    Returns (new_text, warning): warning is None when no cut was made, else a
+    message naming what was dropped (or why truncation was skipped).
+    """
     lines = entry_text.splitlines(keepends=True)
     if len(lines) <= max_lines:
-        return entry_text
-    return "".join(lines[:max_lines])
+        return entry_text, None
+
+    h3_matches = list(H3_RE.finditer(entry_text))
+    changes_idx = next(
+        (i for i, m in enumerate(h3_matches) if m.group(1).strip() == "Changes"), None
+    )
+    if changes_idx is None:
+        return entry_text, (
+            f"entry exceeds {max_lines} lines but has no '### Changes' section to safely "
+            "truncate within -- left un-truncated to avoid dropping other sections"
+        )
+
+    changes_match = h3_matches[changes_idx]
+    changes_end = (
+        h3_matches[changes_idx + 1].start()
+        if changes_idx + 1 < len(h3_matches)
+        else len(entry_text)
+    )
+    changes_section = entry_text[changes_match.start():changes_end]
+    heading_end = changes_section.index("\n") + 1
+    body_lines = changes_section[heading_end:].splitlines(keepends=True)
+    content_lines = [ln for ln in body_lines if ln.strip()]
+
+    before = entry_text[:changes_match.start()]
+    after = entry_text[changes_end:]
+    # +1 for the '### Changes' heading, +1 for the blank separator line kept after it.
+    fixed_lines = len(before.splitlines()) + 2 + len(after.splitlines())
+    budget = max_lines - fixed_lines
+
+    if budget < 1 or len(content_lines) <= budget:
+        return entry_text, (
+            f"entry exceeds {max_lines} lines even outside '### Changes' bullets -- left "
+            "un-truncated to avoid dropping 'Dimensions Evaluated' or 'Rename'"
+        )
+
+    dropped = len(content_lines) - budget
+    new_changes_section = "### Changes\n" + "".join(content_lines[:budget]) + "\n"
+    new_text = before + new_changes_section + after
+    warning = (
+        f"truncated {dropped} line(s) from '### Changes' to fit the {max_lines}-line limit; "
+        "'Dimensions Evaluated' and 'Rename' preserved"
+    )
+    return new_text, warning
 
 
-def normalize_changelog(text: str, artifact_name: str) -> str:
+def normalize_changelog(text: str, artifact_name: str) -> "tuple[str, list[str]]":
     """Normalize the topmost entry of `text`; raises DiffGuardError if a prior
-    entry (or '## Compacted history') would be touched, ValueError on malformed input."""
+    entry (or '## Compacted history') would be touched, ValueError on malformed
+    input. Returns (new_text, warnings) -- warnings is non-empty when truncation
+    had to cut (or skip cutting) content; see truncate_entry."""
     topmost_start, prior_start = find_entry_boundaries(text)
     preamble = text[:topmost_start]
     entry = text[topmost_start:prior_start]
@@ -125,7 +182,8 @@ def normalize_changelog(text: str, artifact_name: str) -> str:
     new_preamble = normalize_h1(preamble, artifact_name)
     new_entry = normalize_h2(entry)
     new_entry = normalize_h3_sections(new_entry)
-    new_entry = truncate_entry(new_entry, MAX_ENTRY_LINES)
+    new_entry, warning = truncate_entry(new_entry, MAX_ENTRY_LINES)
+    warnings = [warning] if warning else []
 
     new_text = new_preamble + new_entry + prior_region
 
@@ -144,7 +202,7 @@ def normalize_changelog(text: str, artifact_name: str) -> str:
             "normalization would modify content below the topmost entry:\n" + diff
         )
 
-    return new_text
+    return new_text, warnings
 
 
 def main(argv=None) -> int:
@@ -163,13 +221,16 @@ def main(argv=None) -> int:
     original_text = path.read_text()
 
     try:
-        new_text = normalize_changelog(original_text, artifact_name)
+        new_text, warnings = normalize_changelog(original_text, artifact_name)
     except DiffGuardError as exc:
         print(f"error: diff-guard tripped: {exc}", file=sys.stderr)
         return 3
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
 
     if new_text == original_text:
         print(f"{path}: already normalized (no changes)")

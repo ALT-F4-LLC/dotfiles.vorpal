@@ -24,6 +24,7 @@ MESSY_INPUT = FIXTURES / "messy_input.md"
 MESSY_EXPECTED = FIXTURES / "messy_expected.md"
 SINGLE_ENTRY = FIXTURES / "single_entry.md"
 OVERSIZED_ENTRY = FIXTURES / "oversized_entry.md"
+OVERSIZED_CHANGES_ONLY = FIXTURES / "oversized_changes_only.md"
 NO_H2 = FIXTURES / "no_h2.md"
 
 spec = importlib.util.spec_from_file_location("changelog_normalize", SCRIPT)
@@ -51,18 +52,57 @@ def test_prior_entry_and_compacted_history_untouched():
     assert "2026-06-01: earlier fossil record, untouched." in out, out
 
 
-def test_oversized_entry_truncated_to_20_lines_prior_entry_intact():
+def test_oversized_entry_truncated_within_changes_prior_entry_intact():
     code, out, err = run(str(OVERSIZED_ENTRY), "--dry-run")
     assert code == 0, f"exit {code}: {out}{err}"
     idx = out.index("## 2026-07-10")
     entry_start = out.index("## 2026-07-13")
     topmost = out[entry_start:idx]
     assert len(topmost.splitlines()) <= 20, topmost
-    assert "### Rename" not in topmost, topmost  # truncated away past line 20
+    # Truncation must cut only within '### Changes' bullets, never the other sections.
+    assert "### Dimensions Evaluated" in topmost, topmost
+    assert "- correctness: pass" in topmost, topmost
+    assert "### Rename" in topmost, topmost
+    assert "No rename." in topmost, topmost
+    assert "AMPLIFY: line 10" not in topmost, topmost  # dropped bullet
+    assert "AMPLIFY: line 1 " in topmost, topmost  # earliest bullets kept
+    assert "warning: truncated" in err and "'### Changes'" in err, err
     prior = out[idx:]
     assert "Prior entry, should be untouched even though the new one above is truncated." in prior, prior
     assert "### Rename" in prior, prior
     assert "No rename." in prior, prior
+
+
+def test_changes_alone_over_20_lines_truncated_dimensions_and_rename_intact():
+    """Regression fixture for DKT-157: '### Changes' bullets alone exceed the
+    20-line limit. Truncation must still land, and the required
+    '### Dimensions Evaluated' and '### Rename' sections must survive intact."""
+    code, out, err = run(str(OVERSIZED_CHANGES_ONLY), "--dry-run")
+    assert code == 0, f"exit {code}: {out}{err}"
+    idx = out.index("## 2026-07-10")
+    entry_start = out.index("## 2026-07-13")
+    topmost = out[entry_start:idx]
+    assert len(topmost.splitlines()) <= 20, topmost
+    assert "### Dimensions Evaluated" in topmost, topmost
+    assert "- correctness: pass" in topmost, topmost
+    assert "### Rename" in topmost, topmost
+    assert "No rename." in topmost, topmost
+    assert "AMPLIFY: line 25" not in topmost, topmost  # dropped bullet
+    assert "AMPLIFY: line 1 " in topmost, topmost  # earliest bullets kept
+    assert "warning: truncated" in err and "'### Changes'" in err, err
+
+
+def test_truncate_entry_skips_cutting_when_other_sections_alone_exceed_budget():
+    entry = (
+        "## 2026-07-13\n\n"
+        "### Summary\n" + "line\n" * 10 + "\n"
+        "### Changes\n- only bullet\n\n"
+        "### Dimensions Evaluated\n" + "line\n" * 10 + "\n"
+        "### Rename\nNo rename.\n"
+    )
+    new_text, warning = mod.truncate_entry(entry, 20)
+    assert new_text == entry, "entry must be left untouched rather than dropping other sections"
+    assert warning is not None and "Dimensions Evaluated" in warning and "Rename" in warning, warning
 
 
 def test_single_entry_no_prior_region_normalizes_cleanly():
@@ -122,12 +162,12 @@ def test_diff_guard_blocks_a_corrupted_normalization_from_touching_prior_entries
     real_truncate = mod.truncate_entry
 
     def corrupting_truncate(entry_text, max_lines):
-        result = real_truncate(entry_text, max_lines)
-        return result + "\n## 9999-99-99 INJECTED-BY-TEST\n"
+        result, warning = real_truncate(entry_text, max_lines)
+        return result + "\n## 9999-99-99 INJECTED-BY-TEST\n", warning
 
     with mock.patch.object(mod, "truncate_entry", side_effect=corrupting_truncate):
         try:
-            mod.normalize_changelog(original_text, "evolve-agents")
+            mod.normalize_changelog(original_text, "evolve-agents")  # raises before returning
             raised = False
         except mod.DiffGuardError as exc:
             raised = True
@@ -147,7 +187,8 @@ def test_diff_guard_trip_surfaces_as_exit_3_through_the_cli():
     real_truncate = mod.truncate_entry
 
     def corrupting_truncate(entry_text, max_lines):
-        return real_truncate(entry_text, max_lines) + "\n## 9999-99-99 INJECTED-BY-TEST\n"
+        result, warning = real_truncate(entry_text, max_lines)
+        return result + "\n## 9999-99-99 INJECTED-BY-TEST\n", warning
 
     tmp = FIXTURES / "_diffguard_target.md"
     shutil.copy(MESSY_INPUT, tmp)

@@ -249,7 +249,7 @@ Scrutinize new dependencies for organizational cost (security, maintenance, lice
 
 ## Proactive Communication
 
-Silence is risk. If you hold context a teammate needs, SendMessage is not optional. **Auto-resume**: SendMessage to a completed or `TaskStop`ped subagent auto-resumes it — no waiting for re-spawn. **Carve-out (v2.1.191, sub-agents.md:945):** a subagent the OPERATOR stopped (`x` in `/tasks`, SDK `stop_task`) does NOT auto-resume — the send returns a refusal naming the cancellation, and only operator transcript input clears it. Read that refusal as operator intent, not a stall: report it to team-lead and stop probing. Use when a TDD-acceptance, scope-delta, or re-plan trigger lands while the recipient is idle.
+Silence is risk. If you hold context a teammate needs, SendMessage is not optional. **Auto-resume**: SendMessage to a completed or `TaskStop`ped subagent auto-resumes it — no waiting for re-spawn. **Carve-out (v2.1.191, sub-agents.md:945):** a subagent the OPERATOR stopped (`x` in `/tasks`, SDK `stop_task`) does NOT auto-resume — the send returns a refusal naming the cancellation, meaning alive-but-paused, cleared only by operator transcript input (never read as death/free — see shutdown-protocol.md SP-3). Read that refusal as operator intent, not a stall: report it to team-lead and stop probing. Use when a TDD-acceptance, scope-delta, or re-plan trigger lands while the recipient is idle.
 
 **Proactive SendMessage triggers — situation → action:**
 - **Before drafting TDD Testing Strategy** → consult @sdet (testability gaps).

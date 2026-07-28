@@ -88,7 +88,20 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
    - `{today_date}` = `Bash date +%Y-%m-%d`.
    - `{project_name}` = `Bash basename $(git rev-parse --show-toplevel)`.
    - `{updated_by}` = the calling agent's identifier (e.g., `@staff-engineer`).
-4. **ADR numbering + atomic claim** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh --claim docs/adr {slug}` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
+4. **Gather prior art**: `Grep -r "{topic-keywords}" docs/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
+   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
+   Pass only the dirs that exist — `docs/spec/` and `docs/ux/` are materialized on
+   first write and are commonly absent, and passing a path that does not exist makes
+   the search error out (exit 2 with warnings) rather than return a clean no-match.
+   Read any candidate predecessors so the new ADR cites them in `Context`. If a
+   predecessor already records THIS decision, ABORT with `Error: {path} already records
+   this decision — update or supersede it instead.` Run this BEFORE the atomic number
+   claim in step 5 below: the claim is the only step that writes to disk, so gathering
+   prior art first means a duplicate-decision abort never orphans a claimed stub. The
+   atomic claim hands concurrent authors distinct numbers, so it prevents duplicate
+   NUMBERS but never duplicate DECISIONS; this Grep is the only duplicate check in the
+   flow.
+5. **ADR numbering + atomic claim** (ADR-specific): `Bash ~/.claude/scripts/next_doc_number.sh --claim docs/adr {slug}` (repo: `src/user/claude-code/scripts/next_doc_number.sh`)
    — the shared doc-number allocation + citation-hijack script, run here in `--claim`
    mode so numbering and reservation happen as one atomic step (also used in plain,
    non-claiming mode by `src/user/claude-code/agents/distinguished-engineer.md`,
@@ -117,7 +130,7 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
       - **Listed** — it was free on disk but skipped because an upstream TDD or plan
         cites it (the self-forward-reference false positive). ABORT: writing at
         `{next_num}` would leave every upstream citation dangling, and this skill
-        cannot rewrite the upstream doc. Report the orphaned stub per step 4.4:
+        cannot rewrite the upstream doc. Report the orphaned stub per step 5.4:
 
         ```
         Error: {mandated} was mandated upstream but skipped as citation-hijacked; claimed {next_num} instead — reconcile the citation and re-invoke.
@@ -135,8 +148,8 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
       ```
 
    3. `{output_path}` = `docs/adr/{next_num}-{slug}.md`. This file already exists on
-      disk as the empty claimed stub from step 4.1 — expected, not a collision.
-   4. **Abort-after-claim caveat**: if the skill aborts anywhere at or after step 4.1
+      disk as the empty claimed stub from step 5.1 — expected, not a collision.
+   4. **Abort-after-claim caveat**: if the skill aborts anywhere at or after step 5.1
       (mandated-number mismatch, Authoring Procedure, Validation Before Save), the
       empty stub at `{output_path}`
       is left on disk as an orphaned reservation of `{next_num}` — a re-invocation does
@@ -145,31 +158,21 @@ least one alphanumeric character.` on stderr — surface it and ABORT.
 
 ## Authoring Procedure
 
-1. **Gather prior art**: `Grep -r "{topic-keywords}" docs/adr/ docs/tdd/ docs/spec/ docs/ux/` to find related
-   ADRs, TDDs, PRDs, or UX specs that may be superseded, reinforced, or contradicted by this decision.
-   Pass only the dirs that exist — `docs/spec/` and `docs/ux/` are materialized on
-   first write and are commonly absent, and passing a path that does not exist makes
-   the search error out (exit 2 with warnings) rather than return a clean no-match.
-   Read any candidate predecessors so the new ADR cites them in `Context`. If a
-   predecessor already records THIS decision, ABORT with `Error: {path} already records
-   this decision — update or supersede it instead.` The atomic claim hands concurrent
-   authors distinct numbers, so it prevents duplicate NUMBERS but never duplicate
-   DECISIONS; this Grep is the only duplicate check in the flow.
-2. **Draft the frontmatter** per the Required Frontmatter contract below. Set
+1. **Draft the frontmatter** per the Required Frontmatter contract below. Set
    `status: "proposed"` initially; `accepted` is set after the calling agent's
    review/vote loop, not by this skill.
-3. **Draft each Required Section in order** (see Output Contract → Required
+2. **Draft each Required Section in order** (see Output Contract → Required
    Sections). Every section listed MUST appear, in the order shown. ADRs are
    intentionally short — aim for tight prose, not exhaustive coverage. Mermaid
    is optional; include a block only when it clarifies component, state, or
    flow relationships.
-4. **Verify embedded technical assertions before stating them as fact.** Any
+3. **Verify embedded technical assertions before stating them as fact.** Any
    concrete claim the ADR commits to — a code/config/command/SQL snippet, a
    portability or compatibility claim across engines/platforms, or a reference
    to test infrastructure the decision relies on — MUST be checked against its
    actual target (run it, or confirm the target exists) before it is written as
    settled. State unverified claims as assumptions, not facts.
-5. **Proceed to Validation Before Save** — single source of truth for
+4. **Proceed to Validation Before Save** — single source of truth for
    frontmatter, section order, alternatives count, and placeholder checks.
 
 ## Output Contract
@@ -275,18 +278,18 @@ On operator Cancel during the collision dialog: emit
 `Cancelled — no file written.` and end without writing.
 <!-- CANONICAL:SAVE_AND_RETURN:END -->
 
-**adr-specific note:** the CANONICAL block's "collision dialog" clause is a shared, family-wide branch (prd/adr/tdd/ux-spec) — for THIS skill it is structurally unreachable, since Pre-flight step 4's atomic `--claim` reserves `{NNNN}` before Authoring Procedure runs, making a same-number collision impossible by construction. Kept verbatim for CANONICAL parity; do not treat its presence here as a live code path.
+**adr-specific note:** the CANONICAL block's "collision dialog" clause is a shared, family-wide branch (prd/adr/tdd/ux-spec) — for THIS skill it is structurally unreachable, since Pre-flight step 5's atomic `--claim` reserves `{NNNN}` before Authoring Procedure runs, making a same-number collision impossible by construction. Kept verbatim for CANONICAL parity; do not treat its presence here as a live code path.
 
 For this skill, `{output_dir}` is `docs/adr/` and `{output_path}` is
-`docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 4).
+`docs/adr/{NNNN}-{slug}.md` (with `{NNNN}` resolved by Pre-flight step 5).
 
 ADR-specific full sequence: `mkdir → Read stub → Write → Emit`. Unlike the sibling
 doc-authoring skills, canonical step 2 (`Write {output_path}`) here targets a file that
 already exists on disk — the empty stub the atomic `--claim` created back in Pre-flight
-step 4 — so the harness's unread-overwrite guard applies. Insert one
+step 5 — so the harness's unread-overwrite guard applies. Insert one
 `Read {output_path}` between canonical steps 1 and 2 to satisfy it (the stub is empty;
 there is nothing to review). Because the number was reserved atomically at Pre-flight
-step 4 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
+step 5 via noclobber lock semantics, no peer can have claimed the same `{NNNN}` in the
 interim, so no pre-Write/post-Write race-detection Glob is needed. On a clean
 Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 
@@ -296,10 +299,10 @@ Read + Write, proceed directly to canonical step 3 (Emit confirmation) and end.
 |---|---|
 | `<topic>` missing or empty | Abort: `Error: Usage: Skill(adr, "<topic>") — describe the artifact in 3-10 words.` |
 | Slug empty after sanitization (e.g., all-CJK or all-punct topic) | Abort: `Error: Topic must contain at least one alphanumeric character.` |
+| Prior-art Grep (Pre-flight step 4) finds a predecessor already recording this decision | Abort: `Error: {path} already records this decision — update or supersede it instead.` Runs before the atomic claim (step 5), so no stub has been created yet — nothing is orphaned. |
 | `next_doc_number.sh --claim docs/adr {slug}` exits non-zero (existing filename doesn't match `^\d{4}-[a-z0-9-]+\.md$`, or `{slug}` fails `^[a-z0-9-]+$`) | Abort: `Error: Could not determine next ADR number. {script stderr}.` |
 | A peer claims a candidate `{NNNN}` before this invocation does | Handled transparently inside `next_doc_number.sh --claim` (retries the next candidate); never surfaces as a failure to this skill. |
 | `{next_num}` differs from an upstream-mandated number that the script's stderr lists as citation-hijacked | Abort: `Error: {mandated} was mandated upstream but skipped as citation-hijacked; claimed {next_num} instead — reconcile the citation and re-invoke.` The claimed stub is orphaned — report its path per the abort-after-claim caveat. |
-| Prior-art Grep finds a predecessor already recording this decision | Abort: `Error: {path} already records this decision — update or supersede it instead.` The claimed stub is orphaned — report its path per the abort-after-claim caveat. |
 | Read of `{output_path}` (the claimed stub) fails before Write (stub deleted or unreadable between claim and Save & Return) | Surface raw error: `Error: Read failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |
 | Validation Before Save fails | Abort with `Error: validation failed: {field/section} — {detail}.` No retry — calling agent re-invokes. |
 | Filesystem write fails (permissions, disk, read-only mount) | Surface raw error: `Error: Write failed — {raw error}.` Do NOT retry. The calling agent reports to the operator. |

@@ -80,6 +80,36 @@ def test_citation_hijack_skips_candidate():
         shutil.rmtree(repo, ignore_errors=True)
 
 
+def test_gitignored_large_untracked_dir_not_scanned():
+    # Regression test for DKT-162: a citation-hijack candidate living inside
+    # a gitignored, untracked directory must never surface a hit, because
+    # the search must never traverse into that directory at all (the
+    # original unbounded `grep -rl --exclude-dir=.git .` ignored .gitignore
+    # entirely and would recurse into any such dir — the real incident was a
+    # 10GB untracked library/ dir that hung this exact search). Uses a
+    # moderately large fan-out (2000 files) as a cheap stand-in for "large",
+    # and a wall-clock ceiling to catch an accidental full descent.
+    import time
+
+    repo = make_repo()
+    try:
+        (repo / ".gitignore").write_text("big/\n")
+        big_dir = repo / "big"
+        big_dir.mkdir()
+        cited = "docs/adr/" + "0001-hijack.md"
+        for i in range(2000):
+            (big_dir / f"file{i}.md").write_text(f"see {cited} for context" if i == 0 else "filler")
+        start = time.monotonic()
+        code, out, err = run(repo, "docs/adr")
+        elapsed = time.monotonic() - start
+        assert code == 0, f"exit {code}: {err}"
+        assert out.strip() == "0001", f"citation inside gitignored dir must not hijack: {out} / {err}"
+        assert "citation-hijack" not in err, err
+        assert elapsed < 10, f"search took {elapsed:.1f}s — likely traversed the gitignored dir"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
 def test_invalid_dir_usage_error():
     repo = make_repo()
     try:

@@ -49,11 +49,20 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   that name) and **D2** (explicit harness cleanup/reap output naming that teammate) are already
   defined by SP-2's closing termination-evidence sentence above — SP-3 cites that sentence for
   D1/D2 rather than restating it. SP-3's additive content: **D3** — a SendMessage to that name
-  that ERRORS as unreachable/unknown (a tool-call failure, not a delivered-but-unanswered send);
-  the not-death negative list — any `idle_notification`/`TeammateIdle` with ANY `idleReason`
-  (including `"failed"`), session/usage-limit messages, probe silence or timeout of any length, a
-  `shutdown_response` or any shutdown acknowledgement, or a shutdown-rejection or "context
-  saturated" SendMessage — these mean alive-or-indeterminate — never death (the last two — shutdown ack/rejection and saturation — prove ALIVE; idle reasons/session-limit messages/probe silence are indeterminate, not proof of death). **Unordered-idle clause:**
+  that ERRORS as unreachable/unknown (a tool-call failure, not a delivered-but-unanswered send)
+  **and is neither of the two ALIVE-not-dead refusal shapes below** — those refusals are also
+  tool-call errors but do NOT prove death and must never be read as D3; the not-death negative
+  list — any `idle_notification`/`TeammateIdle` with ANY `idleReason` (including `"failed"`),
+  session/usage-limit messages, probe silence or timeout of any length, a `shutdown_response` or
+  any shutdown acknowledgement, a shutdown-rejection or "context saturated" SendMessage, **an
+  operator-stopped subagent's refusal** (e.g. `x` in `/tasks`, or an SDK `stop_task` request — the
+  agent still exists, just paused; the refusal proves a pause, not termination), or **a
+  name-collision refusal** (the SendMessage `to` that name is refused with an error naming the
+  CURRENT holder — a different, newer live agent now owns that name — rather than reporting the
+  name unreachable/unknown) — these mean alive-or-indeterminate — never death (shutdown
+  ack/rejection, saturation, operator-stop refusal, and name-collision refusal all prove ALIVE;
+  idle reasons/session-limit messages/probe silence are indeterminate, not proof of death).
+  **Unordered-idle clause:**
   `idle_notification` delivery is additionally UNORDERED relative to the same teammate's own
   SendMessages (observed out-of-order in the field and in anthropics/claude-code#24246, closed as
   not planned; the agent-teams documentation makes no ordering guarantee) — a bare
@@ -62,7 +71,9 @@ block. Routing is unchanged: `shutdown_response` is ALWAYS addressed to `team-le
   Reliability ordering:
   D1/D2 are reliable and always-available; D3 is sufficient when observed but never required and
   never waited for (resume-on-send means a probe typically resumes a dormant name rather than
-  erroring). The exhaustive probe-outcome contract: (i) tool-call error → D3, name free; (ii)
+  erroring). The exhaustive probe-outcome contract: (i) tool-call error reporting the name itself
+  unreachable/unknown → D3, name free; a tool-call error instead shaped as an operator-stop
+  refusal or a name-collision refusal (naming a different current holder) → ALIVE, never D3; (ii)
   delivered + reply at any latency → name OCCUPIED; (iii) delivered + no reply → INDETERMINATE,
   never death. The Liveness-Confirmation Gate that operates on this vocabulary lives in
   `team-lead.md` §Teammate Stall & Crash Recovery — its operational home, not this master.

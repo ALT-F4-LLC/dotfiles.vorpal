@@ -24,19 +24,19 @@ cleaned=$(printf '%s' "$lower" | sed 's/[^a-z0-9]\{1,\}/-/g')
 trimmed=$(printf '%s' "$cleaned" | sed 's/^-*//; s/-*$//')
 truncated="${trimmed:0:60}"
 
-len=${#truncated}
-end=$(( len < 60 ? len : 60 ))
-boundary=-1
-i=$(( end - 1 ))
-while [ "$i" -ge 40 ]; do
-    if [ "${truncated:$i:1}" = "-" ]; then
-        boundary=$i
-        break
+if [ "${#trimmed}" -gt 60 ]; then
+    boundary=-1
+    i=59
+    while [ "$i" -ge 40 ]; do
+        if [ "${truncated:$i:1}" = "-" ]; then
+            boundary=$i
+            break
+        fi
+        i=$(( i - 1 ))
+    done
+    if [ "$boundary" -ne -1 ]; then
+        truncated="${truncated:0:$boundary}"
     fi
-    i=$(( i - 1 ))
-done
-if [ "$boundary" -ne -1 ]; then
-    truncated="${truncated:0:$boundary}"
 fi
 
 truncated=$(printf '%s' "$truncated" | sed 's/^-*//; s/-*$//')

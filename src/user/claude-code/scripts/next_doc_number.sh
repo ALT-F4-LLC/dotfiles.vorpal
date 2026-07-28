@@ -106,7 +106,37 @@ candidate=$((max_num + 1))
 while :; do
     padded=$(printf "%04d" "$candidate")
     pattern="${DIR}/${padded}-"
-    hits=$(grep -rl --exclude-dir=.git -F "$pattern" . 2>/dev/null || true)
+
+    # Plain `grep -rl --exclude-dir=.git .` walked every untracked directory
+    # regardless of .gitignore, so a large untracked tree (e.g. a 10GB
+    # untracked library/ dir) could hang the search. Split the search
+    # instead: `git grep` never touches untracked paths (index-based, so
+    # gitignored dirs like target/ or node_modules/ are never traversed),
+    # and the untracked pass is bounded to git's own non-ignored file
+    # listing (readdir/stat only, no content read) before grepping just
+    # those specific files.
+    # git grep exits 1 on a genuine no-match (fine, keep searching); any other
+    # non-zero (e.g. 128 outside a repo) is a real failure and must not be
+    # silently treated as "no citation hijack found".
+    if tracked_hits=$(git grep -l -F -- "$pattern" 2>/dev/null); then
+        :
+    else
+        tracked_status=$?
+        if [ "$tracked_status" -ne 1 ]; then
+            echo "next_doc_number.sh: git grep failed unexpectedly (exit ${tracked_status}) while checking candidate ${padded} for citation-hijack" >&2
+            exit 1
+        fi
+        tracked_hits=""
+    fi
+
+    # -z/-0 end-to-end keeps paths containing spaces or newlines intact (a
+    # bash variable can't hold NUL-delimited data, so the list is piped
+    # straight into xargs rather than staged through a variable); -r stops
+    # xargs from invoking grep with no args (blocking on stdin) when there
+    # are no untracked files.
+    untracked_hits=$(git ls-files --others --exclude-standard -z 2>/dev/null | xargs -0 -r grep -l -F -- "$pattern" 2>/dev/null || true)
+
+    hits=$(printf '%s\n%s\n' "$tracked_hits" "$untracked_hits" | sed '/^$/d' | sort -u)
     if [ -n "$hits" ]; then
         echo "next_doc_number.sh: candidate ${padded} already cited (citation-hijack) in:" >&2
         echo "$hits" | sed 's/^/  /' >&2

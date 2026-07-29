@@ -1,5 +1,64 @@
 #!/bin/bash
 
+# Mistake-guard for an honest-but-careless agent, NOT a closed enforcement
+# boundary against deliberate evasion. The hook's only input is
+# `.tool_input.command` (the literal Bash tool-call command string) - it
+# never sees the contents of a file that string merely names. That makes
+# the following classes structurally invisible to it, regardless of any
+# text-matcher refinement:
+#   - shell indirection: `bash -c "..."`, `sh -c '...'`, `eval "..."`, or
+#     piping a command string into a shell (`echo "..." | bash`)
+#   - wrapper-script invocation: `bash foo.sh` / `sh foo.sh` / `./foo.sh`
+#     where the script's CONTENTS perform the git write
+#   - variable-indirected shell invocation (the interpreter is computed at
+#     runtime rather than appearing literally in the command string)
+#   - non-shell interpreters (python/perl/ruby/etc. performing a git write
+#     internally)
+#   - computed subcommand: the verb `git` is literal, but the subcommand
+#     word is produced by expansion or substitution (`git $V`, `git
+#     $(echo commit)`) - the subcommand token truncates to empty at the
+#     first non-identifier character and never matches, same as a fully
+#     computed interpreter above
+# These are accepted residual risk, not defects in this hook - closing them
+# would require mediating where the git operation actually executes (e.g.
+# a repo-level pre-commit/pre-push git hook), not refining a text matcher.
+#
+# Separately, by design this matcher only gates the three subcommands most
+# likely to represent a completed, hard-to-revert git write (commit/push/
+# add) - other write-shaped git subcommands (pull, stash, cherry-pick,
+# merge, rebase, revert, am, and their --continue forms) are fully visible
+# to this matcher, not a residual limitation like the classes above; they
+# are simply not gated, a deliberate scope decision.
+#
+# TRIPWIRE (DKT-175/DKT-182): src/user/claude-code/scripts/commit_execute.sh
+# is exactly the wrapper-script-invocation case above today - it is
+# unwired/unreachable from any skill right now, so there is no live
+# exposure yet. Wiring it (or any other git-writing script) into a skill
+# so it becomes reachable is exactly the moment this control must be
+# re-decided FIRST, before wiring proceeds - see that script's own header
+# for the measured trade DKT-182 made against it.
+#
+# One accepted false positive, by design: `git commit --help` still DENYs.
+# Only the option-before-subcommand help form (`git --help commit`) is
+# exempted below - exempting the subcommand-before-flag form too would
+# require scanning past the subcommand for a trailing flag, which would let
+# a commit whose message argument merely contains the text "--help" wrongly
+# ALLOW. Any other false positive (git-write-shaped wording denied even
+# though the command performs no git write) has a documented escape hatch
+# in the deny message below - but that message's own file-and-path route is
+# for when the command must pass literal content through as an argument
+# (e.g. a comment body). For a genuine READ of a file's content that got
+# wrongly matched, use the Read or Grep tool instead of a Bash command -
+# that bypasses this matcher entirely and does not exercise the
+# file-and-path escape hatch at all.
+#
+# Two separate "could not determine state" paths resolve oppositely, by
+# design: a missing/unrecognized permission_mode fails DENY (fail-closed -
+# the safer direction when this hook can't tell which mode applies), but
+# malformed/non-JSON stdin fails ALLOW (fail-open, matching every other
+# early parse failure in this hook). If the harness's stdin schema ever
+# changes or breaks, this hook silently allows every git write.
+
 set -uo pipefail
 
 ASK_REASON="git writes require explicit human approval each time - approve this commit at the prompt."
@@ -56,11 +115,15 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 # discarded). Double-quoted content is marked the same way UNLESS it
 # contains `$(`, a backtick, or `${` - that content can still trigger
 # command/parameter substitution despite the surrounding quotes, so it is
-# left bare/unmarked for the matcher to inspect (this does not currently
-# catch a git-write command embedded inside such a substitution, e.g.
-# `echo "$(git commit -m x)"` - the substitution's `$(` prefix defeats the
-# exact-token match below; this is a pre-existing tokenization gap, not
-# something this pre-pass introduces or is required to close).
+# left bare/unmarked for the matcher to inspect. A command-substitution
+# capture shape like `echo "$(git commit -m x)"` is closed by the head-
+# normalization step in the matcher below, which resolves a token's head
+# past a preceding `$(`, backtick, `(`, `;`, `|`, or `&` before testing it
+# against `git`. The matcher applies the same normalization to the
+# subcommand token, so a delimiter glued directly AFTER the subcommand with
+# nothing else following (`$(git push)`, `` `git push` ``, `(git commit)`,
+# bare `git push;`/`git push&`/`git push|cat`) is also closed, not just the
+# medial forms with trailing content.
 #
 # The whole COMMAND is buffered into a single blob before scanning (rather
 # than processed line-by-line) so quote-tracking state carries across
@@ -137,116 +200,8 @@ END {
     print out
 }
 ' 2>/dev/null) || allow_default
-
-# Tokenizes on whitespace and, for every `git` token (bare OR
-# sentinel-marked - a marked head is no longer skipped outright, since a
-# quoted git plus a bare/differently-quoted subcommand, e.g. `"git" commit`,
-# is still a real bash-unquoted invocation), skips recognized global options
-# (including ones that consume a following value, e.g. `-C <path>`,
-# regardless of whether that value token happens to be quoted - a
-# value-consuming option following a bare `git` can only arise from a real
-# invocation, since a prose mention has its `git` head marked too and is
-# already suppressed by the group check below) before matching the first
-# remaining token against commit/push/add.
-#
-# A candidate match is suppressed as prose ONLY when BOTH the head and the
-# matched subcommand token are sentinel-marked AND share the SAME
-# quote-group id - that means the entire phrase, including the literal word
-# "git", sits inside one single quoted argument (e.g. a docket comment's -m
-# body), which is inert prose. Every other combination denies: bare head +
-# bare subcommand (plain invocation); bare head + marked subcommand of any
-# group (`git "commit"` / `git 'push' origin main`); marked head + bare
-# subcommand or marked-with-a-DIFFERENT-group subcommand (`"git" commit` /
-# `"git" "commit" -m x` - two separately-quoted words that bash unquotes
-# into a real invocation). This avoids false-denying `git remote add` /
-# `git submodule add` / `git worktree add`, and correctly denies
-# `git -C <path> commit`, `git -c user.email=x commit`, `git --no-pager
-# push`, and `git "-C" <path> commit`.
-GIT_WRITE_SCRIPTS='commit_execute.sh'
-GIT_READ_SUBCOMMANDS='log,show,blame,cat-file,ls-files,status,describe,rev-parse'
-INERT_READERS='cat,bat,head,tail,less,more,nl,od,xxd,hexdump,strings,wc,grep,rg,egrep,fgrep,ag,sed,awk,cut,sort,uniq,tr,fold,column,jq,yq,diff,cmp,comm,shasum,md5sum,sha1sum,sha256sum,file,stat,realpath,readlink,basename,dirname,ls,du,tree,cp,mv,rm,ln,touch,mkdir,chmod,chown,chgrp,install,tar,zip,unzip,gzip,gunzip,rsync,scp,vim,nvim,vi,emacs,nano,shellcheck,shfmt,prettier,test,[,docket,echo,printf,fmt,lint,check,format,ruff,pyflakes,mypy,pylint,black,eslint,tsc'
-MATCH=$(printf '%s' "$STRIPPED" | awk -v REGISTRY="$GIT_WRITE_SCRIPTS" -v INERT="$INERT_READERS" -v GITSUBS="$GIT_READ_SUBCOMMANDS" '
-BEGIN {
-    MARK = "\001"
-    split(REGISTRY, _rg, ","); for (_k in _rg) REG[_rg[_k]] = 1
-    split(INERT, _sp, ",");    for (_k in _sp) SUP[_sp[_k]] = 1
-    split(GITSUBS, _gs, ","); for (_k in _gs) GITSUB[_gs[_k]] = 1
-}
-function bname(w,   p) {
-    p = w
-    gsub(/^[\047\042]+|[\047\042]+$/, "", p)
-    sub(/^.*\//, "", p)
-    gsub(/^[\047\042]+|[\047\042]+$/, "", p)
-    return p
-}
-function ismarked(raw) {
-    return (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK)
-}
-function git_head_before(k,   g, rr, mk, ww) {
-    for (g = k - 1; g >= 1; g--) {
-        rr = words[g]
-        mk = ismarked(rr)
-        decode(rr)
-        ww = bname(D_WORD)
-        if (!mk && D_WORD ~ /[;|&`()\n]/) return 0
-        if (ww == "git") return g
-    }
-    return 0
-}
-# Reuses the global-option skip list the hook already has (line 193) in its natural
-# forward direction: find the preceding `git`, walk forward over exactly the
-# options the existing matcher already skips, and require the walk to land on
-# this token. No new grammar modeling -- the enumeration is already verified.
-function git_read_adjacent(k,   g, j, o) {
-    g = git_head_before(k)
-    if (g == 0) return 0
-    j = g + 1
-    while (j < k) {
-        decode(words[j])
-        o = D_WORD
-        if (o !~ /^-/) return 0
-        if (o == "-C" || o == "-c" || o == "--git-dir" || o == "--work-tree" || o == "--exec-path" || o == "--namespace" || o == "--super-prefix" || o == "--config-env" || o == "--attr-source") j += 2
-        else j += 1
-    }
-    return (j == k)
-}
-function inert_before(idx,   k, raw, marked, wk, bw, nf, tfr, nf2, tfr2) {
-    for (k = idx - 1; k >= 1; k--) {
-        raw = words[k]
-        marked = ismarked(raw)
-        decode(raw)
-        wk = D_WORD
-        if (!marked && wk ~ /[;|&`()\n]/) {
-            # The token carries a command boundary. Its TRAILING fragment is
-            # the head of the command that owns our token (`$(realpath`,
-            # `foo;cat`), so test that head for inertness before stopping --
-            # otherwise every substitution/separator wrapper severs the scan
-            # and false-denies an ordinary read. Still purely lexical.
-            nf = split(wk, tfr, /[;|&`()\n]+/)
-            if (nf >= 1 && tfr[nf] != "" && (bname(tfr[nf]) in SUP)) return 1
-            return 0
-        }
-        bw = bname(wk)
-        # A marked token can also glue an inert head to a separator
-        # (`cd /r&&cat script.sh` -> one marked word `/r&&cat`). Test its
-        # trailing fragment for inertness too, symmetrically with the bare
-        # barrier branch above. Any suppression this adds falls inside the
-        # already-documented RES-1 lexical class.
-        if (marked && !(bw in SUP) && !(bw in GITSUB)) {
-            nf2 = split(wk, tfr2, /[;|&`()\n]+/)
-            if (nf2 > 1 && tfr2[nf2] != "") {
-                if (bname(tfr2[nf2]) in SUP) return 1
-                if (bname(tfr2[nf2]) in GITSUB) { if (git_read_adjacent(k)) return 1 }
-            }
-        }
-        if (bw in GITSUB) {
-            if (git_read_adjacent(k)) return 1
-            continue
-        }
-        if (bw in SUP) return 1
-    }
-    return 0
-}
+MATCH=$(printf '%s' "$STRIPPED" | awk '
+BEGIN { MARK = "\001" }
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
         inner = substr(raw, 2, length(raw) - 2)
@@ -263,83 +218,55 @@ function decode(raw,    inner, cpos) {
 }
 {
     n = split($0, words, /[ \t]+/)
-    # O(n) forward precompute of inert_before(): one left-to-right pass
-    # maintaining "an INERT word has been seen since the last barrier".
-    # Exactly equivalent to the backward scan (which skips non-inert tokens and
-    # stops at the first barrier), but linear instead of quadratic -- the
-    # backward form measured 664ms on a 1000-word comment with 500 basename
-    # mentions, on a hook that runs for EVERY Bash tool call.
-    ia = 0
-    for (ri = 1; ri <= n; ri++) {
-        rraw = words[ri]
-        rmarked = ismarked(rraw)
-        decode(rraw)
-        rw = D_WORD
-        rb = bname(rw)
-
-        # --- registry test uses the state as of tokens BEFORE this one ---
-        fm = split(rw, frags, /[;|&`()]+/)
-        for (fi = 1; fi <= fm; fi++) {
-            if (frags[fi] == "") continue
-            if (bname(frags[fi]) in REG) {
-                if (!rmarked && fi > 1) { print "MATCH"; exit }
-                if (!ia) { print "MATCH"; exit }
-            }
-        }
-
-        # --- then fold this token into the state ---
-        if (!rmarked && rw ~ /[;|&`()\n]/) {
-            nf = split(rw, tfr, /[;|&`()\n]+/)
-            tf = (nf >= 1) ? bname(tfr[nf]) : ""
-            # A SUBSTITUTION opener is not an ordinary command boundary: the
-            # inner command produces a VALUE consumed by the OUTER command.
-            # If the inner head is inert (`$(realpath X)`), the path is data and
-            # the OUTER head decides -- so carry ia through unchanged. If the
-            # inner head is NOT inert it may execute the path itself
-            # (`$(bash X)`), so clear ia. Returning "suppressed" on an inert
-            # inner head was a measured FAIL-OPEN: `bash $(echo /x/script)`
-            # allowed while it correctly denied before.
-            if (rw ~ /\$\(|`|<\(|>\(/) {
-                if (!(tf in SUP)) ia = 0
-            } else {
-                ia = (tf != "" && (tf in SUP)) ? 1 : 0
-            }
-            continue
-        }
-        if (rb in GITSUB) { if (git_read_adjacent(ri)) ia = 1; continue }
-        if (rb in SUP) { ia = 1; continue }
-        if (rmarked) {
-            nf2 = split(rw, tfr2, /[;|&`()]+/)
-            if (nf2 > 1 && tfr2[nf2] != "") {
-                if (bname(tfr2[nf2]) in SUP) ia = 1
-                else if ((bname(tfr2[nf2]) in GITSUB) && git_read_adjacent(ri)) ia = 1
-            }
-        }
-    }
     for (i = 1; i <= n; i++) {
         hquoted = decode(words[i])
         hgroup = D_GROUP
         w = D_WORD
-        if (w == "git" || w ~ /\/git$/) {
+        # Resolve the token head past a preceding command-substitution,
+        # subshell, or separator prefix (`X=$(`, backtick, `(`, `;`, `|`, `&`)
+        # before testing it against `git`. This is what closes a
+        # capture-output shape like `X=$(git commit -m y)` - the assignment
+        # and `$(` are glued onto the same whitespace-delimited token as
+        # `git`, so without this the head never equals "git" at all. It does
+        # not touch how a matched *subcommand* is judged, so substitution-READ
+        # shapes (`SHA=$(git log -1)`, `$(git remote add ...)`) are unaffected
+        # since their subcommand still is not commit/push/add.
+        hw = w
+        sub(/^.*(\$\(|\140|\(|;|\||&)/, "", hw)
+        if (hw == "git" || hw ~ /\/git$/) {
             j = i + 1
+            helped = 0
             while (j <= n) {
                 decode(words[j])
                 opt = D_WORD
                 if (opt !~ /^-/) break
+                # Option-before-subcommand help exemption only (`git --help
+                # commit`) - see header for why the subcommand-before-flag
+                # form (`git commit --help`) is an accepted false positive
+                # instead.
+                if (opt == "--help" || opt == "-h") helped = 1
                 if (opt == "-C" || opt == "-c" || opt == "--git-dir" || opt == "--work-tree" || opt == "--exec-path" || opt == "--namespace" || opt == "--super-prefix" || opt == "--config-env" || opt == "--attr-source") {
                     j += 2
                 } else {
                     j += 1
                 }
             }
-            if (j <= n) {
+            if (j <= n && !helped) {
                 squoted = decode(words[j])
                 sgroup = D_GROUP
                 s = D_WORD
-                if (s == "commit" || s == "push" || s == "add") {
-                    if (hquoted && squoted && hgroup == sgroup) {
-                        continue
-                    }
+                # Symmetric to the head normalization above: strip a
+                # trailing delimiter glued directly onto the subcommand
+                # (closing paren/backtick, `;`, `|`, `&`) before comparing
+                # it. This closes the terminal-position counterpart of the
+                # head fix (`$(git push)`, `` `git push` ``, `(git commit)`,
+                # bare `git push;`/`git push&`/`git push|cat`) without
+                # affecting multi-word subcommand names like `commit-tree`/
+                # `commit-graph` (hyphen stays part of the identifier).
+                sw = s
+                sub(/[^A-Za-z0-9_-].*$/, "", sw)
+                if (sw == "commit" || sw == "push" || sw == "add") {
+                    if (hquoted && squoted && hgroup == sgroup) continue
                     print "MATCH"
                     exit
                 }
@@ -348,7 +275,6 @@ function decode(raw,    inner, cpos) {
     }
 }
 ' 2>/dev/null)
-
 [ "$MATCH" = "MATCH" ] || allow_default
 
 PERMISSION_MODE=$(printf '%s' "$INPUT" | jq -r '.permission_mode // empty' 2>/dev/null) \
@@ -359,7 +285,7 @@ case "$PERMISSION_MODE" in
         ask
         ;;
     auto | dontAsk | bypassPermissions)
-        deny "git writes are blocked in non-interactive permission mode '${PERMISSION_MODE}' where a human can't confirm approval - switch to an interactive mode (default/plan/acceptEdits) to commit."
+        deny "git writes are blocked in non-interactive permission mode '${PERMISSION_MODE}' where a human can't confirm approval - switch to an interactive mode (default/plan/acceptEdits) to commit. If this command performs no git write, the text matcher has false-positived on git-write wording inside it (known limitation): to read a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); only if the command must pass literal content through as an argument, write that content to a file and pass the path instead."
         ;;
     *)
         deny "git write blocked - could not determine permission_mode from hook input."

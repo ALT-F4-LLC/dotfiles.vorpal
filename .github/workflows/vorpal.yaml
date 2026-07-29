@@ -22,6 +22,8 @@ jobs:
 
       - run: bash tests/drift_guard_check.test.sh
 
+      - run: bash tests/guard-no-commit-hook.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

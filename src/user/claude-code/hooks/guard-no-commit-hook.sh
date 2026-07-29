@@ -162,8 +162,91 @@ END {
 # `git submodule add` / `git worktree add`, and correctly denies
 # `git -C <path> commit`, `git -c user.email=x commit`, `git --no-pager
 # push`, and `git "-C" <path> commit`.
-MATCH=$(printf '%s' "$STRIPPED" | awk '
-BEGIN { MARK = "\001" }
+GIT_WRITE_SCRIPTS='commit_execute.sh'
+GIT_READ_SUBCOMMANDS='log,show,blame,cat-file,ls-files,status,describe,rev-parse'
+INERT_READERS='cat,bat,head,tail,less,more,nl,od,xxd,hexdump,strings,wc,grep,rg,egrep,fgrep,ag,sed,awk,cut,sort,uniq,tr,fold,column,jq,yq,diff,cmp,comm,shasum,md5sum,sha1sum,sha256sum,file,stat,realpath,readlink,basename,dirname,ls,du,tree,cp,mv,rm,ln,touch,mkdir,chmod,chown,chgrp,install,tar,zip,unzip,gzip,gunzip,rsync,scp,vim,nvim,vi,emacs,nano,shellcheck,shfmt,prettier,test,[,docket,echo,printf,fmt,lint,check,format,ruff,pyflakes,mypy,pylint,black,eslint,tsc'
+MATCH=$(printf '%s' "$STRIPPED" | awk -v REGISTRY="$GIT_WRITE_SCRIPTS" -v INERT="$INERT_READERS" -v GITSUBS="$GIT_READ_SUBCOMMANDS" '
+BEGIN {
+    MARK = "\001"
+    split(REGISTRY, _rg, ","); for (_k in _rg) REG[_rg[_k]] = 1
+    split(INERT, _sp, ",");    for (_k in _sp) SUP[_sp[_k]] = 1
+    split(GITSUBS, _gs, ","); for (_k in _gs) GITSUB[_gs[_k]] = 1
+}
+function bname(w,   p) {
+    p = w
+    gsub(/^[\047\042]+|[\047\042]+$/, "", p)
+    sub(/^.*\//, "", p)
+    gsub(/^[\047\042]+|[\047\042]+$/, "", p)
+    return p
+}
+function ismarked(raw) {
+    return (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK)
+}
+function git_head_before(k,   g, rr, mk, ww) {
+    for (g = k - 1; g >= 1; g--) {
+        rr = words[g]
+        mk = ismarked(rr)
+        decode(rr)
+        ww = bname(D_WORD)
+        if (!mk && D_WORD ~ /[;|&`()\n]/) return 0
+        if (ww == "git") return g
+    }
+    return 0
+}
+# Reuses the global-option skip list the hook already has (line 193) in its natural
+# forward direction: find the preceding `git`, walk forward over exactly the
+# options the existing matcher already skips, and require the walk to land on
+# this token. No new grammar modeling -- the enumeration is already verified.
+function git_read_adjacent(k,   g, j, o) {
+    g = git_head_before(k)
+    if (g == 0) return 0
+    j = g + 1
+    while (j < k) {
+        decode(words[j])
+        o = D_WORD
+        if (o !~ /^-/) return 0
+        if (o == "-C" || o == "-c" || o == "--git-dir" || o == "--work-tree" || o == "--exec-path" || o == "--namespace" || o == "--super-prefix" || o == "--config-env" || o == "--attr-source") j += 2
+        else j += 1
+    }
+    return (j == k)
+}
+function inert_before(idx,   k, raw, marked, wk, bw, nf, tfr, nf2, tfr2) {
+    for (k = idx - 1; k >= 1; k--) {
+        raw = words[k]
+        marked = ismarked(raw)
+        decode(raw)
+        wk = D_WORD
+        if (!marked && wk ~ /[;|&`()\n]/) {
+            # The token carries a command boundary. Its TRAILING fragment is
+            # the head of the command that owns our token (`$(realpath`,
+            # `foo;cat`), so test that head for inertness before stopping --
+            # otherwise every substitution/separator wrapper severs the scan
+            # and false-denies an ordinary read. Still purely lexical.
+            nf = split(wk, tfr, /[;|&`()\n]+/)
+            if (nf >= 1 && tfr[nf] != "" && (bname(tfr[nf]) in SUP)) return 1
+            return 0
+        }
+        bw = bname(wk)
+        # A marked token can also glue an inert head to a separator
+        # (`cd /r&&cat script.sh` -> one marked word `/r&&cat`). Test its
+        # trailing fragment for inertness too, symmetrically with the bare
+        # barrier branch above. Any suppression this adds falls inside the
+        # already-documented RES-1 lexical class.
+        if (marked && !(bw in SUP) && !(bw in GITSUB)) {
+            nf2 = split(wk, tfr2, /[;|&`()\n]+/)
+            if (nf2 > 1 && tfr2[nf2] != "") {
+                if (bname(tfr2[nf2]) in SUP) return 1
+                if (bname(tfr2[nf2]) in GITSUB) { if (git_read_adjacent(k)) return 1 }
+            }
+        }
+        if (bw in GITSUB) {
+            if (git_read_adjacent(k)) return 1
+            continue
+        }
+        if (bw in SUP) return 1
+    }
+    return 0
+}
 function decode(raw,    inner, cpos) {
     if (length(raw) >= 2 && substr(raw, 1, 1) == MARK && substr(raw, length(raw), 1) == MARK) {
         inner = substr(raw, 2, length(raw) - 2)
@@ -180,6 +263,59 @@ function decode(raw,    inner, cpos) {
 }
 {
     n = split($0, words, /[ \t]+/)
+    # O(n) forward precompute of inert_before(): one left-to-right pass
+    # maintaining "an INERT word has been seen since the last barrier".
+    # Exactly equivalent to the backward scan (which skips non-inert tokens and
+    # stops at the first barrier), but linear instead of quadratic -- the
+    # backward form measured 664ms on a 1000-word comment with 500 basename
+    # mentions, on a hook that runs for EVERY Bash tool call.
+    ia = 0
+    for (ri = 1; ri <= n; ri++) {
+        rraw = words[ri]
+        rmarked = ismarked(rraw)
+        decode(rraw)
+        rw = D_WORD
+        rb = bname(rw)
+
+        # --- registry test uses the state as of tokens BEFORE this one ---
+        fm = split(rw, frags, /[;|&`()]+/)
+        for (fi = 1; fi <= fm; fi++) {
+            if (frags[fi] == "") continue
+            if (bname(frags[fi]) in REG) {
+                if (!rmarked && fi > 1) { print "MATCH"; exit }
+                if (!ia) { print "MATCH"; exit }
+            }
+        }
+
+        # --- then fold this token into the state ---
+        if (!rmarked && rw ~ /[;|&`()\n]/) {
+            nf = split(rw, tfr, /[;|&`()\n]+/)
+            tf = (nf >= 1) ? bname(tfr[nf]) : ""
+            # A SUBSTITUTION opener is not an ordinary command boundary: the
+            # inner command produces a VALUE consumed by the OUTER command.
+            # If the inner head is inert (`$(realpath X)`), the path is data and
+            # the OUTER head decides -- so carry ia through unchanged. If the
+            # inner head is NOT inert it may execute the path itself
+            # (`$(bash X)`), so clear ia. Returning "suppressed" on an inert
+            # inner head was a measured FAIL-OPEN: `bash $(echo /x/script)`
+            # allowed while it correctly denied before.
+            if (rw ~ /\$\(|`|<\(|>\(/) {
+                if (!(tf in SUP)) ia = 0
+            } else {
+                ia = (tf != "" && (tf in SUP)) ? 1 : 0
+            }
+            continue
+        }
+        if (rb in GITSUB) { if (git_read_adjacent(ri)) ia = 1; continue }
+        if (rb in SUP) { ia = 1; continue }
+        if (rmarked) {
+            nf2 = split(rw, tfr2, /[;|&`()]+/)
+            if (nf2 > 1 && tfr2[nf2] != "") {
+                if (bname(tfr2[nf2]) in SUP) ia = 1
+                else if ((bname(tfr2[nf2]) in GITSUB) && git_read_adjacent(ri)) ia = 1
+            }
+        }
+    }
     for (i = 1; i <= n; i++) {
         hquoted = decode(words[i])
         hgroup = D_GROUP

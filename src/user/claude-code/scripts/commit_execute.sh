@@ -23,20 +23,39 @@
 #   8. Post-commit byte-compare of `git log -1 --format=%B` against the
 #      draft file — fails loudly on mismatch; never self-fixes with --amend.
 #
-# UNWIRED (2026-07-28, DKT-168 fix round): this script is authored but not
-# yet invoked from commit/SKILL.md, which still runs its original hand-run
-# Steps 1/4/5. Known gap, tracked as DKT-175: guard-no-commit-hook.sh
-# pattern-matches literal Bash command text for git add/commit/push, and
-# ~/.claude/settings.json's permissions.ask prefix-matchers do the same —
-# both are blind to git writes executed INSIDE this script, in every
-# permission mode (auto/default/acceptEdits/bypassPermissions). This
-# script's own checks below (pathspec validation, index scoping, draft
-# non-blank/message-content validation, staged-set equality) ARE genuine
-# safety properties of the pipeline itself — pathspec validation now rejects
-# glob metacharacters and non-existent resolved paths (2026-07-28 fix round
-# 2), closing the whole-repo-sweep gap a bare repo-root/`:`-prefix denylist
-# left open. They are NOT a substitute for the missing external
-# permission-mode enforcement described above.
+# UNWIRED (2026-07-28, DKT-168 fix round; hook-visibility gap narrowed
+# 2026-07-29 DKT-177 fix round 1, that narrowing removed 2026-07-29
+# DKT-182): this script is authored but not yet invoked from
+# commit/SKILL.md, which still runs its original hand-run Steps 1/4/5.
+# Known gap, tracked as DKT-175. DKT-177 closed it for this one script via
+# a GIT_WRITE_SCRIPTS registry entry in guard-no-commit-hook.sh, denying 7
+# measured invocation shapes (interpreter-prefixed, relative-path,
+# bare-path, a quoted $HOME-style path, and two wrapper-command forms).
+# DKT-182 deleted that registry along with the rest of the hook's
+# false-positive-suppression machinery - this was a real, measured trade,
+# NOT a zero-cost/dead-weight cleanup: all 7 of those shapes now silently
+# ALLOW where they used to correctly DENY. In exchange, 6 measured genuine
+# false positives are fixed (differentially verified DENY-before/ALLOW-after
+# against this file): a plain `bash -n` syntax check, `grep -nE a|b <path>`
+# (unquoted alternation), `F=<path>; grep -n x $F`, a bare `F=<path>`
+# assignment, `python3 -c '...' <path>`, and `node -e '...' <path>` - none
+# of which perform a git write. guard-no-commit-hook.sh and
+# ~/.claude/settings.json's permissions.ask prefix-matchers are therefore
+# both blind again to git writes executed INSIDE this script, in every
+# permission mode — the general script-mediated-git-write class DKT-175 was
+# filed for remains open, with no per-script exception. TRIPWIRE: this script is
+# unwired/unreachable from any skill today, so there is no live exposure
+# yet - wiring it (or any other git-writing script) into a skill so it
+# becomes reachable is exactly the moment this control must be re-decided
+# FIRST, before wiring proceeds, since that is when the operator's hard
+# bar (no git write without human interaction) would silently reopen.
+# This script's own checks below (pathspec validation, index scoping,
+# draft non-blank/message-content validation, staged-set equality) ARE
+# genuine safety properties of the pipeline itself — pathspec validation
+# now rejects glob metacharacters and non-existent resolved paths
+# (2026-07-28 fix round 2), closing the whole-repo-sweep gap a bare
+# repo-root/`:`-prefix denylist left open. They are NOT a substitute for
+# the missing settings.json permissions.ask coverage described above.
 set -uo pipefail
 
 usage() {

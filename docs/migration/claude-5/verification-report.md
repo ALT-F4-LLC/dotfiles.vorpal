@@ -24,9 +24,9 @@ omit a real capability. All three byte-reduction floors miss by roughly 2×, and
 the agent-frontmatter re-derivation (remediation item #14) was applied to skills
 but never to agents — those `effort` pins are byte-identical to the baseline.
 
-**Six fixes applied** (§7): two broken references, both `TeammateIdle`
+**Nine fixes applied** (§7): two broken references, both `TeammateIdle`
 contradictions, the unsatisfiable instruction, and the headless-mode contract
-(R15 — applied after Part B; its first design was falsified by live testing and replaced). **Three contradictions
+(R15 — applied after Part B; its first design was falsified by live testing and replaced), plus all four remaining behavioral defects (R16, R17, R20, R21). **Three contradictions
 remain routed** because each needs a content decision, not an edit:
 the banned-confidence-phrase list, the doc-family 5-way COUPLING claim, and
 `evolve-orchestration-core.md`'s Consumers line. Twelve items total are routed,
@@ -112,8 +112,8 @@ Evidence classes:
 | **B8** | Cycles complete unattended | **FAIL → FIXED, verified** | §6.2 B1 — cycle 2 died mid-round-3. R15 (§7) ships unconditional wait-arming; confirmed live |
 | **B9** | Security panel provisioned as specified | **FAIL → FIXED** | §6.2 B2 — the 3-seat roster was unbuildable on Direct/Small; R16 (§7) sets a 2-seat floor there |
 | **B10** | Scratch files stay out of the working tree | **FAIL → rule gap fixed** | §6.2 B3 — 9 `.sdet_*` files left in the repo root; the rule never prohibited that destination. R17 (§7) closes it |
-| **B11** | Spawn names match the dispatch table | **FAIL (1 of 3)** | §6.2 B4 — three forms across four runs: `impl-DKT-1`, bare `senior-engineer`, `impl-cart-linecount` |
-| **B12** | Acceptance vote converges | **FAIL** | §6.2 B5 — 2 rounds rejected on unverified claims, into round 3 of 3 |
+| **B11** | Spawn names match the dispatch table | **FAIL → FIXED** | §6.2 B4 — three forms across four runs; R20 (§7) makes the Name column binding |
+| **B12** | Acceptance vote converges | **FAIL → FIXED** | §6.2 B5 — 2 rounds lost to unverified remediation claims; R21 (§7) requires cited before/after evidence |
 
 ---
 
@@ -605,20 +605,33 @@ evidence the charter requires before adding a mechanism. **Severity: medium.**
 four runs of the same definition, for the same role on the same kind of task:
 `impl-DKT-1` (cycle 1, matching the Per-Role Dispatch Table), bare
 `senior-engineer` (cycle 3), and `impl-cart-linecount` (a later probe run).
-Canonical spawn names are a keep-list item (`sdet.md` §canonical spawn names)
-precisely because downstream tooling greps them — `roster_sweep.sh` and the
-Liveness-Confirmation Gate both match on name shape. **Severity: low
-individually, medium as a class** — the gate that prevents duplicate live
-seats depends on names being predictable.
+**Correction to an earlier draft of this report:** it justified this by
+claiming `roster_sweep.sh` greps name shapes. It does not — it queries
+`docket issue list -a @<role>`, keyed on role, not spawn name. The real
+consequence is narrower but genuine: the Liveness-Confirmation Gate enforces
+"at most ONE live instance per seat/name" by matching names *exactly*, so two
+different names for one logical seat defeat that check silently.
+
+Root cause: `sdet.md:161` states verification names as a binding rule
+("Canonical VERIFICATION spawn names (only three allowed) … variants are naming
+drift — refuse the dispatch"), but implementation names appear only as a cell in
+team-lead's Per-Role Dispatch Table, which reads as descriptive. **Severity:
+low individually, medium as a class.** Fixed in R20 (§7).
 
 **B5 — The acceptance vote did not converge.** Two full rounds, six Opus
 reviewer spawns, both rejected, heading into round 3 of a 3-round maximum —
 with all six reviewers endorsing the *architecture* both times. The rejections
-were for repeated unverified completion claims by the gold author, which is
-exactly the failure mode the charter's §2.1 grounded-progress-claims snippet
-exists to prevent. The snippet is present in the fleet; it did not hold on the
-Fable seat. **Severity: medium** — and the clearest candidate for a
-before/after comparison once fixed.
+were for repeated unverified completion claims by the gold author.
+
+The grounded-claims doctrine is present and strong on that seat —
+`distinguished-engineer.md:171` ("**No guessing.** Uncertain about an API
+signature, spec convention, file's contents, or test outcome — resolve it with
+Read/Grep/Bash *before it appears in a design, verdict, or diff*") and L151's
+documented-vs-inference labelling. But both govern **facts asserted in the
+artifact**. Neither covers the distinct claim class that actually failed: *"the
+finding you raised is now addressed."* A remediation claim is not a fact about
+the system, so the existing rules did not reach it. **Severity: medium.** Fixed
+in R21 (§7).
 
 ### 6.3 The calibration question the numbers raise
 
@@ -660,6 +673,8 @@ recovery path.
 | **G1** — `TeammateIdle` no longer asserted as proof a rule failed; reframed as routine lifecycle that *prompts* the owed-reply check, citing team-lead.md §Teammate Stall & Crash Recovery as authority | `agents/staff-engineer.md:77` | class 1.6 |
 | **G2** — same reframing, citing the file's own §Lifecycle (idle-after-verdict is normal) | `agents/sdet.md:54` | class 1.6 |
 | **G3** — unsatisfiable "if Write is absent, Write…" replaced with the actual mechanism: a quoted-delimiter heredoc under `$TMPDIR`, pointing at `senior-engineer.md §Shell hygiene` as master | `agents/security-engineer.md:55`, `agents/ux-designer.md:69` | logic defect |
+| **R20** — spawn names: the dispatch table's Name column declared binding, with the Liveness-Gate consequence stated | `agents/team-lead.md` | convention not stated as a rule |
+| **R21** — remediation claims: a revision answering a Blocker must cite the check that now passes and previously failed | `agents/distinguished-engineer.md` | uncovered claim class |
 | **R16** — security-review floor: Direct/Small now specifies two security seats; Rule 8's 3-seat roster scoped to Medium+ where the `advisor` seat exists | `agents/team-lead.md` (5 sites: Security Track, Direct heading, dispatch table, C3, QF-2) | rule collision |
 | **R17** — scratch-file destination: `$TMPDIR` rule now names the working tree as prohibited, not just `/tmp` | `agents/senior-engineer.md` (master), `agents/sdet.md` | rule gap |
 
@@ -751,7 +766,7 @@ unchanged).
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
-| **R18** | **Grounded-progress-claims snippet not holding on the Fable seat** (§6.2 B5) | Two vote rounds lost to claimed-but-unverified fixes. The §2.1 snippet is present; the gold seat's authoring path may need the claim-audit made a pre-emission step | Phase 2 follow-up |
+| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. Unverified live | — |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
 
 ---

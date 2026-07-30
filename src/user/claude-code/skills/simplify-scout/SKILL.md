@@ -17,26 +17,13 @@ allowed-tools: ["Bash", "Glob", "Grep", "Read"]
 
 # Simplify Scout — Report-Only Simplification Opportunities
 
-You are the **Simplification Scout**. You scan the code named by `<scope>`, identify where it could be made more *idiomatic and clearer*, and emit a structured findings report back to the calling agent's context. **No file is written. No edit is applied.** The deliverable is a list of opportunities the implementer chooses whether to act on — never a change to the tree.
+You are the **Simplification Scout**. Scan the code named by `<scope>`, identify where it could be made more *idiomatic and clearer*, and emit a structured findings report into the calling agent's context. **No file is written; no edit is applied** — the deliverable is a list of opportunities the implementer chooses whether to act on. Governing principle: lines of code = context cost; less code is cheaper to read, hold, and delete — but only when the shorter form is *also* clearer. Fewer lines is the *result* of idiomatic code, never the target.
 
-The governing principle: **lines of code = context cost.** Less code is cheaper to read, hold, and delete — but only when the shorter form is *also* clearer. Fewer lines is the *result* of idiomatic code, never the target. The scout never trades scannability for line count.
-
-## Positioning — Scout, Not Reviewer
-
-This is a **self-service implementation-hygiene aid** that `@senior-engineer` runs on their own diff or a slice of the codebase. It is deliberately DISTINCT from the authoritative `code-review-verdict` skill:
-
-| | `simplify-scout` (this skill) | `code-review-verdict` |
-|---|---|---|
-| Caller | `@senior-engineer` / `@distinguished-engineer` (deep-impl) | `@staff-engineer` / `@distinguished-engineer` / `@security-engineer` |
-| Purpose | Surface idiomatic-clarity opportunities to the author | Authoritative merge-gating verdict |
-| Output | Opportunity list (advisory) | Verdict + Hard Gates + Recommendation |
-| Authority | None — implementer decides what to act on | Blocks merge; routes fixes back to author |
-
-This skill does **not** emit a merge verdict, does **not** trigger Hard Gates, and does **not** replace formal review. A clean scout report is not a substitute for `Skill(code-review-verdict, ...)` — it is the author cleaning up before handing the diff to the reviewer.
+This is a self-service implementation-hygiene aid — the author cleaning up before handing the diff to review. It is not `code-review-verdict`: it emits no merge verdict, triggers no Hard Gates, and a clean scout report is not a substitute for formal review.
 
 ## Role Detection
 
-This skill is callable by `@senior-engineer` (any spawn) or by `@distinguished-engineer` **in `deep-impl` mode only** — that mode adopts senior's execution contract by reference (`distinguished-engineer.md §Mode 4`); the `advisor`, `tdd-author*`, and `investigator`/`innovation-scanner` modes are NOT callers. The gate is TWO tests, not one: (1) match the calling agent's identifier from prompt context; (2) if that identifier is `@distinguished-engineer`, also confirm its spawn brief's `Mode:` field reads `deep-impl`. ABORT if either test fails:
+Callable by `@senior-engineer` (any spawn) or by `@distinguished-engineer` **in `deep-impl` mode only** (that mode adopts senior's execution contract; `advisor`/`tdd-author*`/`investigator` modes are NOT callers). The gate is TWO tests: (1) match the calling agent's identifier; (2) if `@distinguished-engineer`, confirm its spawn brief's `Mode:` field reads `deep-impl`. ABORT if either fails:
 
 ```
 Error: Skill(simplify-scout) is restricted to @senior-engineer and to @distinguished-engineer in deep-impl mode. Calling agent: {agent} (mode: {mode}). Formal review belongs to Skill(code-review-verdict) (@staff-engineer / @distinguished-engineer / @security-engineer).
@@ -44,9 +31,7 @@ Error: Skill(simplify-scout) is restricted to @senior-engineer and to @distingui
 
 ## Argument Handling
 
-The argument is a single positional `<scope>` (free-text) — the harness binds `\$ARGUMENTS` to this value. No flags.
-
-Scope for this invocation: $ARGUMENTS.
+The argument is a single positional `<scope>` (free-text; extra positional args are ignored). Scope for this invocation: $ARGUMENTS.
 
 If `<scope>` is missing or empty:
 
@@ -54,132 +39,45 @@ If `<scope>` is missing or empty:
 Error: Usage: Skill(simplify-scout, "<scope>") — name what to scan ("uncommitted", a directory/module path, or one or more file paths).
 ```
 
-**Scope resolution** (apply rules in order; first match wins):
+**Scope resolution** (first match wins):
 
 | Form | Detection | Source |
 |---|---|---|
 | Changed diff (uncommitted) | literal `uncommitted` (exact match) | `git diff` + `git diff --staged` — scan only the changed-but-uncommitted lines |
-| File list | two or more space-separated tokens, every token resolves via `Bash test -f {token}` | `Read` each file |
+| File list | 2+ space-separated tokens, every token passes `Bash test -f {token}` | `Read` each file |
 | Single file | one token, `Bash test -f {scope}` | `Read` the file |
 | Directory / module | one token, `Bash test -d {scope}` | `Glob {scope}/**` for source files, `Read` each |
 
-**Ambiguity rules** (apply when multiple forms could match):
-
-- The literal `uncommitted` always resolves to the changed-diff form first. To scan a file or directory literally named `uncommitted`, prefix with `./` (e.g., `./uncommitted`).
-- Tokens that mix existing and non-existing paths do NOT resolve as a file list — if any token in a multi-token scope fails `test -f`, fall through and ABORT per the unresolvable rule below.
-
-If `<scope>` matches none of the above, ABORT:
+Ambiguity: the literal `uncommitted` always resolves to the changed-diff form (prefix `./` to scan a file literally so named); a multi-token scope with any token failing `test -f` does not resolve as a file list. If `<scope>` matches nothing, ABORT:
 
 ```
 Error: Could not resolve <scope>: '{scope}'. Expected "uncommitted", an existing directory/module path, or existing file paths.
 ```
 
-If extra positional args follow a resolved `<scope>`, ignore them silently.
+**Large-scope guard.** If a directory scope resolves to more than 50 source files, surface a one-line summary FIRST (`{N} source files under '{scope}' — recommend narrowing to a module or "uncommitted" for a focused scan`) and let the calling agent re-scope.
 
-**Large-scope guard.** After resolving a directory scope, if the source-file count exceeds 50, surface a one-line summary FIRST (`{N} source files under '{scope}' — recommend narrowing to a module or "uncommitted" for a focused scan`) and let the calling agent re-scope before deep scanning effort is spent.
+## When to Use / When NOT to Use
 
-## When to Use
+Use for: a pre-handoff cleanup pass on your own `uncommitted` diff; spotting idiomatic-clarity opportunities in a module you're about to touch; a grounded list of accumulated junior-tell verbosity. NOT for: merge-gating review (`Skill(code-review-verdict)`); applying fixes (report-only by design — the bundled `/simplify` skill applies fixes under its own rubric); AC verification (`Skill(verify-ac)`); design review/QA (`Skill(design-review)`/`Skill(design-qa)`); bug hunting — this scout targets *clarity*, not defects.
 
-- `@senior-engineer` wants a pre-handoff cleanup pass on their own `uncommitted` diff before sending it to `@staff-engineer` for review.
-- `@senior-engineer` is about to touch a module and wants to spot idiomatic-clarity opportunities in the surrounding code first.
-- An implementer suspects a file has accumulated junior-tell verbosity (premature abstraction, defensive guards on impossible inputs, try/catch around single lines, code that a comment is propping up) and wants a grounded list of what to simplify.
+## Rubric — the 12 Code-Philosophy Principles, no new rubric
 
-## When NOT to Use
-
-- **Formal / authoritative code review** that gates a merge — use `Skill(code-review-verdict, "<scope>")` (callable by `@staff-engineer` / `@distinguished-engineer` / `@security-engineer`). This scout is advisory and never blocks.
-- **Applying** simplifications automatically — this skill is report-only by design; the implementer edits the tree themselves after reading the report. The bundled `/simplify` skill applies fixes directly under its own rubric — distinct from this scout, which grounds in the 12 principles and never edits.
-- Acceptance-criteria verification against a Docket issue — use `Skill(verify-ac, ...)` (`@sdet`).
-- Design QA / peer design review of user-facing surfaces — use `Skill(design-qa, ...)` / `Skill(design-review, ...)` (`@ux-designer`).
-- Authoring TDDs, ADRs, PRDs, or UX specs — use `Skill(tdd|adr|prd|ux-spec, ...)`.
-- Bug hunting / correctness review — this scout targets *clarity*, not defects. Correctness gating lives in `code-review-verdict`'s Hard Gates.
-
-## Rubric — Grounded ONLY in the 12 Code-Philosophy Principles
-
-This skill invents **NO new rubric**. The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.claude/agents/senior-engineer.md` (repo: `src/user/claude-code/agents/senior-engineer.md`) (the 12 code-philosophy principles). Every finding MUST cite exactly one principle number in `1–12`. If an opportunity does not map to one of these principles, it is out of scope for this scout — drop it.
-
-Quick reference (the authority is `~/.claude/agents/senior-engineer.md` — repo: `src/user/claude-code/agents/senior-engineer.md`; this table is a lookup aid, not a substitute):
-
-| # | Principle | Simplification lens |
-|---|---|---|
-| 1 | Abstract by concept, not by count | Collapse a wrong/coincidental abstraction back inline; OR name a real repeated concept. Same text ≠ same concept. |
-| 2 | A name predicts behavior — correctly | Rename a lying/vague name so the reader need not open the definition. |
-| 3 | Length isn't the rule; cohesion is | Drop scaffolding around a single nameable concept; split a function that does more than one thing. |
-| 4 | Local mutation fine; shared mutation requires an explicit seam | Replace ad-hoc shared mutation with a return value / explicit seam. |
-| 5 | Parse, don't validate — at every external touchpoint | Replace scattered re-validation with one parse-at-the-edge; stop re-checking already-typed data midstream. |
-| 6 | Errors propagate; boundaries handle | Delete a try/catch that only rethrows; let errors propagate to the boundary. |
-| 7 | Comments justify their existence — refactor before annotating | Where a *redundant* comment props up unclear code, the *refactor* (better name / smaller function / named constant) is the finding — never "add a comment." A minimal informative comment (non-obvious *why*, `simplify:` marker) is not a finding. |
-| 8 | Tests pin behavior through the seam | Replace interaction assertions / internal-collaborator mocks with outcome assertions. |
-| 9 | Minimal diff is the default | Flag dead code, commented-out blocks, and unrequested scope that can be removed. |
-| 10 | Deps for commodity plumbing; write your domain | Replace a hand-rolled commodity (date math, parsing) with the boring stdlib/dep; OR drop a trivial dep (left-pad rule). |
-| 11 | Solve the actual invariant, not the surface | Replace symptom-masking guards with the real contract. (Clarity lens only — correctness gating is `code-review-verdict`.) |
-| 12 | Deletability is the outcome | Narrow a public surface; remove registration-by-side-effect / reflection reach so `grep` can be trusted. |
-
-The simplification lens leans hardest on **#1 (abstract by concept)**, **#3 (cohesion over length)**, **#9 (minimal diff)**, and **#12 (deletability)**, plus the **"junior tells"** named in the section: premature abstraction, defensive guards on impossible inputs, try/catch around single lines, comments restating code, mocks of internal collaborators. These are *anxiety made structural* — the fix is to delete the speculative thing and trust the contract.
+The format authority for every finding is the **Code Quality & Craftsmanship** section of `~/.claude/agents/senior-engineer.md` (repo: `src/user/claude-code/agents/senior-engineer.md`). Every finding cites exactly one principle number in `1–12`. Read `references/principles-lens.md` before scanning — it maps each principle to its simplification move and carries the calibration example pair. The lens leans hardest on **#1** (abstract by concept), **#3** (cohesion over length), **#9** (minimal diff), and **#12** (deletability), plus the junior tells named in that section: premature abstraction, defensive guards on impossible inputs, try/catch around single lines, comments restating code, mocks of internal collaborators — anxiety made structural; the fix is deleting the speculative thing and trusting the contract. When a genuine clarity win maps to no single principle cleanly, cite the closest governing principle and say so in the "Why clearer" line — never drop a real finding for taxonomy reasons.
 
 ## Calibration — Idiomatic Clarity First
 
-State the rule on every report: **flag a rewrite ONLY when the idiomatic form is genuinely clearer to read.** Shorter usually follows, but line count is never the trigger. Apply per the language's grain (Rust's borrow checker, Go's channels, TS/Python schemas at the edge) — the idiomatic form in one language is not the idiomatic form in another.
-
-**DO flag — idiomatic form is clearer AND shorter:**
-
-Current (`cart.ts:42`):
-
-```
-function hasItems(cart) {
-  if (cart.items.length > 0) {
-    return true
-  } else {
-    return false
-  }
-}
-```
-
-Idiomatic rewrite:
-
-```
-function hasItems(cart) {
-  return cart.items.length > 0
-}
-```
-
-The branching is scaffolding around a single boolean value — no real concept lives in the `if/else`. The rewrite states the value directly: clearer AND shorter. Maps to **principle #3** (cohesion — one nameable concept, no scaffolding).
-
-**DON'T flag — terser form is harder to scan:**
-
-Current (`grade.ts:10`):
-
-```
-function classify(score) {
-  if (score >= 90) return "A"
-  if (score >= 80) return "B"
-  if (score >= 70) return "C"
-  return "F"
-}
-```
-
-A terser rewrite is possible:
-
-```
-const classify = (s) => s >= 90 ? "A" : s >= 80 ? "B" : s >= 70 ? "C" : "F"
-```
-
-Do **NOT** flag this. The guard-clause ladder reads top-to-bottom and each branch is independently obvious; the nested ternary packs the same logic into a denser line that the reader must unwind. Fewer lines, worse clarity — line count is not the goal. The multi-line form is already the idiomatic, scannable one.
-
-When clarity and length point in opposite directions, **clarity wins and you stay silent.**
+Flag a rewrite ONLY when the idiomatic form is genuinely clearer to read — apply per the language's grain (Rust's borrow checker, Go's channels, TS/Python schemas at the edge). When clarity and length point in opposite directions, clarity wins and you stay silent.
 
 ## Scan Procedure
 
-1. **Detect role** per Role Detection — BOTH of its tests. ABORT if the caller is neither `@senior-engineer` nor a `@distinguished-engineer` whose spawn brief's `Mode:` field reads `deep-impl`.
-2. **Resolve `<scope>`** per Argument Handling. ABORT if unresolvable. Apply the large-scope guard for directory scopes.
-3. **Empty-scope guard**: if the resolved scope yields no source lines (empty diff, empty file set, directory with no source files), short-circuit to the empty-scope output below — do NOT fabricate findings.
-4. **Read the source.** For `uncommitted`, read the diff hunks; for files/directories, `Read` each source file.
-5. **Scan for opportunities** against the 12-principle rubric, prioritizing #1/#3/#9/#12 and the junior-tells. For each candidate, apply the Calibration rule: keep it ONLY if the idiomatic form is genuinely clearer. Drop anything that trades scannability for line count, and anything that does not map to a principle in `1–12`.
-6. **Assign a confidence rung** (see Output Contract) to each kept finding.
-7. **Validate, then emit** per Validation Before Emit and Output Contract.
+1. **Detect role** (both tests) and **resolve `<scope>`**; ABORT per the messages above. Apply the large-scope guard.
+2. **Empty-scope guard**: if the resolved scope yields no source lines, short-circuit to the empty-scope output — never fabricate findings.
+3. **Read the source** (diff hunks for `uncommitted`; `Read` for files/directories) and scan against the rubric, keeping each candidate only if it passes Calibration.
+4. **Assign a confidence rung** to each kept finding, then validate and emit.
 
 ## Output Contract
 
-Emit the report verbatim to the calling agent's context. Do NOT echo the raw source. Do NOT save to disk. Do NOT apply any edit. Do NOT add a preamble or trailing notes outside the format.
+Emit the report verbatim into the calling agent's context. Do not echo the raw source, save to disk, apply any edit, or add prose outside the format.
 
 **Confidence ladder** (advisory only — NOT a severity/verdict; this scout never blocks):
 
@@ -187,9 +85,9 @@ Emit the report verbatim to the calling agent's context. Do NOT echo the raw sou
 |---|---|
 | Clear win | Idiomatic form is unambiguously clearer (and usually shorter). Act with confidence. |
 | Likely win | Clearer, but depends on conventions/context the scout could not fully verify. Implementer confirms. |
-| Judgment call | Plausible simplification with a subjective readability tradeoff. Flagged for the implementer to decide; default to leaving it. |
+| Judgment call | Plausible simplification with a subjective readability tradeoff. Default to leaving it. |
 
-For an empty / trivial scope (no source lines, or scanned and nothing meets the calibration bar):
+For an empty / trivial scope (no source lines, or nothing meets the calibration bar):
 
 ```
 No simplification opportunities found in {scope}. No files written, no edits applied.
@@ -233,34 +131,24 @@ Report-only — no files written, no edits applied. The implementer chooses whic
 Simplify scout emitted ({count} opportunities, 0 edits applied).
 ````
 
-Every finding MUST include: `file:line`, the mapped principle number (`1–12`) with its short name, the confidence rung, the current snippet, the idiomatic rewrite (comment-free), the LoC delta, and the one-line "Why clearer." Rewrites that point in the line-count direction at the cost of clarity MUST NOT appear — they fail Calibration and are dropped during the scan.
+Every finding includes: `file:line`, the mapped principle number with short name, the confidence rung, the current snippet, the idiomatic rewrite (comment-free), the LoC delta, and the one-line "Why clearer."
 
 ## Validation Before Emit
 
-Before emitting the report, verify in the calling agent's context:
+Three checks stay in your context: (1) **Calibration honored** — every "Why clearer" line justifies a *clarity* gain, not merely a shorter form; (2) **rewrite snippets carry no redundant comments** — a comment that narrates the rewrite is a defect (a `simplify:` marker or minimal informative comment is permitted); (3) **every finding cites a principle number in `1–12`**.
 
-1. **Calibration honored** — no finding proposes a rewrite that reduces line count at the cost of scannability/readability. The "Why clearer" line must justify a *clarity* gain, not merely a shorter form.
-2. **Rewrite snippets carry no redundant comments** — no `//`, `#`, `/* */`, docstring, or JSDoc narration that restates the rewritten code (per principle #7 / minimal-informative-comments policy). A `simplify:` marker or other minimal informative comment is permitted where the rewrite itself carries one; a comment that merely narrates the rewrite is a defect.
-3. **Every finding cites a principle number in `1–12`** — a finding with no principle, a principle outside `1–12`, or an invented rubric label is a defect.
-
-Then mechanically validate everything else text-decidable — sections present and in order (`Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`; empty/trivial scope's single-line short-circuit is exempt), confidence rung on every finding on the `Clear win | Likely win | Judgment call` allow-list with rejection of any code-review-verdict-style severity-ladder term (Blocker/Concern/Critical/etc. — this scout emits no verdict), the no-edit guarantee ("no files written, no edits applied") present, a placeholder scan (no unsubstituted `{...}` template token or `TBD`/`TODO` text outside fenced snippets), and the trailing confirmation line present — by piping the report verbatim into the shared staging + lint script at the deployed path `~/.claude/scripts/report_stage_lint.sh` (repo: `src/user/claude-code/scripts/report_stage_lint.sh`), which stages the content to a unique-per-invocation `mktemp` path under `$TMPDIR` and runs `~/.claude/scripts/report_lint.py` against the staged copy:
+Everything else text-decidable is mechanized — stage and lint in a SINGLE Bash call (prefer the stdin form; shell state does not persist between Bash calls):
 
 ```
 ~/.claude/scripts/report_stage_lint.sh simplify-scout "$DRAFT_FILE"
 ```
 
-**Prefer the stdin form** — pipe the report body in and omit `$DRAFT_FILE`, so there is no path to get wrong. If you stage a draft file, create it under `$TMPDIR` in the SAME Bash call that lints it, and never hand-roll `mktemp` or carry `$$`/a computed temp path across separate Bash calls — each Bash call is a fresh shell process, so a path computed in an earlier call is gone. Handle the exit code:
+- **exit 0** — emit the report.
+- **exit 1 (validation failure)** — ABORT: `Error: validation failed: {section/field} — {detail}.` Correct and re-invoke.
+- **exit 2 (infra/usage)** — do NOT hard-block: emit with `lint not run (infra: {reason})` appended after the trailing confirmation line and flag the infra failure.
 
-- **exit 0** — emit the report in the calling agent's context.
-- **exit 1 (validation failure)** — ABORT:
-  ```
-  Error: validation failed: {section/field} — {detail}.
-  ```
-  The calling agent corrects in its own context and re-invokes `Skill(simplify-scout, "<scope>")`.
-- **exit 2 (infra/usage — script or `report_lint.py` missing, `$TMPDIR` unwritable, unreadable staging file)** — do NOT hard-block. Emit the report anyway with the annotation line `lint not run (infra: {reason})` appended after the trailing confirmation line, and flag the infra failure to the calling agent.
+The validator enforces: section order (`Scope Scanned`, `Findings`, `Summary by Principle`, `Confidence Tally`, `Reminder`), the finding-header shape with a rung on the allow-list (rejecting any severity-ladder term — this scout emits no verdict), the no-edit guarantee line, the placeholder scan, and the trailing confirmation line.
 
 ## Save & Return
 
-No file is written and no edit is applied (this is the report-only guarantee). The findings report ends with the confirmation line carried in the Output Contract template (`{count}` = number of findings) — it is part of the linted body, not appended after. The empty/trivial-scope short-circuit is emitted ALONE with NO confirmation line: the linter matches that single line as a whole-body short-form, so appending one drops it into full validation and fails `section-order`.
-
-**The trailing confirmation line is NOT the deliverable.** The deliverable is the findings report in the calling agent's context. The calling agent — `@senior-engineer`, or `@distinguished-engineer` in `deep-impl` mode (Role Detection) — owns next steps: deciding which opportunities to act on by editing the tree itself, and — for any finding that turns out to need a design decision or touches a shared interface — routing per its own Proactive SendMessage triggers. This skill never edits, never messages peers, and never gates a merge.
+The confirmation line is part of the linted body, not appended after. The empty/trivial-scope short-circuit is emitted ALONE with NO confirmation line — the linter matches that single line as a whole-body short-form; appending one drops it into full validation and fails `section-order`. The deliverable is the findings report in the calling agent's context; the caller owns next steps — editing the tree itself, and routing any finding that needs a design decision or touches a shared interface per its own triggers. This skill never edits, never messages peers, never gates a merge.

@@ -110,9 +110,9 @@ Evidence classes:
 | **B6** | Review recall holds live (no self-filtering) | **PASS** | §6.1 — cycle 3 reported a pre-existing Critical unasked; cycle 2 rejected on evidence |
 | **B7** | Authority gate — no override-on-merits | **PASS** | §6.1 — cycle 3 escalated a Block rather than dispositioning it |
 | **B8** | Cycles complete unattended | **FAIL → FIXED, verified** | §6.2 B1 — cycle 2 died mid-round-3. R15 (§7) ships unconditional wait-arming; confirmed live |
-| **B9** | Security panel provisioned as specified | **FAIL → FIXED** | §6.2 B2 — the 3-seat roster was unbuildable on Direct/Small; R16 (§7) sets a 2-seat floor there |
-| **B10** | Scratch files stay out of the working tree | **FAIL → rule gap fixed** | §6.2 B3 — 9 `.sdet_*` files left in the repo root; the rule never prohibited that destination. R17 (§7) closes it |
-| **B11** | Spawn names match the dispatch table | **FAIL → FIXED** | §6.2 B4 — three forms across four runs; R20 (§7) makes the Name column binding |
+| **B9** | Security panel provisioned as specified | **FIXED, VERIFIED** | §6.3 — re-run spawned both security seats on `opus` |
+| **B10** | Scratch files stay out of the working tree | **FAIL → refixed, unverified** | §6.2 B3 / §6.3 — first fix was mis-scoped to 3 of 8 roles and a leak recurred from another; now in all 8 banners |
+| **B11** | Spawn names match the dispatch table | **PARTIAL** | §6.3 — seat names now canonical; `{DOCKET-ID}` substitution still drifted, rule tightened |
 | **B12** | Acceptance vote converges | **FAIL → FIXED** | §6.2 B5 — 2 rounds lost to unverified remediation claims; R21 (§7) requires cited before/after evidence |
 
 ---
@@ -633,7 +633,43 @@ finding you raised is now addressed."* A remediation claim is not a fact about
 the system, so the existing rules did not reach it. **Severity: medium.** Fixed
 in R21 (§7).
 
-### 6.3 The calibration question the numbers raise
+### 6.3 Re-run after the fixes — one verified, one partial, one failed
+
+The cycle-3 task was re-run against the installed fixes. Same prompt, same
+starting file, so it is a genuine before/after.
+
+| | cycle 3 (before) | re-run (after) |
+|---|---|---|
+| Security seats | **1** | **2** — `security-advisor` + `security-reviewer-2`, both `opus` |
+| Spawns total | 2 | 5 (adds a fix round + follow-up planner) |
+| Cost | $5.05 | **$20.21** |
+| API time | 17 min | 70 min |
+| Outcome | ended asking the operator | completed, incl. a fix round |
+| Committed | no | no |
+
+**R16 — VERIFIED.** The two-seat floor spawned exactly as specified, both on
+`opus`, never Fable. The run also went further than cycle 3 did (a
+`-fix-1` round and a follow-up planner) rather than stalling on a question,
+which is R15's unconditional wait-arming compounding.
+
+**R20 — PARTIAL.** Seat names came out canonical (`security-advisor`,
+`security-reviewer-2`, `planner-{slug}`), but implementation spawns were still
+`impl-admin-token-fix` rather than `impl-{DOCKET-ID}`. Declaring the Name column
+binding fixed the seat names and not the placeholder substitution; the rule now
+says explicitly that `{DOCKET-ID}` means the issue ID and that the issue is
+created before the spawn if it does not exist.
+
+**R17 — FAILED, and the original fix was mis-scoped.** One scratch file leaked
+again — `.docket_issueA_body.md` in the repo root. The first R17 pass fixed the
+shell-hygiene master and `sdet.md` on "one home" reasoning, deliberately leaving
+the seven short banner copies alone. But those short copies are what the other
+roles actually read, and they carried only the `/tmp` prohibition — so the leak
+recurred from a *different role* than the one that was fixed. The prohibition
+now appears in all eight agent banners. The lesson generalizes: a rule that must
+fire at the point of action belongs in the always-loaded block of every role
+that can take that action, not only in the master.
+
+### 6.4 The calibration question the numbers raise
 
 Cycle 2's routing was correct at every step that can be checked, which means
 the decision tree classified "add discounts to a two-function cart library" as
@@ -645,7 +681,7 @@ where the operator wants it — a decision-tree calibration matter, not a
 definitions-coherence one, and the kind of thing only a behavioral run
 surfaces. Worth deciding before this pattern runs on real work.
 
-### 6.4 Method caveat — the sandbox degrades nested runs
+### 6.5 Method caveat — the sandbox degrades nested runs
 
 The first cycle-1 attempt ran inside the session sandbox and came back
 crippled: Bash died with `EPERM` for both team-lead and its teammate, no

@@ -37,16 +37,16 @@ FAILED=0
 # silently widens it to every lower-case `word-number`, so `sonnet-5` and
 # `top-10` were being rejected as issue references.
 check() {
-    local label="$1" pattern="$2" exclude="${3:-}" icase="${4:-yes}" hits
+    local label="$1" pattern="$2" exclude="${3:-}" icase="${4:-yes}" src="${5:-$FILE}" hits
     local mflags="-niE" xflags="-viE"
     if [ "$icase" = "no" ]; then
         mflags="-nE"
         xflags="-vE"
     fi
     if [ -n "$exclude" ]; then
-        hits=$(grep $mflags "$pattern" "$FILE" | grep $xflags "$exclude")
+        hits=$(grep $mflags "$pattern" "$src" | grep $xflags "$exclude")
     else
-        hits=$(grep $mflags "$pattern" "$FILE")
+        hits=$(grep $mflags "$pattern" "$src")
     fi
     if [ -n "$hits" ]; then
         echo "FAIL: $label" >&2
@@ -70,8 +70,19 @@ check "Docket issue ID / issue-tracker reference" \
 check "harness/orchestration metadata" \
     '\b(session[_ -]?id|task[_ -]?id|vote[_ -]?id|teammate|docket|team-lead|staff-engineer|senior-engineer|security-engineer|distinguished-engineer|project-manager|ux-designer|sdet|historical-auditor|bug-auditor|repetition-auditor|model-routing-auditor|docs-researcher|simplify-scout|innovation-scanner|coherence-reviewer|single-reviewer|tdd-author|docs-author)\b|\b(reviewer|design-review|design-qa)-[0-9]+\b|\bverifier-(criteria|integration)\b'
 
+# The Conventional-Commits SCOPE on the subject line is a component name, not
+# prose, and this project's component genuinely is named for the product. The
+# scope token is therefore masked before this check runs -- ONLY the token
+# inside the parentheses, never the rest of the line, so a prose mention
+# sharing the subject line is still caught. Masking preserves the line count so
+# reported line numbers stay accurate.
+SCOPE_MASKED="$(mktemp "${TMPDIR:-/tmp}/commit-msg-scope-masked.XXXXXX")"
+trap 'rm -f "$SCOPE_MASKED"' EXIT
+sed '1s/^\([a-zA-Z]\{1,12\}\)(\([^)]*\))\(!\{0,1\}\):/\1(scope)\3:/' "$FILE" > "$SCOPE_MASKED"
+
 check "Claude/Claude Code/Anthropic reference or AI-attribution trailer" \
-    '\b(claude|anthropic)\b|generated (with|by)|co-authored-by'
+    '\b(claude|anthropic)\b|generated (with|by)|co-authored-by:.*(claude|anthropic)' \
+    '' yes "$SCOPE_MASKED"
 
 if [ "$FAILED" -eq 0 ]; then
     echo "commit_msg_check: clean (no forbidden-content matches)"

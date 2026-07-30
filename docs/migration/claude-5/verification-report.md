@@ -1261,6 +1261,44 @@ and citing observed results was not. n=1: a FAIL would have been decisive; this
 PASS is one observation. R21 moves from "applied, preconditions never met" to
 **verified in-carrier**.
 
+### 6.11 R19 decided — the Medium price is accepted, with triggers to reopen it
+
+The calibration question §6.4 raised is closed by operator decision, made after
+decomposing where the money actually goes rather than on the headline number.
+
+Cycle 5's $36.76 by component: gold author seat (fable) $21.22 — 58%; volume
+execution (sonnet) $10.45 — 28%; acceptance panel (opus × 3) $5.09 — 14%.
+Three consequences:
+
+- **The panel was never the cost problem — failure rounds were.** Cycle 2 spent
+  $17.09 on opus because six reviewer spawns ran across two lost rounds; cycle
+  5's converged round-1 vote cost $5.09. The behavioral fixes already collected
+  that saving, so "trim the panel" would now cut the cheap component.
+- **Sonnet volume is budget-additive** (the separate Sonnet-only cap,
+  team-lead.md's two-cap economics), so the constrained-cap price of a Medium is
+  ~$26, not ~$35.
+- **The only real lever is the author seat** (~$16 of headroom fable → opus),
+  and it is unmeasured: fable authored both Medium TDDs on record — the pre-fix
+  one lost twice, the post-fix one was 27% smaller and accepted round 1 — and no
+  opus-authored Medium TDD exists. Switching would gamble on exactly the
+  artifact whose failure cost cycle 2 everything.
+
+The misrouting half of the original worry is separately closed: R29's
+open-dimension test gates Medium deterministically, with the count recorded per
+classification, so the tier is only drawn when 2+ interacting design decisions
+are genuinely open.
+
+**Decision: the price stands, knowingly.** It reopens automatically on any of:
+a Medium cycle losing a vote round, a Medium cycle exceeding $50, or five Medium
+cycles accumulating in the dispatch ledger — at which point the question gets
+answered with a sample instead of n=1.
+
+Bookkeeping note, flagged while decomposing: §6's cycle-2 model split (Fable
+$17.76 + Opus $17.09 + Sonnet $6.26 = $41.11) does not sum to its recorded
+$33.97 total. The discrepancy does not affect this decision (the structural
+points survive either figure) but the record should not pretend the two numbers
+agree.
+
 ## 7. Fix list
 
 ### Applied (this pass)
@@ -1371,7 +1409,7 @@ unchanged).
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. **Cycle 5 (§6.8) is real evidence: two sdet-class agents ran (named panel reviewer + report-only verifier) and the root stayed clean. The producing role was actually exercised this time** | — |
 | ~~R18~~ | superseded by **R21** — **APPLIED AND VERIFIED IN-CARRIER** (§6.10) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. Three full cycles never met the preconditions; the seeded-Blocker probe §6.9 prescribed then did, at $1.45: the revision ran the failing check before and after editing and cited observed results, never a bare "addressed". The full panel-relay path remains unexercised | — |
-| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Now answerable (§6.8): cycle 5 is the same Medium pattern and cost $36.76 / 54.4 min vs $33.97 / 97.7 min — 8% MORE expensive, though it shipped working code where the baseline shipped none. Cost per outcome improved enormously; the raw price of a Medium cycle did not fall. The calibration decision is untouched by these fixes** | Migration owner |
+| ~~R19~~ | **Medium-tier cost calibration** — **DECIDED: accepted, with revisit triggers** (§6.11) | Operator decision after cost decomposition: ~$35 per Medium is the accepted price. The panel was never the cost problem (opus $17.09 across 2 failed rounds → $5.09 on round-1 convergence — the fixes already collected that saving); sonnet volume draws the separate Sonnet-only cap, so constrained-cap spend is ~$26; the one real lever is the gold author seat (~58%), and no opus-authored Medium TDD exists to justify switching it. Misrouting is gated by R29's recorded dimension count. **Revisit triggers: a Medium loses a vote round, a Medium exceeds $50, or 5 Medium cycles accumulate in the dispatch ledger** | — |
 | ~~R20~~ | **Spawn-name substitution** — **APPLIED AND VERIFIED LIVE** (§6.6) | The `{DOCKET-ID}` placeholder half that stayed PARTIAL in §6.3 is now confirmed: cycle 4 spawned `impl-DKT-1` and `impl-DKT-1-fix-1`, the canonical form with the real issue ID, not a descriptive slug | — |
 | ~~R29~~ | **Pattern classification unstable at the Small/Medium boundary** — **APPLIED AND VERIFIED LIVE** (§6.7, §6.8) | Root cause was an underdetermined rule, not nondeterminism: the Small-pattern bar offered "consult `advisor` first **or** graduate to Medium" with no rule for choosing, so both classifications were compliant. Fixed by giving that "or" an operational test — count interacting open architectural dimensions — and by scoping the lighter-pattern tie-break so it cannot override a test result. **Cycle 5 (§6.8) confirms it: same task, same repo, Small → Medium, full acceptance panel drawn** | — |
 | ~~R27~~ | **Scope token vs the product-name ban** — **APPLIED** | Check 4 banned the product name outright, so the Conventional-Commits scope this history uses could never pass. Resolved by operator decision: the scope token on the subject line is masked before that one check — a component identifier, not prose. Masking covers ONLY the parenthesised token, since most subjects carry the name twice and the summary use is what the ban exists to stop. `co-authored-by` narrowed to require an assistant name, because all 7 matches in recent history were legitimate dependency-bot trailers. **Not retroactive by design** — the gate has no hook wired and runs only on skill-drafted messages, so past commits were never checked; history went 29→26 rejected, the remainder failing on prose mentions and role words the metadata check covers | — |

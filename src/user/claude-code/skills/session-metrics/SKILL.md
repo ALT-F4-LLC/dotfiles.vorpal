@@ -14,11 +14,11 @@ disallowed-tools: ["Agent", "SendMessage"]
 ---
 
 <!-- CRITICAL BANNER -->
-> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`, do NOT form or manage a team, do NOT invoke other skills recursively. Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns (transcript-verified). Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage. (2) Do NOT commit any changes. (3) Transcript-only: every metric is derived from the local session JSONL under `~/.claude/projects/`. OTEL/aggregate metrics are deliberately NOT consulted — the aggregate sink cannot attribute tokens/cost to THIS specific session (its `skill_name` label is populated only for top-level orchestrator-dispatched skills, not subagent-invoked ones) nor reconstruct per-session tool/file/timeline detail.
+> **CRITICAL:** (1) Leaf skill — do NOT use `Agent`/`SendMessage`, do NOT form or manage a team, do NOT invoke other skills recursively. Caller-side effect: this skill's `disallowed-tools` frontmatter removes `Agent` and `SendMessage` from the CALLING agent's tool pool until the OPERATOR's next real message — the restriction persists across stop-hook continuations, inbound teammate messages, and any number of autonomous turns. Schedule spawns/teammate messages BEFORE invoking, and treat a subsequent `"exists but is not enabled in this context"` error on those tools as this restriction, not an outage. (2) Do NOT commit any changes. (3) Transcript-only: every metric derives from the local session JSONL under `~/.claude/projects/`; OTEL/aggregate metrics are deliberately NOT consulted — the aggregate sink cannot attribute tokens/cost to THIS session nor reconstruct per-session tool/file/timeline detail.
 
 # Session Metrics — Transcript-Derived Token, Cost, Tool, and Subagent Report
 
-You report on the **current** Claude Code session by parsing its local transcript — no network calls, no telemetry, nothing leaves the machine. The work is split: `scripts/session_metrics.py` does all parsing, aggregation, cost math, and HTML rendering and prints a JSON summary plus an HTML file path; you render that JSON into a chat-facing summary and surface the HTML path.
+Report on the **current** session by parsing its local transcript — no network calls, nothing leaves the machine. `scripts/session_metrics.py` does all parsing, aggregation, cost math, and HTML rendering; you render its JSON into a chat summary and surface the HTML path.
 
 ## Step 1 — Run the script
 
@@ -26,33 +26,22 @@ You report on the **current** Claude Code session by parsing its local transcrip
 python3 "${CLAUDE_SKILL_DIR}/scripts/session_metrics.py"
 ```
 
-`${CLAUDE_SKILL_DIR}` resolves to whichever copy of this skill is on disk — installed or repo-source — so the same command works in both (requires Claude Code 2.1.129+). The script takes no arguments. It reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment and needs no other input.
-
-**Output shape:** all stdout except the final line is a single pretty-printed JSON object (the summary); the final line repeats `summary.html_report_path`, the absolute path to the generated HTML file. Split on the last newline and parse everything before it as one JSON blob — don't attempt to `json.loads()` line-by-line as JSONL.
-
-**Failure modes:** the script exits non-zero with a one-line message on stderr if it can't find a Claude Code project directory for the current cwd, or can't find any session `*.jsonl` under it. Surface that message verbatim to the user — don't retry or guess a path yourself.
+No arguments; it reads `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_EFFORT` from the environment (`${CLAUDE_SKILL_DIR}` resolves to whichever copy is on disk; requires Claude Code 2.1.129+). **Output shape:** all stdout except the final line is ONE pretty-printed JSON object; the final line repeats `summary.html_report_path`. Split on the last newline and parse the rest as one JSON blob — never line-by-line as JSONL. On failure the script exits non-zero with a one-line stderr message (no project dir / no session `*.jsonl`) — surface it verbatim; don't retry or guess a path.
 
 ## Step 2 — Render the chat-facing summary
 
-From the JSON summary, build a concise chat reply covering:
+Terse — the HTML report is the long-form artifact; don't re-paste the JSON. Cover:
 
-1. **The data-source note** (`summary.note`) — one line, verbatim or near-verbatim. This must appear; it's the one place the user learns the data source.
-2. **Headline KPIs**: total tokens, total est. cost (`summary.totals.cost_est_usd`, labeled "est."), cache hit ratio, wall-clock duration, files touched count. Include the price table's `summary.price_table.updated` date alongside the cost figure so staleness is visible, not just documented as a caveat.
-3. **Subagent roster** (`summary.subagents`) as a table: name, role, model, effort (always the literal string from the JSON — never paraphrase or infer a number), tokens, est. cost (`cost_est` is `null` when the subagent used a model absent from the price table — render as "n/a", never as \$0), tool calls, errors, files touched. If empty, say "no subagents in this session."
-4. **Session-level effort** (`summary.session_effort`, from `$CLAUDE_EFFORT`) called out separately from the roster — it describes the orchestrating session, not any one subagent.
-5. **Tool-usage breakdown** (`summary.tool_usage`) — top few by call count, with error counts where nonzero.
-6. **The HTML report path** (the script's final stdout line) — tell the user it's a self-contained, sortable HTML file they can open in a browser.
-
-Keep the chat summary terse — the HTML report is the long-form artifact (token/cost tables per model, full files-touched list, raw-JSON drawer). Don't re-paste the whole JSON into chat.
-
-## Step 3 — Hand off the HTML path
-
-State the absolute HTML path plainly (e.g. "Report written to: `<path>`"). Do not open or `cat` the HTML file — it's meant to be opened in a browser, and dumping ~10KB of markup into chat defeats the point of having a separate artifact.
+1. **The data-source note** (`summary.note`), near-verbatim — the one place the user learns the data source.
+2. **Headline KPIs**: total tokens, total est. cost, cache hit ratio, wall-clock duration, files-touched count, with the `summary.price_table.updated` date alongside the cost so staleness is visible.
+3. **Subagent roster** (`summary.subagents`) as a table: name, role, model, effort, tokens, est. cost, tool calls, errors, files touched — or "no subagents in this session."
+4. **Session-level effort** (`summary.session_effort`) called out separately — it describes the orchestrating session, not any subagent.
+5. **Tool-usage breakdown** (`summary.tool_usage`) — top few by call count, error counts where nonzero.
+6. **The HTML report path** — a self-contained, sortable file to open in a browser. State the absolute path plainly; do not `cat` the HTML into chat.
 
 ## Notes on what the numbers mean
 
-- **Every cost figure is an estimate** (`est.`) — derived from a per-model price table loaded from `scripts/model_prices.json`, not billing-authoritative usage. Caching-tier nuances, batch discounts, and `inference_geo` multipliers are not modeled. The table's `updated` date is surfaced as `summary.price_table.updated` so staleness is a visible fact, not a permanent shrug.
-- **An unpriced model undercounts cost — it doesn't zero it.** When any `summary.by_model` entry or a subagent `cost_est` is `null` (rendered "n/a"), that model is absent from `model_prices.json`; surface one caveat line that the session total is undercounted, pointing at the `price_table.updated` date so the user can judge how far the table has drifted.
-- **Subagent effort is never inferred.** The transcript does not record per-subagent effort; the script emits the literal string `"unknown (not recorded in transcript)"`. If asked to estimate it, decline — that would be fabrication.
-- **Files-touched is deduped** across the main session and every subagent transcript.
-- **Timeline has two numbers**: wall-clock duration (first timestamp to last) and total `turn_duration` (the sum of the harness's own per-turn timing records) — these differ when there were idle gaps.
+- **Every cost figure is an estimate** — derived from `scripts/model_prices.json`, not billing-authoritative; caching tiers, batch discounts, and geo multipliers are not modeled.
+- **A `null` `cost_est` means an unpriced model — render it `n/a (unpriced model)`, never $0** (matching the HTML renderer's literal), and add one caveat line that the session total is undercounted, pointing at `price_table.updated`.
+- **Subagent effort is never inferred.** The transcript does not record it; the script emits the literal `"unknown (not recorded in transcript)"` — render that string, and decline requests to estimate it.
+- **Files-touched is deduped** across the main session and every subagent transcript. **Timeline has two numbers**: wall-clock duration and summed per-turn `turn_duration` — they differ when there were idle gaps.

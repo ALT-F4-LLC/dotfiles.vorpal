@@ -1,0 +1,27 @@
+# Byte ceilings from the context-engineering charter, made checkable.
+#
+# AUTHORITY: src/user/claude-code/docs/context-engineering-claude-5.md, the
+# "Byte reduction" and "Progressive disclosure for skills" paragraphs. These
+# rows RESTATE that prose so a script can act on it; the charter remains the
+# source of truth, and test_byte_ceiling_check.py fails if a row drifts from
+# the number the charter states.
+#
+# Format: KIND<TAB>TARGET<TAB>CEILING_BYTES<TAB>NOTE
+#   file      TARGET is one path; its size must not exceed CEILING.
+#   sum       TARGET is a glob; the SUM of matches must not exceed CEILING.
+#   each      TARGET is a glob; EACH match must not exceed CEILING.
+#
+# An `each` row may be excused per-file with an EXCUSE line (same reasoning as
+# the parity manifest's #EXCLUDE rows: a deliberate exception must be written
+# down, or it cannot be told apart from an oversight). The charter explicitly
+# permits this for skills -- "no SKILL.md over 10KB WITHOUT A RECORDED
+# JUSTIFICATION (format-authority tables that are themselves output contracts
+# are the expected exception)".
+#   Format: #EXCUSE<TAB>path<TAB>reason
+#
+# NOTHING is excused below. Every current breach is a real, unratified breach.
+# Warn-only by default; --strict makes it gate.
+
+file	src/user/claude-code/agents/team-lead.md	30000	charter: "team-lead.md (137KB) may not exceed 30KB"
+sum	src/user/claude-code/agents/*.md	170000	charter: "Agents: 554KB total -> at most 170KB"
+each	src/user/claude-code/skills/*/SKILL.md	10000	charter: "no SKILL.md over 10KB without a recorded justification"

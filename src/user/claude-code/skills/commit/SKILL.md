@@ -21,49 +21,28 @@ disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
 
 # Commit — Draft and Execute a Standardized Conventional Commit
 
-You are the **Commit Author**. You draft a single Conventional-Commits-compliant
-commit message for the files the calling agent specifies, then run a scoped
-`git add` + `git commit`. This skill is the format authority for the message
-(type/scope/description grammar, forbidden content) and the safety authority
-for the execution (scoping, index verification, no push/amend).
+You are the **Commit Author**: draft one Conventional-Commits-compliant message for the files the calling agent specifies, then run a scoped `git add` + `git commit`. This skill is the format authority for the message and the safety authority for the execution (scoping, index verification, no push/amend).
 
 ## Argument Handling
 
-The argument is `<files to commit>` (space-separated paths or pathspecs,
-required) optionally followed by `-- <what changed and why>` (free-text
-context for the message body, optional but recommended).
-
-If `<files to commit>` is missing or empty:
+The argument is `<files to commit>` (space-separated paths or pathspecs, required), optionally followed by `-- <what changed and why>` (free-text context for the body). If missing or empty:
 
 ```
 Error: Usage: Skill(commit, "<files> [-- what changed and why]") — name the exact files to stage.
 ```
 
-Never infer the fileset from a bare `git status` / `git diff` scan. In a
-shared multi-agent tree, an unscoped scan surfaces sibling agents' uncommitted
-work too — the calling agent must already know and state which files are
-in scope (per `src/user/claude-code/agents/senior-engineer.md`, "Shared-tree
-diff scoping": *"YOUR contribution is the UNSTAGED diff of YOUR target files
-only"*).
+Never infer the fileset from a bare `git status`/`git diff` scan — in a shared multi-agent tree an unscoped scan surfaces sibling agents' uncommitted work; the caller must already know and state which files are in scope.
 
-## Step 0 — Caller & Authorization Gate (before any other step)
+## Step 0 — Caller & Authorization Gate
 
-**Caller check (first).** This skill may be invoked ONLY by `team-lead` — no
-other agent or subagent (e.g. `@senior-engineer`, `@staff-engineer`,
-`@distinguished-engineer`, `@security-engineer`, `@sdet`, `@ux-designer`,
-`@project-manager`) may call `Skill(commit, ...)`. If the calling agent is
-not `team-lead`, STOP:
+**Caller check (first).** Only `team-lead` may invoke this skill. Any other caller:
 
 ```
 Blocked: Skill(commit) may only be invoked by team-lead. Route the commit
 request to team-lead instead of invoking this skill directly.
 ```
 
-**Authorization check (second, only once the caller check passes).** Confirm
-team-lead's invocation context states the operator has already given explicit
-authorization to commit *now* (not a general standing permission, not an
-inference from "this seems done"). If that confirmation is not present in the
-calling context:
+**Authorization check (second).** Confirm the invocation context states the operator has already given explicit authorization to commit *now* — not standing permission, not an inference from "this seems done". If absent:
 
 ```
 Blocked: Skill(commit) requires team-lead to already hold explicit operator
@@ -71,52 +50,13 @@ authorization to commit. Invoking this skill is not itself that authorization
 — confirm with the operator, then re-invoke.
 ```
 
-Do not proceed to Step 1 until both checks pass. This gate operates *within*
-the team's standing no-commit rule (`src/user/claude-code/agents/senior-engineer.md`'s
-repo-wide "do NOT commit ANY changes ... unless EXPLICITLY instructed by the
-user") — it never replaces or weakens that rule, it only adds message-format
-and scoping guarantees once authorization already exists.
-
-## When to Use
-
-- The calling agent has explicit, current operator authorization to commit,
-  has a bounded set of files representing one logical change, and wants a
-  Conventional-Commits-compliant message drafted and applied without manual
-  formatting.
-
-## When NOT to Use
-
-- The calling agent is not `team-lead` — stop at Step 0; route the commit
-  request to team-lead instead.
-- No explicit, current operator authorization to commit — stop at Step 0.
-- The fileset spans multiple unrelated logical changes (see Step 2's
-  one-change guard) — split into separate invocations first.
-- Pushing, amending an existing commit, or rewriting history — this skill
-  never does any of those; use `git` directly under explicit operator
-  instruction.
+This gate operates *within* the fleet's standing no-commit rule — it adds message-format and scoping guarantees once authorization already exists, never a way around it. Also outside this skill's contract, decline and point at direct `git` usage under explicit operator instruction: pushing, amending, history rewrites, filesets spanning multiple unrelated logical changes (split first).
 
 ## Step 1 — Resolve and verify commit scope
 
-1. Parse `<files to commit>` into an explicit path list. Reject bare `.` or
-   `-A`/`--all` tokens — pathspecs must name real files or directories, not a
-   blanket wildcard (`src/user/claude-code/agents/senior-engineer.md`,
-   "Shared-tree diff scoping": *"Never `git add` to 'clean up'"*).
-2. `git status --porcelain -- <files>` scoped to exactly those paths (use
-   `--porcelain`, not `--short` — same two-column format but guaranteed
-   stable across git versions and user config). Read BOTH columns: X (left)
-   is index-vs-HEAD, Y (right) is worktree-vs-index. `MM` means the path has
-   staged content from an earlier round AND newer unstaged edits — Step 4's
-   `git add` refreshes it, so it is not a blocker, but a bare `git diff`
-   would have looked clean while the index held stale content. Empty output
-   for a path means it has no pending change at all.
-3. `git diff --cached --name-only` — if this is non-empty *before* you stage
-   anything, the index already holds staged content. Partition that list
-   against Step 1's path list before deciding; non-empty alone is not an
-   abort. Paths INSIDE the fileset are your own stale index (the `MM` case
-   above) — leave them: Step 4's `git add` refreshes them from the worktree
-   and Step 4's staged-set equality check confirms the result. Paths OUTSIDE
-   the fileset are possibly a sibling agent's in-progress work in a shared
-   tree — do not touch the index and do not commit through it:
+1. Parse `<files to commit>` into an explicit path list. Reject bare `.` or `-A`/`--all` — pathspecs name real files or directories, never a blanket wildcard.
+2. `git status --porcelain -- <files>` scoped to exactly those paths. Read both columns: `MM` means staged content from an earlier round plus newer unstaged edits — not a blocker (Step 4's `git add` refreshes it), but a bare `git diff` would have looked clean while the index held stale content.
+3. `git diff --cached --name-only` — if non-empty before you stage anything, partition the list against the fileset. Paths INSIDE the fileset are your own stale index — leave them; Step 4 refreshes and re-verifies. Paths OUTSIDE the fileset are possibly a sibling agent's in-progress work — never commit through them:
 
    ```
    Blocked: index already has staged changes ({out-of-fileset staged files})
@@ -127,48 +67,9 @@ and scoping guarantees once authorization already exists.
 
 ## Step 2 — Draft the message
 
-**Format**: `<type>[optional scope]: <description>` on the subject line, one
-blank line, then an optional body, then an optional footer.
+**Format**: `<type>[optional scope]: <description>`, blank line, optional body, optional footer. **Type** (exactly one): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `build`, `ci`, `revert`. **Scope**: the code area touched, never the authoring agent or branch — match the scope tokens already in this repo's history (`git log --oneline -20 -- <touched-dir>`), with one exception: the historical `(claude-code)` scope trips Step 3's rule 4 (`claude` matches inside `claude-code`) and cannot be used — prefer another in-use area token or a bare scopeless type. **Description**: imperative mood, no trailing period, ≤50 characters. **Body**: wrap at ~72 characters; explain *why*, not a restatement of the diff. **Breaking changes**: a `BREAKING CHANGE: <description>` footer when a documented public contract breaks. **One-change guard**: if the fileset cannot be honestly described by one `<type>(<scope>): <description>` line, STOP and have the caller split into separate invocations — one per logical, bisectable change.
 
-**Type** (pick exactly one): `feat`, `fix`, `docs`, `style`, `refactor`,
-`perf`, `test`, `chore`, `build`, `ci`, `revert`.
-
-**Scope**: the code area/component touched, not the authoring agent or
-branch. Derive it from this repo's own convention — run
-`git log --oneline -20 -- <touched-dir>` (or `git log --oneline -20` if the
-touched dir has no history yet) and match the scope tokens already in use
-(e.g. `user`, `cargo`, `hooks`) rather than inventing a new one.
-
-**Description**: imperative mood ("add", "fix", "resolve" — not "added",
-"adds", "fixed"), no trailing period, aim for ≤50 characters.
-
-**Body** (when there's a `-- <what changed and why>` argument or the change
-needs more than the subject conveys): wrap at ~72 characters, separated from
-the subject by exactly one blank line. Explain *why*, not a restatement of
-the diff. If the change is one logical, bisectable unit — behavior separate
-from refactor — say so implicitly by keeping the body about that one thing.
-
-**Breaking changes**: append a footer `BREAKING CHANGE: <description>` (blank
-line before it) when the change breaks a documented public contract.
-
-**One-change guard**: if the fileset mixes clearly unrelated concerns (e.g. a
-refactor plus an unrelated bug fix, or two unrelated features) that cannot be
-honestly described by one `<type>(<scope>): <description>` line, STOP and
-tell the calling agent to split into separate `Skill(commit, ...)`
-invocations — one per logical, independently bisectable change
-(`src/user/claude-code/agents/senior-engineer.md`, "Commit-mode only": *"one logical change
-per commit, each compiling and passing tests (bisectable), refactors separate
-from behavior"*).
-
-### Good examples
-
-```
-feat(user): add commit-message scope guidance to onboarding docs
-
-Hand-formatted commit messages drifted in scope naming and sometimes
-carried orchestration metadata. Document the accepted types and
-scope convention so every commit follows the same grammar.
-```
+Example:
 
 ```
 fix(hooks): reject git writes in non-interactive permission modes
@@ -178,128 +79,25 @@ when no human could confirm the prompt. Deny the write outright in
 auto/dontAsk/bypassPermissions instead of silently allowing it.
 ```
 
-```
-refactor(scripts)!: require explicit pathspecs in docket_claim.sh
+Also pick non-triggering wording up front for known false-positive tokens — e.g. "peer-skills" instead of "teammate" (rule 3 matches it) — a drafting preference that avoids rework, not a change to the checks.
 
-BREAKING CHANGE: callers passing no path argument previously defaulted
-to the repo root; that default is removed and the argument is now
-required.
-```
+## Step 3 — Forbidden-content check (mandatory, before staging)
 
-### Bad example (counter-example — never draft anything like this)
+The message must contain none of: (1) agent/subagent/role `@`-mentions; (2) Docket issue IDs or any issue-tracker references; (3) harness/orchestration metadata (task/session/vote IDs, model or tier names, team/teammate names); (4) Claude/Claude Code/Anthropic references or AI-attribution trailers (`Generated by…`, `Co-Authored-By: Claude`, `🤖…`).
+
+Mechanize it: write the fully drafted message to `$TMPDIR/commit-msg-draft.txt` via a quoted heredoc (`cat > ... <<'EOF'`), then run the single source of truth for all four patterns:
 
 ```
-fix(claude-code): resolve DKT-313 per @staff-engineer review
-
-Fixes the issue @senior-engineer found during the session; see
-team-lead's notes.
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
+~/.claude/scripts/commit_msg_check.sh "$TMPDIR/commit-msg-draft.txt"
 ```
 
-Every line of that example violates one of the four forbidden-content rules
-in Step 3 below — it exists here only to show what the self-check must
-catch, never as a template.
-
-## Step 3 — Forbidden-content self-check (mandatory, before staging)
-
-Four separate, explicit, checkable rules — the drafted message MUST satisfy
-all four before you proceed to Step 4:
-
-1. **No agent/subagent/role references.** Never `@`-mention any agent or role
-   name (`@senior-engineer`, `@staff-engineer`, `@distinguished-engineer`,
-   `@security-engineer`, `@sdet`, `@ux-designer`, `@project-manager`,
-   `@team-lead`, `@advisor`, or similar) in subject, body, or footer.
-2. **No Docket issue IDs or issue-tracker references.** Never include a
-   Docket-style ID (e.g. `DKT-123`) or a reference to any other issue
-   tracker, ticket, or tracking system.
-3. **No harness/orchestration metadata.** Never include task IDs, session
-   IDs, model or tier names (Sonnet, Opus, Fable, Haiku, or similar),
-   team/teammate names, vote IDs, or any other internal-tooling artifact.
-4. **No Claude/Claude Code/Anthropic references or AI-attribution
-   trailers.** Never mention Claude, Claude Code, or Anthropic in any form,
-   and never add an attribution trailer (`Generated by...`,
-   `Co-Authored-By: Claude`, `🤖 Generated with...`, or similar).
-
-Mechanize the check rather than eyeballing it:
-
-1. Write the fully drafted message (subject + blank line + body + footer, as
-   it will actually be committed) to `$TMPDIR/commit-msg-draft.txt` via Bash
-   (`cat > ... <<'EOF' ... EOF`, quoted heredoc so no shell expansion
-   touches the message).
-2. Run all four checks in one deterministic call via
-   `~/.claude/scripts/commit_msg_check.sh`
-   (repo: `src/user/claude-code/scripts/commit_msg_check.sh`) — the single
-   source of truth for the four regex patterns, so the run cannot drift
-   from a hand-retyped copy:
-
-   ```
-   ~/.claude/scripts/commit_msg_check.sh "$TMPDIR/commit-msg-draft.txt"
-   ```
-
-3. Any nonzero exit is a defect in the draft, not a false positive to
-   explain away — the script prints which of the four checks failed and the
-   offending line(s). Rewrite the message to remove the offending content
-   and re-run before continuing. Do not proceed to Step 4 until the script
-   exits 0. (Rule 2's check pipes its hits through an allowlist so standard
-   technical identifiers — `UTF-8`, `SHA-256`, `RFC-7231`, `ISO-8601`,
-   `CVE-2024-…` — never count as matches; a surviving rule-2 hit is
-   therefore a genuine issue-tracker ID and must be removed.)
-
-**Rule 3 is mechanized for compound persona/session names, not for
-single-word tier/model/role nouns.** The script's rule-3 pattern covers
-`session_id`/`task_id`/`vote_id`/`teammate`/`docket`, the core role names
-(`team-lead`, `staff-engineer`, `senior-engineer`, `security-engineer`,
-`distinguished-engineer`, `project-manager`, `ux-designer`, `sdet`), and
-other compound/hyphenated ephemeral or skill names (`historical-auditor`,
-`bug-auditor`, `repetition-auditor`, `model-routing-auditor`,
-`docs-researcher`, `simplify-scout`, `innovation-scanner`,
-`coherence-reviewer`, `single-reviewer`, `tdd-author`, `docs-author`,
-`reviewer-{N}`, `design-review-{N}`, `design-qa-{N}`, `verifier-criteria`,
-`verifier-integration`) as literal or numeric-suffixed tokens. Single-word
-tier/model/role nouns (`gold`, `silver`, `bronze`, `sonnet`, `opus`, `fable`,
-`haiku`, `advisor`, `planner`, `investigator`, `verifier`) are deliberately
-NOT in the regex — they collide too often with ordinary English and this
-repo's own prose-heavy doctrine vocabulary (demonstrated: `gold-standard`,
-"shared planner helper") to gate on without training reflexive
-stoplist-padding, the same tradeoff `model_census.sh`'s report-only arm-3
-backstop already made for its capitalized-token heuristic. Exit 0 means the
-mechanized categories passed — still eyeball the draft for a stray bare
-tier/model/role noun before staging; it remains a residual, not a solved
-category.
-
-### Preemptable false-positive triggers (pick wording up front)
-
-Two tokens in common use elsewhere in this repo incidentally match the checks
-above: the conventional `(claude-code)` scope token matches rule 4's
-`\bclaude\b`-style check (it fires on `claude` inside `claude-code`), and the
-word "teammate" matches rule 3's check. Rather than draft with either, fail
-that check, and rewrite, pick non-triggering wording up front — a bare
-`feat:`/`fix:` type with no scope (or another scope token already in use per
-Step 2), and alternate phrasing such as "peer-skills" instead of "teammate".
-This is a drafting preference to avoid rework, not a change to the checks
-themselves.
+Any nonzero exit is a defect in the draft, not a false positive to explain away — rewrite and re-run until it exits 0. (Rule 2 allowlists standard technical identifiers like `UTF-8`/`SHA-256`/`CVE-2024-…`, so a surviving hit is a genuine tracker ID.) One residual the script deliberately does not gate: single-word tier/model/role nouns (`gold`, `sonnet`, `opus`, `advisor`, …) collide too often with ordinary English — eyeball the draft for a stray bare one before staging.
 
 ## Step 4 — Stage the scoped files
 
-`guard-no-commit-hook.sh` intercepts `git add` (as well as `git commit`), so
-this is the first point in the flow where a permission-mode denial can
-surface. There is no proactive mode check before this step — react only if
-the command itself fails; see the Failure Modes table for the exact denial
-signature and the message to surface. In an interactive mode the hook
-returns `ask` rather than a denial, so Step 4's `git add` and Step 5's
-`git commit` each raise a SEPARATE operator prompt — approval here followed
-by a denial at Step 5 leaves the index staged, not clean.
+`git add -- <file1> <file2> ...` naming every path explicitly — never `git add .`/`-A`/a bare sweeping directory. `guard-no-commit-hook.sh` intercepts `git add` as well as `git commit`, so a permission-mode denial can first surface here; in an interactive mode the hook raises a SEPARATE operator prompt at Step 4 and Step 5 — approval here followed by denial at Step 5 leaves the index staged, not clean. On the hook's denial (stderr contains `git writes are blocked in non-interactive permission mode`), surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was committed.` — and if `git add` already succeeded, name the staged files rather than claiming a clean tree (Step 1's index precheck blocks the next invocation until they're unstaged). Never retry with `--no-verify` or probe the mode in advance.
 
-`git add -- <file1> <file2> ...` naming every path from Step 1 explicitly.
-Never `git add .` / `git add -A` / a bare directory that could sweep in
-unrelated changes beyond what Step 1 verified.
-
-After staging, re-run `git diff --cached --name-only` and confirm the result
-is *exactly* the intended fileset (same set, order-independent) — if it
-differs, something outside this skill's control changed the index between
-Step 1 and here; ABORT without committing:
+After staging, re-run `git diff --cached --name-only` and confirm the result is *exactly* the intended fileset (order-independent). If it differs, the index changed concurrently — ABORT without committing:
 
 ```
 Blocked: staged fileset does not match the intended scope after `git add`
@@ -308,67 +106,17 @@ Blocked: staged fileset does not match the intended scope after `git add`
 
 ## Step 5 — Commit
 
-**Sandbox-context invariant (mandatory, prevents stale-file commits).**
-`$TMPDIR` can resolve to a different path depending on whether a given Bash
-call runs sandboxed or with `dangerouslyDisableSandbox: true` — a file
-written in one context is not guaranteed to exist, or to hold the content
-you expect, in the other. Never split "write the checked message file" and
-"consume it with `git commit -F`" across two Bash calls that might differ
-in sandbox setting:
+`git commit -F "$TMPDIR/commit-msg-draft.txt"` — `-F` against the already-checked file avoids re-typing through shell quoting.
 
-- If this step needs to retry with the sandbox disabled (see the 1Password
-  row in Failure Modes), rewrite the message file with the same quoted
-  heredoc used in Step 3 and re-run all four Step 3 checks **inside that
-  same disabled-sandbox Bash call**, then run `git commit -F` in that
-  identical call.
-- If there is any doubt which context last wrote the file, `cat` it inside
-  the exact Bash call that will run the commit and confirm it still matches
-  the checked draft before proceeding.
+**Sandbox-context invariant.** `$TMPDIR` can resolve differently between sandboxed and sandbox-disabled Bash calls — never split "write the checked message file" and "consume it with `-F`" across calls that might differ in sandbox setting. A known signature requiring the disabled-sandbox retry: `1Password: Could not connect to socket. Is the agent running?` (the sandbox blocking the SSH-signing-agent socket — retry once sandbox-disabled; this is distinct from `--no-verify`, which stays forbidden). On any such retry, rewrite the message file, re-run the Step 3 check, and run `git commit -F` all inside that same disabled-sandbox call.
 
-`git commit -F "$TMPDIR/commit-msg-draft.txt"` — using `-F` against the
-already-checked file avoids re-typing the message through shell quoting.
-
-**Post-commit verification (mandatory).** Immediately after `git commit -F`
-succeeds, run `git log -1 --format='%H%n%s%n%b'` and confirm the subject and
-body match the checked draft exactly. Do not proceed to Step 6 on the
-strength of `git commit`'s exit code alone — a stale or mismatched
-`$TMPDIR` file commits successfully while silently carrying the wrong
-message. On any mismatch, treat this as a failure: do not report success in
-Step 6, and do not self-fix with `git commit --amend` (still forbidden by
-this skill, see below) — report the mismatch and the resulting commit's SHA
-to the calling agent so it can secure fresh, explicit operator authorization
-for whatever git operation fixes it.
-
-Never run `git push`. Never run `git commit --amend`. If the calling agent
-asked for either, decline and point them at direct `git` usage under
-explicit operator instruction — both are outside this skill's contract.
+**Post-commit verification (mandatory).** After `git commit -F` succeeds, run `git log -1 --format='%H%n%s%n%b'` and confirm subject and body match the checked draft exactly — a stale `$TMPDIR` file commits successfully while silently carrying the wrong message. On mismatch: no success report, no self-fix with `--amend` (forbidden) — report the mismatch and the commit's SHA to the caller so it can secure fresh operator authorization for whatever fixes it. Any other `git commit` failure (hook rejection, empty diff): surface the raw error; never bypass.
 
 ## Step 6 — Report
-
-Emit a single confirmation:
 
 ```
 Committed {short_sha}: {subject line}
 Files: {file1}, {file2}, ...
 ```
 
-Do not push. Do not open a PR. Do not send peer messages — the calling agent
-owns next steps.
-
-## Failure Modes
-
-| Trigger | Handling |
-|---|---|
-| `<files to commit>` missing or empty | Abort: `Error: Usage: Skill(commit, "<files> [-- what changed and why]") — name the exact files to stage.` |
-| Calling agent is not `team-lead` | Abort at Step 0 with the caller-gate `Blocked:` message; do not proceed further. |
-| Calling agent has not confirmed explicit, current operator authorization | Abort at Step 0 with the `Blocked:` authorization message. |
-| Bare `.`/`-A`/`--all` pathspec passed | Abort: reject, require explicit paths. |
-| Index already has unrelated staged content before `git add` | Abort at Step 1 with the `Blocked: index already has staged changes` message. |
-| Fileset mixes unrelated logical changes | Abort at Step 2 (one-change guard); ask the calling agent to split into separate invocations. |
-| Forbidden-content self-check (Step 3) finds any hit | Rewrite the draft and re-run all four checks; do not stage or commit until clean. |
-| `git diff --cached --name-only` mismatches the intended fileset after `git add` | Abort at Step 4 with the `Blocked: staged fileset does not match` message; re-run from Step 1. |
-| `git add` or `git commit -F` fails with the guard hook's permission-mode denial (stderr containing `git writes are blocked in non-interactive permission mode`) | This is `guard-no-commit-hook.sh`'s own enforcement, not this skill's — there is no proactive check for it anymore. Surface: `This session's permission mode blocks git writes here — switch to an interactive mode (default/plan/acceptEdits, e.g. Shift+Tab or /permissions) and re-invoke Skill(commit). Nothing was committed.` If `git add` already succeeded, do NOT claim a clean tree — name the staged files, because Step 1's index precheck blocks the next Skill(commit) invocation until they are unstaged. Do not retry, do not probe the mode in advance, do not use `--no-verify`. |
-| `git commit -F` fails for another reason (hook rejection unrelated to permission mode, empty diff, etc.) | Surface the raw `git` error; do not retry with `--no-verify` or any other bypass. |
-| `git commit -F` fails with `1Password: Could not connect to socket. Is the agent running?` | A known Claude Code sandbox-environment signature — the sandbox is blocking the SSH-signing-agent socket, not a `guard-no-commit-hook.sh` rejection. Retry once with the sandbox disabled (the harness's standard recovery pattern for evidence of a sandbox-caused failure); this is distinct from `--no-verify`, which remains forbidden. Step 5's Sandbox-context invariant governs the retry — rewrite the message file and re-run the Step 3 checks inside that same disabled-sandbox Bash call. |
-| `git commit -F` succeeds but the resulting commit's message doesn't match the checked draft (e.g. a stale `$TMPDIR` file reused across a sandbox-context switch) | Caught by the Step 5 post-commit verification — follow its handling verbatim (no Step 6 success report, no `--amend`, report the mismatch plus the wrong commit's SHA to the calling agent). |
-| Calling agent asks for `git push` or `git commit --amend` | Decline — outside this skill's contract; direct them to explicit direct `git` usage under operator instruction. |
+Do not push, open a PR, or send peer messages — the calling agent owns next steps.

@@ -36,6 +36,16 @@ from pathlib import Path
 
 MARKER = "skip `--help`"
 
+# Every doc that currently holds an inlined block. team-lead.md carries the
+# singleton_wait.sh and secret_scan.sh blocks; the dispatch_ledger.sh block
+# moved to the wrap-up reference when step 16's mechanics were relocated behind
+# progressive disclosure. Relocating a block WITHOUT adding its new home here
+# makes the guard pass vacuously -- add the destination in the same commit.
+DEFAULT_DOCS = [
+    "src/user/claude-code/agents/team-lead.md",
+    "src/user/claude-code/skills/team-doctrine/references/wrap-up.md",
+]
+
 _COMMENT_USAGE_RE = re.compile(r"^#\s*Usage:\s*(.+)$")
 _ECHO_LINE_RE = re.compile(r'^echo\s+"(.*)"\s*(?:>&2)?\s*$')
 
@@ -134,41 +144,55 @@ def compare_usage(script_usage, block_text, basename):
     return norm_script == norm_block, f"positional script={norm_script!r} block={norm_block!r}"
 
 
-def run(doc_path, scripts_dir):
-    if not doc_path.is_file():
-        print(f"error: file not found: {doc_path}", file=sys.stderr)
-        return 2
+def run(doc_paths, scripts_dir):
+    # A single Path stays acceptable: the inlined blocks now live across more
+    # than one doc (team-lead.md plus the references/ files sections were
+    # relocated into), so the scan is a set, not one file.
+    if isinstance(doc_paths, (str, Path)):
+        doc_paths = [doc_paths]
+    doc_paths = [Path(d) for d in doc_paths]
+
+    for doc_path in doc_paths:
+        if not doc_path.is_file():
+            print(f"error: file not found: {doc_path}", file=sys.stderr)
+            return 2
     if not scripts_dir.is_dir():
         print(f"error: not a directory: {scripts_dir}", file=sys.stderr)
         return 2
 
-    blocks = find_inlined_blocks(doc_path.read_text())
+    blocks = []
+    for doc_path in doc_paths:
+        for marker, block_content in find_inlined_blocks(doc_path.read_text()):
+            blocks.append((doc_path, block_content))
     if not blocks:
-        print(f"drift-guard: none found ({MARKER!r} not present in {doc_path})")
+        scanned = ", ".join(str(d) for d in doc_paths)
+        print(f"drift-guard: none found ({MARKER!r} not present in {scanned})")
         return 0
 
+    multi = len(doc_paths) > 1
     basenames = sorted(p.name for p in scripts_dir.glob("*.sh"))
     mismatches = 0
-    for _, block_content in blocks:
+    for doc_path, block_content in blocks:
+        where = f"[{doc_path.name}] " if multi else ""
         matched = [b for b in basenames if b in block_content]
         if not matched:
-            print(f"  UNRESOLVED  no known script referenced in block: {block_content!r}")
+            print(f"  UNRESOLVED  {where}no known script referenced in block: {block_content!r}")
             mismatches += 1
             continue
         if len(matched) > 1:
-            print(f"  UNRESOLVED  ambiguous script match {matched} for block: {block_content!r}")
+            print(f"  UNRESOLVED  {where}ambiguous script match {matched} for block: {block_content!r}")
             mismatches += 1
             continue
 
         basename = matched[0]
         script_usage = extract_script_usage(scripts_dir / basename)
         if script_usage is None:
-            print(f"  UNRESOLVED  {basename} -- no Usage: line found in script")
+            print(f"  UNRESOLVED  {where}{basename} -- no Usage: line found in script")
             mismatches += 1
             continue
 
         ok, detail = compare_usage(script_usage, block_content, basename)
-        print(f"  {'OK' if ok else 'DRIFT':<10} {basename} -- {detail}")
+        print(f"  {'OK' if ok else 'DRIFT':<10} {where}{basename} -- {detail}")
         if not ok:
             mismatches += 1
 
@@ -183,8 +207,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--doc",
-        default="src/user/claude-code/agents/team-lead.md",
-        help="markdown file to scan for inlined 'skip `--help`' fenced blocks (default: team-lead.md; invoke from repo root)",
+        action="append",
+        dest="docs",
+        metavar="DOC",
+        help=(
+            "markdown file to scan for inlined 'skip `--help`' fenced blocks; repeatable. "
+            f"Default: {' + '.join(DEFAULT_DOCS)} (invoke from repo root). "
+            "The default set must name EVERY doc holding an inlined block -- a block "
+            "relocated into a doc nobody scans passes vacuously."
+        ),
     )
     parser.add_argument(
         "--scripts-dir",
@@ -192,7 +223,7 @@ def main(argv=None):
         help="directory of *.sh scripts to resolve inlined blocks against (default: src/user/claude-code/scripts)",
     )
     args = parser.parse_args(argv)
-    return run(Path(args.doc), Path(args.scripts_dir))
+    return run([Path(d) for d in (args.docs or DEFAULT_DOCS)], Path(args.scripts_dir))
 
 
 if __name__ == "__main__":

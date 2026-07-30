@@ -10,7 +10,6 @@ description: >
 argument-hint: "<PR — number, full URL, or owner/repo#number>"
 allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read"]
 disallowed-tools: ["Edit", "Write", "Agent", "SendMessage"]
-effort: xhigh
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
@@ -20,73 +19,55 @@ effort: xhigh
 
 # Review-and-Comment — Dual-Lens PR Review → Inline Comments in Your Voice
 
-You review a pull request through two lenses (security + general correctness), then post every finding as its own single-line inline comment, phrased in the operator's voice and posted under the operator's GitHub account — only after the operator approves each one. You run the whole flow yourself; you do not delegate to other agents.
+Review a pull request through two lenses (security + general correctness), then post every finding as its own single-line inline comment, phrased in the operator's voice and posted under the operator's GitHub account — only after the operator approves each one. You run the whole flow yourself.
 
 ## Argument
 
-A single positional `<PR>`: a bare number (`109`), a full URL (`https://github.com/OWNER/REPO/pull/109`), or `OWNER/REPO#109`. If only a number is given, resolve OWNER/REPO from the current directory via `gh repo view --json nameWithOwner`. If neither resolves, ABORT and ask the operator for the repo.
+A single positional `<PR>`: a bare number (`109`), a full URL, or `OWNER/REPO#109`. If only a number is given, resolve OWNER/REPO from the current directory via `gh repo view --json nameWithOwner`; if neither resolves, ABORT and ask the operator for the repo.
 
-## Operational preconditions (read once)
+## Operational preconditions
 
-- **GitHub API calls fail under the sandbox** (TLS x509 errors via the proxy). Run every `gh`/`git` network call with `dangerouslyDisableSandbox: true` — this includes the script calls in Steps 1, 5, and 8, and the raw `gh` call in Step 7.
-- **`gh` and `jq` may not resolve inside shell-function subshells.** Capture absolute paths at top level first: `GH=$(command -v gh); JQ=$(command -v jq)` and call `"$GH"` / `"$JQ"`. If `jq` is missing, build JSON another way (e.g. a written temp file) — do not silently skip. (Step 1's script already does this internally; this still applies to the raw `gh` call in Step 7.)
-- Confirm identity: `gh api user --jq .login`. Comments will be authored by this account. Surface it to the operator before posting. (Step 1's script already captures and prints this as `IDENTITY` — reuse that value.)
+- **GitHub API calls fail under the sandbox** (TLS x509 via the proxy) — run every `gh`/`git` network call with `dangerouslyDisableSandbox: true`, including the script calls below.
+- **`gh`/`jq` may not resolve inside shell-function subshells** — capture absolute paths at top level (`GH=$(command -v gh); JQ=$(command -v jq)`) for any raw call; the setup script handles this internally.
+- Comments post as the authenticated account — Step 1 prints it as `IDENTITY`; surface it to the operator before posting.
 
-## Step 1 — Fetch PR metadata + diff, and clone (via rc_pr_setup.sh)
+## Step 1 — Fetch metadata, diff, and clone
 
-Run the shared setup script `~/.claude/scripts/rc_pr_setup.sh` (repo: `src/user/claude-code/scripts/rc_pr_setup.sh`) with `dangerouslyDisableSandbox: true`:
+Run `~/.claude/scripts/rc_pr_setup.sh <owner/repo> <num>` (repo: `src/user/claude-code/scripts/rc_pr_setup.sh`) with `dangerouslyDisableSandbox: true`. One deterministic call: prints the acting `IDENTITY`, fetches PR metadata and `HEAD_SHA` (anchors every comment), writes the full diff to `DIFF_FILE`, and shallow-clones the PR head branch to `CLONE_DIR` for full-repo context (the diff alone misses callers not in the diff, repo conventions, the dependency graph). **Reuse the printed `DIFF_FILE`/`CLONE_DIR` absolute paths verbatim for the rest of the flow** — the sandbox remaps `$TMPDIR` between calls, so recomputing them later points at the wrong location.
 
-```
-~/.claude/scripts/rc_pr_setup.sh <owner/repo> <num>
-```
+## Step 2 — Review through both lenses
 
-One deterministic call: resolves `gh`/`jq` to absolute paths (avoids the subshell PATH-resolution footgun above), prints the acting `IDENTITY`, fetches PR metadata (`METADATA_JSON`: `title,author,baseRefName,headRefName,additions,deletions,changedFiles,files,url`) and `HEAD_SHA` (anchors every comment — Step 4), writes the full diff to `DIFF_FILE`, and shallow-clones the PR head branch to `CLONE_DIR` (see Step 2). On a TLS/certificate failure it prints an explicit re-run-with-sandbox-disabled instruction instead of a cryptic curl error.
+Read the changed files in full plus their relevant callers/neighbors from the clone. Assign each finding a severity — **high** (should block or get an explicit decision), **medium** (suggestion), **nit/low** (cosmetic) — and cite `file:line`.
 
-**Reuse the printed `DIFF_FILE`/`CLONE_DIR` absolute paths verbatim for the rest of this skill** — the sandbox remaps `$TMPDIR` between calls, so recomputing them from `$TMPDIR` later points at the wrong location.
+**General-correctness lens:** correctness/logic; integration & wiring (interfaces, args, callers); error handling & edge cases; readability/maintainability (incl. fail-safe vs fail-open defaults, footguns); consistency with existing conventions; test coverage. For IaC/Terraform also: dependency graph/cycles, default values, copy-paste defects in names/tags/descriptions.
 
-## Step 2 — Clone the PR head for full-repo context
+**Security lens (least-privilege focus):** trust-boundary changes & blast radius; authn/authz; secrets handling; input validation at privilege boundaries; over-broad grants (all-ports/all-protocols, wildcards, broad CIDRs, shared/default identities); supply-chain (new deps, CI reach); fail-open defaults; abuse cases ("if X is compromised, what does this rule let it reach?"). Frame intentional broad grants as risk-acceptance decisions, not bugs — but still surface them.
 
-The diff alone misses cross-file issues (callers not in the diff, repo-wide conventions, dependency graph). `rc_pr_setup.sh` (Step 1) already shallow-cloned the PR head branch to the printed `CLONE_DIR` — read/grep that path for full-repo context; no separate clone command is needed.
+Distinguish real defects from intentional design. (This fast single-agent pass is not the fleet's formal 6-dimension review rubric — that lives in `Skill(code-review-verdict)`; see "When to escalate instead".)
 
-## Step 3 — Review through both lenses
+## Step 3 — Anchor each finding
 
-Read the changed files in full plus their relevant callers/neighbors. Produce findings under two lenses. Assign each a severity: **high** (concern that should block or get an explicit decision), **medium** (suggestion), **nit/low** (cosmetic). Cite `file:line` for every finding.
+Record `path` (repo-relative), `line` (in the PR's NEW file version), `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment — verify line numbers against the clone (`grep -n`). A finding whose true location is OUTSIDE the diff cannot post inline: anchor it to the nearest changed line that motivates it with an explicit `(re: <path>:<line>)` pointer, or carry it to the Step 8 report as an out-of-diff note — never silently drop it.
 
-**General correctness (6 dimensions):** correctness/logic; integration & wiring (interfaces, args, callers); error handling & edge cases; readability/maintainability (incl. fail-safe vs fail-open defaults, footguns); consistency with existing conventions; test coverage. For IaC/Terraform also check: dependency graph / cycles, default values, and copy-paste defects in names/tags/descriptions.
+## Step 4 — Match the operator's voice
 
-**Security (least-privilege focus):** trust-boundary changes & blast radius; authn/authz; secrets handling; input validation at privilege boundaries; over-broad grants (all-ports/all-protocols, wildcards, broad CIDRs, shared/default identities); supply-chain (new deps, CI reach); fail-open defaults; abuse cases ("if X is compromised, what does this rule let it reach?"). Frame intentional broad grants as risk-acceptance decisions, not bugs — but still surface them.
+Sample the operator's real comment style: `~/.claude/scripts/gh_inline_comment.sh --sample-voice <IDENTITY> <owner/repo>`. If no samples surface, draft in a concise first-person engineer voice (short, direct, concrete fix), tell the operator you had no samples, and let them calibrate tone on the first 1-2 comments.
 
-Distinguish real defects from intentional design. If the change is large or high-stakes, recommend the full fleet flow instead of this single-agent pass (see "When to escalate instead" below).
+## Step 5 — Draft one single-line comment per finding
 
-## Step 4 — Anchor each finding
+One inline comment per finding (never a consolidated mega-comment): short, first-person, names the concern + a concrete suggestion. Prefix nits with `nit:`. Keep high-severity ones direct but collegial (questions over commands).
 
-For each finding, record: `path` (repo-relative), `line` (line number in the PR's NEW file version), and `side: "RIGHT"`. The line must fall inside the PR diff (added/changed lines, or anywhere in a new file) or GitHub rejects the comment. Verify line numbers against the clone (`grep -n`). If a finding's true location is OUTSIDE the diff (e.g. a caller in an unchanged file surfaced by the Step 2 clone), you cannot post it inline — anchor it to the nearest changed line that motivates it with an explicit `(re: <path>:<line>)` pointer, or carry it to the Step 9 report as an out-of-diff note; never silently drop it.
+## Step 6 — Per-item approval gate (MANDATORY)
 
-## Step 5 — Match the operator's voice
+Before presenting, fetch the PR's existing inline comments once (`gh api repos/<owner>/<repo>/pulls/<num>/comments --jq '.[]|"\(.path):\(.line)\t\(.body)"'`, sandbox-off) and mark any draft whose `path:line` + concern already matches one as `[DUP — already on PR]`; exclude dups from the post set unless the operator opts to re-post — this keeps a re-run from posting the same comment twice under the operator's account.
 
-Sample the operator's real comment style so drafts read like them, using `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`):
+Present ALL drafts as a numbered list, each showing `file:line · severity` and the exact body. Then STOP and ask for per-item approval ("post all", "post 1-5, drop 6", "edit #3 to …"). **Post nothing until the operator explicitly approves.** Apply edits and re-confirm changed items.
 
-```
-~/.claude/scripts/gh_inline_comment.sh --sample-voice <IDENTITY> <owner/repo>
-```
+**Terminal states.** Zero real findings → do NOT pad with marginal nits; report "no findings to post", clean up (Step 8), stop. Operator declines all → post nothing, clean up, exit.
 
-If no samples surface, draft in a concise first-person engineer voice (short, direct, suggests a concrete fix) and tell the operator you had no samples — let them calibrate tone on the first 1–2 comments, then match the rest.
+## Step 7 — Post approved comments
 
-## Step 6 — Draft one single-line comment per finding
-
-One inline comment per finding (never a single consolidated mega-comment). Each: short, first-person, names the concern + a concrete suggestion. Prefix nits with `nit:`. Keep high-severity ones direct but collegial (questions over commands). Map findings → anchors from Step 4.
-
-## Step 7 — Per-item approval gate (MANDATORY)
-
-Before presenting, fetch the PR's existing inline comments once (`gh api repos/<owner>/<repo>/pulls/<num>/comments --jq '.[]|"\(.path):\(.line)\t\(.body)"'`, run sandbox-off) and mark any draft whose `path:line` + concern already matches one as `[DUP — already on PR]`; exclude dups from the post set by default unless the operator opts to re-post. This keeps a re-run (fix→re-review, or an interrupted retry) from posting the same comment twice under the operator's account.
-
-Present ALL drafts to the operator as a numbered list, each showing `file:line · severity` and the exact body. Then STOP and ask for per-item approval (e.g. "post all", "post 1–5, drop 6", "edit #3 to …", "add …"). **Post nothing until the operator explicitly approves.** Apply any edits and re-confirm changed items.
-
-**Terminal states.** If the review surfaces zero real findings, do NOT pad with marginal nits — report "no findings to post", skip to Step 9 cleanup, and stop. If the operator declines all drafts (or approves none), post nothing, run Step 9 cleanup, and exit.
-
-## Step 8 — Post approved comments
-
-Post each approved comment as a standalone inline review comment (not a formal approve/request-changes verdict unless asked). Use the shared script `~/.claude/scripts/gh_inline_comment.sh` (repo: `src/user/claude-code/scripts/gh_inline_comment.sh`) — one call per approved finding, preceded by a fresh dedupe check for that exact `path:line`:
+One `~/.claude/scripts/gh_inline_comment.sh` call per approved finding, preceded by a fresh dedupe check for that exact `path:line`:
 
 ```
 ~/.claude/scripts/gh_inline_comment.sh --existing <owner/repo> <num> <path> <line>; rc=$?
@@ -103,14 +84,12 @@ EOF
 fi
 ```
 
-Run the `--existing` check immediately before every post, even though Step 7 already fetched a snapshot for the operator's preview — this re-check catches comments posted between the preview and now (e.g. a concurrent reviewer, or approved items posted in sequence over a long session) and is the authoritative dedupe guard. The check has three outcomes: exit 0 (`EXISTS`) — skip (do not post, and note the skip in the Step 9 report); exit 1 (`NONE`) — safe to post; exit 2 (lookup itself failed — auth/network/rate-limit/parse error, existence genuinely unknown) — do NOT post and do NOT silently skip either; surface it to the operator (e.g. "could not verify whether a comment already exists at `<path>:<line>` — gh api/jq lookup failed; want me to retry, check manually, or post anyway?") and wait for their call before touching that item.
+Run `--existing` immediately before EVERY post even though Step 6 previewed a snapshot — it catches comments posted in between and is the authoritative dedupe guard. Three outcomes: exit 0 (`EXISTS`) — skip and note it in the report; exit 1 (`NONE`) — post; exit 2 (lookup failed — existence genuinely unknown) — do NOT post and do NOT silently skip: surface it ("could not verify whether a comment already exists at `<path>:<line>` — retry, check manually, or post anyway?") and wait for the operator's call. Pass each body via a quoted heredoc so backticks/quotes stay literal (the script pipes into `jq --arg`); run both calls sandbox-disabled. Posting to `pulls/{n}/comments` creates inline comments with no bot/app attribution; on success the script prints `OK <path>:<line> -> <html_url>`.
 
-Pass each comment body via a quoted heredoc (`B=$(cat <<'EOF' … EOF)`) so backticks/quotes stay literal — the script pipes it into `jq --arg`, which handles JSON escaping. Run both calls with `dangerouslyDisableSandbox: true`. Posting to `pulls/{n}/comments` creates individual inline comments with no bot/app attribution — they appear authored by the `gh` account. On success the script prints `OK <path>:<line> -> <html_url>`.
+## Step 8 — Clean up & report
 
-## Step 9 — Clean up & report
-
-`rm -rf <CLONE_DIR> <DIFF_FILE>` — substitute the literal paths Step 1 printed; shell variables do not survive between Bash calls, so an unset one expands empty and `rm -rf ""` exits 0 silently, leaving the clone behind. Report a table of posted comments (file:line + discussion URL), list any items skipped as duplicates by the Step 8 `--existing` check, list any items left unposted because `--existing` could not determine duplicate status (exit 2) and still need the operator's call, confirm nothing was committed and no PR verdict was submitted, and offer to post any deferred/optional comments.
+`rm -rf <CLONE_DIR> <DIFF_FILE>` — substitute the LITERAL paths Step 1 printed (shell variables don't survive between Bash calls; an unset one expands empty and `rm -rf ""` exits 0 silently, leaving the clone behind). Report: a table of posted comments (file:line + discussion URL), items skipped as duplicates, items left unposted on an exit-2 lookup still awaiting the operator's call, confirmation that nothing was committed and no PR verdict was submitted, and an offer to post any deferred comments.
 
 ## When to escalate instead
 
-For very large or high-blast-radius PRs, prefer the full fleet flow: parallel independent @staff-engineer (general) and @security-engineer (security) reviews via the `code-review-verdict` skill, reconciled by team-lead, optionally a consensus `vote` on risk acceptance. This skill is the fast single-agent path; it is not a substitute for independent dual review on critical changes.
+For very large or high-blast-radius PRs, prefer the full fleet flow: parallel independent @staff-engineer and @security-engineer reviews via `Skill(code-review-verdict)`, reconciled by team-lead, optionally a consensus `vote` on risk acceptance. This skill is the fast single-agent path, not a substitute for independent dual review on critical changes.

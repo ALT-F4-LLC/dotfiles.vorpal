@@ -111,7 +111,7 @@ Evidence classes:
 | **B7** | Authority gate — no override-on-merits | **PASS** | §6.1 — cycle 3 escalated a Block rather than dispositioning it |
 | **B8** | Cycles complete unattended | **FAIL → FIXED, verified** | §6.2 B1 — cycle 2 died mid-round-3. R15 (§7) ships unconditional wait-arming; confirmed live |
 | **B9** | Rule 8 security panel provisioned as specified | **FAIL** | §6.2 B2 — 1 of 3 seats, no deliberation in transcript |
-| **B10** | Scratch files stay out of the working tree | **FAIL** | §6.2 B3 — 9 `.sdet_*` files left in the target repo root |
+| **B10** | Scratch files stay out of the working tree | **FAIL → rule gap fixed** | §6.2 B3 — 9 `.sdet_*` files left in the repo root; the rule never prohibited that destination. R17 (§7) closes it |
 | **B11** | Spawn names match the dispatch table | **FAIL (1 of 3)** | §6.2 B4 — three forms across four runs: `impl-DKT-1`, bare `senior-engineer`, `impl-cart-linecount` |
 | **B12** | Acceptance vote converges | **FAIL** | §6.2 B5 — 2 rounds rejected on unverified claims, into round 3 of 3 |
 
@@ -561,11 +561,26 @@ call "non-negotiable on any security surface."
 
 **B3 — Reviewer subagents wrote scratch files into the target repo.** Cycle 2
 left nine files in the repo root: `.sdet_probe.py`, `.sdet_probe2.py`,
-`.sdet_v2_b1.py`–`.sdet_v2_b5.py`, `.sdet_v2_acs.sh`, `.sdet_v2_ref.py`. The
-shell-hygiene master (`senior-engineer.md §Shell hygiene`) requires "ALL scratch
-files" go to `$TMPDIR`, and `sdet.md`'s own CRITICAL banner carries the
-`/tmp`-vs-`$TMPDIR` rule. In a real repository these land in `git status` and
-are commit candidates. **Severity: medium.**
+`.sdet_v2_b1.py`–`.sdet_v2_b5.py`, `.sdet_v2_acs.sh`, `.sdet_v2_ref.py` —
+falsification harnesses for the reviewers' Blocker findings. In a real
+repository these land in `git status` and are commit candidates.
+
+**This is a rule gap, not a compliance failure** — the distinction matters for
+the fix. The rule as written names one prohibited destination (`/tmp/…`) and
+one correct destination (`$TMPDIR`); it never prohibits the working tree.
+`sdet.md`'s banner: "NEVER write to a literal `/tmp/...` path … scratch/temp
+writes go to `$TMPDIR`." The agent obeyed it exactly — it avoided `/tmp` — and
+wrote to the third destination the rule is silent about, which happens to be
+the harmful one. Notably `@sdet`, the role that leaked, carries the *most*
+elaborated version of the rule (the only LONG variant across the 8 agents) and
+it still has the gap.
+
+An earlier draft of this report treated it as prose failing to hold and
+proposed a blocking hook. That was wrong on the evidence and would have been
+the wrong instrument: "scratch vs deliverable" is a judgment, not a crisp
+boundary, so a blocking hook carries real false-deny risk against legitimate
+file creation. Fix the rule first; if it then leaks, *that* is the regression
+evidence the charter requires before adding a mechanism. **Severity: medium.**
 
 **B4 — Spawn naming has no stable convention.** Three different forms across
 four runs of the same definition, for the same role on the same kind of task:
@@ -626,6 +641,7 @@ recovery path.
 | **G1** — `TeammateIdle` no longer asserted as proof a rule failed; reframed as routine lifecycle that *prompts* the owed-reply check, citing team-lead.md §Teammate Stall & Crash Recovery as authority | `agents/staff-engineer.md:77` | class 1.6 |
 | **G2** — same reframing, citing the file's own §Lifecycle (idle-after-verdict is normal) | `agents/sdet.md:54` | class 1.6 |
 | **G3** — unsatisfiable "if Write is absent, Write…" replaced with the actual mechanism: a quoted-delimiter heredoc under `$TMPDIR`, pointing at `senior-engineer.md §Shell hygiene` as master | `agents/security-engineer.md:55`, `agents/ux-designer.md:69` | logic defect |
+| **R17** — scratch-file destination: `$TMPDIR` rule now names the working tree as prohibited, not just `/tmp` | `agents/senior-engineer.md` (master), `agents/sdet.md` | rule gap |
 
 **On G1/G2 — which side was wrong.** `team-lead.md:338` is the authority and
 states it plainly: "`TeammateIdle` fires on nearly every spawn as routine
@@ -714,7 +730,7 @@ unchanged).
 | R14 | **Decide the fate of `src/user/opencode/agents/`** (398KB, unmigrated) (§3.8) | A second, now-divergent generation of the same 8 agents; migrate, regenerate, or retire | Migration owner |
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | **R16** | **Rule 8 security panel under-provisioned** (§6.2 B2) | The panel the definitions call "non-negotiable"; needs the trigger made unmissable at dispatch time, not just stated in Rule 8 | Phase 2 follow-up |
-| **R17** | **Scratch-file discipline not reaching reviewer spawns** (§6.2 B3) | The `$TMPDIR` rule is in `sdet.md`'s own CRITICAL banner and still leaked 9 files into the repo root — prose is not holding; candidate for mechanism (hook) over text, per audit escalation §6.6 | Phase 2 follow-up |
+| ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
 | **R18** | **Grounded-progress-claims snippet not holding on the Fable seat** (§6.2 B5) | Two vote rounds lost to claimed-but-unverified fixes. The §2.1 snippet is present; the gold seat's authoring path may need the claim-audit made a pre-emission step | Phase 2 follow-up |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
 

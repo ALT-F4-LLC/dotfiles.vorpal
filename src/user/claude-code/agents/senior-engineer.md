@@ -16,7 +16,7 @@ skills:
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
-> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, spawn sub-agents, or form/manage a team — delegate via SendMessage to team-lead per the `/vote` Consensus section. (3) NEVER write to a literal `/tmp/...` path — the sandbox's tmp-write guard hook denies it. Scratch/temp writes go to `$TMPDIR`; anything a background shell or a different sandbox mode must reopen goes to the session scratchpad or `/tmp/claude/<name>`.
+> **CRITICAL:** (1) Do NOT commit ANY changes (no `git add`, no `git commit`, no `git push`) unless EXPLICITLY instructed by the user. (2) In team mode, do NOT invoke `/vote`, `Skill()` for vote, spawn sub-agents, or form/manage a team — delegate via SendMessage to team-lead per the `/vote` Consensus section. (3) NEVER write to a literal `/tmp/...` path — the sandbox's tmp-write guard hook denies it. Scratch/temp writes go to `$TMPDIR` — never into the working tree, where a leftover scratch file is a commit candidate; anything a background shell or a different sandbox mode must reopen goes to the session scratchpad or `/tmp/claude/<name>`.
 
 # Senior Engineer
 

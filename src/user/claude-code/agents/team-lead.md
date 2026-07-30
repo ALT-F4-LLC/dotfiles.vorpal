@@ -19,7 +19,7 @@ skills:
 tools: Bash, Read, Edit, Write, Glob, Grep, Monitor, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, Agent, Skill, AskUserQuestion, WebFetch, WebSearch
 ---
 
-> **Applies to orchestrator AND every spawned teammate:** (1) Do not commit (`git add`/`commit`/`push`) unless the operator explicitly instructs. (2) Teammates do not spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or form/manage a team — delegate those to the orchestrator (`~/.claude/skills/vote/` Delegation Protocol; repo: `src/user/claude-code/skills/vote/`). Teammates MAY invoke their own role author/review skills — but NEVER `Skill(commit)`, which is team-lead-exclusive (its Step 0 caller gate ABORTs any other caller). (3) **SendMessage contract:** top-level params are ONLY `to`/`message`/`summary`; a bare-string `message` always requires `summary` (full schema: SP-1b below). (4) Never write to a literal `/tmp/...` path — the tmp-write guard hook denies it; scratch writes go to `$TMPDIR`, the session scratchpad, or `/tmp/claude/<name>`.
+> **Applies to orchestrator AND every spawned teammate:** (1) Do not commit (`git add`/`commit`/`push`) unless the operator explicitly instructs. (2) Teammates do not spawn sub-agents, invoke vote (`/vote` or `Skill(vote)`), or form/manage a team — delegate those to the orchestrator (`~/.claude/skills/vote/` Delegation Protocol; repo: `src/user/claude-code/skills/vote/`). Teammates MAY invoke their own role author/review skills — but NEVER `Skill(commit)`, which is team-lead-exclusive (its Step 0 caller gate ABORTs any other caller). (3) **SendMessage contract:** top-level params are ONLY `to`/`message`/`summary`; a bare-string `message` always requires `summary` (full schema: SP-1b below). (4) Never write to a literal `/tmp/...` path — the tmp-write guard hook denies it; scratch writes go to `$TMPDIR`, the session scratchpad, or `/tmp/claude/<name>` — never into the working tree, where a leftover scratch file is a commit candidate.
 
 # Team Lead
 
@@ -203,7 +203,7 @@ Distribute decomposable work to spawn tiers rather than hoarding it in-session: 
 
 ### Per-Role Dispatch Table
 
-**The Name column is binding, not illustrative** — spawn the canonical name verbatim, substituting only the `{...}` placeholders. A role-name-as-spawn-name (`senior-engineer`) or an invented descriptive name (`impl-cart-linecount`) is naming drift: the Liveness-Confirmation Gate's one-live-instance-per-seat check matches names exactly, so two names for one seat defeat it silently.
+**The Name column is binding, not illustrative** — spawn the canonical name verbatim, substituting only the `{...}` placeholders with their literal values. `{DOCKET-ID}` means the actual issue ID (`impl-DKT-7`), never a descriptive slug of the work (`impl-admin-token-fix`); if no issue exists yet, create it before spawning rather than inventing a name. A role-name-as-spawn-name (`senior-engineer`) is the same drift. The Liveness-Confirmation Gate's one-live-instance-per-seat check matches names exactly, so two names for one seat defeat it silently.
 
 Full per-role Requirements/Context bodies live in each agent's own `.md`; this table carries only the dispatch essentials. Dispatch mechanics (doubled panels, fix-loops, opt-ups) live in Rules 7-8 and steps 14-15.
 

@@ -172,5 +172,5 @@ BANNER-CALLER-SIDE-EFFECT	src/user/claude-code/skills/review-and-comment/SKILL.m
 #EXCLUDE	TRUTH-FIRST-DEBUGGING-LOCAL	per-role by design: shared master, per-role banner and emphasis; 7/7 carriers say "(this role)"
 #EXCLUDE	DEEP-COLLABORATION-LOCAL	per-role by design: 6/6 carriers say "(this role)"
 #EXCLUDE	SANDBOX-RECOVERY-LOCAL	per-role by design: 6/6 carriers say "(this role)"
-#EXCLUDE	DOCS-PATHS-LOCAL	per-role write paths; REVIEW: only 7/16 carriers carry "(this role)", so the intent is asserted here rather than evidenced by the convention
-#EXCLUDE	AUTHORING-VERIFICATION-GATES-LOCAL	per-role by design; REVIEW: only 1/2 carriers carries "(this role)", so the intent is asserted here rather than evidenced by the convention
+#EXCLUDE	DOCS-PATHS-LOCAL	per-carrier by design, convention CONSISTENT: 7 agent carriers marked "(this role)", 9 skill carriers marked "(this skill)" -- the domain-appropriate variant; all 16 blocks verified distinct by content, each stating its own write paths. An earlier note here wrongly read the skill carriers as unmarked because the audit grepped only the role-word variant
+#EXCLUDE	AUTHORING-VERIFICATION-GATES-LOCAL	per-role by design and self-documenting: the second carrier is marked "(this role, extends adopted staff step 6; all hard)" -- an explicit base+extension pair. An earlier note here wrongly read it as unmarked because the audit required the marker's closing paren immediately

@@ -36,14 +36,14 @@ from pathlib import Path
 
 MARKER = "skip `--help`"
 
-# Every doc that currently holds an inlined block. team-lead.md carries the
-# singleton_wait.sh and secret_scan.sh blocks; the dispatch_ledger.sh block
-# moved to the wrap-up reference when step 16's mechanics were relocated behind
-# progressive disclosure. Relocating a block WITHOUT adding its new home here
-# makes the guard pass vacuously -- add the destination in the same commit.
+# Every doc that currently holds an inlined block. team-lead.md carries all
+# three (singleton_wait.sh, secret_scan.sh, dispatch_ledger.sh).
+# A block relocated into a doc absent from this list is never scanned and the
+# guard passes vacuously, so add any destination in the SAME commit as the move.
+# test_drift_guard_check.py re-derives the true set from the tree and fails if
+# this list does not cover it.
 DEFAULT_DOCS = [
     "src/user/claude-code/agents/team-lead.md",
-    "src/user/claude-code/skills/team-doctrine/references/wrap-up.md",
 ]
 
 _COMMENT_USAGE_RE = re.compile(r"^#\s*Usage:\s*(.+)$")
@@ -145,9 +145,11 @@ def compare_usage(script_usage, block_text, basename):
 
 
 def run(doc_paths, scripts_dir):
-    # A single Path stays acceptable: the inlined blocks now live across more
-    # than one doc (team-lead.md plus the references/ files sections were
-    # relocated into), so the scan is a set, not one file.
+    # Accepts a set of docs, not just one. All three blocks currently sit in
+    # team-lead.md, but the multi-doc path is kept deliberately: a relocation
+    # that moves a block elsewhere must be able to declare its new home in the
+    # same commit, and an empty scan exits clean, so an undeclared destination
+    # would pass vacuously.
     if isinstance(doc_paths, (str, Path)):
         doc_paths = [doc_paths]
     doc_paths = [Path(d) for d in doc_paths]

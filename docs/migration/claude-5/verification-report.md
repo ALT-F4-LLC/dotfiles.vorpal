@@ -447,6 +447,22 @@ Two escalations from audit §6 *were* resolved:
   (`model: opus # deliberate pin — security work routes off the gold/fable
   tier … never promote in a fleet sweep`), closing escalation §6.1's sibling
   concern.
+
+  **The inline comment is safe — verified live, not assumed.** The annotation
+  was briefly stripped on the theory that a trailing `#` comment on a
+  frontmatter scalar might break parsing. An A/B on project-level agents,
+  sandbox disabled, settles it: `model: opus` and `model: opus # <the full
+  annotation>` both resolve to `claude-opus-5`, while a `model: sonnet` control
+  resolves to `claude-sonnet-5`. The negative control is what makes this
+  conclusive — it proves the harness genuinely reads the frontmatter field
+  rather than defaulting everything to Opus, so the commented variant matching
+  the bare one is a real pass. The annotation was restored.
+
+  Note that §6.1's cycle-3 evidence does **not** by itself prove the pin
+  parsed: `security-advisor` and `security-reviewer-2` are `silver` in
+  `tier_map.sh`, and `silver` resolves to Opus anyway, so dispatch alone would
+  have produced Opus with or without a working frontmatter pin. The A/B is the
+  first direct evidence.
 - team-lead's model pin is ratified in-body via the two-cap economics
   paragraph (`team-lead.md:195`).
 
@@ -551,6 +567,60 @@ re-pointing the check or invoking it twice. Spawning Templates feeds
 the check wiring updated in the same change, which is why they were not done
 opportunistically here.
 
+**Correction — those two figures overcount what can actually move.** The
+~7.8KB / ~14KB above are section-boundary measurements. Measured against what
+is structurally movable, most of both is pinned:
+
+| candidate | section bytes | actually relocatable | what blocks the rest |
+|---|---:|---:|---|
+| Wrap-up & Team Cleanup | 7,810 | **3,183** | 2,821B `SHUTDOWN-PROTOCOL-LOCAL` + 804B `DOCKET-CLI-LOCAL` are CANONICAL blocks pinned byte-identical across all 8 agents; 964B is already pointer stubs |
+| Spawning Templates | 14,015 | **2,588** | 8,993B is the Tiers block + Per-Role Dispatch Table that `tier_map.sh` parses; 2,337B is point-of-action spawn rules (SP-2 exclusivity, the ephemeral-brief schema, the Closed-vs-Open FORBIDDEN rule) |
+
+So **relocation alone bottoms out near 68.8KB, not the ~53KB** a
+section-boundary reading implies. The residual gap to the 30,000B ceiling is
+about 38.8KB, and closing it is prose reduction inside the remaining sections —
+charter §1 judgment work — not further relocation. R6 should be scoped against
+that number.
+
+Moving the CANONICAL blocks is not merely harder, it is wrong: they are pinned
+byte-identical across 8 carriers precisely so no single carrier can drift, and
+relocating one carrier's copy breaks the invariant in the other seven.
+
+**Second split executed — `Wrap-up & Team Cleanup`.** The end-of-cycle
+mechanics (spot-check, ledger pass, summary, dispatch-ledger instrumentation,
+CLOSED-set shutdown, team cleanup) moved to `team-doctrine/references/wrap-up.md`.
+Three items stayed inline against the point-of-action test: the promised-gate
+delivery check (it also gates the step 14/15 verdicts, so it fires outside
+wrap-up), the shutdown-direction rule (cohesive with the CANONICAL protocol
+block directly beneath it), and the report that nothing was committed.
+
+| | before | after |
+|---|---:|---:|
+| `team-lead.md` | 74,612 | **73,016** |
+| doctrine index rows | 18 | **19** |
+
+Checks after: doctrine (4 arms), coupling, symmetry, drift-guard, tier_map,
+cross-reference — all green, plus 31/31 script test files.
+
+**Checker wiring changed in the same commit, as required.** The
+`dispatch_ledger.sh` drift-guarded block moved with the mechanics, so
+`drift_guard_check.py` went from a single `--doc` to a doc *set*, defaulting to
+every document that holds an inlined block. This also closed a latent hole the
+relocation would otherwise have opened: a scan finding zero blocks prints
+`none found` and **exits 0**, so a block relocated into a document nobody scans
+would have passed vacuously rather than failing. A new test re-derives the true
+holder set by walking the tree and fails if the default set does not cover it.
+`tier_map.sh` needed no change, because the Tiers block and Dispatch Table it
+parses deliberately stayed inline.
+
+**Why the Dispatch Table should not be the next thing relocated.** It carries
+R20's binding-name rule (`impl-{DOCKET-ID}`, never a descriptive slug). R20 is
+still only PARTIAL (§6.3), and moving that rule behind progressive disclosure
+puts it exactly where §6.3's R17 lesson says a point-of-action rule must not
+live — "a rule that must fire at the point of action belongs in the
+always-loaded block of every role that can take that action." The stall-recovery
+split was chosen as the safe first candidate for the same class of reason.
+
 ## 5. `/doctor`
 
 `/doctor` is a Claude Code CLI built-in, not a repo skill; run as `claude
@@ -589,6 +659,26 @@ The definitions were installed via `just activate` and verified byte-identical
 to the repo (all 8 agents, all 17 skills, `references/` dirs live), then three
 `claude -p --agent team-lead` cycles ran headless against throwaway git repos in
 the scratchpad — never against this repo, whose Docket DB holds live issues.
+
+**Install re-validated before the R21 cycle.** `~/.claude/agents` and
+`~/.claude/skills` were both live symlinks into the Vorpal store; `diff -r`
+reported all 8 agents byte-identical and the skills tree content-identical (the
+only delta being an empty harness-created `.claude/.cc-writes/` scratch dir).
+`doctrine_check.sh` passed pointed at the installed copy via `SKILL_MD` /
+`REFERENCES_DIR`.
+
+One caveat on that mechanism, since it affects how much the installed-copy run
+proves: those two variables redirect only the doctrine `SKILL.md`/`references`
+arms. The CANONICAL carrier arm still resolves repo-relative paths from
+`doctrine_check_manifest.tsv`, so it reads repo files either way. With the trees
+byte-identical the distinction is moot here, but "checked against the installed
+copy" is only partly true as a mechanism, and a future divergence between repo
+and install would not be caught by the carrier arm.
+
+A consequence worth recording for method integrity: because the install is a
+symlink into the content-addressed store, editing the repo working tree does
+**not** change what a nested cycle loads. Repo-side refactoring and a running
+behavioral cycle cannot confound each other until the next `just activate`.
 
 | | Cycle 1 — Direct | Cycle 2 — Medium (design + review) | Cycle 3 — security Small |
 |---|---|---|---|
@@ -908,7 +998,7 @@ unchanged).
 | ~~R3~~ | **`brief` stale "HARD GATE" label** — **APPLIED** (§7) | All 3 sites now cite "Pre-flight step 1"; anchor verified present in team-lead.md | — |
 | ~~R4~~ | **team-lead marker-ceiling exception** — **RECORDED** (§7b) | All 15 markers map to keep-list categories; the charter's stated gate is the mapping, not the count | — |
 | ~~R5~~ | **Pointer-stub exception** — **RECORDED** (§7b) | Charter §4 and remediation #3 conflict; the remediation shipped. Literal zero is a different architecture, not a cleanup | — |
-| R6 | **Byte-target shortfall** — agents 2.13×, team-lead 2.56×, skills −30.3% vs −50% (§4.1) | **Re-diagnosed (§4.5): the target is reachable and one large remediation was never executed.** Only 21% of agent bytes are structurally pinned; agents have no `references/` split at all, and the audit's item #1 (team-lead 3-way split) fell between Phase 2 (no reference files) and Phase 3 (skills only) | Scoped work, not a ratification |
+| R6 | **Byte-target shortfall** — agents 2.13×, team-lead 2.56×, skills −30.3% vs −50% (§4.1) | **Re-diagnosed (§4.5): the target is reachable and one large remediation was never executed.** Only 21% of agent bytes are structurally pinned; agents have no `references/` split at all, and the audit's item #1 (team-lead 3-way split) fell between Phase 2 (no reference files) and Phase 3 (skills only). **Second split executed (§4.5): 74,612 → 73,016B.** Corrected accounting also lands there — relocation alone bottoms out near 68.8KB, not the ~53KB a section-boundary reading implies, because most of the two remaining candidate sections is CANONICAL cross-carrier content, `tier_map.sh`-parsed content, or point-of-action spawn rules. Closing the residual ~38.8KB is charter §1 prose reduction, not relocation | Scoped work; residual gap needs an explicit scope decision |
 | ~~R7~~ | **DELETE-WHOLE-FILE verdicts** — **SUPERSEDED** (§7b) | Written against pre-migration content that has since changed; executing them now would delete keep-list material | — |
 | ~~R10~~ | **Doc-family COUPLING vs init-specs** — **APPLIED as R23** (§7) | Sync claim scoped to the four members that carry the section, exclusion stated inline; `coupling_check.py` accepts the corrected roster | — |
 | R11 | **`verify-ac` `uncommitted` scope misses untracked files** (G5) | Real behavioral defect but **pre-existing**, not caused by the migration — file it on its own merits rather than as migration cleanup | Standalone bug |
@@ -920,6 +1010,8 @@ unchanged).
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
 | ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. Unverified live | — |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
+| **R27** | **`commit_msg_check.sh` rejects the scope this repo's own history uses** | Check 4's pattern `\b(claude\|anthropic)\b` matches the `(claude-code)` Conventional-Commits scope that the existing history is written in, so every historical scope is unusable under the current checker. Demonstrated: a message reading `refactor(claude-code): …` exits 1. Either the checker's scope handling or the repo's scope convention has to give — they cannot both stand | Migration owner |
+| **R28** | **`commit_msg_check.sh` Docket-ID check has a false-positive class** | Check 2 runs `\b[A-Z]{2,10}-[0-9]+\b` under `grep -niE`; the `-i` defeats the pattern's uppercase intent, so any lowercase `word-number` trips it. Demonstrated: `fix: bump to sonnet-5 and cover the top-10 paths` is rejected as an issue-tracker reference. Model versions and ordinary hyphenated numerals are the common collisions. Fix is either dropping `-i` for that one check or anchoring the class explicitly | Standalone bug |
 
 ---
 

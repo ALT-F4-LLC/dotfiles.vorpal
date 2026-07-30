@@ -338,18 +338,11 @@ After approval: `docket vote commit {vote-id} --outcome "Approved: {summary}"`, 
 ### Wrap-up & Team Cleanup
 
 16. **After all phases complete:**
-    - Final spot-check (per step 13): `git diff --stat` + `docket issue show <id> --json` for closed issues; surface divergences.
-    - **Wrap-up ledger pass.** Confirm every teammate name spawned this session is `confirmed-terminated` or a CLOSED-set advisor being shut down now. Unaccounted name → probe → Gate. A duplicate found here → report to the operator AND record a pitfalls entry.
+
+    **Master (final spot-check, wrap-up ledger pass, summary, dispatch-ledger instrumentation, CLOSED-set shutdown, team cleanup):** `~/.claude/skills/team-doctrine/references/wrap-up.md` (repo: `src/user/claude-code/skills/team-doctrine/references/wrap-up.md`). Read it when the cycle ends; the binding core is here.
+
     - **Promised-gate delivery check (also gates step 14/15 verdicts).** Neither a general+security Approve nor a `done` Docket status proves a DISTINCT promised gate fired. Before reporting ANY issue/verdict complete, run `~/.claude/scripts/gate_check.sh <id> --gates <promised-subset>` (repo: `src/user/claude-code/scripts/gate_check.sh`; exits 1 on MISSING) for every role promised "I'll loop you in for X"; a MISSING gate never fired — spawn/resume it before reporting, reopening the issue if it already reads `done`. A teammate rejecting `shutdown_request` citing "I never delivered X" is almost always right.
-    - Summarize: issues completed, files changed (real diff), review findings, test results.
-    - **Dispatch ledger (instrumentation).** Run the exact command below (skip `--help` — this is the complete, current syntax) instead of hand-formatting; it writes the calibration baseline to `.claude/agent-memory/team-lead/dispatch-ledger.md` (no `--triggers` flag exists; a literal `[...]` suffix glob-expands under zsh — put opt-up trigger letters in `--note=`):
-      ```
-      ~/.claude/scripts/dispatch_ledger.sh append --cycle=<verified-goal-slug> --pattern=<Direct|Small|Medium|Large|UX|V/I/SR> --review=<n_reviewers> --verify=<1|2> --votes=<crit>:<n>[,...] --fix_rounds=<n> --review_spawns_total=<n> [--note=<...>]
-      ```
-      Then run `python3 ~/.claude/scripts/cycle_metrics.py`; if it prints `MANDATORY EVOLVE-* REVIEW: YES`, surface the blown threshold(s) in the wrap-up summary.
-    - Send `shutdown_request` to the CLOSED persistent set. Any delivered-report ephemeral still alive here is a missed step-13 sweep — send `shutdown_request`, note in memory.
     - **Shutdown direction (never ack a teammate's shutdown).** team-lead SENDS `shutdown_request` and RECEIVES `shutdown_response`. A teammate's approval acknowledges the request without proving termination — do not reply with another `shutdown_response`, and never address one to a raw agent-ID or a peer ephemeral name. team-lead emits `shutdown_response` ONLY to the OPERATOR when the operator asks team-lead itself to shut down; when approving, omit `reason` (SP-1). Silence is the correct response to a teammate's shutdown approval.
-    - After `teammate_terminated` lands for every ephemeral and every advisor is shut down, actively clean up the team. Cleanup is **best-effort, end-of-all-work only** — it fails if any teammate is still running, and a nested lead's reaped children persist with no de-list tool. If it cannot complete, report cleanup degraded/unconfirmed (manual `rm ~/.claude/teams/{name}/` workaround) and proceed — resources auto-remove at session end.
     - Tell the operator: no changes committed — review with `git diff`.
 
 **Recurring-pitfalls memory.** Master: `~/.claude/skills/team-doctrine/references/pitfalls.md` (repo: `src/user/claude-code/skills/team-doctrine/references/pitfalls.md`) — the two-homes split, classification test, harvest, and distill-time invariants bind as written there. Before wrap-up shutdown, if this session surfaced a RECURRING orchestration pitfall, append one `symptom → root cause → resolution` entry to centralized `~/.claude/agent-memory/team-lead/pitfalls.md`; skip if nothing recurring surfaced. This is the sanctioned narrow-scope Edit/Write exception.

@@ -187,16 +187,32 @@ def test_cli_missing_doc_exits_two():
     assert code == 2, f"expected exit 2, got {code}: {out}{err}"
 
 
-def test_real_repo_team_lead_blocks_currently_pass():
+def test_real_repo_blocks_currently_pass():
     """Integration check against the live tree -- DKT-118's own acceptance
-    criterion: the 3 blocks DKT-112 landed must currently be in sync."""
-    doc_path = REPO_ROOT / "src/user/claude-code/agents/team-lead.md"
+    criterion: the 3 blocks DKT-112 landed must currently be in sync. They now
+    span two docs (dispatch_ledger.sh moved with step 16's mechanics), so the
+    default doc set is what must total 3."""
     scripts_dir = REPO_ROOT / "src/user/claude-code/scripts"
-    assert doc_path.is_file(), doc_path
     assert scripts_dir.is_dir(), scripts_dir
-    code, out, err = run_cli("--doc", str(doc_path), "--scripts-dir", str(scripts_dir))
+    code, out, err = run_cli("--scripts-dir", str(scripts_dir))
     assert code == 0, f"exit {code}: {out}{err}"
     assert "drift-guard: OK (3 inlined block(s)" in out, out
+
+
+def test_default_doc_set_covers_every_inlined_block_in_the_tree():
+    """The guard's blind spot: a block relocated into a doc absent from
+    DEFAULT_DOCS is never scanned and passes vacuously. Re-derive the true set
+    by grepping the tree, and fail if DEFAULT_DOCS does not cover it."""
+    holders = set()
+    for path in (REPO_ROOT / "src/user/claude-code").rglob("*.md"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        # Marker presence alone is not enough -- the marker also appears in prose
+        # with no fenced block after it, which the guard rightly ignores.
+        if mod.find_inlined_blocks(text):
+            holders.add(path.relative_to(REPO_ROOT).as_posix())
+    declared = set(mod.DEFAULT_DOCS)
+    missing = holders - declared
+    assert not missing, f"docs holding inlined blocks but absent from DEFAULT_DOCS: {sorted(missing)}"
 
 
 def main():

@@ -24,12 +24,10 @@ omit a real capability. All three byte-reduction floors miss by roughly 2×, and
 the agent-frontmatter re-derivation (remediation item #14) was applied to skills
 but never to agents — those `effort` pins are byte-identical to the baseline.
 
-**Nine fixes applied** (§7): two broken references, both `TeammateIdle`
+**Twelve fixes applied** (§7): two broken references, both `TeammateIdle`
 contradictions, the unsatisfiable instruction, and the headless-mode contract
-(R15 — applied after Part B; its first design was falsified by live testing and replaced), plus all four remaining behavioral defects (R16, R17, R20, R21). **Three contradictions
-remain routed** because each needs a content decision, not an edit:
-the banned-confidence-phrase list, the doc-family 5-way COUPLING claim, and
-`evolve-orchestration-core.md`'s Consumers line. Twelve items total are routed,
+(R15 — applied after Part B; its first design was falsified by live testing and replaced), plus all four remaining behavioral defects (R16, R17, R20, R21). **All five cross-file contradictions are now resolved** (R22–R24 closed the
+remaining three). Nine items remain routed,
 one of which (`verify-ac`'s `uncommitted` scope missing untracked files) is a
 real behavioral defect that predates the migration.
 
@@ -83,7 +81,7 @@ Evidence classes:
 | A5 | Every canonical-master pointer resolves | **PASS** | 74 `Master:` pointers, `doctrine_check.sh` arm (b) |
 | A6 | Every cited script exists | **PASS** | 51/51 |
 | A7 | No orphaned doctrine references | **PASS** | `doctrine_check.sh` arm (d): 17/17 rows' `Cited by` sets match live grep |
-| A8 | No contradictory rules across files | **FAIL → 3 remain** | §3.3 + §3.7 — 5 confirmed; the two `TeammateIdle` contradictions **fixed** (§7). Remaining: banned-phrase drift, doc-family 5-way COUPLING, evolve-core Consumers line |
+| A8 | No contradictory rules across files | **FIXED (5 of 5)** | §3.3 + §3.7 — all five resolved (§7): both `TeammateIdle` pairs, banned-phrase drift, doc-family COUPLING, evolve-core Consumers |
 | A9 | No charter violation class reintroduced | **PASS** | §3.4 — 1.1 and 1.4 scan clean (0 hits); 1.2's single hit is the §3.3 list, counted once |
 | A9b | Charter-named class-1.2 files retired | **PARTIAL** | §3.4 — 3 DELETE-WHOLE-FILE verdicts resolved as shrink-not-delete, documented |
 | A10 | Skill frontmatter matches content | **PASS w/ 1 exception** | §3.5 — `brief` cites a retired label; 16/17 clean |
@@ -182,9 +180,12 @@ three should follow. `sdet.md:48` additionally calls the phrases
 "sign-off-disqualifying" — an enforcement claim that is true for 6 of the 8 and
 false for the 2 the linter never sees.
 
-Routed, not patched: which list is right is a content decision (the linter is
-the enforcement authority, but "I'm sure"/"trust me" may be wanted *in* it),
-and it touches a declared coupled family.
+**Resolved (R22, §7).** `report_lint.py` is the enforcement authority, so prose
+aligns to it rather than the reverse: `design-review` gained the two it was
+missing, `sdet.md` dropped `I'm sure`/`trust me` — phrases it called
+"sign-off-disqualifying" while nothing enforced them. All four prose copies now
+name the linter's six and cite it as the source. Adding the two dropped phrases
+to the linter remains open, but that is a change to enforcement, not a drift.
 
 ### 3.4 No charter violation class reintroduced
 
@@ -709,6 +710,9 @@ recovery path.
 | **G1** — `TeammateIdle` no longer asserted as proof a rule failed; reframed as routine lifecycle that *prompts* the owed-reply check, citing team-lead.md §Teammate Stall & Crash Recovery as authority | `agents/staff-engineer.md:77` | class 1.6 |
 | **G2** — same reframing, citing the file's own §Lifecycle (idle-after-verdict is normal) | `agents/sdet.md:54` | class 1.6 |
 | **G3** — unsatisfiable "if Write is absent, Write…" replaced with the actual mechanism: a quoted-delimiter heredoc under `$TMPDIR`, pointing at `senior-engineer.md §Shell hygiene` as master | `agents/security-engineer.md:55`, `agents/ux-designer.md:69` | logic defect |
+| **R22** — banned-phrase drift: all four prose copies aligned to `report_lint.py`'s six and cite it as authority | `skills/design-review`, `agents/sdet.md` | class 1.6 |
+| **R23** — doc-family sync claim scoped to the members that carry the section; `init-specs` exclusion stated | `skills/{tdd,prd,adr,ux-spec}` | class 1.6 |
+| **R24** — `evolve-orchestration-core` Consumers list corrected 3 → 5 against live citers | `skills/team-doctrine/references/` | class 1.6 |
 | **R20** — spawn names: the dispatch table's Name column declared binding, with the Liveness-Gate consequence stated | `agents/team-lead.md` | convention not stated as a rule |
 | **R21** — remediation claims: a revision answering a Blocker must cite the check that now passes and previously failed | `agents/distinguished-engineer.md` | uncovered claim class |
 | **R16** — security-review floor: Direct/Small now specifies two security seats; Rule 8's 3-seat roster scoped to Medium+ where the `advisor` seat exists | `agents/team-lead.md` (5 sites: Security Track, Direct heading, dispatch table, C3, QF-2) | rule collision |

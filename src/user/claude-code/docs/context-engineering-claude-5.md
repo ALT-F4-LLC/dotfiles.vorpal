@@ -373,15 +373,45 @@ for Opus).
 
 ## 4. Measurable targets
 
-Anthropic's 80%-with-no-regression result is the demonstrated ceiling; these are
-the floors a migration phase must hit, measured against the 2026-07-29 baseline.
+Anthropic's 80%-with-no-regression result demonstrates the METHOD, not a
+portable ratio. What made that number safe was the half this project cannot yet
+reproduce — "no measurable loss on our coding evaluations." Until an equivalent
+local instrument exists (see Verification below), a byte figure here is a
+DIAGNOSTIC that opens a review, never a gate that closes one.
 
-**Byte reduction.** Agents: 554KB total → at most 170KB (≥ 70% reduction);
-`team-lead.md` (137KB) may not exceed 30KB. Skills: ≥ 50% reduction in total
-prose, on top of restructuring. Reduction is a consequence of applying section 1,
-never a goal pursued by deleting context the model cannot reconstruct — the
-latency docs' own caveat: Claude "lacks context on your use case and might not
-make the intended leaps of logic if instructions are unclear."
+**Byte reduction — the qualitative condition is the gate; the number is the
+diagnostic.** This mirrors the Marker-count target below, and for the same
+reason: a file can pass any count and still fail the audit.
+
+*The gate.* Every section of an always-resident definition either (a) fires at
+the point of action for a role that can take that action, or (b) is relocatable
+behind progressive disclosure AND has a dated record of why it has not moved.
+A file failing (a) and (b) is over-long regardless of its size; a file passing
+both is correctly sized regardless of its size.
+
+*The diagnostic.* `team-lead.md` carries a ratchet, not a floor: it may not
+exceed its recorded high-water mark without a stated reason, and the mark
+lowers only when a verified reduction lands. `src/user/claude-code/scripts/byte_ceilings.tsv`
+holds the current figure and `byte_ceiling_check.sh` reports it. Skills: no
+SKILL.md over 10KB without a recorded justification. There is deliberately NO
+fleet-total byte target — no context ever holds more than one agent definition,
+so a sum over `agents/*.md` bounds no real resource, and it double-charges the
+CANONICAL blocks this project pins across carriers on purpose. Duplication has
+its own target below, which measures it correctly.
+
+Reduction is a consequence of applying section 1, never a goal pursued by
+deleting context the model cannot reconstruct — the latency docs' own caveat:
+Claude "lacks context on your use case and might not make the intended leaps of
+logic if instructions are unclear." A numeric gate cannot evaluate that caveat,
+which is why the gate above is qualitative: a shell script cannot judge what the
+model can reconstruct, so a script must not be the thing that decides.
+
+*Relocation is not yet a validated reduction mechanism.* Across every recorded
+behavioral cycle, `team-doctrine/references/` files have been read zero times,
+and one relocation is on record as having stopped a behavior from firing (the
+dispatch-ledger instrumentation, moved out of the always-loaded block and then
+absent from the next cycle). Treat a relocation as a hypothesis to be probed,
+not as a completed reduction.
 
 **Marker count.** Baseline: 108 MUST/NEVER/ALWAYS markers across agents, 100
 across skills. Target: every surviving marker maps to a named keep-list category

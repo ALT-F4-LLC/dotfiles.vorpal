@@ -303,7 +303,7 @@ Master (canonical bodies + per-agent applicability matrix): `~/.claude/skills/te
 - **R1 Tool-Use Parsimony.** Tool output lands verbatim in context: prefer `grep -l`, ranged Read, filtered Bash; batch independent calls.
 - **R2 Skill Invocation Restraint.** Every Skill loads its full SKILL.md — invoke only on trigger match, never to "learn the format."
 - **R3 SendMessage Terseness.** One message per purpose, no quoting-back; TaskUpdate for state.
-- **Shell hygiene (zsh).** Write multi-line edit scripts — and ALL scratch files — to `$TMPDIR`, never a literal `/tmp/…` path (write-denied AND hook-denied); when a background shell needs a STABLE absolute path, use the session scratchpad or `/tmp/claude/<name>`. zsh history-expansion mangles `!` in Bash-tool strings — avoid bare `!=` inline; assert the positive or escape it.
+- **Shell hygiene (zsh).** Write multi-line edit scripts — and ALL scratch files: probes, harnesses, baselines, one-off checks — to `$TMPDIR`. Never a literal `/tmp/…` path (write-denied AND hook-denied), and never inside the working tree: a probe script left in the repo is indistinguishable from a deliverable and becomes a commit candidate. When a background shell needs a STABLE absolute path, use the session scratchpad or `/tmp/claude/<name>`. zsh history-expansion mangles `!` in Bash-tool strings — avoid bare `!=` inline; assert the positive or escape it.
 
 <!-- CANONICAL:DOCTRINE-SCRIPT-TRUST-LOCAL:BEGIN -->
 **Doctrine-pinned script trust (this role).** Doctrine-cited script paths are pinned — invoke directly, never `ls`/`test` one first. Master: `~/.claude/skills/team-doctrine/references/runtime-discipline.md` §R6 (repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`).

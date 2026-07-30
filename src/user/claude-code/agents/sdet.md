@@ -16,7 +16,7 @@ skills:
 tools: Edit, Write, Read, Grep, Glob, Bash, Monitor, SendMessage, Skill, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskGet, WebFetch, WebSearch
 ---
 
-> **CRITICAL:** No commits unless explicitly instructed. NEVER write to a literal `/tmp/...` path — the sandbox's tmp-write guard hook denies it; scratch/temp writes go to `$TMPDIR`, and anything a background shell must reopen (e.g. a backgrounded log) goes to the session scratchpad or `/tmp/claude/<name>` instead of a `$TMPDIR`-relative path. In team mode, delegate `/vote` via SendMessage to team-lead — never invoke `Skill(vote)`, spawn sub-agents, or form/manage a team.
+> **CRITICAL:** No commits unless explicitly instructed. NEVER write to a literal `/tmp/...` path — the sandbox's tmp-write guard hook denies it; scratch/temp writes — probe scripts, falsification harnesses, baselines — go to `$TMPDIR` and never into the working tree, where a leftover probe is a commit candidate; anything a background shell must reopen (e.g. a backgrounded log) goes to the session scratchpad or `/tmp/claude/<name>` instead of a `$TMPDIR`-relative path. In team mode, delegate `/vote` via SendMessage to team-lead — never invoke `Skill(vote)`, spawn sub-agents, or form/manage a team.
 
 # Software Development Engineer in Test
 

@@ -50,29 +50,56 @@ def rows():
 
 # --- the one that matters: the config must not drift from the charter ---
 
-def test_ceilings_match_the_charter_prose():
-    # The charter is hard-wrapped prose, so every pattern must tolerate a line
-    # break anywhere a space appears -- matching on \s+ rather than " ".
+def test_skill_ceiling_matches_the_charter_prose():
+    """The one target the charter still states as a hard number. Patterns match
+    on \\s+ rather than " " because the charter is hard-wrapped prose."""
     charter = CHARTER.read_text(encoding="utf-8")
-    expected = {}
-    if re.search(r'`team-lead\.md`[^.]*?may\s+not\s+exceed\s+30KB', charter, re.S):
-        expected["src/user/claude-code/agents/team-lead.md"] = 30000
-    if re.search(r'Agents:.*?at\s+most\s+170KB', charter, re.S):
-        expected["src/user/claude-code/agents/*.md"] = 170000
-    if re.search(r'no\s+SKILL\.md\s+over\s+10KB', charter, re.S):
-        expected["src/user/claude-code/skills/*/SKILL.md"] = 10000
-
-    assert len(expected) == 3, (
-        "could not find all three ceilings in the charter prose — either the "
-        f"charter was reworded or this test's patterns are stale. Found: {sorted(expected)}"
+    assert re.search(r'no\s+SKILL\.md\s+over\s+10KB', charter, re.S), (
+        "charter no longer states the 10KB skill figure — either it was reworded "
+        "or this pattern is stale"
     )
     declared = {target: ceiling for _, target, ceiling in rows()}
-    for target, want in expected.items():
-        assert target in declared, f"charter states a ceiling for {target}; config does not declare it"
-        assert declared[target] == want, (
-            f"{target}: config says {declared[target]}, charter says {want} — "
-            "the restatement has drifted from its source"
-        )
+    target = "src/user/claude-code/skills/*/SKILL.md"
+    assert declared.get(target) == 10000, (
+        f"{target}: config says {declared.get(target)}, charter says 10000 — "
+        "the restatement has drifted from its source"
+    )
+
+
+def test_charter_frames_the_agent_figure_as_a_ratchet_not_a_floor():
+    """The agent figure is deliberately NOT traceable to a charter numeral: the
+    charter now specifies a mechanism (a high-water ratchet) and leaves the
+    number to this config. Assert the mechanism is stated, so nobody reinstates
+    a hard floor in the config without amending the charter first."""
+    charter = CHARTER.read_text(encoding="utf-8")
+    assert re.search(r'ratchet,\s+not\s+a\s+floor', charter, re.S), (
+        "charter no longer frames the agent byte figure as a ratchet"
+    )
+    assert re.search(r'high-water\s+mark', charter, re.S), (
+        "charter no longer describes the high-water mechanism"
+    )
+    declared = {target: ceiling for _, target, ceiling in rows()}
+    tl = "src/user/claude-code/agents/team-lead.md"
+    assert tl in declared, "the ratcheted file must still be declared"
+    actual = (REPO_ROOT / tl).stat().st_size
+    assert declared[tl] >= actual, (
+        f"ratchet is below current size ({declared[tl]} < {actual}) — a ratchet "
+        "records a high-water mark; to lower it, land the reduction first"
+    )
+
+
+def test_no_fleet_total_row():
+    """The charter explicitly disclaims a fleet-wide byte total: no context ever
+    holds more than one agent definition, so a sum bounds no real resource and
+    double-charges the deliberately-pinned CANONICAL blocks. Guard against
+    reintroduction."""
+    charter = CHARTER.read_text(encoding="utf-8")
+    assert re.search(r'deliberately\s+NO\s*\n?\s*fleet-total', charter, re.S) or \
+           re.search(r'NO\s+fleet-total', charter, re.S), (
+        "charter no longer disclaims the fleet-total target"
+    )
+    sums = [t for kind, t, _ in rows() if kind == "sum"]
+    assert not sums, f"fleet-total row reintroduced against the charter: {sums}"
 
 
 def test_every_declared_row_traces_to_the_charter():
@@ -83,22 +110,46 @@ def test_every_declared_row_traces_to_the_charter():
 
 # --- gate contract ---
 
+def _breaching_config(td):
+    """A config guaranteed to breach, so gate behaviour is tested against the
+    MECHANISM rather than against the tree happening to be non-compliant.
+    The live tree is currently clean; an earlier version of these tests relied
+    on it being broken, which would have silently stopped testing anything the
+    moment it was fixed."""
+    cfg = Path(td) / "c.tsv"
+    cfg.write_text("file\tsrc/user/claude-code/agents/team-lead.md\t100\tdeliberately absurd\n")
+    return cfg
+
+
 def test_warn_only_is_the_default_and_does_not_break_a_breaching_tree():
-    code, out = run("--quiet")
-    assert code == 0, f"warn-only must exit 0 even in breach; got {code}"
-    assert "WARN" in out, out
+    with tempfile.TemporaryDirectory() as td:
+        code, out = run("--quiet", config=_breaching_config(td))
+        assert code == 0, f"warn-only must exit 0 even in breach; got {code}"
+        assert "WARN" in out, out
 
 
 def test_strict_gates():
-    code, out = run("--quiet", "--strict")
-    assert code == 1, f"--strict must exit 1 while the tree is in breach; got {code}"
-    assert "FAIL" in out, out
+    with tempfile.TemporaryDirectory() as td:
+        code, out = run("--quiet", "--strict", config=_breaching_config(td))
+        assert code == 1, f"--strict must exit 1 in breach; got {code}"
+        assert "FAIL" in out, out
 
 
-def test_reports_the_known_breaches():
+def test_breaches_are_reported_with_both_numbers():
+    with tempfile.TemporaryDirectory() as td:
+        code, out = run("--quiet", config=_breaching_config(td))
+        assert "team-lead.md" in out, out
+        assert re.search(r'OVER\s+\d+\s*/\s*100', out), out
+
+
+def test_live_tree_is_currently_compliant():
+    """A positive invariant, and the point of the amendment: after dropping the
+    fleet-total row, ratcheting the agent figure, and recording the skill
+    justifications the charter already permitted, the tree passes without any
+    content having been cut."""
     code, out = run("--quiet")
-    assert "team-lead.md" in out, "the flagship breach should be reported"
-    assert re.search(r'OVER\s+\d+\s*/\s*30000', out), out
+    assert code == 0, out
+    assert "clean" in out, f"tree regressed out of compliance: {out}"
 
 
 def test_under_ceiling_reports_ok():

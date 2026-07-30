@@ -1,28 +1,38 @@
 # Recurring-Pitfalls Memory Convention — Maintained Master
 
-**LOCAL-copy consumers:** the 7 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
-`distinguished-engineer.md`), each carrying a byte-identical `CANONICAL:PITFALLS-LOCAL`
-pointer block (inline hard gate + master pointer; parity-registered in
-`doctrine_check_manifest.tsv`), most followed by a role-specific "What to save here"
-line. The full body below is single-homed HERE.
-`team-lead.md` does **not** carry the block — it uses three bespoke lines instead
-(write-scope, "Persistent memory" categories, "Recurring-pitfalls memory") that
-independently reflect the two-homes split below. Relocated from
-`src/user/claude-code/agents/team-lead.md` §Wrap-up & Team Cleanup (DKT-59/60
-doctrine-home migration). Deployed at `~/.claude/skills/team-doctrine/references/pitfalls.md`
-— repo: `src/user/claude-code/skills/team-doctrine/references/pitfalls.md`. Read on demand
-only — never `Skill(team-doctrine)`.
-
-Recurring pitfalls split by content into two homes per role: **in-repo**
-(`.claude/agent-memory/{role}/pitfalls.md`, unchanged, git-tracked) for lessons true only of
-this codebase, and **centralized** (`~/.claude/agent-memory/{role}/pitfalls.md`,
-`$HOME`-rooted, new) for lessons that generalize across repos — a cross-repo lesson stored
-in-repo gets re-learned per repository; a repo-specific lesson stored centrally pollutes other
-repos and loses git review. The block below carries the write-time classification test.
+The 7 team agents carry byte-identical `CANONICAL:PITFALLS-LOCAL` pointer blocks
+(parity-registered in `doctrine_check_manifest.tsv`); the full body is single-homed here.
+Deployed at `~/.claude/skills/team-doctrine/references/pitfalls.md` — repo:
+`src/user/claude-code/skills/team-doctrine/references/pitfalls.md`.
 
 ---
 
 <!-- CANONICAL:PITFALLS:BEGIN -->
-**Recurring-pitfalls memory — two homes, chosen by content.** Before shutdown (ephemerals: before or with the final report; team-lead/persistent advisors: before emitting or approving `shutdown_request`), if this session surfaced a RECURRING pitfall (a failure/stall/diagnosis class that has appeared before or will plausibly recur — NOT routine work or a one-shot incident), append ONE entry to exactly one home — never both — chosen by asking: *"Would this lesson help an agent in my role working in a DIFFERENT repository?"* YES → centralized `~/.claude/agent-memory/{role}/pitfalls.md` (about the agent, its orchestration, the harness/skills, or a cross-repo tool; decide by root cause, not symptom — a lesson with both a general root cause and a repo-specific instantiation still files centralized only). NO → in-repo `.claude/agent-memory/{role}/pitfalls.md` (unchanged path; true only of this codebase's build/test/layout/config). Write in `symptom → root cause → resolution` form (`~/.claude/scripts/pitfalls_check.sh <role> <in-repo|centralized>` (repo: `src/user/claude-code/scripts/pitfalls_check.sh`) resolves the path and `mkdir -p`s the target dir if absent, printing the path to stdout for the append). Skip the write entirely if nothing recurring surfaced — per-issue/per-cycle details belong in Docket, not here. Both homes are periodically harvested by the `evolve-*` cycles — ALWAYS APPEND rather than overwriting, never hand-edit or remove prior entries, and avoid duplicating lessons already recorded (check the harvested ledger too). **Distill-time ledgering (sole sanctioned mutation, both homes):** when an edit you land encodes an existing entry's resolution into a git-tracked definition, run `~/.claude/scripts/pitfalls_distill.sh <role> <in-repo|centralized> --entry "<entry first-line prefix>" --encoded-in <tracked-path> --evidence "<grep pattern>"` (repo: `src/user/claude-code/scripts/pitfalls_distill.sh`) in the same session — it replaces that ONE entry with a ledger line under the retention-compaction master's distill-time invariants and prints the removed entry verbatim; MIRROR that text into the change's record (changelog entry, Docket comment, or final report). Docket-tracked dispositions are NOT distillations — leave those entries live for the Phase 4 safety net. Boundedness: the in-repo file keeps the evolve-agents History Compaction phase as safety net for entries dispositioned but never ledgered (full text recoverable via git history once committed); the centralized file is per-user runtime state with no git-backed recovery — its boundedness is the write gate above plus distill-time ledgering, and apart from that mutation it stays read-only ingest for harvest.
+**Recurring-pitfalls memory — two homes, chosen by content.** Before shutdown (ephemerals:
+before or with the final report; team-lead/persistent advisors: before emitting or approving
+`shutdown_request`), if this session surfaced a RECURRING pitfall — a failure/stall/diagnosis
+class that has appeared before or will plausibly recur, NOT routine work or a one-shot
+incident — append ONE entry in `symptom → root cause → resolution` form to exactly one home,
+never both. **Classification test:** *"Would this lesson help an agent in my role working in
+a DIFFERENT repository?"* YES → centralized `~/.claude/agent-memory/{role}/pitfalls.md`
+(decide by root cause, not symptom — a lesson with a general root cause and a repo-specific
+instantiation still files centralized only). NO → in-repo
+`.claude/agent-memory/{role}/pitfalls.md`. `~/.claude/scripts/pitfalls_check.sh <role>
+<in-repo|centralized>` (repo: `src/user/claude-code/scripts/pitfalls_check.sh`) resolves the
+path, creates the directory if absent, and prints it for the append. Skip the write entirely
+if nothing recurring surfaced — per-issue detail belongs in Docket. Both homes are harvested
+by the `evolve-*` cycles: always APPEND — never overwrite, hand-edit, or remove prior
+entries — and check for duplicates first (including the harvested ledger).
+**Distill-time ledgering (sole sanctioned mutation, both homes):** when an edit you land
+encodes an existing entry's resolution into a git-tracked definition, run
+`~/.claude/scripts/pitfalls_distill.sh <role> <in-repo|centralized> --entry "<entry
+first-line prefix>" --encoded-in <tracked-path> --evidence "<grep pattern>"` (repo:
+`src/user/claude-code/scripts/pitfalls_distill.sh`) in the same session — it replaces that
+ONE entry with a ledger line per the retention-compaction master and prints the removed
+entry verbatim; MIRROR that text into the change's durable record. Docket-tracked
+dispositions are NOT distillations — leave those entries live for the Phase 4 safety net.
+**Boundedness:** the in-repo file's safety net is the evolve-agents History Compaction phase
+(full text recoverable via git history once committed); the centralized file has no
+git-backed recovery — its boundedness is the write gate above plus distill-time ledgering,
+and apart from that mutation it is read-only ingest for harvest.
 <!-- CANONICAL:PITFALLS:END -->

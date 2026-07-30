@@ -1,178 +1,90 @@
 # Runtime Discipline (R1-R7) — Maintained Master
 
-**LOCAL-copy consumers:** all 7 team agents (`staff-engineer.md`, `security-engineer.md`,
-`senior-engineer.md`, `sdet.md`, `project-manager.md`, `ux-designer.md`,
-`distinguished-engineer.md`) plus `team-lead.md`,
-which retains compact `CANONICAL:RUNTIME-DISCIPLINE-LOCAL` bodies for R1/R3/R4/R6 (it is a
-runtime consumer of those four rules on every turn) and a pointer for R2/R5/R7. Relocated from
-`src/user/claude-code/agents/team-lead.md` §Runtime Discipline (DKT-59/60 doctrine-home
-migration). Deployed at `~/.claude/skills/team-doctrine/references/runtime-discipline.md` —
-repo: `src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`. Read on
-demand only — never `Skill(team-doctrine)`.
-
----
+Source of truth for the R-rule bodies. Agent files carry a one-line reminder per applicable
+rule plus a pointer here; team-lead additionally carries compact LOCAL bodies for R1/R3/R4/R6.
+Deployed at `~/.claude/skills/team-doctrine/references/runtime-discipline.md` — repo:
+`src/user/claude-code/skills/team-doctrine/references/runtime-discipline.md`.
 
 ## Runtime Discipline (R1-R7)
 
-Canonical R-rule bodies for the team. Agent files carry a one-line reminder per applicable rule plus a pointer here, not a copy of the body; cross-agent pointers resolve to this file. Per-agent applicability per the matrix below; team-lead is the sole exception, carrying compact LOCAL bodies for R1/R3/R4/R6 and a grouped pointer for R2/R5/R7 (▾). This file is the source of truth for the R-rule bodies.
+Per-agent applicability (tl=team-lead, st=staff, de=distinguished, se=security, pm=pm,
+ux=ux, sd=sdet, sr=senior; ▾ = grouped pointer only, — = omit):
 
-| Rule | tl | st | de | se | pm | ux | sd | sr | Lines |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| **R1 Tool-Use Parsimony** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~8 |
-| **R2 Skill Invocation Restraint** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
-| **R3 SendMessage Terseness** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~5 |
-| **R4 Iteration Cap** | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ~4 |
-| **R5 Persistent-Advisor Self-Summary** | ▾ | ✓* | ✓* | ✓* | — | ✓* | — | — | ~7+variants |
-| **R6 Anti-Defensive-Exploration** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~4 |
-| **R7 In-Session Read-Cache Awareness** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ~3 |
-
-✓ = inline per-rule entry: a one-line reminder plus a section-level pointer to this master, never a copy of the body (team-lead's four ✓ cells are the one exception — compact LOCAL bodies inside its `CANONICAL:RUNTIME-DISCIPLINE-LOCAL` block); ▾ = named in a grouped pointer sentence, no per-rule reminder; — = omit; ✓* = the ✓ form plus the per-advisor variant trigger below.
+| Rule | tl | st | de | se | pm | ux | sd | sr |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **R1 Tool-Use Parsimony** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **R2 Skill Invocation Restraint** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **R3 SendMessage Terseness** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **R4 Iteration Scope** | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ |
+| **R5 Advisor Continuity** | ▾ | ✓ | ✓ | ✓ | — | ✓ | — | — |
+| **R6 Doctrine-Pinned Script Trust** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **R7 Read-Cache Awareness** | ▾ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### R1 — Tool-Use Parsimony
 
-R1. **Tool-Use Parsimony.** Tool-call results land in your context verbatim — a 2,000-line
-Read costs ~2,000 lines of context. Apply these defaults:
+Tool-call results land in context verbatim — filter before the result lands (`grep -l` over
+`grep -rn` for enumeration, ranged `Read`, `jq`/`grep`-piped Bash), and batch independent
+calls in one turn. A bulk read that IS the load-bearing evidence (full file for review, full
+diff for verification) is correct — the rule bans speculative bulk reads. Tool-contract
+facts that recur as errors:
 
-- File enumeration: use `grep -l 'pattern' path/`, NOT `grep -rn 'pattern' path/`. Reach for
-  `-rn` ONLY when the line content itself IS the evidence you need.
-- Large files: use `Read(file, offset=N, limit=M)`, NOT a full-file `Read`, when you only need
-  a section. Read the whole file ONLY when you must reason about whole-file structure.
-- `offset` and `limit` are each a SINGLE integer, not a two-element array — `{"offset": 218,
-  "limit": 12}` is correct; `{"offset": 218, 230}` is a malformed call the harness rejects.
-- `Read` takes a file path, not a directory — passing a directory path errors closed. Enumerate
-  a directory's contents with `Glob` or `ls`/`find` via Bash first, then `Read` the specific
-  file(s) you actually need.
-- Bash dumps: use `wc -l`, `head`, `tail`, or `awk` summary patterns. Do NOT pipe raw `cat`
-  into your context. Pipe through `jq` / `grep` to filter BEFORE the result lands.
-- Batched calls: dispatch 3+ independent reads/greps in ONE turn (harness runs them concurrently).
-- Escape hatch: when the bulk read IS the load-bearing evidence (full file for review, full diff for verification), the full read is correct — the rule bans speculative bulk reads, not load-bearing ones.
-- cwd PERSISTS across Bash calls (the shell keeps its working directory) and `docket` resolves its DB from cwd — never leave the repo `src/` root; scope directory-local commands with a subshell `(cd <dir> && ...)` or absolute paths. On `no docket database found`, `pwd` and cd back to root — do NOT re-`docket init`.
-- `Monitor`'s `timeout_ms` has a hard floor of 1000ms (default 300000ms if omitted, max
-  3600000ms) — a call below the floor is rejected outright, not silently clamped up. Round up
-  to at least 1000 rather than retrying with a slightly larger guess.
+- `Read` `offset`/`limit` are each a SINGLE integer (`{"offset": 218, "limit": 12}`), and
+  `Read` takes a file path, never a directory — enumerate with `Glob` or `ls` first.
+- cwd PERSISTS across Bash calls, and `docket` resolves its DB from cwd — never leave the
+  repo root; scope directory-local commands with a subshell `(cd <dir> && ...)`. On
+  `no docket database found`, `pwd` and cd back — do NOT re-`docket init`.
+- `Monitor`'s `timeout_ms` has a hard floor of 1000ms (default 300000, max 3600000) — a call
+  below the floor is rejected outright, not clamped.
 
 ### R2 — Skill Invocation Restraint
 
-R2. **Skill Invocation Restraint.** Every `Skill(name, ...)` call loads the entire SKILL.md
-body into your context.
-
-- Invoke a skill ONLY on a real trigger match. NEVER pre-load a skill "in case I need it
-  later".
-- Your role-canonical skills (per the frontmatter `skills:` list) are the ones you legitimately
-  invoke routinely. Treat occasional skills (e.g., `vote` for non-staff agents) as
-  trigger-dispatched, NOT defensive.
-- **Banned for orchestrators (team-lead), planners (@project-manager), and persistent advisors (the three CLOSED-set names — `advisor`, `security-advisor`, `ux-advisor`):** do NOT invoke a skill "to learn the format authority" or "in case it's needed." Skill bodies are only loaded by the actual artifact-producing agent on the standard spawn-template invocation (e.g., the reviewer running `code-review-verdict`, the TDD author running `tdd`). If you need to consult a skill's format without running it, ask the operator or the responsible spawn-template owner.
-- **Scope boundary — this rule restrains `Skill(name, ...)` calls only, never a skill-prescribed Bash validation step.** R2 governs whether you reload a SKILL.md body into context; it says nothing about whether a mechanical validation script that skill prescribes still runs. Several skills (`code-review-verdict`, `verify-ac`, `design-qa`, `design-review`, `simplify-scout`) prescribe `report_stage_lint.sh` as a mandatory Bash-invoked staging + lint gate before emitting their artifact. "I've learned this skill's format and no longer need to re-invoke `Skill(name)`" and "I no longer need to run `report_stage_lint.sh` before emitting" are two different claims — the first is what R2 licenses; the second is never licensed by R2 and remains required on every emission, regardless of how many times you've run it before. Do not let familiarity with the format collapse into skipping the gate.
-- Escape hatch: when the operator or team-lead directs `/skill-name` explicitly, invoke per
-  the directive.
-- **Never guess a skill name.** Invoke only a name that appears verbatim in the current
-  available-skills listing (or one the operator/team-lead typed explicitly). A plausible-sounding
-  guess either fails closed as `Unknown skill` or, worse, collides with an unrelated real skill
-  and silently loads the wrong body.
+Every `Skill(name)` call loads the entire SKILL.md into context — invoke only on a real
+trigger match or an explicit operator/team-lead directive, never "to learn the format";
+orchestrators, planners, and persistent advisors leave skill bodies to the
+artifact-producing agent. Never guess a skill name — invoke only a name that appears
+verbatim in the current available-skills listing; a guess fails closed or silently loads the
+wrong body. Scope boundary: R2 restrains `Skill()` calls only, never a skill-prescribed Bash
+validation step — "I know this skill's format" never licenses skipping a prescribed gate
+like `report_stage_lint.sh` on an emission.
 
 ### R3 — SendMessage Terseness
 
-R3. **SendMessage Terseness.** SendMessage payloads accumulate in BOTH endpoints' contexts.
+Payloads accumulate in BOTH endpoints' contexts: one message per purpose, no quoting-back,
+`TaskUpdate` for state transitions instead of narrative status. Schema fact: `summary` is
+REQUIRED whenever `message` is a plain STRING (harness-rejected otherwise; long
+status/vote-result messages are where it gets forgotten — risk rises with length);
+object-form `message` needs no `summary` — see shutdown-protocol.md SP-1b. High-stakes
+events (re-plan triggers, scope deltas, blocker escalations) earn a longer message;
+terseness bounds redundant state, never load-bearing context.
 
-- Send one message per purpose. Do NOT append a status update to a question, or vice versa.
-- Do NOT quote back the message you are replying to — the recipient already has it in their
-  thread. Reference the prior message's claim/ask in 5-10 words and respond.
-- The `summary` field is REQUIRED whenever `message` is a plain STRING — a string `message` with
-  no `summary` is harness-rejected. Object-form `message` (structured `shutdown_response` /
-  `plan_approval_response` payloads) needs no `summary` — see shutdown-protocol.md SP-1 for that
-  shape's schema.
-- **Highest-risk case — long-form/detailed status and vote-result messages.** A 7-day bug audit
-  found 6/6 sampled sessions dropped `summary` specifically on LONG, multi-paragraph status
-  updates and vote-result messages: attention goes to composing the body, and the metadata field
-  gets forgotten. The risk goes UP with message length, not down — the longer/more detailed the
-  message, the more deliberately check for `summary` before sending. WRONG (long message, no
-  `summary` — harness-rejected):
-  ```json
-  {"to": "team-lead",
-   "message": "Vote DKT-201 closed 4-1 in favor. Rationale: the majority found the proposed
-   schema migration path acceptable given the rollback plan documented in ADR-0042 covers the
-   failure mode raised in dissent. Dissenting voter flagged residual risk in the cutover window;
-   mitigation is a feature-flagged rollback path landing in the same PR. Proceeding to close the
-   proposal and notify affected consumers next."}
-  ```
-  RIGHT (same body, `summary` added):
-  ```json
-  {"to": "team-lead",
-   "summary": "Vote DKT-201 closed 4-1, approved",
-   "message": "Vote DKT-201 closed 4-1 in favor. Rationale: the majority found the proposed
-   schema migration path acceptable given the rollback plan documented in ADR-0042 covers the
-   failure mode raised in dissent. Dissenting voter flagged residual risk in the cutover window;
-   mitigation is a feature-flagged rollback path landing in the same PR. Proceeding to close the
-   proposal and notify affected consumers next."}
-  ```
-- Use `TaskUpdate` state transitions (in_progress / completed / blocked) instead of narrative
-  status paragraphs.
-- Escape hatch: high-stakes events (re-plan triggers, scope deltas, blocker escalations) earn
-  the longer message — the visibility contract (team-lead Rule 2) is the gate. Terseness bounds
-  redundant state, never load-bearing context — see the Alignment & Optimization orthogonality statement (single source of truth) for how terseness and recipient-shaped optimization coexist.
+### R4 — Iteration Scope
 
-### R4 — Iteration Cap (no re-verify of completed ACs)
+Re-verify a completed criterion only when specific evidence of regression points at it, and
+only that criterion. Verification scope beyond the acceptance criteria is @sdet's call, not
+unilaterally yours.
 
-R4. **Iteration Cap.** After verifying an AC once, mark it complete and do NOT re-Read the
-artifact for that AC unless evidence of regression surfaces.
+### R5 — Advisor Continuity (persistent advisors only)
 
-- Do NOT expand verification scope past the acceptance criteria — extra coverage is @sdet's
-  call, not unilaterally yours.
-- Cycle caps already exist at team-lead level (2 fix-review cycles, 2 fix-verify cycles per
-  team-lead.md step 14/15). Your role-level discipline is to avoid INTRA-instance re-verification
-  loops within a single fix cycle.
-- Escape hatch: when an explicit blocker says "the prior verification was wrong because X",
-  re-verify the specific criterion X impacts. Do NOT re-verify unrelated criteria.
+Before dropping any transient state, write memory first (pitfalls home per pitfalls.md) —
+within-session drops are irreversible; never drop a cross-cycle canonical decision-record,
+and when unsure whether content is load-bearing, keep it and surface to team-lead. When
+continuity can no longer be maintained, SendMessage team-lead to respawn with a continuity
+preamble.
 
-### R5 — Persistent-Advisor Self-Summary (advisors ONLY)
+### R6 — Doctrine-Pinned Script Trust
 
-R5. **Persistent-Advisor Self-Summary** (applies to `advisor`, `security-advisor`,
-`ux-advisor` ONLY).
+Any script path cited by its exact path in your own role's doctrine text (this master, your
+agent file, or a skill you're following) is pinned — version-controlled at a fixed location
+(repo `src/user/claude-code/scripts/`, deployed `~/.claude/scripts/`). Invoke it directly;
+never `ls`/`test -e`/`--help` it first — a failed invocation reports the same fact in one
+call. This does NOT extend to the Read-before-Edit gate or to file-existence checks at other
+trust boundaries (e.g. confirming an issue's attached paths resolve before citing them) —
+those stand unchanged. Re-read a file only on actual cause (edited since last Read,
+operator-flagged divergence, explicit reviewer concern); once the owning authority confirms
+state, stop re-reading lagging readers to re-confirm it.
 
-- On saturation symptoms (replies shortening, losing track of decisions, repeated re-reads), emit a self-summary turn: outline the prior phase's load-bearing decisions to re-anchor against.
-- **BEFORE dropping any transient state**, SendMessage team-lead the outline and await ack; no ack within one turn → HOLD context and resume from the outline OR escalate the stall. Memory writes (`.claude/agent-memory/{role}/pitfalls.md` in-repo, or `~/.claude/agent-memory/{role}/pitfalls.md` centralized, per the content split) land BEFORE the drop — it is irreversible within-session. When you can no longer self-summarize crisply, SendMessage team-lead to respawn with a continuity preamble.
-- Trigger when context feels heavy AND a new phase starts (not between every turn — that is churn). Escape hatch: never drop a cross-cycle canonical decision-record; when unsure if content is load-bearing, KEEP it and surface to team-lead.
+### R7 — Read-Cache Awareness
 
-**Per-advisor trigger variants** (appended in each advisor file): `advisor` = 3+ TDD revisions OR after a TDD-acceptance revision (view-change) round completes; `security-advisor` = each security-review verdict OR after critical/high finding-to-fix cycle; `ux-advisor` = each design-QA verdict that surfaced a spec/implementation mismatch OR 3+ design-review rounds on the same spec.
-
-### R6 — Anti-Defensive-Exploration
-
-R6. **Anti-Defensive-Exploration.** Re-reading a file you already Read this session,
-re-running a `git status` you already ran this turn, or re-checking facts because of vague
-anxiety is context bloat with no evidence value.
-
-- Re-read ONLY on actual cause: file edited since last Read, operator-flagged divergence, or
-  explicit reviewer concern pointing at the specific file. Same discipline for lagging readers:
-  once the owning authority confirms state (write acked by the live DB/system), STOP re-reading a possibly-stale reader to re-confirm it.
-- Banned-phrase extension (complements Rule 6): "let me also check", "to be safe I'll Read", "let me confirm by Read" — anxiety-driven bloat. Verifying a specific load-bearing claim is fine; Reading "to be sure" is not.
-- **Doctrine-pinned script trust convention.** Any script path cited by its exact path in your
-  own role's doctrine text (this master, your agent file, or a skill you're following) is already
-  pinned — version-controlled, deployed at a fixed location (repo `src/user/claude-code/scripts/`,
-  deployed `~/.claude/scripts/`), and cannot vary by repo or session. Invoke it directly; never
-  `ls`/`test -e`/`--help` it first to confirm it exists — a failed invocation reports the same
-  fact in one call, at the cost of the retry, not two. This generalizes the narrower "6 named
-  scripts" convention from DKT-59 (`docket_create.sh`, `docket_write.sh`, `dor_check.py`,
-  `plan_collision_check.py`, `docket_claim.sh`, `dispatch_ledger.sh` remain the canonical
-  example, but the rule covers ANY doctrine-cited script, not only these) — a repetition audit
-  found 113 sessions across 5+ roles still `ls`-checking doctrine-pinned paths outside that
-  named list, with the check never once changing an outcome (repetition-auditor finding R1,
-  evolve-agents cycle 2026-07-27 — DKT-149). This does NOT extend to the general
-  Read-before-Edit gate or to file-existence verification at other trust boundaries (e.g.,
-  confirming an issue's attached file paths resolve on disk before citing them, or a path not
-  cited anywhere in doctrine) — those requirements are unrelated and stand unchanged.
-- Escape hatch: after a long stretch of work or compaction, re-anchoring on the original brief
-  is correct. The rule bans defensive re-checks of facts already in your turn context, not
-  legitimate re-anchoring of context that has been lost.
-
-### R7 — In-Session Read-Cache Awareness
-
-R7. **In-Session Read-Cache Awareness.** Files you Read this session are already in your
-context — re-Reading them doubles the cost without new evidence.
-
-- Before any Read call, scan back through your turn history to confirm you have not already
-  Read this file this session. The harness does not cache; you must.
-- Exception (canonical): after compaction, all "previously Read" files are un-Read for the
-  Edit/Write gate. Read once before the next Edit per the Read-before-Edit/Write rule.
-  This is ONE Read per file after compaction, not defensive multi-Reads.
-- Escape hatch: when a peer SendMessages "I just edited X", re-Read X — the edit invalidates
-  your prior context.
+Files Read this session are already in context — re-Read only when the file changed (a peer
+says "I just edited X") or after compaction, where one Read per file re-satisfies the
+Read-before-Edit gate.

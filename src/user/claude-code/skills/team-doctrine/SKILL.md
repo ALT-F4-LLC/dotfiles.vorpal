@@ -14,32 +14,43 @@ disable-model-invocation: true
 
 # Team Doctrine
 
-A reference home, not a workflow. Most files here are doctrine masters: each agent file carries a compact `CANONICAL:<NAME>-LOCAL`
-copy of the doctrine below and cites the matching file here as its maintained master — Read
-that file only when a LOCAL-copy pointer sends you here (TDD conformance check, master-vs-copy
-drift audit, or an evolve-* cycle). A second class is the spawn-TEMPLATE store (`evolve-phase0-templates.md`): paste-at-spawn-time, token-contracted bodies with NO `CANONICAL:*-LOCAL` copies, Read once by an evolve-* orchestrator at Phase-0 spawn and token-substituted — never mirrored into an agent file. Never invoke this skill; there is nothing to execute, and
-doing so would violate R2 Skill Invocation Restraint (`references/runtime-discipline.md`). Frontmatter `disable-model-invocation: true` enforces exactly that — it blocks model-initiated `Skill()` calls only, not operator invocation: an operator-typed `/team-doctrine` still resolves and harmlessly renders this index.
+A reference home, not a workflow — there is nothing to execute. Agent files carry compact
+`CANONICAL:<NAME>-LOCAL` pointers that cite the matching master below; Read a master only when
+a pointer sends you here (TDD conformance check, drift audit, or an evolve-* cycle).
+Frontmatter `disable-model-invocation: true` blocks model-initiated `Skill()` calls; an
+operator-typed `/team-doctrine` still resolves and harmlessly renders this index. One
+exception to the master/pointer model: `evolve-phase0-templates.md` is a spawn-TEMPLATE store
+(paste-at-spawn-time, token-contracted, Read once by an evolve-* orchestrator at Phase-0
+spawn) — never mirrored into an agent file.
 
-**Source-only — no mirror in the built tree.** `team-doctrine` (and its `references/*.md` files) lives ONLY at `src/user/claude-code/skills/team-doctrine/` — there is no `.claude/skills/team-doctrine/` directory. Do not `ls`/`Read` a `.claude/skills/team-doctrine/references/...` path; it does not exist. (Some other skills, e.g. `evolve-agents`/`evolve-skills`/`evolve-config`/`evolve-coherence`, live only in the built `.claude/skills/` tree with no `src/user/claude-code/skills/` counterpart at all — single-tree-only is common here, but which tree varies per skill, so always check both before assuming a path.)
+**Source-only — no mirror in the built tree.** This skill lives ONLY at
+`src/user/claude-code/skills/team-doctrine/`; there is no `.claude/skills/team-doctrine/`
+directory. (Which tree holds a given skill varies: the 5 evolve-* skills live only in
+`.claude/skills/`; check both before assuming a path.)
 
-**Index maintenance:** when adding/removing a `references/*.md` file, update the table below in the same change — `ls references/*.md | wc -l` MUST equal the table's data-row count. Run `bash src/user/claude-code/scripts/doctrine_check.sh` (repo: `src/user/claude-code/scripts/doctrine_check.sh`) to verify this mechanically — it also checks (b) every `CANONICAL:*-LOCAL` `Master:` pointer resolves to an existing file and (c) `CANONICAL:<TAG>` blocks stay byte-identical across the carriers listed in `src/user/claude-code/scripts/doctrine_check_manifest.tsv` (append new tag/carrier rows there, e.g. for a newly parity-locked block). Read-only; exits 1 if any arm fails.
+**Index maintenance:** when adding or removing a `references/*.md` file, update the table
+below in the same change — `ls references/*.md | wc -l` must equal the table's data-row
+count. `bash src/user/claude-code/scripts/doctrine_check.sh` verifies this mechanically, plus
+(b) every `CANONICAL:*-LOCAL` `Master:` pointer resolves and (c) manifest-registered
+`CANONICAL:<TAG>` blocks stay byte-identical across their carriers
+(`src/user/claude-code/scripts/doctrine_check_manifest.tsv`).
 
-| Reference file | Master for | Cited by (LOCAL-copy consumers) |
+| Reference file | Master for | Cited by |
 |---|---|---|
-| `references/runtime-discipline.md` | R1-R7 canonical bodies + per-agent applicability matrix | all 7 agents (one-line reminder + pointer) + `team-lead.md` (compact LOCAL bodies for R1/R3/R4/R6, pointer for R2/R5/R7) + `evolve-coherence` (audit-detection reference to the R-rule applicability matrix, not a LOCAL-copy consumer) |
-| `references/truth-first-debugging.md` | Truth-First Debugging (TFD-1..5, pre-fix gate) | all 7 agents + `team-lead.md` |
-| `references/docs-paths.md` | Docs-Path Taxonomy (`docs/` output-path ownership) | all 7 agents + `team-lead.md` + 14 docs-path-touching skills (`adr`, `brief`, `code-review-verdict`, `design-qa`, `design-review`, `evolve-agents`, `evolve-config`, `evolve-model-distribution`, `evolve-skills`, `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`) |
-| `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | all 7 agents + `team-lead.md` |
-| `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge/critique, shared task list, cross-examination) | 6 agents (all but `senior-engineer.md`) + `team-lead.md` |
-| `references/pitfalls.md` | Recurring-pitfalls memory convention — content-split across in-repo (`.claude/agent-memory/{role}/pitfalls.md`) and centralized (`~/.claude/agent-memory/{role}/pitfalls.md`) homes | all 7 agents + `team-lead.md` |
-| `references/retention-compaction.md` | Retention & Compaction Policy (per-file changelog retention budget + pitfalls-file compaction) | 3 evolve-* skills (`evolve-agents`, `evolve-config`, `evolve-model-distribution`) — evolve-skills cites "the retention-compaction master" in prose only, without the references/retention-compaction.md path |
-| `references/shutdown-protocol.md` | Shutdown protocol (SP-1 silent-approve, SP-2 teammate-vs-subagent discriminator) | all 7 agents + `team-lead.md` (also retains a compact LOCAL copy — the lead operates the handshake every cycle) |
-| `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` (self-referential meta-convention; no worker agent cites this master) + `evolve-coherence` (audit-detection reference for the rule-numbering asymmetry check) |
-| `references/laziness-discipline.md` | Laziness Discipline (the lazy-developer ladder, Rules, Output, When NOT to be lazy, Boundaries) | `senior-engineer.md`, `sdet.md` |
-| `references/design-gate.md` | Design-Complete Gate (per-pattern artifact/acceptance table, Design-source grammar, mid-cycle interaction) | `team-lead.md` only (Rule 10 + choke-point hooks — pointer-only, no LOCAL copy) |
-| `references/fable-completeness-heuristics.md` | Fable-distilled completeness heuristics (provenance, honest scope, full bullet bodies) | `team-lead.md` (compact LOCAL copy) |
-| `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` (compact LOCAL copy) |
-| `references/authoring-verification-gates.md` | Authoring verification gates for TDD/review authors (executable-claim, negative-claim re-grep, insertion-anchor, byte-budget) | `staff-engineer.md`, `distinguished-engineer.md` |
-| `references/sandbox-recovery.md` | Sandbox-recovery retry signatures (`.git/index.lock`, loopback bind, out-of-repo state-dir writes) | `distinguished-engineer.md`, `sdet.md`, `security-engineer.md`, `senior-engineer.md`, `staff-engineer.md`, `ux-designer.md` |
-| `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates — auditors plus evolve-agents' SDLC Role Research (§9) (spawn-TEMPLATE store: paste-at-spawn-time, token-contracted; NOT a doctrine master with LOCAL copies) | `evolve-agents`, `evolve-skills`, `evolve-config` skills (Read-once at Phase-0 spawn) + `evolve-coherence` (audit-detection reference, not a Phase-0 spawner) + `evolve-model-distribution` (troubleshooting/recovery reference) |
-| `references/evolve-orchestration-core.md` | Shared evolve-* orchestration-core prose (DKT-106) — Scientific Trial Protocol, Genetic-Drift Operator, Operator prompts, Crash & Stall Recovery, Second-Failure Recovery, Shutdown Protocol, Phase 3 Disambiguation Charter/Boundary | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` skills (Read-once at the point each section is needed; two sections are hybrid — a compressed CANONICAL restatement stays local, parity-enforced) |
+| `references/runtime-discipline.md` | R1-R7 canonical bodies + per-agent applicability matrix | 7 agents + `team-lead.md` + `evolve-coherence` |
+| `references/truth-first-debugging.md` | Truth-First Debugging (banner, TFD-1..5) | 7 agents + `team-lead.md` |
+| `references/docs-paths.md` | Docs-Path Taxonomy (`docs/` output-path ownership, Ephemerality doctrine, Distillation Gate) | 7 agents + `team-lead.md` + 14 docs-path-touching skills (`adr`, `brief`, `code-review-verdict`, `design-qa`, `design-review`, `evolve-agents`, `evolve-config`, `evolve-model-distribution`, `evolve-skills`, `init-specs`, `prd`, `tdd`, `ux-spec`, `verify-ac`) |
+| `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | 7 agents + `team-lead.md` |
+| `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge, shared task list, cross-examination) | 6 agents (all but `senior-engineer.md`) + `team-lead.md` |
+| `references/pitfalls.md` | Recurring-pitfalls memory convention (two-homes content split) | 7 agents + `team-lead.md` |
+| `references/retention-compaction.md` | Retention & Compaction Policy (changelog budgets + pitfalls compaction; sole authority for its gate formulas, ledger formats, and invariants) | `evolve-agents`, `evolve-config`, `evolve-model-distribution` |
+| `references/shutdown-protocol.md` | Shutdown protocol (SP-1/1b/2/3/4) | 7 agents + `team-lead.md` |
+| `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` + `evolve-coherence` |
+| `references/laziness-discipline.md` | Simplicity ladder + when-not-to-simplify boundaries | `senior-engineer.md`, `sdet.md` |
+| `references/design-gate.md` | Design-Complete Gate (per-pattern artifact/acceptance table, Design-source grammar) | `team-lead.md` |
+| `references/fable-completeness-heuristics.md` | Completeness heuristics for briefs and return-audits | `team-lead.md` |
+| `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` |
+| `references/authoring-verification-gates.md` | Authoring verification gates for TDD/ADR authors | `staff-engineer.md`, `distinguished-engineer.md`, `tdd` |
+| `references/sandbox-recovery.md` | Sandbox permission-denial recovery signatures | 6 agents (all but `project-manager.md`) |
+| `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates (spawn-TEMPLATE store, token-contracted) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |
+| `references/evolve-orchestration-core.md` | Shared evolve-* orchestration-core prose (DKT-106) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |

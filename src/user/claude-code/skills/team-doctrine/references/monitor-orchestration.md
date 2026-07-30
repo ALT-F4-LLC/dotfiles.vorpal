@@ -1,45 +1,40 @@
 # Monitor for Orchestration — Maintained Master
 
-**LOCAL-copy consumers:** `team-lead.md` only (compact LOCAL copy under its kept `### Monitor
-for Orchestration` header). Relocated from `src/user/claude-code/agents/team-lead.md` lines
-305-312 (DKT-44, per the accepted Design-Complete Gate doctrine (`references/design-gate.md`)); the `### Monitor for Orchestration`
-header itself stays inline in team-lead.md (step 12's `§Monitor for Orchestration`
-cross-reference must resolve). Deployed at
-`~/.claude/skills/team-doctrine/references/monitor-orchestration.md` — repo:
-`src/user/claude-code/skills/team-doctrine/references/monitor-orchestration.md`. Read on demand
-only — never `Skill(team-doctrine)`.
+`team-lead.md` carries a compact LOCAL copy under its `### Monitor for Orchestration`
+header. Deployed at `~/.claude/skills/team-doctrine/references/monitor-orchestration.md` —
+repo: `src/user/claude-code/skills/team-doctrine/references/monitor-orchestration.md`.
 
 ---
 
-`Monitor` is the canonical mechanism for keeping turns short while teammates work. Default to Monitor instead of polling whenever you'd otherwise block on a long wait (>30s) or repeat a probe more than twice. Each pattern below is one event-stream per occurrence — your turn stays cheap and you react when something actually happens.
+**The discriminator:** default to `Monitor` instead of polling whenever you'd otherwise
+block on a long wait (>30s) or repeat a probe more than twice — one event-stream per
+occurrence keeps turns cheap. Use `Bash(run_in_background=true)` for one-shot "wait until X
+is done"; use Monitor for "tell me each time X happens". Filters must be selective and cover
+failure signatures alongside the happy path.
 
-- **Phase completion (any phase >5min expected):** `Monitor("docket plan --json --watch", filter: lines whose status transitions to closed/done)`. One event per issue closing; no sleep loops.
-- **Stall / zombie sweep (continuous during steps 11–16):** `Monitor("deadman_watch.sh <stall-threshold-minutes>", filter: none needed — every stdout line is already a STALL-CANDIDATE event)`. `deadman_watch.sh` (`src/user/claude-code/scripts/deadman_watch.sh`) polls `roster_sweep.sh`'s `{role: [in-progress issue ids]}` plus `docket plan --json`'s per-issue `updated_at` on a fixed interval (default 30s) and diffs `updated_at` itself, emitting `STALL-CANDIDATE: <role> <issue> unchanged <N>min` per stall. It alerts once per stall (re-arming only after the issue progresses and stalls again) so the event stream doesn't flood. Replaces manual every-turn probing in step 13's shutdown sweep — emit `shutdown_request` only when the watch surfaces a candidate. This single watch already covers every role `roster_sweep.sh` tracks (senior-engineer, sdet, staff-engineer, distinguished-engineer, project-manager, security-engineer, ux-designer) — no need for one watch per role.
+Watch patterns:
 
-  **Why not `docket ... --watch` for this:** `--watch` (and hand-rolled `docket issue list -a @role -s in-progress --watch --json` variants) only emits when a row's fields CHANGE between refreshes — it is a change-detector, not a silence-detector. An issue that has genuinely stalled (no status/updated_at delta at all — the exact zombie case this sweep exists to catch) produces zero `--watch` events, so a stall recipe built on `--watch` structurally cannot fire. `deadman_watch.sh` exists specifically to close this gap: it polls on a timer and treats an *unchanged* `updated_at` past the threshold as the signal, rather than waiting for a change event that will never come. Do not reintroduce a `--watch`-based recipe here for this reason.
-- **CI / PR checks (when work touches a PR):** `Monitor("gh pr checks <num> --watch", filter: terminal states succeeded/failed/cancelled)`.
-- **Inbound Discovered comments (mid-phase scope deltas):** compare the sorted comment-ID set from `--json` output — the same cost as a raw comment count, but also discriminates a delete+add netting to an equal count if the CLI ever grows deletion, and immune to relative-timestamp drift because it contains no rendered text:
+- **Phase completion:** `Monitor("docket plan --json --watch", filter: status transitions to
+  closed/done)` — prefer docket's native `--watch`/`-w` (with `--interval`) over hand-rolled
+  sleep loops.
+- **Stall / zombie sweep:** `Monitor("deadman_watch.sh <stall-threshold-minutes>")`
+  (`src/user/claude-code/scripts/deadman_watch.sh`) — polls on a timer and emits
+  `STALL-CANDIDATE: <role> <issue> unchanged <N>min`, alerting once per stall; one watch
+  covers every role `roster_sweep.sh` tracks. `--watch` cannot serve here: it is a
+  change-detector, and a genuine stall produces zero change events — only a timer-poll that
+  treats an *unchanged* `updated_at` as the signal can fire. Do not reintroduce a
+  `--watch`-based stall recipe.
+- **CI / PR checks:** `Monitor("gh pr checks <num> --watch", filter: terminal states)`.
+- **Inbound Discovered comments:** poll `docket issue comment list <ID> --json` and compare
+  the sorted comment-ID set. **Never hash or text-diff rendered CLI output for change
+  detection** — rendered docket output embeds relative timestamps that drift on every poll
+  (the DKT-345 false-positive loop); compare `--json` IDs, counts, or absolute timestamps.
+  A failed docket call treated as "no change" is sound for a blip but blind forever if the
+  failure persists — escalate after a bounded run of consecutive failures.
 
-  ```bash
-  prev=$(docket issue comment list <ID> --json | jq -r '[.data[].id] | sort | join(",")')
-  while true; do
-    cur=$(docket issue comment list <ID> --json 2>/dev/null \
-          | jq -r '[.data[].id] | sort | join(",")') || cur="$prev"
-    if [ "$cur" != "$prev" ]; then
-      docket issue comment list <ID> --json \
-        | jq -r '.data[] | "\(.id)\t\(.body)"' \
-        | awk -F'\t' -v prev=",$prev," 'index(prev, ","$1",")==0 {print $2}' \
-        | grep --line-buffered "Discovered:" || true
-      prev="$cur"
-    fi
-    sleep 30
-  done
-  ```
-
-  **Why never hash or text-diff rendered CLI output for this:** rendered docket output embeds relative timestamps that drift on every poll — a comment authored "25 minutes ago" reads as changed text on the very next refresh even though nothing changed, which is the false-positive polling loop from the 2026-07-16 DKT-345 incident. Compare `--json` IDs, counts, or absolute timestamps instead; never hash or text-diff rendered output for change detection. Absolute `created_at` timestamps are available in the same payload but add nothing over sorted IDs here.
-
-  **Docket query failure caveat:** `|| cur="$prev"` treats a failed `docket` call as "no change," sound for a transient blip but silently blind forever if the failure is persistent (DB corruption, permissions) — the loop compares `$prev` to itself indefinitely. Escalate after a bounded run of consecutive failures rather than retrying unboundedly.
-
-Filter must be selective (no raw log dumps) and cover failure signatures alongside the happy path (per Monitor tool's coverage rule). The change-detection recipes above (phase completion, CI/PR checks) hand `docket`'s native `--watch`/`-w` global flag (with `--interval DURATION`, default 2s — confirmed live in `docket --help`) to Monitor as the poll primitive; prefer it over wrapping a bare `docket` query in a hand-rolled `while … ; sleep N; done` loop. Two recipes are sanctioned exceptions that poll-and-diff on their own timer instead of asking `docket` to watch: the stall sweep, because it needs to detect the *absence* of a change, which `--watch` cannot express (`deadman_watch.sh`); and inbound Discovered comments, because change detection there must never hash or text-diff `--watch`'s rendered, timestamp-bearing output — it compares the stable `--json` comment-ID set instead. Use `Bash(run_in_background=true)` for one-shot "wait until X is done" cases; use Monitor for "tell me each time X happens." Combine with TaskUpdate at every state transition so the operator sees progress.
-
-**One wait per condition.** Arm a hand-rolled `Bash(run_in_background=true)` background wait through `singleton_wait.sh <key> <interval-seconds> <condition-command>` (`src/user/claude-code/scripts/singleton_wait.sh`), keyed to the condition it polls, rather than spawning a bare loop directly. The lock makes re-arming an already-covered key idempotent instead of cumulative — impossible when armed through the `singleton_wait.sh` helper; a hand-rolled loop that bypasses the helper entirely is not caught by the lock, since this is a doctrine convention plus opt-in helper, not a mechanical guarantee across every invocation path. A stop-guard nudge is never license on its own to arm a second wait for a condition an existing poller already covers — check for an `already-armed key=<key> pid=<pid>` response (or an existing armed key) before spawning another.
+**One wait per condition.** Arm hand-rolled background waits through
+`singleton_wait.sh <key> <interval-seconds> <condition-command>`
+(`src/user/claude-code/scripts/singleton_wait.sh`), keyed to the condition — the lock makes
+re-arming an already-covered key idempotent. A stop-guard nudge is never license to arm a
+second wait for a condition an existing poller covers; check for `already-armed key=<key>`
+first.

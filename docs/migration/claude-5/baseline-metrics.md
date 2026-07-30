@@ -146,3 +146,45 @@ Note for remediation: the charter's zero-verbatim-duplication target makes the
 entire CANONICAL-fence machinery (a 4.x attention-decay workaround) obsolete —
 the fences themselves, plus the "Master: …" citation lines inside the copies,
 are deletable overhead on top of the block content.
+
+## After metrics — Phase 2 agent rewrites (2026-07-29)
+
+Measured with the same commands as the baseline, one row appended as each
+agent's rewrite lands. Parity-locked CANONICAL blocks
+(`doctrine_check_manifest.tsv`) are retained byte-verbatim, and skill-cited
+anchors (team-lead Rules/steps, sdet SP-2/Rule 7, senior-engineer's 12
+principles, etc.) are preserved, so per-file floors sit above the charter's
+reference-split projections — Phase 2 cannot create reference files (skills are
+Phase 3). Checks re-run green per row: doctrine_check.sh (4 arms),
+tier_map.sh, drift_guard_check.py, model_census.sh (no new actionable hits),
+census exemption anchors.
+
+| File | Bytes before | Bytes after | Δ | MUST | NEVER | ALWAYS | M/N/A (was) | CRITICAL (was) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| team-lead.md | 137,218 | 76,878 | −44.0% | 5 | 7 | 3 | 15 (42) | 0 (0) |
+| senior-engineer.md | 78,897 | 48,108 | −39.0% | 0 | 1 | 2 | 3 (6) | 1 (3) |
+| staff-engineer.md | 67,580 | 40,785 | −39.7% | 2 | 2 | 3 | 7 (16) | 1 (1) |
+| sdet.md | 61,892 | 42,018 | −32.1% | 0 | 2 | 2 | 4 (10) | 1 (3) |
+| distinguished-engineer.md | 56,691 | 41,576 | −26.7% | 0 | 1 | 2 | 3 (4) | 1 (1) |
+| security-engineer.md | 56,068 | 41,526 | −25.9% | 3 | 2 | 2 | 7 (12) | 1 (1) |
+| project-manager.md | 48,476 | 34,446 | −28.9% | 3 | 2 | 3 | 8 (11) | 1 (2) |
+| ux-designer.md | 46,903 | 37,485 | −20.1% | 1 | 2 | 2 | 5 (7) | 1 (1) |
+| **Fleet** | **553,725** | **362,822** | **−34.5%** | 14 | 19 | 19 | **52 (108)** | **7 (12)** |
+
+**Shortfall note vs the 40–60% task target.** The fleet lands at −34.5% (team-lead
+−44.0%, the largest absolute cut at 60.3KB). The residual gap is structurally
+pinned in Phase 2, where skills, hooks, and scripts are out of scope:
+(a) ~24KB of parity-locked CANONICAL blocks (`doctrine_check_manifest.tsv`
+registers PITFALLS/VORPAL-TOOLS/SHUTDOWN-PROTOCOL/DOCTRINE-SCRIPT-TRUST/
+LAZINESS across 2–7 carriers each; compacting them is a coordinated
+all-carriers + manifest edit — the manifest lives in `scripts/`);
+(b) machine-parsed anchors (tier_map.sh's Tiers block + Per-Role Dispatch
+Table, drift-guard-pinned fenced script syntax, SP-1/1b/2/3 literals,
+model-census exemption substrings) and skill-cited anchors (team-lead
+Rules/steps, sdet SP-2/Rule 7, senior-engineer's 12 numbered principles,
+ux-designer's HIG catalogue — the declared single home for 3 skills);
+(c) evidence-backed keeps the audit manifest routes to reference-file splits
+(its remediation items #2/#3/#7) that only the Phase 3 team-doctrine
+restructuring can perform. Charter §4's own caveat governs the stop point:
+reduction is a consequence of applying §1, never a goal pursued by deleting
+context the model cannot reconstruct. Phase 3 unlocks the remainder.

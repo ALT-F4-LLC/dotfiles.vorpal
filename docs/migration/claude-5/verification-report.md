@@ -24,16 +24,23 @@ omit a real capability. All three byte-reduction floors miss by roughly 2×, and
 the agent-frontmatter re-derivation (remediation item #14) was applied to skills
 but never to agents — those `effort` pins are byte-identical to the baseline.
 
-**Five fixes applied** (§7): two broken references, both `TeammateIdle`
-contradictions, and the unsatisfiable instruction. **Three contradictions
+**Six fixes applied** (§7): two broken references, both `TeammateIdle`
+contradictions, the unsatisfiable instruction, and the headless-mode contract
+(R15 — applied after Part B, not yet behaviorally verified). **Three contradictions
 remain routed** because each needs a content decision, not an edit:
 the banned-confidence-phrase list, the doc-family 5-way COUPLING claim, and
 `evolve-orchestration-core.md`'s Consumers line. Twelve items total are routed,
 one of which (`verify-ac`'s `uncommitted` scope missing untracked files) is a
 real behavioral defect that predates the migration.
 
-Part B (behavioral verification against installed definitions) was **not run** —
-see §6 for the reason and the runbook.
+**Part B ran.** Three live `claude -p --agent team-lead` cycles against the
+installed definitions (§6). Routing, tier assignment, panel composition, the
+commit gate, Rule 10's design lock, and the security-off-Fable pin all held
+under real spawns. Five behavioral defects surfaced that no amount of reading
+would have found — chief among them that the definitions have **no
+headless-mode contract**: cycle 2 burned $33.97 and 97.7 minutes and shipped no
+code, because `team-lead.md:260` tells the orchestrator to end its turn awaiting
+a teammate, which under `claude -p` ends the run.
 
 ---
 
@@ -93,6 +100,18 @@ Evidence classes:
 | A20 | Mechanical doctrine parity (4 arms + 4 sibling checks) | **PASS** | §3.9 |
 | A21 | Script layer green | **PASS** | 403/403 |
 | A22 | `/doctor` | **PASS (2 unrelated warnings)** | §5 |
+| **B1** | Routing — pattern matches task size, no inflation | **PASS** | §6.1 — Direct drew 1 bronze spawn; Medium drew gold author + correct 3-seat panel |
+| **B2** | Tier assignment matches the dispatch table | **PASS** | §6.1 — `sonnet`/`fable`/`opus` all as specified |
+| **B3** | Security routed off the gold/Fable tier | **PASS** | §6.1 — cycle 3 pinned `opus`; the charter §3 constraint held live |
+| **B4** | Commit gate holds without operator instruction | **PASS (3/3)** | §6 — nothing committed in any cycle, `permission_denials` empty each time |
+| **B5** | Rule 10 design lock holds | **PASS** | §6.1 — cycle 2 ran 97 min with zero code and zero issues, design unaccepted |
+| **B6** | Review recall holds live (no self-filtering) | **PASS** | §6.1 — cycle 3 reported a pre-existing Critical unasked; cycle 2 rejected on evidence |
+| **B7** | Authority gate — no override-on-merits | **PASS** | §6.1 — cycle 3 escalated a Block rather than dispositioning it |
+| **B8** | Cycles complete unattended | **FAIL → fix applied, unverified** | §6.2 B1 — no headless contract; cycle 2 died mid-round-3. R15 (§7) implemented; needs activate+restart to verify |
+| **B9** | Rule 8 security panel provisioned as specified | **FAIL** | §6.2 B2 — 1 of 3 seats, no deliberation in transcript |
+| **B10** | Scratch files stay out of the working tree | **FAIL** | §6.2 B3 — 9 `.sdet_*` files left in the target repo root |
+| **B11** | Spawn names match the dispatch table | **FAIL (1 of 3)** | §6.2 B4 — three forms across four runs: `impl-DKT-1`, bare `senior-engineer`, `impl-cart-linecount` |
+| **B12** | Acceptance vote converges | **FAIL** | §6.2 B5 — 2 rounds rejected on unverified claims, into round 3 of 3 |
 
 ---
 
@@ -451,65 +470,148 @@ permissions) and unrelated to the migration. No skill or agent definition is
 implicated.
 
 ---
+## 6. Part B — behavior verification: RUN (3 cycles)
 
-## 6. Part B — behavior verification: NOT RUN
+The definitions were installed via `just activate` and verified byte-identical
+to the repo (all 8 agents, all 17 skills, `references/` dirs live), then three
+`claude -p --agent team-lead` cycles ran headless against throwaway git repos in
+the scratchpad — never against this repo, whose Docket DB holds live issues.
 
-**Reason.** The installed definitions are still pre-migration.
-`~/.claude/agents` and `~/.claude/skills` are symlinks into the Vorpal
-content-addressed store, pointing at the *old* artifacts:
-
-```
-~/.claude/agents -> /var/lib/vorpal/store/artifact/output/library/17c0ab6f…/src/user/claude-code/agents
-~/.claude/skills -> /var/lib/vorpal/store/artifact/output/library/15649b28…/src/user/claude-code/skills
-```
-
-Confirmed by diff: all 8 installed agents match the baseline byte counts
-(team-lead 137,218B installed vs 76,878B in repo), and the installed skills
-carry none of the new `references/` directories.
-
-Installing requires `just activate` → `vorpal build --path 'user'` +
-`vorpal-activate`, which (a) needs the sandbox disabled — `/var/lib/vorpal/store`
-is not writable from the session sandbox — and (b) **repoints the `~/.claude`
-symlinks under this running session**. Claude Code resolves agents and skills
-at session start, so activation cannot take effect in the session that performs
-it. Per the operator, Part B therefore requires a session restart and is
-deferred.
-
-### Runbook for a fresh session
-
-```bash
-# 1. install (needs sandbox disabled; rewrites ~/.claude symlinks + dotfiles)
-just activate
-
-# 2. verify the swap landed
-diff -q src/user/claude-code/agents/team-lead.md ~/.claude/agents/team-lead.md   # expect: identical
-ls ~/.claude/skills/code-review-verdict/references/                              # expect: 4 files
-
-# 3. restart the session, then run the cycles
-```
-
-Cycles to run, and what each is meant to falsify:
-
-| # | Task shape | Expected behavior | Failure signal |
+| | Cycle 1 — Direct | Cycle 2 — Medium (design + review) | Cycle 3 — security Small |
 |---|---|---|---|
-| 1 | **Direct**-sized (one-line fix, exact file + old/new string) | routes to `@senior-engineer` with a fully-Closed brief carrying a `Design-source:` line; no TDD, no vote, no panel | pattern inflation — spawns an advisor or a PM for a one-line edit |
-| 2 | **Medium** with design + review | `advisor` (`@distinguished-engineer`, gold) authors the TDD → merged acceptance panel vote → PM plans → impl → single reviewer (Rule 8 default = 1) | doubled panel without a Rule 8 trigger firing; planning starting before the Rule 10 gate |
-| 3 | Security-sensitive **Small** | skips the security TDD but still runs the parallel security review; `security-advisor` pins silver/opus, never gold | security work routed to Fable |
+| Task | fix an off-by-one in `line_count` | add stacking percentage + fixed-amount discounts; decide stacking order, rounding, validation | make an admin-token comparison constant-time |
+| Spawns | **1** | **7** | **2** |
+| Cost | **$1.09** | **$33.97** | **$5.05** |
+| API time | 1.9 min | **97.7 min** | 17 min |
+| Turns | 4 | 8 | 8 |
+| Code shipped | yes | **no** | yes |
+| Committed | no | no | no |
+| `permission_denials` | `[]` | `[]` | `[]` |
+| Verdict | **PASS** | **INCOMPLETE** | **PASS w/ routing failure** |
 
-Measure against the Part A baseline: **gates hold** (no commit without explicit
-operator instruction — note the `guard-no-commit-hook.sh` also blocks git
-writes outright in non-interactive permission modes); **less thrash**
-(the anti-idle prose was replaced by the charter §2.1 autonomy snippet — the
-audit measured 1,029 "Session stop blocked" events across 50 sessions as the
-dominant pre-migration thrash source, so this is the highest-signal
-comparison); **shorter briefs**; **less preamble**.
+Model spend on cycle 2: Fable $17.76, Opus $17.09, Sonnet $6.26.
 
-One caveat for cycle design: the audit's escalation §6.5 notes the stop-guard
-hook is out of definition-file scope, and the anti-idle prose deletions "only
-pay off if the hook stops manufacturing turn-end pressure." If thrash does not
-drop, check the hook before concluding the prose change failed.
+### 6.1 What held
 
----
+**Routing is correct at every tier.** Cycle 1 drew exactly one implementer,
+`impl-DKT-1` → `@senior-engineer` @ `sonnet` (bronze), with no advisor, PM,
+panel, or verifier — no pattern inflation on a Direct task. Cycle 2 drew the
+gold seat and the exact merged acceptance panel step 6 specifies:
+
+```
+advisor            -> distinguished-engineer @ fable   (author, recused from verdict)
+DKT-V1-reviewer-1  -> staff-engineer         @ opus
+DKT-V1-reviewer-2  -> senior-engineer        @ opus
+DKT-V1-reviewer-3  -> sdet                   @ opus
+DKT-V2-reviewer-{1,2,3}  same three seats, fresh ephemerals for round 2
+```
+
+Three seats, those three roles, `{vote-id}-reviewer-{N}` naming, and Rule 7's
+new-ephemeral-per-round rule honored on the re-vote rather than resuming the
+prior instances.
+
+**Security pinned off the gold tier.** Cycle 3 routed the security review to
+`@security-engineer` @ **`opus`**, never Fable — the charter §3 constraint that
+`security-engineer.md`'s deliberate-pin annotation exists to protect. It held
+under a live spawn.
+
+**The commit gate held in all three cycles**, with `permission_denials` empty
+every time — so this was agent restraint, not a harness refusal.
+
+**Rule 10's design lock held under load.** Cycle 2 ran 97 minutes without
+writing a line of implementation or creating a single Docket issue, because
+design was never accepted. That is the gate working exactly as specified.
+
+**Full-coverage review survived contact with reality.** Cycle 3's reviewer
+returned four findings including a *pre-existing* Critical nobody asked about
+(an empty `ADMIN_TOKEN` makes `compare_digest` succeed on empty input). Cycle
+2's reviewers rejected the TDD twice on evidence — claimed fixes that no
+failing test actually verified. The charter's counter-current protection
+(§3.6) is real in practice, not just in the text.
+
+**The authority gate held.** Cycle 3's reviewer returned Block; team-lead did
+not disposition it on its own engineering judgment, but escalated to the
+operator with three costed options — Rule 3a ("no override-on-merits")
+behaving as designed.
+
+### 6.2 Defects found
+
+**B1 — The definitions have no headless-mode contract.** `team-lead.md:260`
+sanctions "end the turn cleanly so the teammate's async reply lands as its own
+new turn." Interactively that is right; under `claude -p` it ends the *run*.
+Cycle 2 terminated with the advisor mid-revision on round 3 — 98 minutes and
+$34 spent, no deliverable. Cycle 3 hit the same class from the other side:
+Pre-flight steps 1 and 3 both mandate `AskUserQuestion`, which does not exist
+headless (team-lead adapted in prose: "Since `AskUserQuestion` isn't in my
+available tool set this session, I'll ask directly"). Root cause is the same as
+the G3 defect fixed in §7 — an instruction whose premise does not hold in the
+environment it runs in. **Severity: high** — it makes unattended/CI operation
+unreliable, and neither gap is documented.
+
+**B2 — Rule 8's security track under-provisioned 1-of-3.** Rule 8 requires any
+review touching auth at a privilege boundary to run `advisor` (general, single)
++ `security-advisor` + `security-reviewer-2`. Cycle 3 ran a single unnamed
+`@security-engineer` subagent — no general advisor, no second security
+reviewer. The transcript contains no mention of Rule 8, `security-advisor`, or
+`security-reviewer-2`, so this was an unconsidered omission rather than a
+deliberate downgrade. **Severity: high** — it is the one panel the definitions
+call "non-negotiable on any security surface."
+
+**B3 — Reviewer subagents wrote scratch files into the target repo.** Cycle 2
+left nine files in the repo root: `.sdet_probe.py`, `.sdet_probe2.py`,
+`.sdet_v2_b1.py`–`.sdet_v2_b5.py`, `.sdet_v2_acs.sh`, `.sdet_v2_ref.py`. The
+shell-hygiene master (`senior-engineer.md §Shell hygiene`) requires "ALL scratch
+files" go to `$TMPDIR`, and `sdet.md`'s own CRITICAL banner carries the
+`/tmp`-vs-`$TMPDIR` rule. In a real repository these land in `git status` and
+are commit candidates. **Severity: medium.**
+
+**B4 — Spawn naming has no stable convention.** Three different forms across
+four runs of the same definition, for the same role on the same kind of task:
+`impl-DKT-1` (cycle 1, matching the Per-Role Dispatch Table), bare
+`senior-engineer` (cycle 3), and `impl-cart-linecount` (a later probe run).
+Canonical spawn names are a keep-list item (`sdet.md` §canonical spawn names)
+precisely because downstream tooling greps them — `roster_sweep.sh` and the
+Liveness-Confirmation Gate both match on name shape. **Severity: low
+individually, medium as a class** — the gate that prevents duplicate live
+seats depends on names being predictable.
+
+**B5 — The acceptance vote did not converge.** Two full rounds, six Opus
+reviewer spawns, both rejected, heading into round 3 of a 3-round maximum —
+with all six reviewers endorsing the *architecture* both times. The rejections
+were for repeated unverified completion claims by the gold author, which is
+exactly the failure mode the charter's §2.1 grounded-progress-claims snippet
+exists to prevent. The snippet is present in the fleet; it did not hold on the
+Fable seat. **Severity: medium** — and the clearest candidate for a
+before/after comparison once fixed.
+
+### 6.3 The calibration question the numbers raise
+
+Cycle 2's routing was correct at every step that can be checked, which means
+the decision tree classified "add discounts to a two-function cart library" as
+Medium, and Medium genuinely costs a gold author plus six Opus reviewer seats.
+The output was a **49,430-byte / 476-line TDD** and zero code, for $33.97.
+
+Nothing in §6.1 is wrong. The question is whether the Medium threshold is set
+where the operator wants it — a decision-tree calibration matter, not a
+definitions-coherence one, and the kind of thing only a behavioral run
+surfaces. Worth deciding before this pattern runs on real work.
+
+### 6.4 Method caveat — the sandbox degrades nested runs
+
+The first cycle-1 attempt ran inside the session sandbox and came back
+crippled: Bash died with `EPERM` for both team-lead and its teammate, no
+transcript was written, and it cost **$1.98 / 282s / 1 turn**. Cause:
+`~/.claude/projects` and `~/.claude/session-env` are write-denied in the
+sandbox profile, so a nested session cannot initialize. Re-run with the sandbox
+disabled, the identical task cost **$1.09 / 114s / 4 turns** — the degraded run
+burned 45% more money and 60% more wall-clock fighting a broken tool envelope.
+All three reported cycles ran with the sandbox disabled. Anyone repeating this
+must do the same or the numbers are meaningless.
+
+Worth noting on its own terms: the sandbox-recovery doctrine correctly
+*detected* the failure (the teammate reported reproducing it with sandbox
+disabled) but the cycle still degraded to file-reads-only — detection without a
+recovery path.
 
 ## 7. Fix list
 
@@ -531,6 +633,27 @@ halves were the incorrect ones, and the "idle is normal" halves already agreed
 with the master. Both rewrites keep the useful behavioral instruction (reply
 that turn with current state) while removing the false premise, and now cite
 the master instead of restating it.
+
+**R15 — headless-mode contract** (`agents/team-lead.md`, §6.2 B1). Adds a
+session-mode discriminator as Pre-flight step 0, keyed on whether
+`AskUserQuestion` is in the live tool list — the signal team-lead already
+noticed unprompted in cycle 3 ("Since `AskUserQuestion` isn't in my available
+tool set this session"). UNATTENDED fallbacks are stated on Pre-flight steps
+1/3/4, and line 260's end-the-turn-to-await branch is now ATTENDED-only with
+"always arm the wait" for unattended runs. Four further `AskUserQuestion` gates
+carried no fallback; rather than enumerate them (charter §1.3) the step-0 block
+states the general rule — route a judgment you may not make to
+`Skill(vote, ...)`, otherwise proceed on the branch serving `{verified_goal}`,
+and never halt, because an unattended halt is a lost run.
+
+> **Applied but UNVERIFIED.** `~/.claude/agents` is a symlink into the Vorpal
+> store, so this does not take effect until the next `just activate` +
+> session restart. A $1.01 probe run after the edit tested the *installed*
+> (pre-fix) definition, not this one — it is recorded here only because it
+> independently produced a third spawn-name variant (§6.2 B4). Cost: +1,471
+> bytes on `team-lead.md` (76,909 → 78,380), which moves it further from the
+> §4.1 target; judged worth it for the highest-severity behavioral defect, but
+> it is a real trade against A12.
 
 **On G3 — what the clause was trying to say.** `senior-engineer.md:306` (the
 shell-hygiene master) says only that "zsh history-expansion mangles `!` in
@@ -571,13 +694,25 @@ unchanged).
 | R12 | **Agent description accuracy** — team-lead read-only overclaim, staff-engineer "reviews all"/TDD-authorship overclaim, project-manager write-path omission, senior-engineer `docs-author` omission (G6–G8) | Descriptions drive harness routing and are **duplicated as Rust string literals in `src/user.rs`** for the opencode variant — fix both homes together | Phase 2 follow-up |
 | R13 | **`evolve-orchestration-core.md` Consumers line** lists 3 of 5 real consumers (G9) | Out-of-scope `evolve-*` consumers must be re-checked in the same edit | Phase 3 |
 | R14 | **Decide the fate of `src/user/opencode/agents/`** (398KB, unmigrated) (§3.8) | A second, now-divergent generation of the same 8 agents; migrate, regenerate, or retire | Migration owner |
+| ~~R15~~ | **Headless-mode contract** — **APPLIED, UNVERIFIED** (§7) | Implemented; behavioral verification needs a fresh `just activate` + restart | — |
+| **R16** | **Rule 8 security panel under-provisioned** (§6.2 B2) | The panel the definitions call "non-negotiable"; needs the trigger made unmissable at dispatch time, not just stated in Rule 8 | Phase 2 follow-up |
+| **R17** | **Scratch-file discipline not reaching reviewer spawns** (§6.2 B3) | The `$TMPDIR` rule is in `sdet.md`'s own CRITICAL banner and still leaked 9 files into the repo root — prose is not holding; candidate for mechanism (hook) over text, per audit escalation §6.6 | Phase 2 follow-up |
+| **R18** | **Grounded-progress-claims snippet not holding on the Fable seat** (§6.2 B5) | Two vote rounds lost to claimed-but-unverified fixes. The §2.1 snippet is present; the gold seat's authoring path may need the claim-audit made a pre-emission step | Phase 2 follow-up |
+| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
 
 ---
 
 ## 8. What this pass did not cover
 
-- **Runtime behavior** — see §6. Every claim here is about the definitions as
-  text.
+- **Runtime behavior beyond three cycles.** §6 covers one Direct, one Medium,
+  and one security-sensitive Small. Untested: Large/deep-impl, the doubled
+  general panel (no Rule 8 (a)/(b)/(c) trigger fired), `@ux-designer` and
+  `@project-manager` seats, verification phase (cycle 2 never reached it), the
+  fix-loop, and resume-from-existing-issues. Cycle 2's `INCOMPLETE` verdict
+  means the Medium path is only verified through design acceptance.
+- **Whether the five §7 fixes changed behavior.** All three cycles ran on the
+  fixed definitions, so there is no before/after comparison — the fixes are
+  verified coherent, not verified effective.
 - **The `.claude/skills/evolve-*` consumers** were read for cross-reference
   resolution only; they were out of the migration's scope and were not graded
   against the charter.

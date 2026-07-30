@@ -50,7 +50,7 @@ A new or significantly revised user-facing surface (CLI, TUI, API, agent prompt,
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, adr, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, and adr — update all 4 in lockstep when adding/removing a sibling skill. Also bridges the report-emission family (design-review, design-qa) which brackets the ux-spec lifecycle — keep those routes accurate too. -->
 - Inline advisory replies, review comments, scratch wireframes, or one-off copy proposals not meant to live at `docs/ux/`.
 - Internal-only surfaces, single-tier design fits (flag rename, copy tweak, one-shot error message), or anything fitting the calling agent's lighter Design Output Tiers 1-3.
 - Peer review of a draft spec — `Skill(design-review, "<scope>")`; QA of shipped implementation — `Skill(design-qa, "<scope>")`.

@@ -52,7 +52,7 @@ A Technical Design Document for non-trivial work (architecture, system design, m
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, adr, and ux-spec — update all 4 in lockstep when adding/removing a sibling skill. `init-specs` is in the doc-authoring family but carries no "When NOT to Use" section, so it is outside this particular sync. -->
 - Inline advisory replies, review comments, scratch notes, or one-off sketches not meant to live at `docs/tdd/`.
 - Architecture Decision Records (single decisions): `Skill(adr, "<topic>")`.
 - Product Requirements Documents (feature-level specs): `Skill(prd, "<topic>")`.

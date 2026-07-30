@@ -51,7 +51,7 @@ A single architectural or design decision with long-term consequences (library, 
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/prd, tdd, and ux-spec — update all 4 in lockstep when adding/removing a sibling skill. `init-specs` is in the doc-authoring family but carries no "When NOT to Use" section, so it is outside this particular sync. -->
 - Inline advisory replies, review comments, scratch notes, or one-off sketches not meant to live at `docs/adr/`.
 - Full system designs spanning multiple components or phases: `Skill(tdd, "<topic>")`.
 - Product Requirements Documents: `Skill(prd, "<topic>")`. UX / design specs: `Skill(ux-spec, "<topic>")`.

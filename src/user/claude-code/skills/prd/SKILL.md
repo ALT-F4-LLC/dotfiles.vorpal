@@ -50,7 +50,7 @@ A feature-level PRD for a non-trivial product surface, landing at `docs/spec/{sl
 
 ## When NOT to Use
 
-<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/tdd, adr, ux-spec, and init-specs — update all 5 in lockstep when adding/removing a sibling skill. -->
+<!-- COUPLING: this skill is part of the doc-authoring family. The "When NOT to Use" delegation routes below MUST stay in sync with src/user/claude-code/skills/tdd, adr, and ux-spec — update all 4 in lockstep when adding/removing a sibling skill. `init-specs` is in the doc-authoring family but carries no "When NOT to Use" section, so it is outside this particular sync. -->
 - Inline scoping notes, advisory replies, decomposition comments, or scratch ideas not meant to live at `docs/spec/`.
 - Technical Design Documents: `Skill(tdd, "<topic>")`. Architecture Decision Records: `Skill(adr, "<topic>")`. UX / design specs: `Skill(ux-spec, "<topic>")`.
 - Project-wide engineering specs (the 7 reserved names): owned by `init-specs` — this skill HARD-REFUSES those names (Pre-flight step 2).

@@ -1,7 +1,7 @@
 # Evolve Orchestration Core (shared reference)
 
-Single home for orchestration-core prose shared by the `evolve-agents`, `evolve-config`, and
-`evolve-skills` cycles (DKT-106). Read each section ONCE at the point it is needed
+Single home for orchestration-core prose shared by the `evolve-agents`, `evolve-config`,
+`evolve-skills`, `evolve-coherence`, and `evolve-model-distribution` cycles (DKT-106). Read each section ONCE at the point it is needed
 (Pre-flight for Scientific Trial Protocol / Genetic-Drift Operator / Operator prompts; Team
 Setup for Shutdown Protocol; Phase-0 spawn for Crash & Stall / Second-Failure Recovery;
 Phase 3 spawn for the Disambiguation sections). If this file or a named section is missing,
@@ -29,7 +29,7 @@ further block from a consumer file, grep that file's changelog (including compac
 for a recorded `Drift:`/`Trial:` line naming it — a block carrying a LIVE recorded allele
 stays local until the trial resolves.
 
-**Consumers:** evolve-agents, evolve-config, evolve-skills.
+**Consumers:** evolve-agents, evolve-config, evolve-skills, evolve-coherence, evolve-model-distribution.
 
 ---
 

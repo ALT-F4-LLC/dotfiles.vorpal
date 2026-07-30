@@ -260,7 +260,7 @@ Full per-role Requirements/Context bodies live in each agent's own `.md`; this t
 While dispatched work is outstanding, either arm ONE wait keyed to a real condition (a Monitor or background `until`-loop that exits on a concrete signal — never a bare sleep loop, which detects nothing) or end the turn cleanly so the teammate's async reply lands as its own new turn. Pause for the operator only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input only they can provide — ask and end the turn rather than ending on a promise. If a teammate has gone silent, ONE probe per the Liveness-Confirmation Gate — never more polling. Hand-rolled background waits are armed once per condition via `singleton_wait.sh`.
 <!-- CANONICAL:MONITOR-ORCHESTRATION-LOCAL:END -->
 
-**`singleton_wait.sh` exact invocation (skip `--help` — this is the complete, current syntax; mirrors the master doc `references/monitor-orchestration.md`):**
+**`singleton_wait.sh` exact invocation (skip `--help` — this is the complete, current syntax; mirrors the master doc `~/.claude/skills/team-doctrine/references/monitor-orchestration.md`):**
 ```
 ~/.claude/scripts/singleton_wait.sh <key> <interval-seconds> <condition-command> [args...]
 ```

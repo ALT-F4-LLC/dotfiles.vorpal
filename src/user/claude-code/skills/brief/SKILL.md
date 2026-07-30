@@ -2,7 +2,7 @@
 name: brief
 description: >
   Turn a freeform work request into a standardized brief block that team-lead's
-  Pre-flight HARD GATE consumes — collapsing goal verification to a single confirm.
+  Pre-flight step 1 consumes — collapsing goal verification to a single confirm.
   Parses the request, derives every brief field it can support, asks ONE batched
   AskUserQuestion round only for genuinely underdetermined fields, then emits the
   block verbatim and stops. Standalone operator-intake aid; writes no files, spawns
@@ -16,7 +16,7 @@ argument-hint: "<freeform work request>"
 
 # Brief — Standardize a Freeform Work Request
 
-Take the freeform request in `\$ARGUMENTS` and emit ONE standardized brief block — the artifact team-lead's Pre-flight step 1 (goal-verification HARD GATE) reads, letting the operator confirm the whole intake in a single pass. The deliverable is the block itself, emitted into context; no file is written, no team is spawned, and after emitting the block you stop.
+Take the freeform request in `\$ARGUMENTS` and emit ONE standardized brief block — the artifact team-lead's Pre-flight step 1 (goal verification) reads, letting the operator confirm the whole intake in a single pass. The deliverable is the block itself, emitted into context; no file is written, no team is spawned, and after emitting the block you stop.
 
 ## What a good brief is
 
@@ -63,7 +63,7 @@ Security-sensitive: yes | no
 Constraints: <no new deps, API freezes, etc.>
 ```
 
-**HALT — brief complete.** Do not continue, execute, or ask follow-ups; the operator carries the block to team-lead's Pre-flight HARD GATE.
+**HALT — brief complete.** Do not continue, execute, or ask follow-ups; the operator carries the block to team-lead's Pre-flight step 1.
 
 ## When NOT to use
 

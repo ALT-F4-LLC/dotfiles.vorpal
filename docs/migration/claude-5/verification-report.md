@@ -1021,6 +1021,81 @@ but R6's ledger should not be read as if the split still stands alone.
 against a new run. R21 still needs a cycle that reaches a TDD revision round,
 and this fix is what should make that cycle classify Medium reliably.
 
+### 6.8 Cycle 5 — R29 verified live; R21 blocked by success
+
+The R29 fix was installed and the discount task re-run against a repo rebuilt
+from the original commit (not cycle 4's output), same prompt as cycle 4.
+
+| | cycle 2 (before) | cycle 4 (Small) | cycle 5 (after R29) |
+|---|---:|---:|---:|
+| Classification | Medium | Small | **Medium** |
+| advisor seat | `@distinguished-engineer` `fable` | `@staff-engineer` `opus` | **`@distinguished-engineer` `fable`** |
+| Spawns | 7 | 4 | **8** |
+| TDD | 49,430B | none | **36,040B** |
+| Acceptance vote | **lost 2 rounds** | none | **converged round 1** |
+| Code shipped | **no** | 222 ins | **249 ins** |
+| Tests | — | 29/29 | **38/38** |
+| Cost | $33.97 | $8.77 | **$36.76** |
+| Wall clock | 97.7 min | 25.0 min | **54.4 min** |
+| API time | 97.7 min | 24.5 min | 65.6 min |
+| Turns | 8 | 10 | 14 |
+| Committed | no | no | no |
+| `permission_denials` | `[]` | `[]` | `[]` |
+
+Model spend: Fable $21.22, Sonnet $10.45, Opus $5.09.
+
+**R29 — VERIFIED LIVE.** Same task text, same pristine starting repo, same
+harness; the only variable changed was the fix. Classification moved Small →
+Medium and drew the full merged acceptance panel — `DKT-V1-reviewer-{1,2,3}` on
+`@staff-engineer` / `@senior-engineer` / `@sdet`, all `opus` — identical in shape
+to cycle 2's. The gold seat spawns only on Medium+ TDD-bearing cycles, so its
+presence is direct proof of the classification rather than an inference.
+
+**The acceptance vote converged on round 1.** No `DKT-V2-*` seats spawned and no
+`-fix-*` rounds ran. Against §6.2's B12 (2 rounds lost to unverified remediation
+claims) and the success bar set for this work — the vote converges, or rejects
+on substance rather than on unverified claims — this run clears it. Cycle 2
+never reached planning; cycle 5 closed every issue and shipped working code.
+
+**R21 — STILL NOT EXERCISED, this time because the design passed.** R21 governs
+a revision answering a review **Blocker**. Round 1 raised no Blocker, so no
+revision round occurred and the rule had no occasion to apply. Three cycles have
+now failed to exercise it for three different reasons: cycle 2 predates the fix,
+cycle 4 classified Small so the rule's file never loaded, and cycle 5 passed
+review first time.
+
+This is worth stating as a structural property rather than a scheduling
+accident. **R21 is a fix to failure-path behavior, and the surrounding fixes
+have made the failure path hard to reach.** A shorter, tighter TDD (36,040B vs
+49,430B) accepted on the first round is the outcome the other fixes were meant
+to produce. Verifying R21 therefore requires deliberately inducing a Blocker —
+seeding a design flaw a reviewer must reject — rather than re-running the same
+task and hoping for a rejection. Until someone does that, R21's status is
+"applied, preconditions never met," which is weaker than verified and should not
+be reported as verified.
+
+**R19 — now a genuinely comparable number, and it does not vindicate the tier.**
+Cycle 5 is the same pattern as cycle 2, so the two can be set side by side:
+$36.76 against $33.97, i.e. **8% more expensive**, for a discount function.
+Wall clock halved (54.4 min vs 97.7) and the run delivered where the baseline
+delivered nothing, so cost *per outcome* improved enormously. But the raw price
+of a Medium cycle did not fall. The calibration question §6.4 raised stands
+unchanged: Medium costs about $35, and whether a two-function discount feature
+should route there is still an open decision, not something these fixes settled.
+
+**R17 — strongest evidence so far.** Two `sdet`-class agents ran this cycle
+(`DKT-V1-reviewer-3` named, plus the report-only `verifier` subagent, unnamed
+per SP-2 and `sonnet` per the routine-verification tier), and the repo root
+stayed clean. That is the role whose scratch file originally leaked, so unlike
+cycle 4 the producing role was actually exercised.
+
+**R20 — reinforced.** Every spawn name in the cycle is canonical:
+`DKT-V1-reviewer-{N}`, `planner`, `impl-DKT-3`, `impl-DKT-4`, and a correctly
+UNNAMED report-only verifier.
+
+**The commit gate held** for the fifth consecutive cycle: 249 insertions left
+uncommitted with `permission_denials` empty.
+
 ## 7. Fix list
 
 ### Applied (this pass)
@@ -1129,11 +1204,11 @@ unchanged).
 | ~~R14~~ | **`opencode` fleet** — **WITHDRAWN** (§3.8) | Mis-framed: a port to a different harness with different primitives, not a divergent copy of this fleet. No decision needed from this migration | — |
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
-| ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. **Cycle 4 left the root clean (§6.6), but no `sdet`/`verifier` spawned in that cycle and the original leak came from an sdet-class file — so the producing role never ran. Still effectively unverified** | — |
-| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. **Still unverified after two attempts: cycle 4 (§6.6) classified Small, never spawned the gold seat whose file carries the rule, authored no TDD, and raised no Blocker — none of R21's preconditions were met** | Needs a cycle that actually reaches a TDD revision round |
-| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Cycle 4's $8.77 / 25.0 min does not answer this — it priced a Small cycle, not the same pattern (§6.6)** | Migration owner |
+| ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. **Cycle 5 (§6.8) is real evidence: two sdet-class agents ran (named panel reviewer + report-only verifier) and the root stayed clean. The producing role was actually exercised this time** | — |
+| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. **Still unverified after THREE attempts (§6.8): cycle 4 classified Small so the rule's file never loaded; cycle 5 classified Medium and drew the full panel, but the design passed round 1, so no revision round occurred. R21 governs failure-path behavior and the other fixes have made that path hard to reach** | Needs a deliberately seeded design flaw to induce a Blocker — not another re-run |
+| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Now answerable (§6.8): cycle 5 is the same Medium pattern and cost $36.76 / 54.4 min vs $33.97 / 97.7 min — 8% MORE expensive, though it shipped working code where the baseline shipped none. Cost per outcome improved enormously; the raw price of a Medium cycle did not fall. The calibration decision is untouched by these fixes** | Migration owner |
 | ~~R20~~ | **Spawn-name substitution** — **APPLIED AND VERIFIED LIVE** (§6.6) | The `{DOCKET-ID}` placeholder half that stayed PARTIAL in §6.3 is now confirmed: cycle 4 spawned `impl-DKT-1` and `impl-DKT-1-fix-1`, the canonical form with the real issue ID, not a descriptive slug | — |
-| ~~R29~~ | **Pattern classification unstable at the Small/Medium boundary** — **APPLIED** (§7, §6.7) | Root cause was an underdetermined rule, not nondeterminism: the Small-pattern bar offered "consult `advisor` first **or** graduate to Medium" with no rule for choosing, so both classifications were compliant. Fixed by giving that "or" an operational test — count interacting open architectural dimensions — and by scoping the lighter-pattern tie-break so it cannot override a test result | Retest owed |
+| ~~R29~~ | **Pattern classification unstable at the Small/Medium boundary** — **APPLIED AND VERIFIED LIVE** (§6.7, §6.8) | Root cause was an underdetermined rule, not nondeterminism: the Small-pattern bar offered "consult `advisor` first **or** graduate to Medium" with no rule for choosing, so both classifications were compliant. Fixed by giving that "or" an operational test — count interacting open architectural dimensions — and by scoping the lighter-pattern tie-break so it cannot override a test result. **Cycle 5 (§6.8) confirms it: same task, same repo, Small → Medium, full acceptance panel drawn** | — |
 | **R27** | **`commit_msg_check.sh` rejects the scope this repo's own history uses** | Check 4's pattern `\b(claude\|anthropic)\b` matches the `(claude-code)` Conventional-Commits scope that the existing history is written in, so every historical scope is unusable under the current checker. Demonstrated: a message reading `refactor(claude-code): …` exits 1. Either the checker's scope handling or the repo's scope convention has to give — they cannot both stand | Migration owner |
 | **R28** | **`commit_msg_check.sh` Docket-ID check has a false-positive class** | Check 2 runs `\b[A-Z]{2,10}-[0-9]+\b` under `grep -niE`; the `-i` defeats the pattern's uppercase intent, so any lowercase `word-number` trips it. Demonstrated: `fix: bump to sonnet-5 and cover the top-10 paths` is rejected as an issue-tracker reference. Model versions and ordinary hyphenated numerals are the common collisions. Fix is either dropping `-i` for that one check or anchoring the class explicitly | Standalone bug |
 

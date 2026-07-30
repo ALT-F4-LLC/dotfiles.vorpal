@@ -1,7 +1,7 @@
 # Retention & Compaction Policy — Maintained Master
 
 Sole normative home for its gate formulas, ledger formats, and invariants — consumers (the
-evolve-* skills, `team-lead.md`, and `references/pitfalls.md`'s carriers) cite by path,
+evolve-* skills, `team-lead.md`, and `pitfalls.md`'s carriers) cite by path,
 never restate. Deployed at
 `~/.claude/skills/team-doctrine/references/retention-compaction.md` — repo:
 `src/user/claude-code/skills/team-doctrine/references/retention-compaction.md`.

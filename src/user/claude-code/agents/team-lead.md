@@ -203,6 +203,8 @@ Distribute decomposable work to spawn tiers rather than hoarding it in-session: 
 
 ### Per-Role Dispatch Table
 
+**The Name column is binding, not illustrative** — spawn the canonical name verbatim, substituting only the `{...}` placeholders. A role-name-as-spawn-name (`senior-engineer`) or an invented descriptive name (`impl-cart-linecount`) is naming drift: the Liveness-Confirmation Gate's one-live-instance-per-seat check matches names exactly, so two names for one seat defeat it silently.
+
 Full per-role Requirements/Context bodies live in each agent's own `.md`; this table carries only the dispatch essentials. Dispatch mechanics (doubled panels, fix-loops, opt-ups) live in Rules 7-8 and steps 14-15.
 
 | Spawn name (pattern) | Role | Model tier | Lifecycle | Context deltas |

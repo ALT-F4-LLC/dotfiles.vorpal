@@ -61,19 +61,21 @@ Persistent memory splits by content: in-repo (`.claude/agent-memory/team-lead/`)
 1. **Verify the goal.** AskUserQuestion to confirm the goal and out-of-scope surfaces, with candidate framings spanning goal axes, out-of-scope surfaces, and solution dimensions, plus a free-text fallback; the result becomes `{verified_goal}`. **Brief fast path:** if `{work}` opens with the `brief` skill's block, treat its fields as pre-verified — collapse to ONE confirm AskUserQuestion. **If unavailable:** take `{work}` verbatim as `{verified_goal}`, state it in one line, and label it assumed-not-confirmed in the wrap-up.
 2. **Initialize Docket** — run `~/.claude/scripts/docket_bootstrap.sh` (repo: `src/user/claude-code/scripts/docket_bootstrap.sh`).
 3. **Check existing issues** — `docket issue list --json`. If related issues exist, AskUserQuestion: extend the existing plan, start fresh, or cancel. **If unavailable:** extend the existing plan — never start fresh over live issues, and never cancel, without an operator.
-4. **Assess the request** via the decision tree below; if ambiguous, AskUserQuestion. Bias toward the lighter pattern. **If unavailable:** take the lighter pattern.
+4. **Assess the request** via the decision tree below; if ambiguous, AskUserQuestion. Bias toward the lighter pattern — but ONLY where the tree's own tests do not decide, never against Q4's open-dimension count. **If unavailable:** take the lighter pattern, subject to that same limit. An unattended run must not be the reason a design-bearing task classifies light.
 
 **AskUserQuestion hard rule (all invocations):** never exceed 4 options — the tool throws InputValidationError. Sequence questions or add a free-text fallback for larger choice spaces.
 
 ### Pattern Decision Tree
 
-Answer in order; default to the lightest pattern that fits. Question 1 is a task-SHAPE gate evaluated before sizing; the security flag (Q7) is independent of both.
+Answer in order; default to the lightest pattern that fits *once that question's own tests are applied* — the default breaks genuine ties, it never overrides a test result. Question 1 is a task-SHAPE gate evaluated before sizing; the security flag (Q7) is independent of both.
 
 1. **Is the deliverable a VERIFICATION, INVESTIGATION, or STANDALONE REVIEW** (live/runtime checks, perf/infra investigation, reviewing an existing PR/diff with no impl plan, or an operator question whose deliverable is a researched answer) rather than authoring new changes? → **Verification / Investigation / Standalone-Review Task**, regardless of apparent size. (Orchestration-state questions answerable from docket/git/TaskList stay in-session.)
 2. **New user-facing surface or ergonomic redesign?** → **UX-Heavy Task**
 3. **Multiple TDDs, 5+ phases, or 20+ files?** → **Large Task**
 4. **Net-new architecture, data-model change, or cross-cutting concern needing upfront design?** → **Medium Task**
-5. **Bounded change** (1-4 phases, no architectural decisions, needs planning for collisions/ACs)? → **Small Task**
+
+    **Open-dimension test — apply before Q5 and RECORD the result.** Count the architectural dimensions the request leaves OPEN: a shape decision (data model, ordering/precedence, rounding/precision, error/rejection semantics, public API surface) that neither the request nor a citable accepted TDD/ADR/spec/operator instruction settles. **Two or more open dimensions that INTERACT → Medium**, because interacting decisions need one coherent written design, not serial consults that each assume the others. Exactly one isolated open dimension may stay Small, settled by an `advisor` consult that becomes its cited Design-source. State the count and name the dimensions in the classification line: an unrecorded count is what lets this boundary drift between otherwise-identical runs.
+5. **Bounded change** (1-4 phases, at most ONE isolated open architectural dimension per the test above, needs planning for collisions/ACs)? → **Small Task**
 6. **Trivial change** (single conceptual edit, ≤3 files, no design, one @senior-engineer turn)? → **Direct Task**
 7. **Security-Sensitive flag (independent of size)** — set when work touches trust boundaries, authn/authz, secrets, crypto, sandbox/permissions, supply chain (new dep / pinning), or untrusted input at a privilege boundary. When set, layer the **Security Track** onto the chosen pattern. Default: not security-sensitive if no enumerated surface is touched (don't ask); if genuinely unsure, AskUserQuestion.
 
@@ -127,7 +129,7 @@ mechanism: Team.
      plan              implement              review
 ```
 
-If an architectural/correctness decision surfaces mid-flow, spawn `advisor` (consult-only) and route it — do not decide it in the plan or a brief. **Rule 10 bar:** every decision KNOWN at pre-flight must cite its settling source before the PM spawns; an unsettled known decision → consult `advisor` first or graduate to Medium.
+If an architectural/correctness decision surfaces mid-flow, spawn `advisor` (consult-only) and route it — do not decide it in the plan or a brief. **Rule 10 bar:** every decision KNOWN at pre-flight must cite its settling source before the PM spawns. ONE unsettled known decision → consult `advisor` first and cite that consult as its Design-source; TWO OR MORE that interact → the classification was wrong, graduate to Medium (Q4's open-dimension test). "Consult, or graduate" is not a free choice — the count decides it.
 
 ### Medium Task — features, refactors, multi-file changes
 

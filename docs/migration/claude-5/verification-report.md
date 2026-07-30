@@ -966,6 +966,61 @@ equally consistent with the fix being untested.
 at exit, with `permission_denials` empty — agent restraint, not a harness
 refusal, matching all three earlier cycles.
 
+### 6.7 R29 diagnosed and fixed — an underdetermined rule, not a coin flip
+
+The cycle 2 / cycle 4 split (§6.6) looked like nondeterminism. It is not. Both
+classifications were **compliant with the rules as written**, which is the
+defect.
+
+Rule 10 requires dispatches to carry zero open design questions. The Small
+pattern's Rule 10 bar then said: an unsettled known decision → "consult
+`advisor` first **or** graduate to Medium." That `or` is a free choice with no
+selection rule, so three open decisions (stacking order, rounding, rejection
+semantics) could legally be settled either by an advisor consult inside Small
+*or* by a TDD and acceptance panel at Medium. Two conforming runs, two answers.
+
+Two amplifiers made the lighter branch the likely one under `claude -p`: the
+tree's "default to the lightest pattern that fits", and Pre-flight step 4's
+"bias toward the lighter pattern / **if unavailable, take the lighter
+pattern**" — so an unattended run tended to classify a design-bearing task
+light precisely when no operator was there to catch it.
+
+**Fix — give the `or` an operational test.** Count the architectural dimensions
+the request leaves OPEN (data model, ordering/precedence, rounding/precision,
+error/rejection semantics, public API surface) that neither the request nor a
+citable accepted source settles. Two or more that INTERACT → Medium, because
+interacting decisions need one coherent written design rather than serial
+consults that each assume the others. Exactly one isolated open dimension may
+stay Small, settled by an `advisor` consult cited as its Design-source. The
+count and the dimension names must be stated in the classification line — an
+unrecorded count is what let this drift silently. The lighter-pattern bias is
+now scoped to genuine ties and cannot override a test result.
+
+**Validated against all four cycles on record:**
+
+| cycle | task | open dimensions | test says | actual |
+|---|---|---:|---|---|
+| 1 | off-by-one in `line_count` | 0 | Direct | Direct ✓ |
+| 3 | constant-time token compare | 0–1 | Small + security | Small ✓ |
+| 2 | stacking discounts | 3, interacting | **Medium** | Medium ✓ |
+| 4 | stacking discounts | 3, interacting | **Medium** | Small ✗ — corrected |
+
+The interaction claim is not asserted, it is measured — from cycle 4's own
+shipped tests: discount order changes the result (`[10%,5%]`→89 vs
+`[5%,10%]`→90), and rounding diverges by order of operations (percent 1.15 on a
+3000 subtotal → 35 via the decimal path, 34 via a naive float path). Order and
+rounding are not separable decisions, which is exactly why serial consults were
+the wrong instrument.
+
+**Cost.** +1,349B on `team-lead.md`, which eats most of §4.5's split win: the
+file lands at 74,365B, a net −247B across both changes. Recorded rather than
+hidden — a correctness fix to the routing tree is worth more than the bytes,
+but R6's ledger should not be read as if the split still stands alone.
+
+**Not yet retested live.** The fix is validated against the recorded cycles, not
+against a new run. R21 still needs a cycle that reaches a TDD revision round,
+and this fix is what should make that cycle classify Medium reliably.
+
 ## 7. Fix list
 
 ### Applied (this pass)
@@ -1078,7 +1133,7 @@ unchanged).
 | ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. **Still unverified after two attempts: cycle 4 (§6.6) classified Small, never spawned the gold seat whose file carries the rule, authored no TDD, and raised no Blocker — none of R21's preconditions were met** | Needs a cycle that actually reaches a TDD revision round |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Cycle 4's $8.77 / 25.0 min does not answer this — it priced a Small cycle, not the same pattern (§6.6)** | Migration owner |
 | ~~R20~~ | **Spawn-name substitution** — **APPLIED AND VERIFIED LIVE** (§6.6) | The `{DOCKET-ID}` placeholder half that stayed PARTIAL in §6.3 is now confirmed: cycle 4 spawned `impl-DKT-1` and `impl-DKT-1-fix-1`, the canonical form with the real issue ID, not a descriptive slug | — |
-| **R29** | **Pattern classification is unstable at the Small/Medium boundary** | Substantively the same discount task drew Medium in cycle 2 (7 spawns, gold advisor, TDD + acceptance vote) and Small in cycle 4 (4 spawns, silver advisor, no TDD, no vote). Either the decision tree is nondeterministic there or an applied fix moved the threshold. This is why R21 still has no evidence, and it undercuts confidence in routing generally | Migration owner |
+| ~~R29~~ | **Pattern classification unstable at the Small/Medium boundary** — **APPLIED** (§7, §6.7) | Root cause was an underdetermined rule, not nondeterminism: the Small-pattern bar offered "consult `advisor` first **or** graduate to Medium" with no rule for choosing, so both classifications were compliant. Fixed by giving that "or" an operational test — count interacting open architectural dimensions — and by scoping the lighter-pattern tie-break so it cannot override a test result | Retest owed |
 | **R27** | **`commit_msg_check.sh` rejects the scope this repo's own history uses** | Check 4's pattern `\b(claude\|anthropic)\b` matches the `(claude-code)` Conventional-Commits scope that the existing history is written in, so every historical scope is unusable under the current checker. Demonstrated: a message reading `refactor(claude-code): …` exits 1. Either the checker's scope handling or the repo's scope convention has to give — they cannot both stand | Migration owner |
 | **R28** | **`commit_msg_check.sh` Docket-ID check has a false-positive class** | Check 2 runs `\b[A-Z]{2,10}-[0-9]+\b` under `grep -niE`; the `-i` defeats the pattern's uppercase intent, so any lowercase `word-number` trips it. Demonstrated: `fix: bump to sonnet-5 and cover the top-10 paths` is rejected as an issue-tracker reference. Model versions and ordinary hyphenated numerals are the common collisions. Fix is either dropping `-i` for that one check or anchoring the class explicitly | Standalone bug |
 

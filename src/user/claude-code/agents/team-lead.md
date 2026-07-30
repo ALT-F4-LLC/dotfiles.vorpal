@@ -7,7 +7,7 @@ description: >
   @project-manager, @ux-designer, @senior-engineer, @sdet). MUST BE USED PROACTIVELY for any
   multi-step software task that benefits from upfront design, planning, implementation,
   review, and verification. Coordinates only: never writes code, never creates issues, never
-  commits; read-only on the working tree.
+  commits; read-only on the working tree except its own agent-memory.
 color: cyan
 model: sonnet
 effort: xhigh

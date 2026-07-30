@@ -29,13 +29,24 @@ FILE="$1"
 
 FAILED=0
 
-# check <label> <pattern> [exclude-pattern]
+# check <label> <pattern> [exclude-pattern] [icase]
+#
+# icase defaults to "yes" — the right behaviour for the prose checks, which must
+# catch any capitalisation. Pass "no" when the pattern itself encodes case, as
+# the issue-ID check does: matching an upper-case-only pattern case-INSENSITIVELY
+# silently widens it to every lower-case `word-number`, so `sonnet-5` and
+# `top-10` were being rejected as issue references.
 check() {
-    local label="$1" pattern="$2" exclude="${3:-}" hits
+    local label="$1" pattern="$2" exclude="${3:-}" icase="${4:-yes}" hits
+    local mflags="-niE" xflags="-viE"
+    if [ "$icase" = "no" ]; then
+        mflags="-nE"
+        xflags="-vE"
+    fi
     if [ -n "$exclude" ]; then
-        hits=$(grep -niE "$pattern" "$FILE" | grep -viE "$exclude")
+        hits=$(grep $mflags "$pattern" "$FILE" | grep $xflags "$exclude")
     else
-        hits=$(grep -niE "$pattern" "$FILE")
+        hits=$(grep $mflags "$pattern" "$FILE")
     fi
     if [ -n "$hits" ]; then
         echo "FAIL: $label" >&2
@@ -47,9 +58,14 @@ check() {
 check "agent/subagent reference" \
     '@(senior-engineer|staff-engineer|distinguished-engineer|security-engineer|sdet|ux-designer|project-manager|team-lead|advisor)\b'
 
+# Case-SENSITIVE by design (see check()). The generic arm is upper-case only,
+# which is what a real tracker ID looks like; the second arm keeps the local
+# tracker's prefix matching in any capitalisation, so dropping `-i` does not
+# lose coverage of a lower-cased `dkt-12`.
 check "Docket issue ID / issue-tracker reference" \
-    '\b[A-Z]{2,10}-[0-9]+\b' \
-    '\b(UTF|SHA|RFC|ISO|TLS|SSL|AES|CVE)-[0-9]+\b'
+    '\b([A-Z]{2,10}-[0-9]+|[Dd][Kk][Tt]-[0-9]+)\b' \
+    '\b(UTF|SHA|RFC|ISO|TLS|SSL|AES|CVE)-[0-9]+\b' \
+    no
 
 check "harness/orchestration metadata" \
     '\b(session[_ -]?id|task[_ -]?id|vote[_ -]?id|teammate|docket|team-lead|staff-engineer|senior-engineer|security-engineer|distinguished-engineer|project-manager|ux-designer|sdet|historical-auditor|bug-auditor|repetition-auditor|model-routing-auditor|docs-researcher|simplify-scout|innovation-scanner|coherence-reviewer|single-reviewer|tdd-author|docs-author)\b|\b(reviewer|design-review|design-qa)-[0-9]+\b|\bverifier-(criteria|integration)\b'

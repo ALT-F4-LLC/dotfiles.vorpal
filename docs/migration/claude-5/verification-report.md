@@ -1044,8 +1044,16 @@ from the original commit (not cycle 4's output), same prompt as cycle 4.
 
 Model spend: Fable $21.22, Sonnet $10.45, Opus $5.09.
 
-**R29 — VERIFIED LIVE.** Same task text, same pristine starting repo, same
-harness; the only variable changed was the fix. Classification moved Small →
+**R29 — VERIFIED LIVE, with a correction to this claim's original wording.**
+Same task text, same pristine starting repo, same harness. This section first
+read "the only variable changed was the fix"; that was **false** and is
+corrected here. The install window between cycles 4 and 5 also contained the
+wrap-up reference split and a role-description alignment, and `team-lead.md`
+moved 79,889 → 74,612 → 73,016 → 74,365 across that span. The gold-seat draw
+still evidences the classification *in that run*, but a single post-fix sample
+does not establish determinism for a rule §6.7 itself proved was previously a
+free choice — the falsifier (a post-fix run classifying Small) was never given
+a chance to appear. Classification moved Small →
 Medium and drew the full merged acceptance panel — `DKT-V1-reviewer-{1,2,3}` on
 `@staff-engineer` / `@senior-engineer` / `@sdet`, all `opus` — identical in shape
 to cycle 2's. The gold seat spawns only on Medium+ TDD-bearing cycles, so its
@@ -1095,6 +1103,100 @@ UNNAMED report-only verifier.
 
 **The commit gate held** for the fifth consecutive cycle: 249 insertions left
 uncommitted with `permission_denials` empty.
+
+### 6.9 Four-reviewer adversarial review of the byte ceilings — and a regression it exposed
+
+The byte-ceiling question was elevated to four independent reviewers rather than
+settled in-session: a doctrine-primed gold advisor, an unprimed general reviewer
+given no access to the convening analysis, a dedicated ADVOCATE tasked to defend
+the ceilings, and an evidence methodologist asked only whether the question was
+answerable. Model held constant at `fable` for the first two so the sole varied
+factor was doctrine priming. All four converged.
+
+**Verdicts.** The fleet-total (170,000B) is indefensible — no context ever holds
+more than one agent definition, so the sum bounds no real resource, and it
+double-charges the CANONICAL blocks pinned across carriers on purpose. Its own
+advocate could construct no defense. The per-skill 10,000B ceiling is sound as
+written: it is a justification trigger, not a cap. The `team-lead.md` figure is
+the right quantity with an unvalidated number.
+
+**The numbers are derived, not arbitrary — and the derivation does not license
+them as floors.** Charter :14 quotes a real result and :376 uses it as "the
+demonstrated ceiling." Decomposed against §4.5's pinned mass, the floors demand
+an ~80.6% cut of baseline free prose fleet-wide and **~86.6% for `team-lead.md`
+— beyond the "over 80%" the source demonstrated**, on the artifact where the
+analogy transfers worst. And the clause that made the source result meaningful —
+"no measurable loss on our coding evaluations" — has no local counterpart: the
+charter's own prescribed instrument (:404-410, before/after against a 4.x
+baseline) was never built, as §8 concedes. The floors imported the number and
+left the guardrail behind.
+
+**The mechanism for reaching them has never been observed to work.** Parsing
+every recorded cycle transcript — 12 run directories, 1,040 tool calls, 35 agent
+spawns — yields **9 Read calls into skill-local `references/` and ZERO into
+`team-doctrine/references/`**. Seventeen files, 74 `Master:` pointers, zero
+reads. Checks A5/A7 verify the pointers *resolve*; nothing verified they are
+*followed*, and the observation is that they are not.
+
+**A relocation performed during this pass stopped a behavior from firing.** The
+dispatch-ledger instrumentation sat inline in `team-lead.md` through cycle 4 and
+was relocated behind progressive disclosure before cycle 5:
+
+| | cycle 4 (inline) | cycle 5 (relocated) |
+|---|---|---|
+| `agent-memory/team-lead/dispatch-ledger.md` | **written**, 256B | **absent** |
+| reads of the reference holding the instruction | n/a | **zero** |
+
+n=1 per arm and the arms differ in pattern, so this is not conclusive. But the
+mechanism is clean, and it reproduces §6.3's R17 exactly: a rule moved out of the
+always-loaded block failed to fire, and R17's fix was to *re-duplicate* it into
+all eight banners. **The record now contains one demonstrated instance of adding
+always-resident text fixing a defect, and zero instances of removing text
+improving anything.** The relocation was reverted; the instruction is inline
+again.
+
+**Cost is not the argument either.** Prices solved from cycle 5's `cycle.json`
+(two exact matches against recorded `costUSD`): definition text bills as
+cache-read at 10% of input. Removing 44,365B from `team-lead.md` caps the saving
+at ~9% of a cycle under assumptions maximally favourable to the ceiling, and
+realistically ~1%. At 1M context it is 1.9% of one window. Whatever the ceiling
+is worth, it is not worth it for cost or capacity.
+
+**Resolution — the charter's §4 byte target now mirrors its own Marker-count
+target.** That target already solved this correctly one paragraph away: "typical
+file ≤ 5, no file above 10", then "the mapping requirement is the real gate — a
+file could pass the count and still fail the audit." R4 shows it operating: 15
+markers, all mapped, sanctioned exception, closed. The byte target was the only
+one in the document that made the count the gate. It no longer does. The
+qualitative point-of-action condition binds; the number is a ratchet that reports.
+The fleet-total is deleted. The skill justifications, which check A17 already
+read PASS and `baseline-metrics.md` already recorded, are now mechanized as
+`#EXCUSE` rows — an earlier revision of `byte_ceilings.tsv` wrongly asserted
+nothing was excused, overstating the breach count as 15 when it was 2.
+
+**After the amendment the tree is compliant, with no content cut.** The reported
+breach count went 15 → 2 → 0: two of the three ceilings were measuring the wrong
+thing and the third was already satisfied by justifications recorded months of
+work ago. The "2.5× over budget" position was substantially a measurement
+artifact.
+
+**Recorded process defect.** A density metric was built during this pass,
+produced conclusions, was corrected three times as controls were added, and was
+then abandoned leaving no artifact in the record. A measurement that vanishes is
+indistinguishable from one that never ran. Its findings: line-share density
+cannot distinguish agent files (Wilson intervals overlap at n≈285 lines);
+unique-units-per-KB ranked `team-lead.md` lowest of eight; and validation against
+the relocation natural experiment FAILED — relocated content scored *denser* than
+its source file, so density is orthogonal to relocatability and cannot guide what
+to move.
+
+**Open, and now the gating question.** No recorded run has ever manipulated
+definition size, and §6 does not record the byte-state each cycle ran under, so
+no size correlation is recoverable retrospectively either. The next instrument
+should be a rule-recall probe suite — one short headless run per load-bearing
+rule per arm — not another full-cycle A/B, whose coarse bimodal outcome variable
+needs k≥5 per arm at $9-37 each. The probe suite is not new scope; it is the
+unbuilt half of charter :404-410.
 
 ## 7. Fix list
 

@@ -899,6 +899,73 @@ Worth noting on its own terms: the sandbox-recovery doctrine correctly
 disabled) but the cycle still degraded to file-reads-only — detection without a
 recovery path.
 
+### 6.6 Cycle 4 — the R21 attempt, and why it does not verify R21
+
+A fourth cycle ran the same discount task against a fresh throwaway repo
+(stdlib `unittest`, since this machine has no pytest, uv, or virtualenv — R21
+needs a runnable check or it cannot be cited). Sandbox disabled per §6.5.
+
+| | cycle 2 (baseline) | cycle 4 |
+|---|---:|---:|
+| Classification | Medium | **Small** |
+| Spawns | 7 | **4** |
+| Cost | $33.97 | **$8.77** |
+| Wall clock | 97.7 min | **25.0 min** |
+| API time | 97.7 min | 24.5 min |
+| Turns | 8 | 10 |
+| Code shipped | **no** | **yes** — 222 insertions |
+| Tests | — | **29/29 pass** |
+| Docket issues | **0** | `DKT-1`, closed `done` |
+| Committed | no | no |
+| `permission_denials` | `[]` | `[]` |
+
+Model spend: Opus $5.07, Sonnet $3.70, Haiku $0.0006. No Fable — consistent
+with no gold seat being drawn.
+
+**R20 — VERIFIED, closing §6.3's PARTIAL.** The spawn roster came back
+`advisor`, `planner`, `impl-DKT-1`, `impl-DKT-1-fix-1`. The implementation
+spawns use the canonical `impl-{DOCKET-ID}` / `-fix-{N}` form with the real
+issue ID substituted — not the descriptive slug (`impl-admin-token-fix`) that
+the previous re-run produced. This is the half the last pass could not fix.
+
+**R21 — NOT EXERCISED. This cycle is not evidence for it.** R21's text lives in
+`distinguished-engineer.md`, and that agent was never spawned: the advisor seat
+resolved to `@staff-engineer` @ `opus`, the dispatch table's *sub-Medium*
+advisor. No TDD was authored, `docket vote list` reports no proposals, and the
+one fix round answered reviewer **Concerns**, not a **Blocker**. R21 fires only
+on a revision answering a Blocker in a TDD revision round, so none of its
+preconditions were met and its text was never loaded. Recorded as not
+exercised — not as a pass.
+
+What the fix round *does* show is the behavior class R21 targets, arriving from
+a different seat under a different rule. The remediation comment names the
+tests it added, states the discriminating values it verified numerically before
+writing them, and cites the resulting count (`29/29 OK — 26 prior + 3 new`).
+That is a cited, checkable remediation claim rather than a bare "addressed".
+Encouraging, but it is evidence about the general-review path, not about R21.
+
+**The classification difference is itself a finding.** Substantively the same
+task drew Medium in cycle 2 and Small here — 7 spawns versus 4, gold advisor
+versus silver, TDD-and-vote versus none. Either the decision tree is
+nondeterministic at this boundary, or one of the applied fixes moved it. Worth
+resolving before the tree is trusted to route real work, and it is the reason
+R21 still has no behavioral evidence after two attempts.
+
+**R19 — a number, but not a comparable one.** $8.77 prices a *Small* cycle. It
+cannot be set against the $33.97 Medium baseline to argue the Medium threshold
+moved; the two runs did not run the same pattern. The Medium calibration
+question stays open on the original data.
+
+**R17 — clean, on weaker evidence than it looks.** No scratch file appeared in
+the repo root. But no `sdet`/`verifier` spawned in this cycle, and the original
+leak came from an sdet-class scratch file — so the role that produced the
+defect never ran. Absence of a leak here is consistent with the fix working and
+equally consistent with the fix being untested.
+
+**The commit gate held.** The working tree carried 222 uncommitted insertions
+at exit, with `permission_denials` empty — agent restraint, not a harness
+refusal, matching all three earlier cycles.
+
 ## 7. Fix list
 
 ### Applied (this pass)
@@ -1007,9 +1074,11 @@ unchanged).
 | ~~R14~~ | **`opencode` fleet** — **WITHDRAWN** (§3.8) | Mis-framed: a port to a different harness with different primitives, not a divergent copy of this fleet. No decision needed from this migration | — |
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
-| ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
-| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. Unverified live | — |
-| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
+| ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. **Cycle 4 left the root clean (§6.6), but no `sdet`/`verifier` spawned in that cycle and the original leak came from an sdet-class file — so the producing role never ran. Still effectively unverified** | — |
+| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. **Still unverified after two attempts: cycle 4 (§6.6) classified Small, never spawned the gold seat whose file carries the rule, authored no TDD, and raised no Blocker — none of R21's preconditions were met** | Needs a cycle that actually reaches a TDD revision round |
+| **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Cycle 4's $8.77 / 25.0 min does not answer this — it priced a Small cycle, not the same pattern (§6.6)** | Migration owner |
+| ~~R20~~ | **Spawn-name substitution** — **APPLIED AND VERIFIED LIVE** (§6.6) | The `{DOCKET-ID}` placeholder half that stayed PARTIAL in §6.3 is now confirmed: cycle 4 spawned `impl-DKT-1` and `impl-DKT-1-fix-1`, the canonical form with the real issue ID, not a descriptive slug | — |
+| **R29** | **Pattern classification is unstable at the Small/Medium boundary** | Substantively the same discount task drew Medium in cycle 2 (7 spawns, gold advisor, TDD + acceptance vote) and Small in cycle 4 (4 spawns, silver advisor, no TDD, no vote). Either the decision tree is nondeterministic there or an applied fix moved the threshold. This is why R21 still has no evidence, and it undercuts confidence in routing generally | Migration owner |
 | **R27** | **`commit_msg_check.sh` rejects the scope this repo's own history uses** | Check 4's pattern `\b(claude\|anthropic)\b` matches the `(claude-code)` Conventional-Commits scope that the existing history is written in, so every historical scope is unusable under the current checker. Demonstrated: a message reading `refactor(claude-code): …` exits 1. Either the checker's scope handling or the repo's scope convention has to give — they cannot both stand | Migration owner |
 | **R28** | **`commit_msg_check.sh` Docket-ID check has a false-positive class** | Check 2 runs `\b[A-Z]{2,10}-[0-9]+\b` under `grep -niE`; the `-i` defeats the pattern's uppercase intent, so any lowercase `word-number` trips it. Demonstrated: `fix: bump to sonnet-5 and cover the top-10 paths` is rejected as an issue-tracker reference. Model versions and ordinary hyphenated numerals are the common collisions. Fix is either dropping `-i` for that one check or anchoring the class explicitly | Standalone bug |
 

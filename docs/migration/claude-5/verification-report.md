@@ -513,6 +513,44 @@ with a known shape, and the charter's caveat still governs its execution —
 reduction is a consequence of applying §1, never a goal pursued by deleting
 context the model cannot reconstruct.
 
+**First split executed — the pattern is verified end-to-end.**
+`### Teammate Stall & Crash Recovery` (6,806B) moved to
+`team-doctrine/references/stall-recovery.md`. It was the safe candidate: zero
+fenced blocks, zero `skip --help` drift-guard markers (those sit in the Monitor
+and Wrap-up sections), and exactly one external citer — `ux-designer.md`, which
+references the Liveness-Confirmation Gate *by name*, so the name stays inline.
+
+What stayed inline is the binding core: the Gate's one-live-instance rule,
+SP-3's positive-death-evidence requirement, reply-at-any-latency-means-alive,
+and that `TeammateIdle` is routine lifecycle rather than a stall verdict. What
+moved is the mechanics you read *when* a teammate goes quiet — triage table,
+probe contract, reconciliation path, redirect-race rule, bare-idle
+disambiguation, the full ladder.
+
+| | before | after |
+|---|---:|---:|
+| `team-lead.md` | 79,889 | **74,612** |
+| agents total | 367,955 | **363,014** |
+| team-lead markers | 15 | 14 |
+
+Checks after: doctrine (4 arms, index now 18 rows), coupling, symmetry,
+drift-guard (still finds all 3 blocks), tier_map, cross-reference — all green.
+
+**Framed honestly, this is a loaded-context win, not a total-bytes win.** The
+reference file is 7,240B against 5,277B removed, because it gained a provenance
+header and the inline core was kept deliberately. Per-invocation cost is what
+the charter's progressive-disclosure rule targets, and that fell 5.3KB for every
+orchestration turn that does *not* hit a stall.
+
+**Remaining to reach ≤30KB.** `Wrap-up & Team Cleanup` (~7.8KB) and
+`Spawning Templates` (~14KB) are the next candidates, but both are harder than
+the first: Wrap-up contains the `dispatch_ledger.sh` drift-guarded block, and
+`drift_guard_check.py` takes a single `--doc`, so moving it means either
+re-pointing the check or invoking it twice. Spawning Templates feeds
+`tier_map.sh`'s Per-Role Dispatch Table parse. Neither is blocked — both need
+the check wiring updated in the same change, which is why they were not done
+opportunistically here.
+
 ## 5. `/doctor`
 
 `/doctor` is a Claude Code CLI built-in, not a repo skill; run as `claude

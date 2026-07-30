@@ -14,481 +14,138 @@ description: >
 
 # Docket CLI Skill
 
-Docket (`docket`) is a local-first, SQLite-backed issue tracker driven
-entirely through a single CLI binary. There is no server and no network
-call — all state lives in a `.docket/issues.db` SQLite file, resolved via
-`internal/config`. This skill teaches an agent how to drive `docket` end to
-end: issue CRUD and lifecycle, file attachments, comments, labels,
-relations, dependency graphs, execution planning, consensus voting, docs,
-watch mode, and export/import.
-
-Every command supports **two output modes**: human-readable (default,
-colorized via lipgloss when the terminal supports it) and machine-readable
-JSON (`--json`). **Agents should always pass `--json`** for reliable
-parsing — the examples below show both.
-
-## Quick Start
+Docket (`docket`) is a local-first, SQLite-backed issue tracker driven entirely through one
+CLI binary — no server, no network; all state lives in a `.docket/issues.db` file resolved
+from the cwd. **Always pass `--json`** for reliable parsing. Worked examples for every
+workflow (issues, files, comments, labels/relations, graph, plan/next, vote, docs, watch,
+export/import) live in `references/workflows.md` — read it when composing a multi-step
+invocation; the contracts every call depends on are below.
 
 ```bash
 docket init                                   # create .docket/issues.db in the cwd
 docket issue create -t "Fix login bug" --json # create an issue, get its ID back
 docket issue list --json                      # list open issues
-docket issue show DKT-1 --json                # show full detail incl. comments/activity
+docket issue show DKT-1 --json                # full detail incl. comments/activity
 docket next --json                            # what's ready to work on right now?
 ```
 
-> At session start, prefer `docket_bootstrap.sh` (see Deterministic Wrapper
-> Scripts below) over hand-typing `docket init && docket version --quiet` —
-> it's the recommended one-call bootstrap invocation.
+At session start prefer `docket_bootstrap.sh` (see Wrapper Scripts) over hand-typing
+`docket init && docket version --quiet`.
 
-> **The flag reference in this file is complete and current** — the Global
-> Flags table and the Complete Command & Flag Reference section below
-> transcribe every flag from the `docket` source. Look flags up here; do NOT
-> re-run `docket --help` or per-subcommand `--help` unless you suspect the
-> installed `docket` has drifted from this reference, or a governing gate
-> (e.g. the evolve-* Phase-0 ground-truth check) explicitly names `--help`
-> as its verification source — a mandated ground-truth check outranks this
-> lookup shortcut. `docket_ref_check.sh` (see Deterministic Wrapper Scripts
-> below) mechanizes exactly this drift check against the installed `docket`
-> binary and is the recommended Phase-0 ground-truth step whenever
-> evolve-skills audits this skill specifically.
-
-Issue IDs are formatted `DKT-<n>` (e.g. `DKT-42`), document IDs `DOC-<n>`,
-and proposal (vote) IDs `DKT-V<n>` — all three accept either the bare number
-or the formatted string as CLI arguments (`model.ParseID`, `ParseDocID`,
-`ParseProposalID` all strip the prefix case-insensitively).
+**The flag reference below is complete and current** — look flags up here rather than
+re-running `--help`, unless a governing gate (e.g. the evolve-* Phase-0 ground-truth check)
+names `--help` as its verification source. `docket_ref_check.sh` mechanizes the drift check
+against the installed binary and is the recommended Phase-0 ground-truth step when auditing
+this skill.
 
 ## Global Flags & Output Contract
 
-Defined once on `rootCmd` in `internal/cli/root.go` and inherited by every
-subcommand:
+Inherited by every subcommand:
 
 | Flag | Shorthand | Type | Default | Behavior |
 |---|---|---|---|---|
-| `--json` | — | bool | `false` | Switch to machine-readable JSON envelope on stdout. |
-| `--quiet` | `-q` | bool | `false` | Suppress non-essential human-mode info/warning lines on stderr. No effect in `--json` mode (already silent). |
-| `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Only valid on read-only, watch-eligible commands (see below); write commands reject it with a `VALIDATION_ERROR`. |
-| `--interval` | — | duration | `2s` | Refresh interval for `--watch`. Minimum `500ms`; anything lower is a `VALIDATION_ERROR`. |
-
-### `--watch` eligibility
-
-`--watch`/`-w` and `--interval` are hidden (via Cobra `MarkHidden`) on every
-command NOT in this allowlist, defined in `internal/cli/watch_commands.go`:
-
-```
-docket board
-docket issue list
-docket issue show
-docket issue log
-docket issue graph
-docket issue comment list
-docket doc list
-docket doc show
-docket doc comment list
-docket next
-docket plan
-docket stats
-docket config
-docket vote list
-docket vote show
-docket vote result
-```
-
-Attempting `--watch` on any other (write) command fails with:
-`--watch is not supported on write commands` (`VALIDATION_ERROR`).
+| `--json` | — | bool | `false` | Machine-readable JSON envelope on stdout. |
+| `--quiet` | `-q` | bool | `false` | Suppress human-mode info/warning lines on stderr. |
+| `--watch` | `-w` | bool | `false` | Re-run on an interval. Read-only commands only (`board`, `issue list/show/log/graph`, `issue comment list`, `doc list/show`, `doc comment list`, `next`, `plan`, `stats`, `config`, `vote list/show/result`); write commands reject it with `VALIDATION_ERROR`. |
+| `--interval` | — | duration | `2s` | Watch refresh interval; minimum `500ms`. |
 
 ### JSON envelope shape
 
-All JSON output (`internal/output/json.go`) is a single-line JSON object
-written to stdout via `json.Encoder` (HTML-escaping disabled).
-
-Success:
-```json
-{"ok": true, "data": { ... }, "message": "Created DKT-1: Fix login bug"}
-```
-`message` is `omitempty` — it is present on success responses but callers
-should not depend on it being non-empty for every command.
-
-Error:
-```json
-{"ok": false, "error": "issue DKT-99 not found", "code": "NOT_FOUND"}
-```
+Single-line JSON object on stdout. Success:
+`{"ok": true, "data": { ... }, "message": "Created DKT-1: Fix login bug"}` (`message` is
+`omitempty` — don't depend on it). Error:
+`{"ok": false, "error": "issue DKT-99 not found", "code": "NOT_FOUND"}`.
 
 ### Error codes & exit codes
 
-Defined in `internal/output/json.go`. The process exit code always matches
-the table below, in both JSON and human mode (`ExitCodeForError`):
+The process exit code always matches, in both JSON and human mode:
 
 | `code` | Exit code | Meaning |
 |---|---|---|
 | `GENERAL_ERROR` | 1 | Unclassified failure (DB error, I/O error, etc.) |
-| `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
-| `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags |
-| `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty DB on import without `--merge`/`--replace` |
+| `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist (also: no `.docket/` DB yet — run `docket init`) |
+| `VALIDATION_ERROR` | 3 | Bad input: invalid enum, missing required flag, mutually exclusive flags, non-interactive environment without required flags |
+| `CONFLICT` | 4 | State conflict: duplicate relation, cycle, already-voted, non-empty DB on import without `--merge`/`--replace` |
 
-Exit code `0` is success. Note `PersistentPreRunE` also returns `NOT_FOUND`
-(exit 2) if no `.docket/` database exists yet — run `docket init` first.
+### `.data` shapes are NOT uniform — check before parsing
 
-### Interactive forms
+Sub-entity `list` subcommands return `.data` as a **bare array**; every other list command
+returns an **object** with a named collection key plus `total`. Confusing the two is the
+most common Docket parsing failure.
 
-Several write commands (`issue create`, `issue delete` with sub-issues,
-`vote create`, `vote cast`, `doc create`, `doc delete`, `label delete`,
-`import --replace`) fall back to an interactive `huh` form when required
-flags are omitted and stdin is a TTY. (`issue comment` and `doc comment`
-use a different fallback — they open `$EDITOR` when no message is piped
-and stdin is a TTY; see the Comments section below.) **In non-interactive/agent contexts
-(no TTY) these commands return a `VALIDATION_ERROR` listing the missing
-flags instead of hanging** — always pass all required flags explicitly
-when scripting or running as an agent. `--json` mode never launches an
-interactive form; missing required fields are always a hard
-`VALIDATION_ERROR` in JSON mode.
+| Command | `.data` | jq for the rows |
+|---|---|---|
+| `issue list`, `next` | object | `.data.issues[]` |
+| `doc list` | object | `.data.docs[]` |
+| `vote list` | object | `.data.proposals[]` |
+| `issue log` | object | `.data.entries[]` |
+| `plan` | object | `.data.phases[]` |
+| `issue graph` | object | `.data.nodes[]` / `.data.edges[]` |
+| `issue show` | object (the issue itself) | `.data.status`, `.data.comments[]` |
+| `issue comment list`, `doc comment list` | **bare array** | `.data[]` |
+| `issue file list`, `label list`, `link list` | **bare array** | `.data[]` |
 
----
-
-## Workflow: Issue Creation & Editing
-
-Create an issue (only `--title` is required in JSON mode):
+**Truncation is silent.** `issue list`/`doc list`/`vote list` default to `--limit 50`
+(`next` to 10) with no warning when rows are cut; `total` counts the FULL match set:
 
 ```bash
-docket issue create --json \
-  -t "Add rate limiting to API" \
-  -d "Prevent abuse on public endpoints" \
-  -p high -T feature \
-  -l backend -l must-have \
-  -f internal/api/router.go \
-  -a "@alice"
+docket issue list --json | jq -e '.data.total > (.data.issues|length)' >/dev/null \
+  && echo "TRUNCATED — re-run with a higher --limit"
 ```
 
-New issues default to `backlog` status (omitting `-s`, as above); only
-team-lead promotes an issue to `todo`, immediately before spawning the
-ephemeral that claims it.
+### Non-interactive contexts
 
-Description can be piped from stdin with `-d -`:
+Write commands with missing required flags fall back to an interactive form or `$EDITOR`
+only when stdin is a TTY; with no TTY they return `VALIDATION_ERROR` listing the missing
+flags, and `--json` mode never launches a form. Always pass all required flags explicitly.
 
-```bash
-echo "Long description..." | docket issue create --json -t "Title" -d -
-```
+### The comment contract
 
-Edit only the fields you pass — `issue edit` uses `cmd.Flags().Changed(...)`
-so omitted flags are left untouched, not reset to zero values:
+The message is **always** `-m`/`--message` — never a bare positional arg, never
+`-b`/`--body` — and the verb is `add`, never `create`; the same contract covers
+`doc comment add`. **Always pass `--json` on `comment add`:** in human mode an empty
+message (`-m ""`, or `-m "$VAR"` with `VAR` unset) takes the editor path, prints
+`Cancelled.`, exits 0, and writes NOTHING — a silent drop; under `--json` the same input is
+a hard `VALIDATION_ERROR` (exit 3). Corollary: never split a stage-file write from its
+consumption (`-m "$(cat "$STAGE")"`) across two Bash tool calls — shell variables do not
+persist between calls, so the comment lands empty.
 
-```bash
-docket issue edit DKT-1 --json -s in-progress -a "@bob"
-docket issue edit DKT-1 --json --parent DKT-5      # reparent
-docket issue edit DKT-1 --json --parent none        # make it a root issue again
-docket issue edit DKT-1 --json -f a.go -f b.go       # REPLACES the file list (not additive)
-```
+Two more forms that fail: `issue edit -l` (no label flag on `edit` — use
+`issue label add`), and `issue move ... -m "note"` (no message flag on `move` — comment
+separately).
 
-Reparenting validates against cycles (`db.IsDescendant`) and rejects
-self-parenting with `VALIDATION_ERROR`/`CONFLICT`.
+### ID formats
 
-Status transitions and other lifecycle commands:
-
-```bash
-docket issue move DKT-1 review --json     # arbitrary status transition
-docket issue close DKT-1 --json           # shorthand for: move <id> done
-docket issue reopen DKT-1 --json          # shorthand for: move <id> backlog (only if currently done)
-docket issue delete DKT-1 --json --force  # cascade-delete issue + all sub-issues
-docket issue delete DKT-1 --json --orphan # delete issue, promote sub-issues to root
-```
-
-Valid `--status` values: `backlog`, `todo`, `in-progress`, `review`, `done`.
-Valid `--priority` values: `none`, `low`, `medium`, `high`, `critical`.
-Valid `--type`/`-T` values: `task`, `bug`, `feature`, `epic`, `chore`. There
-is no `docs` or `spike` kind — use `task` or `chore` for documentation-only
-work.
-
-List and inspect:
-
-```bash
-docket issue list --json -s todo -s in-progress -p high --tree
-docket issue show DKT-1 --json     # full detail: sub-issues, relations, comments, activity, docs
-docket issue log DKT-1 --json --limit 50
-```
-
-> **`--json` shapes are NOT uniform — check this table before parsing.**
-> Sub-entity `list` subcommands return `.data` as a **bare array**; every
-> other list command returns `.data` as an **object** with a named
-> collection key plus `total`. Confusing the two is the most common Docket
-> parsing failure: on a bare-array response `d["data"].get("issues")` raises
-> `AttributeError: 'list' object has no attribute 'get'` and
-> `d["data"]["issues"]` raises `TypeError: list indices must be integers`.
->
-> | Command | `.data` | jq for the rows |
-> |---|---|---|
-> | `issue list`, `next` | object | `.data.issues[]` |
-> | `doc list` | object | `.data.docs[]` |
-> | `vote list` | object | `.data.proposals[]` |
-> | `issue log` | object | `.data.entries[]` |
-> | `plan` | object | `.data.phases[]` |
-> | `issue graph` | object | `.data.nodes[]` / `.data.edges[]` |
-> | `issue show` | object (the issue itself) | `.data.status`, `.data.comments[]` |
-> | `issue comment list`, `doc comment list` | **bare array** | `.data[]` |
-> | `issue file list`, `label list`, `link list` | **bare array** | `.data[]` |
->
-> ```bash
-> docket issue list --json               | jq -r '.data.issues[].id'  # object
-> docket issue comment list DKT-1 --json | jq -r '.data[].body'       # bare array
-> ```
->
-> **Truncation is silent.** `issue list`, `doc list` and `vote list` default
-> to `--limit 50` (`next` to 10) and print no warning when rows are cut.
-> `total` counts the FULL match set, so compare it against the page:
->
-> ```bash
-> docket issue list --json | jq -e '.data.total > (.data.issues|length)' >/dev/null \
->   && echo "TRUNCATED — re-run with a higher --limit"
-> ```
-
-> **Common CLI mistakes — these forms will fail:**
->
-> | Wrong | Right |
-> |---|---|
-> | `docket issue comment add` with a positional message, `-b`, or the verb `create` | always `-m` and always `add` — see the Comments section |
-> | `docket issue edit DKT-1 -l backend` — no `-l`/`--label` flag on `edit` | `docket issue label add DKT-1 backend` |
-> | `docket issue move DKT-1 review -m "note"` — no message flag on `move` | `docket issue move DKT-1 review` (add a note separately via `docket issue comment add`) |
-
----
-
-## Workflow: File Attachment (`docket issue file`)
-
-```bash
-docket issue file add DKT-1 --json internal/api/router.go internal/api/middleware.go
-docket issue file list DKT-1 --json
-docket issue file remove DKT-1 --json internal/api/router.go
-```
-
-`add`/`remove` take 2+ positional args (`id` then one or more file paths) —
-there is no `-f` flag on `issue file add`; that's only on `issue create -f`
-and `issue edit -f`. Files are additive on `file add` (unlike `issue edit
--f`, which replaces the whole list).
-
----
-
-## Workflow: Comments
-
-> **Common mistake — read this before calling `comment add`:**
->
-> | Wrong | Right |
-> |---|---|
-> | `docket issue comment add DKT-1 "note"` — positional message arg | `docket issue comment add DKT-1 -m "note"` |
-> | `docket issue comment add DKT-1 -b "note"` / `--body "note"` — no such flag | `docket issue comment add DKT-1 -m "note"` |
-> | `docket issue comment create DKT-1 -m "note"` — no such subcommand | `docket issue comment add DKT-1 -m "note"` |
->
-> The message is **always** `-m`/`--message` — never a bare positional arg,
-> never `-b`/`--body`, and the verb is `add`, never `create`.
-
-```bash
-docket issue comment add DKT-1 --json -m "Investigated — root cause is a stale cache key"
-docket issue comment list DKT-1 --json
-```
-
-`-m`/`--message` is optional: if omitted and stdin is a pipe, the body is
-read from stdin; if omitted and stdin is a TTY (human mode only), `$EDITOR`
-(default `vi`) is opened. In `--json` mode, `-m` (or piped stdin) is
-required — there is no editor fallback.
-
-> **Always pass `--json` on `comment add`.** An empty message (`-m ""`, or
-> `-m "$VAR"` where `VAR` is unset) is NOT an error in human mode — it takes
-> the editor path, prints `Cancelled.`, **exits 0, and writes nothing**, so
-> an agent checking the exit status sees success for a comment that never
-> landed. The same input under `--json` is a hard `VALIDATION_ERROR` (exit
-> 3, `message is required in JSON mode`). Corollary: never split a
-> stage-file write from its consumption (`-m "$(cat "$STAGE")"`) across two
-> Bash tool calls — shell state does not persist between calls, so `$STAGE`
-> expands empty and the comment is silently dropped.
-
----
-
-## Workflow: Labels & Relations
-
-```bash
-docket issue label add DKT-1 --json backend must-have --color "#ff0000"
-docket issue label rm DKT-1 --json must-have
-docket issue label list --json
-docket issue label delete backend --json --force   # --force skips the attached-issue-count confirmation
-
-docket issue link add DKT-1 --json blocks DKT-2      # DKT-1 blocks DKT-2
-docket issue link add DKT-1 --json depends_on DKT-3   # DKT-1 depends_on DKT-3
-docket issue link remove DKT-1 --json blocks DKT-2
-docket issue link list DKT-1 --json
-```
-
-Valid `<relation>` values (`model.RelationType`): `blocks`, `depends_on`,
-`relates_to`, `duplicates`.
-
----
-
-## Workflow: Dependency Graph (`docket issue graph`)
-
-```bash
-docket issue graph DKT-1 --json --direction both --depth 2
-docket issue graph DKT-1 --mermaid --direction down   # Mermaid flowchart, human-readable only
-```
-
-`--direction` must be one of `up` (what blocks this), `down` (what this
-blocks), or `both` (default). `--depth 0` (default) means unlimited BFS
-traversal. Use this before touching a shared interface to assess blast
-radius.
-
----
-
-## Workflow: Planning (`docket plan` and `docket next`)
-
-`docket plan` groups all non-done issues into dependency-ordered execution
-phases (topological sort; a cycle returns `CONFLICT`):
-
-```bash
-docket plan --json
-docket plan --json --root DKT-1                      # scope to a parent issue's subtree
-docket plan --json -s backlog -s todo -l must-have    # filter by status/label
-```
-
-`docket next` finds work-ready issues — no incomplete blockers, in one of
-the ready statuses (default `backlog`,`todo`):
-
-```bash
-docket next --json
-docket next --json -s todo -p high -p critical -l must-have --limit 5
-```
-
----
-
-## Workflow: Voting (`docket vote`, consensus proposals)
-
-Create a proposal:
-
-```bash
-docket vote create --json \
-  -d "Adopt Result<T,E> for all internal/db error returns" \
-  -r "Panics currently propagate uncaught in 3 call sites" \
-  -c high -n 3 --threshold 0.67 \
-  --domain-tags "database,error-handling" \
-  --files-changed "internal/db/issue.go,internal/db/doc.go"
-```
-
-Cast a vote:
-
-```bash
-docket vote cast DKT-V1 --json \
-  -v approve --confidence 0.9 --domain-relevance 0.8 \
-  --findings "Reviewed all call sites, no blockers" \
-  --summary "LGTM"
-```
-
-Valid `--verdict`/`-v` values: `approve`, `approve-with-concerns`, `reject`.
-Valid `--criticality`/`-c` values: `low`, `medium`, `high`, `critical`.
-`--confidence` and `--domain-relevance` are floats in `[0.0, 1.0]`.
-
-Inspect and finalize:
-
-```bash
-docket vote show DKT-V1 --json
-docket vote result DKT-V1 --json
-docket vote list --json --all               # --all shows every proposal; omit --all for open-only (the default)
-docket vote commit DKT-V1 --json --outcome "Approved: adopting Result<T,E>"
-docket vote link DKT-V1 --json --issue DKT-1
-docket vote unlink DKT-V1 --json --issue DKT-1
-```
-
----
-
-## Workflow: Docs (`docket doc`)
-
-```bash
-docket doc create --json -t "ADR-0003: SQLite over Postgres" -T adr -s accepted \
-  -d "@docs/adr/0003-sqlite.md"          # "@path" loads body from a file
-docket doc create --json -t "Quick note" -d "-"   # "-" reads body from stdin
-docket doc show DOC-1 --json
-docket doc show DOC-1 --json --rev 2               # a specific revision
-docket doc list --json -T adr -s accepted
-docket doc edit DOC-1 --json -s superseded
-docket doc delete DOC-1 --json --force
-docket doc link add DOC-1 --json --issue DKT-1
-docket doc link remove DOC-1 --json --issue DKT-1
-docket doc comment add DOC-1 --json -m "Needs a follow-up on migration path"
-docket doc comment list DOC-1 --json
-```
-
-`--description`/`-d` on `doc create`/`doc edit` supports the same three
-input modes as `issue create -d`: literal string, `@path/to/file` (loads
-file contents, 1 MiB cap), or `-` (stdin, 1 MiB cap).
-
----
-
-## Workflow: Watch Mode
-
-Any watch-eligible command (see table above) can be re-run on an interval
-instead of polling manually:
-
-```bash
-docket issue list --json --watch --interval 5s
-docket board --watch                       # human-mode live board, default 2s interval
-docket vote result DKT-V1 --watch --interval 1s
-```
-
-`--watch` is rejected with `VALIDATION_ERROR` on any write command (e.g.
-`docket issue create --watch` fails immediately). Watch mode runs until
-`Ctrl-C` (SIGINT) or SIGTERM.
-
----
-
-## Workflow: Export / Import
-
-```bash
-docket export --json -o json -f backup.json
-docket export -o csv -f issues.csv -s todo -s in-progress
-docket export -o markdown > issues.md
-
-docket import backup.json --json --merge      # skip duplicates by ID
-docket import backup.json --json --replace    # destructive: wipes DB first, needs confirmation (or --json to skip it)
-docket import backup.json --json              # default: requires an EMPTY database, else CONFLICT
-```
-
-`export` streams to stdout when `-f`/`--file` is omitted. `import` requires
-`--merge` XOR `--replace`, or an empty database — passing both is a
-`VALIDATION_ERROR`, and importing into a non-empty DB without either flag
-is a `CONFLICT`.
-
----
+| Entity | Prefix | Example | Parse accepts |
+|---|---|---|---|
+| Issue | `DKT-` | `DKT-42` | `DKT-42`, `dkt-42`, or bare `42` |
+| Document | `DOC-` | `DOC-7` | `DOC-7`, `doc-7`, or bare `7` |
+| Proposal (vote) | `DKT-V` | `DKT-V3` | `DKT-V3`, `dkt-v3`, or bare `3` |
 
 ## Deterministic Wrapper Scripts
 
-Nine helper scripts under `src/user/claude-code/scripts/` chain the multi-command
-Docket rituals below behind a cwd-guard and post-write verification. Prefer them
-over hand-composing the raw `docket` sequences, which drift from the
-assignee-first-then-status claim contract and the close-then-verify contract:
+Nine helpers under `src/user/claude-code/scripts/` chain multi-command rituals behind a
+cwd-guard and post-write verification — prefer them over hand-composing raw sequences:
 
 | Script | Args | Encodes |
 |---|---|---|
-| `docket_bootstrap.sh` | (none) | `init` then `version --quiet` — the recommended session-start invocation |
-| `docket_claim.sh` | `<id> <role>` | `edit -a @<role>` then `move in-progress`; rejects if still `backlog` |
+| `docket_bootstrap.sh` | (none) | `init` then `version --quiet` — the session-start invocation |
+| `docket_claim.sh` | `<id> <role>` | `edit -a @<role>` then `move in-progress`; rejects if still `backlog`; verifies against `status`/`assignee` (not `updated_at`, whose second-granularity made same-second claims false-negative) |
 | `docket_close.sh` | `<id> <msg>` | `close` → verify `status==done` → `comment "Completed: <msg>"` |
-| `docket_promote.sh` | `<id>` | promote `backlog` → `todo` if still `backlog`, else no-op exit 0 — the team-lead-only pre-dispatch move |
+| `docket_promote.sh` | `<id>` | promote `backlog` → `todo` if still `backlog`, else no-op — the team-lead-only pre-dispatch move |
 | `docket_write.sh` | `<id> <issue subcommand...>` | any `docket issue` write + activity-log-advanced re-verify |
 | `docket_create.sh` | `<issue create flags...>` | `issue create` + re-verify every `-l`/`-f` landed, backfilling omissions |
-| `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create -n <voters>` (`<voters>` = integer voter count, not names) with criticality-correct `--threshold` + prints the delegation payload |
-| `vote_record.sh` | `<vote-id> <voter> <role> <report-file>` | parses a reviewer report's Verdict/Confidence/Domain-Relevance/Findings sections and casts via `vote cast`, streaming findings through stdin instead of argv |
-| `docket_ref_check.sh` | `[skill-md-path]` | Diffs this file's flag tables against installed `docket <cmd> --help` output per subcommand; exits nonzero on drift — run during evolve-skills Phase 0 when auditing this skill |
-
-> **`docket_claim.sh` verifies against `status`/`assignee`, not `updated_at`.**
-> An earlier version gated success on `updated_at` inequality, but
-> `updated_at` is second-granularity (`2026-07-25T00:36:06Z`), so a
-> promote-then-claim completing inside one wall-clock second left the two
-> equal and the script reported a false-negative `claim did not take
-> effect`. The script now re-reads `.data.status`/`.data.assignee` after the
-> claim and only fails if they don't match `in-progress`/`@<role>`, so
-> same-second claims verify correctly.
+| `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create -n <voters>` (integer voter count, not names) with criticality-correct `--threshold` + prints the delegation payload |
+| `vote_record.sh` | `<vote-id> <voter> <role> <report-file>` | parses a reviewer report's Verdict/Confidence/Domain-Relevance/Findings sections and casts via `vote cast`, streaming findings through stdin |
+| `docket_ref_check.sh` | `[skill-md-path]` | diffs this file's flag tables against installed `docket <cmd> --help`; exits nonzero on drift |
 
 ---
 
 ## Complete Command & Flag Reference
 
-Every flag below is transcribed directly from the `cmd.Flags().*` calls in
-the corresponding `internal/cli/*.go` file's `init()`. "Req." marks flags
-enforced via `cmd.Flags().MarkFlagRequired` (Cobra rejects the command
-before `RunE` runs if absent) — distinct from flags that are merely
-required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
+Every flag below is transcribed from the `cmd.Flags().*` calls in the corresponding
+`internal/cli/*.go` file. "Req." marks Cobra `MarkFlagRequired` flags — distinct from flags
+required only *in JSON mode* by checks inside `RunE` (noted in Notes).
 
 ### `docket issue` (alias `i`) — `internal/cli/issue.go`
 
@@ -788,8 +445,7 @@ No local flags. Watch-eligible.
 
 ### `docket init` — `init.go`
 
-No local flags. `Annotations: {"skipDB": "true"}` — runs before any DB
-check/open, since its job is to create the DB.
+No local flags. `Annotations: {"skipDB": "true"}` — runs before any DB check/open.
 
 ### `docket version` — `version.go`
 
@@ -797,36 +453,21 @@ No local flags. `skipDB` annotated.
 
 ### `docket config` — `config.go`
 
-No local flags. `skipDB` annotated (reads config even if no DB exists yet,
-to report that fact). Watch-eligible.
+No local flags. `skipDB` annotated (reads config even if no DB exists yet). Watch-eligible.
 
 ---
 
 ## Enum Reference
 
-Transcribed from `internal/model/issue.go`, `relation.go`, `proposal.go`
-(validated by `model.Validate*` helpers called from the corresponding
-`RunE`):
-
 | Enum | Values |
 |---|---|
 | Issue status | `backlog`, `todo`, `in-progress`, `review`, `done` |
 | Issue priority | `none`, `low`, `medium`, `high`, `critical` |
-| Issue type/kind | `task`, `bug`, `feature`, `epic`, `chore` |
+| Issue type/kind | `task`, `bug`, `feature`, `epic`, `chore` (no `docs`/`spike` kind — use `task` or `chore` for documentation-only work) |
 | Relation type | `blocks`, `depends_on`, `relates_to`, `duplicates` |
 | Proposal criticality | `low`, `medium`, `high`, `critical` |
 | Proposal status | `open`, `approved`, `rejected`, `committed` |
 | Vote verdict | `approve`, `approve-with-concerns`, `reject` |
 
-`docket doc`'s `--type`/`-T` and `--status`/`-s` are **free-form strings**
-with no enum validation in the CLI layer — pick a project convention (e.g.
-`tdd`, `adr`, `ux`) and use it consistently.
-
-## ID Formats
-
-| Entity | Prefix | Example | Parse accepts |
-|---|---|---|---|
-| Issue | `DKT-` | `DKT-42` | `DKT-42`, `dkt-42`, or bare `42` |
-| Document | `DOC-` | `DOC-7` | `DOC-7`, `doc-7`, or bare `7` |
-| Proposal (vote) | `DKT-V` (no separator before digits) | `DKT-V3` | `DKT-V3`, `dkt-v3`, or bare `3` |
-
+`docket doc`'s `--type`/`-T` and `--status`/`-s` are **free-form strings** with no enum
+validation — pick a project convention (e.g. `tdd`, `adr`, `ux`) and use it consistently.

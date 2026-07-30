@@ -188,3 +188,92 @@ ux-designer's HIG catalogue — the declared single home for 3 skills);
 restructuring can perform. Charter §4's own caveat governs the stop point:
 reduction is a consequence of applying §1, never a goal pursued by deleting
 context the model cannot reconstruct. Phase 3 unlocks the remainder.
+
+## After metrics — Phase 3 skill rewrites (2026-07-29)
+
+Measured with the same commands as the baseline after rewriting all 17 skills
+under `src/user/claude-code/skills/`. `Bytes (dir)` counts every file in the
+skill dir (including unchanged scripts and reference files); `SKILL.md` is the
+entry file loaded on every invocation — the per-invocation context cost the
+charter's progressive-disclosure rule targets. Checks re-run green after every
+skill: doctrine_check.sh (all 4 arms), coupling_check.py (8/8 family notes),
+symmetry_check.py, docket_ref_check.sh (51 subcommands, no drift).
+
+| Skill | Bytes (dir) before | after | Δ | SKILL.md before | after | refs files | M/N/A (was) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| team-doctrine | 183,947 | 129,435 | −29.6% | 7,526 | 5,011 | 17 | 14 (29) |
+| code-review-verdict | 42,125 | 31,464 | −25.3% | 42,125 | 19,030 | 4 | 3 (7) |
+| vote | 39,047 | 25,267 | −35.3% | 39,047 | 19,184 | 2 | 4 (11) |
+| docket | 34,362 | 27,224 | −20.8% | 34,362 | 21,183 | 1 | 0 (0) |
+| session-metrics | 29,842 | 27,978 | −6.2% | 6,490 | 4,626 | 0 | 0 (0) |
+| verify-ac | 26,055 | 17,503 | −32.8% | 26,055 | 15,424 | 1 | 2 (6) |
+| tdd | 25,758 | 16,432 | −36.2% | 25,758 | 16,432 | 0 | 4 (9) |
+| commit | 21,633 | 10,828 | −49.9% | 21,633 | 10,828 | 0 | 1 (2) |
+| ux-spec | 20,428 | 14,001 | −31.5% | 20,428 | 14,001 | 0 | 4 (6) |
+| design-review | 20,402 | 16,099 | −21.1% | 20,402 | 13,623 | 1 | 1 (5) |
+| simplify-scout | 19,613 | 13,923 | −29.0% | 19,613 | 10,834 | 1 | 1 (4) |
+| adr | 19,261 | 12,638 | −34.4% | 19,261 | 12,638 | 0 | 2 (5) |
+| design-qa | 19,024 | 12,654 | −33.5% | 19,024 | 12,654 | 0 | 1 (4) |
+| prd | 17,823 | 12,519 | −29.8% | 17,823 | 12,519 | 0 | 2 (6) |
+| init-specs | 16,930 | 12,018 | −29.0% | 16,930 | 12,018 | 0 | 1 (4) |
+| review-and-comment | 12,125 | 9,654 | −20.4% | 12,125 | 9,654 | 0 | 0 (0) |
+| brief | 11,111 | 7,366 | −33.7% | 11,111 | 7,366 | 0 | 1 (2) |
+| **Total** | **559,486** | **397,003** | **−29.0%** | **359,713** | **217,025** | **−39.7%** | **41 (100)** |
+
+**Loaded-context view (the operative number).** Summed SKILL.md bytes — what an
+invocation actually pays — fell 359,713 → 217,025 (−39.7%); md-only prose
+excluding the deliberately unchanged `evolve-phase0-templates.md` (see below)
+fell 476,143 → 313,660 (−34.1%). M/N/A markers fell 100 → 41 (−59%), CRITICAL
+19 → 19 (banner-carried commit/no-spawn gates, all keep-list cat 1/3); every
+surviving marker maps to a keep-list category (commit/authority gates, family
+lockstep contracts, validator-enforced format rules), typical file ≤4, no file
+above 5 outside team-doctrine's 18-file aggregate.
+
+**Structural result.** 15-of-17 single-file monoliths → 9 skills now carry
+`references/` files loaded on demand (crv output templates + hard-gates +
+evidence-gates; vote reviewer-template + non-vote; verify-ac rounds;
+design-review's shared accessibility checklist consumed by design-qa;
+simplify-scout principles-lens; docket workflows; team-doctrine's existing 17).
+Recall fixes landed per the audit's counter-current protections: crv triage is
+explicitly an effort-ORDER rule, design-review Blockers permit
+"alternative: none identified", design-qa reports principle-less findings with
+a tag instead of dropping them, simplify-scout maps un-taxonomized wins to the
+closest principle instead of discarding them. Live defects fixed: init-specs
+max-4-options vs 7-filename multiSelect (routing round), init-specs
+ask-on-failure → respawn-once, evolve-orchestration-core's 2-turn stall
+heuristic scoped to completed turns (Fable long-turn misfire), session-metrics
+"n/a" prose realigned to the renderer's `n/a (unpriced model)`, commit's
+`(claude-code)`-scope contradiction resolved in Step 2, adr's atomicity claim
+scoped to allocators that consult `next_doc_number.sh`. All five skill `effort:
+xhigh` pins removed (charter §3 re-derivation; review holds at lower effort).
+
+**Recorded >10KB justifications (charter §4).** 13 SKILL.md files exceed 10KB;
+each carries machine-parsed or parity-locked format authority that cannot move
+behind a Read: docket (21.2KB — the 51-subcommand flag reference is parsed in
+place by `docket_ref_check.sh`, whose default target is this file), crv/vote/
+verify-ac/design-* (report_lint.py section/ladder/trailing-line contracts +
+byte-locked BANNER/scope-table parity blocks), doc family (doc_validate.py
+frontmatter + Required Sections contracts + ARGUMENT_HANDLING/COLLISION_DIALOG/
+SAVE_AND_RETURN parity blocks registered in `doctrine_check_manifest.tsv`),
+init-specs (spawning template + RESERVED-NAMES authority), commit and
+simplify-scout marginally over on banner + gate text.
+
+**Structurally pinned residue (out of Phase 3 scope).**
+(a) `evolve-phase0-templates.md` (59,991B) is byte-unchanged: its §-numbered
+templates and per-section token sets are pinned by the out-of-scope
+`.claude/skills/evolve-*` consumers, whose Template-sourcing prose enumerates
+exact token lists per section ("no spawn-time tokens" for §4/§5; "the only
+spawn-time token is {HARVEST_BLOCK}" for §3c) — the manifest's `{SCAFFOLD_*}`
+tokenization is only safe as a coordinated evolve-skills-cycle change that
+edits consumers in lockstep. (b) Parity-locked CANONICAL blocks (BANNER across
+12 registered carriers, ARGUMENT_HANDLING/COLLISION_DIALOG/SAVE_AND_RETURN
+across the doc family, BANNER-CALLER-SIDE-EFFECT across commit +
+review-and-comment) were kept byte-identical because `doctrine_check.sh` arm
+(c) enforces cross-carrier parity from `scripts/doctrine_check_manifest.tsv`
+and scripts are out of scope — compacting them is a coordinated all-carriers +
+manifest edit. (c) Arm (d) requires team-doctrine/SKILL.md's `Cited by` column
+to match live grep results, so the index keeps that column. All 17
+team-doctrine reference files remain at their paths — every one is cited by
+the read-only Phase 2 agents or the out-of-scope evolve-* skills — with 15
+rewritten in place (the shrink-not-delete resolution of the manifest's three
+DELETE-WHOLE-FILE verdicts, which predated the citation map).

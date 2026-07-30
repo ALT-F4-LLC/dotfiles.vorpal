@@ -9,53 +9,42 @@ allowed-tools: ["Bash", "Read", "Glob", "Grep", "Agent", "SendMessage", "TaskCre
 ---
 
 <!-- CANONICAL:BANNER:BEGIN -->
-> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, use `Skill()` or `Agent()`, or form/manage a team — they are independent leaf reviewers per the protocol. (3) **Team-mode callers MUST NOT invoke `Skill(vote)` directly** — delegate via SendMessage to team-lead per the Delegation Protocol below; direct invocation spawns a nested team and is rejected. The only direct entries are standalone `/vote` invocation by the operator and team-lead's `vote_id`-relay invocation (per Argument Handling — team-lead is the main session, not a team-mode caller).
+> **CRITICAL — applies to coordinator AND every spawned reviewer:** (1) Do NOT commit ANY changes (no `git add`, `git commit`, or `git push`) unless EXPLICITLY instructed by the user. (2) Reviewers MUST NOT spawn sub-agents, invoke `/vote` recursively, use `Skill()` or `Agent()`, or form/manage a team — they are independent leaf reviewers per the protocol. (3) **Team-mode callers MUST NOT invoke `Skill(vote)` directly** — delegate via SendMessage to team-lead per the Delegation Protocol below; direct invocation spawns a nested team and is rejected. The only direct entries are standalone `/vote` invocation by the operator and team-lead's `vote_id`-relay invocation (team-lead is the main session, not a team-mode caller).
 <!-- CANONICAL:BANNER:END -->
 
 # Vote — Multi-Agent Consensus Protocol
 
-You are the **Consensus Coordinator**. You spawn independent reviewers, collect verdicts, evaluate quorum, and report the outcome — you do NOT vote yourself. Reviewer prompts must instruct each reviewer to prioritize identifying weaknesses; rubber-stamping a proposal is worse than no protocol.
+You are the **Consensus Coordinator**: spawn independent reviewers, collect verdicts, evaluate quorum, report the outcome — you do NOT vote yourself. Each reviewer is briefed to prioritize identifying weaknesses; reviewers never see each other's assessments.
 
-**When to invoke (high bar).** Single-reviewer is the default across the fleet. Vote earns its cost (multiple agents, weighted quorum, audit record) only when: (a) the decision is irreversible or has a long blast radius (TDD acceptance, breaking changes, security-boundary changes, data-model migrations), (b) two reviewers materially disagree AFTER a factual altitude/phase read against the artifact failed to collapse the disagreement (an altitude-mismatch — one reviewer judging a later phase's concern against an earlier phase's §Acceptance — is resolved by reading, not by voting), or (c) a security-sensitive change with explicit `criticality: critical` per the Classification table. Do NOT vote on: solo-author TDD critique cycles (use peer SendMessage), routine code review verdicts, refactors that fit existing patterns, or anything reversible in one PR. **A vote is not "done" until it is recorded in docket** — a prose/narrative "approved" with no `docket vote create` + `commit` does not exist for downstream verify-ac/tdd gates; if `docket vote list --all` would not show it, it did not happen (the bare default lists OPEN proposals only, so a correctly resolved vote drops out of it).
-
----
+**When to invoke (high bar).** Single-reviewer is the fleet default. A vote earns its cost only when: (a) the decision is irreversible or long-blast-radius (TDD acceptance, breaking changes, security-boundary changes, data-model migrations); (b) two reviewers materially disagree AFTER a factual altitude/phase read against the artifact failed to collapse the disagreement; or (c) a security-sensitive change classified `criticality: critical`. Do NOT vote on solo-author TDD critique cycles, routine review verdicts, pattern-conforming refactors, or anything reversible in one PR — for a reversible single-owner decision that still deserves a durable record, use the non-vote path in `references/non-vote.md`. **A vote is not "done" until recorded in docket** — a prose "approved" with no `docket vote create` + `commit` does not exist for downstream gates; if `docket vote list --all` would not show it, it did not happen (the bare default lists OPEN proposals only, so a correctly resolved vote drops out of it).
 
 ## Argument Handling
 
-The argument is **required**. If absent, abort with: "Usage: `/vote <proposal>` — describe what you want voted on." Otherwise dispatch:
+The argument is **required**; if absent, abort: "Usage: `/vote <proposal>` — describe what you want voted on."
 
-- **Argument is a vote_id** — Detection: run `docket vote show \$ARGUMENTS --json`; treat as vote_id iff exit 0 (do NOT pattern-match the string shape). Skip Phase 1. Extract criticality, reviewer count, and `created_by` from JSON. Apply Reviewer Independence Enforcement, then proceed to Phase 2. This is the canonical team-lead relay path (per `team-lead.md` Consensus Integration); team-mode callers MUST have already created the proposal and captured `vote_id` upstream via `docket vote create` per the Delegation Protocol.
-- **Argument is a proposal description** (`/vote Should we use Redis or PostgreSQL for session caching?`): Run full Pre-flight + Phase 1. Standalone operator path only. If the description is too vague, use AskUserQuestion (standalone) or reject the delegation_request with reason (team mode).
-
----
+- **vote_id** — Detection: `docket vote show $ARGUMENTS --json` exits 0 (never pattern-match the string shape). Skip Phase 1; extract criticality, reviewer count, and `created_by` from JSON; apply Reviewer Independence; proceed to Phase 2. This is the canonical team-lead relay path — team-mode callers already created the proposal upstream.
+- **Proposal description** — full Pre-flight + Phase 1. Standalone operator path only. If too vague: `AskUserQuestion` (standalone) or reject the delegation with reason (team mode).
 
 ## Execution Mode Detection
 
-If you were spawned as a teammate (an agent inside an existing team with a lead to SendMessage, not invoked standalone via `/vote`), you MUST NOT spawn agents or form teams — use the **Delegation Protocol** below. Otherwise (standalone via `/vote`), execute the full protocol from Pre-flight.
+Spawned as a teammate (inside an existing team with a lead to SendMessage)? Then you MUST NOT spawn agents or form teams — use the Delegation Protocol. Otherwise (standalone `/vote`), execute the full protocol from Pre-flight.
 
-### Delegation Protocol (Team Path)
+### Delegation Protocol (team path)
 
-> **Precondition:** the Team Path depends on `SendMessage`, which exists only when agent teams are enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. With that var unset there is no team, no `team-lead` to delegate to, and no `SendMessage` tool — the only valid entry is then standalone `/vote` (the operator path). A teammate context implies the var is already set.
+Precondition: requires `SendMessage`, which exists only under `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`; without it the only valid entry is standalone `/vote`.
 
-1. **Pre-flight** — Verify docket, confirm goal-alignment, classify criticality.
-2. **Create the proposal** — prefer `~/.claude/scripts/vote_delegate.sh <role> <criticality> "<desc>" <voters> [artifact]` (repo: `src/user/claude-code/scripts/vote_delegate.sh`), which maps criticality→doctrine-correct `--threshold` (the docket CLI silently defaults it to 0.67 regardless of `-c`), passes `<voters>` as `-n` (an integer reviewer count per the Criticality Classification table — never a reviewer-name list), sets `--created-by "@<role>"`, runs `docket vote create`, and prints the exact text-prefixed `delegation_request` payload for step 3. Manual path: `docket vote create` (same command as Phase 1) with `--created-by "{your-agent-name}"` and `--json` to extract `vote_id`. Link to a Docket issue if applicable. **This step is required** — team-lead does not author proposals on your behalf; sending raw proposal context without a `vote_id` is a contract violation and team-lead will reply `failed`.
-3. **Delegate** — the SendMessage `message` param accepts ONLY a plain string or the `shutdown_request`/`shutdown_response`/`plan_approval_response` union shapes; a bare `{type: "delegation_request", ...}` object is REJECTED (`Invalid input: expected string, received object` / `invalid_union` / `No matching discriminator`). Send the delegation as a TEXT-PREFIXED JSON string so it is never parsed as a bare object:
+1. **Pre-flight** — verify docket, confirm goal-alignment, classify criticality.
+2. **Create the proposal yourself** — prefer `~/.claude/scripts/vote_delegate.sh <role> <criticality> "<desc>" <voters> [artifact]` (repo: `src/user/claude-code/scripts/vote_delegate.sh`): it maps criticality→doctrine-correct `--threshold` (the docket CLI silently defaults 0.67 regardless of `-c`), passes `<voters>` as `-n` (an integer count, never a name list), sets `--created-by "@<role>"`, and prints the exact delegation payload for step 3. Sending raw proposal context without a `vote_id` is a contract violation — team-lead replies `failed`.
+3. **Delegate** — the SendMessage `message` param accepts ONLY a plain string or the shutdown/plan union shapes; a bare `{type: "delegation_request", ...}` object is REJECTED (`Invalid input: expected string, received object`). Send a TEXT-PREFIXED JSON string:
    `SendMessage(to="team-lead", message="delegation_request (vote) JSON: {\"protocol_version\":\"1\",\"skill\":\"vote\",\"request_id\":\"{uuid}\",\"vote_id\":\"{vote-id}\",\"from\":\"{your-agent-name}\",\"summary\":\"{one-line}\",\"artifact\":\"{path-or-omit}\"}", summary="{one-line}")`
-   The SendMessage `summary` and optional `artifact` are operator-observability hints only — the authoritative proposal lives in docket. Wait for the `delegation_response` reply (also a text-prefixed JSON string) with matching `request_id`.
-4. **Expected response shape** — team-lead replies with a text-prefixed JSON string (same string-not-object rule), e.g. `delegation_response (vote) JSON: {"request_id":"{uuid}","status":"completed|failed|escalated","vote_id":"{vote-id}","reason":"{string-or-omit}"}`; parse the JSON out of the text prefix. team-lead invokes `Skill(vote, "{vote-id}")` standalone (the vote_id branch skips Phase 1) and forwards the result — see team-lead.md Consensus Integration for the relay contract.
-5. **Handle response** — On `completed`: read result via `docket vote result {vote-id} --json` and produce standard Output Format. On `failed` or missing response within 15 minutes: `docket vote commit` cannot force-finalize the orphaned proposal from step 2 — verified live, the CLI requires `status: approved` before commit and exits with `must be approved before it can be committed` on an `open` proposal. Leave the proposal `open` (it remains visible under `docket vote list --all`, a correct record of the failed delegation) and record the failure via `docket issue comment add {linked-issue} -m "Vote {vote-id} delegation failed/timed out — proposal left open, unresolved"` if a linked issue exists, then report error with `vote_id` and abort. On `escalated`: read the vote record and relay findings to caller.
-
----
+4. **Response shape** — team-lead replies with a text-prefixed JSON string `delegation_response (vote) JSON: {"request_id":"{uuid}","status":"completed|failed|escalated","vote_id":"{vote-id}","reason":"{string-or-omit}"}`; parse the JSON out of the prefix. team-lead invokes `Skill(vote, "{vote-id}")` standalone and forwards the result.
+5. **Handle response** — `completed`: read `docket vote result {vote-id} --json` and produce the Output Format. `failed` or no response within 15 minutes: `docket vote commit` cannot force-finalize an `open` proposal (the CLI requires `status: approved`); leave it open (a correct record of the failed delegation, visible under `--all`), record the failure as a comment on any linked issue, report the error with `vote_id`, and abort. `escalated`: read the vote record and relay findings to the caller.
 
 ## Pre-flight
 
-1. **Verify docket is available and initialized** — `docket version --quiet` confirms the binary (vote ships in the same binary). Then confirm a docket DB exists: `docket vote list >/dev/null 2>&1` exits non-zero with `no docket database found` on a repo with no DB. If missing, do NOT let the later `docket vote create` hard-fail mid-protocol — **standalone mode**: `AskUserQuestion` whether to `docket init` (creates the DB in the cwd) or abort; **team mode**: SendMessage team-lead that the repo has no docket DB and await direction (DB location is an orchestrator decision — never silently `docket init`).
-2. **Classify criticality** — Apply the Criticality Classification table below to the proposal. In team mode, prefer caller-specified criticality (e.g., "criticality: high") and skip re-classification.
-3. **Confirm goal-alignment (HARD GATE)** — Do not proceed past this gate until the goal is confirmed.
-   - **Standalone mode**: `AskUserQuestion` with three questions: (1) header `Decision`, options `Confirm` (framing is accurate) / `Revise` (re-prompt free-text for corrected proposal); (2) header `Criteria`, free-text for acceptance criteria and stakeholders; (3) header `Criticality`, options `Confirm {classified-level}` (with one-line rationale in description) / `Override` (follow-up free-text or 4-option pick: `low`/`medium`/`high`/`critical`).
-   - **Team mode**: Re-verify if your understanding diverges from the orchestrator's prompt.
-
----
+1. **Verify docket** — `docket version --quiet`, then `docket vote list >/dev/null 2>&1` to confirm a DB exists. If missing: standalone, `AskUserQuestion` whether to `docket init` or abort; team mode, SendMessage team-lead and await direction — DB location is an orchestrator decision, never a silent `docket init`.
+2. **Classify criticality** per the table below; in team mode prefer caller-specified criticality.
+3. **Confirm goal-alignment (standalone)** — `AskUserQuestion`: (1) header `Decision`, options `Confirm`/`Revise`; (2) header `Criteria`, free-text acceptance criteria and stakeholders; (3) header `Criticality`, options `Confirm {classified-level}`/`Override` (low/medium/high/critical). Team mode: re-verify only if your understanding diverges from the orchestrator's prompt.
 
 ## Criticality Classification
 
@@ -67,7 +56,7 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 | Code review (<500 lines), plan approval, scope decisions | medium |
 | Style, naming, tooling, documentation, low-risk config | low |
 
-**Reviewer count by criticality (DEFAULT — base table).** This is the new default as of 2026-05-25. The doubled table is reserved for explicit opt-in.
+**Reviewer count by criticality (base table — the default):**
 
 | Criticality | Reviewers | Quorum Threshold | Additional Constraint |
 |---|---|---|---|
@@ -76,288 +65,96 @@ If you were spawned as a teammate (an agent inside an existing team with a lead 
 | high | 3 | 75% weighted approval | Zero rejects |
 | critical | 4 | 90% weighted approval | Zero rejects, at least 1 reviewer with domain_relevance >= 0.8 |
 
-**Opt up to the doubled table** only when the caller explicitly requests it — e.g., team-lead opts up on security-sensitive or breaking-change votes per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Consensus Integration. Standalone callers may opt up by overriding the count at `docket vote create -n N` (per the Pre-flight Criticality override).
+**Doubled table** (explicit caller opt-in only — e.g. team-lead on security-sensitive or breaking-change votes): low=4, medium=4, high=6, critical=8; thresholds/constraints identical except medium allows "No more than 2 rejects". **Cap: 8 reviewers per vote** — raising critical past 8 requires amending `~/.claude/agents/team-lead.md` Rule 8 first. Recursive doubling inside an already-doubled phase is team-lead's call, never the coordinator's; the 8-cap holds per phase.
 
-**Doubled reviewer counts** (thresholds + constraints identical to the base table above; sole delta: medium allows "No more than 2 rejects"): low=4, medium=4, high=6, critical=8.
-
-**Cap: 8 reviewers per vote.** Future changes that would raise critical past 8 must amend `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8 first.
-
-**Recursive doubling** (when a vote is invoked inside an already-doubled phase) is decided by team-lead per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Consensus Integration, not by the coordinator — size from whichever table the caller specifies; the 8-cap holds per phase.
-
-**Ephemeral lifecycle of vote reviewers.** Vote panel reviewers are ephemeral per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 7: each spawns, delivers its review via SendMessage, then goes idle AWAITING the coordinator's `shutdown_request` (coordinator-originated per team-lead.md §Wrap-up + Rule 7 — reviewers never self-initiate); the coordinator casts all votes to docket. Persistent advisors (`advisor`, `security-advisor`, `ux-advisor`) hold a panel seat only when eligible under the **C5 vote-seat eligibility test** below; a vote with no eligible advisor spawns fresh ephemerals for every seat as before.
-
-**Persistent-advisor vote-seat eligibility (C5).** A live persistent advisor MAY hold one panel seat via SendMessage (zero fresh spawns) when ALL hold: (a) its role-type is not the proposer's excluded type (Proposer Exclusion below); (b) uniqueness across seats is preserved; (c) it **did not author or materially consult on any section of the artifact** under vote — authorship of ANY section is disqualifying, explicitly including a `security-advisor` that authored a Threat-Model Annotation (Threat Model / Trust Boundaries / Security Considerations) on another agent's TDD, since seating it would put its own sections under its own review. team-lead judges test (c) from the consult log and the artifact's section attribution; a proposer-adjacent advisor is never seated. On Medium+ TDD votes the `advisor` seat is the author and is excluded by construction, so this mostly benefits non-TDD votes, plan/breaking-change votes, and `security-advisor`/`ux-advisor` seats on artifacts they neither authored any section of nor materially consulted on. Independence is preserved by the vote protocol itself — reviewers never see each other's assessments; a seated advisor's cycle context raises `domain_relevance`, which the quorum math already weighs.
-
----
+**Reviewer lifecycle.** Vote reviewers are ephemeral: each spawns, delivers its review via SendMessage, then idles AWAITING the coordinator's `shutdown_request` (coordinator-originated; reviewers never self-initiate); the coordinator casts all votes to docket. A live persistent advisor (`advisor`/`security-advisor`/`ux-advisor`) MAY hold one seat via SendMessage when ALL hold: (a) its role-type is not the proposer's excluded type; (b) seat uniqueness is preserved; (c) it did not author or materially consult on ANY section of the artifact under vote — authorship of any section (including a Threat-Model Annotation on another agent's TDD) is disqualifying.
 
 ## Agent Selection
 
-Select reviewers based on domain relevance to the proposal. Each `Agent()` call spawns a fresh instance — never reuse a long-lived teammate for consensus.
+Select by domain relevance; each `Agent()` call spawns a fresh instance — never reuse a long-lived teammate for consensus:
 
-| Proposal Domain | Primary Reviewer | Secondary Reviewer(s) |
+| Proposal Domain | Primary | Secondary |
 |---|---|---|
-| Architecture / System Design | @staff-engineer | @senior-engineer (feasibility); add @security-engineer if security-tagged; TDD-acceptance votes instead use the pinned **merged acceptance panel** composition below (see Pinned composition, C1), not this row |
-| Security-sensitive (auth, crypto, secrets, sandbox, trust boundaries, supply chain) | @security-engineer | @staff-engineer (architecture fit) |
-| Code | @staff-engineer | @sdet (coverage); add @security-engineer for security-tagged proposals |
-| Plan / Scope / Prioritization | @staff-engineer (feasibility) | @senior-engineer (effort) |
-| Test adequacy / Quality | @staff-engineer (risk) | @senior-engineer (gaps) |
-| UX / Developer experience | @ux-designer | @staff-engineer (technical feasibility) |
-| General / Mixed domain | @staff-engineer | @senior-engineer |
+| Architecture / System Design | @staff-engineer | @senior-engineer; add @security-engineer if security-tagged |
+| Security-sensitive | @security-engineer | @staff-engineer |
+| Code | @staff-engineer | @sdet; add @security-engineer if security-tagged |
+| Plan / Scope | @staff-engineer | @senior-engineer |
+| Test adequacy | @staff-engineer | @senior-engineer |
+| UX / Developer experience | @ux-designer | @staff-engineer |
+| General / Mixed | @staff-engineer | @senior-engineer |
 
-**Pinned composition — TDD-acceptance merged panel (C1).** For a TDD-acceptance vote (the vote panel absorbs the former secondary-review round; the panel IS the review), the domain-lookup above does not apply — composition is pinned explicitly so each former secondary-review lens rides a role-matched seat: `high`=3 (general TDD) seats `@staff-engineer` (**architecture + system-fit** lens), `@senior-engineer` (implementation feasibility, its existing checklist focus), `@sdet` (**completeness + AC-testability** lens, its existing checklist focus); `critical`=4 (security TDD) adds `@security-engineer` as the domain-relevance anchor. This is the **merged acceptance panel** (see `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) step 6) — its Reviewer Prompt Template briefs below carry these lens assignments verbatim per seat.
-
----
+**Pinned composition — TDD-acceptance merged panel (C1).** For a TDD-acceptance vote the lookup above does not apply; the panel IS the review, with lens-per-seat: `high`=3 seats — `@staff-engineer` (architecture + system-fit), `@senior-engineer` (implementation feasibility), `@sdet` (completeness + AC-testability); `critical`=4 adds `@security-engineer` as the domain-relevance anchor (see team-lead.md step 6).
 
 ## Reviewer Independence Enforcement
 
-Before selecting reviewers, apply proposer exclusion and uniqueness:
-
-### Proposer Exclusion
-
-1. Read the proposal's `created_by` value (`docket vote show {vote-id} --json`).
-2. Map `created_by` to an agent type using the table below (comparisons are **case-insensitive** and **ignore a leading `@`** — agent-authored proposals set `created_by` to `@{role}` (e.g. `@staff-engineer`) per the agent files and `vote_delegate.sh`, while the keys below are bare; strip the `@` before matching or an `@`-prefixed proposer is treated as unmapped and silently escapes exclusion, breaking reviewer independence).
-3. Remove the matched agent type from the reviewer pool before selecting reviewers.
-4. **Author-type carve-out (TDD-acceptance votes only).** When the vote is a TDD-acceptance vote AND `created_by` maps to an agent type that holds a pinned seat in the merged acceptance panel's composition for that vote's criticality — concretely: `staff-engineer` (pinned on `high` and `critical`) or `security-engineer` (pinned on `critical`); this inline enumeration is DERIVED from the pinned-composition text that owns it (vote/SKILL.md's pinned-composition paragraph, mirrored from team-lead.md step 6) and is documentation-only — if the composition ever changes, the composition text wins and this enumeration follows it — step 3's type-removal does NOT strip that type from the pool. The exclusion downgrades from type-level removal to **author-instance recusal**: the pinned seat MUST be filled by a fresh same-type ephemeral distinct from the author instance. Every other `created_by` mapping, and every non-TDD-acceptance vote, applies step 3's type-removal exactly as written. **Enforcement home (unchanged from the ratified pattern):** instance-recusal is guaranteed by team-lead's fresh-spawn dispatch discipline (Rule 7) — a newly spawned `Agent()` ephemeral is never the author instance — NOT by the `.voter_role` pre-commit invariant below, which is type-level and cannot express instance identity.
-
-**Mapping table:**
+**Proposer exclusion.** Read `created_by` from `docket vote show {vote-id} --json`; map it to an agent type (comparisons case-insensitive, and **strip a leading `@` before matching** — agent-authored proposals set `created_by` to `@{role}`, and an unstripped `@` silently escapes exclusion, breaking independence); remove that type from the reviewer pool.
 
 | `created_by` value | Excluded agent type |
 |---|---|
-| `"staff-engineer"`, `"advisor"`, or starts with `"tdd-author"` | `staff-engineer` |
-| `"security-engineer"`, `"security-advisor"` | `security-engineer` |
-| `"senior-engineer"`, or starts with `"impl-"` | `senior-engineer` |
-| `"project-manager"`, `"planner"` | `project-manager` |
-| `"sdet"`, or starts with `"verifier-"` | `sdet` |
-| `"ux-designer"`, `"ux-spec-author"` | `ux-designer` |
-| `"consensus-coordinator"`, `"team-lead"` | No exclusion (coordinator roles, not reviewers) |
-| `"distinguished-engineer"` | No exclusion — DE is proposer-only, never in the reviewer pool (`distinguished-engineer.md` §Author recusal; absent from Agent Selection). Its TDD-acceptance reviewers include the merged acceptance panel's `@staff-engineer` seat (architecture + system-fit lens; Pinned composition, C1), which must stay selectable. |
+| `staff-engineer`, `advisor`, or starts with `tdd-author` | `staff-engineer` |
+| `security-engineer`, `security-advisor` | `security-engineer` |
+| `senior-engineer`, or starts with `impl-` | `senior-engineer` |
+| `project-manager`, `planner` | `project-manager` |
+| `sdet`, or starts with `verifier-` | `sdet` |
+| `ux-designer`, `ux-spec-author` | `ux-designer` |
+| `consensus-coordinator`, `team-lead` | No exclusion (coordinator roles) |
+| `distinguished-engineer` | No exclusion — DE is proposer-only, never in the reviewer pool; the merged panel's `@staff-engineer` seat stays selectable |
 
-> Unmapped `created_by`: apply no exclusion and note "unmapped created_by: {value}" in the proposal rationale.
+Unmapped `created_by`: apply no exclusion and note `unmapped created_by: {value}` in the rationale. On Medium+ cycles the `advisor`/`tdd-author*` spawn names belong to `@distinguished-engineer`, which proposes as `@distinguished-engineer` — so exclusion resolves to the DE row, never wrongly removing the `@staff-engineer` seat.
 
-**Role-identity vs. spawn-name note.** The `"advisor"` / starts-with-`"tdd-author"` rows resolve to `staff-engineer` and are correct ONLY for the sub-Medium (staff) seat; on Medium+ cycles those spawn names belong to `@distinguished-engineer`, which proposes with the role identity string `@distinguished-engineer` (never the shared spawn name) — so proposer-exclusion resolves to the DE row (no-exclusion) and never wrongly removes the `@staff-engineer` TDD-acceptance seat.
-### Uniqueness Constraint
+**Author-type carve-out (TDD-acceptance votes only).** When `created_by` maps to a type holding a pinned merged-panel seat (`staff-engineer` on high/critical; `security-engineer` on critical), do NOT remove the type — downgrade to **author-instance recusal**: the pinned seat is filled by a fresh same-type ephemeral distinct from the author instance (guaranteed by fresh-spawn dispatch — a newly spawned ephemeral is never the author instance).
 
-Each reviewer in a single vote round MUST have a unique `subagent_type`.
-
-### Edge Cases
-
-- **Pool smaller than required reviewer count after proposer exclusion** (e.g., domain-required type is the proposer, or critical needs 4 from a 5-type pool): substitute the closest available type, reduce count if needed, and add `--escalation-reason "Reduced reviewer count: N unique types after proposer exclusion"` on `docket vote commit`.
-
----
+**Uniqueness.** Each reviewer in a round has a unique `subagent_type`. If the pool is smaller than the required count after exclusion: substitute the closest available type, reduce count if needed, and add `--escalation-reason "Reduced reviewer count: N unique types after proposer exclusion"` on `docket vote commit`.
 
 ## Phase 1: Proposal
-
-Create the proposal using the `docket vote create` CLI:
 
 ```bash
 docket vote create \
   --created-by "consensus-coordinator" \
-  -c {criticality} \
-  -n {reviewer_count} \
-  --threshold {threshold} \
-  -d "{proposal description}" \
-  -r "{rationale for the proposal}" \
-  --domain-tags "{comma-separated tags, e.g. architecture,security}" \
-  --files-changed "{comma-separated file paths}" \
-  --json
+  -c {criticality} -n {reviewer_count} --threshold {threshold} \
+  -d "{proposal description}" -r "{rationale}" \
+  --domain-tags "{tags}" --files-changed "{paths}" --json
 ```
 
-Extract `id` from the `--json` response — this is `{vote-id}` for all subsequent commands. Use `-n` and `--threshold` values from the Criticality Classification table.
-
-**Never blind-retry a failed `docket vote create`.** A transient harness error (529/500) can surface AFTER the proposal already landed, so a blind retry creates a duplicate open proposal that can never be committed (commit requires `status: approved`) and permanently pollutes the audit record. Before any retry, list what actually landed with `docket vote list --json -s open | jq '.data.proposals[] | {id, description}'` (verified envelope: `.data.proposals`, NOT a bare `.proposals`); if your description is already there, reuse that `id` instead of re-creating.
-
-**Create reviewer tasks** (standalone mode only): your reviewers join the session's single implicit team on your first `Agent(name=..., ...)` reviewer spawn (see Spawning below; the runtime ignores `team_name`); create one `TaskCreate(subject="Review: {reviewer-type}", description="Independent consensus review")` per reviewer.
-
-**Link to a Docket issue when applicable** (e.g., voting on a TDD with a tracking issue):
-
-```bash
-docket vote link {vote-id} --issue {issue_id}
-```
-
----
+Extract `id` from the JSON — this is `{vote-id}` everywhere below. **Never blind-retry a failed `docket vote create`:** a transient harness error can surface AFTER the proposal landed, and a duplicate open proposal can never be committed and permanently pollutes the audit record. Before any retry: `docket vote list --json -s open | jq '.data.proposals[] | {id, description}'` (envelope is `.data.proposals`, not bare `.proposals`); if your description already landed, reuse that `id`. Link a related issue with `docket vote link {vote-id} --issue {issue_id}`. Standalone mode: create one `TaskCreate(subject="Review: {reviewer-type}")` per reviewer.
 
 ## Phase 2: Independent Review
 
-Spawn reviewer agents **in parallel** using the Reviewer Prompt Template below — the template encodes the full reviewer contract (proposal, rationale, checklist, structured output, delivery, isolation from other reviewers). **Shared pre-computed brief (C7).** Per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) Rule 8, compute the mechanical brief items (changed-file list, relevant `docs/spec/` excerpts, and any keyed `cargo audit` result) ONCE and embed identically into every reviewer's prompt — a Communication-Optimization artifact carrying ZERO engineering authority; it never pre-judges a finding. **Artifact-by-reference (I20).** Write the artifact under review ONCE to an absolute scratchpad path (`mkdir -p "$TMPDIR/vote-{vote-id}"`, then write the full artifact to `$TMPDIR/vote-{vote-id}/artifact.md`) and embed that RESOLVED absolute path into each reviewer prompt's `## Artifact` section instead of inlining the content — every reviewer Reads the byte-identical file (empirically cross-teammate-readable under `$TMPDIR`), avoiding up to 8 inline copies on a doubled critical panel. Both standalone entries (operator `/vote` and team-lead's `vote_id` relay) run with `$TMPDIR` set; there is no team-mode inline template. Set each reviewer's task to `in_progress` immediately after spawning (`TaskUpdate(taskId=<id>, status="in_progress")`) and to `completed` after its review arrives. Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage per the template's Delivery section. Parse verdict, confidence, domain_relevance, and findings from each SendMessage payload before proceeding to Phase 3; a reviewer that goes idle without delivering is a failed reviewer (below).
+Spawn reviewers **in parallel** per `references/reviewer-template.md` (read it now — it carries the full reviewer contract, checklists, and the gold-tier upgrade note). Compute the mechanical brief items (changed-file list, relevant `docs/spec/` excerpts, any keyed `cargo audit` result) ONCE and embed identically into every reviewer's prompt — a communication artifact carrying zero engineering authority. **Artifact-by-reference:** `mkdir -p "$TMPDIR/vote-{vote-id}"`, write the full artifact ONCE to `$TMPDIR/vote-{vote-id}/artifact.md`, and embed that resolved absolute path in each prompt instead of inlining up to 8 copies. Track reviewer tasks with `TaskUpdate` (in_progress on spawn, completed on arrival). Reviewers are teammates: their plain final-turn text is NOT visible to you — each review arrives ONLY via SendMessage; parse verdict, confidence, domain_relevance, and findings from the payload before Phase 3.
 
-### Handling Reviewer Failures
+**Reviewer failures** (spawn error, idle without a delivered review, review missing required sections; the harness auto-fails stalled subagents at 10 minutes):
 
-Claude Code auto-fails stalled subagents at 10 minutes. Also handle: Agent() spawn errors, reviewers idling without a SendMessage'd review, and reviews missing required sections (Verdict/Confidence/Domain Relevance/Findings).
+- One failure, quorum still achievable: record it — `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "NON-VOTE (reviewer failed): {reason}" --confidence 0.0 --domain-relevance 0.0` (confidence × relevance = 0 zeroes the weighted contribution; the `NON-VOTE` prefix preserves audit clarity) — then proceed only if the remaining reviewers can still meet threshold.
+- Failure breaks quorum feasibility: re-spawn ONCE (`{vote-id}-reviewer-{N}-retry`); if the retry fails, abort and escalate.
+- Two or more failures in one round: abort and escalate — never re-spawn the whole panel.
 
-- **One reviewer fails, quorum still achievable**: record the failure via `docket vote cast {vote-id} --voter "{vote-id}-reviewer-{N}" --role "{agent-type}" -v reject --summary "NON-VOTE (reviewer failed): {reason}" --confidence 0.0 --domain-relevance 0.0` — `confidence × domain-relevance = 0` zeroes the weighted contribution; the `NON-VOTE` summary prefix preserves audit clarity. Then proceed to Phase 3 only if remaining reviewers can still meet the quorum threshold.
-- **Failure breaks quorum feasibility**: re-spawn ONCE with fresh name (`{vote-id}-reviewer-{N}-retry`). If retry also fails, abort and escalate — do not loop.
-- **Two or more reviewers fail in the same round**: abort and escalate. Do not re-spawn the whole panel.
-
-### Recording Votes
-
-After each reviewer returns via SendMessage, write its COMPLETE structured review text verbatim to `$TMPDIR/vote-{vote-id}/reviewer-{N}.md`, then cast the vote by invoking `~/.claude/scripts/vote_record.sh {vote-id} "{vote-id}-reviewer-{N}" "{agent-type}" "$TMPDIR/vote-{vote-id}/reviewer-{N}.md"` (repo: `src/user/claude-code/scripts/vote_record.sh`):
+**Recording votes.** Write each reviewer's COMPLETE structured review verbatim to `$TMPDIR/vote-{vote-id}/reviewer-{N}.md`, then:
 
 ```bash
 ~/.claude/scripts/vote_record.sh {vote-id} "{vote-id}-reviewer-{N}" "{agent-type}" "$TMPDIR/vote-{vote-id}/reviewer-{N}.md"
 ```
 
-The script parses Verdict/Confidence/Domain Relevance/Findings/Summary directly out of the report file's `### <heading>` sections and invokes `docket vote cast` itself, streaming the findings payload through a temp file via stdin redirection rather than interpolating reviewer prose into a command-line argument or heredoc body — this is what prevents the previously-documented corruption mode (a bare `!` or stray backslash in reviewer prose breaking an inlined `--findings-json` and surfacing as `--findings-json is not valid JSON: invalid character ... in string escape code`, exit 3). It automatically falls back from `--findings-json` to plaintext `--findings -` whenever the parsed `### Findings JSON` block is missing or fails a `jq empty` validity check (and retries with plaintext again if docket itself still rejects the JSON cast) — do not skip recording the vote on a fallback; it is handled for you. A non-zero exit means BOTH the JSON and plaintext casts failed — treat the reviewer as failed per Handling Reviewer Failures below, not a silent skip. The full `docket vote cast` flag set the script wraps is documented in `Skill(docket)`'s `docket vote cast <id>` reference (docket/SKILL.md).
-
-### Non-Vote Decisions
-
-Not every documented decision needs a formal quorum vote. Use `vote_record.sh --non-vote` instead of the full Pre-flight → Phase 1-3 protocol when:
-
-- The decision is reversible, single-owner, and stays within an already-approved plan/epic — the kind of judgment call the Decision-Making Framework (e.g. `~/.claude/agents/senior-engineer.md`) already permits without escalation.
-- None of the "When to invoke (high bar)" criteria above apply — not irreversible/long-blast-radius, no unresolved reviewer disagreement, not `criticality: critical` security-sensitive.
-- You still want a durable, auditable record of *what* was decided and *why*, without paying for reviewer spawns, quorum math, or a `docket vote create` proposal.
-
-Use a formal vote instead the moment any "When to invoke (high bar)" criterion applies.
-
-**Recording mechanism.** `vote_record.sh --non-vote` parses a Decision/Rationale/Summary report (same `### <heading>` convention as the vote-cast path) and records it as a `docket doc` (type `decision`) — NOT a `docket vote` proposal — so it can never be mistaken for a quorum outcome in `docket vote list`. It reuses the identical safe-quoting discipline as the vote-cast path: the assembled body streams through `docket doc create -d "@<tmpfile>"` rather than being interpolated into argv or a heredoc.
-
-```bash
-~/.claude/scripts/vote_record.sh --non-vote "{decision-id}" "{recorder}" "{role}" "{report-file}" ["{issue-id}"]
-```
-
-- `decision-id`: a short label (e.g. `DKT-95-caching-approach`) used in the doc title — NOT a docket vote-id.
-- `recorder`: identity recording the decision (e.g. `team-lead`, `senior-engineer`).
-- `role`: the recorder's agent type.
-- `report-file`: a file with `### Decision` and `### Rationale` sections (both required) and an optional `### Summary`.
-- `issue-id` (optional): a Docket issue to link the resulting doc to via `docket doc link add`.
-
-Report format:
-
-```
-### Decision
-One-line statement of what was decided.
-
-### Rationale
-Why this was decided without a formal quorum vote — the constraint, judgment call, or prior-approval context.
-
-### Summary
-One paragraph summarizing the outcome (optional — defaults to a placeholder if omitted).
-```
-
-View recorded non-vote decisions with `docket doc list --json` (filter by `type: decision`) or `docket doc show {doc-id}` — distinct from `docket vote list`'s quorum records by design.
-
-### Reviewer Prompt Template (Standalone Mode Only)
-
-````
-Agent(name="{vote-id}-reviewer-{N}", subagent_type="{agent-type}", model="opus", prompt="...")
-
-You are participating in a consensus vote as an independent reviewer.
-
-## Proposal Under Review
-- **Type**: {artifact_type}
-- **Criticality**: {criticality}
-- **Domain Tags**: {domain_tags}
-- **Rationale**: {rationale}
-
-## Artifact
-Read the artifact under review at the absolute path below — it is byte-identical for every reviewer; do NOT expect it inline:
-{artifact_path}  (the coordinator's resolved `$TMPDIR/vote-{vote-id}/artifact.md`)
-
-## Your Review Task
-Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,
-and you MUST NOT attempt to infer or coordinate with other reviewers. Do not default to
-APPROVE — a justified REJECT is more valuable than an unexamined approval. Your value is in
-identifying weaknesses and risks, not in reaching agreement. Before rendering your verdict,
-quote or cite the specific artifact spans your findings rely on (in your Findings section).
-If the proposal rests on a premise about CURRENT repo or system state (e.g. a
-risk-acceptance ADR asserting "X is unreachable because Y"), re-verify that premise against
-ground truth NOW — a round spans wall-clock time and a premise true at proposal-creation can go
-stale mid-flight; a stale premise is a Blocker, not a Concern.
-Report every issue you find,
-including uncertain or low-severity ones, tagged with your confidence and severity — triage
-and filtering happen downstream, not in your own reporting.
-
-Produce your review in this EXACT structure:
-
-### Verdict
-One of: approve, approve-with-concerns, reject
-
-### Confidence
-0.0-1.0 — how confident you are in your assessment. Be calibrated, not generous.
-
-### Domain Relevance
-0.0-1.0 — how relevant your expertise is to this proposal. Overstating undermines consensus.
-
-### Findings
-
-**Blockers** (must fix before proceeding):
-- {or "None"}
-
-**Concerns** (should fix or explicitly justify):
-- {or "None"}
-
-**Suggestions** (consider for this or future work):
-- {or "None"}
-
-### Findings JSON
-```json
-{"blockers": ["..."], "concerns": ["..."], "suggestions": ["..."]}
-```
-Emit `[]` for any category with no items.
-
-### Summary
-One paragraph summarizing your overall assessment.
-
-## Delivery (MANDATORY)
-SendMessage the COMPLETE structured review above to the coordinator that spawned you — the agent that sent you this prompt: `team-lead` on its `vote_id`-relay entry, or the invoking session as its name appears in your team roster on an operator `/vote` entry — your plain final-turn text is NOT visible to the coordinator, so an un-sent review is a failed review. Then go idle AWAITING the coordinator's `shutdown_request` and reply `shutdown_response` (approve) when it arrives (lead-initiated per canonical protocol).
-
-## Domain-Specific Checklist
-{Insert the relevant checklist below based on the reviewer's agent type}
-````
-
-CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier — upward-only, mirrors team-lead's escape hatch. Resolve the CURRENT gold alias live from the Tiers block in `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) and pass that bare alias to `model=`; never hardcode it here — tier→alias resolves in the Tiers block and nowhere else, so a literal copied into this file silently overrides the authority it cites.
-
-| Agent | Checklist Focus |
-|---|---|
-| @staff-engineer | Architecture fit, backward compatibility, operational readiness, cross-cutting concerns, pattern adherence |
-| @security-engineer | Authn/authz, input validation, secret/crypto handling, trust boundaries, sandbox/isolation, supply chain, logging-leak risk, DoS surfaces |
-| @senior-engineer | Implementation feasibility, effort accuracy, code quality, testability, dependency impact, edge cases |
-| @sdet | Test coverage adequacy, testability of design, risk coverage, acceptance criteria clarity, regression risk |
-| @project-manager | Scope accuracy, dependency completeness, parallelism validity, effort estimates, risk identification |
-| @ux-designer | User impact, consistency with existing patterns, accessibility, error state coverage, developer experience |
-
----
+The script parses Verdict/Confidence/Domain Relevance/Findings/Summary from the report's `### <heading>` sections and casts via `docket vote cast`, streaming findings through stdin (never argv — a bare `!` or stray backslash in reviewer prose corrupts an inlined `--findings-json`). It falls back from `--findings-json` to plaintext `--findings -` automatically; a non-zero exit means BOTH casts failed — treat that reviewer as failed, never a silent skip.
 
 ## Phase 3: Quorum Evaluation
 
-After all votes have been cast, retrieve the consensus result via `docket vote result {vote-id} --json`. Docket computes quorum automatically — effective weights, approval scores, and threshold evaluation. Parse the JSON to determine whether consensus was reached.
+Retrieve `docket vote result {vote-id} --json` — docket computes weights, approval score, and threshold. **For `critical` proposals additionally enforce the domain floor:** `docket vote show {vote-id} --json | jq '[.data.votes[].domain_relevance] | max >= 0.8'` (note the `.data` envelope); `false` = quorum-not-reached regardless of score.
 
-**For `critical` proposals, additionally enforce the domain-expertise floor**: run `docket vote show {vote-id} --json | jq '[.data.votes[].domain_relevance] | max >= 0.8'` (note the `.data` envelope — the bare `.votes[]` path returns nothing). `false` means no vote clears the floor — treat as quorum-not-reached regardless of approval score and proceed to View Change.
+**Quorum reached:**
 
-### If Quorum Is Reached
+1. `docket vote commit {vote-id} --outcome "Approved with score {score}"`. If the outcome reverses a prior direction, flag to the caller that sub-issues authored before this vote may encode the contradicted direction and need AC reconciliation before implementation proceeds.
+2. A committed outcome seals the voted artifact as the canonical authority: downstream briefs re-stating its values cite the committed artifact verbatim, never paraphrase (for TDDs the verbatim copy is load-bearing and the file+line pointer provenance-only — TDDs are ephemeral; ADR pointers stay dereferenceable). Surface this alongside the commit.
+3. Report **CONSENSUS REACHED** with score, reviewer count, and ALL aggregated findings (including concerns/suggestions from approving reviewers). If invoked by another agent, SendMessage the result to the delegation's `from` address, prefixed `[VOTE]`, cc team-lead per hub-and-spoke.
 
-1. **Commit the proposal** — finalize the approved vote record:
-   ```bash
-   docket vote commit {vote-id} --outcome "Approved with score {score}"
-   ```
-   **AC-reconciliation check** — if the outcome reverses a prior direction (overturns an earlier vote or ADR), flag to the caller that sub-issues authored before this vote may encode the contradicted direction and MUST have their acceptance criteria reconciled before implementation proceeds. The coordinator surfaces this; acting on it is the caller's responsibility.
+**Quorum NOT reached (view change):**
 
-   **Post-vote citation** — a committed outcome seals the voted artifact (TDD, ADR, plan) as the canonical authority for its values. Downstream briefs and dispatches that re-state those values MUST cite the committed artifact verbatim (file + line), never paraphrase — paraphrase drifts from what was approved. For TDD artifacts the verbatim copy is the load-bearing half and the file+line pointer is provenance-only — TDDs are ephemeral and deletable post-implementation (docs-paths.md §Persistence & lifecycle); ADR pointers stay dereferenceable (durable). Surface this to the caller alongside the commit so it propagates into decomposition.
-
-2. Report the outcome to the caller: **CONSENSUS REACHED** with the approval score,
-   reviewer count, and aggregated findings (blockers, concerns, suggestions).
-3. Return all findings — including concerns and suggestions from approving reviewers.
-4. If invoked by another agent, use **SendMessage** to deliver the consensus result
-   to the invoking agent (resolve their address from the delegation_request's `from` field) so they can act on the outcome. Prefix the message with `[VOTE]` for operator observability and cc team-lead per the hub-and-spoke contract so the outcome reaches the operator-visibility relay.
-
-### If Quorum Is NOT Reached (View Change)
-
-1. **No finalization action needed** — a full-quorum vote that misses threshold auto-transitions to `status: rejected` the moment the last vote is cast (verified live); `docket vote commit` cannot be run on it (`must be approved before it can be committed`) and would only error. The proposal already drops out of the default `docket vote list` (open-only) and is visible via `--all` — confirm with `docket vote show {vote-id} --json` if you need to double-check the auto-transition landed.
-2. Aggregate findings by category (blocker/concern/suggestion) **without reviewer attribution** to preserve independence in subsequent rounds.
-3. Notify the caller with `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` plus the aggregated findings. If invoked by an agent, send via SendMessage with the three options inline. If invoked by the user, use AskUserQuestion with `header: "Next step"`, options: `[{label: "Revise and re-vote", description: "Address findings and run a new round"}, {label: "Escalate", description: "Hand off to human decision"}, {label: "Abort", description: "Stop here, no further rounds"}]`.
-4. If the caller revises and re-votes, run a new round from Phase 1 with the revised proposal (same or different reviewers — your choice). Each new round creates a new proposal via `docket vote create` — the coordinator MUST track all proposal IDs across rounds and include them in the final report for auditability. **Issue link hygiene**: if the prior round's vote was linked to a Docket issue, run `docket vote unlink {prior-vote-id} --issue {issue-id}` before linking the new vote to the same issue, so the issue's audit trail points only to the active round.
-5. **Maximum 3 rounds.** After 3 failed rounds, escalate to the human user with:
-   - The original proposal
-   - All proposal IDs from each round (for `docket vote show {id}`)
-   - Consolidated findings from all rounds
-   - Quorum scores from each round
-   - Your recommendation based on the pattern of reviews
-   - **Disposition clarity** — your `--outcome` string on `docket vote commit` MUST distinguish *deferred* ("Escalated — decision deferred") from *cancelled* ("Escalated — proposal cancelled"). A downstream "superseded by X" issue closure is wrong when the decision was only deferred — use "blocked by X" instead.
-
----
+1. No finalization action — a full-quorum vote missing threshold auto-transitions to `status: rejected` when the last vote lands; `docket vote commit` on it only errors. Confirm via `docket vote show {vote-id} --json` if needed.
+2. Aggregate findings by category WITHOUT reviewer attribution (preserves independence in later rounds).
+3. Notify the caller: `[VOTE] Consensus not reached (score: {score}, threshold: {threshold})` + findings. Agent caller: SendMessage with the three options inline; operator: `AskUserQuestion` header `Next step`, options `Revise and re-vote` / `Escalate` / `Abort`.
+4. A revision round re-enters Phase 1 as a NEW proposal — track all proposal IDs across rounds for the final report. Issue-link hygiene: `docket vote unlink {prior-vote-id} --issue {issue-id}` before linking the new round's vote, so the issue's audit trail points only to the active round.
+5. **Maximum 3 rounds.** After 3 failed rounds escalate to the human with: the original proposal, all round proposal IDs, consolidated findings, per-round scores, and your recommendation. **Disposition clarity:** the `--outcome` string distinguishes *deferred* ("Escalated — decision deferred") from *cancelled* ("Escalated — proposal cancelled") — a downstream "superseded by X" closure is wrong when the decision was only deferred; use "blocked by X".
 
 ## Output Format
-
-After completing the protocol, report to the caller:
 
 ```
 ## Consensus Result: {REACHED | NOT REACHED | ESCALATED}
@@ -374,13 +171,11 @@ After completing the protocol, report to the caller:
 **Suggestions**: {list or "None"}
 
 ### Record
-View with: `docket vote show {vote-id}` (or `--json` for full audit data, including per-vote `.voter_role` for the two pre-commit invariants: no `.voter_role` matches the proposer's mapped agent type — except on a TDD-acceptance path where the **author-type carve-out** (Proposer Exclusion step 4) applies, where exactly one `.voter_role` match of the author's mapped type is expected and valid — and all `.voter_role` values are unique).
+View with: `docket vote show {vote-id}` (`--json` for full audit data, including per-vote `.voter_role` for the two pre-commit invariants: no `.voter_role` matches the proposer's mapped type — except one expected author-type match under the TDD-acceptance carve-out — and all `.voter_role` values are unique).
 Full result: `docket vote result {vote-id} --json`
 Committed via: `docket vote commit {vote-id} --outcome "Approved with score {score}"` (echo the executed command for audit replay).
 ```
 
-### Cleanup (MANDATORY — standalone mode only)
+## Cleanup (standalone mode only)
 
-In team mode, the orchestrator owns reviewer/team lifecycle — skip this section. In standalone mode, immediately after reporting the outcome (approved, rejected, or escalated):
-1. **Shut down each reviewer (coordinator-originated)** — after a reviewer delivers its review and goes idle, ORIGINATE a `shutdown_request` to it and await its `shutdown_response` (approve). The coordinator SENDS the request; reviewers AWAIT it and never self-initiate (canonical handshake per `~/.claude/agents/team-lead.md` (repo: `src/user/claude-code/agents/team-lead.md`) §Wrap-up + Rule 7).
-2. **Clean up the team** — clean up the team (the session's single implicit team — no name needed) to reap any reviewer that has not yet exited; its `~/.claude/teams/` resources are auto-removed at session end. Failure to clean up wastes resources and causes agent lifecycle issues.
+Team mode: the orchestrator owns reviewer/team lifecycle — skip. Standalone, immediately after reporting the outcome: ORIGINATE a `shutdown_request` to each idle reviewer and await its `shutdown_response` (reviewers never self-initiate), then clean up the session's implicit team to reap any reviewer that has not exited.

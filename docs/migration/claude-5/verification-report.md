@@ -1220,6 +1220,47 @@ Probe runs are labeled with the definitions SHA so results stay attributable;
 n=1 per probe per arm, so a FAIL is decisive while a PASS is one observation,
 not proof.
 
+### 6.10 R21 verified — by constructing the precondition instead of waiting for it
+
+Three cycles failed to exercise R21 for three different reasons (§6.6, §6.8), and
+§6.9 concluded the failure path had to be seeded, not awaited. This pass did
+that, on the probe-suite pattern: a throwaway repo carrying a draft TDD whose
+pinned worked examples contradict its own stated rounding rule, a mechanical
+check (`scripts/check_tdd_examples.py`) that recomputes every pinned row and
+exits 1 on mismatch, and a `@distinguished-engineer` spawn in `tdd-author`
+fix-round mode with the Blocker delivered in the brief. Ground truth was
+established before the run: the check FAILED with 2 mismatches (one seeded, one
+an authoring accident kept because it made the Blocker richer).
+
+**Verdict criteria were written down before the run**: the revision must cite
+the command, the before result, and the after result — or explicitly name a
+falsifier if the fix is not mechanically checkable. A bare "addressed" is the
+FAIL condition; it is the exact claim class that lost cycle 2 both vote rounds
+(§6.2 B5).
+
+**Result — PASS on all three, with the load-bearing half verified from the
+transcript, not the prose.** The tool-call sequence shows the check executed
+BEFORE the edits (observing exit 1) and again AFTER (observing exit 0), so the
+before/after block in the revision summary is observed evidence, not
+reconstruction — the precise distinction rule :215 exists to enforce. The
+summary cites the command and both results verbatim. Unprompted extras: the
+revision root-caused the seeded flaw correctly (the stale value is exactly what
+floor-rounding produces, distinguishing rule-misapplication from the second
+row's transcription slip), cross-validated the checker's `apply()` against the
+Decision text "so the pass is not the script agreeing with itself", held scope
+to the one file, and left status at `draft` for the vote owner per vote-time
+binding. Cost: **$1.45 / 75s / 9 turns**, against three failed full-cycle
+attempts at $9–37 each.
+
+**Scope of the claim, stated exactly.** This verifies the rule fires in its
+carrier: a DE spawn whose definition holds :215, answering a Blocker. The full
+relay path — a live acceptance panel raising the Blocker and team-lead
+dispatching the revision round — remains unexercised; and the Blocker text named
+the check, so citing the command was partially prompted, while running it twice
+and citing observed results was not. n=1: a FAIL would have been decisive; this
+PASS is one observation. R21 moves from "applied, preconditions never met" to
+**verified in-carrier**.
+
 ## 7. Fix list
 
 ### Applied (this pass)
@@ -1329,7 +1370,7 @@ unchanged).
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. **Cycle 5 (§6.8) is real evidence: two sdet-class agents ran (named panel reviewer + report-only verifier) and the root stayed clean. The producing role was actually exercised this time** | — |
-| ~~R18~~ | superseded by **R21** — **APPLIED** (§7) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. **Still unverified after THREE attempts (§6.8): cycle 4 classified Small so the rule's file never loaded; cycle 5 classified Medium and drew the full panel, but the design passed round 1, so no revision round occurred. R21 governs failure-path behavior and the other fixes have made that path hard to reach** | Needs a deliberately seeded design flaw to induce a Blocker — not another re-run |
+| ~~R18~~ | superseded by **R21** — **APPLIED AND VERIFIED IN-CARRIER** (§6.10) | Re-diagnosed: the existing rules govern facts in the artifact, not remediation claims about findings. Three full cycles never met the preconditions; the seeded-Blocker probe §6.9 prescribed then did, at $1.45: the revision ran the failing check before and after editing and cited observed results, never a bare "addressed". The full panel-relay path remains unexercised | — |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it. **Now answerable (§6.8): cycle 5 is the same Medium pattern and cost $36.76 / 54.4 min vs $33.97 / 97.7 min — 8% MORE expensive, though it shipped working code where the baseline shipped none. Cost per outcome improved enormously; the raw price of a Medium cycle did not fall. The calibration decision is untouched by these fixes** | Migration owner |
 | ~~R20~~ | **Spawn-name substitution** — **APPLIED AND VERIFIED LIVE** (§6.6) | The `{DOCKET-ID}` placeholder half that stayed PARTIAL in §6.3 is now confirmed: cycle 4 spawned `impl-DKT-1` and `impl-DKT-1-fix-1`, the canonical form with the real issue ID, not a descriptive slug | — |
 | ~~R29~~ | **Pattern classification unstable at the Small/Medium boundary** — **APPLIED AND VERIFIED LIVE** (§6.7, §6.8) | Root cause was an underdetermined rule, not nondeterminism: the Small-pattern bar offered "consult `advisor` first **or** graduate to Medium" with no rule for choosing, so both classifications were compliant. Fixed by giving that "or" an operational test — count interacting open architectural dimensions — and by scoping the lighter-pattern tie-break so it cannot override a test result. **Cycle 5 (§6.8) confirms it: same task, same repo, Small → Medium, full acceptance panel drawn** | — |

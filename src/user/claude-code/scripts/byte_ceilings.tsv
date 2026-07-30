@@ -29,7 +29,7 @@
 # header claimed nothing was excused while the record already justified all
 # thirteen, which overstated the breach count by an order of magnitude.
 
-file	src/user/claude-code/agents/team-lead.md	75961	RATCHET, not a floor: recorded high-water. Charter: "may not exceed its recorded high-water mark without a stated reason". Lower only when a verified reduction lands.
+file	src/user/claude-code/agents/team-lead.md	78150	RATCHET, not a floor: recorded high-water. Charter: "may not exceed its recorded high-water mark without a stated reason". Lower only when a verified reduction lands. High-water raised 75961 -> 78150 (+2189B) by the pre-dispatch brief-review checklist commit, whose message states the reason (six recurring dispatch failure classes); the delta is recorded here because the commit itself did not state it.
 each	src/user/claude-code/skills/*/SKILL.md	10000	charter: "no SKILL.md over 10KB without a recorded justification"
 
 # Ratified >10KB skills. Ported verbatim in substance from

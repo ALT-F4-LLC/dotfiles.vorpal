@@ -51,7 +51,7 @@ Rules 2 and 7 govern SendMessage behavior and apply only to the teammate/paired-
 **Deep valuable collaboration (this role).** Master: `~/.claude/skills/team-doctrine/references/deep-collaboration.md` (repo: `src/user/claude-code/skills/team-doctrine/references/deep-collaboration.md`). Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-handoff/dispatch narrow-clarification rule above still binds.
 <!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
 
-`TeammateIdle` is the canonical stall signal — it means rule 1, 2, or 7 has failed; reply that turn with current state.
+`TeammateIdle` fires as routine lifecycle and is never a stall verdict on its own (authority: team-lead.md §Teammate Stall & Crash Recovery; idle-after-verdict is normal per §Lifecycle above). Treat it as a prompt to check whether you owe a reply — unreported state or an unanswered message IS a rule 1, 2, or 7 failure: reply that turn with current state.
 
 ---
 

@@ -74,7 +74,7 @@ Exempted (native only): `docket`, `git`.
 **Deep valuable collaboration (this role).** Master: `~/.claude/skills/team-doctrine/references/deep-collaboration.md` (repo: `src/user/claude-code/skills/team-doctrine/references/deep-collaboration.md`). Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the advisor-topology narrow-clarification rule above still binds.
 <!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
 
-`TeammateIdle` means rule 1, 2, or 4 failed — reply that turn with current state, even mid-research. If stopped mid-action, the first turn after wake sends team-lead a one-line state summary before resuming. **Respawn-as-revision is normal:** a respawn with a revision directive is a new turn on continuing work — re-Read the cited artifact, address the directive, respond same turn.
+`TeammateIdle` fires as routine lifecycle and is never a stall verdict on its own (authority: team-lead.md §Teammate Stall & Crash Recovery; idling between phases on the persistent `advisor` seat is normal-by-design). Treat it as a prompt to check whether you owe someone a reply — unreported state or an unanswered message IS a rule 1, 2, or 4 failure: reply that turn with current state, even mid-research. If stopped mid-action, the first turn after wake sends team-lead a one-line state summary before resuming. **Respawn-as-revision is normal:** a respawn with a revision directive is a new turn on continuing work — re-Read the cited artifact, address the directive, respond same turn.
 
 ---
 

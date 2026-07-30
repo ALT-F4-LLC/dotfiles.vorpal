@@ -110,7 +110,7 @@ Evidence classes:
 | **B6** | Review recall holds live (no self-filtering) | **PASS** | §6.1 — cycle 3 reported a pre-existing Critical unasked; cycle 2 rejected on evidence |
 | **B7** | Authority gate — no override-on-merits | **PASS** | §6.1 — cycle 3 escalated a Block rather than dispositioning it |
 | **B8** | Cycles complete unattended | **FAIL → FIXED, verified** | §6.2 B1 — cycle 2 died mid-round-3. R15 (§7) ships unconditional wait-arming; confirmed live |
-| **B9** | Rule 8 security panel provisioned as specified | **FAIL** | §6.2 B2 — 1 of 3 seats, no deliberation in transcript |
+| **B9** | Security panel provisioned as specified | **FAIL → FIXED** | §6.2 B2 — the 3-seat roster was unbuildable on Direct/Small; R16 (§7) sets a 2-seat floor there |
 | **B10** | Scratch files stay out of the working tree | **FAIL → rule gap fixed** | §6.2 B3 — 9 `.sdet_*` files left in the repo root; the rule never prohibited that destination. R17 (§7) closes it |
 | **B11** | Spawn names match the dispatch table | **FAIL (1 of 3)** | §6.2 B4 — three forms across four runs: `impl-DKT-1`, bare `senior-engineer`, `impl-cart-linecount` |
 | **B12** | Acceptance vote converges | **FAIL** | §6.2 B5 — 2 rounds rejected on unverified claims, into round 3 of 3 |
@@ -550,14 +550,33 @@ the G3 defect fixed in §7 — an instruction whose premise does not hold in the
 environment it runs in. **Severity: high** — it makes unattended/CI operation
 unreliable, and neither gap is documented.
 
-**B2 — Rule 8's security track under-provisioned 1-of-3.** Rule 8 requires any
-review touching auth at a privilege boundary to run `advisor` (general, single)
-+ `security-advisor` + `security-reviewer-2`. Cycle 3 ran a single unnamed
-`@security-engineer` subagent — no general advisor, no second security
-reviewer. The transcript contains no mention of Rule 8, `security-advisor`, or
-`security-reviewer-2`, so this was an unconsidered omission rather than a
-deliberate downgrade. **Severity: high** — it is the one panel the definitions
-call "non-negotiable on any security surface."
+**B2 — the security panel was unbuildable at the size it was needed.** Cycle 3
+ran a single `@security-engineer` subagent where Rule 8 specifies three seats.
+Initially recorded as an unconsidered omission; investigation showed the
+opposite — team-lead *did* fire the flag, calling it "the mandatory security
+review (non-negotiable on an auth surface)" in its first turn. What it could
+not do was build the panel.
+
+Three rules collided on a security-sensitive trivial change, and no reading
+satisfied all of them:
+
+| Rule | Says |
+|---|---|
+| `Direct Task` (L109) | "no plan, **no review**" — roster is `@senior-engineer` alone |
+| Security Track (L82) | security review "non-negotiable on any security surface" — but the carve-out named **Small** only, never Direct |
+| Rule 8 / C3 | that review is `advisor` + `security-advisor` + `security-reviewer-2` — **persistent seats Direct never spawns** |
+| QF-2 | "never drops to a lone security reviewer" |
+
+So the 3-seat roster was unconstructible at that pattern size without standing
+up two persistent seats for a one-line fix, and team-lead's single reviewer was
+a reasonable resolution of an underspecified rule rather than negligence — it
+violated QF-2 only because no constructible alternative existed. Emphasis would
+have been the wrong fix: the trigger is already stated in six places.
+
+**Resolved by operator decision (R16, §7): a two-seat floor on Direct/Small** —
+`security-advisor` + `security-reviewer-2`, dropping the general `advisor` whose
+value on a ≤3-file diff is low, keeping the cross-checking independence QF-2
+demands. **Severity: was high; now closed.**
 
 **B3 — Reviewer subagents wrote scratch files into the target repo.** Cycle 2
 left nine files in the repo root: `.sdet_probe.py`, `.sdet_probe2.py`,
@@ -641,6 +660,7 @@ recovery path.
 | **G1** — `TeammateIdle` no longer asserted as proof a rule failed; reframed as routine lifecycle that *prompts* the owed-reply check, citing team-lead.md §Teammate Stall & Crash Recovery as authority | `agents/staff-engineer.md:77` | class 1.6 |
 | **G2** — same reframing, citing the file's own §Lifecycle (idle-after-verdict is normal) | `agents/sdet.md:54` | class 1.6 |
 | **G3** — unsatisfiable "if Write is absent, Write…" replaced with the actual mechanism: a quoted-delimiter heredoc under `$TMPDIR`, pointing at `senior-engineer.md §Shell hygiene` as master | `agents/security-engineer.md:55`, `agents/ux-designer.md:69` | logic defect |
+| **R16** — security-review floor: Direct/Small now specifies two security seats; Rule 8's 3-seat roster scoped to Medium+ where the `advisor` seat exists | `agents/team-lead.md` (5 sites: Security Track, Direct heading, dispatch table, C3, QF-2) | rule collision |
 | **R17** — scratch-file destination: `$TMPDIR` rule now names the working tree as prohibited, not just `/tmp` | `agents/senior-engineer.md` (master), `agents/sdet.md` | rule gap |
 
 **On G1/G2 — which side was wrong.** `team-lead.md:338` is the authority and
@@ -729,7 +749,7 @@ unchanged).
 | R13 | **`evolve-orchestration-core.md` Consumers line** lists 3 of 5 real consumers (G9) | Out-of-scope `evolve-*` consumers must be re-checked in the same edit | Phase 3 |
 | R14 | **Decide the fate of `src/user/opencode/agents/`** (398KB, unmigrated) (§3.8) | A second, now-divergent generation of the same 8 agents; migrate, regenerate, or retire | Migration owner |
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
-| **R16** | **Rule 8 security panel under-provisioned** (§6.2 B2) | The panel the definitions call "non-negotiable"; needs the trigger made unmissable at dispatch time, not just stated in Rule 8 | Phase 2 follow-up |
+| ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
 | **R18** | **Grounded-progress-claims snippet not holding on the Fable seat** (§6.2 B5) | Two vote rounds lost to claimed-but-unverified fixes. The §2.1 snippet is present; the gold seat's authoring path may need the claim-audit made a pre-emission step | Phase 2 follow-up |
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |

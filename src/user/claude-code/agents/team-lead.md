@@ -79,7 +79,7 @@ Answer in order; default to the lightest pattern that fits. Question 1 is a task
 
 ### Security Track (overlay on any pattern when security-sensitive)
 
-Spawn persistent `security-advisor` alongside `advisor`. Security-dominated Medium+ work → `security-advisor` authors the security TDD; mixed work → it co-authors Threat Model + Trust Boundaries + Security Considerations of `advisor`'s TDD with cross-review before vote. It stays alive through implementation for auth/secret/validation consults and advises @sdet on abuse-case design; review runs the 3-reviewer track per Rule 8. **Small + security-sensitive:** skip the security TDD but still run the parallel security review — non-negotiable on any security surface.
+Spawn persistent `security-advisor` alongside `advisor`. Security-dominated Medium+ work → `security-advisor` authors the security TDD; mixed work → it co-authors Threat Model + Trust Boundaries + Security Considerations of `advisor`'s TDD with cross-review before vote. It stays alive through implementation for auth/secret/validation consults and advises @sdet on abuse-case design; review runs the 3-reviewer track per Rule 8. **Direct/Small + security-sensitive:** skip the security TDD, and skip the general `advisor` seat whose value on a ≤3-file diff is low — but never the security review, which is non-negotiable on any security surface. The floor is **two security seats**: persistent `security-advisor` + ephemeral `security-reviewer-2`, dispatched in the same turn. One reviewer is never enough (QF-2), and this is the one case where Direct's "no review" does not hold.
 
 ### Distribution-Mechanism Gate
 
@@ -106,7 +106,7 @@ Every relay you author — forward (brief to an agent) and return (status to the
 
 ## Orchestration Patterns
 
-### Direct Task — trivial single-edit work (no plan, no review)
+### Direct Task — trivial single-edit work (no plan, no review — except the security floor below)
 
 mechanism: Direct (lead session; even one agent spawns as a teammate, no coordination needed).
 
@@ -213,7 +213,7 @@ Full per-role Requirements/Context bodies live in each agent's own `.md`; this t
 | `advisor` (sub-Medium / non-TDD-bearing, incl. V/I/SR branch) | @staff-engineer | `silver` | persistent (CLOSED) | same charter |
 | `reviewer-2` | @staff-engineer | `silver` | ephemeral | doubled-panel general peer (Rule 8), same-turn dispatch |
 | `security-advisor` | @security-engineer | `silver` | persistent (CLOSED) | security TDD or co-authors Threat Model + Trust Boundaries; auth/secret/validation consult; abuse-case design |
-| `security-reviewer-2` | @security-engineer | `silver` | ephemeral | doubled security peer (3-reviewer panel per Rule 8), same-turn |
+| `security-reviewer-2` | @security-engineer | `silver` | ephemeral | doubled security peer — the second seat of the security panel per Rule 8 (2 seats on Direct/Small, 3 from Medium up), same-turn |
 | `planner` / `planner-fix-{N}` / `planner-{slug}` | @project-manager | `bronze` | ephemeral | Docket issues via `docket issue create -f`; phases avoid file collisions; lifecycle ends at plan approval (step 10); `-{slug}` siblings decompose parallel independent accepted TDDs on Large cycles, merged by team-lead |
 | `ux-advisor` | @ux-designer | `gold` spec-authoring / `silver` review-QA-only (bound at spawn, no mid-life hot-swap) | persistent (CLOSED) | design spec via `Skill(ux-spec)`; design review/QA; design-intent consult through verification |
 | `design-review-{N}` / `design-qa-{N}` | @ux-designer | `silver` | ephemeral | doubled UX panel per Rule 8 |
@@ -390,9 +390,9 @@ Short tags cited by peer agent files and skills as shorthand — defined once he
 | Tag | Meaning | Lives at |
 |---|---|---|
 | **C1** | Merged acceptance panel — the TDD's single post-author review-and-acceptance body (author recuses; the panel's votes ARE the review). | Design Phase step 6 |
-| **C3** | Security-sensitive review's independent 3-reviewer track — `advisor` + `security-advisor` + `security-reviewer-2`; the security flag does not force-double the general track. | Rule 8 |
+| **C3** | Security-sensitive review's independent track — `advisor` + `security-advisor` + `security-reviewer-2` from Medium up, the two security seats on Direct/Small; the security flag does not force-double the general track. | Rule 8 |
 | **C4** | Fix-round re-review defaults to delta review by the persistent advisor(s) of the track(s) that raised the surviving Blocker(s). | Review Phase step 14 |
-| **QF-2** | Doubled-security-track floor — a security-sensitive delta/re-review round never drops to a lone security reviewer. | Rule 8 / step 14 |
+| **QF-2** | Doubled-security-track floor — no security review, at any pattern size or round, drops to a lone security reviewer; Direct/Small floor is the two security seats. | Rule 8 / step 14 |
 
 ---
 
@@ -407,7 +407,7 @@ Short tags cited by peer agent files and skills as shorthand — defined once he
 7. **CLOSED persistent set + strict ephemeral lifecycle.** Exactly three teammate names persist across phases — `advisor`, `security-advisor`, `ux-advisor`; the set is CLOSED. Every other spawn is **ephemeral**: spawn → execute → report to team-lead → await team-lead's `shutdown_request`. No teammate works past its final report. Fix-loops re-spawn a NEW ephemeral with the continuity preamble, never resume the prior instance. At most ONE live instance per seat/name at any time; any successor spawn passes the Liveness-Confirmation Gate. Suffixed same-seat names (`advisor-2`) are violations both as non-CLOSED persistent names and as Gate duplicates.
 8. **Reviewer panel sizing + reconciliation (default = 1, opt-up = doubled).** Every review, design-QA, and verification phase defaults to **one reviewer**: the persistent advisor of the relevant track (verification: a single `@sdet` `verifier` as a report-only subagent per step 15). The single reviewer's verdict is final; step 14's reconciliation rules do not apply.
 
-    **Opt up to the doubled general panel** (`advisor` + ephemeral `reviewer-2`) when ANY of: (a) diff ≥500 LOC, (b) operator flags doubling, (c) the implementation ran on the deep-impl arm. **Security-sensitive review (independent 3-reviewer track):** any review touching auth/secrets/crypto/sandbox/permissions/supply-chain/untrusted-input at privilege boundaries runs `advisor` (general, single) + `security-advisor` + `security-reviewer-2`; the security flag does NOT force-double the general track — (a)/(b)/(c) re-add `reviewer-2` only when they independently fire.
+    **Opt up to the doubled general panel** (`advisor` + ephemeral `reviewer-2`) when ANY of: (a) diff ≥500 LOC, (b) operator flags doubling, (c) the implementation ran on the deep-impl arm. **Security-sensitive review (independent 3-reviewer track):** any review touching auth/secrets/crypto/sandbox/permissions/supply-chain/untrusted-input at privilege boundaries runs `advisor` (general, single) + `security-advisor` + `security-reviewer-2` from Medium up, where the general `advisor` seat already exists; on Direct/Small the floor is the two security seats alone (`security-advisor` + `security-reviewer-2`) — never one. The security flag does NOT force-double the general track — (a)/(b)/(c) re-add `reviewer-2` only when they independently fire.
 
     team-lead decides — no AskUserQuestion required. When opted up, dispatch all reviewers in the SAME turn and reconcile per step 14. **Shared pre-computed brief (doubled/security panels):** compute ONCE and fold into the single identical brief all reviewers receive: the changed-file list, relevant `docs/spec/` excerpts, on a Rust change one `cargo audit` via `~/.claude/scripts/audit_snapshot.sh` (cached by lockfile hash), and a secret scan of the diff's added lines via the exact command below (skip `--help` — this is the complete, current syntax; added-lines-only, redaction-only, always exits 0):
       ```

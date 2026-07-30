@@ -154,3 +154,23 @@ DOCTRINE-SCRIPT-TRUST-LOCAL	src/user/claude-code/agents/distinguished-engineer.m
 # literally `CANONICAL:BANNER:BEGIN/END`, not `BANNER-CALLER-SIDE-EFFECT`.
 BANNER-CALLER-SIDE-EFFECT	src/user/claude-code/skills/commit/SKILL.md	/CRITICAL BANNER -->/d;s/^.*(5) Caller-side effect:/(5) Caller-side effect:/	BANNER
 BANNER-CALLER-SIDE-EFFECT	src/user/claude-code/skills/review-and-comment/SKILL.md	/CRITICAL BANNER -->/d;s/^.*(5) Caller-side effect:/(5) Caller-side effect:/	BANNER
+
+# ---------------------------------------------------------------------------
+# DELIBERATE EXCLUSIONS — multi-carrier CANONICAL tags that are NOT parity-locked.
+#
+# doctrine_check.sh ignores these (they are ordinary # comments to it). They
+# exist so test_doctrine_manifest_completeness.py can tell a DELIBERATE omission
+# from a FORGOTTEN one. Without them, a tag that should be parity-locked can be
+# added and silently never checked -- indistinguishable from the legitimate
+# per-carrier blocks below. Format: #EXCLUDE<TAB>TAG<TAB>reason
+#
+# The prevailing convention for an intentionally per-carrier block is the
+# phrase "(this role)" in its opening sentence. That convention is NOT applied
+# uniformly (see the two flagged below), so it is a signal, not the authority --
+# this list is the authority.
+#EXCLUDE	DOCKET-CLI-LOCAL	per-role by design: each carrier lists the docket commands that role actually runs; 8/8 carriers say "(this role)"
+#EXCLUDE	TRUTH-FIRST-DEBUGGING-LOCAL	per-role by design: shared master, per-role banner and emphasis; 7/7 carriers say "(this role)"
+#EXCLUDE	DEEP-COLLABORATION-LOCAL	per-role by design: 6/6 carriers say "(this role)"
+#EXCLUDE	SANDBOX-RECOVERY-LOCAL	per-role by design: 6/6 carriers say "(this role)"
+#EXCLUDE	DOCS-PATHS-LOCAL	per-role write paths; REVIEW: only 7/16 carriers carry "(this role)", so the intent is asserted here rather than evidenced by the convention
+#EXCLUDE	AUTHORING-VERIFICATION-GATES-LOCAL	per-role by design; REVIEW: only 1/2 carriers carries "(this role)", so the intent is asserted here rather than evidenced by the convention

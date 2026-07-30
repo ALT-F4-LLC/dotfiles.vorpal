@@ -1190,13 +1190,35 @@ the relocation natural experiment FAILED — relocated content scored *denser* t
 its source file, so density is orthogonal to relocatability and cannot guide what
 to move.
 
-**Open, and now the gating question.** No recorded run has ever manipulated
-definition size, and §6 does not record the byte-state each cycle ran under, so
-no size correlation is recoverable retrospectively either. The next instrument
-should be a rule-recall probe suite — one short headless run per load-bearing
-rule per arm — not another full-cycle A/B, whose coarse bimodal outcome variable
-needs k≥5 per arm at $9-37 each. The probe suite is not new scope; it is the
-unbuilt half of charter :404-410.
+**The probe suite exists and has its first baseline.** `rule_probe.sh` +
+`rule_probes.tsv` implement charter :404-410's prescribed instrument, scoped to
+the one answerable size question: does a named load-bearing behavior still fire.
+Each assertion ships with a self-test proving it can detect its own violation,
+and a dry-run mode validates the harness without spend.
+
+First run — all four probes PASS against definitions @ `d37493b` (post-revert,
+freshly installed):
+
+| probe | asserts | result |
+|---|---|---|
+| commit-gate | HEAD unmoved after a fix task | PASS |
+| scratch-hygiene | no `.sdet_*`/`.docket_*`/`.tmp_*` in repo root | PASS |
+| dispatch-ledger | calibration ledger written at wrap-up | **PASS** |
+| spawn-naming | every spawn name canonical | PASS |
+
+The dispatch-ledger PASS completes §6.9's evidence chain: inline → the ledger
+was written (cycle 4); relocated → it was not, and the reference was read zero
+times (cycle 5); re-inlined → written again (this run). Three observations with
+a documented counterfactual on each side of the middle one — the closest thing
+to a causal result on rule placement this record holds.
+
+**Still open.** No recorded run has ever manipulated definition size, and §6
+does not record the byte-state each cycle ran under, so no size correlation is
+recoverable retrospectively. Any future cut to an always-resident definition
+should run this suite on both arms — the baseline above is the "before" column.
+Probe runs are labeled with the definitions SHA so results stay attributable;
+n=1 per probe per arm, so a FAIL is decisive while a PASS is one observation,
+not proof.
 
 ## 7. Fix list
 

@@ -24,7 +24,7 @@ omit a real capability. All three byte-reduction floors miss by roughly 2×, and
 the agent-frontmatter re-derivation (remediation item #14) was applied to skills
 but never to agents — those `effort` pins are byte-identical to the baseline.
 
-**Twelve fixes applied** (§7): two broken references, both `TeammateIdle`
+**Fourteen fixes applied** (§7): two broken references, both `TeammateIdle`
 contradictions, the unsatisfiable instruction, and the headless-mode contract
 (R15 — applied after Part B; its first design was falsified by live testing and replaced), plus all four remaining behavioral defects (R16, R17, R20, R21). **All five cross-file contradictions are now resolved** (R22–R24 closed the
 remaining three). Nine items remain routed,
@@ -298,16 +298,35 @@ skill is visible in this harness build; and both scope-table COUPLING comments
 cite `DKT-250`, which returns `NOT_FOUND` against the local Docket DB (max ID
 DKT-191). Either may be a forward reference.
 
-### 3.8 Out of scope but worth recording — the unmigrated `opencode` fleet
+### 3.8 A finding this report previously made in error — `opencode`
 
-`src/user/opencode/agents/` holds a **parallel copy of the same 8 agents,
-398,405B, untouched by this migration** (`team-lead.md` there is 86,569B vs
-76,878B in `claude-code/`). The charter scopes the migration to
-`src/user/claude-code/`, so this is correctly out of scope — but the repo now
-carries two divergent generations of one fleet, and `src/user.rs:481` inlines
-agent descriptions for the opencode variant as Rust string literals, a third
-place descriptions can drift from the definitions they describe. Worth an
-explicit decision: migrate, regenerate from the claude-code sources, or retire.
+An earlier revision flagged `src/user/opencode/agents/` (398KB, 8 same-named
+roles) as "a second, now-divergent generation of the same fleet" and asked
+whether to migrate, regenerate, or retire it. **That was wrong**, and it is
+recorded here rather than silently deleted because it is the kind of error a
+directory listing invites.
+
+`opencode` is a deliberate port to a different harness, not a stale copy:
+
+| | claude-code | opencode |
+|---|---|---|
+| shared unique lines (`team-lead`) | — | **57 of 276 (~20%)** |
+| `teammate`/`SendMessage` mentions | 51 | **3** |
+| model/effort pins | YAML frontmatter | none — configured in `opencode.json` |
+
+OpenCode dispatches subagents that return summaries; it has no
+persistent-teammate or peer-messaging substrate, so Rule 7's lifecycle, the SP
+protocol, and the charter §3 frontmatter deltas have no counterpart there. Its
+own history documents the port (`migrate … agents to opencode harness`,
+`convert to native agent/skill structure`, `configure cross-provider model
+tiers`).
+
+The charter scopes this migration to `src/user/claude-code/`; `opencode` is
+correctly outside it and needs no decision from this work. The one narrow
+observation that survives is that improvements have historically been ported
+across (`feat(codex): port designer improvements from claude code`), so its
+owner may eventually want the Claude 5 changes — a separate piece of work whose
+first question is which of them even apply to a harness with no teammates.
 
 ### 3.9 Mechanical doctrine parity — all green
 
@@ -440,6 +459,59 @@ the definition's `effort:` and "are the only per-dispatch xhigh lane." Since
 class. This is a live cost setting, not a no-op.
 
 ---
+
+### 4.5 R6 re-diagnosed — the target is reachable; a remediation was skipped
+
+Phases 2 and 3 attribute the byte shortfall to structurally pinned content.
+Measured against the current tree, that explanation covers **77,550 of 367,955
+agent bytes — 21%**:
+
+| file | bytes | pinned | % |
+|---|---:|---:|---:|
+| team-lead.md | 79,889 | 13,438 | 17% |
+| senior-engineer.md | 48,378 | 10,947 | 23% |
+| sdet.md | 42,409 | 10,168 | 24% |
+| distinguished-engineer.md | 42,142 | 9,685 | 23% |
+| ux-designer.md | 37,693 | 9,728 | 26% |
+| security-engineer.md | 41,734 | 7,610 | 18% |
+| project-manager.md | 34,531 | 7,673 | 22% |
+| staff-engineer.md | 41,179 | 8,301 | 20% |
+| **total** | **367,955** | **77,550** | **21%** |
+
+("Pinned" = CANONICAL-fenced blocks + fenced command syntax + markdown tables —
+i.e. everything parity-locked, drift-guarded, or machine-parsed.)
+
+That leaves **290,405 bytes of free prose** against a 170,000-byte total
+target: reaching it requires free prose to fall to ~92,450, a 68% cut. Aggressive
+— but the charter's own reference point is Anthropic removing 80% of Claude
+Code's system prompt with no eval regression. Structural pinning explains 77KB
+of a 193KB gap; it does not explain the gap.
+
+**The specific cause is identifiable.** Agents have **no `references/` split at
+all** — every one is a single file. The audit's ranked remediation #1 was
+"team-lead.md → ≤30KB (3-way references split + 1.2/1.4 deletions + marker
+map)", splitting the Execution Workflow into `references/stall-recovery.md`,
+`shutdown-lifecycle.md`, and `review-reconciliation.md` (~57KB out, ~8KB
+inline). It was never executed: Phase 2 declared reference-file creation out of
+scope ("skills are Phase 3"), Phase 3 covered only `skills/`, and the item fell
+between them. `team-lead.md`'s section profile still shows it:
+
+| section | bytes | % of file |
+|---|---:|---:|
+| Execution Workflow | 34,697 | **43.4%** |
+| Spawning Templates | 14,015 | 17.5% |
+| Rules | 7,426 | 9.3% |
+| Pre-flight | 7,148 | 8.9% |
+
+61% of the file sits in the two sections the audit named. The content is
+largely contingency material — stall ladders, shutdown edge cases, review
+reconciliation — which is what progressive disclosure is for: loaded when the
+exception fires, not every turn.
+
+So R6 is not a request to ratify a missed target. It is a scoped piece of work
+with a known shape, and the charter's caveat still governs its execution —
+reduction is a consequence of applying §1, never a goal pursued by deleting
+context the model cannot reconstruct.
 
 ## 5. `/doctor`
 
@@ -710,6 +782,8 @@ recovery path.
 | **G1** — `TeammateIdle` no longer asserted as proof a rule failed; reframed as routine lifecycle that *prompts* the owed-reply check, citing team-lead.md §Teammate Stall & Crash Recovery as authority | `agents/staff-engineer.md:77` | class 1.6 |
 | **G2** — same reframing, citing the file's own §Lifecycle (idle-after-verdict is normal) | `agents/sdet.md:54` | class 1.6 |
 | **G3** — unsatisfiable "if Write is absent, Write…" replaced with the actual mechanism: a quoted-delimiter heredoc under `$TMPDIR`, pointing at `senior-engineer.md §Shell hygiene` as master | `agents/security-engineer.md:55`, `agents/ux-designer.md:69` | logic defect |
+| **R25** — `brief`'s three stale `HARD GATE` references retargeted to the label team-lead actually uses | `skills/brief/SKILL.md` | dangling anchor |
+| **R26** — four agent descriptions corrected to match their bodies (team-lead's memory write path, staff's tier-split review/authoring seats, PM's `docs/spec` write path, senior's `docs-author` seat) | `agents/{team-lead,staff-engineer,project-manager,senior-engineer}.md` | description drift |
 | **R22** — banned-phrase drift: all four prose copies aligned to `report_lint.py`'s six and cite it as authority | `skills/design-review`, `agents/sdet.md` | class 1.6 |
 | **R23** — doc-family sync claim scoped to the members that carry the section; `init-specs` exclusion stated | `skills/{tdd,prd,adr,ux-spec}` | class 1.6 |
 | **R24** — `evolve-orchestration-core` Consumers list corrected 3 → 5 against live citers | `skills/team-doctrine/references/` | class 1.6 |
@@ -793,16 +867,16 @@ unchanged).
 |---|---|---|---|
 | R1 | **Agent frontmatter sweep** — re-derive `effort` on 6 agents per charter §3 (§4.4) | Needs an effort sweep on real evals, not a text edit; changes dispatch cost on the two most common spawn classes | Phase 2 follow-up (remediation #14) |
 | ~~R2~~ | **Banned-confidence-phrase list** — **APPLIED as R22** (§7) | All four prose copies aligned to `report_lint.py`'s six and citing it. Open follow-up is separate: whether `I'm sure`/`trust me` should be *added* to the linter | — |
-| R3 | **`brief` skill's stale "HARD GATE" label** ×3 incl. the frontmatter description (§3.5) | Trivial as text, but the wording is the operator-facing intake contract with team-lead's Pre-flight step 1 — rename both ends together | Phase 3 |
-| R4 | **Record team-lead's marker-ceiling exception** (15 vs ≤10; all 15 map to keep-list) (§4.2) | Documentation decision belonging with the other §6.7 exceptions | Migration owner |
-| R5 | **Record the pointer-stub exception** to the zero-duplication target (§4.3) | Charter §4 and remediation #3 conflict; needs an explicit ruling | Migration owner |
-| R6 | **Byte-target shortfall** — agents 2.13×, team-lead 2.56×, skills −30.3% vs −50% (§4.1) | Closing it requires the coordinated all-carriers + manifest edits and consumer-lockstep changes both phases declared out of scope | Migration owner — re-scope or ratify |
-| R7 | **Finish the three DELETE-WHOLE-FILE verdicts** (`laziness-discipline`, `fable-completeness-heuristics`, `team-conventions`) (§3.4) | Requires repointing live citers in Phase 2 agents and out-of-scope `evolve-*` skills in lockstep | Phase 3 |
+| ~~R3~~ | **`brief` stale "HARD GATE" label** — **APPLIED** (§7) | All 3 sites now cite "Pre-flight step 1"; anchor verified present in team-lead.md | — |
+| ~~R4~~ | **team-lead marker-ceiling exception** — **RECORDED** (§7b) | All 15 markers map to keep-list categories; the charter's stated gate is the mapping, not the count | — |
+| ~~R5~~ | **Pointer-stub exception** — **RECORDED** (§7b) | Charter §4 and remediation #3 conflict; the remediation shipped. Literal zero is a different architecture, not a cleanup | — |
+| R6 | **Byte-target shortfall** — agents 2.13×, team-lead 2.56×, skills −30.3% vs −50% (§4.1) | **Re-diagnosed (§4.5): the target is reachable and one large remediation was never executed.** Only 21% of agent bytes are structurally pinned; agents have no `references/` split at all, and the audit's item #1 (team-lead 3-way split) fell between Phase 2 (no reference files) and Phase 3 (skills only) | Scoped work, not a ratification |
+| ~~R7~~ | **DELETE-WHOLE-FILE verdicts** — **SUPERSEDED** (§7b) | Written against pre-migration content that has since changed; executing them now would delete keep-list material | — |
 | ~~R10~~ | **Doc-family COUPLING vs init-specs** — **APPLIED as R23** (§7) | Sync claim scoped to the four members that carry the section, exclusion stated inline; `coupling_check.py` accepts the corrected roster | — |
 | R11 | **`verify-ac` `uncommitted` scope misses untracked files** (G5) | Real behavioral defect but **pre-existing**, not caused by the migration — file it on its own merits rather than as migration cleanup | Standalone bug |
-| R12 | **Agent description accuracy** — team-lead read-only overclaim, staff-engineer "reviews all"/TDD-authorship overclaim, project-manager write-path omission, senior-engineer `docs-author` omission (G6–G8) | Descriptions drive harness routing and are **duplicated as Rust string literals in `src/user.rs`** for the opencode variant — fix both homes together | Phase 2 follow-up |
+| ~~R12~~ | **Agent description accuracy** — **APPLIED** (§7) | All 4 corrected against their bodies; each new claim verified present | — |
 | ~~R13~~ | **`evolve-orchestration-core.md` Consumers line** — **APPLIED as R24** (§7) | Corrected 3 → 5 against live citers | — |
-| R14 | **Decide the fate of `src/user/opencode/agents/`** (398KB, unmigrated) (§3.8) | A second, now-divergent generation of the same 8 agents; migrate, regenerate, or retire | Migration owner |
+| ~~R14~~ | **`opencode` fleet** — **WITHDRAWN** (§3.8) | Mis-framed: a port to a different harness with different primitives, not a divergent copy of this fleet. No decision needed from this migration | — |
 | ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | ~~R16~~ | **Security panel unbuildable on light patterns** — **APPLIED** (§7) | Diagnosed as a three-way rule collision, not a missed trigger; resolved by operator decision to a 2-seat floor. Unverified live | — |
 | ~~R17~~ | **Scratch-file destination gap** — **APPLIED** (§7) | Diagnosed as a rule gap rather than a compliance failure; the working tree was never named as prohibited. Rule fixed at the master + the one elaborated carrier. Unverified — a repeat leak would be the evidence for adding a mechanism | — |
@@ -810,6 +884,69 @@ unchanged).
 | **R19** | **Medium-tier cost calibration** (§6.3) | $33.97 / 97.7 min / 49KB TDD / zero code for a discount function. Routing was correct — the question is whether the Medium threshold sits where you want it | Migration owner |
 
 ---
+
+## 7b. Recorded exceptions (R4, R5, R7)
+
+Three open items were requests to *record a decision* rather than change a
+file. Each is settled by evidence already in this report; they are written down
+here so a later reader does not re-litigate them or "fix" a deliberate choice.
+
+### R4 — `team-lead.md` exceeds the ≤10 marker ceiling, and should
+
+Charter §4 sets "typical file ≤5, no file above 10." Seven of eight agents
+comply; `team-lead.md` carries 15. **Recorded as a sanctioned exception**, on
+the same basis the audit manifest (§6.7) pre-authorized for senior-engineer
+(~20–25), distinguished-engineer (~20–25), and security-engineer (~12–14) —
+all three of which came in far under their allowances (3, 3, 7).
+
+The charter's own stated gate is the category mapping, not the count: "a file
+could pass the count and still fail the audit." All 15 map (§4.2) — commit and
+no-spawn gates (cat 1+3), alignment-never-judges-merits and the two
+no-override/no-self-arbitration rules (cat 3), `.env` phantom-delete masking
+(cat 2), and the SP-1b/SP-2/SP-3 protocol literals plus the explicit-`model=`
+requirement (cat 4). team-lead is the only file holding the fleet's spawn
+authority, its protocol wire formats, and its adjudication boundaries at once,
+so a marker concentration there is the architecture working, not drift.
+
+### R5 — pointer stubs are a sanctioned exception to zero-duplication
+
+Charter §4 demands "zero multi-line blocks shared verbatim between two or more
+agent files." Measured: 12 blocks, 26,201 redundant bytes (§4.3) — up in count
+from the baseline's 7, down 57% in bytes.
+
+**Recorded as sanctioned.** The charter and the audit's own remediation #3
+conflict here, and the remediation is the one that shipped: "delete `-LOCAL`
+bodies in agents/skills, **keep pointer lines**." What remains is not inlined
+doctrine but 2–4 line stubs — a fence, a `Master:` path, and at most one
+locally load-bearing fact. Reaching literal zero means agents carry no pointer
+at all and rely purely on progressive disclosure to find their doctrine, which
+is a different architecture, not a cleanup. That trade is available but has not
+been made, and it should be made deliberately if ever.
+
+### R7 — the three DELETE-WHOLE-FILE verdicts are superseded, not outstanding
+
+Charter §1.2 names `laziness-discipline.md` and
+`fable-completeness-heuristics.md` as existing "entirely" for class 1.2, and
+the audit added `team-conventions.md`. All three survive, shrunk 39–60%.
+
+**Recorded as superseded by the rewrite.** Those verdicts were written against
+the *pre-migration* content; the content changed underneath them:
+
+- `laziness-discipline.md` (4,896 → 1,948B) — what remains is the simplicity
+  ladder, which is close to the charter's *own* §2.1 code-scope snippet, plus a
+  "When NOT to be lazy" paragraph that is keep-list cat 2 (never simplify away
+  trust-boundary validation, data-loss-preventing error handling, security
+  measures).
+- `fable-completeness-heuristics.md` (3,227 → 1,972B) — reframed from
+  first-person reasoning-echo into *form checks on returned artifacts*
+  ("team-lead audits **that** search evidence is cited, never whether the
+  search was adequate"). Charter §1.1 explicitly permits requiring evidence.
+- `team-conventions.md` (3,992 → 1,777B) — the rule-numbering convention,
+  live-cited by team-lead Rule 5 and `evolve-coherence`.
+
+Executing the deletions now would remove keep-list material to satisfy a
+verdict whose premise no longer holds. The files stay; §3.4's "partial pass"
+stands as the accurate description.
 
 ## 8. What this pass did not cover
 

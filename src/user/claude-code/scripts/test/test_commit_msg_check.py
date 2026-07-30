@@ -105,6 +105,49 @@ def test_harness_metadata_rejected_any_case():
         assert code == 1, f"harness metadata slipped through: {msg!r}: {out}"
 
 
+# --- R27: the scope token is a component name, not prose ---
+
+def test_product_named_scope_is_allowed():
+    """The project's component genuinely is named for the product."""
+    code, out = run_msg("refactor(claude-code): rewrite the routing table\n")
+    assert code == 0, f"scope-position use rejected: {out}"
+
+
+def test_prose_on_the_subject_line_is_still_caught():
+    """Masking must cover ONLY the scope token, not the whole line -- 29
+    historical subjects carry both a product scope and a prose mention."""
+    code, out = run_msg(
+        "refactor(claude-code): rewrite the agent per Claude 5 charter\n"
+    )
+    assert code == 1, f"prose mention on the subject line slipped through: {out}"
+
+
+def test_prose_in_the_body_is_still_caught():
+    code, out = run_msg("refactor(claude-code): rewrite it\n\nPer the Claude charter.\n")
+    assert code == 1, f"body prose slipped through: {out}"
+
+
+def test_scope_masking_does_not_leak_to_other_lines():
+    code, out = run_msg("refactor(claude-code): fine\n\nrefactor(claude-code): not fine\n")
+    assert code == 1, f"only line 1's scope may be exempt: {out}"
+
+
+def test_bot_co_authorship_is_allowed():
+    """All co-authored-by hits in history are a dependency bot, not attribution."""
+    code, out = run_msg(
+        "chore(deps): update rust crate toml\n\n"
+        "Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>\n"
+    )
+    assert code == 0, f"legitimate bot co-authorship rejected: {out}"
+
+
+def test_assistant_attribution_trailer_still_rejected():
+    for trailer in ("Co-authored-by: Claude <noreply@anthropic.com>",
+                    "Generated with Claude Code"):
+        code, out = run_msg(f"feat: add a thing\n\n{trailer}\n")
+        assert code == 1, f"attribution trailer slipped through: {trailer!r}: {out}"
+
+
 def test_clean_message_passes():
     code, out = run_msg(
         "refactor: move end-of-cycle mechanics behind progressive disclosure\n"

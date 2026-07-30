@@ -5,22 +5,14 @@ use crate::{
 use anyhow::Result;
 use bat::BatConfig;
 use claude_code::Config as ClaudeCodeConfig;
-use codex::{AgentRole, Codex, Otel, SkillConfig, TuiNotifications};
 use ghostty::GhosttyConfig;
 use k9s::K9sSkin;
-pub use opencode::ModelLimit;
-use opencode::{
-    AgentConfig, AgentMode, AutoUpdate, Config as OpenCodeConfig, LspServerConfig, ModelConfig,
-    PermissionAction, PermissionRule, ProviderConfig, ProviderOptions,
-};
-use opencode_tui::Config as OpenCodeTuiConfig;
-use std::collections::BTreeMap;
 use vorpal_artifacts::artifact::{
     abtop::Abtop, awscli2::Awscli2, bash_language_server::BashLanguageServer, bat::Bat, cue::Cue,
     delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr,
     hunk::Hunk, jj::Jj, jq::Jq, just::Just, k9s::K9s, kubectl::Kubectl, lazygit::Lazygit,
-    lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, op::Op, opencode::Opencode,
-    pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
+    lua_language_server::LuaLanguageServer, neovim::Neovim, nnn::Nnn, op::Op, pi::Pi,
+    ripgrep::Ripgrep, sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux,
     tree_sitter::TreeSitter, typescript::Typescript,
     typescript_language_server::TypescriptLanguageServer,
     vscode_langservers_extracted::VscodeLangserversExtracted,
@@ -35,44 +27,10 @@ use vorpal_sdk::{
 
 mod bat;
 mod claude_code;
-mod codex;
 mod ghostty;
 mod k9s;
-mod opencode;
-mod opencode_tui;
-
-//    OPENCODE - MODEL RANKINGS    //
-// Benchmarks @ https://benchlm.ai //
-
-// Gemini 3.1 Pro (89 benchmark): (https://benchlm.ai/models/gemini-3-pro) - Low, Medium, High
-// Provider: Google Vertex (metered, per-token API).
-// Price: ~$2 input / $12 output per 1M tokens (BenchLM fallback 2026-07-07; official
-// https://cloud.google.com/vertex-ai/pricing was obscured by dynamic rendering).
-const OPENCODE_MODEL_GOLD: &str = "google-vertex/gemini-3.1-pro-preview"; // Closest to Fable 5
-                                                                          // in relative comparison
-
-// GLM 5.2 (83 benchmark): (https://benchlm.ai/models/glm-5-2) - High, Max
-// Provider: Z.AI via `zai-coding-plan` key (operator subscription-flat billing form).
-// Price: per-token fallback ~$1.40 input / $4.40 output per 1M tokens (BenchLM fallback
-// 2026-07-07; official https://z.ai/pricing returned HTTP 404).
-const OPENCODE_MODEL_SILVER: &str = "zai-coding-plan/glm-5.2"; // Closest to Opus 4.8
-                                                               // in relative comparison
-
-// GPT 5.5 (80 benchmark): (https://benchlm.ai/models/gpt-5-5) - None, Low, Medium, High, XHigh
-// Provider: OpenAI (metered, per-token API).
-// Price: ~$5 input / $30 output per 1M tokens (BenchLM fallback 2026-07-07; official
-// https://openai.com/api/pricing/ blocked by HTTP 403).
-const OPENCODE_MODEL_BRONZE: &str = "openai/gpt-5.5"; // Closest to Sonnet 5
-                                                      // in relative comparison
-
-// const OPENCODE_MODEL_VARIANT_LOW: &str = "low";
-// const OPENCODE_MODEL_VARIANT_MEDIUM: &str = "medium";
-const OPENCODE_MODEL_VARIANT_HIGH: &str = "high";
-const OPENCODE_MODEL_VARIANT_XHIGH: &str = "xhigh";
-const OPENCODE_MODEL_VARIANT_MAX: &str = "max";
 
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
-const OTEL_METRICS_ENDPOINT_ALLOY: &str = "https://alloy-otlp.bulbasaur.altf4.domains/v1/metrics";
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
@@ -81,7 +39,6 @@ const SENSITIVE_PATHS: &[&str] = &[
     "/Library/**",
     "/System/**",
     "~/.claude.json",
-    "~/.codex/**",
     "~/.doppler/**",
     "~/.gemini/**",
     "~/.gnupg/**",
@@ -89,14 +46,12 @@ const SENSITIVE_PATHS: &[&str] = &[
     // deny-read rather than allowlisted; kubectl work requires `dangerouslyDisableSandbox=true`.
     "~/.kube/**",
     "~/.netrc",
-    "~/.opencode/**",
     "~/.ssh/**",
     "~/.talos/**",
     "~/Desktop/**",
     "~/Downloads/**",
 ];
 
-const OPENCODE_CONFIG_PATH: &str = "~/.opencode/**";
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
 const SANDBOX_DENY_READ_EXCLUDED: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
@@ -151,7 +106,6 @@ impl UserEnvironment {
         let nnn = Nnn::new().build(context).await?;
         let nodejs = NodeJS::new().build(context).await?;
         let op = Op::new().build(context).await?;
-        let opencode = Opencode::new().build(context).await?;
         let pi = Pi::new().build(context).await?;
         let ripgrep = Ripgrep::new().build(context).await?;
         let sesh = Sesh::new().build(context).await?;
@@ -198,546 +152,6 @@ impl UserEnvironment {
         let claude_code_config_path = format!(
             "{}/{claude_code_config_name}",
             get_output_path("library", &claude_code_config)
-        );
-
-        let codex_team_lead_profile_name = format!("{}-codex-team-lead-profile", &self.name);
-        let codex_team_lead_profile =
-            Codex::new(codex_team_lead_profile_name.as_str(), self.systems.clone())
-                .with_developer_instructions(include_str!("user/codex/personas/team-lead.md"))
-                .with_model_reasoning_effort("xhigh")
-                .with_plan_mode_reasoning_effort("xhigh")
-                .build(context)
-                .await?;
-        let codex_team_lead_profile_path = format!(
-            "{}/{}",
-            get_output_path("library", &codex_team_lead_profile),
-            codex_team_lead_profile_name
-        );
-
-        let codex_config_name = format!("{}-codex", &self.name);
-        let codex_config = Codex::new(codex_config_name.as_str(), self.systems.clone())
-            .with_agent_limits(Some(12), Some(2), Some(3600))
-            .with_agent_role(
-                "project-manager",
-                codex_agent_role(
-                    "Plans Docket issue decomposition, phase order, dependencies, and acceptance criteria.",
-                    "./agents/project-manager.toml",
-                    &["pm", "planner", "tpm"],
-                ),
-            )
-            .with_agent_role(
-                "staff-engineer",
-                codex_agent_role(
-                    "Authors technical designs and ADRs, evaluates architecture, and performs general code review.",
-                    "./agents/staff-engineer.toml",
-                    &["architect", "staff", "advisor"],
-                ),
-            )
-            .with_agent_role(
-                "security-engineer",
-                codex_agent_role(
-                    "Owns threat modeling, security design, and security-focused review.",
-                    "./agents/security-engineer.toml",
-                    &["security", "sec", "security-advisor"],
-                ),
-            )
-            .with_agent_role(
-                "senior-engineer",
-                codex_agent_role(
-                    "Implements scoped code changes, follows local patterns, and reports verification evidence.",
-                    "./agents/senior-engineer.toml",
-                    &["implementer", "senior", "impl"],
-                ),
-            )
-            .with_agent_role(
-                "sdet",
-                codex_agent_role(
-                    "Verifies acceptance criteria, writes tests, and reports quality evidence.",
-                    "./agents/sdet.toml",
-                    &["tester", "qa", "verifier"],
-                ),
-            )
-            .with_agent_role(
-                "ux-designer",
-                codex_agent_role(
-                    "Designs and reviews user-facing workflows, UX specs, and design QA.",
-                    "./agents/ux-designer.toml",
-                    &["ux", "designer", "ux-advisor"],
-                ),
-            )
-            .with_skill_config(SkillConfig {
-                path: Some("$HOME/.codex/skills".to_string()),
-                enabled: Some(true),
-            })
-            .with_allow_login_shell(true)
-            .with_analytics_enabled(true)
-            .with_approval_policy("on-request")
-            .with_approvals_reviewer("auto_review")
-            .with_check_for_update_on_startup(true)
-            .with_cli_auth_credentials_store("keyring")
-            .with_default_permissions(":workspace")
-            .with_disable_paste_burst(false)
-            .with_feature_enabled("apps", false)
-            .with_feature_enabled("codex_git_commit", false)
-            .with_feature_enabled("fast_mode", true)
-            .with_feature_enabled("hooks", true)
-            .with_feature_enabled("memories", true)
-            .with_feature_enabled("multi_agent", true)
-            .with_feature_enabled("personality", true)
-            .with_feature_enabled("shell_snapshot", true)
-            .with_feature_enabled("shell_tool", true)
-            .with_feature_enabled("undo", false)
-            .with_feature_enabled("unified_exec", true)
-            .with_feedback_enabled(false)
-            .with_file_opener("none")
-            .with_hide_agent_reasoning(false)
-            .with_history_persistence("save-all")
-            .with_mcp_oauth_credentials_store("auto")
-            .with_model("gpt-5.5")
-            .with_model_context_window(1_000_000)
-            .with_model_provider("openai")
-            .with_model_reasoning_effort("xhigh")
-            .with_model_reasoning_summary("auto")
-            .with_model_verbosity("medium")
-            .with_otel(Otel {
-                log_user_prompt: Some(false),
-                environment: Some("dev".to_string()),
-                exporter: codex_otlp_exporter(OTEL_LOGS_ENDPOINT_LOKI),
-                metrics_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT_ALLOY),
-                trace_exporter: codex_otlp_exporter(OTEL_METRICS_ENDPOINT_ALLOY),
-            })
-            .with_personality("pragmatic")
-            .with_plan_mode_reasoning_effort("xhigh")
-            .with_project_doc_max_bytes(32768)
-            .with_sandbox_mode("workspace-write")
-            .with_sandbox_workspace_writable_roots(vec!["$HOME/.cache/uv".to_string()])
-            .with_sandbox_workspace_network_access(false)
-            .with_shell_environment_exclude(vec![
-                "AWS_*".to_string(),
-                "AZURE_*".to_string(),
-                "GCP_*".to_string(),
-            ])
-            .with_shell_environment_inherit("all")
-            .with_show_raw_agent_reasoning(false)
-            .with_tool_enabled("view_image", true)
-            .with_tui_notifications(TuiNotifications::Enabled(false))
-            .with_tui_status_line(vec![
-                "model-with-reasoning".to_string(),
-                "context-remaining".to_string(),
-                "current-dir".to_string(),
-                "git-branch".to_string(),
-            ])
-            .with_tui_terminal_title(vec!["spinner".to_string(), "project".to_string()])
-            .with_tui_theme("tokyonight")
-            .with_web_search("cached")
-            .build(context)
-            .await?;
-        let codex_config_path = format!(
-            "{}/{codex_config_name}",
-            get_output_path("library", &codex_config)
-        );
-
-        let opencode_config_name = format!("{}-opencode", &self.name);
-        let opencode_config =
-            OpenCodeConfig::new(opencode_config_name.as_str(), self.systems.clone())
-                .with_schema("https://opencode.ai/config.json")
-                .with_autoupdate(AutoUpdate::Boolean(false))
-                .with_default_agent("team-lead")
-                .with_model(OPENCODE_MODEL_BRONZE)
-                .with_skill_path("$HOME/.config/opencode/skills")
-                .with_bash_permissions(vec![
-                    // Default: ask for anything not explicitly allowed or denied
-                    ("*", PermissionAction::Ask),
-                    // Allow — CC full bash allowlist parity (CC with_permission_allow Bash rules above)
-                    ("bun run*", PermissionAction::Allow),
-                    ("bun test*", PermissionAction::Allow),
-                    ("cargo build*", PermissionAction::Allow),
-                    ("cargo check*", PermissionAction::Allow),
-                    ("cargo clippy*", PermissionAction::Allow),
-                    ("cargo fmt*", PermissionAction::Allow),
-                    ("cargo outdated*", PermissionAction::Allow),
-                    ("cargo run*", PermissionAction::Allow),
-                    ("cargo search*", PermissionAction::Allow),
-                    ("cargo test*", PermissionAction::Allow),
-                    ("cargo tree*", PermissionAction::Allow),
-                    ("cargo update*", PermissionAction::Allow),
-                    ("cat*", PermissionAction::Allow),
-                    ("chmod*", PermissionAction::Allow),
-                    ("cue*", PermissionAction::Allow),
-                    ("docker images*", PermissionAction::Allow),
-                    ("docker logs*", PermissionAction::Allow),
-                    ("docker ps*", PermissionAction::Allow),
-                    ("docket*", PermissionAction::Allow),
-                    ("echo*", PermissionAction::Allow),
-                    ("file*", PermissionAction::Allow),
-                    ("find*", PermissionAction::Allow),
-                    ("gh pr diff*", PermissionAction::Allow),
-                    ("gh pr list*", PermissionAction::Allow),
-                    ("gh pr view*", PermissionAction::Allow),
-                    ("git branch*", PermissionAction::Allow),
-                    ("git diff*", PermissionAction::Allow),
-                    ("git log*", PermissionAction::Allow),
-                    ("git remote get-url*", PermissionAction::Allow),
-                    ("git show*", PermissionAction::Allow),
-                    ("git status*", PermissionAction::Allow),
-                    ("go build*", PermissionAction::Allow),
-                    ("go doc*", PermissionAction::Allow),
-                    ("go list*", PermissionAction::Allow),
-                    ("go mod tidy*", PermissionAction::Allow),
-                    ("go test*", PermissionAction::Allow),
-                    ("go version*", PermissionAction::Allow),
-                    ("go vet*", PermissionAction::Allow),
-                    ("gofmt*", PermissionAction::Allow),
-                    ("grep*", PermissionAction::Allow),
-                    ("head*", PermissionAction::Allow),
-                    ("jq*", PermissionAction::Allow),
-                    ("ls*", PermissionAction::Allow),
-                    ("make*", PermissionAction::Allow),
-                    ("npm run build*", PermissionAction::Allow),
-                    ("npm run lint*", PermissionAction::Allow),
-                    ("npm run test*", PermissionAction::Allow),
-                    ("npx tsc*", PermissionAction::Allow),
-                    ("rg*", PermissionAction::Allow),
-                    ("sort*", PermissionAction::Allow),
-                    ("staticcheck*", PermissionAction::Allow),
-                    ("tail*", PermissionAction::Allow),
-                    ("tar*", PermissionAction::Allow),
-                    ("test*", PermissionAction::Allow),
-                    ("tree*", PermissionAction::Allow),
-                    ("vorpal build*", PermissionAction::Allow),
-                    ("vorpal inspect*", PermissionAction::Allow),
-                    ("vorpal run*", PermissionAction::Allow),
-                    ("wc*", PermissionAction::Allow),
-                    ("xargs*", PermissionAction::Allow),
-                    ("yarn build*", PermissionAction::Allow),
-                    ("yarn lint*", PermissionAction::Allow),
-                    ("yarn test*", PermissionAction::Allow),
-                    // Deny — CC bash deny rules (CC with_permission_deny Bash rules above)
-                    ("git checkout*", PermissionAction::Deny),
-                    ("git reset*", PermissionAction::Deny),
-                ])
-                .with_permission_edit(opencode_permission_denies(
-                    PermissionAction::Ask,
-                    SENSITIVE_PATHS.iter().copied(),
-                ))
-                .with_permission_glob(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_list(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_lsp(PermissionRule::Simple(PermissionAction::Allow))
-                .with_permission_read(opencode_permission_denies(
-                    PermissionAction::Allow,
-                    SENSITIVE_PATHS.iter().chain(SENSITIVE_PATHS_DENY_READ_ONLY).copied(),
-                ))
-                .with_permission_webfetch(PermissionAction::Ask)
-                .with_permission_websearch(PermissionAction::Allow)
-                .with_lsp(
-                    "gopls",
-                    LspServerConfig {
-                        command: vec!["gopls".to_string()],
-                        extensions: vec![".go".to_string()],
-                        ..Default::default()
-                    },
-                )
-                .with_lsp(
-                    "rust-analyzer",
-                    LspServerConfig {
-                        command: vec!["rust-analyzer".to_string()],
-                        extensions: vec![".rs".to_string()],
-                        ..Default::default()
-                    },
-                )
-                .with_lsp(
-                    "typescript-language-server",
-                    LspServerConfig {
-                        command: vec!["typescript-language-server".to_string()],
-                        extensions: vec![".ts".to_string(), ".tsx".to_string()],
-                        ..Default::default()
-                    },
-                )
-                .with_experimental_open_telemetry(true)
-                .with_agent(
-                    "build",
-                    AgentConfig {
-                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // follows `team-lead`
-                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()),
-                        ..Default::default()
-                    },
-                )
-                .with_agent(
-                    "plan",
-                    AgentConfig {
-                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // follows `team-lead`
-                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()),
-                        ..Default::default()
-                    },
-                )
-                .with_agent(
-                    "team-lead",
-                    AgentConfig {
-                        model: Some(OPENCODE_MODEL_SILVER.to_string()), // better at directions
-                        variant: Some(OPENCODE_MODEL_VARIANT_MAX.to_string()), // meant to think
-                        mode: Some(AgentMode::Primary),
-                        color: None,
-                        description: Some(
-                            "The operator's single entry point — a task-to-subagent prompt-engineering and routing layer that turns each request into recipient-optimized briefs/relays and model/effort/mechanism dispatch decisions across the specialist agents (@staff-engineer, @security-engineer, @project-manager, @ux-designer, @senior-engineer, @sdet). MUST BE USED PROACTIVELY for any multi-step software task that benefits from upfront design, planning, implementation, review, and verification. Coordinates only: never writes code, never creates issues, never commits; read-only on the working tree.".to_string(),
-                        ),
-                        prompt: Some(
-                            include_str!("user/opencode/agents/team-lead.md").to_string(),
-                        ),
-                        ..Default::default()
-                    },
-                )
-                .with_agent(
-                    "distinguished-engineer",
-                    opencode_agent(
-                        "A beyond-staff-level engineer: TDD authoring, persistent advisory on TDD-bearing cycles, open-ended investigation/innovation scanning, and >1-day-horizon deep implementation. Mode is fixed by the spawn brief; writes code ONLY in deep-impl mode. Never takes security-sensitive work (that pins security-engineer deterministically).",
-                        include_str!("user/opencode/agents/distinguished-engineer.md"),
-                        OPENCODE_MODEL_GOLD, // highest benchmarks
-                        Some(OPENCODE_MODEL_VARIANT_HIGH), // meant to think
-                    ),
-                )
-                .with_agent(
-                    "staff-engineer",
-                    opencode_agent(
-                        "Staff-level technical architect and code reviewer. Produces TDDs in `docs/tdd/` and ADRs in `docs/tdd/adr/`. Reviews all @senior-engineer changes. MUST BE USED PROACTIVELY for architectural decisions, system design, technical planning, design review, dependency evaluation, and code reviews. Never writes implementation code.",
-                        include_str!("user/opencode/agents/staff-engineer.md"),
-                        OPENCODE_MODEL_SILVER, // second highest benchmarks
-                        Some(OPENCODE_MODEL_VARIANT_MAX), // meant to think
-                    ),
-                )
-                .with_agent(
-                    "senior-engineer",
-                    opencode_agent(
-                        "Senior Software Engineer focused on implementation quality. Executes pre-planned Docket issues and ad-hoc work — writing code, editing source files, and producing working software. Handles both routine and deep implementation work. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context before implementing. All changes reviewed by @staff-engineer and verified by @sdet. Does not produce design documents or perform code reviews.",
-                        include_str!("user/opencode/agents/senior-engineer.md"),
-                        OPENCODE_MODEL_BRONZE, // better at directions
-                        Some(OPENCODE_MODEL_VARIANT_XHIGH), // meant to think
-                    ),
-                )
-                .with_agent(
-                    "security-engineer",
-                    opencode_agent(
-                        "Staff-level Security Engineer — owns security architecture, threat modeling, and risk management. Authors security TDDs in `docs/tdd/` and security ADRs in `docs/tdd/adr/`. Performs security-focused review of code, designs, dependencies, and configurations alongside @staff-engineer's general review. MUST BE USED PROACTIVELY for trust-boundary changes, authn/authz design, secret handling, cryptography, supply-chain decisions, sandbox/permission models, and any change touching security-sensitive surfaces. Aligns security posture with business goals and risk tolerance. Never writes implementation code.",
-                        include_str!("user/opencode/agents/security-engineer.md"),
-                        OPENCODE_MODEL_SILVER, // second highest benchmarks
-                        Some(OPENCODE_MODEL_VARIANT_MAX), // meant to put in full effort
-                    ),
-                )
-                .with_agent(
-                    "project-manager",
-                    opencode_agent(
-                        "Technical project manager that breaks down problems and tasks into well-structured Docket issues. MUST BE USED PROACTIVELY when the user describes a problem, feature request, project, migration, or any body of work that needs to be planned and decomposed before execution begins. This agent ONLY plans — it creates issues, subtasks, dependencies, and priorities in Docket. It NEVER writes code or edits source files. It uses Read, Grep, and Glob to explore the codebase and surfaces deeper technical investigation needs to the user or team lead. Aware of @staff-engineer (TDDs in `docs/tdd/`), @ux-designer (design specs in `docs/ux/`), @senior-engineer (implementation), and @sdet (testing). The primary agent that creates Docket issues — @senior-engineer may create single ad-hoc tracking issues for unplanned work.",
-                        include_str!("user/opencode/agents/project-manager.md"),
-                        OPENCODE_MODEL_BRONZE, // better at directions
-                        Some(OPENCODE_MODEL_VARIANT_XHIGH), // meant to think
-                    ),
-                )
-                .with_agent(
-                    "ux-designer",
-                    opencode_agent(
-                        "UX designer and developer experience specialist. Produces design specs in `docs/ux/` — does NOT write implementation code. Use PROACTIVELY for designing interfaces (web, mobile, CLI, TUI), evaluating usability, defining interaction patterns, reviewing existing UX, or designing APIs, SDKs, config formats, and developer-facing surfaces. Hands off to @project-manager for task decomposition and @senior-engineer for implementation.",
-                        include_str!("user/opencode/agents/ux-designer.md"),
-                        OPENCODE_MODEL_SILVER, // second highest intellegence
-                        Some(OPENCODE_MODEL_VARIANT_MAX), // meant to think
-                    ),
-                )
-                .with_agent(
-                    "sdet",
-                    opencode_agent(
-                        "Software Development Engineer in Test — owns test infrastructure, automation, and quality engineering. Writes test code and tooling, verifies Docket issues against acceptance criteria, performs defect triage and quality analysis. Checks `docs/tdd/`, `docs/ux/`, and `docs/spec/` for context. Does not write production code, design documents, or perform production code reviews.",
-                        include_str!("user/opencode/agents/sdet.md"),
-                        OPENCODE_MODEL_BRONZE, // better at directions
-                        Some(OPENCODE_MODEL_VARIANT_XHIGH), // meant to think
-                    ),
-                )
-                // Provider: Ollama local (self-hosted, OpenAI-compatible). No per-token provider
-                // price; infrastructure compute cost only. Models: devstral-small-2, qwen3.6,
-                // qwen3-coder-next, ornith.
-                .with_provider(
-                    "ollama-local",
-                    ProviderConfig {
-                        npm: Some("@ai-sdk/openai-compatible".to_string()),
-                        name: Some("Ollama - Local".to_string()),
-                        options: Some(ProviderOptions {
-                            base_url: Some("http://localhost:11434/v1".to_string()),
-                            ..Default::default()
-                        }),
-                        models: [
-                            (
-                                "devstral-small-2:24b-instruct-2512-q8_0".to_string(),
-                                ModelConfig {
-                                    name: Some("devstral-small-2".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3.6:27b-q8_0".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3.6:27b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3.6:35b-a3b-q8_0".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3.6:35b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3-coder-next:q4_K_M".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3-coder-next".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "ornith:35b".to_string(),
-                                ModelConfig {
-                                    name: Some("ornith:35b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        ..Default::default()
-                    },
-                )
-                // Provider: Ollama remote (self-hosted, OpenAI-compatible). No per-token provider
-                // price; infrastructure compute cost only. Models: qwen3-embedding, glm-ocr,
-                // phi4-mini-reasoning, deepseek-r1, lfm2.5, granite4.1, ministral-3, qwen3-vl,
-                // ornith, qwen3.5, gemma4.
-                .with_provider(
-                    "ollama-remote",
-                    ProviderConfig {
-                        npm: Some("@ai-sdk/openai-compatible".to_string()),
-                        name: Some("Ollama - Remote".to_string()),
-                        options: Some(ProviderOptions {
-                            base_url: Some("http://192.168.0.180:11434/v1".to_string()),
-                            ..Default::default()
-                        }),
-                        models: [
-                            (
-                                "qwen3-embedding:8b".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3-embedding:8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "glm-ocr:latest".to_string(),
-                                ModelConfig {
-                                    name: Some("glm-ocr:latest".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "phi4-mini-reasoning:3.8b".to_string(),
-                                ModelConfig {
-                                    name: Some("phi4-mini-reasoning:3.8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "deepseek-r1:14b".to_string(),
-                                ModelConfig {
-                                    name: Some("deepseek-r1:14b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "lfm2.5:8b".to_string(),
-                                ModelConfig {
-                                    name: Some("lfm2.5:8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "granite4.1:8b".to_string(),
-                                ModelConfig {
-                                    name: Some("granite4.1:8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "ministral-3:8b".to_string(),
-                                ModelConfig {
-                                    name: Some("ministral-3:8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3-vl:8b".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3-vl:8b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "ornith:9b".to_string(),
-                                ModelConfig {
-                                    name: Some("ornith:9b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3.5:9b".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3.5:9b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "gemma4:12b".to_string(),
-                                ModelConfig {
-                                    name: Some("gemma4:12b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "gemma4:e4b".to_string(),
-                                ModelConfig {
-                                    name: Some("gemma4:e4b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "qwen3.5:4b".to_string(),
-                                ModelConfig {
-                                    name: Some("qwen3.5:4b".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "gemma4:latest".to_string(),
-                                ModelConfig {
-                                    name: Some("gemma4:latest".to_string()),
-                                    ..Default::default()
-                                },
-                            ),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        ..Default::default()
-                    },
-                )
-                .build(context)
-                .await?;
-        let opencode_config_path = format!(
-            "{}/{opencode_config_name}",
-            get_output_path("library", &opencode_config)
-        );
-
-        let opencode_tui_config_name = format!("{}-opencode-tui", &self.name);
-        let opencode_tui_config =
-            OpenCodeTuiConfig::new(opencode_tui_config_name.as_str(), self.systems.clone())
-                .with_schema("https://opencode.ai/tui.json")
-                .with_theme("tokyonight")
-                .build(context)
-                .await?;
-        let opencode_tui_config_path = format!(
-            "{}/{opencode_tui_config_name}",
-            get_output_path("library", &opencode_tui_config)
         );
 
         let ghostty_config_name = format!("{}-ghostty-config", &self.name);
@@ -886,28 +300,6 @@ impl UserEnvironment {
         .await?;
         let claude_agents_path = get_output_path("library", &claude_agents);
 
-        // Codex agents directory
-        let codex_agents_name = format!("{}-codex-agents", &self.name);
-        let codex_agents = FileSource::new(
-            &codex_agents_name,
-            "src/user/codex/agents",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-        let codex_agents_path = get_output_path("library", &codex_agents);
-
-        // Codex personas directory
-        let codex_personas_name = format!("{}-codex-personas", &self.name);
-        let codex_personas = FileSource::new(
-            &codex_personas_name,
-            "src/user/codex/personas",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-        let codex_personas_path = get_output_path("library", &codex_personas);
-
         // Claude skills directory
         let claude_skills_name = format!("{}-claude-skills", &self.name);
         let claude_skills = FileSource::new(
@@ -930,38 +322,12 @@ impl UserEnvironment {
         .await?;
         let claude_scripts_path = get_output_path("library", &claude_scripts);
 
-        // Codex skills directory
-        let codex_skills_name = format!("{}-codex-skills", &self.name);
-        let codex_skills = FileSource::new(
-            &codex_skills_name,
-            "src/user/codex/skills",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-        let codex_skills_path = get_output_path("library", &codex_skills);
-
-        // Opencode skills directory
-        let opencode_skills_name = format!("{}-opencode-skills", &self.name);
-        let opencode_skills = FileSource::new(
-            &opencode_skills_name,
-            "src/user/opencode/skills",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-        let opencode_skills_path = get_output_path("library", &opencode_skills);
-
         // User environment
 
         let claude_agents_path = format!("{claude_agents_path}/src/user/claude-code/agents");
         let claude_hooks_path = format!("{claude_hooks_path}/src/user/claude-code/hooks");
         let claude_scripts_path = format!("{claude_scripts_path}/src/user/claude-code/scripts");
         let claude_skills_path = format!("{claude_skills_path}/src/user/claude-code/skills");
-        let codex_agents_path = format!("{codex_agents_path}/src/user/codex/agents");
-        let codex_personas_path = format!("{codex_personas_path}/src/user/codex/personas");
-        let codex_skills_path = format!("{codex_skills_path}/src/user/codex/skills");
-        let opencode_skills_path = format!("{opencode_skills_path}/src/user/opencode/skills");
 
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(vec![
@@ -990,7 +356,6 @@ impl UserEnvironment {
                 nodejs,
                 op,
                 pi,
-                opencode,
                 ripgrep,
                 sesh,
                 starship,
@@ -1016,45 +381,27 @@ impl UserEnvironment {
                 claude_scripts,
                 claude_skills,
                 claude_statusline,
-                codex_agents,
-                codex_config,
-                codex_personas,
-                codex_team_lead_profile,
-                codex_skills,
                 ghostty_config,
                 k9s_skin_config,
                 markdown_vim_config,
-                opencode_config,
-                opencode_skills,
-                opencode_tui_config,
             ])
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=${HOME}/Development/language/go".to_string(),
-                "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1".to_string(),
-                "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1".to_string(),
-                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.opencode/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
+                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
             ])
             .with_symlinks(vec![
                 (&claude_agents_path, "$HOME/.claude/agents"),
                 (&claude_hooks_path, "$HOME/.claude/hooks"),
                 (&claude_scripts_path, "$HOME/.claude/scripts"),
                 (&claude_skills_path, "$HOME/.claude/skills"),
-                (&codex_agents_path, "$HOME/.codex/agents"),
-                (&codex_personas_path, "$HOME/.codex/personas"),
-                (&codex_skills_path, "$HOME/.codex/skills"),
-                (&opencode_skills_path, "$HOME/.config/opencode/skills"),
                 (bat_config_path.as_str(), "$HOME/.config/bat/config"),
                 (bat_theme_path.as_str(), "$HOME/.config/bat/themes/tokyonight.tmTheme"),
                 (claude_code_config_path.as_str(), "$HOME/.claude/settings.json"),
                 (claude_statusline_path.as_str(), "$HOME/.claude/statusline.sh"),
-                (codex_config_path.as_str(), "$HOME/.codex/config.toml"),
-                (codex_team_lead_profile_path.as_str(), "$HOME/.codex/team-lead.config.toml"),
                 (ghostty_config_path.as_str(), "$HOME/Library/Application\\ Support/com.mitchellh.ghostty/config"),
                 (k9s_skin_config_path.as_str(), "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml"),
                 (markdown_vim_config_path.as_str(), "$HOME/.config/nvim/after/ftplugin/markdown.vim"),
-                (opencode_config_path.as_str(), "$HOME/.config/opencode/opencode.json"),
-                (opencode_tui_config_path.as_str(), "$HOME/.config/opencode/tui.json"),
             ])
             .build(context)
             .await
@@ -1305,65 +652,6 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
         .collect();
     paths.sort_unstable();
     paths
-}
-
-// Deny-list entries for opencode's own permission maps: every sensitive path except opencode's
-// own config directory (denying opencode access to its own config within its own map is a
-// no-op).
-fn opencode_permission_denies(
-    default: PermissionAction,
-    paths: impl IntoIterator<Item = &'static str>,
-) -> PermissionRule {
-    let mut m = BTreeMap::new();
-    m.insert("*".to_string(), default);
-    for path in paths {
-        if path == OPENCODE_CONFIG_PATH {
-            continue;
-        }
-        m.insert(path.to_string(), PermissionAction::Deny);
-    }
-    PermissionRule::Object(m)
-}
-
-fn codex_otlp_exporter(endpoint: &str) -> Option<toml::Value> {
-    Some(
-        toml::Value::try_from(serde_json::json!({
-            "otlp-http": { "endpoint": endpoint, "protocol": "binary" }
-        }))
-        .expect("Codex OTLP exporter config must be TOML-serializable"),
-    )
-}
-
-fn codex_agent_role(
-    description: &str,
-    config_file: &str,
-    nickname_candidates: &[&str],
-) -> AgentRole {
-    AgentRole {
-        description: Some(description.to_string()),
-        config_file: Some(config_file.to_string()),
-        nickname_candidates: nickname_candidates
-            .iter()
-            .map(|candidate| candidate.to_string())
-            .collect(),
-    }
-}
-
-fn opencode_agent(
-    description: &str,
-    prompt: &str,
-    model: &str,
-    variant: Option<&str>,
-) -> AgentConfig {
-    AgentConfig {
-        model: Some(model.to_string()),
-        variant: variant.map(|v| v.to_string()),
-        mode: Some(AgentMode::Subagent),
-        color: None,
-        description: Some(description.to_string()),
-        prompt: Some(prompt.to_string()),
-        ..Default::default()
-    }
 }
 
 #[cfg(test)]

@@ -26,7 +26,7 @@ but never to agents — those `effort` pins are byte-identical to the baseline.
 
 **Six fixes applied** (§7): two broken references, both `TeammateIdle`
 contradictions, the unsatisfiable instruction, and the headless-mode contract
-(R15 — applied after Part B, not yet behaviorally verified). **Three contradictions
+(R15 — applied after Part B; its first design was falsified by live testing and replaced). **Three contradictions
 remain routed** because each needs a content decision, not an edit:
 the banned-confidence-phrase list, the doc-family 5-way COUPLING claim, and
 `evolve-orchestration-core.md`'s Consumers line. Twelve items total are routed,
@@ -37,10 +37,12 @@ real behavioral defect that predates the migration.
 installed definitions (§6). Routing, tier assignment, panel composition, the
 commit gate, Rule 10's design lock, and the security-off-Fable pin all held
 under real spawns. Five behavioral defects surfaced that no amount of reading
-would have found — chief among them that the definitions have **no
-headless-mode contract**: cycle 2 burned $33.97 and 97.7 minutes and shipped no
-code, because `team-lead.md:260` tells the orchestrator to end its turn awaiting
-a teammate, which under `claude -p` ends the run.
+would have found — chief among them that the definitions had **no unattended-run
+safety**: cycle 2 burned $33.97 and 97.7 minutes and shipped no code, because
+`team-lead.md:260` told the orchestrator it could end its turn awaiting a
+teammate, which under `claude -p` ends the run. That one is now fixed and
+confirmed on a live cycle (R15, §7) — including a first attempt whose design
+live testing falsified, which is itself the argument for running Part B at all.
 
 ---
 
@@ -107,7 +109,7 @@ Evidence classes:
 | **B5** | Rule 10 design lock holds | **PASS** | §6.1 — cycle 2 ran 97 min with zero code and zero issues, design unaccepted |
 | **B6** | Review recall holds live (no self-filtering) | **PASS** | §6.1 — cycle 3 reported a pre-existing Critical unasked; cycle 2 rejected on evidence |
 | **B7** | Authority gate — no override-on-merits | **PASS** | §6.1 — cycle 3 escalated a Block rather than dispositioning it |
-| **B8** | Cycles complete unattended | **FAIL → fix applied, unverified** | §6.2 B1 — no headless contract; cycle 2 died mid-round-3. R15 (§7) implemented; needs activate+restart to verify |
+| **B8** | Cycles complete unattended | **FAIL → FIXED, verified** | §6.2 B1 — cycle 2 died mid-round-3. R15 (§7) ships unconditional wait-arming; confirmed live |
 | **B9** | Rule 8 security panel provisioned as specified | **FAIL** | §6.2 B2 — 1 of 3 seats, no deliberation in transcript |
 | **B10** | Scratch files stay out of the working tree | **FAIL** | §6.2 B3 — 9 `.sdet_*` files left in the target repo root |
 | **B11** | Spawn names match the dispatch table | **FAIL (1 of 3)** | §6.2 B4 — three forms across four runs: `impl-DKT-1`, bare `senior-engineer`, `impl-cart-linecount` |
@@ -634,26 +636,42 @@ with the master. Both rewrites keep the useful behavioral instruction (reply
 that turn with current state) while removing the false premise, and now cite
 the master instead of restating it.
 
-**R15 — headless-mode contract** (`agents/team-lead.md`, §6.2 B1). Adds a
-session-mode discriminator as Pre-flight step 0, keyed on whether
-`AskUserQuestion` is in the live tool list — the signal team-lead already
-noticed unprompted in cycle 3 ("Since `AskUserQuestion` isn't in my available
-tool set this session"). UNATTENDED fallbacks are stated on Pre-flight steps
-1/3/4, and line 260's end-the-turn-to-await branch is now ATTENDED-only with
-"always arm the wait" for unattended runs. Four further `AskUserQuestion` gates
-carried no fallback; rather than enumerate them (charter §1.3) the step-0 block
-states the general rule — route a judgment you may not make to
-`Skill(vote, ...)`, otherwise proceed on the branch serving `{verified_goal}`,
-and never halt, because an unattended halt is a lost run.
+**R15 — unattended-run safety** (`agents/team-lead.md`, §6.2 B1). Cycle 2 died
+because `team-lead.md:260` sanctioned ending a turn to await a worker — correct
+interactively, fatal under `claude -p`, where it ends the run with dispatched
+work in flight.
 
-> **Applied but UNVERIFIED.** `~/.claude/agents` is a symlink into the Vorpal
-> store, so this does not take effect until the next `just activate` +
-> session restart. A $1.01 probe run after the edit tested the *installed*
-> (pre-fix) definition, not this one — it is recorded here only because it
-> independently produced a third spawn-name variant (§6.2 B4). Cost: +1,471
-> bytes on `team-lead.md` (76,909 → 78,380), which moves it further from the
-> §4.1 target; judged worth it for the highest-severity behavioral defect, but
-> it is a real trade against A12.
+The **first attempt was wrong and is recorded as such**: it added a session-mode
+discriminator keyed on whether `AskUserQuestion` was in the live tool list, on
+the strength of cycle 3 reporting the tool absent. Live testing falsified that
+signal — an identical headless run declared `Mode: ATTENDED`, i.e. inferred the
+tool *present*, then told a non-existent operator "no further action needed from
+you in the meantime." Two headless runs, opposite readings of the same signal.
+The declaration mechanism itself worked (making it Pre-flight step 0 got it
+emitted on turn 1); what it keyed on was unreliable.
+
+The shipped fix removes the inference instead of improving it — both paths are
+made safe, which also removes a branch rather than adding one:
+
+- **Arming a wait is unconditional** while dispatched work is outstanding.
+  Ending a turn is safe only if another turn is guaranteed, and nothing in
+  context establishes that. With an operator, arming costs nothing (the wait
+  exits on its own signal); without one it is the difference between a
+  delivered result and a lost run.
+- **Every Pre-flight `AskUserQuestion` is best-effort at the point of use** —
+  keyed on the call actually being unavailable, not on an up-front guess.
+  Fallbacks are the conservative branch and get recorded as assumptions. Where
+  a gate states no fallback, a judgment team-lead may not make routes to
+  `Skill(vote, ...)` (charter §1.3 — a principle, not four enumerated sites).
+
+**Verified live.** A headless Direct cycle on the installed fix: zero mode
+declarations, a wait armed via `run_in_background`, ran to completion in 9
+turns (up from 2–4, the orchestrator now holding control through waits), fix
+correct with `subtotal` untouched, at **$0.97** — the cheapest of four Direct
+runs ($1.09 / $1.18 / $1.01 / $0.97). More turns, less spend.
+
+Cost: +1,646 bytes on `team-lead.md` (76,909 → 78,555), a real trade against
+§4.1's target, taken for the highest-severity behavioral defect.
 
 **On G3 — what the clause was trying to say.** `senior-engineer.md:306` (the
 shell-hygiene master) says only that "zsh history-expansion mangles `!` in
@@ -694,7 +712,7 @@ unchanged).
 | R12 | **Agent description accuracy** — team-lead read-only overclaim, staff-engineer "reviews all"/TDD-authorship overclaim, project-manager write-path omission, senior-engineer `docs-author` omission (G6–G8) | Descriptions drive harness routing and are **duplicated as Rust string literals in `src/user.rs`** for the opencode variant — fix both homes together | Phase 2 follow-up |
 | R13 | **`evolve-orchestration-core.md` Consumers line** lists 3 of 5 real consumers (G9) | Out-of-scope `evolve-*` consumers must be re-checked in the same edit | Phase 3 |
 | R14 | **Decide the fate of `src/user/opencode/agents/`** (398KB, unmigrated) (§3.8) | A second, now-divergent generation of the same 8 agents; migrate, regenerate, or retire | Migration owner |
-| ~~R15~~ | **Headless-mode contract** — **APPLIED, UNVERIFIED** (§7) | Implemented; behavioral verification needs a fresh `just activate` + restart | — |
+| ~~R15~~ | **Unattended-run safety** — **APPLIED AND VERIFIED LIVE** (§7) | First design falsified by testing and replaced; shipped fix confirmed on a live headless cycle | — |
 | **R16** | **Rule 8 security panel under-provisioned** (§6.2 B2) | The panel the definitions call "non-negotiable"; needs the trigger made unmissable at dispatch time, not just stated in Rule 8 | Phase 2 follow-up |
 | **R17** | **Scratch-file discipline not reaching reviewer spawns** (§6.2 B3) | The `$TMPDIR` rule is in `sdet.md`'s own CRITICAL banner and still leaked 9 files into the repo root — prose is not holding; candidate for mechanism (hook) over text, per audit escalation §6.6 | Phase 2 follow-up |
 | **R18** | **Grounded-progress-claims snippet not holding on the Fable seat** (§6.2 B5) | Two vote rounds lost to claimed-but-unverified fixes. The §2.1 snippet is present; the gold seat's authoring path may need the claim-audit made a pre-emission step | Phase 2 follow-up |

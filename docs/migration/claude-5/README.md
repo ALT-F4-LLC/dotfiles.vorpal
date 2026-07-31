@@ -47,11 +47,26 @@ unless it names the keep-list category it lands in and points to the boundary.
 
 ## What did not land, and is accepted
 
-**Byte reduction missed its floors by roughly 2×.** This is recorded as accepted,
-not as an open defect: charter §4 was amended during the migration to make the
-size condition qualitative — a section earns its place if it fires at the point of
-action, or is relocatable *and* carries a dated record of why it has not moved.
-Bytes are a diagnostic that opens a review, never a gate that closes one.
+**Byte reduction did not meet the floors it started with — because two of the
+three floors were withdrawn as invalid and the third was already met.** This is
+recorded as accepted, not as an open defect, and the earlier "missed by roughly
+2×" framing overstated it: the gap was substantially a measurement artifact.
+Commit `e4f5240` amended charter §4 after four independent reviewers, one of them
+appointed solely to defend the ceilings, converged against them. The fleet total
+is deleted — no context ever holds more than one agent definition, so a sum
+across them bounds no real resource. The skills figure became the per-`SKILL.md`
+10,000B justification trigger, which the tree satisfies. `team-lead.md`'s figure
+became a ratchet rather than a floor. **The reported breach count went 15 → 2 → 0
+with no content cut**, and `byte_ceiling_check.sh --strict` exits 0.
+
+What decides now is qualitative: a section earns its place if it fires at the
+point of action, or is relocatable *and* carries a dated record of why it has not
+moved. Bytes are a diagnostic that opens a review, never a gate that closes one.
+This amendment is the scope decision migration item **R6** was waiting for, so R6
+is closed rather than open — see `verification-report.md` §6.9 and §7b, which
+also record why the residual "~38.8KB prose reduction" §4.5 proposed should not
+be pursued: it is a distance to a withdrawn number, and closing it would be
+reduction as a goal, which charter §4 forbids.
 
 **Relocation is not a validated reduction mechanism.** Across every recorded
 behavioral cycle, `team-doctrine/references/` files have been read zero times, and

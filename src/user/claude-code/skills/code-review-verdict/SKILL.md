@@ -47,7 +47,7 @@ Error: Usage: Skill(code-review-verdict, "<scope>") — name what to review (PR 
 
 **Scope resolution** (apply rules in order; first match wins):
 
-<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `src/user/claude-code/skills/verify-ac/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet below is near-identical. Keep both files in sync when either changes (DKT-250). -->
+<!-- COUPLING: scope-resolution — this table's Branch name, Literal `uncommitted`, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same four rows in `src/user/claude-code/skills/verify-ac/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet below is near-identical. Keep both files in sync when either changes (DKT-250). -->
 | Form | Detection | Diff source |
 |---|---|---|
 | GitHub PR number | matches `^\d+$` | `gh pr view {n}` (description) + `gh pr diff {n}` (diff) |

@@ -1,5 +1,36 @@
 # Changelog: ux-designer
 
+## 2026-07-30
+
+### Summary
+Compacted 2 entries (2026-07-12..2026-07-13) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-30
+
+### Summary
+Phase 2 coherence: `TeammateIdle` reframed to routine-lifecycle per the named authority (the old text contradicted this file's own §Lifecycle); incoming TDD-consult trigger generalized from `@staff-engineer` to the authoring seat. `effort:` pin unchanged — already at the Claude 5 default `high`. Net +97.
+
+### Changes
+- FIX[SUBSTANTIVE]: Communication Discipline `TeammateIdle` line aligned to `team-lead.md` §Teammate Stall & Crash Recovery. `:259` already stated idle-between-phases is normal, so the old wording contradicted this file internally as well as the authority. Divergence was pre-existing (verified against HEAD).
+- FIX[SUBSTANTIVE]: incoming trigger "@staff-engineer TDD revision / feasibility consult" → "the TDD authoring seat (`advisor` — either tier)". On Medium+ cycles the TDD author is @distinguished-engineer, so the role-hardcoded row missed the common case.
+- FIX[SUBSTANTIVE]: outgoing escalation row converged to the same seat form ("the general-architecture seat (`advisor` — either tier)"). The coherence pass caught that converting only the incoming half left this file naming one seat two ways — and on a default single-reviewer Medium+ cycle no @staff-engineer instance is alive, so all five outgoing escalations addressed a role with no live seat. senior-engineer.md and security-engineer.md carry an explicit seat-name translation rule for exactly this; this file carries none, so converging the spelling is the fix rather than copying a translation note into a third carrier.
+- RETAINED[SUBSTANTIVE]: `effort: high` — R1 confirmed this pin already sits at the documented default; measured binding dispatch is 0. Now carries a binding-provenance comment, closing the 4-of-8 annotation split the coherence pass flagged.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary
@@ -179,37 +210,6 @@ Actionability.
 ### Rename
 No rename.
 
-## 2026-07-13
-
-### Summary
-Compacted 4 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 4 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
-## 2026-07-12
-
-### Summary
-Phase 2 coherence: fixed the threshold-less vote proposal (real bug); compacted the shutdown block; gained the CANONICAL:SANDBOX-RECOVERY-LOCAL block (only render-executing role that lacked it) and a deep-research sanction on competitive/standards research.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: §Design Spec Approval vote proposal migrated to `vote_delegate.sh` — fixes omitted `--threshold`; Wire form preserved.
-- CULL[SUBSTANTIVE]: §Shutdown Handling block compacted to the master-pointer form.
-- AMPLIFY[SUBSTANTIVE]: Responsibility 5 gains a byte-parity `CANONICAL:SANDBOX-RECOVERY-LOCAL` block (copied from sdet.md) at the render-mechanism table — prevents sandboxed headless-chrome/bind failures being misread as a render Fail.
-- AMPLIFY[SUBSTANTIVE]: Responsibility 3 gains a `Skill(deep-research)` preference for competitive/standards scans.
-
-### Dimensions Evaluated
-Cross-Agent Coherence (vote plumbing, shutdown block, sandbox-recovery, deep-research parity across the fleet).
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -284,3 +284,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-11: Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
 - 2026-07-11: Compacted 3 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
 - 2026-07-12: Surfaced post-implementation design QA in the frontmatter description (HA-UX1), noted `skills:` frontmatter is inert in teammate mode (DR1), trimmed the Go scratch-module recipe to a pointer (IS-UX3). Net -120 bytes.
+- 2026-07-12: Phase 2 coherence — fixed the threshold-less Design Spec Approval vote proposal (migrated to `vote_delegate.sh`); compacted the shutdown block; added CANONICAL:SANDBOX-RECOVERY-LOCAL and a deep-research sanction for competitive/standards research.
+- 2026-07-13: Compacted 4 entries (2026-06-10..2026-06-17) into Compacted history per the retention-compaction policy.

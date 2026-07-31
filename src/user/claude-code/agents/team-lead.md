@@ -10,7 +10,6 @@ description: >
   commits; read-only on the working tree except its own agent-memory.
 color: cyan
 model: sonnet
-effort: xhigh
 memory: project
 permissionMode: dontAsk
 skills:
@@ -208,9 +207,9 @@ Tiers (three named tiers — `gold`/`silver`/`bronze`, benchmark-ordered. team-l
 - `silver` — resolves to model alias `opus` (Opus, 1M context); the authoring/review/verify floor. `reviewer-2`, paired verifiers (new test-architecture; routine single `verifier` runs `bronze`), harness `sdet-{DOCKET-ID}`, static-Large impl (≥3 modules or a new seam without the >1-day horizon), standalone vote reviewers, PRD authoring, the doubled `design-review-{N}`/`design-qa-{N}` panel, `ux-advisor` on review/QA/consult-only cycles. ALL `security-*` pin `silver` deliberately (the Durable Fable caveats above — a `silver` spawn's own reroute stays within the same model family).
 - `bronze` — resolves to model alias `sonnet` (Sonnet, 1M context); the volume execution tier — team-lead itself runs `bronze`. `impl-{DOCKET-ID}` ≤Medium, routine `sdet-{DOCKET-ID}`, `planner` / @project-manager planning, `docs-researcher` (RETRIEVAL-only — behavioral-fact synthesis is `investigator`-class at `gold`), `init-specs` spec-gen.
 
-Distribute decomposable work to spawn tiers rather than hoarding it in-session: two-cap economics — Sonnet volume is budget-additive (it draws on the separate Sonnet-only cap, not the constrained all-models cap).
+Distribute decomposable work to spawn tiers rather than hoarding it in-session.
 
-**Effort dispatch.** TEAMMATE spawns inherit session effort dynamically; agent-frontmatter effort never binds for a teammate. SUBAGENT spawns (the report-only mechanism) honor their definition `effort:` and are the only per-dispatch xhigh lane; a skill's own `effort:` is a third lever that binds while active. **Targeted xhigh upgrade** (replaces blanket opus-xhigh): route the dispatch as a report-only subagent so its `effort:` binds, or raise session effort for a dedicated hard cycle (S5 `high` ≈ Sonnet 4.6 `max`, so lower settings go further than they used to). Never set `CLAUDE_CODE_EFFORT_LEVEL` — it outranks every other lever and flattens per-agent differentiation.
+**Effort dispatch.** TEAMMATE spawns inherit session effort dynamically; agent-frontmatter effort never binds for a teammate. SUBAGENT spawns (the report-only mechanism) honor their definition `effort:` and are the only per-dispatch xhigh lane; a skill's own `effort:` is a third lever that binds while active. Measured 2026-07-30: report-only 9/9 ran at their pin; teammate effort varied within-role under one pin. **Targeted xhigh upgrade** (replaces blanket opus-xhigh): route the dispatch as a report-only subagent so its `effort:` binds, or raise session effort for a dedicated hard cycle. Never set `CLAUDE_CODE_EFFORT_LEVEL` — it outranks every other lever and flattens per-agent differentiation.
 
 ### Per-Role Dispatch Table
 
@@ -389,8 +388,6 @@ Short tags cited by peer agent files and skills as shorthand — defined once he
 | Tag | Meaning | Lives at |
 |---|---|---|
 | **C1** | Merged acceptance panel — the TDD's single post-author review-and-acceptance body (author recuses; the panel's votes ARE the review). | Design Phase step 6 |
-| **C3** | Security-sensitive review's independent track — `advisor` + `security-advisor` + `security-reviewer-2` from Medium up, the two security seats on Direct/Small; the security flag does not force-double the general track. | Rule 8 |
-| **C4** | Fix-round re-review defaults to delta review by the persistent advisor(s) of the track(s) that raised the surviving Blocker(s). | Review Phase step 14 |
 | **QF-2** | Doubled-security-track floor — no security review, at any pattern size or round, drops to a lone security reviewer; Direct/Small floor is the two security seats. | Rule 8 / step 14 |
 
 ---

@@ -1,5 +1,34 @@
 # Changelog: security-engineer
 
+## 2026-07-30
+
+### Summary
+Compacted 3 entries (2026-07-10..2026-07-11) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 3 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-30
+
+### Summary
+Phase 2 coherence: `TeammateIdle` reframed from "canonical stall signal" to routine-lifecycle per the named authority, resolving this file's internal `:51`-vs-`:199` contradiction. `effort:` pin unchanged — this seat deliberately keeps `xhigh` (threat reasoning), the only agent that does. Net +61.
+
+### Changes
+- FIX[SUBSTANTIVE]: Communication Discipline `TeammateIdle` line aligned to `team-lead.md` §Teammate Stall & Crash Recovery ("routine, not a stall verdict"); reply-that-turn duty and rule numbering preserved. The old text asserted a stall verdict the authority forbids, and contradicted `:51` of this same file. Divergence was pre-existing, not introduced by this cycle (verified against HEAD).
+- RETAINED[SUBSTANTIVE]: `effort: xhigh` — R1 re-derived every other pin; this one is kept deliberately (threat reasoning is the task class gate §4 reserves xhigh for). Measured binding dispatch: 1 report-only spawn. Now carries a binding-provenance comment, closing the 4-of-8 annotation split the coherence pass flagged.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary
@@ -209,48 +238,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net +32 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): verification-only pass, no content changes. Charter confirmed as near-exact industry AppSec fit; all team-lead.md cross-references, tier claims, and docket command examples verified valid.
-
-### Changes
-(none — RETAIN across the board; see Dimensions Evaluated)
-
-### Dimensions Evaluated
-Role Realism: SDLC research confirms near-exact fit to industry AppSec Engineer (design-time threat modeling, secure code review, cross-SDLC guidance, no feature code); the "AppSec also builds security CI tooling" delta is intentional role-separation here (tooling routes to impl roles), not a gap. Boundary Clarity (cross-refs to team-lead.md L51/L96/L143 all valid), Actionability (all docket examples correct — no hit for the fleet-wide wrong-docket-example bug), Consolidation (no safe trim found; rejected a fabricated Rule-7/team-lead-Rule-6 trim as non-redundant on inspection): RETAIN. Completeness/Capability Growth/Spec Alignment/Rename: RETAIN.
-
-### Rename
-No rename.
-
-## 2026-07-10
-
-### Summary
-Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
-
-### Changes
-- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
-
-### Dimensions Evaluated
-History Compaction (retention-compaction policy)
-
-### Rename
-No rename.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -297,3 +284,6 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: Phase 2 coherence follow-up: flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object (bug-audit FIX-9, fleet-wide sweep).
 - 2026-07-10: Trimmed a third redundant SP-1 restatement in §Shutdown Handling. Net -69 bytes.
 - 2026-07-10: Phase 3 disambiguation follow-up: fixed a confusable peer-name in a shutdown-routing example (`reviewer-staff-2` -> `reviewer-2`).
+- 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate) — verification-only pass, no content changes; charter confirmed as near-exact industry AppSec fit, all cross-refs and docket examples verified valid.
+- 2026-07-11: Phase 2 coherence fix — corrected the SP-2 teammate/report-only-subagent discriminator; `name=` is the sole discriminator (CC v2.1.198, family-wide lockstep with 5 siblings + master).

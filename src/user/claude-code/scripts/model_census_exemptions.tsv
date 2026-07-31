@@ -51,8 +51,6 @@ product-capability-fact	src/user/claude-code/agents/team-lead.md	Durable Fable c
 deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `fable`	the canonical Tiers block tier-to-alias table
 deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `opus`	the canonical Tiers block tier-to-alias table
 deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `sonnet`	the canonical Tiers block tier-to-alias table
-product-capability-fact	src/user/claude-code/agents/team-lead.md	Sonnet-only cap	durable property of the Sonnet tier's API cap structure
-provenance-record	src/user/claude-code/agents/team-lead.md	Sonnet 4.6 `max`	dated cross-generation effort-level comparison citation
 provenance-record	src/user/claude-code/agents/team-lead.md	replaces blanket opus-xhigh	citation of a superseded prior practice
 functional-value	src/user/claude-code/agents/distinguished-engineer.md	model: fable	frontmatter model pin -- config value selecting the launch model
 product-capability-fact	src/user/claude-code/agents/distinguished-engineer.md	distillation classifier into a silent Opus fallback	classifier fallback behavior

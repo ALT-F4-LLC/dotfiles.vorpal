@@ -1,5 +1,27 @@
 # Changelog: sdet
 
+## 2026-07-30
+
+### Summary
+sdet holds the fleet's only high-volume BINDING `effort:` pin — the default `verifier` is a report-only subagent — so `xhigh` → `high` lands here with real reach. Paid for by six §1.5/§1.6 culls. Net −106 (42409 → 42303).
+Trial: `effort: high` — BINDING measured (report-only 9/9 honored the pin, n≈480); QUALITY delta unmeasured, no eval exists. Adopts-or-rolls-back at the next Phase 0.
+Findings: 9 → 6 sub / 2 cos / 4 rej / 2 def / 4 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (I4+I11): `effort: xhigh` → `high` + binding-provenance comment; 5 report-only spawns = 67% of all fleet binding dispatch.
+- CULL[SUBSTANTIVE] (§1.6): shell-hygiene restatement → citation of `senior-engineer.md §Shell hygiene`; the local copy was over-broad and contradicted the master.
+- CULL[SUBSTANTIVE] (§1.5): three blocks `verify-ac/SKILL.md` already owns cut to their deltas — step-2 diff reading, edge-probe inputs, FULL-depth enumeration.
+- CULL[COSMETIC] (§1.5): third in-file carrier of "no Docket issue creation" removed; routing kept.
+- FIX[SUBSTANTIVE]: mode discriminator made deductive — Task family PRESENT ⇒ teammate, not "inconclusive"; the stated premises already entailed it.
+- FIX[SUBSTANTIVE]: BLOCK routing corrected to the implementing seat, adding @distinguished-engineer's deep-impl arm (the matrix had no DE row).
+- REJECTED (B3): zsh `status` fix belongs in `senior-engineer.md`, the master — adding it here is a second carrier (§1.5); none of B3's 4 sessions were sdet spawns.
+
+### Dimensions Evaluated
+All 9, two passes. 4 caps markers, zero unmappable (§2.1/§2.3).
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary

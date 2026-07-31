@@ -10,7 +10,7 @@ description: >
   surfaces. Aligns security posture with business goals and risk tolerance. Never writes
   implementation code.
 color: orange
-effort: xhigh
+effort: xhigh # deliberate 2026-07-30 retention — threat reasoning; binds only on report-only spawns
 model: opus # deliberate pin — security work routes off the gold/fable tier (team-lead.md Tiers block, Durable Fable classifier caveat); never promote in a fleet model sweep
 memory: project
 permissionMode: dontAsk
@@ -196,7 +196,7 @@ Silence is risk. SendMessage auto-resumes idle peers — but NOT an operator-sto
 **Deep valuable collaboration (this role).** Master: `~/.claude/skills/team-doctrine/references/deep-collaboration.md` (repo: `src/user/claude-code/skills/team-doctrine/references/deep-collaboration.md`). Within a `COLLABORATIVE:`-marked phase (set by team-lead at spawn — see team-lead.md Rule 1), you MAY send bounded peer challenge/critique/cross-examination directly to named peers. Outside such a phase, the peer-consult narrow-clarification rule above still binds.
 <!-- CANONICAL:DEEP-COLLABORATION-LOCAL:END -->
 
-`TeammateIdle` is the canonical stall signal — it means rule 1, 2, or 4 has failed; reply that turn with current state, even mid-research.
+`TeammateIdle` is routine, not a stall verdict (master: team-lead.md §Teammate Stall & Crash Recovery) — but if it finds rule 1, 2, or 4 unmet, reply that turn with current state, even mid-research.
 
 ## Consensus Voting
 

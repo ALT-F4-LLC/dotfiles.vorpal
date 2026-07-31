@@ -367,6 +367,19 @@ reconstruct") governs the stop point. The gap is nonetheless ~2× on two of
 three floors, which is a scope question for the migration owner, not something
 a verification pass can close.
 
+**Superseded 2026-07-30 by `e4f5240` — see §6.9.** That scope question was taken
+up and answered. Two of the three floors in the `Charter target` column above no
+longer exist: the fleet total was deleted outright (no context ever holds more
+than one agent definition, so a sum across them bounds no real resource, and it
+double-charges the CANONICAL blocks pinned across carriers on purpose), and the
+skills figure was replaced by the per-`SKILL.md` 10,000B justification trigger,
+which this tree already satisfies. The third, `team-lead.md`'s 30,000B, became a
+ratchet rather than a floor. The three **FAIL** verdicts stand as the measurement
+they were, but they are scored against a standard that has since been withdrawn.
+Under the standard now in force, `byte_ceiling_check.sh --strict` exits 0 on this
+tree. Current figures: agents **366,387B**, `team-lead.md` **77,619B**,
+Σ`SKILL.md` **217,842B**.
+
 ### 4.2 Markers
 
 | File | Baseline M/N/A | Now | CRITICAL (was) |
@@ -478,6 +491,18 @@ class. This is a live cost setting, not a no-op.
 
 ### 4.5 R6 re-diagnosed — the target is reachable; a remediation was skipped
 
+> **Superseded 2026-07-30 by `e4f5240`; R6 closed — see §6.9 and §7b.** This
+> section reasons toward "the residual ~38.8KB to the 30,000B ceiling is charter
+> §1 prose reduction," and that ceiling was withdrawn the same day: `team-lead.md`
+> now carries a ratchet, not a floor, and the qualitative point-of-action
+> condition is the gate. The distance computed below is a distance to a number
+> that no longer decides anything. Two findings here also inverted under later
+> evidence — the second split was **reverted** (`ae48eae`, see below), and
+> relocation is now on record as an unvalidated mechanism with one demonstrated
+> harm. The section is retained because its *measurements* (pinned mass, section
+> profile, what is structurally movable) are what made the ceiling's withdrawal
+> arguable, and §6.9 decomposes against them directly.
+
 Phases 2 and 3 attribute the byte shortfall to structurally pinned content.
 Measured against the current tree, that explanation covers **77,550 of 367,955
 agent bytes — 21%**:
@@ -586,7 +611,12 @@ Moving the CANONICAL blocks is not merely harder, it is wrong: they are pinned
 byte-identical across 8 carriers precisely so no single carrier can drift, and
 relocating one carrier's copy breaks the invariant in the other seven.
 
-**Second split executed — `Wrap-up & Team Cleanup`.** The end-of-cycle
+**Second split executed — `Wrap-up & Team Cleanup`.** *(Reverted 2026-07-30 by
+`ae48eae`: this relocation is the one that stopped the dispatch-ledger
+instrumentation from firing. The mechanics are inline again, `wrap-up.md` is
+deleted, and `team-lead.md` returned to 75,961B. Read the account below as the
+"before" arm of §6.9's natural experiment, not as a standing reduction.)* The
+end-of-cycle
 mechanics (spot-check, ledger pass, summary, dispatch-ledger instrumentation,
 CLOSED-set shutdown, team cleanup) moved to `team-doctrine/references/wrap-up.md`.
 Three items stayed inline against the point-of-action test: the promised-gate
@@ -1398,7 +1428,7 @@ unchanged).
 | ~~R3~~ | **`brief` stale "HARD GATE" label** — **APPLIED** (§7) | All 3 sites now cite "Pre-flight step 1"; anchor verified present in team-lead.md | — |
 | ~~R4~~ | **team-lead marker-ceiling exception** — **RECORDED** (§7b) | All 15 markers map to keep-list categories; the charter's stated gate is the mapping, not the count | — |
 | ~~R5~~ | **Pointer-stub exception** — **RECORDED** (§7b) | Charter §4 and remediation #3 conflict; the remediation shipped. Literal zero is a different architecture, not a cleanup | — |
-| R6 | **Byte-target shortfall** — agents 2.13×, team-lead 2.56×, skills −30.3% vs −50% (§4.1) | **Re-diagnosed (§4.5): the target is reachable and one large remediation was never executed.** Only 21% of agent bytes are structurally pinned; agents have no `references/` split at all, and the audit's item #1 (team-lead 3-way split) fell between Phase 2 (no reference files) and Phase 3 (skills only). **Second split executed (§4.5): 74,612 → 73,016B.** Corrected accounting also lands there — relocation alone bottoms out near 68.8KB, not the ~53KB a section-boundary reading implies, because most of the two remaining candidate sections is CANONICAL cross-carrier content, `tier_map.sh`-parsed content, or point-of-action spawn rules. Closing the residual ~38.8KB is charter §1 prose reduction, not relocation | Scoped work; residual gap needs an explicit scope decision |
+| ~~R6~~ | **Byte-target shortfall** — **CLOSED 2026-07-30** by `e4f5240`, the scope decision this row was waiting for (§6.9, recorded §7b) | **The shortfall was measured against targets that no longer exist.** Four independent reviewers — including one tasked only to defend the ceilings, who could construct no defense — retired two of the three: the fleet total is deleted (a sum across agent files bounds no real resource and double-charges the CANONICAL blocks pinned across carriers on purpose), and the skills figure is replaced by the per-`SKILL.md` 10,000B justification trigger the tree already satisfies. `team-lead.md`'s 30,000B became a **ratchet, not a floor**, and the qualitative point-of-action condition is now the gate. `byte_ceiling_check.sh --strict` exits 0 on this tree with **no content cut** — the reported breach count went 15 → 2 → 0. §4.5's residual "~38.8KB" is a distance to a withdrawn number, and its remedy has since inverted: relocation is on record as unvalidated (zero reads into `team-doctrine/references/` across 1,040 tool calls / 35 spawns) with one demonstrated harm — **§4.5's own second split was reverted (`ae48eae`) for stopping a behavior from firing.** Charter §4 forbids reduction as a goal, and §6.9 prices the whole 44KB cut at ~1% of a cycle, so a prose-reduction pass aimed at the old number would be pursuing bytes for their own sake against evidence that removal has never once helped | — |
 | ~~R7~~ | **DELETE-WHOLE-FILE verdicts** — **SUPERSEDED** (§7b) | Written against pre-migration content that has since changed; executing them now would delete keep-list material | — |
 | ~~R10~~ | **Doc-family COUPLING vs init-specs** — **APPLIED as R23** (§7) | Sync claim scoped to the four members that carry the section, exclusion stated inline; `coupling_check.py` accepts the corrected roster | — |
 | R11 | **`verify-ac` `uncommitted` scope misses untracked files** (G5) | Real behavioral defect but **pre-existing**, not caused by the migration — file it on its own merits rather than as migration cleanup | Standalone bug |
@@ -1418,11 +1448,53 @@ unchanged).
 
 ---
 
-## 7b. Recorded exceptions (R4, R5, R7)
+## 7b. Recorded exceptions (R4, R5, R6, R7)
 
-Three open items were requests to *record a decision* rather than change a
+Four open items were requests to *record a decision* rather than change a
 file. Each is settled by evidence already in this report; they are written down
 here so a later reader does not re-litigate them or "fix" a deliberate choice.
+
+### R6 — the byte shortfall is the correct size, and the targets were the defect
+
+**Closed 2026-07-30 by `e4f5240`.** R6's status line asked for "an explicit
+scope decision" on the residual gap. That decision was taken the same day and is
+recorded in full at §6.9; this entry exists because the tracking table and
+§4.5 were written before it and read as though the gap were still live.
+
+The decision was not to forgive a miss. It was that two of the three targets
+measured the wrong thing and the third was already met. The fleet total is
+deleted — no context ever holds more than one agent definition, so a sum across
+them bounds no resource, and it charges eight times over for the CANONICAL
+blocks pinned across carriers on purpose; its own appointed advocate could build
+no defense of it. The skills figure is replaced by the per-`SKILL.md` 10,000B
+justification trigger, which the tree satisfies and `baseline-metrics.md` had
+already justified. `team-lead.md`'s 30,000B is now a ratchet: it may not rise
+without a stated reason and it lowers when a verified reduction lands. **The
+reported breach count went 15 → 2 → 0 with no content cut.**
+
+What replaced the count is the qualitative gate — every section of an
+always-resident definition either fires at the point of action for a role that
+can take that action, or is relocatable AND carries a dated record of why it has
+not moved. The dated record for this fleet is §6.9 itself: **relocation is not a
+validated reduction mechanism.** Across 12 run directories, 1,040 tool calls and
+35 spawns, `team-doctrine/references/` was read zero times against 17 files and
+74 pointers, and §4.5's own second split was reverted (`ae48eae`) because moving
+the dispatch-ledger instruction stopped it from firing — inline it wrote,
+relocated it did not, re-inlined it wrote again, the closest thing to a causal
+result this record holds.
+
+**Why the obvious remaining move is the wrong one.** §4.5 concludes that the
+residual "~38.8KB" is charter §1 prose reduction rather than relocation. That
+number is a distance to the 30,000B ceiling, which no longer decides anything,
+and a pass undertaken to close it would be reduction pursued as a goal — the one
+thing charter §4 names and forbids. The price of being wrong is not symmetric
+with the prize: §6.9 solves the whole 44KB cut at ~9% of a cycle under
+assumptions maximally favourable to it and ~1% realistically, or 1.9% of one
+1M-context window, against a record holding one demonstrated instance of *adding*
+always-resident text fixing a defect and zero of removing text improving
+anything. A future cut is not forbidden — it is conditioned: `rule_probe.sh` is
+the instrument, its four-probe PASS at `d37493b` is the "before" arm, and any
+such cut runs the suite on both arms.
 
 ### R4 — `team-lead.md` exceeds the ≤10 marker ceiling, and should
 

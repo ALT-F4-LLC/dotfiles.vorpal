@@ -43,7 +43,7 @@ count. `bash src/user/claude-code/scripts/doctrine_check.sh` verifies this mecha
 | `references/vorpal-tools.md` | Vorpal-managed tool inventory + pinned versions | 7 agents + `team-lead.md` |
 | `references/deep-collaboration.md` | Deep-collaboration mechanics (peer challenge, shared task list, cross-examination) | 6 agents (all but `senior-engineer.md`) + `team-lead.md` |
 | `references/pitfalls.md` | Recurring-pitfalls memory convention (two-homes content split) | 7 agents + `team-lead.md` |
-| `references/retention-compaction.md` | Retention & Compaction Policy (changelog budgets + pitfalls compaction; sole authority for its gate formulas, ledger formats, and invariants) | `evolve-agents`, `evolve-config`, `evolve-model-distribution` |
+| `references/retention-compaction.md` | Retention & Compaction Policy (changelog budgets + pitfalls compaction; sole authority for its gate formulas, ledger formats, and invariants) | `evolve-agents`, `evolve-config`, `evolve-model-distribution`, `evolve-skills` |
 | `references/shutdown-protocol.md` | Shutdown protocol (SP-1/1b/2/3/4) | 7 agents + `team-lead.md` |
 | `references/team-conventions.md` | Communication-Discipline rule-numbering convention | `team-lead.md` + `evolve-coherence` |
 | `references/laziness-discipline.md` | Simplicity ladder + when-not-to-simplify boundaries | `senior-engineer.md`, `sdet.md` |

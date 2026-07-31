@@ -34,10 +34,16 @@ const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
+// `SENSITIVE_PATHS` feeds two different absolute-path prefix dialects depending on which
+// consumer reads it: `Edit(...)`/`Read(...)` permission rules (see `deny_sensitive_paths`
+// below) anchor an absolute path with a *double* leading slash (`//path`; a single `/path`
+// instead anchors at the settings source, e.g. `~/.claude` for this user-level config) —
+// code.claude.com/docs/en/permissions#read-and-edit. `sandbox.filesystem.*` settings (see
+// `sandbox_filesystem_deny_read_paths` below) instead anchor an absolute path with a single
+// leading slash (`/path`) — code.claude.com/docs/en/sandboxing#configure-sandboxing. A future
+// entry that gets this backwards silently misfires exactly the way the pre-fix `/Applications`
+// form did here.
 const SENSITIVE_PATHS: &[&str] = &[
-    "/Applications/**",
-    "/Library/**",
-    "/System/**",
     "~/.claude.json",
     "~/.doppler/**",
     "~/.gemini/**",
@@ -52,9 +58,21 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Downloads/**",
 ];
 
+// /Applications, /Library, /System are integrity-sensitive (no writes/edits), not
+// confidentiality-sensitive: toolchains need real read access under them (the dyld shared
+// cache under /System, /Library/Developer/CommandLineTools, and this repo's own
+// /Applications/Obsidian.app/Contents/MacOS PATH entry below). They're deliberately kept out
+// of `SENSITIVE_PATHS` (which also generates `Read` denies) rather than added there:
+// `Read`/`Edit` permission-rule paths and `sandbox.filesystem` settings are merged into the
+// final sandbox configuration (code.claude.com/docs/en/sandboxing#permission-rules), so a
+// `Read(//Applications/**)` deny here would inject the real `/Applications` into the
+// OS-level sandbox's `denyRead` set and regress those toolchain reads. `Edit` denies don't
+// have that problem — subprocess writes under these 3 paths should stay blocked either way.
+const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] =
+    &["//Applications/**", "//Library/**", "//System/**"];
+
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
-const SANDBOX_DENY_READ_EXCLUDED: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
@@ -574,7 +592,10 @@ fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeC
     let claude_code_config = deny_sensitive_paths(
         claude_code_config,
         |p| format!("Edit({p})"),
-        SENSITIVE_PATHS.iter().copied(),
+        SENSITIVE_PATHS
+            .iter()
+            .chain(SENSITIVE_PATHS_DENY_EDIT_ONLY)
+            .copied(),
     );
     let claude_code_config = deny_sensitive_paths(
         claude_code_config,
@@ -648,13 +669,13 @@ fn deny_sensitive_paths(
 }
 
 // Bare-path form (no `Edit(...)`/`Read(...)` wrapper, no `/**` suffix) of every path denied for
-// Read, minus `SANDBOX_DENY_READ_EXCLUDED`, for the OS-level sandbox's confidentiality-only
-// `with_sandbox_filesystem_deny_read`.
+// Read, for the OS-level sandbox's confidentiality-only `with_sandbox_filesystem_deny_read`.
+// `SENSITIVE_PATHS_DENY_EDIT_ONLY` never feeds Read denies in the first place (see its comment
+// above), so no exclusion filter is needed here.
 fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     let mut paths: Vec<String> = SENSITIVE_PATHS
         .iter()
         .chain(SENSITIVE_PATHS_DENY_READ_ONLY)
-        .filter(|p| !SANDBOX_DENY_READ_EXCLUDED.contains(p))
         .map(|p| p.strip_suffix("/**").unwrap_or(p).to_string())
         .collect();
     paths.sort_unstable();
@@ -676,6 +697,81 @@ mod tests {
                 .expect("claude code config should serialize to JSON");
 
         println!("{content}");
+    }
+
+    // Regression guard for a live abuse case: a single leading slash on `/Applications/**`,
+    // `/Library/**`, `/System/**` anchors an `Edit`/`Read` permission-rule deny at the
+    // settings source (`~/.claude` for this user-level config) rather than the filesystem
+    // root, so it denied nothing under the real `/Applications`, `/Library`, `/System` on
+    // disk — verified live by a Read-tool probe of a real path under `/Applications/`
+    // succeeding despite the rule. Only the `//`-prefixed form reaches those real paths.
+    //
+    // These 3 paths are deliberately `Edit`-deny only, never `Read`-deny: `Read`/`Edit`
+    // permission-rule paths and `sandbox.filesystem` settings are merged into the final
+    // sandbox configuration (code.claude.com/docs/en/sandboxing#permission-rules), so a
+    // correctly-anchored `Read(//Applications/**)` deny would inject the real `/Applications`
+    // into the OS-level sandbox's `denyRead` and regress toolchain reads that must stay open
+    // (the dyld shared cache under /System, /Library/Developer/CommandLineTools, and this
+    // repo's own /Applications/Obsidian.app PATH entry).
+    #[test]
+    fn sensitive_system_paths_are_edit_denied_read_permitted_and_filesystem_root_anchored() {
+        let content =
+            serde_json::to_string_pretty(&build_claude_code_config("claude-code", Vec::new()))
+                .expect("claude code config should serialize to JSON");
+
+        for path in ["Applications", "Library", "System"] {
+            assert!(
+                content.contains(&format!("\"Edit(//{path}/**)\"")),
+                "expected filesystem-root-anchored Edit deny rule for {path}"
+            );
+            assert!(
+                !content.contains(&format!("\"Edit(/{path}/**)\"")),
+                "mis-anchored single-slash Edit deny rule for {path} must not reappear"
+            );
+            assert!(
+                !content.contains(&format!("\"Read(//{path}/**)\"")),
+                "{path} must stay off the Read deny list: a Read deny here merges into the \
+                 OS-level sandbox's denyRead and regresses legitimate toolchain reads"
+            );
+            assert!(
+                !content.contains(&format!("\"Read(/{path}/**)\"")),
+                "mis-anchored single-slash Read deny rule for {path} must not reappear"
+            );
+        }
+
+        // The OS-level sandbox's `denyRead` must never gain these 3 paths, in either the
+        // filesystem-root-anchored (`//`) or permission-rule-relative (`/`) dialect. Anchored
+        // to exact rendered array entries, not a bare substring: a bare `contains("Library")`
+        // would false-fire against an unrelated future entry like `~/Library/Caches/...`.
+        let deny_read_start = content
+            .find("\"denyRead\"")
+            .expect("rendered config should have a denyRead section");
+        let deny_read_end = content[deny_read_start..]
+            .find(']')
+            .expect("denyRead array should be closed");
+        let deny_read_section = &content[deny_read_start..deny_read_start + deny_read_end];
+        for path in ["Applications", "Library", "System"] {
+            assert!(
+                !deny_read_section.contains(&format!("\"//{path}\"")),
+                "OS-level sandbox denyRead must not gain filesystem-root-anchored {path}"
+            );
+            assert!(
+                !deny_read_section.contains(&format!("\"/{path}\"")),
+                "OS-level sandbox denyRead must not gain {path}"
+            );
+        }
+
+        // Positive control: prove the `denyRead` mechanism itself is still wired up. Without
+        // this, the negative assertions above would trivially pass even if `denyRead` were
+        // accidentally emptied out entirely.
+        assert!(
+            deny_read_section.contains("\"~/.ssh\""),
+            "denyRead should still protect ~/.ssh"
+        );
+        assert!(
+            deny_read_section.contains("\".env\""),
+            "denyRead should still protect .env"
+        );
     }
 
     #[test]

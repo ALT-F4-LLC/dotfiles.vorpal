@@ -51,7 +51,7 @@ count. `bash src/user/claude-code/scripts/doctrine_check.sh` verifies this mecha
 | `references/fable-completeness-heuristics.md` | Completeness heuristics for briefs and return-audits | `team-lead.md` |
 | `references/monitor-orchestration.md` | Monitor-for-Orchestration watch patterns | `team-lead.md` |
 | `references/stall-recovery.md` | Teammate stall/crash triage, Liveness-Gate mechanics, bare-idle disambiguation | `team-lead.md` |
-| `references/authoring-verification-gates.md` | Authoring verification gates for TDD/ADR authors | `staff-engineer.md`, `distinguished-engineer.md`, `tdd` |
+| `references/authoring-verification-gates.md` | Authoring verification gates for TDD/ADR authors | `staff-engineer.md`, `distinguished-engineer.md`, `security-engineer.md`, `tdd`, `vote` |
 | `references/sandbox-recovery.md` | Sandbox permission-denial recovery signatures | 6 agents (all but `project-manager.md`) |
 | `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates (spawn-TEMPLATE store, token-contracted) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |
 | `references/evolve-orchestration-core.md` | Shared evolve-* orchestration-core prose (DKT-106) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |

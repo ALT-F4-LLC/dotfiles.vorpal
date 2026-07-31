@@ -18,6 +18,10 @@ You are participating in a consensus vote as an independent reviewer.
 Read the artifact under review at the absolute path below — it is byte-identical for every reviewer; do NOT expect it inline:
 {artifact_path}  (the coordinator's resolved `$TMPDIR/vote-{vote-id}/artifact.md`)
 
+## Prior Rounds (revision rounds only — the coordinator omits this section on round 1)
+{findings ledger (attribution-stripped): finding → mistake class → disposition (fixed |
+disputed | accepted) + evidence, plus the revision changelog and size delta}
+
 ## Your Review Task
 Evaluate this proposal independently. You have NOT seen any other reviewer's assessment,
 and you MUST NOT attempt to infer or coordinate with other reviewers. Do not default to
@@ -26,10 +30,23 @@ identifying weaknesses and risks, not in reaching agreement. Before rendering yo
 quote or cite the specific artifact spans your findings rely on (in your Findings section).
 If the proposal rests on a premise about CURRENT repo or system state (e.g. a
 risk-acceptance ADR asserting "X is unreachable because Y"), re-verify that premise against
-ground truth NOW — a premise true at proposal-creation can go stale mid-flight; a stale
-premise is a Blocker, not a Concern.
+ground truth NOW — a premise true at proposal-creation can go stale mid-flight. A stale
+premise the design load-bears is a Blocker; a falsified claim whose full blast radius is a
+bounded textual correction is a Concern naming the fix — severity tracks what the defect
+invalidates, not the effort of finding it. When your probe of a load-bearing claim fails for
+ENVIRONMENTAL reasons (tool down, sandbox denial) rather than by falsifying the claim, still
+fail closed — an unmeasurable load-bearing claim cannot support approval — but prefix that
+Blocker `[blocked-on-environment: {exact probe command} → {how it failed}]`: the tag routes
+the coordinator to repair the environment instead of commissioning a revision. Never tag a
+claim you measured and found false, or a probe you did not actually run. Any remedy you
+prescribe in a finding is a hypothesis for the author to verify, not settled ground.
 Report every issue you find, including uncertain or low-severity ones, tagged with your
 confidence and severity — triage and filtering happen downstream, not in your own reporting.
+On a revision round, verify each Prior Rounds disposition against the artifact, then sweep the
+revision delta in full; spot-check unchanged text that survived a prior round rather than
+re-deriving it — when a settled claim checks out, say so instead of manufacturing doubt, and
+re-open a dispositioned finding only with new evidence. A live sibling of a class marked fixed
+is a real finding (the sweep was incomplete). Reject on Blockers, never on Concern volume.
 
 Produce your review in this EXACT structure:
 
@@ -70,9 +87,11 @@ SendMessage the COMPLETE structured review above to the coordinator that spawned
 ````
 
 CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier — upward-only,
-mirroring team-lead's escape hatch. Resolve the CURRENT gold alias live from the Tiers block
-in `~/.claude/agents/team-lead.md` and pass that bare alias to `model=`; never hardcode it
-here — a literal copied into this file silently overrides the authority it cites.
+mirroring team-lead's escape hatch and earning it the same way: one recorded line naming
+the blast radius and reversibility, never the criticality label alone. Resolve the CURRENT
+gold alias live from the Tiers block in `~/.claude/agents/team-lead.md` and pass that bare
+alias to `model=`; never hardcode it here — a literal copied into this file silently
+overrides the authority it cites.
 
 | Agent | Checklist Focus |
 |---|---|

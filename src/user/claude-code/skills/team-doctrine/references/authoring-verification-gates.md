@@ -52,6 +52,18 @@ than the TDD itself.
   edit count.
 - **A scoped exception to an existing rule** sweeps EVERY restatement/enforcement/audit home
   of that rule in the same change, each carved home its own AC with verified pre-counts.
+- **Post-findings class sweep** binds on every revision answering review/panel findings:
+  generalize each finding to its mistake class and sweep the ENTIRE document for sibling
+  instances before resubmitting — re-check every `measured`/`verified`/`confirmed`/`exits 0`-style
+  claim against current ground truth (not only the flagged ones), re-read every cited
+  doctrine file, and record per class the sweep command and hit disposition (zero siblings
+  is cited, never assumed). A reviewer-prescribed remedy is a hypothesis, not settled
+  ground: verify it with the same rigor as any measured claim BEFORE adopting — prove it
+  safe and sufficient against ground truth, or design past it — and record that
+  verification with the finding's disposition; an unvetted prescription adopted verbatim
+  relocates the blocker to the next round. The same class recurring on a new axis next
+  round means instance-patching lost: re-derive the ground truth from source or change
+  the mechanism to fail closed — never add axis N+2.
 - **Zero hits is suspect, not proof** — re-run against a known-positive control before
   concluding "not found."
 

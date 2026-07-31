@@ -55,3 +55,4 @@ count. `bash src/user/claude-code/scripts/doctrine_check.sh` verifies this mecha
 | `references/sandbox-recovery.md` | Sandbox permission-denial recovery signatures | 6 agents (all but `project-manager.md`) |
 | `references/evolve-phase0-templates.md` | Shared evolve-* Phase-0 spawn templates (spawn-TEMPLATE store, token-contracted) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |
 | `references/evolve-orchestration-core.md` | Shared evolve-* orchestration-core prose (DKT-106) | `evolve-agents`, `evolve-skills`, `evolve-config`, `evolve-coherence`, `evolve-model-distribution` |
+| `references/claude-5-paradigm-gate.md` | Claude 5 Paradigm Gate — operational form of the context-engineering charter for evolve cycles (Paradigm Content-Gate check, keep-list, insufficient-prescription burden, per-model deltas, byte/marker diagnostics) | `evolve-agents`, `evolve-skills`, `evolve-coherence` |

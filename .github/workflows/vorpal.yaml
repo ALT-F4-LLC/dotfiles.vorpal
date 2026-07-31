@@ -18,6 +18,12 @@ jobs:
 
       - run: bash tests/doctrine_check.test.sh
 
+      # Central byte gate. The charter's ceilings bind here and nowhere else —
+      # no editing skill carries its own copy of the obligation. --strict turns
+      # the warn-only default into a failure, so a raise must land as a stated
+      # reason on the byte_ceilings.tsv row rather than being silently absorbed.
+      - run: bash src/user/claude-code/scripts/byte_ceiling_check.sh --strict
+
       - run: bash tests/model_census.test.sh
 
       - run: bash tests/drift_guard_check.test.sh

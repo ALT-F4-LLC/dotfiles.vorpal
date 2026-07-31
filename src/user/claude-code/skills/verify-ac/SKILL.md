@@ -41,12 +41,12 @@ Error: Usage: Skill(verify-ac, "<scope>") — name what to verify (Docket issue 
 
 **Scope resolution** (apply rules in order; first match wins):
 
-<!-- COUPLING: scope-resolution — this table's Branch name, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same three rows in `src/user/claude-code/skills/code-review-verdict/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet below is near-identical. Keep both files in sync when either changes (DKT-250). -->
+<!-- COUPLING: scope-resolution — this table's Branch name, Literal `uncommitted`, Literal `staged`, and File paths rows are BYTE-IDENTICAL to the same four rows in `src/user/claude-code/skills/code-review-verdict/SKILL.md`'s scope-resolution table; the branch-vs-file `./`-prefix ambiguity bullet below is near-identical. Keep both files in sync when either changes (DKT-250). -->
 | Form | Detection | Sources |
 |---|---|---|
 | Docket issue ID | `docket issue show {scope} --json` exits 0 (abort: `Error: docket CLI required to resolve issue-ID scope. Re-invoke with branch name, "uncommitted", or file paths.` if CLI unavailable) | Pull issue + acceptance criteria + comments + file attachments via `docket issue show`, `docket issue comment list`, `docket issue file list`, `docket issue log` |
 | Branch name | `git rev-parse --verify {scope}` exits 0 | `git diff main...{scope}` + `git log main...{scope} --oneline` + `git diff --stat main...{scope}` |
-| Literal `uncommitted` | exact match | `git diff` + `git diff --staged` + `git diff --stat HEAD` |
+| Literal `uncommitted` | exact match | `git status --short` (surfaces untracked `??`) + `git diff` + `git diff --staged` + `git diff --stat HEAD` |
 | Literal `staged` | exact match | `git diff --staged` + `git diff --stat --staged` |
 | File paths (one or more, space-separated) | every token resolves via `Bash test -e {path}` | `Read` each file directly |
 

@@ -68,12 +68,44 @@ provenance-record	docs/changelog	Fable	dated changelog/audit-log entry -- histor
 provenance-record	docs/changelog	opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	Opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
+provenance-record	docs/changelog	Sonnet	dated changelog/audit-log entry -- historical record, not a live model claim (completes the cased pair, matching the fable/Fable and opus/Opus rows above)
 provenance-record	docs/changelog	claude-sonnet-5	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	docs/changelog	claude-mythos-5	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	fable	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	Fable	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	opus	dated changelog/audit-log entry -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/changelog	sonnet	dated changelog/audit-log entry -- historical record, not a live model claim
+
+# Claude 5 migration family. These four paths name models because their SUBJECT
+# is per-model differences: the migration record measures and cites them, and
+# the charter + its operational gate define the per-model deltas themselves.
+# Blanket path-prefix rows, same treatment and same reasoning as the changelog
+# families above. Routing drift stays guarded where routing actually lives --
+# team-lead.md's content-anchored rows, tier_map.sh, and arm 5's closed alias
+# vocabulary -- none of which these paths carry.
+provenance-record	docs/migration/claude-5	fable	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	Fable	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	opus	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	Opus	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	sonnet	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	Sonnet	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+provenance-record	docs/migration/claude-5	Haiku	dated migration record -- measurements, audit findings, cycle transcripts, not a live model claim
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	fable	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	Fable	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	opus	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	Opus	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	sonnet	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/docs/context-engineering-claude-5.md	Sonnet	the charter's per-model deltas -- behavior statements that become FALSE if tier-ified
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	fable	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	Fable	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	opus	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	Opus	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	sonnet	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	Sonnet	the charter's operational form -- same per-model deltas, same tier-ification failure
+provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	Fable	dated migration summary -- historical record, not a live model claim
+provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	opus	dated migration summary -- historical record, not a live model claim
+provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	Opus	dated migration summary -- historical record, not a live model claim
+provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	Sonnet	dated migration summary -- historical record, not a live model claim
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-haiku-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-opus-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
 functional-value	src/user/claude-code/scripts/test/fixtures	claude-sonnet-4	synthetic test-fixture datum (subagent jsonl/meta.json/README sample data)
@@ -93,20 +125,15 @@ functional-value	src/user.rs	ANTHROPIC_DEFAULT_FABLE_MODEL	env binding -- model 
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_HAIKU_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_OPUS_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_SONNET_MODEL	env binding -- model ID used as an env value
-functional-value	src/user.rs	.with_model("claude-sonnet-5")	model ID used as a literal builder argument
+functional-value	src/user.rs	.with_model("sonnet")	model alias used as a literal builder argument (re-anchored: the builder now takes the bare alias, not the full model ID)
 functional-value	src/user.rs	\"model\": \"claude-sonnet-5\"	test assertion literal (DKT-94 render-target pinning test) -- model ID used as a test-fixture datum asserting serialized JSON output content, not a live routing decision
-provenance-record	src/user.rs	Closest to Fable 5	dated cross-product comparison citation (OpenCode tier mapping)
-provenance-record	src/user.rs	Closest to Opus 4.8	dated cross-product comparison citation (OpenCode tier mapping)
-provenance-record	src/user.rs	Closest to Sonnet 5	dated cross-product comparison citation (OpenCode tier mapping)
 functional-value	src/user/claude-code/scripts/coherence_xref.py	xref-builder` sonnet	names the tier of a specific (now-replaced) spawn
-deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	model or tier names (Sonnet, Opus, Fable, Haiku, or similar)	the commit-message ban-list itself
+deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	single-word tier/model/role nouns	the ban-list's residual-nouns caveat -- names the category the check deliberately does not gate, rather than asserting any of them (re-anchored: supersedes three rows anchored to the pre-DKT-97 two-line enumeration, which the rewrite replaced with this single-line form)
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="sonnet"	template spawn-call example -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="fable"	template spawn-call example -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="opus"	template spawn-call example -- alias used as a literal argument
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	routing\|opus\|sonnet\|haiku\|	alias names used as grep pattern arguments
-provenance-record	src/user/claude-code/skills/team-doctrine/references/fable-completeness-heuristics.md	Fable-Distilled Completeness Heuristics	doc title
-provenance-record	src/user/claude-code/skills/team-doctrine/references/fable-completeness-heuristics.md	fable-completeness-heuristics.md	filename self-citation
-provenance-record	src/user/claude-code/skills/team-doctrine/references/fable-completeness-heuristics.md	Fable-vs-Opus comparison	dated comparison citation
+provenance-record	src/user/claude-code/skills/team-doctrine/references/fable-completeness-heuristics.md	fable-completeness-heuristics.md	filename self-citation (the only surviving model-name mention: the migration retitled this doc to "Completeness Heuristics -- Maintained Master" and dropped the dated Fable-vs-Opus comparison, so the two rows anchored to those are deleted)
 functional-value	.claude/skills/evolve-model-distribution/SKILL.md	3 spawns measured sonnet (bronze)	illustrative changelog-bullet-format example
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	senior-engineer/`sonnet`	Phase roster table naming role to model
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	staff-engineer/`opus`	Phase roster table / prose naming role to model
@@ -120,6 +147,7 @@ deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	alias (
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	the `haiku` suspension	naming the historical suspended-alias defect this phase caught
 product-capability-fact	.claude/skills/evolve-model-distribution/SKILL.md	which supports no effort levels	behavioral fact about haiku's effort-level support
 provenance-record	.claude/skills/evolve-agents/SKILL.md	fable-monoculture` local-optimum collapse	dated/commit-cited historical incident
+product-capability-fact	.claude/skills/evolve-agents/SKILL.md	classifier-enforced on Fable 5	reasoning-echo classifier behavior -- the dimension-9 rubric's reason this violation class is a correctness bug, false if tier-ified
 deliberate-enumeration	.claude/skills/evolve-agents/SKILL.md	(distinguished-engineer/fable)	reviewer-tier prose naming role to model
 deliberate-enumeration	.claude/skills/evolve-agents/SKILL.md	(staff-engineer/opus)	reviewer-tier prose naming role to model
 functional-value	.claude/skills/evolve-agents/SKILL.md	model="opus")`	spawn-call template -- alias used as a literal argument
@@ -128,6 +156,7 @@ functional-value	.claude/skills/evolve-agents/SKILL.md	model="fable")`	spawn-cal
 functional-value	.claude/skills/evolve-agents/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-agents/SKILL.md	, subagent_type="distinguished-engineer", model="fable", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	.claude/skills/evolve-skills/SKILL.md	fable-monoculture` local-optimum collapse	dated/commit-cited historical incident
+product-capability-fact	.claude/skills/evolve-skills/SKILL.md	classifier-enforced on Fable 5	reasoning-echo classifier behavior -- the dimension-9 rubric's reason this violation class is a correctness bug, false if tier-ified
 functional-value	.claude/skills/evolve-skills/SKILL.md	model="opus")`	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-skills/SKILL.md	model="sonnet")`	spawn-call template -- alias used as a literal argument
 functional-value	.claude/skills/evolve-skills/SKILL.md	model="fable")`	spawn-call template -- alias used as a literal argument
@@ -142,15 +171,21 @@ functional-value	.claude/skills/evolve-config/SKILL.md	model="sonnet")`	spawn-ca
 functional-value	.claude/skills/evolve-config/SKILL.md	model="fable", prompt="...")	spawn-call template -- alias used as a literal argument
 provenance-record	.claude/skills/evolve-coherence/SKILL.md	former hand-executed `xref-builder` sonnet spawn	citation of a superseded prior practice
 functional-value	.claude/skills/evolve-coherence/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
-functional-value	src/user/claude-code/skills/vote/SKILL.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument
-provenance-record	src/user/claude-code/skills/team-doctrine/SKILL.md	Fable-distilled completeness	cross-reference to the named heuristics doc/title
+functional-value	src/user/claude-code/skills/vote/references/reviewer-template.md	model="opus", prompt="...")	spawn-call template -- alias used as a literal argument (re-pointed: the template moved out of vote/SKILL.md into references/ behind progressive disclosure)
+provenance-record	src/user/claude-code/skills/team-doctrine/SKILL.md	fable-completeness-heuristics.md	filename citation in the reference index (re-anchored: the index row's prose was rewritten to "Completeness heuristics for briefs and return-audits", so only the filename still names a model)
 functional-value	src/user/claude-code/skills/init-specs/SKILL.md	model="sonnet", prompt="...")	spawn-call template -- alias used as a literal argument
-provenance-record	src/user/claude-code/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation
-provenance-record	src/user/opencode/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation
-provenance-record	.claude/agent-memory	opus	agent-memory narrative entry -- historical incident record, not a live model claim
-provenance-record	.claude/agent-memory	Opus	agent-memory narrative entry -- historical incident record, not a live model claim
-deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	`gold`, `silver`, `bronze`, `sonnet`, `opus`, `fable`,	naming the model/tier-name category rule 3 forbids, not asserting any of them (re-anchored after DKT-97's rewrite reordered/re-wrapped the enumeration across two lines; this row covers the first line)
-deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	`haiku`, `advisor`, `planner`, `investigator`, `verifier`) are deliberately	naming the model/tier-name category rule 3 forbids, not asserting any of them (re-anchored after DKT-97's rewrite reordered/re-wrapped the enumeration across two lines; this row covers the second line)
+provenance-record	src/user/opencode/skills/team-doctrine/references/laziness-discipline.md	fable investigator audit round 2, 2026-07-04	dated audit-round citation (the claude-code twin's row is deleted: the migration's shrink of that copy removed the citation entirely, and this opencode copy retains it)
+# RESTORE-WHEN: repo-local agent memory is committed. Two rows exempting
+# `.claude/agent-memory` (`opus` / `Opus`, provenance-record: agent-memory
+# narrative entries are historical incident records, not live model claims)
+# were deleted here because that directory does not currently exist in the
+# tree, and arm 4 correctly reports a row citing a non-existent path as stale.
+# That rule is not a false positive to engineer around -- it is what catches
+# renames and moves, which is how most rot in this file has been found. But
+# `.claude/agent-memory/team-lead/**` IS a sanctioned in-repo write path
+# (team-lead.md, dispatch-ledger.sh writes the calibration ledger there), so
+# the exemptions become correct again the moment such a file is committed.
+# Re-add both rows in the same change that commits one.
 functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade disambiguation-reviewer fable to opus	test assertion literal -- fixture input/expected-output text, not a live model claim
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	N× opus→<resolved>, M× sonnet→<resolved>	illustrative format-string fixture showing the script's real requested_model/resolved_model output shape, not a hardcoded model claim
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	both record bare ALIASES (`sonnet` / `opus` / `fable`)	naming the closed alias vocabulary this skill categorizes, not asserting a specific model
@@ -160,3 +195,5 @@ functional-value	src/user/claude-code/scripts/tier_map.sh	gold:fable silver:opus
 functional-value	src/user/claude-code/scripts/tier_map.sh	`haiku` is not in the routing vocabulary	anchor string the script greps for in team-lead.md to detect the suspended-alias doctrine text
 functional-value	src/user/claude-code/scripts/tier_map.sh	suspended_aliases=haiku	the script's own suspended-alias output line, mirroring team-lead.md's doctrine
 functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade flaky-confirm passes to haiku	test assertion literal -- fixture input/expected-output text, not a live model claim
+functional-value	src/user/claude-code/scripts/commit_msg_check.sh	sonnet-5	code comment naming the lower-case word-number false-positive class the check's per-check case sensitivity fixes (R28), not a live model claim
+functional-value	src/user/claude-code/scripts/test/test_commit_msg_check.py	sonnet-5	test assertion literal -- fixture input exercising the R28 false-positive class, not a live model claim

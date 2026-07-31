@@ -388,7 +388,7 @@ impl UserEnvironment {
             .with_environments(vec![
                 "EDITOR=nvim".to_string(),
                 "GOPATH=${HOME}/Development/language/go".to_string(),
-                "PATH=/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
+                "PATH=/Applications/Obsidian.app/Contents/MacOS:/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
             ])
             .with_symlinks(vec![
                 (&claude_agents_path, "$HOME/.claude/agents"),

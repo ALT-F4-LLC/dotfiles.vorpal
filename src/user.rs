@@ -562,8 +562,15 @@ fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeC
         .with_permission_ask("Bash(git commit:*)")
         .with_permission_ask("Bash(git push:*)")
         .with_permission_ask("Bash(rm:*)")
+        // Deny whole subcommand families, not just destructive flag combos: deny rules can't
+        // carry allowlist exceptions, and narrow rules here are still bypassable via global
+        // options (e.g. `git -C`) or argument variants. See DKT-190.
         .with_permission_deny("Bash(git checkout:*)")
-        .with_permission_deny("Bash(git reset:*)");
+        .with_permission_deny("Bash(git clean:*)")
+        .with_permission_deny("Bash(git reset:*)")
+        .with_permission_deny("Bash(git restore:*)")
+        .with_permission_deny("Bash(git rm:*)")
+        .with_permission_deny("Bash(git switch:*)");
     let claude_code_config = deny_sensitive_paths(
         claude_code_config,
         |p| format!("Edit({p})"),

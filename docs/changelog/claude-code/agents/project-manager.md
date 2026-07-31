@@ -1,5 +1,34 @@
 # Changelog: project-manager
 
+## 2026-07-30
+
+### Summary
+Compacted 2 entries (2026-07-11..2026-07-11) into Compacted history per the retention-compaction policy.
+
+### Changes
+- Replaced the 2 oldest date-headed entries (between the 10-entry keep-window and the prior Compacted history) with one-line ledger entries.
+
+### Dimensions Evaluated
+History Compaction (retention-compaction policy)
+
+### Rename
+No rename.
+
+## 2026-07-30
+
+### Summary
+Phase 2 coherence: `TeammateIdle` reframed from "canonical stall signal" to routine-lifecycle per the named authority. `effort:` pin unchanged — already at the Claude 5 default `high`. Net +65.
+
+### Changes
+- FIX[SUBSTANTIVE]: Communication Discipline `TeammateIdle` line aligned to `team-lead.md` §Teammate Stall & Crash Recovery ("routine, not a stall verdict"); reply-that-turn duty and rule numbering (1, 2, or 3) and the Relay-authority sentence preserved. Divergence was pre-existing, not introduced by this cycle (verified against HEAD).
+- RETAINED[SUBSTANTIVE]: `effort: high` — R1 confirmed this pin already sits at the documented default; measured binding dispatch is 0 genuine report-only spawns. Now carries a binding-provenance comment, closing the 4-of-8 annotation split the coherence pass flagged.
+
+### Dimensions Evaluated
+Coherence & Cross-Communication (Phase 2)
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary
@@ -194,35 +223,6 @@ History Compaction (retention-compaction policy)
 ### Rename
 No rename.
 
-## 2026-07-11
-
-### Summary
-Phase 2 coherence fix: corrected the SP-2 teammate/report-only-subagent discriminator (family-wide lockstep with 5 sibling agents + the shutdown-protocol master). Net -2 bytes.
-
-### Changes
-- FIX[SUBSTANTIVE]: SP-2 LOCAL copy corrected — `name=` is the sole discriminator; report-only subagents run background-by-default since Claude Code v2.1.198, so `run_in_background` no longer discriminates. Stale phrasing contradicted team-lead.md's Phase-1-corrected copy and current harness behavior.
-
-### Dimensions Evaluated
-Spec Alignment (v2.1.198 harness behavior), Boundary Clarity (family-wide parity with 5 siblings + master).
-
-### Rename
-No rename.
-
-## 2026-07-11
-
-### Summary
-evolve-agents cycle (SDLC role-comparison mandate): documented the industry-TPM scope boundary and trimmed a triple-stated TDD-provenance restatement. Net +91 bytes.
-
-### Changes
-- AMPLIFY[SUBSTANTIVE]: opener now states this role maps to industry Technical Program Manager scope, explicitly excluding product vision/strategy/roadmap and pure schedule/budget logistics (SDLC role research, document-only, no rename).
-- CULL[COSMETIC]: §8 TDD-citation clause trimmed to the actionable directive + P5 pointer — the durable-docs list and provenance rule are stated verbatim in P5/Distillation Gate two lines below (triple restatement).
-
-### Dimensions Evaluated
-Boundary Clarity / Role Realism (primary), Consolidation & Trimming. Inverted-fix-direction lesson confirmed landed (line 252); Docket CLI Reference confirmed accurate against live binary. Actionability/Completeness/Spec Alignment/Capability Growth: RETAIN.
-
-### Rename
-No rename — "project-manager" ≈ industry TPM, but a rename is pure churn (Content Gate Behavioral check fails); boundary now documented inline instead.
-
 ## Compacted history
 
 Entries below were compacted per ADR 0001; full text in git history (see the compaction entry's date).
@@ -295,3 +295,5 @@ Entries below were compacted per ADR 0001; full text in git history (see the com
 - 2026-07-10: Retired the hand-authored-Mermaid implication (CLI already generates it), fixed a vote `--threshold` fraction-vs-percentage trap, and de-duplicated a TDD-provenance restatement. Net +96 bytes.
 - 2026-07-10: Flagged vote-delegation JSON as a plain-text payload, never SendMessage's structured `message` object (bug-audit FIX-9, fleet-wide sweep).
 - 2026-07-10: Compacted 2 entries (2026-06-09..2026-06-09) into Compacted history per the retention-compaction policy.
+- 2026-07-11: evolve-agents cycle (SDLC role-comparison mandate) — documented industry-TPM scope boundary (excludes product vision/roadmap, pure schedule/budget); trimmed a triple-stated TDD-provenance restatement. No rename (pure churn).
+- 2026-07-11: Phase 2 coherence fix — corrected the SP-2 teammate/report-only-subagent discriminator; `name=` is the sole discriminator (CC v2.1.198, family-wide lockstep with 5 siblings + master).

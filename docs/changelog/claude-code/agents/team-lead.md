@@ -1,5 +1,25 @@
 # Changelog: team-lead
 
+## 2026-07-30
+
+### Summary
+Settled migration item R1 for team-lead: deleted the causally-inert frontmatter `effort:` pin and recorded this cycle's measurement as provenance in §Effort dispatch. Trimmed volatile world-state and two uncited legend rows. Net −531 bytes; ratchet lowered 78150 → 77619.
+Findings: 9 → 4 sub / 0 cos / 1 rej / 1 def / 3 enc
+
+### Changes
+- CULL[SUBSTANTIVE]: deleted frontmatter `effort: xhigh` — binds nowhere for a top-level orchestrator, which is never a report-only dispatch target. A pin that binds nowhere is a deletion, not a downgrade.
+- CULL[SUBSTANTIVE] (§1.6): retired the two-cap economics sentence — volatile entitlement world-state contradicting the file's own durable-facts-only rule seven lines above. Ownership verified outside the /evolve-model-distribution anchors.
+- AMPLIFY[SUBSTANTIVE]: §Effort dispatch gained a `Measured 2026-07-30` provenance clause (report-only 9/9 honored the pin; teammate effort varied within-role under one pin), converting an undocumented inference into a citable fact for three downstream consumers.
+- CULL[SUBSTANTIVE] (§1.5): dropped the `S5 high ≈ Sonnet 4.6 max` ratio as a second-carrier restatement of `claude-5-paradigm-gate.md` §4 — **not** as unsupported; the gate states it verbatim at `:113`.
+- CULL[SUBSTANTIVE]: deleted Change-ID legend rows C3 and C4 — zero external citers; bodies live verbatim at their cited homes. C1 and QF-2 retained (cited by `vote/SKILL.md:86` and `security-engineer.md:127`).
+- Companion: two now-stale `model_census_exemptions.tsv` rows deleted; `byte_ceilings.tsv` lowered to the verified figure rather than banking the headroom.
+
+### Dimensions Evaluated
+All 9, two ordered passes; TRIM mode. Marker census 14 (not the 15 the prior record cites — discrepancy flagged, not silently adopted); 13 map cleanly, one marginal noted for next cycle.
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary

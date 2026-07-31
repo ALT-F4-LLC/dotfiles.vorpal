@@ -1,5 +1,25 @@
 # Changelog: senior-engineer
 
+## 2026-07-30
+
+### Summary
+Migration item R1: `effort: xhigh` → `high` with binding provenance — 0 report-only spawns measured (204/204 teammate), so charter alignment, not a Trial. One verified executable-defect fix (B3) plus four consolidations retiring intra-file duplication. Net −61 (48452 → 48391).
+Findings: 8 → 3 sub / 0 cos / 2 rej / 1 def / 2 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (R1+I11): `effort: high` + binding-context provenance comment; re-derived per gate §4.
+- AMPLIFY[SUBSTANTIVE] (B3): §Shell hygiene's zsh-identifier hazard list extended with the read-only `status` special — verified live (`zsh -c 'status=$(echo hi)'` → `read-only variable: status`); 4 sessions wrote the same `status=$(docket issue show …)` loop. Extension of an existing concrete enumeration, so gate §3's burden does not attach.
+- CULL[SUBSTANTIVE] (§1.2/§1.5): CRITICAL banner item (3)'s full `/tmp` rule collapsed to a pointer — the rule was stated twice in full and `guard-tmp-write-hook.sh` caught all 3 in-window violations, so a louder third statement is emphasis inflation. Retires the file's one §2-unmappable `NEVER`.
+- CULL[SUBSTANTIVE]: "No surface-level fixes" paragraph deleted — trace-to-root-cause was stated 4×; its unique escalation clause folded into code-philosophy principle 11.
+- CULL[SUBSTANTIVE]: shutdown step 5's restatement of the `shutdown_response` reply (stated 3×) and post-shutdown ephemeral routing (stated 4×).
+- REJECTED (I6): frontmatter `hooks:` gate — inert on the teammate path (~100% of spawns), and `guard-no-commit-hook.sh` already gates `commit|push|add` path-independently while listing `stash` as a deliberate exclusion, so the proposal would also contradict a ratified decision.
+
+### Dimensions Evaluated
+All 9, two ordered passes. 14 markers after, every survivor mapping to §2.1–§2.4.
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary

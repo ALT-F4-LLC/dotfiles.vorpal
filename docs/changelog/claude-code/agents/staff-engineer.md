@@ -1,5 +1,25 @@
 # Changelog: staff-engineer
 
+## 2026-07-30
+
+### Summary
+Re-derived the `effort:` pin per charter §3 / gate §4 with measured binding provenance; corrected a description authoring claim contradicting both this file's §Responsibility 1 and team-lead.md's Tiers authority; deduped two within-file restatements of the shutdown/idle contract. Net −28 (41366 → 41338).
+Trial: `effort: xhigh` → `high` — BINDING measured (1 report-only spawn of 98; all 13 skill-root spawn sites re-verified as `Agent(name=…)`, i.e. teammate and pin-inert); QUALITY delta NOT measured, no eval exists. Adopt-or-roll-back at the next Phase 0, judged on report-only review-verdict quality; rollback restores `xhigh` keeping the provenance comment.
+Findings: 5 → 3 sub / 2 cos / 0 rej / 2 def / 3 enc
+
+### Changes
+- AMPLIFY[SUBSTANTIVE] (R1/I11): `effort: high` + binding-provenance comment; gate §4 Opus row ("code-review accuracy holds at lower effort").
+- FIX[SUBSTANTIVE]: description no longer claims primary TDD authorship on sub-Medium cycles — `team-lead.md:206` pins design-artifact authoring to `gold` "regardless of cycle size", and `:128` says this seat authors only as the gold-unavailable fallback. The tier-split is on the `advisor` seat, not the author seat. **Corrected in the same cycle after the coherence pass caught an over-reach:** the first phrasing collapsed TDD and ADR, but they diverge — `tdd/SKILL.md:17` gives the gold seat every TDD-bearing cycle, while `adr/SKILL.md:18` names this seat "the sub-Medium/standalone author" and `team-lead.md:206` carves out "ADR authoring inherits the active authoring seat's tier". The description now scopes the regardless-of-size claim to TDD and lets ADR follow seat inheritance.
+- CULL[SUBSTANTIVE] (§1.5): Communication Discipline rule 7 reduced to its own subject; the ephemeral-flow sentence duplicating §Shutdown Handling removed (re-accreted since the 2026-06-09 dedup).
+- CULL[COSMETIC] ×2: dropped the third restatement of "advisor idles between phases" (`:52`, `:79`, `:243`); relocated the load-bearing "idling is normal" gloss to the ephemeral contract's single home.
+- DEFERRED (I7) `already_present.sh`: verified absent across 79 scripts — third consecutive cycle deferring on nonexistence. Script creation and citation must land in the same change.
+
+### Dimensions Evaluated
+All 9, two passes. 7 markers, all §2-mappable, none unmappable; no marker added. Two culls considered and rejected with reasons recorded.
+
+### Rename
+No rename.
+
 ## 2026-07-27
 
 ### Summary

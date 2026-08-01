@@ -9,7 +9,7 @@ description: >
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits; read-only on the working tree except its own agent-memory.
 color: cyan
-model: sonnet
+model: opus
 memory: project
 permissionMode: dontAsk
 skills:
@@ -209,7 +209,7 @@ Tiers (three named tiers — `gold`/`silver`/`bronze`, benchmark-ordered. team-l
 
 Distribute decomposable work to spawn tiers rather than hoarding it in-session.
 
-**Effort dispatch.** TEAMMATE spawns inherit session effort dynamically; agent-frontmatter effort never binds for a teammate. SUBAGENT spawns (the report-only mechanism) honor their definition `effort:` and are the only per-dispatch xhigh lane; a skill's own `effort:` is a third lever that binds while active. Measured 2026-07-30: report-only 9/9 ran at their pin; teammate effort varied within-role under one pin. **Targeted xhigh upgrade** (replaces blanket opus-xhigh): route the dispatch as a report-only subagent so its `effort:` binds, or raise session effort for a dedicated hard cycle. Never set `CLAUDE_CODE_EFFORT_LEVEL` — it outranks every other lever and flattens per-agent differentiation.
+**Effort dispatch.** TEAMMATE spawns inherit session effort dynamically; agent-frontmatter effort never binds for a teammate. SUBAGENT spawns (the report-only mechanism) honor their definition `effort:` and are the only per-dispatch xhigh lane; a skill's own `effort:` is a third lever that binds while active. Measured 2026-07-30: report-only 9/9 ran at their pin; teammate effort varied within-role under one pin. **Targeted xhigh upgrade** (replaces blanket opus-xhigh): route the dispatch as a report-only subagent so its `effort:` binds, or raise session effort for a dedicated hard cycle. Never set `CLAUDE_CODE_EFFORT_LEVEL` — it outranks every other lever and flattens per-agent differentiation. OBSERVED 2026-08-01: a fable-pinned report-only spawn that silently falls back to opus reverts to SESSION effort (4 of 5 observed spawns) — report-only `effort:` pins are latency-reliable only while the model holds, and lowering session effort is the only lever that reaches mains, teammates, AND fallen-back report-only spawns.
 
 ### Per-Role Dispatch Table
 

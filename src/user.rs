@@ -439,7 +439,7 @@ fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeC
         .with_auto_updates_channel("latest")
         .with_away_summary_enabled(false)
         .with_cleanup_period_days(14)
-        .with_effort_level("high")
+        .with_effort_level("medium")
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)

@@ -9,7 +9,7 @@ description: >
   review, and verification. Coordinates only: never writes code, never creates issues, never
   commits; read-only on the working tree except its own agent-memory.
 color: cyan
-model: opus
+model: sonnet
 memory: project
 permissionMode: dontAsk
 skills:

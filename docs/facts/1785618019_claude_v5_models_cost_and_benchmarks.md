@@ -38,19 +38,24 @@ Sources: Anthropic pricing docs (platform.claude.com), Anthropic Opus 5 launch p
 
 All v5 models expose five effort levels (low, medium, high, xhigh, max). High is the default on Opus 5 and Sonnet 5. On Opus 5, thinking can be disabled only at high effort or below; disabling at xhigh/max returns a 400 error. `max_tokens` covers both thinking and visible output.
 
-**Opus 5, AA-Briefcase (long-horizon agentic knowledge work), by effort (Artificial Analysis):**
+**All measured model × effort combinations, AA-Briefcase (long-horizon agentic knowledge work), sorted by Elo (Artificial Analysis):**
 
-| Setting | AA-Briefcase Elo | Cost per task | Turns/task |
-|---|---|---|---|
-| Opus 5 max | 1720 | $17.79 | 103 |
-| Opus 5 xhigh | 1693 | $14.26 | 91 |
-| Opus 5 high | 1606 | $10.41 | 76 |
-| Opus 5 medium | 1470 | not published | — |
-| Opus 5 low | 1223 | not published (≈$1.78 per eesel/AA chart) | — |
-| Fable 5 (max, w/ fallback) | 1574 | $22.30 | — |
-| Sonnet 5 max | 1386 | $14.43 | 183 |
+| Rank | Model | Effort | AA-Briefcase Elo | Cost per task | Turns/task |
+|---|---|---|---|---|---|
+| 1 | Opus 5 | max | 1720 | $17.79 | 103 |
+| 2 | Opus 5 | xhigh | 1693 | $14.26 | 91 |
+| 3 | Opus 5 | high | 1606 | $10.41 | 76 |
+| 4 | Fable 5 | max (w/ fallback) | 1574 | $22.30 | — |
+| 5 | Opus 5 | medium | 1470 | not published | — |
+| 6 | Sonnet 5 | max | 1386 | $14.43 | 183 |
+| 7 | Opus 5 | low | 1223 | not published (≈$1.78 per eesel/AA chart) | — |
 
-**Key insight:** Opus 5 at high effort beats Fable 5's score at under half the cost, and beats Sonnet 5 at max on both quality *and* cost for long tasks. Sonnet 5 at max took the most turns (183) of any model measured — the mechanism by which the "cheaper" model runs up a bigger bill on long tasks.
+**Not measured / not published.** Artificial Analysis ran the full effort sweep only on Opus 5; Fable 5 and Sonnet 5 were reported at max effort only. The following eight combinations have no published AA-Briefcase Elo or cost figures and should not be interpolated from the Opus 5 curve — effort scaling is model-specific:
+
+- Fable 5 at low, medium, high, xhigh
+- Sonnet 5 at low, medium, high, xhigh
+
+**Reading the table.** Three things stand out. Opus 5 at **high** (rank 3) outscores Fable 5 at **max** (rank 4) for less than half the cost — the single most important line in the report for API users. Sonnet 5 at max (rank 6) is beaten by Opus 5 at medium (rank 5) *and* costs more than Opus 5 at high, which is why raising Sonnet's effort is the wrong lever. And the top three rows are all one model: the effort dial moves Opus 5 across a 497-Elo range, wider than the gap between any two models at matched effort.
 
 **Opus 5, Artificial Analysis Intelligence Index, cost per task by effort:** Per Artificial Analysis (verbatim): "Claude Opus 5 (max) costs $2.03 on average per Intelligence Index task, below Claude Fable 5 (with fallback) at $2.75, but still above Claude Opus 4.8 (max) at $1.80 and Claude Sonnet 5 (max) at $1.53." On short index-scale tasks, Sonnet 5 at max is cheaper per task; on long agentic tasks, Opus 5 at high wins. **Task length is the hinge.** Per-effort Intelligence-Index cost figures for low/medium/high/xhigh are not published in Artificial Analysis's own text (only the max value of $2.03 is confirmed).
 

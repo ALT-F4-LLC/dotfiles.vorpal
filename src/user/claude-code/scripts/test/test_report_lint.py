@@ -142,6 +142,47 @@ def test_crv_hard_gate_consistency():
     red("code-review-verdict", t, "hard-gate-consistency")
 
 
+# F5 (DKT-11 AC2.4): check id `inherited-exclusions` — the security-track
+# Scope Reviewed section must carry the disclosure line.
+def test_crv_inherited_exclusions_missing():
+    t = base("crv_security_pass.md").replace(
+        "- Inherited exclusions: None\n", "")
+    red("code-review-verdict", t, "inherited-exclusions")
+
+
+def test_crv_inherited_exclusions_named_shape_passes():
+    t = base("crv_security_pass.md").replace(
+        "- Inherited exclusions: None",
+        "- Inherited exclusions: skip pragma — semgrep default-excludes corpus — this corpus — "
+        "vendored fixtures are not source we own")
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
+        fh.write(t)
+        path = fh.name
+    code, out, err = run("--skill", "code-review-verdict", path)
+    Path(path).unlink()
+    assert code == 0, f"expected exit 0 (named-exclusion shape), got {code}: {out}{err}"
+
+
+def test_crv_inherited_exclusions_na_shape_passes():
+    t = base("crv_security_pass.md").replace(
+        "- Inherited exclusions: None",
+        "- Inherited exclusions: N/A — no detection control in diff")
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
+        fh.write(t)
+        path = fh.name
+    code, out, err = run("--skill", "code-review-verdict", path)
+    Path(path).unlink()
+    assert code == 0, f"expected exit 0 (N/A shape), got {code}: {out}{err}"
+
+
+def test_crv_general_report_unaffected_by_inherited_exclusions():
+    # General-playbook reports have no CRV_SECURITY banner match, so the F5
+    # check never fires — crv_general_pass.md carries no such line and must
+    # still pass.
+    code, out, err = run("--skill", "code-review-verdict", str(FIX / "crv_general_pass.md"))
+    assert code == 0, f"expected exit 0, got {code}: {out}{err}"
+
+
 def test_verify_ac_verdict_consistency():
     t = base("verify_ac_pass.md").replace(
         "**High** (0):\n- None",

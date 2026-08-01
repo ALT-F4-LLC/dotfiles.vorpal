@@ -335,6 +335,21 @@ def validate(doc_type, text):
                     failures.append((check_name,
                                      f"section '{sect}' missing required ### '{name}'"))
 
+    # Check: security track skipped (tdd) — the trigger field does NOT match,
+    # yet security subsections are present anyway, meaning the security track
+    # was silently never run over content that expects it. Fail closed.
+    if st and fm.get(st["trigger_field"]) != st["trigger_value"]:
+        actual = fm.get(st["trigger_field"], "")
+        for sect, (check_name, needed) in st["subsections"].items():
+            subs = h3_in_section(records, sect)
+            present = set(subs or [])
+            for name in needed:
+                if name in present:
+                    failures.append(("security-track-skipped",
+                                     f"section '{sect}' has ### '{name}' present but "
+                                     f"'{st['trigger_field']}' is '{actual}' (expected "
+                                     f"'{st['trigger_value']}') — security checks were not run"))
+
     return failures
 
 

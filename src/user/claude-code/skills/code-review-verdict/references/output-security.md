@@ -23,6 +23,7 @@ For substantive security-relevant changes:
 - Files changed: {N} (security-touched paths called out)
 - Tree state: {git rev-parse --short HEAD}[+dirty:<sha12>] — same fingerprint and carry-forward rules as the general template
 - Reference docs: {the issue's distilled security contracts, `docs/adr/` security records, docs/spec/security.md sections — or "None applicable"}
+- Inherited exclusions: {one entry per inherited exclusion of shape `exclusion — source-tool corpus — this corpus — why still appropriate`, or "None", or "N/A — no detection control in diff"}
 
 ### Threat Model (assumed)
 - Adversary: {external attacker / curious insider / supply-chain compromise / prompt injection / ...}

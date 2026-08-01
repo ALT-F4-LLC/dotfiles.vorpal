@@ -99,5 +99,13 @@ than the TDD itself.
   `skills:`/`mcpServers:` are NOT applied (code.claude.com/docs/en/agent-teams, "Use
   subagent definitions for teammates"). Prescribe explicit `Skill(<name>)` invocation in the
   TDD's Implementation Notes, not by referencing the agent's frontmatter.
+- **Supersede by DELETION, never by addition.** A revision answering a finding REMOVES the
+  superseded sentence in the same edit — the revision diff must show the superseded text as
+  a removed line; a correction added alongside leaves the stale sentence live, and the stale
+  one is usually phrased as the actionable directive. After any fix round: (1) re-read the
+  artifact's build-instruction section (Implementation Phases) ON ITS OWN, asking of every
+  AC "built only from this line, is it the corrected thing?", and (2) list the sections
+  edited since decomposition/transcription started and re-check only the artifacts
+  transcribed from those sections — O(sections moved), knowable from the fix-round record.
 
 <!-- CANONICAL:AUTHORING-VERIFICATION-GATES:END -->

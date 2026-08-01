@@ -433,13 +433,13 @@ impl UserEnvironment {
 fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeCodeConfig {
     let claude_code_config = ClaudeCodeConfig::new(name, systems)
         .with_agent("team-lead")
-        .with_always_thinking_enabled(true)
+        .with_always_thinking_enabled(false)
         .with_attribution_commit("")
         .with_attribution_pr("")
         .with_auto_updates_channel("latest")
         .with_away_summary_enabled(false)
         .with_cleanup_period_days(14)
-        .with_effort_level("xhigh")
+        .with_effort_level("medium")
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
@@ -503,7 +503,7 @@ fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeC
             "command",
         )
         .with_include_git_instructions(false)
-        .with_model("sonnet")
+        .with_model("opus")
         .with_output_style("Proactive")
         .with_permission_allow("Bash(bun run:*)")
         .with_permission_allow("Bash(bun test:*)")
@@ -780,7 +780,7 @@ mod tests {
             serde_json::to_string_pretty(&build_claude_code_config("claude-code", Vec::new()))
                 .expect("claude code config should serialize to JSON");
 
-        assert!(content.contains("\"model\": \"claude-sonnet-5\""));
+        assert!(content.contains("\"model\": \"opus\""));
         assert!(content.contains("\"defaultMode\": \"auto\""));
         assert!(content.contains("\"tui\": \"fullscreen\""));
     }

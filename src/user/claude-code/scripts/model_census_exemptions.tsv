@@ -125,8 +125,8 @@ functional-value	src/user.rs	ANTHROPIC_DEFAULT_FABLE_MODEL	env binding -- model 
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_HAIKU_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_OPUS_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_SONNET_MODEL	env binding -- model ID used as an env value
-functional-value	src/user.rs	.with_model("sonnet")	model alias used as a literal builder argument (re-anchored: the builder now takes the bare alias, not the full model ID)
-functional-value	src/user.rs	\"model\": \"claude-sonnet-5\"	test assertion literal (DKT-94 render-target pinning test) -- model ID used as a test-fixture datum asserting serialized JSON output content, not a live routing decision
+functional-value	src/user.rs	.with_model("opus")	model alias used as a literal builder argument (re-anchored: the builder now takes the bare alias, not the full model ID)
+functional-value	src/user.rs	\"model\": \"opus\"	test assertion literal (DKT-94 render-target pinning test, re-anchored for DKT-239's opus default) -- model ID used as a test-fixture datum asserting serialized JSON output content, not a live routing decision
 functional-value	src/user/claude-code/scripts/coherence_xref.py	xref-builder` sonnet	names the tier of a specific (now-replaced) spawn
 deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	single-word tier/model/role nouns	the ban-list's residual-nouns caveat -- names the category the check deliberately does not gate, rather than asserting any of them (re-anchored: supersedes three rows anchored to the pre-DKT-97 two-line enumeration, which the rewrite replaced with this single-line form)
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	model="sonnet"	template spawn-call example -- alias used as a literal argument

@@ -91,7 +91,7 @@ Mechanize it: write the fully drafted message to `$TMPDIR/commit-msg-draft.txt` 
 ~/.claude/scripts/commit_msg_check.sh "$TMPDIR/commit-msg-draft.txt"
 ```
 
-Any nonzero exit is a defect in the draft, not a false positive to explain away — rewrite and re-run until it exits 0. (Rule 2 allowlists standard technical identifiers like `UTF-8`/`SHA-256`/`CVE-2024-…`, so a surviving hit is a genuine tracker ID.) One residual the script deliberately does not gate: single-word tier/model/role nouns (`gold`, `sonnet`, `opus`, `advisor`, …) collide too often with ordinary English — eyeball the draft for a stray bare one before staging.
+Any nonzero exit is a defect in the draft, not a false positive to explain away — rewrite and re-run until it exits 0. (Rule 2 allowlists standard technical identifiers like `UTF-8`/`SHA-256`/`CVE-2024-…`, so a surviving hit is a genuine tracker ID.) One residual the script deliberately does not gate: single-word tier/model/role nouns (`gold`, `diamond`, `sonnet`, `opus`, `advisor`, …) collide too often with ordinary English — eyeball the draft for a stray bare one before staging.
 
 ## Step 4 — Stage the scoped files
 

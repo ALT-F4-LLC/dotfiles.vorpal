@@ -299,7 +299,7 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 
 {MENTION_COUNT_LINE}
 
-4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
+4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|fable\|tier\|bronze\|silver\|gold\|diamond' .claude/agent-memory/ 2>/dev/null` for any durable routing lessons already recorded.
 5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Run `~/.claude/scripts/mimir_query.sh {history_days} --label {PROMQL_LABEL}` (repo: `src/user/claude-code/scripts/mimir_query.sh`) via Bash — do NOT hand-issue the PromQL yourself. On success it emits labeled TSV (`metric<TAB>model<TAB>label<TAB>value`, one row per `token_usage`/`cost_usage`/`active_time_total` series); on any unreachable/non-200/malformed-JSON/empty-result failure it emits the exact sentinel line `Mimir metrics unavailable: <reason>` and exits 0 — proceed using transcript signals only on that outcome. Mimir results are factual ground truth that supplements and cross-checks the transcript grep above — cite discrepancies between the two signal sources.
 
 ## Improvement-Only Mandate
@@ -349,7 +349,7 @@ Mine read-only sources to measure ACTUAL model distribution per spawn/role and c
 
 3. **`~/.claude/history.jsonl`** — count operator-typed `/evolve-config` invocations in the window (filter by `timestamp` ≥ `{history_cutoff_epoch_ms}`). Surface `none` if empty.
 
-4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|effort\|tier\|gold\|silver\|bronze' .claude/agent-memory/ 2>/dev/null` for durable routing lessons.
+4. **`.claude/agent-memory/`** — `grep -lri 'model\|routing\|opus\|sonnet\|haiku\|fable\|effort\|tier\|bronze\|silver\|gold\|diamond' .claude/agent-memory/ 2>/dev/null` for durable routing lessons.
 5. **Mimir metrics (primary factual arm — https://code.claude.com/docs/en/monitoring-usage)**: Run `~/.claude/scripts/mimir_query.sh {history_days}` (repo: `src/user/claude-code/scripts/mimir_query.sh`; no `--label` — this variant groups by `model` only) via Bash — do NOT hand-issue the PromQL yourself. On success it emits labeled TSV (`metric<TAB>model<TAB>label<TAB>value`, one row per `token_usage`/`cost_usage`/`active_time_total` series, `label` column `<none>`); on any unreachable/non-200/malformed-JSON/empty-result failure it emits the exact sentinel line `Mimir metrics unavailable: <reason>` and exits 0 — proceed using transcript signals only on that outcome. Mimir results are factual ground truth that supplements and cross-checks the transcript grep — cite discrepancies.
 
 ## Improvement-Only Mandate
@@ -442,10 +442,10 @@ Target agents: {target_agents}
 ## Research tasks
 1. Enumerate the standard SDLC/engineering-org role ladder via WebSearch (cite sources): IC track (junior/associate → mid → senior → staff → principal → distinguished/fellow), management track (tech lead, engineering manager, director, VP/CTO), and supporting/adjacent roles (SRE/platform/DevOps, QA/SDET, security/AppSec, architect, PM/TPM, UX/design, UX research, technical writer, release manager, data engineer/DBA, accessibility specialist). One-line definition of scope/seniority signal each.
 2. Gap/overlap analysis: for each standard role, assess whether an EXISTING agent (persistent or ephemeral) already covers that function, is a partial/weak fit, or is a genuine gap. Be honest about near-misses.
-3. Higher-level exploration: evaluate at least one candidate higher-level role (e.g. "principal engineer", "fellow", "VP-Eng-adjacent oversight"). Is there a genuine functional gap TODAY this system lacks (per the Content Gate), or does it duplicate an existing gold-tier/orchestrator charter?
+3. Higher-level exploration: evaluate at least one candidate higher-level role (e.g. "principal engineer", "fellow", "VP-Eng-adjacent oversight"). Is there a genuine functional gap TODAY this system lacks (per the Content Gate), or does it duplicate an existing diamond-tier/orchestrator charter?
 4. Lower-level exploration: evaluate at least one candidate lower-level role (e.g. "junior/associate engineer", a below-SDET tester). Does the existing bronze/ephemeral tiering already serve this niche, or is there a genuinely distinct executable capability gap?
 5. Other commonly-present SDLC functions not covered above (SRE/platform, technical writer, data engineer, release manager, accessibility, etc.) — assess fit/gap the same way. Most human-org roles will NOT translate to a distinct executable agent role; say so explicitly when a "gap" is better served by an existing agent absorbing a skill/behavior than a whole new role.
-6. Model-tier fit recommendation: for every ADD/CHANGE candidate, propose a model tier (gold/silver/bronze) grounded in a genuine seniority-to-capability mapping. Explicitly call out if the CURRENT roster looks under- or over-diversified relative to task complexity — this feeds `model-routing-auditor`'s and a future `evolve-model-distribution` cycle's class-6 quality-mismatch lane.
+6. Model-tier fit recommendation: for every ADD/CHANGE candidate, propose a model tier (bronze/silver/gold/diamond) grounded in a genuine seniority-to-capability mapping. Explicitly call out if the CURRENT roster looks under- or over-diversified relative to task complexity — this feeds `model-routing-auditor`'s and a future `evolve-model-distribution` cycle's class-6 quality-mismatch lane.
 
 ## Content Gate (apply before recommending)
 1. Executable — can Claude do this in a stateless session? 2. Behavioral — does removing it change output? 3. Non-redundant — already covered elsewhere? 4. Concrete — specific action/check/output, not aspirational fluff.
@@ -459,7 +459,7 @@ Target agents: {target_agents}
 <one bullet per standard role: COVERED-BY <agent/pseudo-role> | PARTIAL-FIT <agent> — <gap> | GAP — <why it matters>>
 
 ## Higher-Level Candidate(s)
-CANDIDATE: <name> | RATIONALE: <genuine gap or duplicate-of, cite the Content Gate check(s) it passes/fails> | SUGGESTED TIER: gold|silver|bronze | DISPOSITION: ADD | REJECT-DUPLICATES-<existing-role>
+CANDIDATE: <name> | RATIONALE: <genuine gap or duplicate-of, cite the Content Gate check(s) it passes/fails> | SUGGESTED TIER: bronze|silver|gold|diamond | DISPOSITION: ADD | REJECT-DUPLICATES-<existing-role>
 
 ## Lower-Level Candidate(s)
 CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | REJECT-ALREADY-SERVED-BY-<existing-role/tier>
@@ -468,7 +468,7 @@ CANDIDATE: <name> | RATIONALE: ... | SUGGESTED TIER: ... | DISPOSITION: ADD | RE
 <one bullet per function: ADD-CANDIDATE | ABSORB-INTO-<existing-agent> (skill addition, not new role) | NOT-APPLICABLE-TO-AGENT-CONTEXT — with rationale>
 
 ## Model-Tier Diversity Assessment
-<is the current roster genuinely diversified across gold/silver/bronze relative to task complexity, or over-concentrated? cite which agents/pseudo-roles you believe are mis-tiered and why, with a suggested tier>
+<is the current roster genuinely diversified across bronze/silver/gold/diamond relative to task complexity, or over-concentrated? cite which agents/pseudo-roles you believe are mis-tiered and why, with a suggested tier>
 
 ## Summary Recommendations (ranked)
 1. <ADD|CHANGE|REMOVE> <role/tier> — <one-line why> — <evidence/source>

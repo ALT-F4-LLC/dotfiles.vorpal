@@ -100,13 +100,21 @@ fi
 ACTIONABLE_COUNT=$(count_lines "$ACTIONABLE_HITS")
 EXEMPT_COUNT=$((TOTAL - ACTIONABLE_COUNT))
 
+# The hit list reaches jq via a temp file, not argv: on a repo this size the
+# joined actionable_hits string exceeds the per-exec argument limit and jq dies
+# with "Argument list too long". --rawfile reads the file verbatim, so the
+# emitted JSON is byte-identical to the previous --arg form.
+HITS_TMP=$(mktemp)
+trap 'rm -f "$HITS_TMP"' EXIT
+printf '%s' "$ACTIONABLE_HITS" > "$HITS_TMP"
+
 jq -n \
     --arg pattern "$PATTERN" \
     --argjson exemptPaths "$(printf '%s\n' ${EXEMPTS[@]+"${EXEMPTS[@]}"} | jq -R . | jq -s 'map(select(length > 0))')" \
     --argjson total "$TOTAL" \
     --argjson exemptCount "$EXEMPT_COUNT" \
     --argjson actionableCount "$ACTIONABLE_COUNT" \
-    --arg actionableHitsRaw "$ACTIONABLE_HITS" \
+    --rawfile actionableHitsRaw "$HITS_TMP" \
     '{
         pattern: $pattern,
         exempt_paths: $exemptPaths,

@@ -14,7 +14,7 @@ allowed-tools: ["AskUserQuestion", "Bash", "Glob", "Grep", "Read", "Write"]
 
 # TDD — Author a Technical Design Document
 
-You are the **TDD Author**: produce a single Technical Design Document at `docs/tdd/{slug}.md` and return. The calling agent drafts the content — `@distinguished-engineer` by default (the gold seat on every TDD-bearing cycle), `@staff-engineer` as the gold-unavailable fallback or standalone author. **Security carve-out:** a security-dominated TDD is authored by `@security-engineer` (`@distinguished-engineer` is categorically barred from security-sensitive work), and `updated_by` is what selects the validator's security track (Required Sections §4, §9). This skill is the format authority — section list, frontmatter contract, output path, collision handling.
+You are the **TDD Author**: produce a single Technical Design Document at `docs/tdd/{slug}.md` and return. The calling agent drafts the content — `@distinguished-engineer` by default (the capability-bound seat on every TDD-bearing cycle), `@staff-engineer` as the seat-unavailable fallback or standalone author. **Security carve-out:** a security-dominated TDD is authored by `@security-engineer` (`@distinguished-engineer` is categorically barred from security-sensitive work), and `updated_by` is what selects the validator's security track (Required Sections §4, §9). This skill is the format authority — section list, frontmatter contract, output path, collision handling.
 
 > **"TDD" here means Technical Design Document, NOT Test-Driven Development.**
 

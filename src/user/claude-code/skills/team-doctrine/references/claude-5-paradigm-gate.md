@@ -118,7 +118,7 @@ long runs, remove for Opus), instruction granularity (brief-and-general for Fabl
 explicit-scope for Sonnet), and subagent posture (encourage for Fable, cap for Opus).
 
 **Routing-surface ownership is unchanged:** edits to `team-lead.md`'s model-routing
-surface — precisely its two anchors: the `Tiers (three named tiers` block and the
+surface — precisely its two anchors: the `Tiers (four named tiers` block and the
 `Per-spawn model routing` paragraph — are owned by
 `/evolve-model-distribution`. An evolve-agents or evolve-skills cycle records such a
 finding as DEFERRED (route: /evolve-model-distribution) rather than applying it.

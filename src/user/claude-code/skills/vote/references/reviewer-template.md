@@ -86,12 +86,14 @@ SendMessage the COMPLETE structured review above to the coordinator that spawned
 {Insert the relevant checklist below based on the reviewer's agent type}
 ````
 
-CRITICAL-criticality proposals MAY upgrade reviewers to the `gold` tier — upward-only,
+CRITICAL-criticality proposals MAY upgrade reviewers to the `diamond` tier — upward-only,
 mirroring team-lead's escape hatch and earning it the same way: one recorded line naming
-the blast radius and reversibility, never the criticality label alone. Resolve the CURRENT
-gold alias live from the Tiers block in `~/.claude/agents/team-lead.md` and pass that bare
-alias to `model=`; never hardcode it here — a literal copied into this file silently
-overrides the authority it cites.
+the blast radius and reversibility, never the criticality label alone. The @security-engineer
+seat is EXEMPT and stays on Opus (`silver`, stretching to `gold`) — a `diamond` security
+reviewer is silently rerouted by Fable's classifiers, buying a weaker model than `silver`.
+Resolve the CURRENT diamond alias live from the Tiers block in
+`~/.claude/agents/team-lead.md` and pass that bare alias to `model=`; never hardcode it
+here — a literal copied into this file silently overrides the authority it cites.
 
 | Agent | Checklist Focus |
 |---|---|

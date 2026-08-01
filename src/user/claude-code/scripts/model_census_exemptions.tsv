@@ -40,7 +40,7 @@
 # Comments (#) and blank lines are ignored. This file starts as a skeleton
 # with zero data rows; a later phase populates real rows against the live
 # tree.
-functional-value	src/user/claude-code/agents/team-lead.md	model: sonnet	frontmatter model pin -- config value selecting the launch model
+functional-value	src/user/claude-code/agents/team-lead.md	model: opus	frontmatter model pin -- config value selecting the launch model (moved sonnet -> opus: team-lead runs the silver tier per routing-policy hard rule 4)
 provenance-record	src/user/claude-code/agents/team-lead.md	fable-completeness-heuristics.md	filename citation, master-doc pointer
 provenance-record	src/user/claude-code/agents/team-lead.md	Fable-distilled completeness heuristics	cross-reference to the named heuristics doc
 product-capability-fact	src/user/claude-code/agents/team-lead.md	official Fable prompting de-prescribes	behavioral fact about Fable's prompting sensitivity
@@ -48,10 +48,11 @@ product-capability-fact	src/user/claude-code/agents/team-lead.md	undertrigger to
 product-capability-fact	src/user/claude-code/agents/team-lead.md	Fable template:	prescriptive template rooted in Fable's reason-giving behavior
 deliberate-enumeration	src/user/claude-code/agents/team-lead.md	routing vocabulary	the closed alias vocabulary this file canonically defines
 product-capability-fact	src/user/claude-code/agents/team-lead.md	Durable Fable caveats	explicit designated example carrier (classifier fallback, ZDR compatibility)
-deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `fable`	the canonical Tiers block tier-to-alias table
-deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `opus`	the canonical Tiers block tier-to-alias table
-deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to model alias `sonnet`	the canonical Tiers block tier-to-alias table
-provenance-record	src/user/claude-code/agents/team-lead.md	replaces blanket opus-xhigh	citation of a superseded prior practice
+deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to (`sonnet`, medium)	the canonical Tiers block tier-to-(alias, effort) table
+deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to (`opus`, high)	the canonical Tiers block tier-to-(alias, effort) table
+deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to (`opus`, xhigh)	the canonical Tiers block tier-to-(alias, effort) table
+deliberate-enumeration	src/user/claude-code/agents/team-lead.md	resolves to (`fable`, max)	the canonical Tiers block tier-to-(alias, effort) table
+deliberate-enumeration	src/user/claude-code/agents/team-lead.md	Sonnet 5 medium → Opus 5 high → Opus 5 xhigh → Fable 5 max	the escalation ladder quoted verbatim from docs/facts/1785618019_claude_v5_model_routing_policy.md, the cited authority for the tier pairs
 functional-value	src/user/claude-code/agents/distinguished-engineer.md	model: fable	frontmatter model pin -- config value selecting the launch model
 product-capability-fact	src/user/claude-code/agents/distinguished-engineer.md	distillation classifier into a silent Opus fallback	classifier fallback behavior
 product-capability-fact	src/user/claude-code/agents/distinguished-engineer.md	Fable's live classifiers silently fall back	classifier fallback behavior
@@ -102,6 +103,14 @@ product-capability-fact	src/user/claude-code/skills/team-doctrine/references/cla
 product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	Opus	the charter's operational form -- same per-model deltas, same tier-ification failure
 product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	sonnet	the charter's operational form -- same per-model deltas, same tier-ification failure
 product-capability-fact	src/user/claude-code/skills/team-doctrine/references/claude-5-paradigm-gate.md	Sonnet	the charter's operational form -- same per-model deltas, same tier-ification failure
+product-capability-fact	docs/facts	fable	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	docs/facts	Fable	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	docs/facts	opus	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	docs/facts	Opus	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	docs/facts	sonnet	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	docs/facts	Sonnet	cited reference corpus -- per-model pricing, benchmark and behavior statements that become FALSE if tier-ified; this is the authority the Tiers block points AT, never doctrine itself
+product-capability-fact	src/user/claude-code/skills/vote/references/reviewer-template.md	stays on Opus	classifier-fallback carve-out keeping the security reviewer seat off the diamond tier -- same behavioral fact as team-lead.md's Durable Fable caveats
+product-capability-fact	src/user/claude-code/skills/vote/references/reviewer-template.md	rerouted by Fable's classifiers	classifier fallback behavior, the reason the security seat is exempt from the CRITICAL-criticality tier upgrade
 provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	Fable	dated migration summary -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	opus	dated migration summary -- historical record, not a live model claim
 provenance-record	src/user/claude-code/docs/migration-summary-claude-5.md	Opus	dated migration summary -- historical record, not a live model claim
@@ -125,7 +134,7 @@ functional-value	src/user.rs	ANTHROPIC_DEFAULT_FABLE_MODEL	env binding -- model 
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_HAIKU_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_OPUS_MODEL	env binding -- model ID used as an env value
 functional-value	src/user.rs	ANTHROPIC_DEFAULT_SONNET_MODEL	env binding -- model ID used as an env value
-functional-value	src/user.rs	.with_model("opus")	model alias used as a literal builder argument (re-anchored: the builder now takes the bare alias, not the full model ID)
+functional-value	src/user.rs	.with_model("opus")	model alias used as a literal builder argument (the builder takes the bare alias; the session model is opus, matching the render-target test's pinned "model": "opus")
 functional-value	src/user.rs	\"model\": \"opus\"	test assertion literal (DKT-94 render-target pinning test, re-anchored for DKT-239's opus default) -- model ID used as a test-fixture datum asserting serialized JSON output content, not a live routing decision
 functional-value	src/user/claude-code/scripts/coherence_xref.py	xref-builder` sonnet	names the tier of a specific (now-replaced) spawn
 deliberate-enumeration	src/user/claude-code/skills/commit/SKILL.md	single-word tier/model/role nouns	the ban-list's residual-nouns caveat -- names the category the check deliberately does not gate, rather than asserting any of them (re-anchored: supersedes three rows anchored to the pre-DKT-97 two-line enumeration, which the rewrite replaced with this single-line form)
@@ -190,8 +199,8 @@ functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	
 functional-value	src/user/claude-code/skills/team-doctrine/references/evolve-phase0-templates.md	N× opus→<resolved>, M× sonnet→<resolved>	illustrative format-string fixture showing the script's real requested_model/resolved_model output shape, not a hardcoded model claim
 deliberate-enumeration	.claude/skills/evolve-model-distribution/SKILL.md	both record bare ALIASES (`sonnet` / `opus` / `fable`)	naming the closed alias vocabulary this skill categorizes, not asserting a specific model
 functional-value	src/user/claude-code/scripts/spawn_owner_lookup.sh	model="UNPINNED"	local bash variable feeding report-construction printf output (format_hit), not a spawn's model= argument (DKT-179)
-functional-value	src/user/claude-code/scripts/tier_map.sh	gold/silver/bronze -> fable/opus/sonnet	usage text documenting the script's own tier-to-alias mapping, not a live routing decision
-functional-value	src/user/claude-code/scripts/tier_map.sh	gold:fable silver:opus bronze:sonnet	the script's own tier-alias parsing loop -- literal pairs it iterates to emit tier_alias.<tier>= rows
+functional-value	src/user/claude-code/scripts/tier_map.sh	sonnet/opus/opus/fable	usage text documenting the script's own tier-to-alias mapping, not a live routing decision
+functional-value	src/user/claude-code/scripts/tier_map.sh	bronze:sonnet:medium silver:opus:high gold:opus:xhigh diamond:fable:max	the script's own tier-pair parsing loop -- literal triples it iterates to emit tier_alias.<tier>= / tier_effort.<tier>= rows
 functional-value	src/user/claude-code/scripts/tier_map.sh	`haiku` is not in the routing vocabulary	anchor string the script greps for in team-lead.md to detect the suspended-alias doctrine text
 functional-value	src/user/claude-code/scripts/tier_map.sh	suspended_aliases=haiku	the script's own suspended-alias output line, mirroring team-lead.md's doctrine
 functional-value	src/user/claude-code/scripts/test/test_findings_ledger_init.py	downgrade flaky-confirm passes to haiku	test assertion literal -- fixture input/expected-output text, not a live model claim

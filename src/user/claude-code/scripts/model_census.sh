@@ -175,8 +175,10 @@ run_arm4_stale_exemptions() {
 
 # --- Arm 5: invented-alias sweep (CI-enforced) -------------------------------
 
-# Canonical routing-vocabulary aliases per team-lead.md's Tiers block
-# (gold/silver/bronze resolve to fable/opus/sonnet respectively); `haiku` is
+# Canonical routing-vocabulary aliases per team-lead.md's Tiers block. The four
+# tiers bronze/silver/gold/diamond resolve to sonnet/opus/opus/fable -- three
+# distinct aliases, because silver and gold share the opus alias and differ only
+# in their effort half, which has no `model=` representation. `haiku` is
 # deliberately excluded -- suspended from the routing vocabulary (revisit
 # 2026-09-01), not a valid `model="..."` value.
 CANONICAL_MODEL_ALIASES=(fable opus sonnet)
@@ -277,7 +279,7 @@ run_backstop() {
             rest="${line#*:}"
             content="${rest#*:}"
             # co-occurrence filter: the line must mention tier vocabulary.
-            printf '%s' "$content" | grep -qiE '(gold|silver|bronze|tier)' || continue
+            printf '%s' "$content" | grep -qiE '(bronze|silver|gold|diamond|tier)' || continue
             local tokens tok kept=0
             tokens=$(printf '%s' "$content" | grep -oE '\b[A-Z][a-zA-Z]{2,}\b')
             [ -z "$tokens" ] && continue

@@ -10,7 +10,9 @@ usage() {
     echo "Usage: tier_map.sh [path/to/team-lead.md]" >&2
     echo "  Emits KEY=value / TSV rows parsed from team-lead.md's" >&2
     echo "  model-routing policy:" >&2
-    echo "    tier_alias.<tier>=<alias>   (gold/silver/bronze -> fable/opus/sonnet)" >&2
+    echo "    tier_alias.<tier>=<alias>   (bronze/silver/gold/diamond ->" >&2
+    echo "                                 sonnet/opus/opus/fable)" >&2
+    echo "    tier_effort.<tier>=<effort> (medium/high/xhigh/max)" >&2
     echo "    category<TAB>tier           (one row per Per-Role Dispatch Table entry)" >&2
     echo "    floor_roles=<comma-list>    (spawn-name patterns pinned at/above silver)" >&2
     echo "    suspended_aliases=<comma-list> (aliases excluded from the routing vocabulary)" >&2
@@ -37,13 +39,21 @@ fail() {
     exit 1
 }
 
-# --- tier_alias.<tier>=<alias> ---
-for pair in gold:fable silver:opus bronze:sonnet; do
-    tier="${pair%%:*}"
-    alias_name="${pair##*:}"
-    anchor="\`${tier}\` — resolves to model alias \`${alias_name}\`"
-    grep -qF -- "$anchor" "$TEAM_LEAD_MD" || fail "tier-alias anchor missing for '${tier}': expected substring \"${anchor}\""
+# --- tier_alias.<tier>=<alias> + tier_effort.<tier>=<effort> ---
+# Each tier resolves to an (alias, effort) PAIR, benchmark-ordered low to high,
+# per team-lead.md's Tiers block and the escalation ladder it cites
+# (docs/facts/1785618019_claude_v5_model_routing_policy.md). Emitted as two
+# separate KEY=value lines so existing tier_alias.* consumers keep parsing
+# unchanged while effort-aware consumers can read the second half.
+for triple in bronze:sonnet:medium silver:opus:high gold:opus:xhigh diamond:fable:max; do
+    tier="${triple%%:*}"
+    rest="${triple#*:}"
+    alias_name="${rest%%:*}"
+    effort="${rest##*:}"
+    anchor="\`${tier}\` — resolves to (\`${alias_name}\`, ${effort})"
+    grep -qF -- "$anchor" "$TEAM_LEAD_MD" || fail "tier-pair anchor missing for '${tier}': expected substring \"${anchor}\""
     echo "tier_alias.${tier}=${alias_name}"
+    echo "tier_effort.${tier}=${effort}"
 done
 
 # --- suspended_aliases= ---

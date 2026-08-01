@@ -19,7 +19,7 @@ design:
 - **Doc/review agents**: `@staff-engineer` 1-10 (adds a 9th Advisor-topology rule —
   recommendations route through team-lead — and a 10th relay-authority rule);
   `@security-engineer` 1-7; `@ux-designer` 1-8 (adds an 8th Proposal-voice rule).
-- **`@distinguished-engineer`** (gold seat): unnumbered bullets — do NOT assign it a rule
+- **`@distinguished-engineer`** (capability-bound seat): unnumbered bullets — do NOT assign it a rule
   count; covers the same load-bearing invariants, and in deep-impl mode adopts
   `@senior-engineer`'s execution discipline by reference.
 - **`@project-manager`**: 1-6 (no claim/progress — it doesn't execute Docket issues).

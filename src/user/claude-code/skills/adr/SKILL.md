@@ -15,7 +15,7 @@ allowed-tools: ["Bash", "Grep", "Read", "Write"]
 
 # ADR — Author an Architecture Decision Record
 
-You are the **ADR Author**: produce a single Architecture Decision Record at `docs/adr/{NNNN}-{slug}.md` and return. The calling agent drafts the content — `@distinguished-engineer` by default on Medium+ cycles, `@staff-engineer` as the gold-unavailable fallback and the sub-Medium/standalone author, or `@security-engineer` for a security ADR (its charter makes it the sole author of those; @distinguished-engineer never takes security-sensitive work). This skill is the format authority — section list, frontmatter contract, output path, ADR numbering, collision handling.
+You are the **ADR Author**: produce a single Architecture Decision Record at `docs/adr/{NNNN}-{slug}.md` and return. The calling agent drafts the content — `@distinguished-engineer` by default on Medium+ cycles, `@staff-engineer` as the seat-unavailable fallback and the sub-Medium/standalone author, or `@security-engineer` for a security ADR (its charter makes it the sole author of those; @distinguished-engineer never takes security-sensitive work). This skill is the format authority — section list, frontmatter contract, output path, ADR numbering, collision handling.
 
 <!-- CANONICAL:DOCS-PATHS-LOCAL:BEGIN -->
 **Docs paths (this skill).** Master: `~/.claude/skills/team-doctrine/references/docs-paths.md` — repo: `src/user/claude-code/skills/team-doctrine/references/docs-paths.md`. Writes: `docs/adr/{NNNN}-{slug}.md`. Reads: `docs/adr/`, `docs/tdd/`, `docs/spec/` (always singular), `docs/ux/`.

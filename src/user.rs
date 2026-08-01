@@ -503,7 +503,7 @@ fn build_claude_code_config(name: &str, systems: Vec<ArtifactSystem>) -> ClaudeC
             "command",
         )
         .with_include_git_instructions(false)
-        .with_model("sonnet")
+        .with_model("opus")
         .with_output_style("Proactive")
         .with_permission_allow("Bash(bun run:*)")
         .with_permission_allow("Bash(bun test:*)")

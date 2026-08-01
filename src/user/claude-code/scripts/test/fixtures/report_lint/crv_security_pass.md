@@ -7,6 +7,7 @@ Reviews a new token-verification helper.
 - Source: uncommitted
 - Files changed: 1 (auth.go)
 - Reference docs: docs/spec/security.md §Secrets
+- Inherited exclusions: None
 
 ### Threat Model (assumed)
 - Adversary: external attacker

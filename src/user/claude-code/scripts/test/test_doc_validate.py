@@ -189,6 +189,39 @@ def test_tdd_security_abuse_cases_missing():
     assert_fail("tdd", t, "security-abuse-cases")
 
 
+def test_tdd_security_track_skipped_all_sections():
+    # Recorded live instance (2026-08-01): updated_by mismatch + all four
+    # security subsections present silently returned exit 0 pre-fix.
+    t = mutate(load("tdd_security_ok.md"),
+               'updated_by: "@security-engineer"', 'updated_by: "@staff-engineer"')
+    assert_fail("tdd", t, "security-track-skipped")
+
+
+def test_tdd_security_track_matches_passes():
+    assert_pass("tdd", load("tdd_security_ok.md"))
+
+
+def test_tdd_security_track_mismatch_no_sections_passes():
+    t = load("tdd_security_ok.md")
+    t = mutate(t, 'updated_by: "@security-engineer"', 'updated_by: "@staff-engineer"')
+    t = mutate(t, "### Threat Model\n\nAdversary capabilities and goals.\n\n", "")
+    t = mutate(t, "### Trust Boundaries\n\nWhere trust changes hands.\n\n", "")
+    t = mutate(t, "### Security Considerations\n\nMitigations applied.\n\n", "")
+    t = mutate(t, "### Abuse Cases\n\nAdversarial-input tests enumerated here.\n\n", "")
+    assert_pass("tdd", t)
+
+
+def test_tdd_security_track_skipped_single_section():
+    # Only ### Abuse Cases present (Testing Strategy host section) — proves
+    # single-host-section detection, not just the all-four case.
+    t = load("tdd_security_ok.md")
+    t = mutate(t, 'updated_by: "@security-engineer"', 'updated_by: "@staff-engineer"')
+    t = mutate(t, "### Threat Model\n\nAdversary capabilities and goals.\n\n", "")
+    t = mutate(t, "### Trust Boundaries\n\nWhere trust changes hands.\n\n", "")
+    t = mutate(t, "### Security Considerations\n\nMitigations applied.\n\n", "")
+    assert_fail("tdd", t, "security-track-skipped")
+
+
 # ---------------------------------------------------------------- ux-spec (6)
 def test_ux_frontmatter_missing_field():
     t = mutate(load("ux-spec_ok.md"), 'owner: "@ux-designer"\n', "")

@@ -557,6 +557,10 @@ def validate_full(skill, cfg, records, text):
     if variant is not None and variant.get("hard_gate"):
         failures.extend(hard_gate_failures(records))
 
+    # F5 inherited-exclusions disclosure (crv security only).
+    if variant is CRV_SECURITY:
+        failures.extend(inherited_exclusions_failures(records))
+
     # design-review Blocker structure + Dimension Checklist completeness.
     if skill == "design-review":
         failures.extend(design_review_structure(records, cfg))
@@ -566,6 +570,27 @@ def validate_full(skill, cfg, records, text):
         failures.extend(design_qa_table_failures(records))
 
     return failures
+
+
+_INHERITED_EXCLUSIONS_RE = re.compile(r"^- Inherited exclusions: ")
+
+
+def inherited_exclusions_failures(records):
+    """F5 (DKT-11 AC2.4): the security-track Scope Reviewed section must carry
+    an `- Inherited exclusions: ` disclosure line — general-playbook reports
+    have no CRV_SECURITY variant match, so this never fires on them."""
+    b = section_bounds(records, "Scope Reviewed")
+    if b is None:
+        return [("inherited-exclusions", "Scope Reviewed section missing")]
+    start, end = b
+    for ri in range(start + 1, end):
+        idx, raw, in_fence = records[ri]
+        if in_fence:
+            continue
+        if _INHERITED_EXCLUSIONS_RE.match(raw):
+            return []
+    return [("inherited-exclusions",
+              "Scope Reviewed missing required '- Inherited exclusions: ' line")]
 
 
 def hard_gate_failures(records):

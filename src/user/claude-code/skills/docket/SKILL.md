@@ -34,9 +34,7 @@ At session start prefer `docket_bootstrap.sh` (see Wrapper Scripts) over hand-ty
 
 **The flag reference below is complete and current** — look flags up here rather than
 re-running `--help`, unless a governing gate (e.g. the evolve-* Phase-0 ground-truth check)
-names `--help` as its verification source. `docket_ref_check.sh` mechanizes the drift check
-against the installed binary and is the recommended Phase-0 ground-truth step when auditing
-this skill.
+names `--help` as its verification source.
 
 ## Global Flags & Output Contract
 
@@ -46,8 +44,27 @@ Inherited by every subcommand:
 |---|---|---|---|---|
 | `--json` | — | bool | `false` | Machine-readable JSON envelope on stdout. |
 | `--quiet` | `-q` | bool | `false` | Suppress human-mode info/warning lines on stderr. |
-| `--watch` | `-w` | bool | `false` | Re-run on an interval. Read-only commands only (`board`, `issue list/show/log/graph`, `issue comment list`, `doc list/show`, `doc comment list`, `next`, `plan`, `stats`, `config`, `vote list/show/result`); write commands reject it with `VALIDATION_ERROR`. |
+| `--watch` | `-w` | bool | `false` | Re-run on an interval. Read-only commands only (see eligibility list below); write commands reject it with `VALIDATION_ERROR`. |
 | `--interval` | — | duration | `2s` | Watch refresh interval; minimum `500ms`. |
+| `--collection-shape` | — | string | `"bare"` | `bare`\|`object`. Governs `.data` shape for the five sub-entity list commands (`issue comment list`, `doc comment list`, `issue file list`, `issue label list`, `issue link list`) — see `.data` shapes below. Any other value is a `VALIDATION_ERROR`. |
+
+### `--watch` eligibility
+
+`--watch`/`-w` and `--interval` are hidden (via Cobra `MarkHidden`) on every command NOT in
+this allowlist, defined in `internal/cli/watch_commands.go`:
+
+```
+docket board                 docket doc comment list      docket vote list
+docket issue list            docket next                  docket vote show
+docket issue show            docket plan                  docket vote result
+docket issue log             docket stats
+docket issue graph           docket config
+docket issue comment list    docket doc list
+                              docket doc show
+```
+
+Attempting `--watch` on any other (write) command fails with `--watch is not supported on
+write commands` (`VALIDATION_ERROR`).
 
 ### JSON envelope shape
 
@@ -69,11 +86,11 @@ The process exit code always matches, in both JSON and human mode:
 
 ### `.data` shapes are NOT uniform — check before parsing
 
-Sub-entity `list` subcommands return `.data` as a **bare array**; every other list command
-returns an **object** with a named collection key plus `total`. Confusing the two is the
-most common Docket parsing failure.
+Sub-entity `list` subcommands return `.data` as a **bare array** by default; every other
+list command returns an **object** with a named collection key plus `total`. Confusing the
+two is the most common Docket parsing failure.
 
-| Command | `.data` | jq for the rows |
+| Command | `.data` (default `bare`) | jq for the rows |
 |---|---|---|
 | `issue list`, `next` | object | `.data.issues[]` |
 | `doc list` | object | `.data.docs[]` |
@@ -85,6 +102,22 @@ most common Docket parsing failure.
 | `issue comment list`, `doc comment list` | **bare array** | `.data[]` |
 | `issue file list`, `label list`, `link list` | **bare array** | `.data[]` |
 
+**`--collection-shape=object` opts the five bare-array sub-entity commands into the same
+object-with-`total` shape as everything else** — useful for a uniform parser across all list
+commands. Each has its own named key:
+
+| Command | `--collection-shape=object` `.data` shape | Empty result |
+|---|---|---|
+| `issue comment list` | `{"comments": [...], "total": N}` | `{"comments": [], "total": 0}` |
+| `doc comment list` | `{"comments": [...], "total": N}` | `{"comments": [], "total": 0}` |
+| `issue file list` | `{"files": [...], "total": N}` | `{"files": [], "total": 0}` |
+| `issue label list` | `{"labels": [...], "total": N}` | `{"labels": [], "total": 0}` |
+| `issue link list` | `{"relations": [...], "total": N}` | `{"relations": [], "total": 0}` |
+
+The empty-result case always emits the object shape (`{"<key>": [], "total": 0}`) under
+`--collection-shape=object`, never a bare `[]` — the shape is determined by the flag, not by
+whether any rows matched.
+
 **Truncation is silent.** `issue list`/`doc list`/`vote list` default to `--limit 50`
 (`next` to 10) with no warning when rows are cut; `total` counts the FULL match set:
 
@@ -95,9 +128,14 @@ docket issue list --json | jq -e '.data.total > (.data.issues|length)' >/dev/nul
 
 ### Non-interactive contexts
 
-Write commands with missing required flags fall back to an interactive form or `$EDITOR`
-only when stdin is a TTY; with no TTY they return `VALIDATION_ERROR` listing the missing
-flags, and `--json` mode never launches a form. Always pass all required flags explicitly.
+Several write commands (`issue create`, `issue delete` with sub-issues, `vote create`,
+`vote cast`, `doc create`, `doc delete`, `label delete`, `import --replace`) fall back to an
+interactive `huh` form when required flags are omitted and stdin is a TTY. (`issue comment`
+and `doc comment` use a different fallback — they open `$EDITOR`; see the comment contract
+below.) With no TTY these commands return a `VALIDATION_ERROR` listing the missing flags
+instead of hanging — always pass all required flags explicitly when scripting or running as
+an agent. `--json` mode never launches an interactive form; missing required fields are
+always a hard `VALIDATION_ERROR` in JSON mode.
 
 ### The comment contract
 
@@ -137,7 +175,6 @@ cwd-guard and post-write verification — prefer them over hand-composing raw se
 | `docket_create.sh` | `<issue create flags...>` | `issue create` + re-verify every `-l`/`-f` landed, backfilling omissions |
 | `vote_delegate.sh` | `<role> <criticality> <desc> <voters> [artifact]` | `vote create -n <voters>` (integer voter count, not names) with criticality-correct `--threshold` + prints the delegation payload |
 | `vote_record.sh` | `<vote-id> <voter> <role> <report-file>` | parses a reviewer report's Verdict/Confidence/Domain-Relevance/Findings sections and casts via `vote cast`, streaming findings through stdin |
-| `docket_ref_check.sh` | `[skill-md-path]` | diffs this file's flag tables against installed `docket <cmd> --help`; exits nonzero on drift |
 
 ---
 
@@ -274,7 +311,13 @@ Watch-eligible.
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 
-Watch-eligible. Cycle in the dependency graph → `CONFLICT`.
+Watch-eligible. Cycle in the dependency graph → `CONFLICT`. `--json` output additionally
+includes per-issue `blocked_by` (array of formatted blocker IDs, `[]` if none), per-phase
+`level` (1-based topological-level index — sub-phases produced by splitting one topo-level
+across file collisions share the same `level`), and top-level `total_levels` (count of
+distinct levels). Human/plain rendering distinguishes a same-level file-collision split
+("Phase N (same dependency level as Phase N-1, split by file collision):") from a genuine
+new dependency level ("Phase N (parallel, after Phase N-1):").
 
 ### `docket next` — `next.go`
 
@@ -458,6 +501,9 @@ No local flags. `skipDB` annotated (reads config even if no DB exists yet). Watc
 ---
 
 ## Enum Reference
+
+Transcribed from `internal/model/issue.go`, `relation.go`, `proposal.go` (validated by
+`model.Validate*` helpers called from the corresponding `RunE`):
 
 | Enum | Values |
 |---|---|

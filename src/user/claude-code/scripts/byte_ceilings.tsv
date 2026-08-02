@@ -37,7 +37,7 @@ each	src/user/claude-code/skills/*/SKILL.md	10000	charter: "no SKILL.md over 10K
 # (charter §4)", which check A17 in the verification report reads PASS on.
 # Each carries machine-parsed or parity-locked format authority that cannot
 # move behind a Read without breaking the tool that parses it in place.
-#EXCUSE	src/user/claude-code/skills/docket/SKILL.md	the 51-subcommand flag reference is parsed IN PLACE by docket_ref_check.sh, whose default target is this file
+#EXCUSE	src/user/claude-code/skills/docket/SKILL.md	the 51-subcommand flag reference is the fleet's in-place lookup authority for docket flags
 #EXCUSE	src/user/claude-code/skills/code-review-verdict/SKILL.md	report_lint.py section/ladder/trailing-line contracts + byte-locked BANNER and scope-table parity blocks
 #EXCUSE	src/user/claude-code/skills/vote/SKILL.md	report_lint.py contracts + byte-locked parity blocks
 #EXCUSE	src/user/claude-code/skills/verify-ac/SKILL.md	report_lint.py contracts + byte-locked parity blocks

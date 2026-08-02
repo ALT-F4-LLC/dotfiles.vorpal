@@ -1,0 +1,417 @@
+# 06 — Docket vNext: a generic workflow engine for issues
+
+Status: approved — 2026-08-02 · final boundary (third pass) set after Erik clarified the
+criterion: features belong **in** Docket exactly when they are valuable and reusable for
+*anyone* tracking multi-step work — human teams or agent fleets, any domain — and stay
+out when they encode his fleet's specifics. Ratification: README / 01 §6.
+
+The result: Docket core grows a **domain-neutral workflow engine** — workflows, steps,
+runs, claims, gates, typed payloads, events, usage ledger — and the public story stays
+coherent with the README's existing identity ("issue tracking for ai and humans").
+Everything fleet-specific remains outside as configuration and harness data.
+
+**The genericity rule (binding on every feature below):** core Docket contains zero
+agent/LLM vocabulary — no node, model, prompt, brief, severity, or review concepts.
+Executors are opaque string hints; execution metadata is an opaque KV bag; ordered
+meaning comes from user-registered schemas; computations beyond scheduling arithmetic
+are user-trusted commands. The stranger test for every verb: *a team that has never run
+an LLM should find it useful as documented.*
+
+What stays **outside** core (Erik's instance): the prose (node contracts, fragments,
+skills), the workflow/policy instances and payload schemas (machine-authored per T9,
+§2 "Instance config lifecycle"), and one harness adapter (wave.js) plus one-line hook
+shims. Former glue is absorbed as generic verbs: brief.sh → `step render`,
+reconcile.py → the builtin `aggregate` action, hook logic → the `guard` family.
+`engine.py`/`.graph/` from the second boundary pass are dissolved: semantics land here,
+in Go, in `.docket/issues.db`.
+
+## 1. Surface summary
+
+```
+docket workflow register|list|show f.toml       # generic grammar (05); versioned
+docket schema   register name@v schema.json     # payloads; ordered enums supported
+docket trust    add|list|rm …                   # user-level exec allowlist (§4)
+docket config   set|get key [value]             # engine defaults: lease TTLs per class,
+                                                #   attempt caps, budget default, context caps
+docket guard    spawn|record|stop|gate --step NAME [--input …]
+                                                # allow/deny predicates for harness
+                                                #   enforcement points; exit 0/2 + reason (§2)
+docket workflow init [--template NAME]          # scaffold instance config from shipped
+                                                #   optional templates (zero-authoring start)
+
+docket run start --request-file … ; activate; pause|resume|abandon; status; report
+docket next     --run RUN-N --json              # step-level ready set (02 §5)
+docket dispatch open|close|verify|abandon --run RUN-N
+                                                # batch manifest (TTL'd, one open per run,
+                                                #   CAS); next refuses while open or
+                                                #   discrepancies exist; abandon unsticks
+docket step     claim STEP-N                    # atomic; mints a capability token and
+                                                #   returns token + the step CONTEXT bundle
+docket step     heartbeat|complete|fail         # token via DOCKET_TOKEN env or stdin
+docket step     approve|reject [--note …]       # type=human gate steps only
+docket step     resolve STEP-N --as retry|skip|abandon-issue|override-pass [--note …]
+                                                # waiting-human resolutions (§2)
+docket step     render STEP-N [--template F]    # context bundle → rendered work
+                                                #   packet; claim --render returns it
+                                                #   atomically (§2)
+docket step     show|context
+docket artifact show ART-N | list --run RUN-N
+docket events   --follow [--since SEQ] ; docket events prune --before …
+```
+
+Existing verbs (`issue`, `plan`, `board`, `vote`, `doc`, `export`, …) keep exactly one
+meaning each; workflow features are additive verbs and dormant tables — a repo that
+never registers a workflow observes no change anywhere.
+
+## 2. Semantics per verb group
+
+All semantics are 02's, restated here only where the generic surface differs:
+
+**Workflows.** Registered TOML in the generic grammar (05 §1): `[match]` predicates
+over kind/labels; steps with `executor` (opaque hint), `after`, `inputs`, `fanout`,
+`gates`, `threshold`, `on_fail` routing (closed vocabulary), loops with specified
+re-expansion rules (step identity per loop entry, threshold re-application, gate
+re-runs — the DSL's loop semantics are part of this spec, not implementation
+discretion), `max_attempts`, `expected_cost`, `metadata` passthrough. Validation runs at register time (the grammar itself, plus threshold fields against
+registered schemas) and at activation time (bindings resolvable, pins recorded).
+
+**Activation.** Fat transaction as 02 §3: DAG lints; workflow binding; version pinning —
+registered objects by version, **plus arbitrary operator-supplied file pins** (path +
+content hash), which is how Erik pins node contracts, fragments, and policy without core
+knowing what they are; issue-body snapshots (incl. fenced command blocks, §4); lazy
+phase expansion; promotion via the issue verbs. Re-activation lints and expands new
+phases only, inherits the original pin set, and is refused while a dispatch is open.
+
+**Steps, claims, capabilities.** As 02 §5 and the ratified soundness set: `claim` is
+CAS-atomic, mints a random capability token (delivered via env/stdin, never argv), and
+returns the **context bundle** — step row, issue snapshot, declared input artifacts,
+pinned-file list with hashes — in the same response; `--render` returns the assembled
+prompt instead (§ Rendering). `complete`/`fail`/`heartbeat` refuse non-holders
+(AUTH_ERROR) and stale leases (STALE_LEASE). `complete` is the specified saga —
+artifact+payload validation → gates one-by-one → routing — with panel-hardened
+semantics: **the token retires when the artifact records**; from that commit the saga
+is engine-owned and resumes lazily under any later engine invocation, each stage its
+own transaction, no subprocess ever inside a transaction, every stage commit
+refreshing the step's activity clock. Gates are **at-least-once**: a `gate-started`
+event precedes each spawn; on resume, a started-but-unrecorded gate re-runs only if
+its trust entry is flagged re-runnable, else the step parks `waiting-human`. Routing
+is one transaction spanning step, issue mirror, run, and events. `waiting-human`
+steps resolve via `step resolve` (retry = attempts reset · skip · abandon-issue ·
+override-pass, note recorded); `approve|reject` belongs to `type=human` gate steps
+only, and a human gate's reject routing may not itself be `waiting-human`
+(register-time VALIDATION_ERROR).
+
+**Scheduling.** `next` computes readiness (02 §5): dependencies, predecessors, scope
+non-overlap, run active, concurrency headroom per executor-hint class (a generic knob;
+Erik's config sets his write class to 1 — serialization is *instance policy*, not core
+behavior), budget headroom. Ordering: priority then age. `dispatch open/close/verify`
+give batch dispatchers (the wave) a manifest to verify against byte-for-byte and make
+"unreconciled batch" an engine-refusal state — with recovery designed in: exactly one
+dispatch open per run (CAS/unique index), a dispatch TTL lazily auto-abandoned by
+`next` (event-logged), explicit `dispatch abandon` for a crashed relay, and enumerated
+discrepancy resolutions (lease expiry clears claimed-but-unrecorded;
+`dispatch close --accept-missing-usage` records the acceptance). Reaping a
+**write-class** lease additionally holds write headroom until the relay acknowledges
+the `reaped` event (surfaced by `guard spawn`) — the DB fence is not a tree fence; a
+wedged writer must be confirmed gone before a successor writes.
+
+**Fanout joins.** A fanned-out step joins when every sibling is terminal
+(`done | skipped | superseded | failed-routed`); a sibling in `waiting-human` parks
+the issue. Downstream `inputs` resolve over `done` siblings only, ordered by (declared
+position, sibling index, artifact id). `on_fail` applies per sibling; `min_siblings` (§11.1) permits quorum joins: the join
+still waits for all siblings to reach a terminal state (no early cancel in v1), and if
+`done` count < `min_siblings` at join, the fanned step routes per its `on_fail`.
+
+**Rendering.** `docket step render` (or `claim --render`) formats the context bundle
+into a rendered *work packet* (text) through a template — a shipped generic default,
+or a pinned instance template file. Packet *layout* is thereby core mechanics while
+*content* stays instance data; no harness needs a formatting script. (This design's
+harness hands the packet to an LLM as its prompt; core neither knows nor cares.)
+
+**Guards.** `docket guard spawn|record|stop|commit` are deterministic allow/deny
+predicates over engine state for harness enforcement points (exit 0 allow / exit 2
+deny with reason): `spawn` — proposed rows byte-match the open dispatch and no
+unacknowledged write reaps; `record` — no unreconciled dispatch; `stop` — no pending
+work outside `waiting-human`; `gate --step NAME` — an approved `type=human` step of that name exists for the active
+run (Erik's commit hook shims `guard gate --step commit-gate`). Any harness's hook
+mechanism wires these as one-liners; the logic lives here. (`step heartbeat` serves
+the heartbeat hook — an engine verb, though not a guard predicate.)
+
+**Payloads and thresholds.** `schema register` accepts JSON Schema plus an
+`ordered_enum` annotation; thresholds in workflow defs are then generic comparisons
+(`threshold = { "fix-loop" = "any(severity >= high)" }` works because *the user's
+schema* declared the order — core never knows what a severity is). Aggregations beyond comparison are **action steps**. One is builtin and generic:
+`action = "aggregate"` with `params = { field, method = median|max|min, hold_spread,
+output }` computes over any ordered-enum payload field — median, spread-hold, and a
+recorded demotion trail work for severities, priorities, or tiers alike. When `hold_spread` trips, the engine materializes a `type=human` step named
+`<step>-held` gating the routing step, and the aggregate's output payload —
+per-cluster value, members, held flag, `demoted_from`, `operator_resolved` — validates
+against the shipped `aggregate@1` schema. Erik's reconciliation is therefore
+parameters, not code. Other computations remain user-trusted commands receiving step
+context on stdin.
+
+**Budgets.** Enforced against `max(reported, floor)`; floor = Σ claimed steps'
+`expected_cost` (from the workflow def) — engine-owned facts, so the cap holds with
+reporting absent. Reported usage (opaque numbers on `complete`) only raises the
+counter; missing usage rows are a dispatch discrepancy.
+
+**Runs, report, events.** As 02 §3/§1.6: ledger rollup (usage, attempts, gate trail,
+artifact index, metadata rollups), NDJSON event feed with `--follow`, prune verb.
+Read verbs render *effective* status (lease expiry computed at read time, no write) —
+status never lies just because nobody called `next`.
+
+**Instance config lifecycle (T9 — zero-touch).** Instance files live in the repo at
+`.docket/config/` (`workflows/`, `schemas/`, `contracts/`, `fragments/`,
+`templates/`, `policy.toml`) — git-versioned like any code. They are
+**machine-authored**: a bootstrap agent drafts them at project start (mining the
+build system, test commands, git history, conventions), the retro pipeline evolves
+them from run evidence, and the human only approves in conversation. **Activation
+auto-registers** the config directory's current contents (content-hash versioning) —
+registration is never a manual step, and schemas are stable reviewed files, never
+generated per-run. Strangers start from shipped optional templates
+(`docket workflow init --template standard-dev`) — a working baseline with zero
+authoring. At plan approval the session surfaces what activation will bind — including every
+harvested fenced command, verbatim — so what the human approves is what was actually
+read, not a summary. Developer responsibility, by design: provide work, approve at
+gates — nothing else.
+
+## 3. Storage
+
+Schema v5 on `.docket/issues.db`: additive tables (runs, steps, artifacts,
+gate_results, events, pins, dispatches, trust-cache) + `version` CAS columns on
+existing entities (part of §5). Dormant unless workflows are used; existing verbs'
+behavior is byte-compatible (`--json=v2` opt-in aside). Artifacts capped at 1MiB with
+explicit refusal; events carry monotonic `seq`; lifecycle specified: `events prune`,
+artifact GC per run-retention config, documented backup (`sqlite3 .backup`), WAL-on-
+synced-directory warning in docs. `docket migrate` is idempotent, backup-first,
+additive-only; v4 DBs open unchanged. `events prune` refuses events of non-terminal
+runs and never crosses the artifact-retention boundary; `events --follow --since`
+below the retained minimum returns GONE rather than silently skipping.
+
+## 4. Execution trust model (gates, actions, fenced commands)
+
+Docket executes registered commands at workflow transitions — the one place it runs
+anything — under a trust model fit for an OSS tool:
+
+- **User-level trust only, repo-scoped by default.** Executable argv templates live
+  in `~/.config/docket/trust.toml` (per-user, never repo-shipped), managed by
+  `docket trust`; each entry binds to the repo it was approved in unless `--global`
+  is explicitly chosen — an argv trusted for one project does not execute in a
+  malicious clone of another. Workflow defs and issues reference names only. A cloned
+  repo can never introduce execution; unknown names require an explicit one-time
+  `trust add` (TOFU, argv-hash recorded).
+- **Fenced command blocks** (generic form of Erik's ```ac``` convention): a workflow
+  gate may declare `source = "fence:<tag>"`; commands are harvested from the issue
+  body **at activation** (snapshotted, hashed — post-activation edits cannot inject)
+  and each must match a trust entry — a full-argv hash satisfies the match; prefix
+  entries are the explicit opt-in case — or it is *not executed* and reported as
+  unmatched. Any team using executable acceptance checks gets this; no team gets
+  drive-by execution.
+- Mechanics: resolved argv, no shell interpolation, cwd repo root, env allowlist,
+  timeout with process-group kill, captured output with explicit truncation,
+  flaky-declared re-runs recorded individually. Read verbs never execute. Gates are
+  at-least-once and **must be idempotent**; `re-runnable` is a per-entry trust flag
+  (§2). Gates that touch the working tree declare `tree = true` and serialize on an
+  engine-held per-repo mutex — parallel read-step completions never race a build.
+- Trust entries default to **full-argv hashes**; prefix entries are explicit opt-in
+  (`trust add --prefix`, with an over-authorization warning). Tokens pass via
+  env/stdin, never argv; claim markers are 0600 in a per-user runtime dir.
+- **Conversational trust (zero-touch posture):** in this solution the session
+  proposes, the human approves in-chat, and the session runs `trust add --yes` — the
+  harness's own command-permission prompt is the human-confirmation backstop. The
+  residual risk (a misbehaving session self-trusting a command) is accepted and
+  bounded by full-argv hashing plus the permission layer (08 D14).
+
+## 5. Docket core reliability delta (stage 1; unchanged from prior spec)
+
+CAS `--if-version` everywhere + versions in `.data`; uniform envelopes
+(`{items,total,truncated}`) behind `--json=v2`; explicit truncation flags; hard
+VALIDATION_ERROR on silent-drop cases; idempotency keys on create verbs; millisecond
+timestamps + `seq`; error taxonomy extended once for all new verbs (NOT_FOUND,
+VALIDATION_ERROR, CONFLICT, AUTH_ERROR, STALE_LEASE, TIMEOUT, UNTRUSTED). Generic,
+valuable standalone, and deletes nine wrapper scripts in the current fleet.
+
+## 6. Concurrency model
+
+As 02 §9 in Go: WAL, busy_timeout, single-transaction mutations, CAS claims, lazy lease
+reaping confined to `next`/`claim` (reads never write; read verbs compute *effective*
+status from `expires_at`). No subprocess ever executes inside a transaction — each
+saga stage commits separately (§2). Multiple dispatchers are safe
+and pointless. Erik's writer-serialization is his concurrency config (§2), enforced by
+`next` like any other headroom rule.
+
+## 7. Out of scope (hard boundaries)
+
+No daemon; no network; no model calls; no prompt/agent vocabulary anywhere in core
+(the genericity rule — a PR introducing `model`, `prompt`, or `llm` into core surface
+fails review by definition; metadata KV exists precisely so such things ride through
+opaquely); no execution outside §4; no cross-repo federation in v1 (08 D6); no VCS coupling beyond the declared
+`issue.diff` provider (git in v1, §11.1); board/UI
+growth limited to opt-in run/step columns.
+
+## 8. Erik's instance configuration (examples, not core defaults)
+
+The routing/budget table formerly in this section is unchanged in substance but is now
+explicitly *instance data* living in his repo: `policy.toml` (executor-hint → metadata
+{model, effort}, delivered to the wave as step `metadata` on `next` rows — the
+workflow script reads no files; `never`-style constraints enforced by his workflow
+thresholds over recorded metadata plus the spawn-guard hook),
+`expected_cost` per step template, lease TTLs (read 15m / write 45m / research 20m),
+write-class concurrency 1, budget warn 60% / pause 100%, context-size warn 64KB / error
+128KB, max_attempts 2 / max_fix_loops 2. Core ships with no opinions here.
+
+## 9. Acceptance criteria (when implemented)
+
+1. **Stranger test:** a human-only demo — a docs-review workflow with two steps, one
+   fenced-command gate, no agents anywhere — is definable, runnable, and comprehensible
+   from public docs alone, with zero references to AI concepts.
+2. Zero model-made scheduling decisions in a full run: every transition in events
+   traceable to next/gate/threshold/human input.
+3. Capability proofs: an unclaimed worker cannot record (AUTH_ERROR); duplicates lose
+   at claim (CONFLICT); late completes refused (STALE_LEASE); racing dispatchers cause
+   no duplicate execution or lost updates.
+4. Kill a worker mid-step: lease expiry alone re-readies it; the run completes; the
+   attempt trail is complete.
+5. Determinism: same run at same pins ⇒ identical step topology and byte-identical
+   context bundles, immune to mid-run issue edits and working-tree changes.
+6. Trust: a cloned malicious repo cannot cause execution without a prior local
+   `trust add` (proof includes fenced-command harvesting); unmatched commands are
+   reported, never run.
+7. Budget: with reporting disabled, the run still pauses at the cap from the floor.
+8. Compatibility: v4 DBs open; all existing verbs byte-compatible without `--json=v2`;
+   a workflow-free repo shows no behavioral change on any existing verb.
+9. Dispatch recovery: kill the relay with a dispatch open — TTL auto-abandon (or an
+   explicit `dispatch abandon`) restores `next`; nothing is lost or double-executed.
+10. Saga safety: crash at every stage boundary of `complete` — resume never
+    double-runs a non-re-runnable gate (parks `waiting-human` instead), and a reaped
+    write-class step cannot gain a successor until the reap is acknowledged.
+11. Zero-touch: from `docket workflow init --template …` through a completed run,
+    the only human inputs are conversational approvals relayed by the harness — no
+    hand-edited config, no manual registration.
+
+## 10. Staged delivery (ratified: Docket-first, staged)
+
+Each stage ships as a normal Docket release, independently useful:
+
+1. **Reliability delta** (§5) — immediate payoff for the current fleet.
+2. **Claims/leases + capability tokens** on issues and steps-to-be.
+3. **Workflows, steps, `next`, activation/pinning** — the engine's spine (largest
+   stage; loop semantics land here).
+4. **Gates + trust model** (§4).
+5. **Payload schemas + ordered enums + action steps** (thresholds, reconcile-as-action).
+6. **Runs, budgets/floor, report; `dispatch` manifests; the events *read* surface**
+   (`events list --since`) — M4's AC-integrity audit needs it.
+7. **Events `--follow` + prune** (observability tail).
+
+Guard verbs land with their underlying features (`stop`/`gate` at stage 3,
+`record`/`spawn` at stage 6); stage 3 carries the minimal run subset activation needs
+(run row, status, pins) with report/budgets completing at stage 6.
+
+**v1 shadow run (07 §4) becomes runnable after stage 6**; stage 7 may trail it. The
+harness pieces (03) and Erik's instance config (05, 08) can be authored in parallel
+from stage 2 onward.
+
+## 11. Appendix: normative grammar and wire shapes
+
+This section is the implementable definition of what §1–§2 describe. Field names are
+final unless a stage's implementation review changes them; anything not listed here is
+not part of the core surface.
+
+### 11.1 Workflow definition grammar (TOML)
+
+`[pipeline]` — `name` (string, required), `version` (int, required), `description?`.
+
+`[match]` — `kind = [..]`, `labels_any = [..]`, `labels_all = [..]`,
+`unless_labels = [..]`. Evaluated at activation; **exactly one** workflow may match an
+issue — zero or multiple matches is a VALIDATION_ERROR naming the issue and the
+candidate workflows.
+
+`[limits]` — optional map of executor *class* → `{ max = N, lease_ttl = "45m" }` (bare
+int = shorthand for `max`). When a run pins multiple workflows, the most restrictive
+limit per class wins; unset values fall back to `docket config` defaults. Classes also carry `max_step_duration` — a schedule-to-close bound independent of
+heartbeats, so a runaway executor cannot renew forever. (Erik's writer serialization
+is exactly `"write" = { max = 1, lease_ttl = "45m", max_step_duration = "2h" }`.)
+
+`[[step]]` fields:
+
+| Field | Type / default | Meaning |
+|---|---|---|
+| `name` | string, required, unique in workflow | step identity; instances are `name@k#i` (§11.3) |
+| `executor` | string (opaque hint) | worker step; core never interprets the value |
+| `action` | string (trusted command name) | deterministic computation step (§4) |
+| `type` | `"human"` \| `"vote"` | operator gate / proposal-driven gate |
+| — | | exactly one of `executor` / `action` / `type` / `fanout` per step |
+| `fanout` | [executor hints] | expands to parallel siblings `name@k#0..n-1`, one per hint |
+| `class` | string, default = executor value | concurrency-accounting key for `[limits]` |
+| `emits` | artifact-kind string, required on executor steps | binds the step to its recorded artifact kind (`inputs` resolution; instance contract frontmatter mirrors it for the model's benefit — the workflow is authoritative) |
+| `payload` | `schema@ver`, optional | payload validated at `complete`; threshold fields check against it at register time |
+| `voters`, `vote_rule` | [executor hints], proposal-config name | required on `type="vote"` steps — who casts, which existing Docket threshold config tallies |
+| `after` | [step names], **required** except the first step and `loop = true` steps (whose ordering comes from loop entry, §11.3) | intra-workflow predecessors; `[]` = root (implicit topology was a footgun) |
+| `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"issue.body"` \| `"issue.diff"`] | artifacts inlined into the context bundle, in order. `issue.diff` = the engine-computed VCS diff for the issue's scope, snapshotted and fingerprinted when its producing step completed (git in v1 — the one declared VCS coupling, §7) |
+| `gates` | [trusted gate names \| `{name, source="fence:<tag>", pre=bool}`] | `pre = true` gates run at claim with results included in the context bundle (measure-then-judge steps); the rest run in order inside `complete` (§2, §4) |
+| `params` | opaque KV table | arguments to `action` steps (e.g. the builtin `aggregate`) |
+| `min_siblings` | int, default = all | fanout join quorum (§2 Fanout joins) |
+| `threshold` | table: routing → predicate (11.2) | routing computed over the step's recorded payloads |
+| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | routing for gate failure / attempts exhausted |
+| `loop` | bool, default false | marks loop-body steps (11.3) |
+| `after_loop` | step name | re-entry target after a loop body completes |
+| `max_attempts` | int, default engine config | per-instance retry budget |
+| `max_fix_loops` | int, default engine config | loop-entry budget per issue |
+| `expected_cost` | number ≥ 0, default 0 | budget-floor contribution per claim (§2) |
+| `when` | predicate over issue `kind`/`labels` | step is `skipped` when false |
+| `metadata` | opaque KV table | recorded on the step; delivered in the context bundle |
+
+### 11.2 Threshold predicates
+
+`threshold` maps a routing (`"fix-loop"`, `"waiting-human"`, `"pass"`, or a step name)
+to a predicate string, evaluated top-to-bottom, first match routes; no match ⇒ `"pass"`.
+Routing to a **step name** interposes that declared, otherwise-unreached step as a
+successor gate: it becomes ready next, and on its pass execution resumes at the
+routing step's ordinary downstream (05 §2's security pipeline interposes its vote gate
+this way). Grammar: `agg(field op literal)` where `agg ∈ {any, all, count>=n}` over
+the payload array, `op ∈ {==, !=, >=, >, <=, <}`, and ordered comparisons are defined
+**only** for fields whose registered schema declares `ordered_enum` (§2). Fields and literals are
+validated against the registered schema at `workflow register` time. Example
+(standard-change): `threshold = { "fix-loop" = "any(severity >= high)" }`.
+
+### 11.3 Loop semantics (normative)
+
+Step instances are identified `name@k#i` — `k` = loop ordinal (0 at initial
+expansion), `#i` = fanout index (absent when not fanned out). When a routing resolves
+to `"fix-loop"`: (1) the issue's loop counter increments; exceeding `max_fix_loops`
+routes `waiting-human` instead — loops are bounded by construction. (2) Not-yet-claimed
+instances downstream of `after_loop` (e.g. a pending `verify@0`) transition to the
+terminal status **`superseded`** (event-logged); claimed/running instances finish, but
+routing from a superseded lineage is inert. (3) Steps marked `loop = true` — excluded
+from ordinary expansion — instantiate at ordinal `k`, with `inputs` bound within
+ordinal `k` (falling back to the highest earlier ordinal per input), ordered by
+(declared position, sibling index, artifact id) — never event order. (4) When the loop
+body's gates pass, `after_loop` and its downstream chain re-instantiate at ordinal
+`k`; gates re-run; thresholds re-apply. Issue completion is evaluated over
+highest-ordinal instances only. Prior instances and artifacts remain immutable and
+addressable; the ledger attributes every instance. There is no other loop construct.
+
+Engine-enforced numbers live core-side, never in opaque pins: per-class lease TTLs and
+concurrency (`[limits]` / `docket config`), attempt caps (step fields / config
+defaults), the per-run budget cap (`docket run start --budget N`, config default), and
+context-size warn/error caps (config). Opaque instance files may carry anything else.
+
+### 11.4 Wire shapes (JSON, `--json` mode; envelope per §5)
+
+```
+next row        { step, issue, run, executor, class, attempt, expected_cost,
+                  lease_ttl_s, metadata }
+claim response  { step, token, lease_expires_ms, context }
+context         { step: <next row>, issue: {id, title, body_snapshot, kind, labels,
+                  scope}, inputs: [{artifact, kind, producer_step, body}],
+                  pins: [{path, sha256}], loop_entry, metadata }
+dispatch        { dispatch, run, opened_seq, rows: [<next row>…] }   # verify = byte-equality on rows
+complete args   --artifact-file F  [--payload-file F]  [--usage '{"unit":n,…}']
+                [--metadata '{…}']   (token via DOCKET_TOKEN env or stdin — §4)
+gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdict }
+event           { seq, at_ms, kind, run?, step?, data }
+```
+
+`docket step context STEP-N` re-emits `context` read-only (no token required; local
+inspection). `--meta` on it reports per-section byte counts — the closure-size record
+(02 §8).

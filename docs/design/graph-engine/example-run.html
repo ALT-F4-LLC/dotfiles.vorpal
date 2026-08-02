@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graph engine — example run (RUN-7)</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --c-docket: #2a78d6;   /* slot 1 blue  — deterministic (Docket + harness code) */
+    --c-llm:    #eb6834;   /* slot 2 orange — LLM judgment */
+    --c-human:  #1baf7a;   /* slot 3 aqua  — Erik / human gates */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --c-docket: #3987e5; --c-llm: #d95926; --c-human: #199e70;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --c-docket: #3987e5; --c-llm: #d95926; --c-human: #199e70;
+  }
+  html, body { margin:0; padding:0; background: var(--page); }
+  .viz-root {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--ink-1);
+    max-width: 1120px; margin: 0 auto; padding: 28px 24px 40px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .mantra { color: var(--ink-2); font-size: 13px; margin: 0 0 2px; }
+  .sub { color: var(--ink-3); font-size: 12px; margin: 0 0 18px; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px 22px; align-items:center;
+    background: var(--surface-1); border:1px solid var(--border); border-radius:10px;
+    padding:10px 14px; margin-bottom:18px; font-size:12px; color: var(--ink-2); }
+  .legend .sw { display:inline-block; width:14px; height:14px; border-radius:4px;
+    vertical-align:-2px; margin-right:7px; border:1.8px solid; }
+  .sw-h { border-color: var(--c-human);  background: color-mix(in srgb, var(--c-human) 13%, var(--surface-1)); }
+  .sw-l { border-color: var(--c-llm);    background: color-mix(in srgb, var(--c-llm) 13%, var(--surface-1)); }
+  .sw-d { border-color: var(--c-docket); background: color-mix(in srgb, var(--c-docket) 13%, var(--surface-1)); }
+  .sw-c { border-color: var(--c-docket); background: var(--surface-1); border-style: dashed; }
+  .sw-a { border-color: var(--baseline); background: var(--surface-1); border-radius:8px; }
+  .panel { background: var(--surface-1); border:1px solid var(--border);
+    border-radius:12px; padding:16px 12px 8px; margin-bottom:20px; }
+  .panel h2 { font-size:13px; letter-spacing:.04em; text-transform:uppercase;
+    color: var(--ink-2); margin:0 0 2px 10px; font-weight:600; }
+  .panel p.cap { font-size:12px; color: var(--ink-3); margin:0 0 8px 10px; }
+  svg { display:block; width:100%; height:auto; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+  /* node fills/strokes */
+  .nh { fill: color-mix(in srgb, var(--c-human) 13%, var(--surface-1));  stroke: var(--c-human);  stroke-width:1.8; }
+  .nhg{ fill: color-mix(in srgb, var(--c-human) 13%, var(--surface-1));  stroke: var(--c-human);  stroke-width:2.6; }
+  .nl { fill: color-mix(in srgb, var(--c-llm) 13%, var(--surface-1));    stroke: var(--c-llm);    stroke-width:1.8; }
+  .nd { fill: color-mix(in srgb, var(--c-docket) 13%, var(--surface-1)); stroke: var(--c-docket); stroke-width:1.8; }
+  .nc { fill: var(--surface-1); stroke: var(--c-docket); stroke-width:1.8; stroke-dasharray:5 4; }
+  .sub-box { fill: var(--surface-1); stroke: color-mix(in srgb, var(--c-llm) 55%, var(--surface-1)); stroke-width:1.2; }
+  .chip { fill: var(--surface-1); stroke: var(--baseline); stroke-width:1.1; }
+  .lane { stroke: var(--grid); stroke-width:1; }
+  .arr { stroke: var(--ink-3); stroke-width:1.5; fill:none; }
+  .arr-loop { stroke: var(--c-docket); stroke-width:1.5; fill:none; stroke-dasharray:6 5; }
+  marker#m path, marker#m2 path { fill: var(--ink-3); }
+  marker#m3 path { fill: var(--c-docket); }
+  .badge { fill: var(--ink-1); }
+  .badge-t { fill: var(--surface-1); font-size:11px; font-weight:700; }
+  .t1 { fill: var(--ink-1); font-size:12.5px; font-weight:600; }
+  .t2 { fill: var(--ink-2); font-size:11px; }
+  .t3 { fill: var(--ink-3); font-size:10px; }
+  .ref { fill: var(--ink-3); font-size:9.5px; font-style: italic; }
+  .lane-h { fill: var(--ink-3); font-size:10.5px; font-weight:600; letter-spacing:.12em; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:10.5px; }
+  .gatechip { fill: var(--ink-2); font-size:9.5px; font-weight:700; letter-spacing:.08em; }
+  details { margin-top: 6px; color: var(--ink-2); font-size: 13px; }
+  details summary { cursor: pointer; color: var(--ink-2); font-size: 12.5px; }
+  details ol { line-height: 1.55; }
+  .foot { color: var(--ink-3); font-size: 11px; margin-top: 10px; }
+  .foot code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:10.5px; }
+</style>
+</head>
+<body>
+<div class="viz-root" data-palette="#2a78d6,#eb6834,#1baf7a">
+  <h1>Graph engine — one example run, end to end</h1>
+  <p class="mantra"><strong>Docket decides · Claude judges · Hooks enforce · Artifacts flow.</strong></p>
+  <p class="sub">RUN-7 “Add rate limiting to the registry API”. Columns are <em>where it runs</em>; color is <em>who does the work</em>. Corner tags (e.g. 02 §5) point into the design docs. Mono commands are what <em>your session</em> runs on your behalf — you only converse.</p>
+
+  <div class="legend" role="list">
+    <span role="listitem"><span class="sw sw-h"></span>Erik — human gates (the only pauses)</span>
+    <span role="listitem"><span class="sw sw-l"></span>Claude — LLM judgment (prose-contract nodes)</span>
+    <span role="listitem"><span class="sw sw-d"></span>Docket — deterministic engine (generic workflow core)</span>
+    <span role="listitem"><span class="sw sw-c"></span>Deterministic code in the harness (wave · hooks)</span>
+    <span role="listitem"><span class="sw sw-a"></span>artifact — immutable, recorded in Docket</span>
+  </div>
+
+  <div class="panel">
+    <h2>Level 1 — the work DAG (judged into existence, once)</h2>
+    <p class="cap">The planner composes <em>what to build</em>: issues, dependencies, scopes, acceptance criteria. It never observes execution.</p>
+    <svg viewBox="0 0 1040 190" role="img" aria-label="Level 1: request flows to planner, which records a three-issue dependency graph in Docket; each issue expands into a pipeline.">
+      <defs>
+        <marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L8,4 L0,8 z" fill="#898781"/>
+        </marker>
+      </defs>
+      <rect x="24" y="52" width="200" height="56" rx="10" class="nh"/>
+      <text x="40" y="76" class="t1">Erik: request</text>
+      <text x="40" y="93" class="t2">“/plan — add rate limiting”</text>
+
+      <path class="arr" d="M224,80 H286" marker-end="url(#m)"/>
+
+      <rect x="290" y="52" width="216" height="56" rx="10" class="nl"/>
+      <text x="306" y="76" class="t1">planner (one invocation)</text>
+      <text x="306" y="93" class="t2">converse → decompose → exit</text>
+      <text x="492" y="66" class="ref" text-anchor="end">03 §2</text>
+
+      <path class="arr" d="M506,80 H568" marker-end="url(#m)"/>
+      <rect x="402" y="118" width="118" height="20" rx="10" class="chip"/>
+      <text x="461" y="132" class="t3" text-anchor="middle">plan artifact · issues</text>
+
+      <rect x="572" y="24" width="444" height="140" rx="12" class="nd"/>
+      <text x="588" y="46" class="t1">Docket: RUN-7 work DAG</text>
+      <text x="1002" y="46" class="ref" text-anchor="end">02 §2</text>
+
+      <rect x="592" y="60" width="180" height="42" rx="8" class="nd"/>
+      <text x="604" y="78" class="t1" style="font-size:11.5px">DKT-101 token bucket</text>
+      <text x="604" y="94" class="t3">scope: internal/ratelimit/**</text>
+
+      <rect x="592" y="112" width="180" height="42" rx="8" class="nd"/>
+      <text x="604" y="130" class="t1" style="font-size:11.5px">DKT-102 wire into API</text>
+      <text x="604" y="146" class="t3">scope: internal/api/**</text>
+
+      <rect x="820" y="86" width="180" height="42" rx="8" class="nd"/>
+      <text x="832" y="104" class="t1" style="font-size:11.5px">DKT-103 docs + examples</text>
+      <text x="832" y="120" class="t3">scope: docs/**</text>
+
+      <path class="arr" d="M772,107 L816,102" marker-end="url(#m)"/>
+      <path class="arr" d="M772,128 L816,112" marker-end="url(#m)"/>
+      <text x="776" y="76" class="t3">depends_on</text>
+    </svg>
+  </div>
+
+  <div class="panel">
+    <h2>Level 2 — one issue through the standard-change pipeline (deterministic expansion)</h2>
+    <p class="cap">DKT-101’s process, expanded by Docket from <span class="mono">standard-change.toml</span> — same issue kind, same version ⇒ identical steps, every time. How to read: follow the numbers; orange = judgment, blue = deterministic, green = you.</p>
+    <svg viewBox="0 0 1040 1490" role="img" aria-label="Level 2: numbered walk of one issue through implement, gates, review fan-out, reconciliation, fix loop, verification, human gates and commit.">
+      <defs>
+        <marker id="m2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L8,4 L0,8 z" fill="#898781"/>
+        </marker>
+        <marker id="m3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L8,4 L0,8 z" fill="#2a78d6"/>
+        </marker>
+      </defs>
+
+      <!-- lanes -->
+      <line x1="245" y1="34" x2="245" y2="1470" class="lane"/>
+      <line x1="672" y1="34" x2="672" y2="1470" class="lane"/>
+      <text x="122" y="24" class="lane-h" text-anchor="middle">ERIK</text>
+      <text x="458" y="24" class="lane-h" text-anchor="middle">CLAUDE CODE (HARNESS)</text>
+      <text x="856" y="24" class="lane-h" text-anchor="middle">DOCKET (ENGINE)</text>
+
+      <!-- 1 plan approval gate -->
+      <rect x="24" y="48" width="200" height="64" rx="10" class="nhg"/>
+      <circle cx="24" cy="48" r="10" class="badge"/><text x="24" y="52" class="badge-t" text-anchor="middle">1</text>
+      <text x="40" y="66" class="gatechip">⏸ HUMAN GATE</text>
+      <text x="40" y="84" class="t1">Plan approval</text>
+      <text x="40" y="100" class="t2 mono">docket run activate RUN-7</text>
+      <text x="216" y="62" class="ref" text-anchor="end">03 §6</text>
+
+      <path class="arr" d="M224,80 C420,80 560,96 700,110" marker-end="url(#m2)"/>
+
+      <!-- 2 activation -->
+      <rect x="704" y="86" width="312" height="74" rx="10" class="nd"/>
+      <circle cx="704" cy="86" r="10" class="badge"/><text x="704" y="90" class="badge-t" text-anchor="middle">2</text>
+      <text x="720" y="106" class="t1">Activate: expand the process graph</text>
+      <text x="720" y="123" class="t2">pin versions · bind pipelines · lint DAG · promote</text>
+      <text x="720" y="140" class="t2 mono">next → ready: implement(DKT-101)</text>
+      <text x="1008" y="148" class="ref" text-anchor="end">02 §3 §5</text>
+
+      <path class="arr" d="M702,170 C620,186 560,196 512,206" marker-end="url(#m2)"/>
+
+      <!-- 3 run skill + wave -->
+      <rect x="262" y="196" width="180" height="60" rx="10" class="nl"/>
+      <circle cx="262" cy="196" r="10" class="badge"/><text x="262" y="200" class="badge-t" text-anchor="middle">3</text>
+      <text x="276" y="218" class="t1">run skill (relay)</text>
+      <text x="276" y="235" class="t2">no decisions — mirrors</text>
+      <text x="276" y="248" class="t2 mono">next → dispatch open/close</text>
+
+      <path class="arr" d="M442,226 H482" marker-end="url(#m2)"/>
+
+      <rect x="486" y="196" width="172" height="60" rx="10" class="nc"/>
+      <text x="500" y="218" class="t1">wave.js (saved)</text>
+      <text x="500" y="235" class="t2">deterministic fan-out,</text>
+      <text x="500" y="248" class="t2">spawns per ready set</text>
+      <text x="644" y="210" class="ref" text-anchor="end">03 §3</text>
+
+      <rect x="262" y="264" width="180" height="20" rx="10" class="chip"/>
+      <text x="352" y="278" class="t3" text-anchor="middle">spawn-guard hook checks args</text>
+
+      <path class="arr" d="M560,256 C540,286 500,308 470,322" marker-end="url(#m2)"/>
+
+      <!-- 4 implement -->
+      <rect x="262" y="326" width="396" height="76" rx="10" class="nl"/>
+      <circle cx="262" cy="326" r="10" class="badge"/><text x="262" y="330" class="badge-t" text-anchor="middle">4</text>
+      <text x="278" y="346" class="t1">executor-write: implement</text>
+      <text x="278" y="363" class="t2">claim (CAS) → brief (assembled) → tests-first code → self-record</text>
+      <text x="278" y="380" class="t2">heartbeat hook renews lease on every tool call</text>
+      <text x="278" y="395" class="t3">contract: contracts/implement.md · fragments: code-philosophy, tdd</text>
+      <text x="644" y="340" class="ref" text-anchor="end">04 §5.1</text>
+
+      <path class="arr" d="M658,366 C700,372 720,380 744,392" marker-end="url(#m2)"/>
+      <rect x="668" y="336" width="128" height="20" rx="10" class="chip"/>
+      <text x="732" y="350" class="t3" text-anchor="middle">change-summary (ART)</text>
+
+      <!-- 5 gates -->
+      <rect x="704" y="396" width="312" height="58" rx="10" class="nd"/>
+      <circle cx="704" cy="396" r="10" class="badge"/><text x="704" y="400" class="badge-t" text-anchor="middle">5</text>
+      <text x="720" y="416" class="t1">Gates run + recorded</text>
+      <text x="720" y="433" class="t2">build ✓ tests ✓ scope ✓ hygiene ✓ secrets ✓</text>
+      <text x="720" y="447" class="t2">route: → review fan-out</text>
+      <text x="1008" y="410" class="ref" text-anchor="end">02 §1.5</text>
+
+      <path class="arr" d="M702,462 C620,478 556,488 512,498" marker-end="url(#m2)"/>
+
+      <!-- 6 review fanout -->
+      <rect x="262" y="492" width="396" height="104" rx="10" class="nl"/>
+      <circle cx="262" cy="492" r="10" class="badge"/><text x="262" y="496" class="badge-t" text-anchor="middle">6</text>
+      <text x="278" y="512" class="t1">Review fan-out — 4 judges in parallel (wave)</text>
+      <rect x="278" y="524" width="88" height="30" rx="7" class="sub-box"/>
+      <text x="322" y="543" class="t2" text-anchor="middle">correctness</text>
+      <rect x="372" y="524" width="88" height="30" rx="7" class="sub-box"/>
+      <text x="416" y="543" class="t2" text-anchor="middle">architecture</text>
+      <rect x="466" y="524" width="88" height="30" rx="7" class="sub-box"/>
+      <text x="510" y="543" class="t2" text-anchor="middle">simplicity</text>
+      <rect x="560" y="524" width="84" height="30" rx="7" class="sub-box"/>
+      <text x="602" y="543" class="t2" text-anchor="middle">testing</text>
+      <text x="278" y="574" class="t2">read-only executors · findings only — <tspan style="font-style:italic">no verdict field to hedge in</tspan></text>
+      <text x="278" y="589" class="t3">severity is the one typed enum (arithmetic runs over it)</text>
+      <text x="644" y="506" class="ref" text-anchor="end">05 §1</text>
+
+      <path class="arr" d="M460,596 V622" marker-end="url(#m2)"/>
+      <rect x="472" y="600" width="118" height="20" rx="10" class="chip"/>
+      <text x="531" y="614" class="t3" text-anchor="middle">findings ×4 (payloads)</text>
+
+      <!-- 7 synthesize -->
+      <rect x="330" y="626" width="260" height="46" rx="10" class="nl"/>
+      <circle cx="330" cy="626" r="10" class="badge"/><text x="330" y="630" class="badge-t" text-anchor="middle">7</text>
+      <text x="346" y="646" class="t1">synthesize-findings</text>
+      <text x="346" y="662" class="t2">clusters duplicates across judges</text>
+      <text x="576" y="640" class="ref" text-anchor="end">02 §6</text>
+
+      <path class="arr" d="M590,650 C660,656 700,664 744,676" marker-end="url(#m2)"/>
+
+      <!-- 8 reconcile -->
+      <rect x="704" y="676" width="312" height="88" rx="10" class="nd"/>
+      <circle cx="704" cy="676" r="10" class="badge"/><text x="704" y="680" class="badge-t" text-anchor="middle">8</text>
+      <text x="720" y="696" class="t1">Reconcile — zero-variance arithmetic</text>
+      <text x="720" y="713" class="t2">median severity · held if spread ≥ 2 · demoted_from</text>
+      <text x="720" y="730" class="t2">threshold: 1 × high in scope ⇒ fix-loop</text>
+      <text x="720" y="747" class="t2">verdict = computed — nobody “approves”</text>
+      <text x="1008" y="730" class="ref" text-anchor="end">02 §6</text>
+
+      <!-- held branch -->
+      <path class="arr-loop" d="M702,712 C520,714 320,712 230,716" marker-end="url(#m3)"/>
+      <rect x="24" y="694" width="200" height="52" rx="10" class="nhg"/>
+      <text x="40" y="712" class="gatechip">⏸ HUMAN GATE (only if held)</text>
+      <text x="40" y="729" class="t2">cluster spread ≥ 2 levels</text>
+      <text x="40" y="742" class="t2 mono">docket step approve …</text>
+
+      <!-- 9 fix loop -->
+      <path class="arr" d="M744,768 C640,788 540,796 470,804" marker-end="url(#m2)"/>
+      <rect x="262" y="800" width="396" height="64" rx="10" class="nl"/>
+      <circle cx="262" cy="800" r="10" class="badge"/><text x="262" y="804" class="badge-t" text-anchor="middle">9</text>
+      <text x="278" y="820" class="t1">fix — repair against reconciled findings</text>
+      <text x="278" y="837" class="t2">gates re-run ✓ → delta re-review of changed scope</text>
+      <text x="278" y="853" class="t2">loop budget: ≤ 2 fix-loops, then human</text>
+      <text x="644" y="814" class="ref" text-anchor="end">05 §1</text>
+
+      <path class="arr-loop" d="M658,818 C672,806 666,700 666,640 L666,592 C666,576 662,570 659,566" marker-end="url(#m3)"/>
+      <text x="681" y="610" class="t3" transform="rotate(90 681 610)" text-anchor="middle">fix-loop → re-review</text>
+
+      <!-- 10 verify-ac -->
+      <path class="arr" d="M460,864 V892" marker-end="url(#m2)"/>
+      <rect x="262" y="896" width="396" height="72" rx="10" class="nl"/>
+      <circle cx="262" cy="896" r="10" class="badge"/><text x="262" y="900" class="badge-t" text-anchor="middle">10</text>
+      <text x="278" y="916" class="t1">verify-ac — per-AC judgment with evidence</text>
+      <text x="278" y="933" class="t2">met / unmet / unverifiable, cited to file:line + gate results</text>
+      <text x="278" y="950" class="t2">issue body is the sole authority (no TDD dereference)</text>
+      <text x="278" y="963" class="t3">contract: contracts/verify-ac.md</text>
+      <text x="644" y="910" class="ref" text-anchor="end">04 §5.3</text>
+
+      <path class="arr" d="M658,930 C700,936 720,944 744,956" marker-end="url(#m2)"/>
+
+      <!-- 11 ac gate -->
+      <rect x="704" y="956" width="312" height="56" rx="10" class="nd"/>
+      <circle cx="704" cy="956" r="10" class="badge"/><text x="704" y="960" class="badge-t" text-anchor="middle">11</text>
+      <text x="720" y="976" class="t1">ac-commands gate</text>
+      <text x="720" y="993" class="t2">the ```ac``` fenced commands from DKT-101 run</text>
+      <text x="720" y="1006" class="t2">literally · exits recorded · routing computed</text>
+      <text x="1008" y="970" class="ref" text-anchor="end">02 §6</text>
+
+      <!-- 12 commit gate -->
+      <path class="arr" d="M702,1016 C480,1032 300,1040 228,1052" marker-end="url(#m2)"/>
+      <rect x="24" y="1044" width="200" height="66" rx="10" class="nhg"/>
+      <circle cx="24" cy="1044" r="10" class="badge"/><text x="24" y="1048" class="badge-t" text-anchor="middle">12</text>
+      <text x="40" y="1062" class="gatechip">⏸ HUMAN GATE</text>
+      <text x="40" y="1080" class="t1">Commit authorization</text>
+      <text x="40" y="1097" class="t2 mono">git diff → step approve</text>
+      <text x="216" y="1058" class="ref" text-anchor="end">03 §6</text>
+
+      <path class="arr" d="M224,1078 C300,1090 360,1100 400,1112" marker-end="url(#m2)"/>
+
+      <!-- 13 commit -->
+      <rect x="262" y="1116" width="396" height="60" rx="10" class="nl"/>
+      <circle cx="262" cy="1116" r="10" class="badge"/><text x="262" y="1120" class="badge-t" text-anchor="middle">13</text>
+      <text x="278" y="1136" class="t1">commit-author — drafts the message</text>
+      <text x="278" y="1153" class="t2">execution stays gated: commit-guard hook + commit-msg ✓</text>
+      <text x="278" y="1169" class="t2">+ commit-exec ✓ (runs only behind the approved gate)</text>
+      <text x="644" y="1130" class="ref" text-anchor="end">05 §1</text>
+
+      <path class="arr" d="M658,1146 C700,1152 724,1160 748,1174" marker-end="url(#m2)"/>
+
+      <!-- 14 done / unlock -->
+      <rect x="704" y="1178" width="312" height="72" rx="10" class="nd"/>
+      <circle cx="704" cy="1178" r="10" class="badge"/><text x="704" y="1182" class="badge-t" text-anchor="middle">14</text>
+      <text x="720" y="1198" class="t1">DKT-101 done → DAG advances</text>
+      <text x="720" y="1215" class="t2 mono">next → ready: implement(DKT-102)</text>
+      <text x="720" y="1232" class="t2">writers serialize in v1 ([limits] write=1) —</text>
+      <text x="720" y="1246" class="t2">no batons, no locks; scope gate still checks diffs</text>
+      <text x="1008" y="1192" class="ref" text-anchor="end">02 §5</text>
+
+      <path class="arr-loop" d="M744,1250 C660,1290 600,1296 566,1296" marker-end="url(#m3)"/>
+      <text x="520" y="1318" class="t3" text-anchor="middle">waves repeat per ready set — DKT-102, DKT-103 flow through the same pipeline</text>
+
+      <!-- 15 report -->
+      <path class="arr" d="M860,1250 V1352" marker-end="url(#m2)"/>
+      <rect x="704" y="1356" width="312" height="76" rx="10" class="nd"/>
+      <circle cx="704" cy="1356" r="10" class="badge"/><text x="704" y="1360" class="badge-t" text-anchor="middle">15</text>
+      <text x="720" y="1376" class="t1">Run done → the ledger</text>
+      <text x="720" y="1393" class="t2 mono">docket run report RUN-7</text>
+      <text x="720" y="1410" class="t2">cost + tokens per step · models requested vs resolved</text>
+      <text x="720" y="1426" class="t2">gate trail · artifacts · attempts — telemetry is native</text>
+      <text x="1008" y="1370" class="ref" text-anchor="end">02 §7 §9</text>
+
+      <path class="arr" d="M702,1396 C480,1408 300,1414 228,1424" marker-end="url(#m2)"/>
+      <rect x="24" y="1408" width="200" height="46" rx="10" class="nh"/>
+      <text x="40" y="1428" class="t1">Erik reads the ledger</text>
+      <text x="40" y="1444" class="t2">the v1 judgment is yours (07 §4)</text>
+
+      <!-- footer inside svg: nothing -->
+    </svg>
+  </div>
+
+  <details>
+    <summary>Plain-text walkthrough (same 15 steps)</summary>
+    <ol>
+      <li><strong>Plan approval (human).</strong> Erik approves in conversation; the session runs <code>docket run activate RUN-7</code>.</li>
+      <li><strong>Activate (engine).</strong> Docket pins versions, binds pipelines, lints the DAG, expands DKT-101's steps, promotes; <code>next</code> returns the ready set.</li>
+      <li><strong>Relay (harness).</strong> The run skill opens a dispatch manifest and mirrors the ready set into the saved wave workflow; spawn-guard verifies the args (docket guard spawn), and next refuses to proceed past an unreconciled dispatch.</li>
+      <li><strong>Implement (LLM).</strong> A write-executor claims atomically, receives its assembled brief, works tests-first, records its change-summary artifact itself.</li>
+      <li><strong>Gates (engine).</strong> build, tests, scope, self-hygiene, secret-scan run and are recorded; routing to review is computed.</li>
+      <li><strong>Review fan-out (LLM).</strong> Four read-only judges in parallel emit findings — there is no verdict field.</li>
+      <li><strong>Synthesize (LLM).</strong> Duplicate findings are clustered across judges.</li>
+      <li><strong>Reconcile (engine).</strong> Median severity, held on ≥2 spread (a human gate only then), demotions recorded; thresholds route one high finding to a fix-loop.</li>
+      <li><strong>Fix (LLM).</strong> Repair against the reconciled findings; gates re-run; delta re-review; loop budget ≤2, then human.</li>
+      <li><strong>Verify-AC (LLM).</strong> Per-AC met/unmet/unverifiable with evidence, judged from the issue body alone.</li>
+      <li><strong>AC commands (engine).</strong> The <code>```ac```</code>-fenced commands run literally; exits recorded.</li>
+      <li><strong>Commit authorization (human).</strong> The session shows the real diff; Erik approves in conversation and the session approves the gate.</li>
+      <li><strong>Commit (LLM + engine).</strong> commit-author drafts; commit-msg/commit-exec gates and the commit-guard hook execute it only behind the approval.</li>
+      <li><strong>DAG advances (engine).</strong> DKT-101 done unlocks DKT-102; write steps serialize in v1 ([limits] write=1) while read fan-outs stay parallel; waves repeat.</li>
+      <li><strong>Ledger (engine → human).</strong> The session runs <code>docket run report</code> and narrates it: cost, models requested vs resolved, gate trail, attempts — Erik judges the run (07 §4).</li>
+    </ol>
+  </details>
+
+  <p class="foot">Companion to <code>docs/design/graph-engine/</code> (section tags reference those files). Colors validated all-pairs for CVD + normal-vision separation in light and dark modes; identity never rides on color alone — every element is labeled in text.</p>
+</div>
+</body>
+</html>

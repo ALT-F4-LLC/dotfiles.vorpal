@@ -353,7 +353,7 @@ is exactly `"write" = { max = 1, lease_ttl = "45m", max_step_duration = "2h" }`.
 | `params` | opaque KV table | arguments to `action` steps (e.g. the builtin `aggregate`) |
 | `min_siblings` | int, default = all | fanout join quorum (§2 Fanout joins) |
 | `threshold` | table: routing → predicate (11.2) | routing computed over the step's recorded payloads |
-| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | routing for gate failure / attempts exhausted |
+| `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | routing for gate failure / attempts exhausted; `type="human"` steps must declare it explicitly and `"waiting-human"` is invalid there — reject routes per `on_fail` (§2's reject-routing rule; amended 2026-08-03) |
 | `loop` | bool, default false | marks loop-body steps (11.3) |
 | `after_loop` | step name | re-entry target after a loop body completes |
 | `max_attempts` | int, default engine config | per-instance retry budget |

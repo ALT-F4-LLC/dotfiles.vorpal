@@ -37,6 +37,7 @@ unless_labels = ["security-load-bearing", "ui", "docs-only", "investigation"]
 name = "implement"
 executor = "implement"
 class = "write"
+emits = "change-summary"
 expected_cost = 1.50
 gates = ["build", "tests", "scope", "self-hygiene", "secret-scan"]
 max_attempts = 2
@@ -46,6 +47,7 @@ on_fail = "waiting-human"
 name = "review"
 after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
+emits = "findings"
 expected_cost = 0.60                 # per expanded sibling
 inputs = ["implement.change-summary", "issue.diff"]
 
@@ -53,6 +55,7 @@ inputs = ["implement.change-summary", "issue.diff"]
 name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
+emits = "findings"
 expected_cost = 0.40
 inputs = ["review.*"]
 
@@ -60,7 +63,7 @@ inputs = ["review.*"]
 name = "reconcile"
 after = ["synthesize"]
 action = "aggregate"                 # builtin (06 §2); held clusters materialize a
-params = { field = "severity", method = "median", hold_spread = 2 }
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
                                      #   human:held-findings step — my reconciliation
                                      #   is parameters, not code
 threshold = { "fix-loop" = "any(severity >= high)" }   # no match -> pass (06 §11.2)
@@ -70,6 +73,7 @@ max_fix_loops = 2                    # loops exhausted -> waiting-human (06 §11
 name = "fix"
 executor = "fix"
 class = "write"
+emits = "change-summary"
 expected_cost = 1.00
 loop = true                          # instantiated per fix-loop entry
 inputs = ["reconcile.findings", "implement.change-summary"]
@@ -80,6 +84,7 @@ after_loop = "review"                # re-review delta; engine re-enters at revi
 name = "verify"
 after = ["reconcile"]
 executor = "verify-ac"
+emits = "ac-report"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]   # pre-gate: runs at claim, results
                                      #   land in the context bundle (02 §6; 06 §11.1)
@@ -90,11 +95,15 @@ threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status
 name = "commit-gate"
 after = ["verify"]
 type = "human"                       # human:commit-authorized (03 §5, §6)
+on_fail = "fix-loop"                 # reject routes to rework; explicit on_fail is
+                                     #   required on human steps (06 §11.1, amended
+                                     #   2026-08-03 — waiting-human invalid here)
 
 [[step]]
 name = "commit"
 after = ["commit-gate"]
 executor = "commit-author"
+emits = "commit-record"
 expected_cost = 0.10
 gates = ["commit-msg", "commit-exec"]
 ```

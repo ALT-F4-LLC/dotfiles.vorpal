@@ -226,7 +226,8 @@ anything — under a trust model fit for an OSS tool:
 
 CAS `--if-version` everywhere + versions in `.data`; uniform envelopes
 (`{items,total,truncated}`) behind `--json=v2`; explicit truncation flags; hard
-VALIDATION_ERROR on silent-drop cases; idempotency keys on create verbs; millisecond
+VALIDATION_ERROR on silent-drop cases (fires under `--json=v2` only; v1/human output
+stays byte-identical per §9 item 8); idempotency keys on create verbs; millisecond
 timestamps + `seq`; error taxonomy extended once for all new verbs (NOT_FOUND,
 VALIDATION_ERROR, CONFLICT, AUTH_ERROR, STALE_LEASE, TIMEOUT, UNTRUSTED). Generic,
 valuable standalone, and deletes nine wrapper scripts in the current fleet.

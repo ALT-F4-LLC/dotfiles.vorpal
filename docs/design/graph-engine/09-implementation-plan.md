@@ -3,7 +3,11 @@
 Status: plan v1 — 2026-08-02. Companion to the approved design (01–08); updated as
 units complete. Progress: M0 ✓ (2026-08-02); M1.S1 ✓ delivered as docket PR #33
 (2026-08-03; one PR instead of two — delivery-vehicle deviation, no spec change;
-§5 silent-drop scoping amended per its DKT amendment issue). Produced by three advisors (Go delivery grounded in the real
+§5 silent-drop scoping amended per its DKT amendment issue). M1.S2 ✓ (engine-s2;
+WAL/busy_timeout ordering bug found and fixed). M1.S3 ✓ (engine-s3, 2026-08-03:
+TDD-first with two-round review, four commit groups, stage review ACCEPT with
+zero blocking; amendments applied — §11.1 on_fail + min_siblings, §11.3 ordinal
+resolution, §11.4 instance field; DKT-16 open for S4). Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 
@@ -22,8 +26,8 @@ graph system itself (permitted only at M4+, D-register).
 |---|---|---|---|---|---|
 | M0 ✓ | Freeze, spec port, preambles, DKT issues | this session + plain | S | — | files committed; issues carry ACs |
 | M1.S1 ✓ | Reliability delta (`--json=v2`, CAS, taxonomy) | plain | M | M0 | 9.8 |
-| M1.S2 | Claims/leases/capability tokens + `config` | plain | M | S1 | 9.3, 9.4 |
-| M1.S3 | Spine: workflows, steps, next, activation/pins, loops, guard stop/gate | plain+review (+vote) | XL | S2 | 9.5, grammar §11 |
+| M1.S2 ✓ | Claims/leases/capability tokens + `config` | plain | M | S1 | 9.3, 9.4 |
+| M1.S3 ✓ | Spine: workflows, steps, next, activation/pins, loops, guard stop/gate | plain+review (+vote) | XL | S2 | 9.5, grammar §11 |
 | M1.S4 | Gates + trust model + exec runner | plain+review (+security, vote) | L | S3 | 9.6, 9.10-part, 9.1 |
 | M1.S5 | Schemas/ordered enums/thresholds/aggregate | plain | M | S4 | feeds 9.5 |
 | M1.S6 | Runs/budgets/floor/report/dispatch + events read + guard spawn/record | plain+review (+security, concurrency) | L | S5 | 9.2, 9.7, 9.9, 9.10, 9.11 |

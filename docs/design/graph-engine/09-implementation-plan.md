@@ -49,6 +49,19 @@ spawn-rows with no engine at all. S7 may run parallel to M4. M5 finalization
 Safe-stop invariant (every unit): the previous system remains default and complete;
 nothing requires a flag-day; every stage merge is tagged and green on its 06 §9 proofs.
 
+**Delivery mode (operator decision, 2026-08-03 — D10 prerogative):** all M1 work
+accumulates on `feature/graph-engine`, commit-separated — no per-stage merges to
+main, no child branches, no per-stage PRs. Docket PR #33 stays open as a **draft**
+tracking PR: its pull_request events give every branch push full CI (ci.yaml's push
+triggers cover only main and tags), and its diff is the cumulative integration view.
+Stage boundaries are operator-placed **local tags** after review — never pushed:
+ci.yaml cuts a public prerelease with binaries on any pushed tag, so tag pushes are
+reserved for the arc-end release. Fleet review units (S3/S4/S6) consume tag-range
+diffs. History is linear, revert-only. The invariant reads accordingly: every local
+stage tag is green on its 06 §9 proofs and shippable; M4 pins a locally built binary
+from its tag; main merges once at arc end (post-S7 or post-M4, operator's call) with
+a final dormancy re-proof against the pre-merge binary.
+
 ## 3. Phase packets
 
 Shared elements (§4): every kickoff uses the SHARED HEADER + STANDING TAINT RULE;

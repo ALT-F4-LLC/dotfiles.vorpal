@@ -33,6 +33,7 @@ Date: 2026-08-02 · Author: Claude (Cowork session) · Reviewed and approved by 
 | [06-docket-vnext.md](06-docket-vnext.md) | Docket vNext: the generic workflow engine (surface, semantics, trust model, staged delivery) + what stays outside as instance config |
 | [07-migration.md](07-migration.md) | Phases, full parity map (every current file → destination), v1 test protocol, risks, rollback |
 | [08-decisions.md](08-decisions.md) | Ratified decisions D1–D16 (no open questions) + the measurement plan |
+| [09-implementation-plan.md](09-implementation-plan.md) | Phase packets: vehicle, required files, kickoff prompts, review gates, risks (plan v1, living) |
 
 A reviewer short on time should open example-run.html, then read 01, 02, and 07 §4 (the
 v1 test), then skim 05 §1's worked pipeline.

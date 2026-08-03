@@ -351,7 +351,7 @@ is exactly `"write" = { max = 1, lease_ttl = "45m", max_step_duration = "2h" }`.
 | `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"issue.body"` \| `"issue.diff"`] | artifacts inlined into the context bundle, in order. `issue.diff` = the engine-computed VCS diff for the issue's scope, snapshotted and fingerprinted when its producing step completed (git in v1 — the one declared VCS coupling, §7) |
 | `gates` | [trusted gate names \| `{name, source="fence:<tag>", pre=bool}`] | `pre = true` gates run at claim with results included in the context bundle (measure-then-judge steps); the rest run in order inside `complete` (§2, §4) |
 | `params` | opaque KV table | arguments to `action` steps (e.g. the builtin `aggregate`) |
-| `min_siblings` | int, default = all | fanout join quorum (§2 Fanout joins) |
+| `min_siblings` | int, default = all | fanout join quorum (§2 Fanout joins); the default is the plain join — quorum semantics (the `on_fail` routing at join) apply only when declared below the sibling count *(clarified 2026-08-03)* |
 | `threshold` | table: routing → predicate (11.2) | routing computed over the step's recorded payloads |
 | `on_fail` | `"fix-loop"` \| `"waiting-human"` \| `"skip"` \| `"abandon-issue"`; default `"waiting-human"` | routing for gate failure / attempts exhausted; `type="human"` steps must declare it explicitly and `"waiting-human"` is invalid there — reject routes per `on_fail` (§2's reject-routing rule; amended 2026-08-03) |
 | `loop` | bool, default false | marks loop-body steps (11.3) |
@@ -391,6 +391,10 @@ body's gates pass, `after_loop` and its downstream chain re-instantiate at ordin
 `k`; gates re-run; thresholds re-apply. Issue completion is evaluated over
 highest-ordinal instances only. Prior instances and artifacts remain immutable and
 addressable; the ledger attributes every instance. There is no other loop construct.
+Predecessor satisfaction and issue completion resolve per step name over instances at
+the highest existing ordinal ≤ the consumer's (mirroring input binding);
+re-instantiation never spans steps outside the `after_loop` chain. *(Clarified
+2026-08-03, S3 stage review.)*
 
 Engine-enforced numbers live core-side, never in opaque pins: per-class lease TTLs and
 concurrency (`[limits]` / `docket config`), attempt caps (step fields / config
@@ -400,8 +404,8 @@ context-size warn/error caps (config). Opaque instance files may carry anything 
 ### 11.4 Wire shapes (JSON, `--json` mode; envelope per §5)
 
 ```
-next row        { step, issue, run, executor, class, attempt, expected_cost,
-                  lease_ttl_s, metadata }
+next row        { step, instance, issue, run, executor, class, attempt,
+                  expected_cost, lease_ttl_s, metadata }
 claim response  { step, token, lease_expires_ms, context }
 context         { step: <next row>, issue: {id, title, body_snapshot, kind, labels,
                   scope}, inputs: [{artifact, kind, producer_step, body}],
@@ -412,6 +416,10 @@ complete args   --artifact-file F  [--payload-file F]  [--usage '{"unit":n,…}'
 gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdict }
 event           { seq, at_ms, kind, run?, step?, data }
 ```
+
+`instance` is the rendered `name@k#i` identity (§11.3) carried alongside the `STEP-N`
+id on next rows and, via `context.step`, in the context bundle *(added 2026-08-03,
+DKT-15)*.
 
 `docket step context STEP-N` re-emits `context` read-only (no token required; local
 inspection). `--meta` on it reports per-section byte counts — the closure-size record

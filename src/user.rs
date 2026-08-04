@@ -1,3 +1,4 @@
+use crate::user::{bat::Bat, claude_code::ClaudeCode, ghostty::Ghostty, k9s::K9s, neovim::Neovim};
 use anyhow::Result;
 use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, context::ConfigContext};
 
@@ -25,24 +26,24 @@ impl UserEnvironment {
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         let binaries = utilities::build(context).await?;
 
-        let bat = bat::Bat::new(&self.name, self.systems.clone())
+        let bat = Bat::new(&self.name, self.systems.clone())
             .with_theme("tokyonight")
             .build(context)
             .await?;
 
-        let claude_code = claude_code::ClaudeCode::new(&self.name, self.systems.clone())
+        let claude_code = ClaudeCode::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
 
-        let ghostty = ghostty::Ghostty::new(&self.name, self.systems.clone())
+        let ghostty = Ghostty::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
 
-        let k9s = k9s::K9s::new(&self.name, self.systems.clone())
+        let k9s = K9s::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
 
-        let neovim = neovim::Neovim::new(&self.name, self.systems.clone())
+        let neovim = Neovim::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
 
@@ -69,13 +70,23 @@ impl UserEnvironment {
             .map(|(a, b)| (a.as_str(), b.as_str()))
             .collect();
 
+        let path = [
+            "/Applications/Obsidian.app/Contents/MacOS",
+            "/Applications/VMware\\ Fusion.app/Contents/Library",
+            "${GOPATH}/bin",
+            "${HOME}/.vorpal/bin",
+            "${HOME}/.local/bin",
+        ];
+
+        let environments = [
+            "EDITOR=nvim",
+            "GOPATH=${HOME}/Development/language/go",
+            &format!("PATH={}:${{PATH}}", path.join(":")),
+        ];
+
         artifact::UserEnvironment::new(&self.name, self.systems)
             .with_artifacts(artifacts)
-            .with_environments(vec![
-                "EDITOR=nvim".to_string(),
-                "GOPATH=${HOME}/Development/language/go".to_string(),
-                "PATH=/Applications/Obsidian.app/Contents/MacOS:/Applications/VMware\\ Fusion.app/Contents/Library:${GOPATH}/bin:${HOME}/.vorpal/bin:${HOME}/.local/bin:${PATH}".to_string(),
-            ])
+            .with_environments(environments.into_iter().map(|k| k.to_string()).collect())
             .with_symlinks(symlinks)
             .build(context)
             .await

@@ -1,14 +1,6 @@
 lockfile = 1
 
 [[sources]]
-name = "abtop"
-path = "https://github.com/graykode/abtop/releases/download/v0.5.1/abtop-aarch64-apple-darwin.tar.xz"
-includes = []
-excludes = []
-digest = "5a287568e0a5c5d801e3bbb024171aa95caac3ef466db976dedebb978e65a63a"
-platform = "aarch64-darwin"
-
-[[sources]]
 name = "awscli2"
 path = "https://awscli.amazonaws.com/AWSCLIV2-2.33.1.pkg"
 includes = []
@@ -450,10 +442,10 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "herdr"
-path = "https://github.com/ogulcancelik/herdr/releases/download/v0.7.4/herdr-macos-aarch64"
+path = "https://github.com/ogulcancelik/herdr/releases/download/v0.7.5/herdr-macos-aarch64"
 includes = []
 excludes = []
-digest = "78147d22f8d83e26fb704bafe45a081bda5acccf52a069930cdb4259089d8b07"
+digest = "bf445b210b35429cc72aa7c5555449dc1bbfd2466fc438ee55af704d9760af63"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -569,19 +561,11 @@ digest = "a178768e4a235c4bccf1350b81c2af0225e7f8029cc73a1d58d7c22ee72be769"
 platform = "aarch64-darwin"
 
 [[sources]]
-name = "opencode"
-path = "https://github.com/anomalyco/opencode/releases/download/v1.17.11/opencode-darwin-arm64.zip"
-includes = []
-excludes = []
-digest = "da43578becb9b9900d84d2d1f26d655ee94f96b9f2b735f5f58359066539c610"
-platform = "aarch64-darwin"
-
-[[sources]]
 name = "pi"
-path = "https://github.com/earendil-works/pi/releases/download/v0.80.2/pi-darwin-arm64.tar.gz"
+path = "https://github.com/earendil-works/pi/releases/download/v0.83.0/pi-darwin-arm64.tar.gz"
 includes = []
 excludes = []
-digest = "1404305e5eeac508537f22ab754602d053bc12ce35ee2805158ebfb09654daa4"
+digest = "3523a9b925587d36e81c61d5a8ef99f4b626f1c7222e193698ced1ced383ef79"
 platform = "aarch64-darwin"
 
 [[sources]]
@@ -713,7 +697,7 @@ digest = "a7a1f522fb471627564b358892dce3f611fdbe1224e05a2e993d0cd01ea776ad"
 platform = "aarch64-darwin"
 
 [[sources]]
-name = "user-bat-theme"
+name = "user-bat-theme-file-source"
 path = "https://raw.githubusercontent.com/folke/tokyonight.nvim/refs/tags/v4.14.1/extras/sublime/tokyonight_night.tmTheme"
 includes = []
 excludes = []

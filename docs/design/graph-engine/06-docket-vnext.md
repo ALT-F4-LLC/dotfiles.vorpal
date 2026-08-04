@@ -409,17 +409,21 @@ next row        { step, instance, issue, run, executor, class, attempt,
 claim response  { step, token, lease_expires_ms, context }
 context         { step: <next row>, issue: {id, title, body_snapshot, kind, labels,
                   scope}, inputs: [{artifact, kind, producer_step, body}],
-                  pins: [{path, sha256}], loop_entry, metadata }
+                  pins: [{path, sha256}], loop_entry, metadata, pre_gates? }
 dispatch        { dispatch, run, opened_seq, rows: [<next row>…] }   # verify = byte-equality on rows
 complete args   --artifact-file F  [--payload-file F]  [--usage '{"unit":n,…}']
                 [--metadata '{…}']   (token via DOCKET_TOKEN env or stdin — §4)
-gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdict }
+gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdict,
+                  reason? }
 event           { seq, at_ms, kind, run?, step?, data }
 ```
 
 `instance` is the rendered `name@k#i` identity (§11.3) carried alongside the `STEP-N`
 id on next rows and, via `context.step`, in the context bundle *(added 2026-08-03,
-DKT-15)*.
+DKT-15)*. `pre_gates?` is an array of §11.4-shaped gate results for the step's
+`pre = true` gates, present only when the step declares them; `reason?` carries why
+a verdict is `unmatched` or timed out, null on ordinary pass/fail *(added
+2026-08-03, DKT-19 / DKT-20)*.
 
 `docket step context STEP-N` re-emits `context` read-only (no token required; local
 inspection). `--meta` on it reports per-section byte counts — the closure-size record

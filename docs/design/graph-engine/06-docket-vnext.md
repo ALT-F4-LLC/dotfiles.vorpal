@@ -29,7 +29,8 @@ in Go, in `.docket/issues.db`.
 
 ```
 docket workflow register|list|show f.toml       # generic grammar (05); versioned
-docket schema   register name@v schema.json     # payloads; ordered enums supported
+docket schema   register|list|show name@v …     # payloads; ordered enums supported
+                                                #   (list|show added 2026-08-03, DKT-22)
 docket trust    add|list|rm …                   # user-level exec allowlist (§4)
 docket config   set|get key [value]             # engine defaults: lease TTLs per class,
                                                 #   attempt caps, budget default, context caps
@@ -143,7 +144,10 @@ the heartbeat hook — an engine verb, though not a guard predicate.)
 schema* declared the order — core never knows what a severity is). Aggregations beyond comparison are **action steps**. One is builtin and generic:
 `action = "aggregate"` with `params = { field, method = median|max|min, hold_spread,
 output }` computes over any ordered-enum payload field — median, spread-hold, and a
-recorded demotion trail work for severities, priorities, or tiers alike. When `hold_spread` trips, the engine materializes a `type=human` step named
+recorded demotion trail work for severities, priorities, or tiers alike. Cluster membership arrives in the
+payload itself: each element is one cluster, whose `field` value is either a scalar
+(a one-member cluster — the identity case) or an array of the cluster's member
+values *(amended 2026-08-03, DKT-23)*. When `hold_spread` trips, the engine materializes a `type=human` step named
 `<step>-held` gating the routing step, and the aggregate's output payload —
 per-cluster value, members, held flag, `demoted_from`, `operator_resolved` — validates
 against the shipped `aggregate@1` schema. Erik's reconciliation is therefore
@@ -337,7 +341,7 @@ is exactly `"write" = { max = 1, lease_ttl = "45m", max_step_duration = "2h" }`.
 
 | Field | Type / default | Meaning |
 |---|---|---|
-| `name` | string, required, unique in workflow | step identity; instances are `name@k#i` (§11.3) |
+| `name` | string, required, unique in workflow | step identity; instances are `name@k#i` (§11.3); the suffix `-held` is reserved for engine-materialized steps *(amended 2026-08-03, DKT-26)* |
 | `executor` | string (opaque hint) | worker step; core never interprets the value |
 | `action` | string (trusted command name) | deterministic computation step (§4) |
 | `type` | `"human"` \| `"vote"` | operator gate / proposal-driven gate |
@@ -345,7 +349,7 @@ is exactly `"write" = { max = 1, lease_ttl = "45m", max_step_duration = "2h" }`.
 | `fanout` | [executor hints] | expands to parallel siblings `name@k#0..n-1`, one per hint |
 | `class` | string, default = executor value | concurrency-accounting key for `[limits]` |
 | `emits` | artifact-kind string, required on executor steps | binds the step to its recorded artifact kind (`inputs` resolution; instance contract frontmatter mirrors it for the model's benefit — the workflow is authoritative) |
-| `payload` | `schema@ver`, optional | payload validated at `complete`; threshold fields check against it at register time |
+| `payload` | `schema@ver`, optional | payload validated at `complete`; threshold fields check against it at register time; required on `action = "aggregate"` steps *(amended 2026-08-03, DKT-25)* |
 | `voters`, `vote_rule` | [executor hints], proposal-config name | required on `type="vote"` steps — who casts, which existing Docket threshold config tallies |
 | `after` | [step names], **required** except the first step and `loop = true` steps (whose ordering comes from loop entry, §11.3) | intra-workflow predecessors; `[]` = root (implicit topology was a footgun) |
 | `inputs` | [`"<step>.<kind>"` \| `"<step>.*"` \| `"issue.body"` \| `"issue.diff"`] | artifacts inlined into the context bundle, in order. `issue.diff` = the engine-computed VCS diff for the issue's scope, snapshotted and fingerprinted when its producing step completed (git in v1 — the one declared VCS coupling, §7) |
@@ -415,6 +419,9 @@ complete args   --artifact-file F  [--payload-file F]  [--usage '{"unit":n,…}'
                 [--metadata '{…}']   (token via DOCKET_TOKEN env or stdin — §4)
 gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdict,
                   reason? }
+action result   { step, action, argv, exit, duration_ms, output, truncated,
+                  verdict, builtin, reason? }   # argv/exit NULL for builtin|unmatched
+                                                #   (added 2026-08-03, DKT-24)
 event           { seq, at_ms, kind, run?, step?, data }
 ```
 

@@ -147,7 +147,9 @@ output }` computes over any ordered-enum payload field — median, spread-hold, 
 recorded demotion trail work for severities, priorities, or tiers alike. Cluster membership arrives in the
 payload itself: each element is one cluster, whose `field` value is either a scalar
 (a one-member cluster — the identity case) or an array of the cluster's member
-values *(amended 2026-08-03, DKT-23)*. When `hold_spread` trips, the engine materializes a `type=human` step named
+values; the builtin's input payload is the concatenated payloads of the step's
+declared `inputs` artifacts, resolved per the input rules — action steps are
+engine-run, never claimed *(amended 2026-08-03, DKT-23 / DKT-28)*. When `hold_spread` trips, the engine materializes a `type=human` step named
 `<step>-held` gating the routing step, and the aggregate's output payload —
 per-cluster value, members, held flag, `demoted_from`, `operator_resolved` — validates
 against the shipped `aggregate@1` schema. Erik's reconciliation is therefore

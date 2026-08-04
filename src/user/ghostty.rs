@@ -1,9 +1,9 @@
 use crate::file::FileCreate;
 use anyhow::Result;
 use indoc::formatdoc;
-use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
+use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::ConfigContext};
 
-pub struct GhosttyConfig {
+struct GhosttyConfig {
     background_opacity: f32,
     font_family: String,
     font_size: u8,
@@ -11,6 +11,11 @@ pub struct GhosttyConfig {
     name: String,
     systems: Vec<ArtifactSystem>,
     theme: String,
+}
+
+pub struct Ghostty {
+    name: String,
+    systems: Vec<ArtifactSystem>,
 }
 
 impl GhosttyConfig {
@@ -66,8 +71,46 @@ impl GhosttyConfig {
             theme = self.theme
         };
 
-        FileCreate::new(content.as_str(), &self.name, self.systems)
+        FileCreate::new(
+            &format!("{}-ghostty-config", self.name),
+            self.systems,
+            content.as_str(),
+        )
+        .build(context)
+        .await
+    }
+}
+
+impl Ghostty {
+    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
+        Self {
+            name: name.to_string(),
+            systems,
+        }
+    }
+
+    pub async fn build(
+        self,
+        context: &mut ConfigContext,
+    ) -> Result<(Vec<String>, Vec<(String, String)>)> {
+        let mut artifacts = vec![];
+
+        let config = GhosttyConfig::new(&self.name, self.systems.clone())
+            .with_background_opacity(0.95)
+            .with_font_family("GeistMono NFM")
+            .with_font_size(16)
+            .with_macos_option_as_alt(true)
+            .with_theme("TokyoNight")
             .build(context)
-            .await
+            .await?;
+
+        let symlinks = vec![(
+            format!("{}/{}-ghostty-config", get_env_key(&config), self.name),
+            "${HOME}/Library/Application\\ Support/com.mitchellh.ghostty/config".to_string(),
+        )];
+
+        artifacts.push(config);
+
+        Ok((artifacts, symlinks))
     }
 }

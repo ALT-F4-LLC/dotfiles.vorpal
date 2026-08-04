@@ -11,7 +11,12 @@ resolution, §11.4 instance field; DKT-16 open for S4). M1.S4 ✓ (engine-s4,
 2026-08-03: security-led TDD review closed a real PATH-resolution gap
 (.envrc/direnv vector) before code; two groups; stage review ACCEPT, zero
 blocking; §11.4 gains pre_gates + reason per DKT-19/DKT-20; DKT-16 closed; the
-§9.1 stranger demo is QA section ZH). Produced by three advisors (Go delivery grounded in the real
+§9.1 stranger demo is QA section ZH). M1.S5 ✓ (engine-s5, 2026-08-03: ordered
+enums, live thresholds, aggregate + held steps; TDD review flipped H11 (held
+blocks stop) and stage review caught the hand-fed aggregate seam — action steps
+are engine-run, never claimed, fed from declared inputs (DKT-28); amendments
+DKT-22..28 applied to both spec copies; the fixture's `any(severity >= high)`
+routes for real over a user-registered order). Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 
@@ -33,7 +38,7 @@ graph system itself (permitted only at M4+, D-register).
 | M1.S2 ✓ | Claims/leases/capability tokens + `config` | plain | M | S1 | 9.3, 9.4 |
 | M1.S3 ✓ | Spine: workflows, steps, next, activation/pins, loops, guard stop/gate | plain+review (+vote) | XL | S2 | 9.5, grammar §11 |
 | M1.S4 ✓ | Gates + trust model + exec runner | plain+review (+security, vote) | L | S3 | 9.6, 9.10-part, 9.1 |
-| M1.S5 | Schemas/ordered enums/thresholds/aggregate | plain | M | S4 | feeds 9.5 |
+| M1.S5 ✓ | Schemas/ordered enums/thresholds/aggregate | plain | M | S4 | feeds 9.5 |
 | M1.S6 | Runs/budgets/floor/report/dispatch + events read + guard spawn/record | plain+review (+security, concurrency) | L | S5 | 9.2, 9.7, 9.9, 9.10, 9.11 |
 | M1.S7 | Events `--follow` + prune | plain | S | S6 | retention/GONE rules |
 | M2a | Author bootstrap + retro skills | plain | S | M0 (grammar frozen) | toy-repo zero-touch draft |

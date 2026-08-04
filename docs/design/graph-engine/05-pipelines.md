@@ -66,6 +66,8 @@ action = "aggregate"                 # builtin (06 §2); held clusters materiali
 params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
                                      #   human:held-findings step — my reconciliation
                                      #   is parameters, not code
+inputs = ["synthesize.findings"]     # the clusters the builtin reduces (DKT-28)
+payload = "findings@1"               # severity's declared order (V29 — DKT-25/DKT-27)
 threshold = { "fix-loop" = "any(severity >= high)" }   # no match -> pass (06 §11.2)
 max_fix_loops = 2                    # loops exhausted -> waiting-human (06 §11.3)
 

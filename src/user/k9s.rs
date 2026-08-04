@@ -1,17 +1,10 @@
 use crate::file::FileCreate;
 use anyhow::Result;
 use indoc::formatdoc;
-use vorpal_sdk::{api::artifact::ArtifactSystem, context::ConfigContext};
+use vorpal_artifacts::artifact::k9s;
+use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::ConfigContext};
 
-fn format_yaml_list(colors: &[String]) -> String {
-    colors
-        .iter()
-        .map(|color| format!("\n        - '{}'", color))
-        .collect::<Vec<_>>()
-        .join("")
-}
-
-pub struct K9sSkin {
+struct K9sTheme {
     name: String,
     systems: Vec<ArtifactSystem>,
     // Body colors
@@ -80,7 +73,12 @@ pub struct K9sSkin {
     views_logs_indicator_bg_color: String,
 }
 
-impl K9sSkin {
+pub struct K9s {
+    name: String,
+    systems: Vec<ArtifactSystem>,
+}
+
+impl K9sTheme {
     pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
         Self {
             name: name.to_string(),
@@ -441,84 +439,84 @@ impl K9sSkin {
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         let content = formatdoc! {r#"
-                k9s:
-                  # General K9s styles
-                  body:
-                    fgColor: '{body_fg_color}'
-                    bgColor: '{body_bg_color}'
-                    logoColor: '{body_logo_color}'
-                  prompt:
-                    fgColor: '{prompt_fg_color}'
-                    bgColor: '{prompt_bg_color}'
-                    suggestColor: '{prompt_suggest_color}'
-                  info:
-                    fgColor: '{info_fg_color}'
-                    sectionColor: '{info_section_color}'
-                  dialog:
-                    fgColor: '{dialog_fg_color}'
-                    bgColor: '{dialog_bg_color}'
-                    buttonFgColor: '{dialog_button_fg_color}'
-                    buttonBgColor: '{dialog_button_bg_color}'
-                    buttonFocusFgColor: '{dialog_button_focus_fg_color}'
-                    buttonFocusBgColor: '{dialog_button_focus_bg_color}'
-                    labelFgColor: '{dialog_label_fg_color}'
-                    fieldFgColor: '{dialog_field_fg_color}'
-                  frame:
-                    border:
-                      fgColor: '{frame_border_fg_color}'
-                      focusColor: '{frame_border_focus_color}'
-                    menu:
-                      fgColor: '{frame_menu_fg_color}'
-                      keyColor: '{frame_menu_key_color}'
-                      numKeyColor: '{frame_menu_num_key_color}'
-                    crumbs:
-                      fgColor: '{frame_crumbs_fg_color}'
-                      bgColor: '{frame_crumbs_bg_color}'
-                      activeColor: '{frame_crumbs_active_color}'
-                    status:
-                      newColor: '{frame_status_new_color}'
-                      modifyColor: '{frame_status_modify_color}'
-                      addColor: '{frame_status_add_color}'
-                      errorColor: '{frame_status_error_color}'
-                      highlightcolor: '{frame_status_highlight_color}'
-                      killColor: '{frame_status_kill_color}'
-                      completedColor: '{frame_status_completed_color}'
-                    title:
-                      fgColor: '{frame_title_fg_color}'
-                      bgColor: '{frame_title_bg_color}'
-                      highlightColor: '{frame_title_highlight_color}'
-                      counterColor: '{frame_title_counter_color}'
-                      filterColor: '{frame_title_filter_color}'
-                  views:
-                    charts:
-                      bgColor: '{views_charts_bg_color}'
-                      defaultDialColors:{charts_default_dial_colors}
-                      defaultChartColors:{charts_default_chart_colors}
-                    table:
-                      fgColor: '{views_table_fg_color}'
-                      bgColor: '{views_table_bg_color}'
-                      cursorFgColor: '{views_table_cursor_fg_color}'
-                      cursorBgColor: '{views_table_cursor_bg_color}'
-                      header:
-                        fgColor: '{views_table_header_fg_color}'
-                        bgColor: '{views_table_header_bg_color}'
-                        sorterColor: '{views_table_header_sorter_color}'
-                    xray:
-                      fgColor: '{views_xray_fg_color}'
-                      bgColor: '{views_xray_bg_color}'
-                      cursorColor: '{views_xray_cursor_color}'
-                      graphicColor: '{views_xray_graphic_color}'
-                      showIcons: {views_xray_show_icons}
-                    yaml:
-                      keyColor: '{views_yaml_key_color}'
-                      colonColor: '{views_yaml_colon_color}'
-                      valueColor: '{views_yaml_value_color}'
-                    logs:
-                      fgColor: '{views_logs_fg_color}'
-                      bgColor: '{views_logs_bg_color}'
-                      indicator:
-                        fgColor: '{views_logs_indicator_fg_color}'
-                        bgColor: '{views_logs_indicator_bg_color}'
+            k9s:
+              # General K9s styles
+              body:
+                fgColor: '{body_fg_color}'
+                bgColor: '{body_bg_color}'
+                logoColor: '{body_logo_color}'
+              prompt:
+                fgColor: '{prompt_fg_color}'
+                bgColor: '{prompt_bg_color}'
+                suggestColor: '{prompt_suggest_color}'
+              info:
+                fgColor: '{info_fg_color}'
+                sectionColor: '{info_section_color}'
+              dialog:
+                fgColor: '{dialog_fg_color}'
+                bgColor: '{dialog_bg_color}'
+                buttonFgColor: '{dialog_button_fg_color}'
+                buttonBgColor: '{dialog_button_bg_color}'
+                buttonFocusFgColor: '{dialog_button_focus_fg_color}'
+                buttonFocusBgColor: '{dialog_button_focus_bg_color}'
+                labelFgColor: '{dialog_label_fg_color}'
+                fieldFgColor: '{dialog_field_fg_color}'
+              frame:
+                border:
+                  fgColor: '{frame_border_fg_color}'
+                  focusColor: '{frame_border_focus_color}'
+                menu:
+                  fgColor: '{frame_menu_fg_color}'
+                  keyColor: '{frame_menu_key_color}'
+                  numKeyColor: '{frame_menu_num_key_color}'
+                crumbs:
+                  fgColor: '{frame_crumbs_fg_color}'
+                  bgColor: '{frame_crumbs_bg_color}'
+                  activeColor: '{frame_crumbs_active_color}'
+                status:
+                  newColor: '{frame_status_new_color}'
+                  modifyColor: '{frame_status_modify_color}'
+                  addColor: '{frame_status_add_color}'
+                  errorColor: '{frame_status_error_color}'
+                  highlightcolor: '{frame_status_highlight_color}'
+                  killColor: '{frame_status_kill_color}'
+                  completedColor: '{frame_status_completed_color}'
+                title:
+                  fgColor: '{frame_title_fg_color}'
+                  bgColor: '{frame_title_bg_color}'
+                  highlightColor: '{frame_title_highlight_color}'
+                  counterColor: '{frame_title_counter_color}'
+                  filterColor: '{frame_title_filter_color}'
+              views:
+                charts:
+                  bgColor: '{views_charts_bg_color}'
+                  defaultDialColors:{charts_default_dial_colors}
+                  defaultChartColors:{charts_default_chart_colors}
+                table:
+                  fgColor: '{views_table_fg_color}'
+                  bgColor: '{views_table_bg_color}'
+                  cursorFgColor: '{views_table_cursor_fg_color}'
+                  cursorBgColor: '{views_table_cursor_bg_color}'
+                  header:
+                    fgColor: '{views_table_header_fg_color}'
+                    bgColor: '{views_table_header_bg_color}'
+                    sorterColor: '{views_table_header_sorter_color}'
+                xray:
+                  fgColor: '{views_xray_fg_color}'
+                  bgColor: '{views_xray_bg_color}'
+                  cursorColor: '{views_xray_cursor_color}'
+                  graphicColor: '{views_xray_graphic_color}'
+                  showIcons: {views_xray_show_icons}
+                yaml:
+                  keyColor: '{views_yaml_key_color}'
+                  colonColor: '{views_yaml_colon_color}'
+                  valueColor: '{views_yaml_value_color}'
+                logs:
+                  fgColor: '{views_logs_fg_color}'
+                  bgColor: '{views_logs_bg_color}'
+                  indicator:
+                    fgColor: '{views_logs_indicator_fg_color}'
+                    bgColor: '{views_logs_indicator_bg_color}'
             "#,
             body_fg_color = self.body_fg_color,
             body_bg_color = self.body_bg_color,
@@ -580,8 +578,124 @@ impl K9sSkin {
             views_logs_indicator_bg_color = self.views_logs_indicator_bg_color,
         };
 
-        FileCreate::new(content.as_str(), &self.name, self.systems)
+        FileCreate::new(&format!("{}-k9s-theme", self.name), self.systems, &content)
             .build(context)
             .await
     }
+}
+
+impl K9s {
+    pub fn new(name: &str, systems: Vec<ArtifactSystem>) -> Self {
+        Self {
+            name: name.to_string(),
+            systems,
+        }
+    }
+
+    pub async fn build(
+        self,
+        context: &mut ConfigContext,
+    ) -> Result<(Vec<String>, Vec<(String, String)>)> {
+        let mut artifacts = vec![k9s::K9s::new().build(context).await?];
+
+        // Define TokyoNight color palette
+
+        let theme_background = "default";
+        let theme_comment = "#6272a4";
+        let theme_current_line = "#44475a";
+        let theme_cyan = "#8be9fd";
+        let theme_foreground = "#f8f8f2";
+        let theme_green = "#50fa7b";
+        let theme_orange = "#ffb86c";
+        let theme_pink = "#ff79c6";
+        let theme_purple = "#bd93f9";
+        let theme_red = "#ff5555";
+        let theme_selection = "#44475a";
+        let theme_yellow = "#f1fa8c";
+
+        let theme = K9sTheme::new(&self.name, self.systems.clone())
+            .with_body_bg_color(theme_background)
+            .with_body_fg_color(theme_foreground)
+            .with_body_logo_color(theme_purple)
+            .with_dialog_bg_color(theme_background)
+            .with_dialog_button_bg_color(theme_purple)
+            .with_dialog_button_fg_color(theme_foreground)
+            .with_dialog_button_focus_bg_color(theme_pink)
+            .with_dialog_button_focus_fg_color(theme_yellow)
+            .with_dialog_fg_color(theme_foreground)
+            .with_dialog_field_fg_color(theme_foreground)
+            .with_dialog_label_fg_color(theme_orange)
+            .with_frame_border_fg_color(theme_selection)
+            .with_frame_border_focus_color(theme_current_line)
+            .with_frame_crumbs_active_color(theme_current_line)
+            .with_frame_crumbs_bg_color(theme_current_line)
+            .with_frame_crumbs_fg_color(theme_foreground)
+            .with_frame_menu_fg_color(theme_foreground)
+            .with_frame_menu_key_color(theme_pink)
+            .with_frame_menu_num_key_color(theme_pink)
+            .with_frame_status_add_color(theme_green)
+            .with_frame_status_completed_color(theme_comment)
+            .with_frame_status_error_color(theme_red)
+            .with_frame_status_highlight_color(theme_orange)
+            .with_frame_status_kill_color(theme_comment)
+            .with_frame_status_modify_color(theme_purple)
+            .with_frame_status_new_color(theme_cyan)
+            .with_frame_title_bg_color(theme_current_line)
+            .with_frame_title_counter_color(theme_purple)
+            .with_frame_title_fg_color(theme_foreground)
+            .with_frame_title_filter_color(theme_pink)
+            .with_frame_title_highlight_color(theme_orange)
+            .with_info_fg_color(theme_pink)
+            .with_info_section_color(theme_foreground)
+            .with_prompt_bg_color(theme_background)
+            .with_prompt_fg_color(theme_foreground)
+            .with_prompt_suggest_color(theme_purple)
+            .with_views_charts_bg_color(theme_background)
+            .with_views_charts_default_chart_colors(vec![
+                theme_purple.to_string(),
+                theme_red.to_string(),
+            ])
+            .with_views_charts_default_dial_colors(vec![
+                theme_purple.to_string(),
+                theme_red.to_string(),
+            ])
+            .with_views_logs_bg_color(theme_background)
+            .with_views_logs_fg_color(theme_foreground)
+            .with_views_logs_indicator_bg_color(theme_purple)
+            .with_views_logs_indicator_fg_color(theme_foreground)
+            .with_views_table_bg_color(theme_background)
+            .with_views_table_cursor_bg_color(theme_current_line)
+            .with_views_table_cursor_fg_color(theme_foreground)
+            .with_views_table_fg_color(theme_foreground)
+            .with_views_table_header_bg_color(theme_background)
+            .with_views_table_header_fg_color(theme_foreground)
+            .with_views_table_header_sorter_color(theme_cyan)
+            .with_views_xray_bg_color(theme_background)
+            .with_views_xray_cursor_color(theme_current_line)
+            .with_views_xray_fg_color(theme_foreground)
+            .with_views_xray_graphic_color(theme_purple)
+            .with_views_xray_show_icons(false)
+            .with_views_yaml_colon_color(theme_purple)
+            .with_views_yaml_key_color(theme_pink)
+            .with_views_yaml_value_color(theme_foreground)
+            .build(context)
+            .await?;
+
+        let symlinks = vec![(
+            format!("{}/{}-k9s-theme", get_env_key(&theme), self.name),
+            "$HOME/Library/Application\\ Support/k9s/skins/tokyo_night.yaml".to_string(),
+        )];
+
+        artifacts.push(theme);
+
+        Ok((artifacts, symlinks))
+    }
+}
+
+fn format_yaml_list(colors: &[String]) -> String {
+    colors
+        .iter()
+        .map(|color| format!("\n        - '{}'", color))
+        .collect::<Vec<_>>()
+        .join("")
 }

@@ -2,7 +2,9 @@
 node: synthesize-findings
 version: 1
 archetype: executor-read
-fragments: [evidence-rules, truth-first]
+packet_includes:
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
 emits: findings
 ---
 # Charter

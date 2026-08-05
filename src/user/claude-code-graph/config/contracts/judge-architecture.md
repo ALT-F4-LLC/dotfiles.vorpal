@@ -2,7 +2,11 @@
 node: judge-architecture
 version: 1
 archetype: executor-read
-fragments: [severity-ladder-general, code-philosophy, evidence-rules, truth-first]
+packet_includes:
+  - fragments/severity-ladder-general.md
+  - fragments/code-philosophy.md
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
 emits: findings
 payload: findings@1
 ---

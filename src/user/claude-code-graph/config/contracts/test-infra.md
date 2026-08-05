@@ -2,7 +2,13 @@
 node: test-infra
 version: 1
 archetype: executor-write
-fragments: [tdd-discipline, code-philosophy, laziness-ladder, scope-discipline, truth-first, vorpal-toolchain]
+packet_includes:
+  - fragments/tdd-discipline.md
+  - fragments/code-philosophy.md
+  - fragments/laziness-ladder.md
+  - fragments/scope-discipline.md
+  - fragments/truth-first.md
+  - fragments/vorpal-toolchain.md
 emits: change-summary
 ---
 # Charter

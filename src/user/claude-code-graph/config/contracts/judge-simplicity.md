@@ -2,7 +2,11 @@
 node: judge-simplicity
 version: 1
 archetype: executor-read
-fragments: [code-philosophy, laziness-ladder, severity-ladder-general, evidence-rules]
+packet_includes:
+  - fragments/code-philosophy.md
+  - fragments/laziness-ladder.md
+  - fragments/severity-ladder-general.md
+  - fragments/evidence-rules.md
 emits: findings
 payload: findings@1
 ---

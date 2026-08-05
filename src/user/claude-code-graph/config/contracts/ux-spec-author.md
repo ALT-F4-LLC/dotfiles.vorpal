@@ -2,7 +2,12 @@
 node: ux-spec-author
 version: 1
 archetype: executor-write
-fragments: [doc-house-style, writing-for-humans, hig-principles, copy-discipline, evidence-rules]
+packet_includes:
+  - fragments/doc-house-style.md
+  - fragments/writing-for-humans.md
+  - fragments/hig-principles.md
+  - fragments/copy-discipline.md
+  - fragments/evidence-rules.md
 emits: ux-spec
 ---
 # Charter

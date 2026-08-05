@@ -2,7 +2,10 @@
 node: adr-author
 version: 1
 archetype: executor-write
-fragments: [doc-house-style, writing-for-humans, evidence-rules]
+packet_includes:
+  - fragments/doc-house-style.md
+  - fragments/writing-for-humans.md
+  - fragments/evidence-rules.md
 emits: adr
 ---
 # Charter

@@ -71,6 +71,7 @@ fanout = ["judge-architecture", "judge-security", "judge-design"]
                                      #   field, not a per-hint one (06 §11.1), so it
                                      #   cannot prune individual siblings.
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 payload = "findings@1"
 expected_cost = 0.60                 # per expanded sibling
 inputs = ["author.doc", "issue.body"]
@@ -80,6 +81,7 @@ name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.40
 inputs = ["review.*"]
 

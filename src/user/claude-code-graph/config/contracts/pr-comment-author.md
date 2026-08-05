@@ -2,7 +2,9 @@
 node: pr-comment-author
 version: 1
 archetype: executor-read
-fragments: [writing-for-humans, scope-discipline]
+packet_includes:
+  - fragments/writing-for-humans.md
+  - fragments/scope-discipline.md
 emits: comment-set
 ---
 # Charter

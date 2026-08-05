@@ -2,7 +2,10 @@
 node: investigate
 version: 1
 archetype: executor-read
-fragments: [truth-first, evidence-rules, writing-for-humans]
+packet_includes:
+  - fragments/truth-first.md
+  - fragments/evidence-rules.md
+  - fragments/writing-for-humans.md
 emits: investigation
 ---
 # Charter

@@ -1,0 +1,76 @@
+# investigation — kind-matched (05 §2).
+# Per 05 §2: "`investigate` node (scope `[]`, read-only) -> optional `research`
+# fanout -> report artifact -> human gate (operator reads). No gates beyond
+# report recording; explicitly cheap."
+# Notes:
+#   - scope `[]` is ISSUE data, not a pipeline field (02 §5): scope-less issues
+#     never exclude, which is what lets an investigation run beside a writer.
+#     Nothing here declares `class = "write"`; every step is read-only.
+#   - "optional" research is a `when` predicate, not an absent step: a false
+#     `when` expands the step as `skipped` (terminal), so `report`'s join stays
+#     resolvable either way (06 §11.1).
+#   - "No gates beyond report recording" is read literally: no step declares a
+#     `gates` list. The human gate is a step, not a gate.
+
+[pipeline]
+name    = "investigation"
+version = 1
+description = "Read-only root-cause investigation with optional research fanout, ending at an operator read."
+
+[match]                      # 05 §2 calls this "kind-matched", but Docket's issue
+                             #   kinds are a CLOSED set — {bug, feature, task,
+                             #   epic, chore} (internal/model/issue.go); there is no
+                             #   `investigation` kind to match and `issue create`
+                             #   refuses one. Labels are the extensible dimension,
+                             #   so the match moves there. Engine wins over 05's
+                             #   prose per the standing rule; DKT filed.
+kind        = ["task", "bug", "chore"]
+labels_any  = ["investigation"]
+unless_labels = ["spec-doc", "spec-project", "release", "retro"]
+                             # excludes only what outranks it in the precedence
+                             #   order recorded in docs-only.toml
+
+[[step]]
+name = "investigate"
+after = []
+executor = "investigate"
+emits = "investigation"
+expected_cost = 0.70
+inputs = ["issue.body"]
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "research"
+after = ["investigate"]
+fanout = ["research", "research"]    # two parallel research hints (04: the
+                                     #   research archetype); plain join — 05 §2
+                                     #   asks for no quorum, so `min_siblings`
+                                     #   stays at its default of all
+emits = "research-notes"
+expected_cost = 0.50                 # per expanded sibling
+when = "labels contains needs-research"
+                                     # the "optional" of 05 §2
+inputs = ["investigate.investigation", "issue.body"]
+
+[[step]]
+name = "report"
+after = ["investigate", "research"]
+executor = "investigate"             # the same node writes the report from its
+                                     #   own findings plus whatever research
+                                     #   returned
+emits = "investigation"
+expected_cost = 0.40
+inputs = ["investigate.investigation", "research.*", "issue.body"]
+
+[[step]]
+name = "read-gate"
+after = ["report"]
+type = "human"                       # the operator reads (05 §2)
+on_fail = "skip"                     # V13 forbids `waiting-human` here and V13a
+                                     #   requires an explicit value; an
+                                     #   investigation the operator does not accept
+                                     #   is simply not adopted — there is no loop
+                                     #   body to re-enter and no reason to abandon
+                                     #   the issue
+inputs = ["report.investigation"]

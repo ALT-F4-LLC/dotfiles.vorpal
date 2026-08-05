@@ -1,0 +1,140 @@
+# security-load-bearing — label-matched variant of standard-change (05 §2).
+# Deltas from the baseline, per 05 §2:
+#   - prepends `threat-model` (before implement; its artifact feeds the
+#     implement brief)
+#   - review fanout adds `judge-security`
+#   - adds gates `vuln-scan` (govulncheck), stricter `secret-scan`, and
+#     `sdet-abuse` (Q4 closure — named abuse cases from the threat model
+#     actually executed; 05 §3)
+#   - threshold: any security finding >= medium => fix-loop; any high+ security
+#     finding entering `pass` requires a VOTE GATE (05 §4) instead of silent
+#     acceptance
+#   - commit gate requires the vote reference
+# The vote gate is interposed by routing a threshold to a STEP NAME, which is
+# exactly 06 §11.2's interposition rule: "the reference instance's security
+# workflow interposes its vote gate this way — upstream 05 §2".
+# `secret-scan` is stricter here as a TRUST-ENTRY property (argv/timeout/flake
+# live in trust.toml, 06 §4), not a distinct pipeline-visible name: the pipeline
+# references gate names only (05 §3).
+
+[pipeline]
+name    = "security-load-bearing"
+version = 1
+description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
+
+[match]                      # exactly-one-match (06 §11.1): security is the highest-
+                             #   precedence CODE pipeline, but the doc/meta pipelines
+                             #   are different work and still outrank it
+kind        = ["task", "feature", "bug", "chore"]
+labels_any  = ["security-load-bearing"]
+unless_labels = [
+  "docs-only", "investigation",
+  "spec-doc", "spec-project", "release", "retro",
+]
+
+[[step]]
+name = "threat-model"
+after = []                           # root: the threat model precedes implement
+executor = "threat-model"
+emits = "threat-model"
+expected_cost = 0.80
+inputs = ["issue.body"]
+
+[[step]]
+name = "implement"
+after = ["threat-model"]
+executor = "implement"
+class = "write"
+emits = "change-summary"
+expected_cost = 1.50
+inputs = ["threat-model.threat-model", "issue.body"]   # the threat model feeds
+                                     #   the implement brief (05 §2)
+gates = ["build", "tests", "scope", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "review"
+after = ["implement"]
+fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-security"]
+emits = "findings"
+payload = "findings@1"               # judge-boundary validation, per-judge failure
+                                     #   attribution (see standard-change's note);
+                                     #   deliberately absent on `synthesize`
+expected_cost = 0.60                 # per expanded sibling
+inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
+
+[[step]]
+name = "synthesize"
+after = ["review"]
+executor = "synthesize-findings"
+emits = "findings"
+expected_cost = 0.40
+inputs = ["review.*"]
+
+[[step]]
+name = "reconcile"
+after = ["synthesize"]
+action = "aggregate"
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+inputs = ["synthesize.findings"]
+payload = "findings@1"
+threshold = { "fix-loop" = "any(severity >= medium)", "security-vote" = "any(severity >= high)" }
+                                     # 05 §2's two security thresholds, in
+                                     #   evaluation order (first match routes,
+                                     #   06 §11.2): >= medium routes fix-loop;
+                                     #   what survives to `pass` carrying a
+                                     #   high+ finding interposes the vote gate
+                                     #   rather than being silently accepted
+max_fix_loops = 2
+
+[[step]]
+name = "fix"
+executor = "fix"
+class = "write"
+emits = "change-summary"
+expected_cost = 1.00
+loop = true
+inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model"]
+gates = ["build", "tests", "scope", "secret-scan", "vuln-scan"]
+after_loop = "review"
+
+[[step]]                     # reached ONLY by reconcile's threshold routing
+name = "security-vote"
+after = ["reconcile"]                # names the predecessor V8 requires; the step
+                                     #   stays otherwise-unreached — interposition
+                                     #   is what makes it ready (06 §11.2)
+type = "vote"                        # 05 §4: waivers and security acceptance are
+                                     #   where per-voter accountability is the point
+voters = ["judge-security", "judge-architecture", "judge-correctness"]
+vote_rule = "security-acceptance"
+on_fail = "fix-loop"                 # a refused waiver is rework, not a park
+inputs = ["reconcile.findings"]
+
+[[step]]
+name = "verify"
+after = ["reconcile"]
+executor = "verify-ac"
+emits = "ac-report"
+payload = "ac-report@1"
+expected_cost = 0.50
+gates = [{ name = "ac-commands", pre = true }]
+inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+
+[[step]]
+name = "commit-gate"
+after = ["verify"]
+type = "human"
+on_fail = "fix-loop"
+inputs = ["reconcile.findings"]      # the vote reference the commit gate requires
+                                     #   (05 §2) rides in the reconciled payload
+                                     #   the vote recorded its outcome over
+
+[[step]]
+name = "commit"
+after = ["commit-gate"]
+executor = "commit-author"
+emits = "commit-message"
+expected_cost = 0.10
+gates = ["commit-msg", "commit-exec"]

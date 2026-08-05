@@ -1,0 +1,102 @@
+# docs-only — kind/label-matched, scope = docs/** (05 §2).
+# Per 05 §2: "implement -> single `judge-correctness` review -> verify; gates:
+# `doc-validate` (per doc type), `citation-check`. No fix-loop (attempts
+# suffice), no commit vote."
+# Consequences of "no fix-loop", read against the engine:
+#   - there is no `fix` step and no `after_loop` anywhere in this file;
+#   - no threshold may route "fix-loop" (there would be no loop body to enter),
+#     so the review outcome routes `waiting-human` instead — the operator reads
+#     the findings. `max_fix_loops` is therefore absent too.
+#   - the single-judge review is an ordinary executor step, not a `fanout`: a
+#     one-hint fanout would register (V15 only refuses an EMPTY fanout) but would
+#     model a join over one sibling that 05 §2 does not ask for.
+# `synthesize`/`reconcile` are absent: clustering across judges is meaningless
+# with one judge, and `aggregate` over a single input computes nothing new.
+# Scope (`docs/**`) is issue data, not a pipeline field (02 §5) — the `scope`
+# gate is what enforces it.
+
+[pipeline]
+name    = "docs-only"
+version = 1
+description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop."
+
+[match]                      # no `docs` kind exists (closed set, see spec-doc's
+                             #   note); `docs-only` is the label 05 §2 names anyway
+                             # Precedence (exactly-one-match, 06 §11.1): the nine
+                             #   [match] clauses form a total order, each excluding
+                             #   every label that binds above it —
+                             #   retro > release > spec-project > spec-doc >
+                             #   investigation > docs-only > security > ui >
+                             #   standard-change.
+kind        = ["task", "feature", "bug", "chore"]
+labels_any  = ["docs-only"]
+unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"]
+
+[[step]]
+name = "implement"
+after = []
+executor = "implement"
+class = "write"
+emits = "change-summary"
+expected_cost = 0.80
+inputs = ["issue.body"]
+gates = ["build", "scope", "self-hygiene", "doc-validate", "citation-check"]
+                                     # `doc-validate` is 05 §3's per-type gate:
+                                     #   doc_validate.py per type. Per-type
+                                     #   checks are its parameters, not sibling
+                                     #   gate names (see the fold decisions).
+max_attempts = 2
+on_fail = "waiting-human"            # attempts suffice (05 §2); nothing loops
+
+[[step]]
+name = "review"
+after = ["implement"]
+executor = "judge-correctness"       # the single judge 05 §2 specifies
+emits = "findings"
+payload = "findings@1"
+expected_cost = 0.60
+inputs = ["implement.change-summary", "issue.diff"]
+threshold = { "waiting-human" = "any(severity >= high)" }
+                                     # no fix-loop exists to route to; a high+
+                                     #   finding parks for the operator instead
+
+[[step]]
+name = "verify"
+after = ["review"]
+executor = "verify-ac"
+emits = "ac-report"
+payload = "ac-report@1"
+expected_cost = 0.40
+gates = [{ name = "ac-commands", pre = true }]
+inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+threshold = { "waiting-human" = "any(status == unmet)" }
+                                     # unmet parks rather than looping; the
+                                     #   `unverifiable` clause collapses into the
+                                     #   same routing, so it is not restated
+
+[[step]]
+name = "commit-gate"
+after = ["verify"]
+type = "human"                       # a human gate, not a vote (05 §2: "no
+                                     #   commit vote")
+on_fail = "skip"                     # 05 §2 says "no fix-loop" for this pipeline,
+                                     #   but V13 forbids `waiting-human` on a human
+                                     #   step and V13a requires an explicit value —
+                                     #   leaving "fix-loop", "skip", "abandon-issue".
+                                     #   `skip` is the only one that means what a
+                                     #   rejected docs commit means: drop the commit,
+                                     #   keep the reviewed work and the operator's
+                                     #   note. `fix-loop` would name a loop body this
+                                     #   pipeline deliberately does not have (V17-
+                                     #   adjacent nonsense), and `abandon-issue`
+                                     #   discards a change whose only fault is that
+                                     #   it should not land yet. Engine wins over 05's
+                                     #   prose per the standing rule; DKT filed.
+
+[[step]]
+name = "commit"
+after = ["commit-gate"]
+executor = "commit-author"
+emits = "commit-message"
+expected_cost = 0.10
+gates = ["commit-msg", "commit-exec"]

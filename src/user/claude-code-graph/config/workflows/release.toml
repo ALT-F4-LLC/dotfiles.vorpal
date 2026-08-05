@@ -1,0 +1,80 @@
+# release — the commit/PR tail as its own pipeline for multi-issue runs (05 §2).
+# Per 05 §2: "aggregate verify (run-level verify-ac over the union diff) -> human
+# commit gate -> `commit-author` -> optional `pr-comment-author` + posting gates.
+# Keeps per-issue commits available (standard-change) while giving runs a
+# one-commit option; which applies is a plan-time choice recorded on the run."
+#
+# The plan-time choice is expressed as a LABEL, which is the only thing `[match]`
+# and `when` can read (06 §11.1, V22): an issue labeled `release` binds here
+# instead of standard-change, which is what makes the two mutually exclusive
+# under the exactly-one-match rule. standard-change already excludes nothing
+# about `release`, so its `unless_labels` is the other half of that pair — see
+# the deviation note in the report.
+#
+# "Union diff" is `issue.diff` on the release issue: the engine computes the
+# diff for the ISSUE'S SCOPE (06 §11.1), so a release issue scoped over the run's
+# files is exactly the union. No new virtual artifact is invented here.
+
+[pipeline]
+name    = "release"
+version = 1
+description = "Run-level release tail: aggregate AC verification, operator commit gate, one commit, optional PR comment."
+
+[match]                      # closed kind set (see spec-doc's note): `release` is a
+                             #   label, not a kind. Engine wins over 05; DKT filed.
+kind        = ["task", "chore"]
+labels_any  = ["release"]
+unless_labels = ["retro"]    # only `retro` outranks it (precedence order in
+                             #   docs-only.toml)
+
+[[step]]
+name = "verify"
+after = []
+executor = "verify-ac"               # run-level verify-ac over the union diff
+emits = "ac-report"
+payload = "ac-report@1"
+expected_cost = 0.70
+gates = [{ name = "ac-commands", pre = true }]
+inputs = ["issue.body", "issue.diff"]
+threshold = { "waiting-human" = "any(status == unmet)" }
+                                     # a release has no fix-loop of its own: the
+                                     #   repair belongs to the issue that owns the
+                                     #   code, so an unmet AC parks for the operator
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "commit-gate"
+after = ["verify"]
+type = "human"                       # the operator authorizes the release commit
+on_fail = "abandon-issue"            # V13 bars `waiting-human`; a refused RELEASE
+                                     #   is abandoned rather than looped — the
+                                     #   release issue is a wrapper with no work of
+                                     #   its own to repair, and the underlying
+                                     #   changes keep their own issues
+inputs = ["verify.ac-report"]
+
+[[step]]
+name = "commit"
+after = ["commit-gate"]
+executor = "commit-author"
+class = "write"
+emits = "commit-message"
+expected_cost = 0.10
+gates = ["commit-msg", "commit-exec"]
+                                     # commit-exec runs only behind the human gate
+                                     #   plus the commit-guard hook (05 §3)
+inputs = ["issue.body", "issue.diff"]
+
+[[step]]
+name = "pr-comment"
+after = ["commit"]
+executor = "pr-comment-author"
+emits = "comment-set"
+expected_cost = 0.30
+when = "labels contains pr"          # the "optional" of 05 §2
+inputs = ["commit.commit-message", "issue.diff"]
+gates = ["gh-inline-comment"]        # the posting gate (05 §3's remaining-survivors
+                                     #   bucket: gh_inline_comment)
+on_fail = "skip"                     # a failed comment post must not undo a
+                                     #   landed commit

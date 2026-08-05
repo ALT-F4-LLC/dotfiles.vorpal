@@ -1,0 +1,113 @@
+# spec-project — the init-specs replacement (05 §2).
+# Per 05 §2: "seven parallel `spec-author` steps (one per spec file) ->
+# `doc-validate` gates -> single review fanout -> human acceptance."
+#
+# The seven are the reserved engineering-spec names the spec-author contract
+# names: architecture, security, operations, performance, code quality, review
+# strategy, testing.
+#
+# FANOUT ARITY, and why this is ONE step and not seven: `fanout` expands to one
+# sibling per hint (06 §11.1), and every sibling of a fanned step shares the step's
+# `emits`, `gates`, and `inputs`. Seven spec-author siblings is exactly that shape.
+# Which of the seven a given sibling writes is carried by the hint itself —
+# `spec-author` resolves per sibling index the way any executor hint resolves,
+# opaque to core. `min_siblings` is NOT declared: 05 §2 asks for seven specs, not
+# a quorum of them, so the default (all) is the plain join the design wants — a
+# missing spec must block acceptance, not be voted around.
+
+[pipeline]
+name    = "spec-project"
+version = 1
+description = "Author the seven reserved project spec files in parallel, review them once, and accept by operator."
+
+[match]                      # closed kind set (see spec-doc's note): the label is
+                             #   what binds. Engine wins over 05's prose; DKT filed.
+kind        = ["task", "feature", "chore"]
+labels_any  = ["spec-project"]
+unless_labels = ["release", "retro"]
+                             # excludes only what outranks it (precedence order in
+                             #   docs-only.toml)
+
+[[step]]
+name = "spec-author"
+after = []
+fanout = [
+  "spec-author-architecture",
+  "spec-author-security",
+  "spec-author-operations",
+  "spec-author-performance",
+  "spec-author-code-quality",
+  "spec-author-review-strategy",
+  "spec-author-testing",
+]                                    # the seven reserved names, one sibling each
+class = "write"
+emits = "spec"
+expected_cost = 1.00                 # per expanded sibling
+inputs = ["issue.body"]
+gates = ["doc-validate", "reserved-name-check"]
+                                     # `reserved-name-check` (05 §3) is the gate
+                                     #   that makes the seven-name claim mechanical:
+                                     #   spec-author CLAIMS these names in the shared
+                                     #   docs/spec/ dir. A registry row, so it wires
+                                     #   as a named gate.
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "review"
+after = ["spec-author"]
+fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
+                                     # the "single review fanout" of 05 §2: one
+                                     #   fanout over the seven specs together, not
+                                     #   one review per spec
+emits = "findings"
+payload = "findings@1"
+expected_cost = 0.60                 # per expanded sibling
+inputs = ["spec-author.*", "issue.body"]
+                                     # `.*` resolves over DONE siblings only, ordered
+                                     #   by (declared position, sibling index,
+                                     #   artifact id) — 06 §2
+
+[[step]]
+name = "synthesize"
+after = ["review"]
+executor = "synthesize-findings"
+emits = "findings"
+expected_cost = 0.40
+inputs = ["review.*"]
+
+[[step]]
+name = "reconcile"
+after = ["synthesize"]
+action = "aggregate"
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+inputs = ["synthesize.findings"]
+payload = "findings@1"
+threshold = { "fix-loop" = "any(severity >= high)" }
+max_fix_loops = 2
+
+[[step]]
+name = "revise"
+fanout = [
+  "spec-author-architecture",
+  "spec-author-security",
+  "spec-author-operations",
+  "spec-author-performance",
+  "spec-author-code-quality",
+  "spec-author-review-strategy",
+  "spec-author-testing",
+]
+class = "write"
+emits = "spec"
+expected_cost = 0.70                 # per expanded sibling
+loop = true
+inputs = ["reconcile.findings", "spec-author.*"]
+gates = ["doc-validate", "reserved-name-check"]
+after_loop = "review"
+
+[[step]]
+name = "accept"
+after = ["reconcile"]
+type = "human"                       # human acceptance (05 §2)
+on_fail = "fix-loop"
+inputs = ["spec-author.*", "reconcile.findings"]

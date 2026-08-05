@@ -32,7 +32,20 @@ the compat sweep is per-stage-invoked — backlog issue filed to self-contain
 it). Artifact GC identified as unstaged by any stage — filed as post-M1
 backlog; events.retain is the sole retention window until it lands (DKT-37
 disposition). Next: M2a/M2b/M3 in parallel from the frozen grammar, then M4's
-shadow run against a binary built from engine-s7.** Produced by three advisors (Go delivery grounded in the real
+shadow run against a binary built from engine-s7.** M2a ✓ (2026-08-05: bootstrap +
+retro skills, toy-repo zero-touch transcript; found the version-bump bind wedge —
+fixed engine-side as bind-to-highest, DKT-40). **M2b COMPLETE (2026-08-05, DKT-9):
+the corpus shipped at G:config/ — 24 contracts, 16 fragments, 2 schemas
+(findings@1, ac-report@1 — engine-registered, CONFLICT-proven), 9 workflows
+(engine-registered, 78-step activation proof, V21b refusal shown), policy.toml
+(engine-pins-bytes-only, verified; tier/security/escalation values
+operator-ratified). Eight batches + schemas/workflows/policy sessions, every batch
+conversationally approved; deviations DKT-47..49, 50/51, 55..62 filed —
+including the batch-9 team-lead.md breach (DKT-61) remedied by purge +
+operator ratification, and the standing stop-and-file rule it produced.
+Corpus distribution to target `.docket/config/` and the trust-setup flow are
+M3's, per the single-homed-source decision; the 04-vs-05 emit and kind/label
+contradictions found at registration are amended into 04/05 with annotations.** Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 

@@ -32,6 +32,7 @@ name = "verify"
 after = []
 executor = "verify-ac"               # run-level verify-ac over the union diff
 emits = "ac-report"
+packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
 expected_cost = 0.70
 gates = [{ name = "ac-commands", pre = true }]
@@ -60,6 +61,7 @@ after = ["commit-gate"]
 executor = "commit-author"
 class = "write"
 emits = "commit-message"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
 gates = ["commit-msg", "commit-exec"]
                                      # commit-exec runs only behind the human gate
@@ -71,6 +73,7 @@ name = "pr-comment"
 after = ["commit"]
 executor = "pr-comment-author"
 emits = "comment-set"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.30
 when = "labels contains pr"          # the "optional" of 05 §2
 inputs = ["commit.commit-message", "issue.diff"]

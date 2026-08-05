@@ -2,7 +2,11 @@
 node: judge-security
 version: 1
 archetype: executor-read
-fragments: [severity-ladder-security, security-review-dimensions, evidence-rules, truth-first]
+packet_includes:
+  - fragments/severity-ladder-security.md
+  - fragments/security-review-dimensions.md
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
 emits: findings
 payload: findings@1
 ---

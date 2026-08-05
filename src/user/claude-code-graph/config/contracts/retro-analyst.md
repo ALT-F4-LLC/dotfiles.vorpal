@@ -2,7 +2,10 @@
 node: retro-analyst
 version: 1
 archetype: executor-read
-fragments: [evidence-rules, writing-for-humans, scope-discipline]
+packet_includes:
+  - fragments/evidence-rules.md
+  - fragments/writing-for-humans.md
+  - fragments/scope-discipline.md
 emits: proposals
 ---
 # Charter

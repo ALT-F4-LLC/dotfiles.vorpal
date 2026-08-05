@@ -2,7 +2,10 @@
 node: verify-ac
 version: 1
 archetype: executor-read
-fragments: [evidence-rules, truth-first, scope-discipline]
+packet_includes:
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
+  - fragments/scope-discipline.md
 emits: ac-report
 payload: ac-report@1
 ---

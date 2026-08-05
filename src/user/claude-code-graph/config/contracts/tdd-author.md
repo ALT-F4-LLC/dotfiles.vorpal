@@ -2,7 +2,12 @@
 node: tdd-author
 version: 1
 archetype: executor-write
-fragments: [doc-house-style, writing-for-humans, code-philosophy, evidence-rules, scope-discipline]
+packet_includes:
+  - fragments/doc-house-style.md
+  - fragments/writing-for-humans.md
+  - fragments/code-philosophy.md
+  - fragments/evidence-rules.md
+  - fragments/scope-discipline.md
 emits: tdd
 ---
 # Charter

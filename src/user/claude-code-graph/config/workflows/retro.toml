@@ -31,6 +31,7 @@ name = "analyze"
 after = []
 executor = "retro-analyst"
 emits = "proposals"
+packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 inputs = ["issue.body"]
 max_attempts = 2
@@ -45,6 +46,7 @@ fanout = ["judge-correctness", "judge-simplicity"]
                                      #   evidence cited, and do they add machinery
                                      #   the system does not need
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 payload = "findings@1"
 expected_cost = 0.50                 # per expanded sibling
 inputs = ["analyze.proposals"]
@@ -54,6 +56,7 @@ name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.30
 inputs = ["review.*"]
 
@@ -71,6 +74,7 @@ max_fix_loops = 2
 name = "revise"
 executor = "retro-analyst"
 emits = "proposals"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.60
 loop = true
 inputs = ["reconcile.findings", "analyze.proposals"]

@@ -2,7 +2,12 @@
 node: threat-model
 version: 1
 archetype: executor-read
-fragments: [threat-model-method, security-review-dimensions, severity-ladder-security, evidence-rules, truth-first]
+packet_includes:
+  - fragments/threat-model-method.md
+  - fragments/security-review-dimensions.md
+  - fragments/severity-ladder-security.md
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
 emits: threat-model
 ---
 # Charter

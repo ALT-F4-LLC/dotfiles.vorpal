@@ -2,7 +2,11 @@
 node: judge-correctness
 version: 1
 archetype: executor-read
-fragments: [hard-gates, severity-ladder-general, evidence-rules, truth-first]
+packet_includes:
+  - fragments/hard-gates.md
+  - fragments/severity-ladder-general.md
+  - fragments/evidence-rules.md
+  - fragments/truth-first.md
 emits: findings
 payload: findings@1
 ---

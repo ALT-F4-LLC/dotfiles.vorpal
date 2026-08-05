@@ -34,6 +34,7 @@ executor = "implement"       # label-keyed resolution to `test-infra` on
                              #   concern (05 §1); the hint stays opaque here
 class = "write"
 emits = "change-summary"
+packet = ["contracts/{executor}.md"]
 expected_cost = 1.50
 gates = ["build", "tests", "scope", "self-hygiene", "secret-scan"]
 max_attempts = 2
@@ -44,6 +45,7 @@ name = "review"
 after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 payload = "findings@1"               # validates at the JUDGE boundary: each judge
                                      #   emits a scalar `severity`, so a malformed
                                      #   payload fails its own sibling's `complete`
@@ -62,6 +64,7 @@ name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.40
 inputs = ["review.*"]
 
@@ -84,6 +87,7 @@ name = "fix"
 executor = "fix"
 class = "write"
 emits = "change-summary"
+packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true                          # instantiated per fix-loop entry (06 §11.3)
 inputs = ["reconcile.findings", "implement.change-summary"]
@@ -95,6 +99,7 @@ name = "verify"
 after = ["reconcile"]
 executor = "verify-ac"
 emits = "ac-report"
+packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"              # status is a plain enum: the thresholds below
                                      #   are equality, which needs no declared order
 expected_cost = 0.50
@@ -116,5 +121,6 @@ name = "commit"
 after = ["commit-gate"]
 executor = "commit-author"
 emits = "commit-message"             # aligned to 04 §2 (M2b batch 4)
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
 gates = ["commit-msg", "commit-exec"]

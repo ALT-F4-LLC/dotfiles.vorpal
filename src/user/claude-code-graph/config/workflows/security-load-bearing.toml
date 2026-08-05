@@ -37,6 +37,7 @@ name = "threat-model"
 after = []                           # root: the threat model precedes implement
 executor = "threat-model"
 emits = "threat-model"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.80
 inputs = ["issue.body"]
 
@@ -46,6 +47,7 @@ after = ["threat-model"]
 executor = "implement"
 class = "write"
 emits = "change-summary"
+packet = ["contracts/{executor}.md"]
 expected_cost = 1.50
 inputs = ["threat-model.threat-model", "issue.body"]   # the threat model feeds
                                      #   the implement brief (05 §2)
@@ -58,6 +60,7 @@ name = "review"
 after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-security"]
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 payload = "findings@1"               # judge-boundary validation, per-judge failure
                                      #   attribution (see standard-change's note);
                                      #   deliberately absent on `synthesize`
@@ -69,6 +72,7 @@ name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.40
 inputs = ["review.*"]
 
@@ -93,6 +97,7 @@ name = "fix"
 executor = "fix"
 class = "write"
 emits = "change-summary"
+packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
 inputs = ["reconcile.findings", "implement.change-summary", "threat-model.threat-model"]
@@ -116,6 +121,7 @@ name = "verify"
 after = ["reconcile"]
 executor = "verify-ac"
 emits = "ac-report"
+packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
@@ -136,5 +142,6 @@ name = "commit"
 after = ["commit-gate"]
 executor = "commit-author"
 emits = "commit-message"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
 gates = ["commit-msg", "commit-exec"]

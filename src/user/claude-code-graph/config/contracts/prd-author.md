@@ -2,7 +2,10 @@
 node: prd-author
 version: 1
 archetype: executor-write
-fragments: [doc-house-style, writing-for-humans, scope-discipline]
+packet_includes:
+  - fragments/doc-house-style.md
+  - fragments/writing-for-humans.md
+  - fragments/scope-discipline.md
 emits: prd
 ---
 # Charter

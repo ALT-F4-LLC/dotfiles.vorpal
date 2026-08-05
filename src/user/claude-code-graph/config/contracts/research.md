@@ -2,7 +2,9 @@
 node: research
 version: 1
 archetype: executor-research
-fragments: [evidence-rules, writing-for-humans]
+packet_includes:
+  - fragments/evidence-rules.md
+  - fragments/writing-for-humans.md
 emits: research-notes
 ---
 # Charter

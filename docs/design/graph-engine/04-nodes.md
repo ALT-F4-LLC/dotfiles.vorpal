@@ -74,8 +74,8 @@ versioned, inlined by the engine wherever a contract declares it (no pointers, E
 | `threat-model-method` | security-engineer Shostack 4Q method |
 | `hig-principles` | ux-designer's 8 HIG principles + WCAG 2.2 AA floors |
 | `copy-discipline` | ux copy-literal rules (grep-verifiable acceptance surface) |
-| `tdd-discipline` | tdd skill: red-first, AC-fail-first, no test-weakening |
-| `scope-discipline` | phase/scope rules: touch only declared scope, gap out otherwise |
+| `tdd-discipline` | agents/sdet.md §Testing Philosophy (red-green at sdet.md:110): red-first, AC-fail-first, no test-weakening *(source corrected 2026-08-05 — skills/tdd is the design-doc authoring skill and carries none of this; found by M2b batch 1)* |
+| `scope-discipline` | senior-engineer.md principle 9 + the exemplars' own # Stuck honest-gap doctrine + sdet.md:168's undeclared-scope judgment: touch only declared scope, gap out otherwise *(sources named 2026-08-05 — the row previously named no file; M2b batch 1)* |
 | `doc-house-style` | adr/prd/tdd/ux-spec section conventions (validators enforce structure; this carries taste) |
 | `vorpal-toolchain` | vorpal-tools (pinned tool notes) |
 | `writing-for-humans` | report-writing conventions worth keeping (minus banned-phrase lists — T5 removed their cause) |

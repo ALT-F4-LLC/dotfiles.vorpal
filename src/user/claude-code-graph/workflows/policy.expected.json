@@ -33,9 +33,6 @@
     "commit-author": {
       "tier": "bronze"
     },
-    "doc-recorder": {
-      "tier": "bronze"
-    },
     "judge-correctness": {
       "tier": "silver"
     },
@@ -92,7 +89,29 @@
     "ux-spec-author": {
       "tier": "gold"
     },
-    "spec-author": {
+    "spec-author-architecture": {
+      "tier": "gold"
+    },
+    "spec-author-security": {
+      "tier": "gold",
+      "never": [
+        "fable"
+      ],
+      "reason": "security-classifier-reroute"
+    },
+    "spec-author-operations": {
+      "tier": "gold"
+    },
+    "spec-author-performance": {
+      "tier": "gold"
+    },
+    "spec-author-code-quality": {
+      "tier": "gold"
+    },
+    "spec-author-review-strategy": {
+      "tier": "gold"
+    },
+    "spec-author-testing": {
       "tier": "gold"
     },
     "investigate": {
@@ -116,7 +135,8 @@
     "nodes": [
       "judge-security",
       "threat-model",
-      "tdd-author-security"
+      "tdd-author-security",
+      "spec-author-security"
     ],
     "never": [
       "fable"

@@ -71,7 +71,6 @@ implement         = { tier = "bronze" }   # routine change; static-Large or >1-d
 test-infra        = { tier = "bronze" }   # implement's label-keyed resolution (below); same class, same rung
 fix               = { tier = "bronze" }   # bounded, finding-directed rework
 commit-author     = { tier = "bronze" }   # mechanical: compose message under gates
-doc-recorder      = { tier = "bronze" }   # mechanical: record accepted doc
 
 # Review nodes — silver is the floor, and dispatching review below it is a
 # routing defect. The reason is the value review produces: a judge exists to
@@ -101,7 +100,31 @@ adr-author        = { tier = "gold" }     # a decision record fixes a choice and
                                           #   alternatives for future readers — authoring-class work
                                           #   whose cost lands later, when the record is relied on
 ux-spec-author    = { tier = "gold" }
-spec-author       = { tier = "gold" }
+
+# spec-project's seven reserved spec files (05 §2), one row per fanout hint.
+# [OBSERVED] These are seven DISTINCT executor hints, not seven spawns of one:
+# `internal/workflow/expand.go:160-168` assigns `row.Executor = hint` per
+# sibling, and `internal/engine/packets/default.tmpl:5-6` renders it as
+# `target: {{.Step.Executor}}`. The hint IS the per-sibling identity carrier —
+# it is what tells sibling #1 to write the architecture spec and #4 the
+# performance spec. A bare `spec-author` x7 would render seven identical briefs
+# with no declared way to say which file each writes (DKT-64's open question).
+# Contrast investigation.toml's `["research","research"]`, where the siblings
+# ARE interchangeable and the repeated literal key is therefore correct.
+#
+# Gold across the board: each is authoring-class work standing up a project's
+# reference documentation.
+spec-author-architecture   = { tier = "gold" }
+spec-author-security       = { tier = "gold", never = ["fable"], reason = "security-classifier-reroute" }
+                                          # the one sibling whose subject matter trips
+                                          #   the classifier by its nature — pinned for
+                                          #   the same reason as tdd-author-security,
+                                          #   and listed in [security].nodes below
+spec-author-operations     = { tier = "gold" }
+spec-author-performance    = { tier = "gold" }
+spec-author-code-quality   = { tier = "gold" }
+spec-author-review-strategy = { tier = "gold" }
+spec-author-testing        = { tier = "gold" }
 
 # Investigator-class — diagnosis and synthesis with no map to follow, and the
 # only work that sits at diamond by default. Sending it somewhere cheaper first
@@ -137,7 +160,7 @@ threat-model      = { tier = "silver", never = ["fable"], reason = "security-cla
 #     no higher rung to reach for.
 
 [security]
-nodes   = ["judge-security", "threat-model", "tdd-author-security"]
+nodes   = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security"]
 never   = ["fable"]
 ceiling = "gold"
 reason  = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."

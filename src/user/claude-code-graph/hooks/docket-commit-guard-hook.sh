@@ -261,4 +261,33 @@ fi
 GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 [ -n "$GATE_REASON" ] || GATE_REASON="no approved commit-gate step in any active run"
 
+# NOT-APPLICABLE IS NOT A DENIAL. [OBSERVED] internal/engine/guard.go:138-147 —
+# the engine returns exactly three verdicts, and only ONE of them is this
+# guard's business:
+#
+#   approved -> allow                                            (handled above)
+#   found    -> `gate "commit-gate" is <state>, not approved`    (DENY: the case
+#               this guard exists for — a run whose pipeline HAS a commit-gate
+#               step that the operator has not yet approved)
+#   default  -> `no type="human" step named "commit-gate" in any active run`
+#               (ALLOW: the gate is ABSENT, not unapproved)
+#
+# The `default` arm is reached by a single query (`:101-108`) that joins steps
+# to runs WHERE the run is active AND the step name matches AND kind=human. So
+# ONE reason string covers two situations that are both "this guard has no
+# opinion": no active run at all, and an active run whose pipeline simply has
+# no commit-gate step (a retro or investigation pipeline, say). Denying either
+# would brick every git write in a session that is not conducting a
+# commit-bearing pipeline — which is exactly what the operator's no-run check
+# found.
+#
+# Allowing here does NOT make those commits unguarded: `git commit` remains a
+# `Bash(git commit:*)` permission-ask (E3), and the old fleet's
+# guard-no-commit-hook.sh still prompts on its own permission_mode case split.
+# This hook re-keys the DECISION to engine truth where engine truth exists; it
+# does not manufacture a verdict where the engine has declined to give one.
+case $GATE_REASON in
+    *'in any active run'*) allow_default ;;
+esac
+
 deny "git write blocked: ${GATE_REASON}. A git write needs an APPROVED commit-gate step on an active run — approve it with \`docket step approve\`, then retry. If this command performs no git write, the retained text matcher has false-positived on git-write wording inside it (known limitation): to read a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); only if the command must pass literal content through as an argument, write that content to a file and pass the path instead."

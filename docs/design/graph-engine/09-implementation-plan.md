@@ -45,7 +45,23 @@ including the batch-9 team-lead.md breach (DKT-61) remedied by purge +
 operator ratification, and the standing stop-and-file rule it produced.
 Corpus distribution to target `.docket/config/` and the trust-setup flow are
 M3's, per the single-homed-source decision; the 04-vs-05 emit and kind/label
-contradictions found at registration are amended into 04/05 with annotations.** Produced by three advisors (Go delivery grounded in the real
+contradictions found at registration are amended into 04/05 with annotations.** **M3 COMPLETE (2026-08-05): the harness shipped in six groups plus an
+engine patch. G1 render path (artifact-level merge with a fail-closed
+collision guard; E3 PASS ask-beats-allow, E4 NEGATIVE; team-lead default pin
+removed, operator-ratified, R11). G2 wave.js (policy resolver + TOML subset
+parser, golden-pinned) + three executor archetypes. G3 plan + conduct skills
+(conductor renamed from `run` — bundled-skill collision, G3-F1). G4 docket-*
+hooks (heartbeat dropped: E1 FAIL, D11 fallback — liveness is TTL-only, write
+TTL 45m). G5 distribution, DKT-41/59/60/62/64 closed, commit-guard three-case
+fix, E2 PASS (agentId join; label not persisted). Engine patch DKT-68/70 —
+first engine commits since S7 (7e70547): completion metadata persisted;
+packets compose declared files ({executor} token, packet_includes, checkPacketRef
+containment) — the corpus reaches briefs at last. Corpus packet wave (DKT-72):
+24 contracts + 9 workflows migrated; F-W1/DKT-73 recorded (M4 excludes
+test-infra-labeled issues and doc pipelines). G6 re-measured all four
+environment checks UNCHANGED from the recorded table against a fresh clone
+and fresh binary; M4 pins recorded in the G6 report. Next: M4 pre-registration
+(07 §4), then the shadow run.** Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 

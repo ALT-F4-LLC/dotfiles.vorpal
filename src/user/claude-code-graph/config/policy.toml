@@ -1,0 +1,207 @@
+# policy.toml — wave-side spawn routing (05 §5, 02 §7).
+#
+# THE ENGINE NEVER READS THIS FILE. Core pins it by content hash at activation
+# and registers nothing (06 §2; docket's own TDD states it outright: "No
+# `policy.toml` interpretation. It is pinned as bytes and never parsed").
+# Its only consumer is wave.js, which reads these tables and delivers the
+# result as step `metadata` on `next` rows — the workflow script reads no files
+# (05 §5). Everything engine-ENFORCED lives core-side instead (06 §11.1):
+# budget cap, attempt defaults, lease TTLs, and context-size caps via
+# `docket config` / run flags and `[limits]`; gate timeout and flake policy in
+# trust entries (06 §4).
+#
+# NO TRUST ENTRIES, NO ARGV TEMPLATES. Executable argv lives only in the
+# per-user `~/.config/docket/trust.toml` and is NEVER repo-shipped (06 §4) — a
+# cloned repo can never introduce execution. Workflows reference gate names
+# only; this file references none.
+#
+# Provenance (T9): machine-authored, human-approved in conversation, never
+# hand-maintained (05 §1).
+#
+# 05 §5 instructs that a four-tier ladder, dispatch tables, census exemptions,
+# and effort workarounds "all collapse into this one file". This file satisfies
+# that instruction by ADOPTION, not transcription: the tier values, security
+# pins, and escalation policy below are OPERATOR POLICY, ratified in
+# conversation on 2026-08-05. They are authoritative because the operator
+# ratified them — no other document is their source, and none needs to be.
+
+[policy]
+version = 1
+
+# --- Tier ladder ------------------------------------------------------------
+# Four named tiers, ordered by capability. Each names a model alias together
+# with the reasoning effort it is meant to run at. Ascend by a single step, and
+# only after an attempt has actually failed — not because a task looks hard up
+# front.
+#
+# Aliases, not model IDs. Exactly one other file turns an alias into a concrete
+# model ID: src/user/claude_code.rs:135-138, the ANTHROPIC_DEFAULT_*_MODEL
+# env bindings (verified 2026-08-05 — every alias below has a binding there:
+# fable:135, opus:137, sonnet:138; haiku:136 is bound but no tier needs it).
+# Duplicating model IDs here would create a second source of truth that drifts.
+#
+# This is where 05 §5's "effort workarounds" stop being needed. Previously only
+# the model half of a tier could actually be dispatched; the effort half was a
+# target nobody could bind per spawn, so naming a high-effort tier described
+# what a task deserved rather than what it received. Wave carries both halves
+# to the spawn as metadata, so both bind.
+
+[tiers]
+bronze  = { model = "sonnet", effort = "medium" }   # volume execution
+silver  = { model = "opus",   effort = "high"   }   # the default, and the floor for authoring/review/verify
+gold    = { model = "opus",   effort = "xhigh"  }   # buys reasoning, not a different model — entering it costs effort only
+diamond = { model = "fable",  effort = "max"    }   # scarce and gated; reserved for hard problems, never a default seat
+
+# --- Executor routing -------------------------------------------------------
+# executor hint -> {model, effort} (02 §7), expressed as a tier so the ladder
+# stays the single ordering. Keys are node names from 04 — opaque strings core
+# never interprets (05 §1).
+#
+# The step records requested vs resolved model (the harness may substitute),
+# which makes tier drift measurable from the ledger itself (02 §7). That is why
+# 05 §5's "census exemptions" have no successor here: an exemption list exists
+# only to stop a text-scanning audit from misreading model names written in
+# prose. Typed rows are read by parsing, not scanning, so there is nothing to
+# exempt — the category dissolves rather than collapsing.
+
+[executors]
+
+# Write nodes.
+implement         = { tier = "bronze" }   # routine change; static-Large or >1-day work escalates per [escalation]
+test-infra        = { tier = "bronze" }   # implement's label-keyed resolution (below); same class, same rung
+fix               = { tier = "bronze" }   # bounded, finding-directed rework
+commit-author     = { tier = "bronze" }   # mechanical: compose message under gates
+doc-recorder      = { tier = "bronze" }   # mechanical: record accepted doc
+
+# Review nodes — silver is the floor, and dispatching review below it is a
+# routing defect. The reason is the value review produces: a judge exists to
+# find defects the author missed, and a model that misses them too returns a
+# clean verdict that is worth less than no review at all, because the run then
+# records the code as reviewed. Cheap review does not buy weaker assurance; it
+# buys false assurance.
+judge-correctness = { tier = "silver" }
+judge-architecture = { tier = "silver" }
+judge-simplicity  = { tier = "silver" }
+judge-testing     = { tier = "silver" }
+judge-design      = { tier = "silver" }
+judge-security    = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
+design-qa         = { tier = "silver" }
+verify-ac         = { tier = "silver" }   # routine verification; paired/new-architecture verification is still silver
+synthesize-findings = { tier = "silver" } # reduces N judge outputs; cheaper tier loses cross-finding signal
+pr-comment-author = { tier = "silver" }
+
+# Authoring nodes — capability-bound, gold is their standing home.
+spec-doc-author   = { tier = "gold" }     # the resolution table below refines this per doc type
+prd-author        = { tier = "silver" }   # ratified at silver: a PRD states product intent and
+                                          #   acceptance criteria, which is authoring-class but not
+                                          #   the architectural design work that earns gold
+tdd-author        = { tier = "gold" }
+tdd-author-security = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
+adr-author        = { tier = "gold" }     # a decision record fixes a choice and its rejected
+                                          #   alternatives for future readers — authoring-class work
+                                          #   whose cost lands later, when the record is relied on
+ux-spec-author    = { tier = "gold" }
+spec-author       = { tier = "gold" }
+
+# Investigator-class — diagnosis and synthesis with no map to follow, and the
+# only work that sits at diamond by default. Sending it somewhere cheaper first
+# is a false economy: the weaker pass tends to miss defaults and negative cases,
+# and the question then has to be asked again at full price.
+investigate       = { tier = "diamond" }
+research          = { tier = "diamond" }
+retro-analyst     = { tier = "diamond" } # mines run ledgers -> proposals (04, 05 §6)
+
+# Security nodes — see [security] for why these never reach diamond.
+threat-model      = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
+
+# --- Security model pins ----------------------------------------------------
+# 02 §7: "Security-sensitive node types carry a `never: [model...]` list honored
+# at spawn (the vendor-classifier constraint that pinned security work off Fable
+# is a policy row with a reason, not folklore)."
+#
+# This block IS that de-folklorization. The reason is a durable property of the
+# model, not a fact about today's entitlements:
+#
+#   Fable screens cyber and bio content and quietly serves Opus instead when a
+#   request trips those screens. Security review trips them by its nature. The
+#   harm is the silence, not the substitution: the ledger would attribute the
+#   finding to a model that never produced it, so the provenance of a security
+#   judgement becomes unreliable. Naming Opus up front keeps the recorded model
+#   and the executing model the same, whatever the screens decide.
+#
+# Consequences, both deliberate:
+#   - Sensitivity is checked ahead of any escalation gate. Security-sensitive
+#     work takes these pins even when its node's own row says otherwise.
+#   - Gold is the ceiling for this work. Since it stays on Opus throughout, a
+#     security step that fails at gold gets broken into smaller pieces; there is
+#     no higher rung to reach for.
+
+[security]
+nodes   = ["judge-security", "threat-model", "tdd-author-security"]
+never   = ["fable"]
+ceiling = "gold"
+reason  = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."
+
+# Sensitivity is a property of the TASK, not only the node. A step on an issue
+# carrying any of these labels takes the security pins above even when its own
+# executor row is unpinned.
+labels  = ["security-load-bearing", "security"]
+
+# --- Label-keyed executor resolution ---------------------------------------
+# 05 §1: "A step's `executor` may also be a label-keyed resolution table."
+# Core never interprets the hint (06 §11.1) — resolution is policy-side, keyed
+# on the issue's labels, which is exactly why one step covers all five authors.
+#
+# Resolution is: match the first rule whose keys all match; otherwise `default`.
+
+[[resolve]]
+executor = "implement"                    # standard-change's implement step (05 §1)
+default  = "implement"
+[[resolve.rule]]
+labels = ["test-infra"]
+to     = "test-infra"
+
+[[resolve]]
+executor = "spec-doc-author"              # spec-doc's author AND revise steps
+default  = "prd-author"                   # PRD is the unlabeled doc type; its
+                                          #   acceptance is the human gate (05 §2)
+[[resolve.rule]]
+doc_type = "tdd"
+labels   = ["security-load-bearing"]      # security label wins over plain tdd:
+to       = "tdd-author-security"          #   listed FIRST so it matches first
+[[resolve.rule]]
+doc_type = "tdd"
+to       = "tdd-author"
+[[resolve.rule]]
+doc_type = "adr"
+to       = "adr-author"
+[[resolve.rule]]
+doc_type = "ux-spec"
+to       = "ux-spec-author"
+[[resolve.rule]]
+doc_type = "prd"
+to       = "prd-author"
+
+# --- Escalation -------------------------------------------------------------
+# Rungs are earned by a failed attempt, not predicted difficulty. The presence
+# of a security-sounding keyword in an issue is not on its own a reason to move.
+#
+# Note the asymmetry with core: the engine's `max_attempts` / `on_fail` decide
+# WHETHER a step retries (06 §11.1, engine-enforced). This decides what tier the
+# retry SPAWNS at. Two different questions; the engine owns the first.
+
+[escalation]
+on_failure   = "one-rung"                 # exactly one rung per failed attempt
+security_max = "gold"                     # at this ceiling security work is split up, not promoted further
+diamond_gates = [                         # diamond needs a gate to fire even for an eligible row
+  "investigator-class",                   # diagnosis with no map to follow
+  "novel-architecture",                   # a TDD/ADR/UX spec standing up a subsystem or seam with no precedent here
+  "failed-gold-round",                    # non-security work that already came back failed from gold
+]
+
+# When diamond cannot be used, the step keeps its role and drops a single rung to
+# gold — it does not fall all the way to the cheap tier. This path gets exercised
+# for real: under zero-data-retention a Fable request fails outright instead of
+# degrading, so unavailability is a normal condition, not a hypothetical.
+[escalation.fallback]
+diamond = "gold"

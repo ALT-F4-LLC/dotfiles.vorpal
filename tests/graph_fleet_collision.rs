@@ -30,7 +30,7 @@ const SHARED_FILE_EXEMPTIONS: &[&str] = dotfiles::file::FileSource::MERGE_COLLIS
 const MERGED_DIRS: &[(&str, &[&str])] = &[
     ("agents", &["executor-"]),
     ("hooks", &["docket-"]),
-    ("skills", &["plan", "run", "bootstrap", "retro"]),
+    ("skills", &["plan", "conduct", "bootstrap", "retro"]),
 ];
 
 fn repo_root() -> PathBuf {

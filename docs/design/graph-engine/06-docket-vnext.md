@@ -41,6 +41,8 @@ docket workflow init [--template NAME]          # scaffold instance config from 
                                                 #   optional templates (zero-authoring start)
 
 docket run start --request-file … ; activate; pause|resume|abandon; status; report
+docket run budget RUN-N --set N                 # raise/lower a live cap (CAS,
+                                                #   event-logged — DKT-29, stage 7)
 docket next     --run RUN-N --json              # step-level ready set (02 §5)
 docket dispatch open|close|verify|abandon --run RUN-N
                                                 # batch manifest (TTL'd, one open per run,
@@ -57,7 +59,8 @@ docket step     render STEP-N [--template F]    # context bundle → rendered wo
                                                 #   atomically (§2)
 docket step     show|context
 docket artifact show ART-N | list --run RUN-N
-docket events   --follow [--since SEQ] ; docket events prune --before …
+docket events   list [--since SEQ] ; --follow ; docket events prune --before …
+                                                #   (read verb ships as `list` — DKT-32)
 ```
 
 Existing verbs (`issue`, `plan`, `board`, `vote`, `doc`, `export`, …) keep exactly one
@@ -235,7 +238,8 @@ CAS `--if-version` everywhere + versions in `.data`; uniform envelopes
 VALIDATION_ERROR on silent-drop cases (fires under `--json=v2` only; v1/human output
 stays byte-identical per §9 item 8); idempotency keys on create verbs; millisecond
 timestamps + `seq`; error taxonomy extended once for all new verbs (NOT_FOUND,
-VALIDATION_ERROR, CONFLICT, AUTH_ERROR, STALE_LEASE, TIMEOUT, UNTRUSTED). Generic,
+VALIDATION_ERROR, CONFLICT, AUTH_ERROR, STALE_LEASE, TIMEOUT, UNTRUSTED; `GONE`
+appended at stage 6 for the events read surface — DKT-33, 2026-08-05). Generic,
 valuable standalone, and deletes nine wrapper scripts in the current fleet.
 
 ## 6. Concurrency model
@@ -424,7 +428,7 @@ gate result     { step, gate, argv, exit, duration_ms, output, truncated, verdic
 action result   { step, action, argv, exit, duration_ms, output, truncated,
                   verdict, builtin, reason? }   # argv/exit NULL for builtin|unmatched
                                                 #   (added 2026-08-03, DKT-24)
-event           { seq, at_ms, kind, run?, step?, data }
+event           { seq, at_ms, kind, run?, step?, step_id?, data }   # step_id: DKT-34
 ```
 
 `instance` is the rendered `name@k#i` identity (§11.3) carried alongside the `STEP-N`

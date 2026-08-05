@@ -105,7 +105,7 @@ on_fail = "fix-loop"                 # reject routes to rework; explicit on_fail
 name = "commit"
 after = ["commit-gate"]
 executor = "commit-author"
-emits = "commit-record"
+emits = "commit-message"  # was commit-record; aligned to 04 s2 r116 (M2b batch 4, 2026-08-05)
 expected_cost = 0.10
 gates = ["commit-msg", "commit-exec"]
 ```
@@ -127,7 +127,7 @@ Deltas from `standard-change`:
 
 **`security-load-bearing`** — label-matched. Prepends `threat-model` (before implement,
 its artifact feeds the implement brief); review fanout adds `judge-security`; adds gates
-`vuln-scan` (govulncheck) and stricter `secret-scan`; threshold: any security finding
+`vuln-scan` (govulncheck), stricter `secret-scan`, and `sdet-abuse` (Q4 closure); threshold: any security finding
 ≥ medium ⇒ fix-loop, any `high`+ *security* finding entering `pass` requires a
 **vote gate** (§4) instead of silent acceptance; commit gate requires the vote reference.
 Policy pins security nodes' allowed models (02 §7).
@@ -180,9 +180,11 @@ current script corpus (07 maps each):
 | `self-hygiene` | self_review_scan.sh (debug artifacts, TODOs, conflict markers) |
 | `secret-scan` | secret_scan.sh |
 | `vuln-scan` | govulncheck.sh |
+| `sdet-abuse` | gate_check.sh --gates sdet-abuse (Q4 closure: named abuse cases from the threat model actually executed; security pipeline) |
 | `ac-commands` | ac_check.sh (execute the literal ```` ```ac ````-fenced commands from issue bodies, 02 §6) |
 | `red-green` | red_green_verify.sh (fail-first proof, on tdd-labeled issues) |
 | `doc-validate` | doc_validate.py per type; next_doc_number allocation |
+| `reserved-name-check` | doc filenames vs the seven reserved engineering-spec names (init-specs manifest is the authority); spec-author claims them, prd-author refuses them (shared docs/spec/ output dir) |
 | `citation-check` | check_citations.py / xref_check.py |
 | `tdd-preflight` | tdd_preflight.sh |
 | `render-verify`, `copy-verify` | render_verify.sh, copy_verify.sh |

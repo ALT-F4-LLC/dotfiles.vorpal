@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "findings@1",
-  "description": "The review-family payload (02 §6): one element per finding from a judge, or per cluster from synthesize-findings, or per reconciled cluster from the builtin `aggregate`. `severity` carries the declared order the engine's thresholds and the `aggregate` action compute over; its five values are 02 §6's, not either authoring ladder's (see the fragment-mapping note below). Cluster member severities travel in `members`, which `aggregate@1` also defines, because a field cannot both declare an order and admit an array — the property-level `enum` that makes `severity` orderable is the same keyword that rejects a list.",
+  "description": "The review-family payload (02 §6): one element per finding from a judge, or per cluster from synthesize-findings, or per reconciled cluster from the builtin `aggregate`. `severity` carries the declared order the engine's thresholds and the `aggregate` action compute over; its five values are 02 §6's, not either authoring ladder's (see the fragment-mapping note below). Cluster member severities travel in the `severity` field itself, as an array: the builtin's `clusterMembers` reads `element[field]` and branches on array (a multi-member cluster) versus scalar (the one-member identity case), so scalar-or-array is the aggregate's INPUT contract. `members` is the aggregate's OUTPUT record of what it reduced. This document is therefore declared on steps whose `severity` is scalar — judge steps and the aggregate step — and NOT on synthesize, whose multi-member clusters the property-level `enum` would refuse at `complete`.",
   "type": "array",
   "items": {
     "type": "object",
@@ -40,7 +40,7 @@
         "type": "string"
       },
       "members": {
-        "description": "The cluster's member severities, in arrival order — the array form 06 §2 requires of a multi-member cluster. Present on synthesize-findings output and on the `aggregate` output, absent on a single judge's finding. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable (V30).",
+        "description": "The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: the builtin's `clusterMembers` reads member severities from the `severity` field of each input element, so 06 §2's scalar-or-array shape is the aggregate's INPUT contract — a multi-member cluster arrives with `severity` itself holding the array. That is also why synthesize's step declares no `payload`: this document's property-level `enum` on `severity` would refuse every multi-member cluster at `complete`. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable (V30).",
         "type": "array",
         "minItems": 1
       },

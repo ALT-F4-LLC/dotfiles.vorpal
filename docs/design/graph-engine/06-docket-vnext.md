@@ -335,7 +335,11 @@ not part of the core surface.
 `[match]` — `kind = [..]`, `labels_any = [..]`, `labels_all = [..]`,
 `unless_labels = [..]`. Evaluated at activation; **exactly one** workflow may match an
 issue — zero or multiple matches is a VALIDATION_ERROR naming the issue and the
-candidate workflows.
+candidate workflows. Matching is evaluated over the **highest registered version of
+each workflow name** (mirroring `workflow show`'s resolution); superseded versions
+remain registered for the runs that pinned them but never participate in binding —
+this is what makes the version-bump evolution path (D15, the retro skill) able to
+complete *(amended 2026-08-05 — bind-to-highest, found by M2a's toy run)*.
 
 `[limits]` — optional map of executor *class* → `{ max = N, lease_ttl = "45m" }` (bare
 int = shorthand for `max`). When a run pins multiple workflows, the most restrictive

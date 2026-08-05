@@ -113,9 +113,12 @@ impl ClaudeCode {
         // Basenames must stay disjoint — `tests/graph_fleet_collision.rs` asserts it, since a
         // collision here would silently overwrite rather than fail.
         //
-        // Graph hooks are deliberately NOT registered via `.with_hook` below: the `docket-*` hook
-        // files land in a later group, and registering a path that renders nothing would break
-        // every session. Registration follows the files, not the other way around.
+        // Graph hooks ARE now registered via `.with_hook` below (M3/G4): the `docket-*` files
+        // exist in `src/user/claude-code-graph/hooks/`, so registration follows the files as G1
+        // required. FOUR of the five, not five — `heartbeat` is dropped per D11's decided fallback
+        // because environment check E1 failed (shared `$TMPDIR` across subagents); see
+        // `claude-code-graph/hooks/docket-heartbeat-hook.sh.dropped` for the measurement and the
+        // re-instatement conditions.
         let agents = FileSource::new(
             &format!("{}-claude-code-agents", self.name),
             "src/user/claude-code/agents",
@@ -223,6 +226,49 @@ impl ClaudeCode {
                 "Stop",
                 None,
                 "bash ~/.claude/hooks/stop-guard-hook.sh",
+                "command",
+            )
+            // Graph fleet hooks (M3/G4, TDD §4.5). Each is a shim over an engine guard verb; the
+            // predicates live in the engine. All are global to the session tree — per-executor
+            // scoping comes from engine state, never from hook configuration (03 §5) — so each one
+            // no-ops when no active run exists, including in the operator's own sessions and the
+            // old fleet's.
+            //
+            // BOTH Stop hooks stay registered, deliberately (AC-4.7). `stop-guard-hook.sh` above
+            // serves the old fleet and is inert in a graph session: both of its dimensions gate on
+            // a per-session team config that a graph session does not have (verified live — a
+            // graph session with pending engine work got `{}`/exit 0 from it). Deleting it is M5's
+            // one dotfiles change, not M3's (§9).
+            //
+            // `heartbeat` is absent by decision, not omission — see the FileSource comment above.
+            .with_hook(
+                "PreToolUse",
+                Some("Workflow|Agent"),
+                "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "PostToolUse",
+                Some("Workflow"),
+                "bash ~/.claude/hooks/docket-wave-audit-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "Stop",
+                None,
+                "bash ~/.claude/hooks/docket-run-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Bash"),
+                "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "SessionStart",
+                None,
+                "bash ~/.claude/hooks/docket-session-start-hook.sh",
                 "command",
             )
             .with_include_git_instructions(false)

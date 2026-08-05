@@ -9,9 +9,12 @@
 # FANOUT ARITY, and why this is ONE step and not seven: `fanout` expands to one
 # sibling per hint (06 §11.1), and every sibling of a fanned step shares the step's
 # `emits`, `gates`, and `inputs`. Seven spec-author siblings is exactly that shape.
-# Which of the seven a given sibling writes is carried by the hint itself —
-# `spec-author` resolves per sibling index the way any executor hint resolves,
-# opaque to core. `min_siblings` is NOT declared: 05 §2 asks for seven specs, not
+# Which of the seven a given sibling writes is carried by the hint itself, and
+# [OBSERVED] that is literally true at the engine seam: `expand.go:160-168` sets
+# `row.Executor = hint` per sibling and `packets/default.tmpl:5-6` renders it as
+# `target: <hint>`, so the hint reaches the executor's brief as that sibling's
+# identity. Opaque to core, resolved by policy: each of the seven has its own
+# [executors] row (DKT-64). `min_siblings` is NOT declared: 05 §2 asks for seven specs, not
 # a quorum of them, so the default (all) is the plain join the design wants — a
 # missing spec must block acceptance, not be voted around.
 
@@ -42,6 +45,7 @@ fanout = [
 ]                                    # the seven reserved names, one sibling each
 class = "write"
 emits = "spec"
+packet = ["contracts/spec-author.md"]
 expected_cost = 1.00                 # per expanded sibling
 inputs = ["issue.body"]
 gates = ["doc-validate", "reserved-name-check"]
@@ -61,6 +65,7 @@ fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
                                      #   fanout over the seven specs together, not
                                      #   one review per spec
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 payload = "findings@1"
 expected_cost = 0.60                 # per expanded sibling
 inputs = ["spec-author.*", "issue.body"]
@@ -73,6 +78,7 @@ name = "synthesize"
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
+packet = ["contracts/{executor}.md"]
 expected_cost = 0.40
 inputs = ["review.*"]
 
@@ -99,6 +105,7 @@ fanout = [
 ]
 class = "write"
 emits = "spec"
+packet = ["contracts/spec-author.md"]
 expected_cost = 0.70                 # per expanded sibling
 loop = true
 inputs = ["reconcile.findings", "spec-author.*"]

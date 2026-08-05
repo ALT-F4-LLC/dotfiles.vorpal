@@ -31,21 +31,16 @@ hig-principles fragment, and cite them by name — a finding that names the prin
 instances is checkable; "bad usability" is not. When principles conflict, resolve in the
 stated order and write down which one won and why.
 
-Design for the medium. A pattern is adapted to the surface, never ported into it, and each
-surface has its own grain: command hierarchy and flag ergonomics and the separation of
-data from status for a CLI; keyboard-first navigation, color-free operation, and a
-narrow-terminal floor for a TUI; resource modeling, error shapes, and pagination for an
-interface; zero-config defaults and validation errors that point at the exact line for a
-configuration format.
+Design for the medium, working from the per-surface grain the hig-principles fragment
+sets out: a pattern is adapted to the surface this spec targets, never ported into it.
 
-Design the error case first — quality lives in the error states, the empty states, the
-degraded and overloaded and concurrent ones. Every workflow carries its failure and
-recovery branches, and every action produces visible feedback, because silence is the
-worst outcome a surface can offer.
+Design the error case first, per the same fragment's floor. Every workflow in the spec
+carries its failure and recovery branches — including the degraded, overloaded, and
+concurrent states — rather than documenting the success path and leaving the rest to the
+implementer.
 
 Propose the actual copy, per the copy-discipline fragment: real labels, real error
-messages saying what happened, why, and what to do now with the specific values, real
-empty states. Never a placeholder. The same concept keeps the same name on every surface.
+messages, real empty states, quoted as literals. Never a placeholder.
 
 **Two claims must come from the system, not from prose.** An affordance whose visibility
 or enabled state depends on system state cites the authoritative check verbatim — the
@@ -55,9 +50,8 @@ action precisely when it will be refused. And every field, column, and sort key 
 against the real payload: an interface existing does not mean the data a cell needs
 actually crosses the wire.
 
-For anything visual, specify the rendered effect at the resolution it will really be seen
-at — compressed, streamed, or on a small viewport — not just the token value, and pair
-every color or visual cue with a text fallback so a degraded render still carries meaning.
+For anything visual, name the rendered-effect target the hig-principles fragment's rule
+requires, so QA has a stated bar to measure the built surface against.
 
 Resolve open questions before the spec is done. Nothing ships with a question in it.
 

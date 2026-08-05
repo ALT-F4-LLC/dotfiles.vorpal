@@ -101,17 +101,46 @@ impl ClaudeCode {
         self,
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
+        // Graph fleet (M3/G1). The graph subtree renders alongside the old fleet, which stays
+        // default until M5. Both fleets land in the same three `~/.claude/{agents,hooks,skills}`
+        // directories because the harness discovers agents and skills by directory scan — a
+        // `~/.claude/skills-graph` would render but never be invocable.
+        //
+        // They merge at the *artifact* level rather than getting their own symlinks: the SDK
+        // emits one `ln -s {source} {target}` per symlink with no `-f` under `set -euo pipefail`,
+        // so a second artifact claiming `~/.claude/agents` aborts activation outright (E4,
+        // answered negative). `with_merge_path` copies the graph subtree into the same output.
+        // Basenames must stay disjoint — `tests/graph_fleet_collision.rs` asserts it, since a
+        // collision here would silently overwrite rather than fail.
+        //
+        // Graph hooks are deliberately NOT registered via `.with_hook` below: the `docket-*` hook
+        // files land in a later group, and registering a path that renders nothing would break
+        // every session. Registration follows the files, not the other way around.
         let agents = FileSource::new(
             &format!("{}-claude-code-agents", self.name),
             "src/user/claude-code/agents",
             self.systems.clone(),
         )
+        .with_merge_path("src/user/claude-code-graph/agents")
         .build(context)
         .await?;
 
         let hooks = FileSource::new(
             &format!("{}-claude-code-hooks", self.name),
             "src/user/claude-code/hooks",
+            self.systems.clone(),
+        )
+        .with_merge_path("src/user/claude-code-graph/hooks")
+        .build(context)
+        .await?;
+
+        // The corpus is instance data for a target repo, not harness prose: nothing scans it and
+        // the harness never loads it. It renders to the sibling path `~/.claude/docket-config/`
+        // purely so `bootstrap` has a local, versioned source to copy into a target repo's
+        // `.docket/config/` without network access (TDD §5.1).
+        let graph_config = FileSource::new(
+            &format!("{}-claude-code-graph-config", self.name),
+            "src/user/claude-code-graph/config",
             self.systems.clone(),
         )
         .build(context)
@@ -262,6 +291,14 @@ impl ClaudeCode {
             .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
             .with_permission_allow("WebSearch")
             .with_permission_ask("Bash(chown:*)")
+            // `docket trust` writes the trust store that gates which commands the engine may run
+            // unattended, so it is the one docket verb a session must not be able to grant itself
+            // (graph-engine D14's human-confirmation backstop). The broader
+            // `Bash(docket:*)` allow above stays — this narrower `ask` is expected to take
+            // precedence over it. That precedence is the load-bearing assumption; if it ever
+            // stops holding, the fix is to narrow the allow by enumerating the non-trust verbs
+            // rather than to rely on this line.
+            .with_permission_ask("Bash(docket trust:*)")
             .with_permission_ask("Bash(git add:*)")
             .with_permission_ask("Bash(git commit:*)")
             .with_permission_ask("Bash(git push:*)")
@@ -357,6 +394,7 @@ impl ClaudeCode {
             "src/user/claude-code/skills",
             self.systems.clone(),
         )
+        .with_merge_path("src/user/claude-code-graph/skills")
         .build(context)
         .await?;
 
@@ -371,6 +409,10 @@ impl ClaudeCode {
 
         let symlinks = vec![
             (get_env_key(&agents), "${HOME}/.claude/agents".to_string()),
+            (
+                get_env_key(&graph_config),
+                "${HOME}/.claude/docket-config".to_string(),
+            ),
             (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
             (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
             (
@@ -392,7 +434,15 @@ impl ClaudeCode {
             ),
         ];
 
-        let artifacts = vec![agents, hooks, settings, scripts, skills, statusline];
+        let artifacts = vec![
+            agents,
+            graph_config,
+            hooks,
+            settings,
+            scripts,
+            skills,
+            statusline,
+        ];
 
         Ok((artifacts, symlinks))
     }

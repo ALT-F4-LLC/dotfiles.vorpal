@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "findings@1",
+  "description": "The review-family payload (02 §6): one element per finding from a judge, or per cluster from synthesize-findings, or per reconciled cluster from the builtin `aggregate`. `severity` carries the declared order the engine's thresholds and the `aggregate` action compute over; its five values are 02 §6's, not either authoring ladder's (see the fragment-mapping note below). Cluster member severities travel in `members`, which `aggregate@1` also defines, because a field cannot both declare an order and admit an array — the property-level `enum` that makes `severity` orderable is the same keyword that rejects a list.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` makes the §7.6 E5 conjunction unsatisfiable and V30 refuses the workflow at register time.",
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "description": "One-line statement of the defect.",
+        "type": "string",
+        "minLength": 1
+      },
+      "severity": {
+        "description": "The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` takes a median over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.",
+        "type": "string",
+        "enum": ["info", "low", "medium", "high", "blocker"],
+        "ordered_enum": true
+      },
+      "file": {
+        "description": "Repo-relative path the finding is anchored to.",
+        "type": "string"
+      },
+      "line": {
+        "description": "1-indexed line within `file`. Optional per 02 §6.",
+        "type": "integer",
+        "minimum": 1
+      },
+      "evidence": {
+        "description": "What a skeptic can re-run or re-read to confirm the finding.",
+        "type": "string"
+      },
+      "alternative": {
+        "description": "A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional (DKT-51).",
+        "type": "string"
+      },
+      "members": {
+        "description": "The cluster's member severities, in arrival order — the array form 06 §2 requires of a multi-member cluster. Present on synthesize-findings output and on the `aggregate` output, absent on a single judge's finding. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable (V30).",
+        "type": "array",
+        "minItems": 1
+      },
+      "held": {
+        "description": "Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step.",
+        "type": "boolean"
+      },
+      "demoted_from": {
+        "description": "Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted.",
+        "type": "string",
+        "enum": ["info", "low", "medium", "high", "blocker"]
+      },
+      "operator_resolved": {
+        "description": "Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6).",
+        "type": "boolean"
+      }
+    },
+    "required": ["severity"],
+    "additionalProperties": true
+  }
+}

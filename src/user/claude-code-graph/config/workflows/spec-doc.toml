@@ -151,10 +151,15 @@ after = ["accept-vote-tdd", "accept-vote-adr", "accept-human"]
                                      # joins over whichever acceptance ran; the
                                      #   `skipped` one is terminal, and a join
                                      #   waits for terminal siblings (06 §2)
-executor = "doc-recorder"
-emits = "doc-record"                 # accepted docs are recorded as Docket docs
+action = "doc-record"                # trusted action, not an executor: recording
+                                     #   is "insert a row and copy bytes", which
+                                     #   is engine-run and never claimed
+params = { output = "doc-record" }   # accepted docs are recorded as Docket docs
                                      #   (DOC-N) and the referencing issues carry
-                                     #   their ACs verbatim — the distillation rule
+                                     #   their ACs verbatim — the distillation rule.
+                                     #   `params.output` is the kind an action step
+                                     #   produces (V11); `emits` is absent on action
+                                     #   steps (V7) and silently ignored if present
 expected_cost = 0.20
 inputs = ["author.doc"]
 gates = ["citation-check"]

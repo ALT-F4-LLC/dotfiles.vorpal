@@ -283,10 +283,17 @@ function resolve(row, issue, policy) {
 }
 
 // --- Archetype selection (§4.4) ---------------------------------------------
+// `doc-recorder` is absent by design: DKT-60 made recording a trusted ACTION
+// step, which the engine runs and never claims, so no archetype is ever chosen
+// for it. The seven `spec-author-<axis>` hints are listed individually because
+// the hint is the sibling's identity (DKT-64) — there is no bare `spec-author`.
 const WRITE_HINTS = [
-  'implement', 'test-infra', 'fix', 'commit-author', 'doc-recorder',
+  'implement', 'test-infra', 'fix', 'commit-author',
   'spec-doc-author', 'prd-author', 'tdd-author', 'tdd-author-security',
-  'adr-author', 'ux-spec-author', 'spec-author', 'pr-comment-author',
+  'adr-author', 'ux-spec-author', 'pr-comment-author',
+  'spec-author-architecture', 'spec-author-security', 'spec-author-operations',
+  'spec-author-performance', 'spec-author-code-quality',
+  'spec-author-review-strategy', 'spec-author-testing',
 ]
 
 function archetype(row, hint) {

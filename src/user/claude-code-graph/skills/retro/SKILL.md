@@ -41,9 +41,60 @@ an anecdote.
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
 | Trust drift (D14) | `trust-added`/`trust-removed` repo-wide | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn (D15) | your own proposals per run over time | churn trending up means bootstrap mined the repo wrong; fix the source, not each symptom |
+| Routing drift | `data.metadata`'s four keys (below) | requested ≠ resolved across runs means policy asks for a model it does not get |
+| Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
+| Tier fit | `[executors]` rows vs attempts + cost at that tier | a row failing repeatedly at its tier is mis-tiered, not under-budgeted |
 
 Label every claim by what it rests on: a count from the report is observed, a
 pattern across five runs is inferred. Say which one you have.
+
+### The M3-era surfaces you may propose edits to
+
+Three surfaces exist now that earlier retros had no vocabulary for. Same
+mechanism as everything else — evidence, proposal, approval — but know they are
+yours to propose against:
+
+**`policy.toml`'s tables.** Pinned, not registered, so an edit needs no version
+bump — but note it, because the next retro attributes what followed to it.
+
+| Table | A finding that touches it |
+|---|---|
+| `[tiers]` | a tier's {model, effort} consistently over- or under-serving its rows |
+| `[executors]` | a hint mis-tiered; a row orphaned by a deleted workflow; a hint with no row |
+| `[security]` | security-labelled work landing on an unpinned row — widen `nodes` or `labels` |
+| `[[resolve]]` | a rule that never matches, or ordering that lets the general rule shadow the specific one |
+| `[escalation]` | `one-rung` under- or over-shooting; a `diamond_gates` entry that never fires |
+
+Two invariants any `[executors]` proposal must preserve: **every hint has
+exactly one row, and every row is reachable from some hint.** The wave refuses
+to route otherwise. A proposal that deletes a workflow must delete the rows it
+orphans in the same breath.
+
+**Vote-rule thresholds.** These live in engine config, not `.docket/config/`:
+
+```bash
+docket config set vote.rule.<name>.threshold <0-1>
+```
+
+They ship provisional (`security-acceptance` 0.67, `doc-acceptance` 0.60) and
+were never calibrated against real votes — sizing them from evidence is
+explicitly retro's job. A rule whose outcome never differs from a plain human
+gate is a rule to question, not tune.
+
+**The four metadata keys.** Every completed step carries
+`model_requested` / `effort_requested` (what policy asked for) and
+`model_resolved` / `effort_resolved` (what actually served). The gap between
+them is routing drift, and it is invisible anywhere else. Known blind spot,
+stated so you do not misread a clean report: **a failed or crashed step
+contributes none of the four**, so drift concentrated in failures will not
+appear here. Read attempt counts alongside.
+
+**Lease TTLs, if steps are being reaped mid-work.** There is no heartbeat;
+liveness is TTL-only. `waiting-human` events whose reason is a lost or expired
+claim, or a step completing against a lease it no longer holds, mean
+`lease.ttl.<class>` is sized below real step duration. Propose the observed
+worst case plus headroom — you now have the run durations bootstrap had to guess
+at.
 
 ## 3. Propose
 

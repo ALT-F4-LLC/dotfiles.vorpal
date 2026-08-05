@@ -16,7 +16,14 @@ enums, live thresholds, aggregate + held steps; TDD review flipped H11 (held
 blocks stop) and stage review caught the hand-fed aggregate seam — action steps
 are engine-run, never claimed, fed from declared inputs (DKT-28); amendments
 DKT-22..28 applied to both spec copies; the fixture's `any(severity >= high)`
-routes for real over a user-registered order). Produced by three advisors (Go delivery grounded in the real
+routes for real over a user-registered order). M1.S6 ✓ (engine-s6, 2026-08-05:
+budgets with the floor-as-query, dispatch manifests with recovery, the write-reap
+acknowledgment, events read + the §9.2 attribution audit, auto-registration with
+the schemas-before-workflows contract, and the §9.11 zero-touch rehearsal green —
+the v5–v10 schema span is COMPLETE and v1 is shadow-runnable; TDD review fixed
+D2's scope pre-code; three in-flight deviations filed and reconciled
+(DKT-30/31/33); the v10 rewind guard now probes indexes, a lesson the dogfooded
+tracker taught a fourth time). Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 
@@ -39,7 +46,7 @@ graph system itself (permitted only at M4+, D-register).
 | M1.S3 ✓ | Spine: workflows, steps, next, activation/pins, loops, guard stop/gate | plain+review (+vote) | XL | S2 | 9.5, grammar §11 |
 | M1.S4 ✓ | Gates + trust model + exec runner | plain+review (+security, vote) | L | S3 | 9.6, 9.10-part, 9.1 |
 | M1.S5 ✓ | Schemas/ordered enums/thresholds/aggregate | plain | M | S4 | feeds 9.5 |
-| M1.S6 | Runs/budgets/floor/report/dispatch + events read + guard spawn/record | plain+review (+security, concurrency) | L | S5 | 9.2, 9.7, 9.9, 9.10, 9.11 |
+| M1.S6 ✓ | Runs/budgets/floor/report/dispatch + events read + guard spawn/record | plain+review (+security, concurrency) | L | S5 | 9.2, 9.7, 9.9, 9.10, 9.11 |
 | M1.S7 | Events `--follow` + prune | plain | S | S6 | retention/GONE rules |
 | M2a | Author bootstrap + retro skills | plain | S | M0 (grammar frozen) | toy-repo zero-touch draft |
 | M2b | Generate config corpus (batched) | plain (bootstrap-driven) | M | M2a; validation at S3/S5 | counts + Erik approvals |

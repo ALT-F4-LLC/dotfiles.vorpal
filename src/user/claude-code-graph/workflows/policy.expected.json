@@ -1,0 +1,186 @@
+{
+  "policy": {
+    "version": 1
+  },
+  "tiers": {
+    "bronze": {
+      "model": "sonnet",
+      "effort": "medium"
+    },
+    "silver": {
+      "model": "opus",
+      "effort": "high"
+    },
+    "gold": {
+      "model": "opus",
+      "effort": "xhigh"
+    },
+    "diamond": {
+      "model": "fable",
+      "effort": "max"
+    }
+  },
+  "executors": {
+    "implement": {
+      "tier": "bronze"
+    },
+    "test-infra": {
+      "tier": "bronze"
+    },
+    "fix": {
+      "tier": "bronze"
+    },
+    "commit-author": {
+      "tier": "bronze"
+    },
+    "doc-recorder": {
+      "tier": "bronze"
+    },
+    "judge-correctness": {
+      "tier": "silver"
+    },
+    "judge-architecture": {
+      "tier": "silver"
+    },
+    "judge-simplicity": {
+      "tier": "silver"
+    },
+    "judge-testing": {
+      "tier": "silver"
+    },
+    "judge-design": {
+      "tier": "silver"
+    },
+    "judge-security": {
+      "tier": "silver",
+      "never": [
+        "fable"
+      ],
+      "reason": "security-classifier-reroute"
+    },
+    "design-qa": {
+      "tier": "silver"
+    },
+    "verify-ac": {
+      "tier": "silver"
+    },
+    "synthesize-findings": {
+      "tier": "silver"
+    },
+    "pr-comment-author": {
+      "tier": "silver"
+    },
+    "spec-doc-author": {
+      "tier": "gold"
+    },
+    "prd-author": {
+      "tier": "silver"
+    },
+    "tdd-author": {
+      "tier": "gold"
+    },
+    "tdd-author-security": {
+      "tier": "silver",
+      "never": [
+        "fable"
+      ],
+      "reason": "security-classifier-reroute"
+    },
+    "adr-author": {
+      "tier": "gold"
+    },
+    "ux-spec-author": {
+      "tier": "gold"
+    },
+    "spec-author": {
+      "tier": "gold"
+    },
+    "investigate": {
+      "tier": "diamond"
+    },
+    "research": {
+      "tier": "diamond"
+    },
+    "retro-analyst": {
+      "tier": "diamond"
+    },
+    "threat-model": {
+      "tier": "silver",
+      "never": [
+        "fable"
+      ],
+      "reason": "security-classifier-reroute"
+    }
+  },
+  "security": {
+    "nodes": [
+      "judge-security",
+      "threat-model",
+      "tdd-author-security"
+    ],
+    "never": [
+      "fable"
+    ],
+    "ceiling": "gold",
+    "reason": "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree.",
+    "labels": [
+      "security-load-bearing",
+      "security"
+    ]
+  },
+  "resolve": [
+    {
+      "executor": "implement",
+      "default": "implement",
+      "rule": [
+        {
+          "labels": [
+            "test-infra"
+          ],
+          "to": "test-infra"
+        }
+      ]
+    },
+    {
+      "executor": "spec-doc-author",
+      "default": "prd-author",
+      "rule": [
+        {
+          "doc_type": "tdd",
+          "labels": [
+            "security-load-bearing"
+          ],
+          "to": "tdd-author-security"
+        },
+        {
+          "doc_type": "tdd",
+          "to": "tdd-author"
+        },
+        {
+          "doc_type": "adr",
+          "to": "adr-author"
+        },
+        {
+          "doc_type": "ux-spec",
+          "to": "ux-spec-author"
+        },
+        {
+          "doc_type": "prd",
+          "to": "prd-author"
+        }
+      ]
+    }
+  ],
+  "escalation": {
+    "on_failure": "one-rung",
+    "security_max": "gold",
+    "diamond_gates": [
+      "investigator-class",
+      "novel-architecture",
+      "failed-gold-round"
+    ],
+    "fallback": {
+      "diamond": "gold"
+    }
+  }
+}

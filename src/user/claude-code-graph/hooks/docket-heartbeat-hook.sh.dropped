@@ -1,0 +1,59 @@
+# heartbeat (03 §5, TDD §4.5) — DROPPED. NOT A HOOK, NOT REGISTERED.
+#
+# This file is a record, not an implementation. It carries the `.dropped`
+# extension deliberately: it must never be discovered as a hook body, and the
+# `.sh` name is left unclaimed so that a future re-instatement is a visible
+# rename rather than an edit nobody reviews.
+#
+# WHY IT IS DROPPED: environment check E1 FAILED (TDD §6 E1), and D11's decided
+# fallback — "markers are cut and TTL + max_step_duration alone carry liveness.
+# The heartbeat hook is then dropped from the set" — applies with no further
+# decision needed. AC-4.5 states the same requirement as an acceptance item:
+# "dropped entirely if E1 failed ... rather than left firing against a shared
+# marker."
+#
+# E1's MEASUREMENT (recorded here so the reason travels with the artifact).
+# Method per §6 E1: two concurrent subagents, each writing to $TMPDIR and
+# listing it. Result, 2026-08-05:
+#
+#   subagent A: TMPDIR=/tmp/claude-501   wrote e1-probe-A.txt
+#   subagent B: TMPDIR=/tmp/claude-501   wrote e1-probe-B.txt
+#   A saw e1-probe-B.txt on poll iteration 1
+#   B saw e1-probe-A.txt on poll iteration 1
+#   parent session: TMPDIR=/tmp/claude-501, saw BOTH files
+#   file mode as created: -rw-r--r-- (not 0600)
+#
+# Every dimension of the pass condition failed: the $TMPDIR paths are identical
+# rather than different, and each subagent saw the other's file rather than
+# neither. The directory is shared session-tree-wide, not per-subagent.
+#
+# WHY LEAVING IT WIRED WOULD BE ACTIVELY UNSAFE, not merely useless: with one
+# shared $TMPDIR, every executor's marker lands in the same directory, so a
+# heartbeat firing in executor X's session could renew the lease belonging to
+# executor Y. That is precisely the cross-executor lease renewal D11 names, and
+# it would defeat the reaping that makes a crashed executor's step reclaimable.
+# A marker's 0600 mode cannot help: the probe shows all subagents run as the
+# same uid, so file permissions do not separate them.
+#
+# CORROBORATING FINDING: the shim's verb does not exist either. TDD §4.5 and
+# 03 §5 both specify `docket step heartbeat --from-marker`; the engine reports
+# `unknown flag: --from-marker` ([OBSERVED] 2026-08-05, docket version dev).
+# `docket step heartbeat STEP-N` exists but "Requires the capability token from
+# `docket step claim`, supplied via DOCKET_TOKEN or on stdin" — which is the
+# marker mechanism under another name, and a PostToolUse hook holds neither the
+# token nor the step id. So the hook is unbuildable as specified independently
+# of E1, and the two findings agree.
+#
+# WHAT CARRIES LIVENESS NOW (D11, unchanged): the lease TTL (observed
+# lease_ttl_s=900 on a dispatch row) plus the class's max_step_duration, which
+# `step heartbeat --help` confirms a heartbeat could not have extended past
+# anyway: "heartbeating does NOT extend a step past its class's
+# max_step_duration, which is measured from the claim". Liveness was never
+# solely the heartbeat's to carry.
+#
+# TO RE-INSTATE, both conditions must hold and both must be re-measured:
+#   1. §6 E1 passes — per-subagent private $TMPDIR, re-run per §7 G6's
+#      before-M4 re-run requirement; and
+#   2. the engine grows a marker-reading entry point (`--from-marker` or
+#      equivalent) that needs neither an argv token nor a step id.
+# Until then the four registered graph hooks are the complete set.

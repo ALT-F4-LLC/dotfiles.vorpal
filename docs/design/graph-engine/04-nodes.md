@@ -108,14 +108,14 @@ Every judgment the fleet performs today, as a node. "Distilled from" is the pari
 | `judge-testing` | read | Test adequacy/honesty, flakiness risk | findings | sdet review lens |
 | `judge-simplicity` | read | Overbuild, dead scaffolding, philosophy violations | findings | simplify-scout, laziness-discipline |
 | `judge-design` | read | Spec/HIG conformance of UI changes | findings | ux-designer design-review |
-| `synthesize-findings` | read | Cluster duplicate findings across judges | clusters | (reconciliation's judged half, 02 §6) |
+| `synthesize-findings` | read | Cluster duplicate findings across judges | findings (cluster-valued) | (reconciliation's judged half, 02 §6) *(artifact column corrected 2026-08-05 — 05 §1 TOML emits `findings` and 06 §2 defines the cluster-valued findings@1 shape; no clusters artifact exists; found by M2b batch 4)* |
 | `verify-ac` | read | Per-AC met/unmet/unverifiable with evidence | ac-report | verify-ac skill, sdet (exemplar below) |
 | `design-qa` | read | Shipped surface vs ux-spec | findings | design-qa skill, ux-designer |
 | `investigate` | read | Root-cause analysis, reproduction | investigation | truth-first-debugging, DE investigator |
-| `research` | research | External evidence gathering (verbatim-quoted) | research-notes | DE research mode, docs-research |
+| `research` | research | External evidence gathering (verbatim-quoted) | research-notes | DE research mode *(source corrected 2026-08-05 — no docs-research skill exists under src/user/claude-code; the DE research mode carries the method in full; found by M2b batch 6)* |
 | `commit-author` | read | Commit message drafting | commit-message | commit skill (execution stays gated, 03 §5) |
 | `pr-comment-author` | read | Inline PR comments in operator's voice | comment-set | review-and-comment (posting = human gate + gh gate) |
-| `retro-analyst` | read | Mine run ledgers → propose contract/pipeline/policy edits | proposals + issues | evolve-* suite, five skills (05 §6) |
+| `retro-analyst` | read | Mine run ledgers → propose contract/pipeline/policy edits | proposals | evolve-* suite, five skills (05 §6) *(artifact column corrected 2026-08-05 — per 05 §6 the node emits proposals and the planner turns accepted ones into issues. Source note: the evolve suite is project-scoped under .claude/skills, never deployed; reachable distillation = the M2a retro skill + 05 §6; found by M2b batch 6)* |
 
 Twenty-five nodes. Deliberate non-nodes: reconciliation, gates, doc validation, metrics,
 promotion, dispatch, votes-counting — deterministic (02); `synthesize-findings` may

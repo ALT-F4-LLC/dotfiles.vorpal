@@ -166,6 +166,20 @@ choice recorded on the run.
 
 **`retro`** — §6.
 
+**Registration-proven amendments (M2b workflows batch, 2026-08-05).** Three deltas
+between this section as prose and the engine as shipped, found when the nine TOMLs
+first registered, are recorded as DKT-56/57/58 and reflected in the authoritative
+TOMLs at `src/user/claude-code-graph/config/workflows/`: (1) issue `kind` is a
+closed engine set — the five variants this section matched on invented kinds bind
+on `labels_any` instead, and exactly-one-match therefore requires the baseline to
+exclude all eight variant labels (total precedence: retro > release > spec-project
+> spec-doc > investigation > docs-only > security > ui > standard-change); (2) a
+declared no-fix-loop pipeline still needs a legal V13/V13a human-gate `on_fail` —
+docs-only, investigation, and retro take `skip`, release takes `abandon-issue`;
+(3) `when` has one connective (`and`), so spec-doc's grouped TDD/ADR acceptance
+vote is three steps (two label-gated votes plus the human complement), not one
+disjunction.
+
 ## 3. Gates registry
 
 Gates are named argv templates held in the operator's user-level trust file

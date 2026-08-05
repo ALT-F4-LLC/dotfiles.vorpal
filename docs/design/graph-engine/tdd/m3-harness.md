@@ -996,13 +996,26 @@ It reads the ledger; M3 gives it the vocabulary. No mechanism change.
 ## 6. The three environment checks (acceptance spine)
 
 **Recorded results (G6 compares against these):** E1 FAIL (2026-08-05, G4:
-shared `$TMPDIR=/tmp/claude-501`, world-readable; D11 fallback applied) · E2
+shared `$TMPDIR=/tmp/claude-501` — owner-only mode, but shared across one user’s subagents, so the one-executor-renews-another’s-lease hazard holds (G6 corrected the world-readable characterization); D11 fallback applied) · E2
 **PASS** (2026-08-05, G5: first real run, two live `agent()` spawns at bronze;
 per-agent usage present and complete, attributable to step ids — but via an
 `agentId` join, not via `label`, see the recorded answer) · E3 PASS
 (2026-08-05, G1: ask-beats-allow, D14 backstop in place) · E4 NEGATIVE
 (2026-08-05, G1: one symlink target per artifact; artifact-level merge is the
 remedy).
+
+**F-W1 (corpus wave, 2026-08-05 — durable record; tracker DKT-73).**
+Resolution-table executor hints are structurally incompatible with engine-side
+packet composition: the engine renders briefs from the raw hint before and
+independent of harness resolution. Two manifestations — spec-doc-author
+refuses loudly (no backing file; its author/revise steps ship packet-less,
+correct-but-thin per the §1.3.1 interim), and implement->test-infra mis-briefs
+silently (a test-infra-labeled issue gets implement’s charter AND a truncated
+closure — test-infra declares six fragments to implement’s five, so
+laziness-ladder never reaches it). LOAD-BEARING for M4: the shadow run
+excludes test-infra-labeled issues and doc pipelines. Likely fix, post-M4:
+dissolve each alias into label-gated sibling steps (the spec-doc acceptance
+trio is the in-corpus precedent); DKT-73 carries five acceptance criteria.
 
 [SPEC] 09 §M3 Done, verbatim: "the **three environment checks recorded**
 (private $TMPDIR per subagent; wave-journal per-agent usage; permission config =

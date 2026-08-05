@@ -33,8 +33,9 @@ symbol's surface needs a search you actually ran, not a narrow one generalized.
 # Emit
 `findings`: markdown body with one section per finding (location · the general rule it
 instances · the second-order consequence · evidence label · suggested direction), plus
-the findings payload — one entry per finding with severity from the general ladder
-fragment. Every Blocker and Concern names the rule it instances, not only its one-line
+the findings payload — one entry per finding whose `severity` is what the general ladder
+fragment's emit-time mapping yields for the rung you authored at. Every Blocker and
+Concern names the rule it instances, not only its one-line
 fix. If you examined everything and found nothing, report examined-clean naming what you
 examined; an empty payload is a valid, meaningful result.
 

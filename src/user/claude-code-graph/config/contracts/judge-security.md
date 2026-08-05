@@ -28,7 +28,8 @@ reported as examined-clean, not silence.
 # Emit
 `findings`: markdown body with one section per finding (location · mechanism · impact ·
 evidence label · suggested direction), plus the findings payload — one entry per finding
-with severity from the security ladder fragment. Severity reflects exploitability and
+whose `severity` is what the security ladder fragment's emit-time mapping yields for the
+rung you authored at. Severity reflects exploitability and
 blast radius, not effort to fix. If you examined everything and found nothing, emit the
 examined-clean report; an empty payload is a valid, meaningful result.
 

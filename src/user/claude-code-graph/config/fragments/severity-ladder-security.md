@@ -19,6 +19,23 @@ This vocabulary is the security track's own. Do not map it onto a general-purpos
 quality ladder or borrow that ladder's bands — the two have bled into each other before,
 and the cost is a real Critical arriving dressed as a style nit.
 
+**Emit-time mapping.** The words above are the authoring language; you reason and write
+in them. The `severity` field of the findings payload takes 02 §6's five values, and
+every rung maps 1:1 onto one of them:
+
+| Author as | Emit as    |
+|-----------|------------|
+| Critical  | `blocker`  |
+| High      | `high`     |
+| Medium    | `medium`   |
+| Low       | `low`      |
+| Info      | `info`     |
+
+The rungs already carry the payload's semantics: Critical is the fix-before-merge band
+and `blocker` is the value that always routes there; and because a security review runs
+under a `≥ medium` threshold rather than the standard `≥ high`, Medium's "real concern
+with a workaround" reaches the fix loop exactly as this ladder intends.
+
 **Report low-severity findings; do not omit them.** Stylistic observations and
 scanner-duplicable findings are still reported, at `Info` — filtering and ranking happen
 downstream, never at authoring time. On large changes, focus effort on the fraction that

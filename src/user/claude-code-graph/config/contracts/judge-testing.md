@@ -34,8 +34,9 @@ corroboration is not verification — and label each claim OBSERVED or INFERRED.
 # Emit
 `findings`: markdown body with one section per finding (location · what is untested or
 falsely proven · why the current test does not establish it · evidence label · suggested
-direction), plus the findings payload — one entry per finding with severity from the
-general ladder fragment. Coverage numbers are reported as diagnostics, never as a
+direction), plus the findings payload — one entry per finding whose `severity` is what
+the general ladder fragment's emit-time mapping yields for the rung you authored at.
+Coverage numbers are reported as diagnostics, never as a
 verdict on adequacy. If you examined everything and found nothing, report examined-clean;
 an empty payload is a valid, meaningful result.
 

@@ -53,8 +53,9 @@ than downgrading the finding.
 # Emit
 `findings`: markdown body with one section per finding (dimension · spec section ·
 expected versus observed · governing principle where one applies · evidence label ·
-suggested direction), plus the findings payload — one entry per finding with severity
-from the general ladder fragment. Components the spec's cutline defers are out of scope,
+suggested direction), plus the findings payload — one entry per finding whose `severity`
+is what the general ladder fragment's emit-time mapping yields for the rung you authored
+at. Components the spec's cutline defers are out of scope,
 not findings. If you examined everything and found nothing, report examined-clean; an
 empty payload is a valid, meaningful result.
 

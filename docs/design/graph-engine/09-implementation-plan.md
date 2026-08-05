@@ -23,7 +23,16 @@ the schemas-before-workflows contract, and the §9.11 zero-touch rehearsal green
 the v5–v10 schema span is COMPLETE and v1 is shadow-runnable; TDD review fixed
 D2's scope pre-code; three in-flight deviations filed and reconciled
 (DKT-30/31/33); the v10 rewind guard now probes indexes, a lesson the dogfooded
-tracker taught a fourth time). Produced by three advisors (Go delivery grounded in the real
+tracker taught a fourth time). M1.S7 ✓ (engine-s7, 2026-08-05: --follow over
+RunWatch, prune with §3's refusals, GONE live and reachable only by pruning,
+run budget --set closing DKT-29's loop). **M1 COMPLETE — the engine shipped:
+seven stages, seven local tags, schema v5–v10, the §9 scoreboard on DKT-7 with
+three honest caveats (ZG21-partial cites ZK; item 10's gate half is Go-only;
+the compat sweep is per-stage-invoked — backlog issue filed to self-contain
+it). Artifact GC identified as unstaged by any stage — filed as post-M1
+backlog; events.retain is the sole retention window until it lands (DKT-37
+disposition). Next: M2a/M2b/M3 in parallel from the frozen grammar, then M4's
+shadow run against a binary built from engine-s7.** Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 
@@ -47,7 +56,7 @@ graph system itself (permitted only at M4+, D-register).
 | M1.S4 ✓ | Gates + trust model + exec runner | plain+review (+security, vote) | L | S3 | 9.6, 9.10-part, 9.1 |
 | M1.S5 ✓ | Schemas/ordered enums/thresholds/aggregate | plain | M | S4 | feeds 9.5 |
 | M1.S6 ✓ | Runs/budgets/floor/report/dispatch + events read + guard spawn/record | plain+review (+security, concurrency) | L | S5 | 9.2, 9.7, 9.9, 9.10, 9.11 |
-| M1.S7 | Events `--follow` + prune | plain | S | S6 | retention/GONE rules |
+| M1.S7 ✓ | Events `--follow` + prune (+ `run budget`, DKT-29) | plain | S | S6 | retention/GONE rules |
 | M2a | Author bootstrap + retro skills | plain | S | M0 (grammar frozen) | toy-repo zero-touch draft |
 | M2b | Generate config corpus (batched) | plain (bootstrap-driven) | M | M2a; validation at S3/S5 | counts + Erik approvals |
 | M3 | Harness wiring (skills, wave.js, shims, archetypes) | plain | M | S3 smoke; finish at S6 | three environment checks |

@@ -48,7 +48,7 @@ are fresh-context scope fences, same discipline as S1–S7.
 | File | 03 §1 target | Status | Group |
 |---|---|---|---|
 | `skills/plan/SKILL.md` | ~4KB | absent | G3 |
-| `skills/run/SKILL.md` | ~2KB | absent | G3 |
+| `skills/conduct/SKILL.md` | ~2KB | absent | G3 — renamed from `run` (G3-F1: the CLI bundles a `run` skill; shadowing in either direction is unacceptable; precedent: code-review-verdict, verify-ac) |
 | `workflows/wave.js` | ~2KB | absent | G2 |
 | `agents/executor-{read,write,research}.md` | ~1KB ea. | absent | G2 |
 | `hooks/*` (5 shims + tmp-guard + SessionStart) | tiny | absent (old fleet's 6 hooks exist, different jobs) | G4 |
@@ -94,7 +94,7 @@ dotfiles source so both render; the old fleet stays default until M5)."
 symlink per directory, so they cannot both own a path. The collision is real and
 G1 must resolve it. §7 G1 AC-1.3 fixes the resolution: **graph files render into
 the same three directories under reserved, non-colliding names** (`executor-*`
-agents; `plan`/`run`/`bootstrap`/`retro` skills; `docket-*` hooks), not into
+agents; `plan`/`conduct`/`bootstrap`/`retro` skills; `docket-*` hooks), not into
 parallel directories. Rationale: the harness discovers skills and agents by
 directory scan of `~/.claude/skills` and `~/.claude/agents` — a
 `~/.claude/skills-graph` would render but never be invocable, which fails "both
@@ -106,6 +106,20 @@ a graph file.
 supported shape, i.e. two sources cannot merge into one symlinked directory.
 If merging is supported, G1 uses it and the naming rule becomes belt-and-braces
 rather than load-bearing. Either way the AC is unchanged.
+
+**The settings surface (operator-found post-G1, 2026-08-05).** §2.2 as first
+written covered file and hook collisions but not `~/.claude/settings.json`:
+`claude_code.rs:150` pins `agent = "team-lead"` for EVERY session in scope, and
+the harness permission/agent surface offers no opt-out value — the key can only
+be replaced by name (CLI `--agent` > local > project > user). Re-imposing the
+hub persona on every session breaks each graph and arc session unless
+overridden per repo, a silent M4 contamination hazard. Operator-ratified
+resolution: G1 REMOVES `with_agent` — fresh sessions boot plain; the team-lead
+definition still renders, so a hub session is `claude --agent team-lead` away.
+07 §2 is honored in substance (every old-fleet file renders; the persona
+becomes opt-in), and M5 absorbs the residue: its cutover note documents the
+flag fallback instead of removing the pin. E3 re-runs at G6 under the live
+activated settings (G1 deviation 4). Risk register: R11.
 
 ---
 
@@ -491,7 +505,7 @@ prefix*.
 
 ## 4. Design
 
-### 4.1 The conductor loop (`run` skill) and its engine contract
+### 4.1 The conductor loop (shipped as the `conduct` skill — G3-F1) and its engine contract
 
 [SPEC] 03 §3 gives the loop verbatim; this section fixes the exact verbs and
 flags against the shipped binary.
@@ -1045,11 +1059,129 @@ trust entry the operator doesn't recognize") becomes the only control, which
 is materially weaker. This would be a finding worth escalating before M4, not
 a silent acceptance.
 
+#### E3 — RECORDED ANSWER (G1, 2026-08-05): **PASS — ask beats allow.**
+
+The assumption holds. The one-line fix is correct and
+`.with_permission_ask("Bash(docket trust:*)")` is in place at
+`claude_code.rs`, alongside the unchanged `Bash(docket:*)` allow.
+
+[OBSERVED] **Documentary.** code.claude.com/docs/en/permissions: "Rules are
+evaluated in order: deny, then ask, then allow. The first match in that order
+determines the outcome, and **rule specificity doesn't change the order**." And
+explicitly for this case: "The same precedence applies between ask and allow: **a
+matching ask rule prompts even when a more specific allow rule also matches the
+same call**." Note the ordering is what makes this work, *not* the `ask` being
+narrower — the docs say specificity is irrelevant. A future maintainer must not
+"simplify" this by assuming the narrower rule wins on specificity.
+
+[OBSERVED] **Empirical A/B**, run headless against the rendered settings with
+`XDG_CONFIG_HOME` pointed at a scratch dir, same session config and cwd for
+both arms:
+
+| Command | Result |
+|---|---|
+| `docket next` | **executed** — reached the binary, which replied `Error: no docket database found`. That is docket's own stderr, not a permission block. |
+| `docket trust list` | **never executed** — "The command needs permission to run — it wasn't granted, so it never executed." |
+| `docket trust add --yes 'echo hi'` | **never executed** — same permission block. |
+
+In headless (`-p`) mode there is no human to answer, so an `ask` rule surfaces as
+a hard "not granted, never executed" rather than an interactive prompt; that is
+the prompt path firing. The contrast is the evidence: an identical `Bash(docket
+...)` invocation executes on the allow and is withheld on the ask.
+
+**Trust-store safety:** no invocation reached a real trust store. `~/.config/docket/`
+does not exist on this machine and was never created; the scratch
+`XDG_CONFIG_HOME` ended the run containing only an unrelated `git/ignore`. The
+`trust add` arm was blocked by the permission matcher before docket ran at all,
+which is the backstop working as designed.
+
+**Consequence:** D14's human-confirmation backstop **is now in place** as of this
+change — it was absent before it (the blanket `Bash(docket:*)` allow matched
+`docket trust add --yes` as readily as `docket next`). The fallback of narrowing
+the allow by enumerating non-trust verbs is **not needed** and should not be
+built. Re-verify at G6 against the live activated settings, since this run used
+`--settings` rather than the activated symlink.
+
 ### E4 — (companion) two FileSources into one directory
 
 Not one of the three, but blocking G1; see §2.2. **Method:** attempt it; if
 unsupported, the reserved-naming rule of §2.2 becomes load-bearing rather than
 belt-and-braces.
+
+#### E4 — RECORDED ANSWER (G1, 2026-08-05): **NEGATIVE — two artifacts cannot share one symlink target. The §2.2 naming rule is load-bearing.**
+
+[OBSERVED] `vorpal-sdk-0.4.0/src/artifact.rs:716-720` emits one line per symlink:
+`ln -s {source} {target}` — **no `-f`** — into a script that opens `set -euo
+pipefail` (`:669`). Two symlinks declared with the same target therefore run `ln
+-s` twice at one path; the second fails and **activation aborts**. Confirmed
+against real generated output, not just the SDK source: the pre-change
+`vorpal-activate-symlinks` has exactly one `ln -s` per target.
+
+Two further details worth not re-deriving:
+
+- The pre-flight guard at `:713` is `if [ -f {target} ]`, which tests for a
+  *regular file*. A pre-existing **directory or symlink** at the target is not
+  caught by it, so a duplicate-target failure surfaces from `ln` itself rather
+  than from the guard's intended error message.
+- Deactivation (`:708`) is `rm -f {target}`, so a stale symlink is cleaned
+  between activations; the failure mode is duplicate targets *within one*
+  activation, not across them.
+
+**Resolution adopted in G1 (deviation from AC-1.1's literal wording — see the
+G1 report).** Because the harness discovers agents and skills by directory scan,
+the graph fleet must land *inside* `~/.claude/{agents,hooks,skills}`, and a
+second symlink per directory is impossible. G1 therefore merges the two subtrees
+at the **artifact** level: `FileSource::with_merge_path` (`src/file.rs`) copies
+the graph subtree into the same artifact output, which is then symlinked once.
+This satisfies AC-1.1's intent (graph files reachable in the scanned
+directories) and AC-1.2 (old-fleet artifacts unchanged — with `merge_paths`
+empty the emitted script is byte-identical to the previous single-source form).
+
+Because merge is `cp -r` layered in order, a shared path **would silently
+overwrite** rather than fail. The authoritative guard against that is therefore
+emitted into the build script itself (`FileSource::with_merge_path`), so it runs
+at `vorpal build` / `just activate` — the chokepoint every render passes
+through. `tests/graph_fleet_collision.rs` is the fast local signal, deliberately
+not the last line: `cargo test` does not run at activation, so a clash
+introduced between test runs would otherwise ship unguarded.
+
+Two implementation details the guard depends on, both found by negative control
+rather than reasoning, and both easy to reintroduce:
+
+- **The walk covers directories, not just files** (`find . -mindepth 1`). `cp -r`
+  clobbers at either granularity: merging a *file* `adr` onto an existing
+  *directory* `adr/` is a real collision that a files-only walk misses entirely.
+- **Collisions are counted into a marker file, not signalled by `exit` inside the
+  loop.** `find | while read` runs the loop body in a subshell, so an `exit`
+  there kills only the subshell and the script proceeds to the very `cp` it was
+  meant to prevent. The first draft of this guard had exactly that bug: it
+  printed its error and then completed with **exit 0**. Testing the marker in the
+  parent shell is what makes the failure real. [OBSERVED] a plain `exit 1` in
+  this step script does surface as `vorpal build` exit 1, so failing in the
+  parent does fail the build.
+
+#### [OBSERVED] Vorpal caches a failed step's partial output — a re-run reports success
+
+Found while negative-controlling the guard, and worth recording because it will
+mislead anyone who tests a build failure twice.
+
+With a clash planted, the **first** `vorpal build` fails correctly: exit 1, guard
+message naming both colliding paths, no store path emitted. The **second**
+invocation, with the clash still planted and nothing else changed, returns
+**exit 0** and emits a store path.
+
+**The safety property still holds.** Inspecting that cached artifact: the
+colliding `adr/SKILL.md` is the **old-fleet original**, byte-for-byte, and the
+merged tree's own files (`bootstrap/`, `retro/`) are **absent**. The aborted
+step's partial output was cached, so the overwrite never happened — the artifact
+is *incomplete*, not *corrupted*. No wrong bytes ever reach `~/.claude`.
+
+The cost is diagnostic, not safety: a green second build can mean "this is
+fine" or "this is a cached failure." **When testing a build failure, treat only
+the first run after a source change as meaningful**, and confirm a fix by
+checking that the merged files are actually present in the output rather than by
+trusting exit 0. This is pre-existing vorpal caching behavior, not introduced by
+the guard, and is out of M3's scope to change.
 
 ---
 
@@ -1089,7 +1221,7 @@ and script present before the change is present after it, byte-identical. The
 old fleet stays default (07 §2).
 
 **AC-1.3** Graph files occupy reserved, non-colliding names in the shared
-directories: `executor-*` (agents), `plan`/`run`/`bootstrap`/`retro` (skills),
+directories: `executor-*` (agents), `plan`/`conduct`/`bootstrap`/`retro` (skills — `conduct` renamed per G3-F1),
 `docket-*` (hooks and the config dir). A mechanical check asserts zero basename
 collisions between the two subtrees and fails the build on collision, with one
 declared exemption: `guard-tmp-write-hook.sh` is the old fleet's own file,
@@ -1180,7 +1312,7 @@ request, a plan artifact, and issues with kinds/labels/scopes/`depends_on` and
 Re-planning is a fresh invocation reading the run record. Explicitly supports a
 deliberately-uncomposed later phase behind a human gate (03 §2, §10).
 
-**AC-3.2** `skills/run/SKILL.md` (~2KB): implements §4.1's loop verbatim —
+**AC-3.2** `skills/conduct/SKILL.md` (~2KB): implements §4.1's loop verbatim —
 `next` → `dispatch open` → invoke `wave` → await → back-fill usage →
 `dispatch close` → `next`. Surfaces `waiting-human` steps conversationally and
 runs the engine verb on the operator's answer (03 §6).
@@ -1388,6 +1520,18 @@ while recording that it did not. Mitigation: AC-2.7 pins the parser to the
 enumerated subset and requires loud failure outside it; AC-2.2's table exercises
 the security paths specifically. Flagged as the revision's own most dangerous
 addition.
+
+**R11 — the settings surface re-imposed team-lead on every session.** *We will
+have wished the coexistence analysis had covered rendered settings, not only
+files and hooks.* [OBSERVED] `claude_code.rs:150` `with_agent("team-lead")`; no
+opt-out value exists in the settings surface — a pinned agent can only be
+replaced by name. Found by the operator between G1 review and activation;
+missed by this TDD and its review both. Mitigation: the operator-ratified
+resolution in §2.2 (G1 removes the pin; persona becomes opt-in via
+`--agent team-lead`; M5 documents the fallback). The general lesson joins R9:
+a shared surface is anything both fleets render INTO — files, hooks, settings,
+permission rules — and the coexistence sweep must enumerate the surface list,
+not the file list.
 
 **R8 — Bootstrap's size grew past its target while nobody owned trimming.**
 *We will have wished we had assigned M2a's overage to someone.* [OBSERVED]

@@ -59,8 +59,9 @@ spec's cutline are out of scope entirely.
 # Emit
 `findings`: markdown body with one section per finding (spec section or cross-surface ·
 observed evidence · expected per spec · governing principle where one applies · evidence
-label · suggested direction), plus the findings payload — one entry per finding with
-severity from the general ladder fragment. Report accepted deviations and what worked
+label · suggested direction), plus the findings payload — one entry per finding whose
+`severity` is what the general ladder fragment's emit-time mapping yields for the rung
+you authored at. Report accepted deviations and what worked
 well alongside the defects: they tell the next reader what was examined. If you walked
 everything and found nothing, report examined-clean; an empty payload is a valid,
 meaningful result.

@@ -33,7 +33,8 @@ concrete failure — this input, this wrong output — is a Suggestion at most.
 `findings`: markdown body with one section per finding (location · what breaks · the
 triggering input or sequence · evidence label · suggested direction), listing recognized
 overrides verbatim with their locations, plus the findings payload — one entry per
-finding with severity from the general ladder fragment. Report every finding, including
+finding whose `severity` is what the general ladder fragment's emit-time mapping yields
+for the rung you authored at. Report every finding, including
 minor ones, at its honest severity. If you examined everything and found nothing, say
 which dimensions you examined and report examined-clean; an empty payload is a valid,
 meaningful result.

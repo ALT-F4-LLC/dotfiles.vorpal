@@ -38,9 +38,10 @@ you as much as the author.
 # Emit
 `findings`: markdown body with one section per finding (location · the principle it
 instances · what to remove or collapse · why the result is clearer, not merely shorter),
-plus the findings payload — one entry per finding with severity from the general ladder
-fragment. Most findings here are Suggestions; reserve higher severity for scaffolding
-that carries real maintenance or correctness cost. If you examined everything and found
+plus the findings payload — one entry per finding whose `severity` is what the general
+ladder fragment's emit-time mapping yields for the rung you authored at. Most findings
+here are Suggestions; reserve the higher rungs for scaffolding that carries real
+maintenance or correctness cost. If you examined everything and found
 nothing, report examined-clean — a clean result here is common and meaningful.
 
 # Stuck

@@ -1,0 +1,116 @@
+# ui-change — label-matched variant of standard-change (05 §2).
+# Deltas from the baseline, per 05 §2:
+#   - requires an accepted `ux-spec` artifact as input (missing => activation
+#     error; the planner must include a ux-spec-author issue). The requirement is
+#     expressed as a cross-issue `inputs` binding, which activation resolves —
+#     an unresolvable binding IS the activation refusal 05 §2 asks for, rather
+#     than a second mechanism invented here.
+#   - review fanout adds `judge-design`
+#   - appends a `design-qa` step after verify with gates `render-verify` and
+#     `copy-verify` (copy literals greppable per the copy-discipline fragment)
+
+[pipeline]
+name    = "ui-change"
+version = 1
+description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd before commit."
+
+[match]                      # exactly-one-match (06 §11.1): security outranks ui,
+                             #   and the doc/meta pipelines outrank both
+kind        = ["task", "feature", "bug", "chore"]
+labels_any  = ["ui"]
+unless_labels = [
+  "security-load-bearing", "docs-only", "investigation",
+  "spec-doc", "spec-project", "release", "retro",
+]
+
+[[step]]
+name = "implement"
+after = []
+executor = "implement"
+class = "write"
+emits = "change-summary"
+expected_cost = 1.50
+inputs = ["issue.body"]              # the accepted ux-spec reaches this step as a
+                                     #   pinned file (06 §2's operator-supplied
+                                     #   file pins); its ACs are carried verbatim
+                                     #   in the issue body by the distillation rule
+gates = ["build", "tests", "scope", "self-hygiene", "secret-scan"]
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "review"
+after = ["implement"]
+fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-design"]
+emits = "findings"
+payload = "findings@1"               # judge-boundary validation, per-judge failure
+                                     #   attribution (see standard-change's note);
+                                     #   deliberately absent on `synthesize`
+expected_cost = 0.60
+inputs = ["implement.change-summary", "issue.diff"]
+
+[[step]]
+name = "synthesize"
+after = ["review"]
+executor = "synthesize-findings"
+emits = "findings"
+expected_cost = 0.40
+inputs = ["review.*"]
+
+[[step]]
+name = "reconcile"
+after = ["synthesize"]
+action = "aggregate"
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+inputs = ["synthesize.findings"]
+payload = "findings@1"
+threshold = { "fix-loop" = "any(severity >= high)" }
+max_fix_loops = 2
+
+[[step]]
+name = "fix"
+executor = "fix"
+class = "write"
+emits = "change-summary"
+expected_cost = 1.00
+loop = true
+inputs = ["reconcile.findings", "implement.change-summary"]
+gates = ["build", "tests", "scope", "secret-scan"]
+after_loop = "review"
+
+[[step]]
+name = "verify"
+after = ["reconcile"]
+executor = "verify-ac"
+emits = "ac-report"
+payload = "ac-report@1"
+expected_cost = 0.50
+gates = [{ name = "ac-commands", pre = true }]
+inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+
+[[step]]                     # appended after verify (05 §2)
+name = "design-qa"
+after = ["verify"]
+executor = "design-qa"
+emits = "findings"
+payload = "findings@1"               # design-qa's contract declares findings@1;
+                                     #   the threshold below compares on severity
+expected_cost = 0.50
+gates = ["render-verify", "copy-verify"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+threshold = { "fix-loop" = "any(severity >= high)" }
+
+[[step]]
+name = "commit-gate"
+after = ["design-qa"]
+type = "human"
+on_fail = "fix-loop"
+
+[[step]]
+name = "commit"
+after = ["commit-gate"]
+executor = "commit-author"
+emits = "commit-message"
+expected_cost = 0.10
+gates = ["commit-msg", "commit-exec"]

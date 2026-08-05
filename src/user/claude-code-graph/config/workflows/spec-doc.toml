@@ -1,0 +1,160 @@
+# spec-doc — for issues that PRODUCE a PRD/TDD/ADR/ux-spec (05 §2).
+# Per 05 §2: "Author node by doc type -> `doc-validate` + `tdd-preflight` gates
+# -> review fanout (architecture + security when security-relevant + design for
+# ux-specs) -> reconcile -> ACCEPTANCE: TDD and ADR acceptance is a vote gate
+# (matching today's panels); PRD acceptance is a human gate (operator)."
+#
+# The author step's `executor` is the label-keyed resolution table 05 §1
+# describes: it resolves to prd-author / tdd-author / tdd-author-security /
+# adr-author / ux-spec-author by doc type and security label. Core never
+# interprets the hint (06 §11.1) — resolution is policy-side, keyed on the
+# issue's labels, which is exactly why one step covers all five authors.
+#
+# TWO acceptance steps, not one: 05 §2 splits acceptance by doc type, and a step
+# is either `type="vote"` or `type="human"` — never both (V5). Each is guarded by
+# `when` over the issue's labels, so exactly one materializes per issue and the
+# other is `skipped` (06 §11.1). That is the engine's own conditional; no
+# expression language is invented here.
+#
+# `emits` on the author step is "doc": the five author contracts emit five
+# different artifact kinds (prd | tdd | adr | ux-spec | spec), but `emits` is a
+# single required string per step (V7) and the step is one step. See the mirror
+# flag in the report.
+
+[pipeline]
+name    = "spec-doc"
+version = 1
+description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote (TDD/ADR) or operator (PRD/ux-spec)."
+
+[match]                      # Docket's issue kinds are a CLOSED set — {bug, feature,
+                             #   task, epic, chore} (internal/model/issue.go) — so a
+                             #   `spec` kind cannot exist. The doc-producing issue is
+                             #   an ordinary task carrying the `spec-doc` label.
+                             #   Engine wins over 05's prose; DKT filed.
+kind        = ["task", "feature", "chore"]
+labels_any  = ["spec-doc"]
+unless_labels = ["spec-project", "release", "retro"]
+                             # excludes only what outranks it (precedence order in
+                             #   docs-only.toml)
+
+[[step]]
+name = "author"
+after = []
+executor = "spec-doc-author"         # label-keyed resolution table (05 §1):
+                                     #   prd-author | tdd-author |
+                                     #   tdd-author-security | adr-author |
+                                     #   ux-spec-author, by doc type + security
+                                     #   label. Opaque to core.
+class = "write"
+emits = "doc"
+expected_cost = 1.20
+inputs = ["issue.body"]
+gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
+                                     # `reserved-name-check` (05 §3) belongs here:
+                                     #   prd-author must REFUSE the seven reserved
+                                     #   engineering-spec names in the shared
+                                     #   docs/spec/ output dir. It is a registry row,
+                                     #   so it wires as a named gate, not a flag.
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "review"
+after = ["author"]
+fanout = ["judge-architecture", "judge-security", "judge-design"]
+                                     # 05 §2's three lenses. The fanout width is
+                                     #   fixed at registration; per-issue relevance
+                                     #   ("security when security-relevant", "design
+                                     #   for ux-specs") is the SIBLING's business —
+                                     #   a judge with nothing to say emits an empty
+                                     #   findings array. `when` is a step-level
+                                     #   field, not a per-hint one (06 §11.1), so it
+                                     #   cannot prune individual siblings.
+emits = "findings"
+payload = "findings@1"
+expected_cost = 0.60                 # per expanded sibling
+inputs = ["author.doc", "issue.body"]
+
+[[step]]
+name = "synthesize"
+after = ["review"]
+executor = "synthesize-findings"
+emits = "findings"
+expected_cost = 0.40
+inputs = ["review.*"]
+
+[[step]]
+name = "reconcile"
+after = ["synthesize"]
+action = "aggregate"
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+inputs = ["synthesize.findings"]
+payload = "findings@1"
+threshold = { "fix-loop" = "any(severity >= high)" }
+max_fix_loops = 2
+
+[[step]]
+name = "revise"
+executor = "spec-doc-author"         # same resolution table; the revision is the
+                                     #   author's, not a separate node
+class = "write"
+emits = "doc"
+expected_cost = 0.90
+loop = true
+inputs = ["reconcile.findings", "author.doc"]
+gates = ["doc-validate", "reserved-name-check"]
+after_loop = "review"
+
+# ACCEPTANCE — three steps, because `and` is the engine's ONLY `when` connective
+# (V22/splitWhen: "a disjunction over kind/labels is expressible as two steps").
+# 05 §2 groups TDD and ADR under one vote gate; that grouping is a disjunction,
+# so it expands into two vote steps sharing one `vote_rule`. Exactly one of the
+# three holds per issue; the other two expand as `skipped`, which is terminal and
+# keeps `record`'s join resolvable (06 §2, §11.1).
+
+[[step]]                     # TDD acceptance: a vote gate (05 §2)
+name = "accept-vote-tdd"
+after = ["reconcile"]
+type = "vote"
+voters = ["judge-architecture", "judge-security", "judge-correctness"]
+vote_rule = "doc-acceptance"
+on_fail = "fix-loop"                 # a rejected design goes back to the author
+when = "labels contains doc-tdd"
+inputs = ["author.doc", "reconcile.findings"]
+
+[[step]]                     # ADR acceptance: the same vote gate (05 §2)
+name = "accept-vote-adr"
+after = ["reconcile"]
+type = "vote"
+voters = ["judge-architecture", "judge-security", "judge-correctness"]
+vote_rule = "doc-acceptance"
+on_fail = "fix-loop"
+when = "labels contains doc-adr"
+inputs = ["author.doc", "reconcile.findings"]
+
+[[step]]                     # PRD acceptance: the operator (05 §2). ux-specs fall
+                             #   here too — 05 §2 names a vote only for TDD and
+                             #   ADR, so everything else accepts by operator.
+name = "accept-human"
+after = ["reconcile"]
+type = "human"
+on_fail = "fix-loop"
+when = "labels != doc-tdd and labels != doc-adr"
+                                     # the complement of the two vote clauses,
+                                     #   written with the one connective that
+                                     #   exists; covers doc-prd and doc-ux-spec
+inputs = ["author.doc", "reconcile.findings"]
+
+[[step]]
+name = "record"
+after = ["accept-vote-tdd", "accept-vote-adr", "accept-human"]
+                                     # joins over whichever acceptance ran; the
+                                     #   `skipped` one is terminal, and a join
+                                     #   waits for terminal siblings (06 §2)
+executor = "doc-recorder"
+emits = "doc-record"                 # accepted docs are recorded as Docket docs
+                                     #   (DOC-N) and the referencing issues carry
+                                     #   their ACs verbatim — the distillation rule
+expected_cost = 0.20
+inputs = ["author.doc"]
+gates = ["citation-check"]

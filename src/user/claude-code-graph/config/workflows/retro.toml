@@ -1,0 +1,88 @@
+# retro — the evolve-* replacement (05 §6).
+# Per 05 §6: "`retro-analyst` reads the run ledger and event log across recent
+# runs (attempt spikes, gate-failure clusters, held-finding rates, cost outliers,
+# model requested-vs-resolved drift) -> emits a proposals artifact -> planner
+# turns accepted proposals into issues (contract edits, fragment edits,
+# pipeline/policy changes, gate additions) -> those issues flow through
+# `standard-change`/`spec-doc` pipelines like any change."
+#
+# The pipeline ENDS at operator acceptance of the proposals. What follows —
+# "planner turns accepted proposals into issues" — is a planner invocation
+# (03 §2), not a step: the planner is an in-session skill, and the issues it
+# creates bind to their OWN pipelines. Modelling that tail here would put one
+# pipeline's steps inside another's run.
+#
+# `retro-analyst` reads the ledger through the engine's own read verbs; no gate
+# is declared because there is nothing to check that the engine has not already
+# recorded (02 §1.5: gate results are recorded facts).
+
+[pipeline]
+name    = "retro"
+version = 1
+description = "Mine recent run evidence into config-change proposals for operator acceptance."
+
+[match]                      # closed kind set (see spec-doc's note): `retro` is a
+                             #   label, not a kind. Engine wins over 05; DKT filed.
+kind        = ["task", "chore"]
+labels_any  = ["retro"]
+
+[[step]]
+name = "analyze"
+after = []
+executor = "retro-analyst"
+emits = "proposals"
+expected_cost = 1.00
+inputs = ["issue.body"]
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
+name = "review"
+after = ["analyze"]
+fanout = ["judge-correctness", "judge-simplicity"]
+                                     # the proposals are reviewed like any other
+                                     #   judgment: are they supported by the
+                                     #   evidence cited, and do they add machinery
+                                     #   the system does not need
+emits = "findings"
+payload = "findings@1"
+expected_cost = 0.50                 # per expanded sibling
+inputs = ["analyze.proposals"]
+
+[[step]]
+name = "synthesize"
+after = ["review"]
+executor = "synthesize-findings"
+emits = "findings"
+expected_cost = 0.30
+inputs = ["review.*"]
+
+[[step]]
+name = "reconcile"
+after = ["synthesize"]
+action = "aggregate"
+params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+inputs = ["synthesize.findings"]
+payload = "findings@1"
+threshold = { "fix-loop" = "any(severity >= high)" }
+max_fix_loops = 2
+
+[[step]]
+name = "revise"
+executor = "retro-analyst"
+emits = "proposals"
+expected_cost = 0.60
+loop = true
+inputs = ["reconcile.findings", "analyze.proposals"]
+after_loop = "review"
+
+[[step]]
+name = "accept"
+after = ["reconcile"]
+type = "human"                       # the operator accepts proposals in
+                                     #   conversation (T9); accepted ones become
+                                     #   issues via a fresh planner invocation
+on_fail = "skip"                     # V13 bars `waiting-human`; rejected proposals
+                                     #   are simply not adopted — the run's evidence
+                                     #   stays recorded either way
+inputs = ["analyze.proposals", "reconcile.findings"]

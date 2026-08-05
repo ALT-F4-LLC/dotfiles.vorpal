@@ -149,6 +149,17 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // Graph workflows (M4 finding F-M4-1): wave.js must be reachable by the
+        // Workflow tool, which loads saved workflows from ~/.claude/workflows/.
+        // G1 wired agents/hooks/skills; this dir was created by G2 and never wired.
+        let graph_workflows = FileSource::new(
+            &format!("{}-claude-code-graph-workflows", self.name),
+            "src/user/claude-code-graph/workflows",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+
         // No `.with_agent(...)` pin here, deliberately. The settings `agent` key applies to EVERY
         // session in scope and the harness offers no opt-out value — it can only be replaced by
         // name (CLI `--agent` > local > project > user). Pinning `team-lead` therefore re-imposed
@@ -467,6 +478,10 @@ impl ClaudeCode {
                 get_env_key(&graph_config),
                 "${HOME}/.claude/docket-config".to_string(),
             ),
+            (
+                get_env_key(&graph_workflows),
+                "${HOME}/.claude/workflows".to_string(),
+            ),
             (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
             (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
             (
@@ -491,6 +506,7 @@ impl ClaudeCode {
         let artifacts = vec![
             agents,
             graph_config,
+            graph_workflows,
             hooks,
             settings,
             scripts,

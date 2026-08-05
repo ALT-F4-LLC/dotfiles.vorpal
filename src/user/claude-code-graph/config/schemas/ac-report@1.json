@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ac-report@1",
+  "description": "The verify-ac payload (02 §6): one element per acceptance criterion, each a per-AC judgment with its evidence. Routing is computed over `status` by the verify step's thresholds — `any(status == unmet)` and `any(status == unverifiable)` (05 §1) — which are equality predicates and need no declared order; `status` is therefore an ordinary enum, deliberately not an `ordered_enum`, because these three values form no ladder and inventing one would let `>=` compile against a comparison nobody defined.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "The acceptance criterion's identifier, matching the issue body's AC section.",
+        "type": "string",
+        "minLength": 1
+      },
+      "status": {
+        "description": "The per-AC judgment (02 §6). `unverifiable` covers both an AC whose fenced command fell outside the operator's trust allowlist — reported, never executed (06 §4) — and one that is runtime-only or too defective in its wording to judge.",
+        "type": "string",
+        "enum": ["met", "unmet", "unverifiable"]
+      },
+      "evidence": {
+        "description": "What a skeptic could re-run or re-read: the recorded pre-gate command result, or the file:line trace through the diff.",
+        "type": "string"
+      },
+      "classification": {
+        "description": "How the AC was verified: `command` (the engine ran it as a pre-gate at claim and the result arrived in the context bundle), `static` (traced through the diff), or `runtime` (observable only by running the system, hence never verified statically).",
+        "type": "string",
+        "enum": ["command", "static", "runtime"]
+      }
+    },
+    "required": ["id", "status"],
+    "additionalProperties": true
+  }
+}

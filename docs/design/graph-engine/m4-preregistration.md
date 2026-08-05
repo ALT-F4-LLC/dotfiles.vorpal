@@ -19,11 +19,20 @@ Four real engine fixes, standard-change shape, in the docket repo itself
 
 None is test-infra-labeled; none is doc-typed (F-W1/DKT-73 exclusions
 honored by construction). The planner adopts these tracker entries into run
-issues with verbatim ACs.
+issues with verbatim ACs. Realized by the recorded plan (RUN-3, DOC-1,
+2026-08-05): DKT-75 (one fix at GuardStop's shared site, closes DKT-66 +
+DKT-67; the blocking set is exactly claimed/running steps + open dispatch —
+`gated` excluded by operator ruling, grounded in the S4 crash matrix and lazy
+saga resume), DKT-76 (the reap half of guard spawn generalizes over all runs
+via guardRunScope; the row half's --run requirement stands per the code's own
+documented reasoning, closes DKT-65), DKT-69 (retitled; DKT-68 landed). All
+three bind standard-change; no depends_on edges; parallel.
 
 ## 2. Bands (halt-and-ask past either)
 
-- Cost: ~$50 total.
+- Cost: ~$50 total. Enforced as `docket run budget RUN-3 --set 30`
+  (expected-cost units with fix-loop headroom; the unit↔dollar mapping is the
+  first retro's to calibrate).
 - Wall-clock: one afternoon of elapsed attention (~4h), human gates dominate.
 
 ## 3. Interventions — this list and nothing else
@@ -56,8 +65,10 @@ the cause, no rerun until the cause is dispositioned.
 - engine commit: 7e705478b8a1a5f4018e823407cc6e2047f6bc9f (binary installed
   from exactly this before start; executors editing engine SOURCE do not
   affect the RUNNING binary)
-- dotfiles HEAD at run start: ________ (fill on run day, after the M3-close
-  commits; corpus tree expected unchanged at caddfd88…)
+- dotfiles HEAD at run start: 3786d9ef598d6291887890a46e30c395083ee448
+- docket repo at run start: b8000d4573f6b3861ae902f07f87b4ad2b8bf424 (engine
+  SOURCE unchanged since the pinned 7e70547 — the delta is bootstrap instance
+  config and tracker commits; the installed binary is from 7e70547)
 - wave.js sha256 0c3aa1f8…a66380cd · policy.expected.json 2ca4a8bb…2fcce597
 - TTLs: lease.ttl.default 15m · lease.ttl.write 45m
 - vote rules: security-acceptance 0.67 · doc-acceptance 0.60
@@ -78,4 +89,12 @@ old-fleet A/B, no model self-metrics.
 AC-integrity query untested against real transitions until this run ·
 liveness is TTL-only (heartbeat dropped, E1/D11) · attribution rides the
 bootstrap prompt naming its step id · spec-doc packets thin (DKT-73,
-irrelevant to this run's shape).
+irrelevant to this run's shape). · bootstrap gate adaptation (DKT-74): implement/fix
+run under [build, tests, scope] only (self-hygiene and secret-scan unported —
+acceptable for engine-internal Go with no credential surface, restored
+post-M4); verify has no ac-commands pre-gate (untraceable ACs degrade to
+unverifiable → waiting-human, an operator read, never a false pass); the
+commit step has no commit-msg/commit-exec gates — the operator executes each
+approved commit manually after the commit-gate approval · ui-change and
+design-qa cut from this repo's instance config by citation (the shared corpus
+keeps both).

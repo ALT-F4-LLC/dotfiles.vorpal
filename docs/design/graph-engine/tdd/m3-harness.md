@@ -842,6 +842,17 @@ one-to-one.
 | tmp-write guard | `guard-tmp-write-hook.sh` | PreToolUse: Bash | **kept as-is**, old-fleet file, unprefixed and unmoved (03 §5) |
 | SessionStart | `docket-session-start-hook.sh` | SessionStart | `docket run status --active --json` injection |
 
+**As-built (G4, 2026-08-05):** `guard stop` and `guard record` take no `--run`
+— the flagless forms are the wired shapes (binary is authority over this
+table). `heartbeat` was never wired: E1 FAILED (shared world-readable
+`$TMPDIR`) and independently `step heartbeat --from-marker` does not exist —
+D11 fallback applied, markers cut, drop recorded in
+`docket-heartbeat-hook.sh.dropped`. CONSEQUENCE: liveness is TTL-only, so
+`lease_ttl_s` sizing is load-bearing — a write-class TTL below worst-case step
+duration produces mid-work reaps and ack loops. Bootstrap proposes sized TTLs
+(G5); M4 pre-registration records the chosen values. commit-guard retains the
+old parser per 03 §5 own carve-out (byte-identical, decision-only delta).
+
 The kept tmp-guard is deliberately exempt from the prefix: it is the old fleet's
 own file, shared rather than copied, and renaming it would edit the old fleet —
 which M3 does not do (§9). AC-1.3's collision check must therefore treat it as
@@ -983,6 +994,13 @@ It reads the ledger; M3 gives it the vocabulary. No mechanism change.
 ---
 
 ## 6. The three environment checks (acceptance spine)
+
+**Recorded results (G6 compares against these):** E1 FAIL (2026-08-05, G4:
+shared `$TMPDIR=/tmp/claude-501`, world-readable; D11 fallback applied) · E2
+UNRUN (first real run scheduled G5 — G2 stubbed `agent()`) · E3 PASS
+(2026-08-05, G1: ask-beats-allow, D14 backstop in place) · E4 NEGATIVE
+(2026-08-05, G1: one symlink target per artifact; artifact-level merge is the
+remedy).
 
 [SPEC] 09 §M3 Done, verbatim: "the **three environment checks recorded**
 (private $TMPDIR per subagent; wave-journal per-agent usage; permission config =

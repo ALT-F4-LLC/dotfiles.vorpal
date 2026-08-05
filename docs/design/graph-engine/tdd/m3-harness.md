@@ -997,7 +997,9 @@ It reads the ledger; M3 gives it the vocabulary. No mechanism change.
 
 **Recorded results (G6 compares against these):** E1 FAIL (2026-08-05, G4:
 shared `$TMPDIR=/tmp/claude-501`, world-readable; D11 fallback applied) · E2
-UNRUN (first real run scheduled G5 — G2 stubbed `agent()`) · E3 PASS
+**PASS** (2026-08-05, G5: first real run, two live `agent()` spawns at bronze;
+per-agent usage present and complete, attributable to step ids — but via an
+`agentId` join, not via `label`, see the recorded answer) · E3 PASS
 (2026-08-05, G1: ask-beats-allow, D14 backstop in place) · E4 NEGATIVE
 (2026-08-05, G1: one symlink target per artifact; artifact-level merge is the
 remedy).
@@ -1046,6 +1048,64 @@ engine's budget floor carry budgets. [SPEC] engine-spec §2: budgets are enforce
 against `max(reported, floor)`, floor = Σ claimed steps' `expected_cost` — so
 "the cap holds with reporting absent" by design. The cost is precision in 08
 §2's cost-per-run query, not safety.
+
+#### E2 — RECORDED ANSWER (G5, 2026-08-05): **PASS — usage is present, complete, and attributable to step ids.**
+
+**Method.** A toy 2-step wave with **real `agent()` spawns** (G2 stubbed them;
+this is the first live run). Routing came from wave.js's *shipped* parser and
+resolver — its pure region was evaluated verbatim rather than reimplemented — so
+the spawns were routed by the same code a production wave uses. Two bronze rows
+(`commit-author`, `fix`), trivial prompts ("Reply with exactly the word OK"),
+sandboxed `XDG_CONFIG_HOME`. Both agents returned `OK`; both resolved to
+`sonnet`/`medium`/`executor-write`, as bronze should.
+
+**[OBSERVED] Per-agent usage is present and complete**, one record per spawn:
+
+```json
+{"input_tokens":2,"cache_creation_input_tokens":10194,"cache_read_input_tokens":0,
+ "output_tokens":4,"cache_creation":{"ephemeral_5m_input_tokens":10194,
+ "ephemeral_1h_input_tokens":0},"service_tier":"standard","speed":"standard"}
+```
+
+**[OBSERVED] It is attributable to step ids — but NOT by `label`.** This is the
+finding worth carrying forward, because §4.2 assumed the mechanism. The journal
+directory holds three kinds of file:
+
+| File | Carries | Usage? | Step id? |
+|---|---|---|---|
+| `journal.jsonl` | `started`/`result` lines with `agentId` | **no** | **no** |
+| `agent-<id>.meta.json` | `{agentType, spawnDepth, model}` | no | no |
+| `agent-<id>.jsonl` | the agent's own transcript | **yes** | yes, in the prompt |
+
+`grep -c 'E2-STEP' journal.jsonl` → **0**. The `label` passed to `agent()` is not
+persisted anywhere in the journal. Each `agent-<id>.jsonl` contains its step id
+exactly once, in the first `user` message — i.e. **because the bootstrap prompt
+names the step**, not because the harness recorded a label:
+
+```json
+{"agentId":"a5bb271c25cac1db4","type":"user","message":{"role":"user",
+ "content":"Reply with exactly the word OK and nothing else. Your step id is E2-STEP-A."}}
+```
+
+Attribution therefore runs `agentId` → transcript → usage, with the step id read
+out of the prompt. Verified unambiguous: `E2-STEP-A` appears in exactly one
+transcript and `E2-STEP-B` in the other, one step per agent, no cross-talk.
+
+**Consequence, and why this still passes.** 03 §3's requirement is that the
+journal expose usage attributable to each `agent()` call, and it does. But the
+attribution carrier is the **prompt**, which the harness already controls
+(§4.4 puts the step id in the bootstrap prompt for its own reasons), rather than
+the `label`. Two things follow: `label` = step id remains correct and worth
+keeping — it is what makes `/workflows` and the progress tree legible — but
+**nothing may depend on reading it back**, and the bootstrap prompt naming its
+step id becomes load-bearing for cost attribution rather than merely helpful.
+Recorded in the `conduct` skill so back-fill reads the right files.
+
+**AC-3.4 consequence:** E2 did **not** fail, so `--accept-missing-usage` stays
+locked. The conduct skill's scheduled one-paragraph revision is therefore
+**untaken** — the section is updated only to replace "E2 has no recorded result"
+with the recorded pass, which keeps the flag locked on evidence rather than on
+absence of evidence.
 
 ### E3 — permission config matches D14's assumption
 

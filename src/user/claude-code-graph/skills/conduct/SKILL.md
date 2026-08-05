@@ -79,6 +79,24 @@ docket dispatch close --run $RUN
 Back-fill per-spawn usage from the wave journal, then close. Surface any
 `waiting-human` steps (below), then go back to step 1.
 
+**Where the numbers actually are** (E2, measured in G5). The journal directory
+holds three kinds of file, and only one carries usage:
+
+- `journal.jsonl` — one `started` and one `result` line per agent, carrying
+  `agentId` and the return value. **No usage, and no step id**: the `label` you
+  passed to `agent()` is not persisted here.
+- `agent-<agentId>.meta.json` — `{agentType, spawnDepth, model}`. Confirms the
+  archetype and model actually used; again no usage, no step id.
+- `agent-<agentId>.jsonl` — the agent's own transcript. **This is where usage
+  lives**, on the assistant message: `input_tokens`, `output_tokens`,
+  `cache_creation_input_tokens`, `cache_read_input_tokens`.
+
+So attribution is a JOIN on `agentId`, not a lookup by step id. Read each
+`agent-<id>.jsonl` for its usage, and map that `agentId` back to a step through
+the step id carried in the agent's first `user` message — the bootstrap prompt
+names the step, which is what makes the mapping possible at all. Do not expect a
+`label` field; it is not there.
+
 **If `close` refuses, that is the system working.** It refuses on discrepancies
 — a step claimed but never recorded, or a finished step with no usage row.
 Report the refusal to the operator with what it said. Do not route around it.
@@ -104,8 +122,11 @@ not a yes. Only an answer to this question is a yes.
 
 **`--accept-missing-usage`.** Do not pass it. It closes over a real discrepancy
 and records the acceptance, and it is authorized only when environment check E2
-(wave-journal per-agent usage) has been recorded as failing. **E2 has no
-recorded result**, so no path through this skill passes this flag today.
+(wave-journal per-agent usage) has been recorded as failing. **E2 was run for
+real in G5 and PASSED** — per-agent usage is present and complete in the wave
+journal, and each agent is attributable to its step id. So the flag stays
+locked, now on evidence rather than on the absence of it: no path through this
+skill passes it.
 
 If usage rows are missing, that is a discrepancy and it should stall loudly.
 Report it. If it turns out E2 is the cause, that is a finding to record against

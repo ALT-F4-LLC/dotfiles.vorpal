@@ -146,8 +146,16 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // No `.with_agent(...)` pin here, deliberately. The settings `agent` key applies to EVERY
+        // session in scope and the harness offers no opt-out value — it can only be replaced by
+        // name (CLI `--agent` > local > project > user). Pinning `team-lead` therefore re-imposed
+        // the hub persona on graph and arc sessions, which is an M4 contamination hazard
+        // (graph-engine TDD §2.2 "settings surface", risk R11; operator-ratified).
+        //
+        // Fresh sessions now boot plain. The team-lead definition still renders, so a hub session
+        // stays one flag away: `claude --agent team-lead`. M5's cutover note owns documenting that
+        // fallback.
         let settings_builder = ClaudeCodeSettings::new(&self.name, self.systems.clone())
-            .with_agent("team-lead")
             .with_always_thinking_enabled(false)
             .with_attribution_commit("")
             .with_attribution_pr("")

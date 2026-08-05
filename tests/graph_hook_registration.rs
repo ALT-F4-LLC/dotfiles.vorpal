@@ -158,6 +158,28 @@ fn teams_runtime_hooks_stay_registered_for_the_old_fleet() {
     );
 }
 
+/// DKT-63 residue. The settings `agent` key applies to EVERY session in scope and the harness
+/// offers no opt-out value, so pinning `team-lead` re-imposes the hub persona on graph and arc
+/// sessions (TDD §2.2 risk R11). Tests the CALL, not any mention: `claude_code.rs` explains the
+/// deliberate omission in a comment naming `.with_agent(...)`, and that comment must not trip this.
+#[test]
+fn no_agent_pin_is_reintroduced_in_the_settings_builder() {
+    let source = claude_code_rs();
+
+    let called = source
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .any(|line| line.contains(".with_agent("));
+
+    assert!(
+        !called,
+        "`.with_agent(...)` is called in claude_code.rs. The settings `agent` key has no opt-out \
+         value and applies to every session in scope, so a pin re-imposes that persona on graph \
+         and arc sessions — the M4 contamination hazard DKT-63 removed. A hub session stays one \
+         flag away: `claude --agent team-lead`."
+    );
+}
+
 #[test]
 fn both_stop_hooks_are_registered_for_coexistence() {
     let source = claude_code_rs();

@@ -168,55 +168,6 @@ impl ClaudeCode {
             .with_feedback_survey_rate(0.0)
             .with_hook(
                 "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/guard-no-commit-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "PreToolUse",
-                Some("Bash"),
-                "bash ~/.claude/hooks/guard-tmp-write-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "TaskCompleted",
-                None,
-                "bash ~/.claude/hooks/task-completed-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "TeammateIdle",
-                None,
-                "bash ~/.claude/hooks/teammate-idle-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "SubagentStop",
-                None,
-                "bash ~/.claude/hooks/subagent-report-hook.sh",
-                "command",
-            )
-            .with_hook(
-                "Stop",
-                None,
-                "bash ~/.claude/hooks/stop-guard-hook.sh",
-                "command",
-            )
-            // Graph fleet hooks (M3/G4, TDD §4.5). Each is a shim over an engine guard verb; the
-            // predicates live in the engine. All are global to the session tree — per-executor
-            // scoping comes from engine state, never from hook configuration (03 §5) — so each one
-            // no-ops when no active run exists, including in the operator's own sessions and the
-            // old fleet's.
-            //
-            // BOTH Stop hooks stay registered, deliberately (AC-4.7). `stop-guard-hook.sh` above
-            // serves the old fleet and is inert in a graph session: both of its dimensions gate on
-            // a per-session team config that a graph session does not have (verified live — a
-            // graph session with pending engine work got `{}`/exit 0 from it). Deleting it is M5's
-            // one dotfiles change, not M3's (§9).
-            //
-            // `heartbeat` is absent by decision, not omission — see the FileSource comment above.
-            .with_hook(
-                "PreToolUse",
                 Some("Workflow|Agent"),
                 "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
                 "command",

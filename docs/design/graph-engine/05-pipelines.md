@@ -198,7 +198,7 @@ current script corpus (07 maps each):
 | `ac-commands` | ac_check.sh (execute the literal ```` ```ac ````-fenced commands from issue bodies, 02 §6) |
 | `red-green` | red_green_verify.sh (fail-first proof, on tdd-labeled issues) |
 | `doc-validate` | doc_validate.py per type; next_doc_number allocation |
-| `reserved-name-check` | doc filenames vs the seven reserved engineering-spec names (init-specs manifest is the authority); spec-author claims them, prd-author refuses them (shared docs/spec/ output dir) |
+| `reserved-name-check` | doc filenames vs the seven reserved engineering-spec names (`contracts/spec-author.md` §"The reserved seven" is the authority — moved there when the init-specs skill was retired into bootstrap §0); spec-author claims them, prd-author refuses them (shared docs/spec/ output dir) |
 | `citation-check` | check_citations.py / xref_check.py |
 | `tdd-preflight` | tdd_preflight.sh |
 | `render-verify`, `copy-verify` | render_verify.sh, copy_verify.sh |

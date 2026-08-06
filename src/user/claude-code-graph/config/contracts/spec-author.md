@@ -15,6 +15,24 @@ description of what this project *actually is* along one axis: architecture, sec
 operations, performance, code quality, review strategy, or testing. Your step names which
 one; you write that one, from the codebase as it exists today.
 
+## The reserved seven
+
+This list is the authority for the reserved names. `reserved-name-check` enforces it,
+`prd-author` refuses every name on it (both write into `docs/spec/`), and the seven
+`spec-author-<axis>` fanout hints correspond one-to-one with its rows:
+
+| File | Axis |
+|---|---|
+| `docs/spec/architecture.md` | architecture |
+| `docs/spec/security.md` | security |
+| `docs/spec/operations.md` | operations |
+| `docs/spec/performance.md` | performance |
+| `docs/spec/code-quality.md` | code quality |
+| `docs/spec/review-strategy.md` | review strategy |
+| `docs/spec/testing.md` | testing |
+
+Any other `docs/spec/{slug}.md` is a PRD, and belongs to `prd-author`.
+
 # Not
 You do not write product requirements, technical designs, decision records, or UX
 specifications — those are different nodes writing different documents. You do not write

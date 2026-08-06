@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Draft a complete .docket/config/ for a repo that has none — mine the repo, adapt a shipped template, propose trust entries, and surface the whole binding for approval before the first run. Use at project start, or when `docket run activate` reports no workflow matches an issue.
+description: Draft a complete .docket/config/ for a repo that has none — seed the seven project specs, mine the repo, adapt a shipped template, propose trust entries, and surface the whole binding for approval before the first run. Use at project start, or when `docket run activate` reports no workflow matches an issue. Also the way to bootstrap docs/spec/ on a repo with no engine running yet ("create specs", "generate project specs").
 ---
 
 # bootstrap
@@ -16,6 +16,55 @@ Two rules you must not fight:
   hand freezes a `name@version` before the human has seen it.
 - **Never add a trust entry before the human approves it.** You propose; they
   say yes; then you run `trust add --yes`.
+
+## 0. Seed the specs
+
+§2 asks you to mine this repo and §3 refuses any file you cannot cite. The seven
+engineering specs are what make those citations cheap and honest — a `testing.md`
+that says "no tests exist" decides, on its own, whether you keep a workflow with a
+`tests` gate. So they are an *input* to mining, and they are written first.
+
+Skip this section when `docs/spec/` already holds the seven. Re-authoring them is
+the `spec-project` pipeline's job, not yours (§0's closing note).
+
+**The contract is the authority.** Read `~/.claude/docket-config/contracts/spec-author.md`
+before spawning anything: it defines the seven axes, what each one explores, and the
+rigorous-honesty rule that governs all of them. Do not restate its guidance here or
+paraphrase it into a brief — hand the file's text to each author and let it speak.
+The gap section is where a spec earns its keep, and an invented capability is the
+failure mode that outlives the run.
+
+Spawn seven `executor-write` agents in ONE message so they author concurrently, one
+axis each:
+
+```
+Agent(subagent_type="executor-write", name="spec-author-<axis>", prompt=...)
+```
+
+for `architecture`, `security`, `operations`, `performance`, `code-quality`,
+`review-strategy`, `testing` — the same seven hint names `spec-project.toml` fans
+out over, so a later graph run re-authors the same files under the same identities.
+
+Each agent's prompt carries the verbatim text of `contracts/spec-author.md`, its one
+axis, today's date (`date +%Y-%m-%d`), the project name
+(`basename $(git rev-parse --git-common-dir) | sed 's/\.git$//'` — worktree-safe),
+and its output path `docs/spec/<axis>.md`. Tell it plainly: write only that file,
+never a name outside the seven, and skim siblings already on disk to avoid overlap
+without ever blocking on one.
+
+These are leaf agents. They must not spawn, form a team, or call `Skill()`.
+
+**No engine is running yet, and that is the point.** There is no `.docket/` to claim
+against, no lease, no gate — which is exactly why this section exists rather than
+deferring to `spec-project`. That pipeline needs `.docket/config/` (§1) and an
+activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
+what breaks that circle.
+
+Verify before moving on: seven files exist, each with frontmatter carrying today's
+date, and each ending in its gaps section. A missing or dateless file means its author
+stalled — respawn that one axis. Say plainly in §5 that these specs are seeded rather
+than gate-validated: `doc-validate` and `reserved-name-check` run under `spec-project`,
+not here, so their structural guarantees do not apply yet.
 
 ## 1. Start from the corpus
 
@@ -57,6 +106,19 @@ adapting** — see §3.
 ## 2. Mine the repo
 
 Read, don't guess. Every adaptation in §3 cites something you found:
+
+**Start with `docs/spec/`** — §0 wrote it, or it was already there, and it is the
+densest source you have. `testing.md` tells you whether a `tests` gate has anything
+to gate and what the real pyramid is; `operations.md` names the CI jobs that gate
+merges today; `code-quality.md` names the linters and formatters a `self-hygiene`
+gate would run; `architecture.md`'s module boundaries are where `scope` globs come
+from; `review-strategy.md` says which review dimensions this repo actually warrants,
+which is the fanout shape of your judge steps. A spec's gaps section is equally
+load-bearing: "no CI exists" deletes a workflow you would otherwise have kept.
+
+Treat the specs as a map, not as testimony. They point at the file; §3 still demands
+you cite the file. A spec that claims a `make check` target is a reason to open the
+`Makefile`, never a substitute for it.
 
 Build files (`Makefile`, `justfile`, `package.json`, `Cargo.toml`, `*.nix`) and
 CI config give you the real check command — the one a contributor actually

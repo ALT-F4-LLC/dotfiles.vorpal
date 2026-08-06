@@ -34,7 +34,18 @@ that this file lacks gets added before disposition.
   never the tree, yet inherits its issue's tree scope and lost a claim race
   to another issue's judges over files it would never open. The fix shape
   includes per-step scope exemption for artifact-only steps, not only
-  read-read coexistence.
+  read-read coexistence. SECOND REFINEMENT (wave 6): claim races have no
+  fairness — DKT-76 review fanout is 0-for-5 on claims, starved by whatever
+  overlapping cluster spawns alongside it. The E-5 fix shape should include
+  ordering (e.g. oldest-ready-first subsets), not only disjointness.
+- E-12 (COMPOSITE, run-ending): builtin action steps are driven ONLY from
+  next (driveActionSteps, next.go:205), which runs after
+  refuseIfUnreconciledTx (next.go:137) returns early — so gap E-4's
+  permanent D2 refusal starves every action step forever. RUN-3 wedged at
+  DKT-75's reconcile with attempt 0. No verb, adaptation, or ordering
+  reaches it; the pre-registration's halt-with-cause rule applies. Fix
+  shape: drive actions before (or independent of) the discrepancy refusal,
+  and/or fix E-4's acceptance semantics.
 - E-7 (pre-existing, surfaced): TestNextHumanTableUnchanged flakes on
   relative-timestamp rendering ("1 second ago" vs "now") — pin the clock.
 - E-8 (pre-existing, judge-proven wave 4): attempt DOUBLE-COUNT — ClaimStep
@@ -86,6 +97,15 @@ drift) and DKT-70 (packet composition — see §5).
   after DISPATCH-5.
 - H-8: the wave skill's invoke hint advertises policyPath; the script reads
   {rows, policyText} and can read no files. Cost failure #1.
+- H-11 (operator-designed, wave-6 observation): STAGED WAVES — wave.js
+  currently spawns all rows in one parallel blast (one phase). Using data
+  rows already carry (class, issue), it can stage: serial write rows first
+  (each awaited), then read rows grouped per issue (parallel within, awaited
+  between) — eliminating every conflict class this run exhibited without
+  filtering, scope data, or engine change. phase() labels make the stages
+  visible in /workflows. Residual races (cross-run holders, mid-wave state
+  drift) remain the engine fix E-5/E-6 target; this is the interim that
+  makes RUN-4 cheap. Lands in the dotfiles wave.js batch.
 - H-9: conduct-skill edits owed: open-first loop (next is D2-wedged for any
   real run until E-4 resolves), back-fill-before-close ordering, the
   scriptPath rule, stop-opening-empty-dispatches guidance.
@@ -130,6 +150,18 @@ drift) and DKT-70 (packet composition — see §5).
   reviewed 2026-08-03 decision; SKILL.md now contradicts the TDD. Routed:
   wave-6 reconcile -> fix loop with judge findings as inputs (the designed
   reopen).
+- P-12 (wave 6, DKT-76's four judges): doc-comment misattached to
+  spawnReapVerdictAllRuns (spec text G5(b)/G9 now documents the wrong
+  function; parser-confirmed); the all-runs denial embeds a remedy
+  (guard spawn --ack-reap <seq>) that the same code refuses without --run —
+  following the error verbatim yields VALIDATION_ERROR, on the hook-facing
+  path DKT-76 exists for; refusal text claims fan-out risk that
+  UNIQUE(reaped_seq) makes impossible (right code, wrong reason). Flows to
+  DKT-76's synthesize/reconcile — which E-12 now blocks; carries to RUN-4.
+- P-13 (conduct item 25): an action-kind row was handed to the wave once;
+  wave refused correctly but misdiagnosed it as policy drift — wave.js
+  message fix joins the dotfiles batch; conduct routes executor rows only
+  (ratified).
 - P-11: item 23 RECURRED (second judge probe-file tree write, self-reported,
   cleaned, git-verified) — the sanctioned scratch path for read-class judges
   rises from nice-to-have to required.

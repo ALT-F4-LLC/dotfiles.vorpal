@@ -52,6 +52,11 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cargo/git",
     "~/.cargo/registry",
     "~/Library/Caches/pip",
+    // Go's build cache. Without it any sandboxed `go build`/`go test` — including
+    // docket gate children, which inherit the sandbox — fails on cache writes and
+    // reports the environmental denial as a compile failure (observed on RUN-2's
+    // build/tests/genericity gates, 2026-08-06).
+    "~/Library/Caches/go-build",
 ];
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 

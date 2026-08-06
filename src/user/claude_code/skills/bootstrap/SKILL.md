@@ -314,8 +314,9 @@ policy the operator owns.
 
 ### 4c. Propose write-class lease TTLs
 
-There is **no heartbeat**. Liveness is TTL-only, so the lease TTL is the entire
-mechanism keeping a working executor's claim alive:
+A heartbeat verb exists (`docket step heartbeat`, token-gated) but **no
+executor calls it**, so in practice liveness is TTL-only and the lease TTL is
+the entire mechanism keeping a working executor's claim alive:
 
 ```bash
 docket config get lease.ttl.default          # ships as 15m

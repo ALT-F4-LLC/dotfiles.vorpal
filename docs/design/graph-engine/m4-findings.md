@@ -14,6 +14,11 @@ that this file lacks gets added before disposition.
   measured usage is stranded journal-side; ledger usage stays null; spend
   tracks declared expected_cost only (the budget FLOOR is the enforcement by
   design — precision, not safety, is what degrades).
+  FIX DESIGNED (2026-08-06): usage-backfill-wedge.md approved — `docket
+  dispatch backfill-usage` (triples or --from-json), source free-text
+  defaulting "backfilled", one transaction, no schema change (v10's source
+  column anticipated exactly this).
+  LANDED (2026-08-06, commit 2cb3127, DKT-77).
 - E-4: `--accept-missing-usage` cannot clear D2. The probe is computed-never-
   stored from step status + usage_ledger and never reads close_reason
   (dispatch.go:448-505 vs :640). Acceptance lets the close succeed — its real
@@ -21,6 +26,12 @@ that this file lacks gets added before disposition.
   usage; each later close re-accepts the ENTIRE set (audit noise grows one
   per completed step). Also: the D2 refusal names the instance (implement@0),
   not the step id — ambiguous with same-named instances across issues.
+  ADJUDICATED (2026-08-06, wedge TDD §2(A)): working as designed —
+  acceptance's contract is the close, not the probe; the missing state was
+  usage, and the back-fill verb supplies it. Step-scoped acceptance REJECTED
+  (it makes the ledger lie by design). The instance-vs-step-id message
+  ambiguity is carried by E-13's round. The verb landed (2cb3127);
+  the acceptance path is untouched per wedge §4.4.
 - E-5: ready sets are offered mutually-conflicting. Readiness checks scope
   against claimed/running only, never ready-vs-ready; dispatch rows carry no
   scope field, so the harness cannot filter. Cost: N-1 agent boots per
@@ -46,22 +57,54 @@ that this file lacks gets added before disposition.
   reaches it; the pre-registration's halt-with-cause rule applies. Fix
   shape: drive actions before (or independent of) the discrepancy refusal,
   and/or fix E-4's acceptance semantics.
+  FIX DESIGNED (2026-08-06): the back-fill verb (usage-backfill-wedge.md)
+  retires the only discrepancy class that can stand while an action step is
+  ready — back-fill quiets D2, next stops refusing, actions drive. The
+  drive-before-refusal ordering half was REJECTED as designed at review:
+  driveActionSteps runs AFTER tx.Commit() on the raw conn because the saga
+  opens its own transactions and the pool is capped at one connection
+  (next.go's own comment) — moving it into the tx deadlocks, and driving it
+  durably before a refusal contradicts "a refused call must not
+  half-advance the run". The starvation CLASS is filed as its own tracker
+  issue instead of riding this TDD.
+  LANDED (2026-08-06, 2cb3127): TestBackfillRetiresTheD2Wedge pins RUN-3's
+  exact shape end-to-end; the starvation class is DKT-79.
 - E-7 (pre-existing, surfaced): TestNextHumanTableUnchanged flakes on
   relative-timestamp rendering ("1 second ago" vs "now") — pin the clock.
+  FIXED (2026-08-06, 063ee67): literal pinned instant, not a time.Now offset.
 - E-8 (pre-existing, judge-proven wave 4): attempt DOUBLE-COUNT — ClaimStep
   increments attempt (steps.go:543) and FailStep bumps it again (human.go:269),
   so max_attempts=N exhausts after N-1 failures and the retry branch is
   unreachable; TestFailMetadataSurvivesIntoRetry is hollow-green (never
   retries). Three judges converged independently; STEP-2 probe-proved it.
   Also skews escalation arithmetic (attempt-derived rungs).
+  FIXED (2026-08-06, 8c4076d): FailStep's bump removed; claimTx is now the
+  SOLE increment (CAS + version + attempt in one statement — structural, not
+  documented); caller-less BumpStepAttemptTx deleted with its phantom §6.10
+  cite; TestAttemptCountsClaimsNotClaimsPlusFailures pins the arithmetic and
+  the below-max test gained an explicit attempt==1 (status-only pins go
+  hollow the other way).
 - E-9 (judge-found wave 4): issue.diff omits UNTRACKED files — new files are
   invisible to review (STEP-11's entire guard_stop_test.go and the cli/guard.go
   adaptation were never in the reviewed diff). A review blind spot covering
   exactly the class of change (new tests) reviews most need to see.
-- E-11 (wave 5, PROBABLE — verify at fix time): all four DKT-75 review briefs
-  carried DKT-76's change-summary as their input artifact — cross-issue input
-  resolution bleed, likely keyed on the shared instance name implement@0.
-  Judges detected it and reviewed the correct diff anyway.
+  FIXED (2026-08-06, 4126a7c): untrackedDiff renders each untracked file as
+  an addition appended after the tracked diff — non-mutating, no
+  intent-to-add staging.
+- E-11 (wave 5) — NOT REPRODUCED, engine exonerated (2026-08-06 review):
+  the probe (input-payloads.md Part II) shows resolution is issue-scoped by
+  construction (matchingArtifacts filters producer.IssueID before names,
+  context.go:400-422), and RUN-3's own DB proves delivery was correct — all
+  four DKT-75 review steps consumed ARTIFACT-3, DKT-75's OWN implement
+  artifact (step_inputs, steps 12-15), whose recorded BODY was DKT-76's
+  summary. The corruption predates the engine: see H-13 (shared scratchpad
+  artifact path). Judges detected it and reviewed the correct diff anyway.
+- E-13 (low, opened at E-11's adjudication): ContextInput.ProducerStep
+  renders the bare instance name (producerInstance, context.go:505-510) with
+  no issue qualification — four correct multi-issue briefs all label their
+  producer implement@0, indistinguishable across issues (the same ambiguity
+  E-4's refusal message carries). Deferred to its own round: changing the
+  rendered producer identity alters every packet's bytes and every golden.
 - E-10 (observed wave 4): under overlapping scopes and the commit-at-end
   workflow, issue.diff shows SIBLING issues' uncommitted work — a DKT-69
   judge reviewed and flagged DKT-75's guard.go change (cross-issue diff
@@ -105,6 +148,23 @@ drift) and DKT-70 (packet composition — see §5).
   executor recovered them by reading a DB copy, noting local sqlite 3.51
   cannot open the 3.53-written file in place. Brief assembly for
   synthesize-class steps must include input payloads, not only bodies.
+  FIX DESIGNED (2026-08-06): input-payloads.md approved — ContextInput gains
+  Payload carried VERBATIM (omitempty), InputsBytes accounts it, template
+  renders it conditionally; payload-less packets stay byte-identical.
+  LANDED (2026-08-06, f4e27ba, DKT-78): eight tests incl. fanout
+  attribution and the live-state extension; engine-spec §11.4 row amended.
+- H-13 (found 2026-08-06 adjudicating E-11; production-proven): the emit
+  convention gives every executor the SAME session-scoped scratchpad path —
+  STEP-11 (DKT-75 implement) and STEP-21 (DKT-76 implement) both completed
+  with --artifact-file .../0132b2fd-.../scratchpad/change-summary.md
+  (transcripts). Concurrent same-kind writers cross-wire, and the engine
+  faithfully records the sibling's bytes (content is opaque to core). H-11's
+  staged waves serialize writers but do NOT fix the stale-read half: an
+  executor that never writes still completes citing the predecessor's
+  leftover, silently. Fix (instance-side, REQUIRED before RUN-4):
+  step-scoped artifact paths (scratchpad/STEP-N/<kind>.md) in the emit
+  conventions, so a missing write is a missing file — loud — rather than a
+  sibling's artifact.
 - H-11 LANDED (post-M4 batch, operator-designed, wave-6 observation): STAGED WAVES — wave.js
   currently spawns all rows in one parallel blast (one phase). Using data
   rows already carry (class, issue), it can stage: serial write rows first
@@ -282,3 +342,20 @@ item 26 recorded as symptom of E-12 per its own final report. AC6/AC7 not
 scorable as met (cross-repo files absent). Synthesis quality: severity
 multisets verified identical to inputs; consensus never manufactured;
 judge disagreement resolved by source-read (see P-7 correction).
+
+Engine patch session 2 (2026-08-06), five commits, reviewed and accepted:
+8c4076d E-8 · 2cb3127 DKT-77 (wedge verb) · f4e27ba DKT-78 (input payloads)
+· 4126a7c E-9 · 063ee67 E-7. Suite green, QA 1839/1839, genericity 5/5.
+Follow-ups for the next engine round, deliberately NOT drive-by-fixed:
+(1) ZG contention flake — under load all five claim losers can busy-timeout
+so zero surface CONFLICT; the one-winner invariant held both runs. Note on
+DKT-35 (its test-side echo); candidate fix is dropping the >=1-CONFLICT-
+loser assertion since the winner count already forbids the dangerous
+outcome. (2) backfill-usage lacks a non-terminal-step guard: back-filling a
+still-running step would later collide with the claimant's own
+`complete --usage` at the unique key — loud and recoverable, and the
+conduct flow (back-fill after completion, before close) never hits it, but
+a one-clause refusal closes the misuse window. Remaining before RUN-4:
+H-13 corpus fix (reviewer-owned, dotfiles), gates restoration (DKT-74),
+repair issues from ARTIFACT-23/33/35 with rulings in bodies (P-2) and
+narrow scopes (P-5).

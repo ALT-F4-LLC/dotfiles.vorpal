@@ -94,7 +94,7 @@ when Erik calls it — deletion is one dotfiles change (§6).
 | commit | `commit-author` + commit-msg/commit-exec gates + human commit gate + commit-guard hook |
 | design-review / design-qa | `judge-design` (spec stage) / `design-qa` node + render/copy gates |
 | docket (24KB ritual doc) | dies with its cause: CLI reliability fixes (06 §5); residual verbs live in conductor/plan definitions |
-| init-specs | `spec-project` pipeline + `spec-author` node |
+| init-specs | `spec-project` pipeline + `spec-author` node (re-authoring); **bootstrap §0** (first seed — `spec-project` needs `.docket/config/` and an activated run, so it cannot produce the specs bootstrap §2 mines). Claude-Code skill deleted; the reserved-name manifest moved to `contracts/spec-author.md`. Codex keeps its own `init-specs` (different harness, no engine). |
 | review-and-comment | `pr-comment-author` + per-item human gate + gh posting gate (`release` pipeline) |
 | session-metrics | native run ledger + `docket run report` |
 | simplify-scout | `judge-simplicity` (review lens) + `investigation` pipeline for standalone scans |

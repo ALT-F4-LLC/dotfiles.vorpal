@@ -61,7 +61,20 @@ containment) — the corpus reaches briefs at last. Corpus packet wave (DKT-72):
 test-infra-labeled issues and doc pipelines). G6 re-measured all four
 environment checks UNCHANGED from the recorded table against a fresh clone
 and fresh binary; M4 pins recorded in the G6 report. Next: M4 pre-registration
-(07 §4), then the shadow run.** Produced by three advisors (Go delivery grounded in the real
+(07 §4), then the shadow run.** **M4 CLOSED (2026-08-06, RUN-3): halt-with-cause honestly
+taken; adopt-and-iterate ratified. The shadow run implemented three of its
+own engine fixes (DKT-75 closing 66+67, DKT-76 closing 65, DKT-69), reviewed
+them with 12 judge passes that probe-proved two blockers past the human
+gate, synthesized 57 findings into 43 clusters with severity multisets
+verified, and halted at a mechanically documented wedge (E-12: E-4's
+permanent D2 refusal starves next-driven actions). AC-1 met live (packet
+composition steering real briefs); AC-2 confirmed by the event log (117
+events, no model anywhere in it); T9 not yet met (interventions exceeded the
+pre-registered classes — all first-run infrastructure findings). Full record:
+m4-preregistration.md, m4-findings.md (28-item ledger + register),
+m4-disposition.md. Next: the dotfiles harness batch (register H-items incl.
+operator-designed H-11 staged waves), the engine E-cluster with E-12 first,
+then RUN-4 on the fixed binary — M5 gates on a clean end-to-end run.** Produced by three advisors (Go delivery grounded in the real
 `feature/graph-engine` worktree; context-packet design; sequencing/risk), synthesized
 and reviewed interactively with Erik phase by phase.
 

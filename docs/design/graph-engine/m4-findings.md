@@ -66,7 +66,10 @@ that this file lacks gets added before disposition.
   workflow, issue.diff shows SIBLING issues' uncommitted work — a DKT-69
   judge reviewed and flagged DKT-75's guard.go change (cross-issue diff
   bleed; the fleet's cumulative-delta lesson reincarnated). Produced a
-  cross-issue blocker inside DKT-69's reconcile.
+  cross-issue blocker inside DKT-69's reconcile. FINAL-REPORT CONSEQUENCE
+  (ledger 28): DKT-69's severity set is inflated by a blocker DKT-75 owns —
+  any threshold computed over DKT-69's clusters reads another issue's
+  finding. Narrow scopes (P-5) or per-issue trees are the fix.
 
 Fixed pre-run by the patch session, verified live in-run: DKT-68 (completion
 metadata persisted; requested==resolved observed on real steps — no tier
@@ -97,6 +100,11 @@ drift) and DKT-70 (packet composition — see §5).
   after DISPATCH-5.
 - H-8: the wave skill's invoke hint advertises policyPath; the script reads
   {rows, policyText} and can read no files. Cost failure #1.
+- H-12 (ledger 27): synthesize briefs supply judge PROSE but not payload
+  severities, which the contract requires clusters to carry unchanged — the
+  executor recovered them by reading a DB copy, noting local sqlite 3.51
+  cannot open the 3.53-written file in place. Brief assembly for
+  synthesize-class steps must include input payloads, not only bodies.
 - H-11 (operator-designed, wave-6 observation): STAGED WAVES — wave.js
   currently spawns all rows in one parallel blast (one phase). Using data
   rows already carry (class, issue), it can stage: serial write rows first
@@ -135,9 +143,14 @@ drift) and DKT-70 (packet composition — see §5).
 - P-5: broad scope globs (internal/engine/**) make the whole run serialize;
   planner guidance for the next run: narrow globs per issue, and expect E-5/
   E-6 economics until fixed.
-- P-7 (wave 4, judge-found): FailStep validates content BEFORE authorizing
-  the holder (human.go:250 vs :265), inverting saga.go:277's stated rule —
-  a real defect in landed DKT-69, flowing to its fix loop via reconcile.
+- P-7 CORRECTED BY SYNTHESIS (STEP-6, source-read saga.go:245/263/282):
+  the inversion claim was FALSE — complete has the identical
+  metadata-before-authorize ordering, so DKT-69 mirrors existing behavior.
+  Residual question (both verbs): is that shared ordering itself wrong vs
+  saga.go:277's stated rule? Carried as a design question, not a defect in
+  the change. Judge-testing was right; judge-architecture's premise wrong;
+  synthesis carried both severities unchanged and wrote the remedy to cover
+  both verbs — the reconciliation layer working on the reviewers.
 - P-10 (wave 5, judge-found, TWO independent probes with firing positive
   controls): landed DKT-75 re-introduces its own defect class — the new
   open-dispatch arm probes ALL discrepancies via refuseIfUnreconciledTx even
@@ -224,3 +237,19 @@ drift) and DKT-70 (packet composition — see §5).
 - Remaining: 8 review steps, then synthesize/reconcile/verify/commit-gate
   per issue. Judges may independently flag the gated inclusion — the one
   channel (P-2) that carries the ruling into a fix brief.
+
+## 7. Run close-out (2026-08-06)
+
+RUN-3 abandoned, halt-with-cause, operator-ratified; cause = E-12; DOC-1
+carries the record. Final: 9 waves / 13 dispatches / 53 spawns; 21 conflict
+losses (~40%, essay-capped from wave 5); 18 steps done, 3 reconciles
+ready-undriveable; spend 12.9/30 declared, 801,892 output tokens
+journal-measured (ledger usage null throughout — E-3/H-6). Tree: +667/−77
+across 16 files, three implemented+reviewed+synthesized changes, NOT
+committed — each carries open findings (P-10 bundle on DKT-75; DKT-76's
+remedy-contradiction; DKT-69's hollow-test/E-8). Syntheses ARTIFACT-23/33/35
+(16,141 / 13,641 / 17,692 B) are RUN-4's fix-brief inputs. Conduct ledger
+item 26 recorded as symptom of E-12 per its own final report. AC6/AC7 not
+scorable as met (cross-repo files absent). Synthesis quality: severity
+multisets verified identical to inputs; consensus never manufactured;
+judge disagreement resolved by source-read (see P-7 correction).

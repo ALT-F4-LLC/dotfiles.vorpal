@@ -29,7 +29,12 @@ that this file lacks gets added before disposition.
   (ready.go:616-643, scope.go:84-86). Different issues' READ steps exclude
   each other: review fanouts run four-at-once within an issue but serialize
   across issues. Fix candidates: class-aware read-read coexistence, or
-  disjoint-subset next (pairs with E-5).
+  disjoint-subset next (pairs with E-5). REFINED (wave 5, operator-observed):
+  artifact-only steps suffer it worst — synthesize reads recorded payloads,
+  never the tree, yet inherits its issue's tree scope and lost a claim race
+  to another issue's judges over files it would never open. The fix shape
+  includes per-step scope exemption for artifact-only steps, not only
+  read-read coexistence.
 - E-7 (pre-existing, surfaced): TestNextHumanTableUnchanged flakes on
   relative-timestamp rendering ("1 second ago" vs "now") — pin the clock.
 - E-8 (pre-existing, judge-proven wave 4): attempt DOUBLE-COUNT — ClaimStep

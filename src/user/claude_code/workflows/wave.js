@@ -394,7 +394,10 @@ function bootstrap(row, r) {
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
    it. What you learned goes in the note (or the metadata bag); do not try to
    attach an artifact to a failure. \`--artifact-file\` exists on \`complete\`
-   alone.
+   alone. A gap artifact — your contract's Stuck clause — is a SUCCESS
+   condition: record it with \`complete\`, exactly as you would the normal
+   artifact. Reach for \`fail\` only when a retry might genuinely redeem the
+   attempt.
 
    The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
    (\`internal/cli/token.go\`; engine-spec.md §4, "Tokens pass via env/stdin,
@@ -522,14 +525,18 @@ function spawn(row, phaseLabel) {
     // null — it does not throw — when a model is unavailable or the agent is
     // skipped, and such an executor never claimed and never recorded, so the
     // step is still ready and the engine will offer it again forever. Calling
-    // that 'no-return' read like a benign variant of 'recorded' and left the
+    // that 'no-return' read like a benign variant of a success and left the
     // conductor looping on a step nothing was working. Say it plainly.
     if (text == null) {
       log(`${row.step}: SPAWN PRODUCED NOTHING (model ${r.model} unavailable, ` +
           `or the agent was skipped) — the step was never claimed`)
       return { step: row.step, status: 'spawn-failed', text: null }
     }
-    return { step: row.step, status: 'recorded', text }
+    // 'returned', not 'recorded': the executor came back with a report, but
+    // only the report's own text says whether the engine accepted a record —
+    // RUN-1's STEP-1 returned a token-lost report and recorded nothing. The
+    // conductor must read text, never trust this status as an outcome.
+    return { step: row.step, status: 'returned', text }
   })
 }
 

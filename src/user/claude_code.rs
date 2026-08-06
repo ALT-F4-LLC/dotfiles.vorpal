@@ -1,9 +1,8 @@
-use crate::{
-    file::{FileCreate, FileSource},
-    user::claude_code_settings::ClaudeCodeSettings,
-};
+use crate::file::{FileCreate, FileSource};
 use anyhow::Result;
 use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::ConfigContext};
+
+mod settings;
 
 const OTEL_LOGS_ENDPOINT_LOKI: &str = "https://loki.bulbasaur.altf4.domains/otlp/v1/logs";
 const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains/otlp/v1/metrics";
@@ -64,10 +63,10 @@ pub struct ClaudeCode {
 // Applies a `deny` permission rule for each sensitive path, formatted via `wrap` (e.g.
 // `Edit({path})`), in sorted order to match the existing deny-list convention.
 fn deny_sensitive_paths(
-    builder: ClaudeCodeSettings,
+    builder: settings::ClaudeCodeSettings,
     wrap: impl Fn(&str) -> String,
     paths: impl IntoIterator<Item = &'static str>,
-) -> ClaudeCodeSettings {
+) -> settings::ClaudeCodeSettings {
     let mut paths: Vec<&str> = paths.into_iter().collect();
     paths.sort_unstable();
     paths
@@ -101,75 +100,39 @@ impl ClaudeCode {
         self,
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
-        // Graph fleet (M3/G1). The graph subtree renders alongside the old fleet, which stays
-        // default until M5. Both fleets land in the same three `~/.claude/{agents,hooks,skills}`
-        // directories because the harness discovers agents and skills by directory scan — a
-        // `~/.claude/skills-graph` would render but never be invocable.
-        //
-        // They merge at the *artifact* level rather than getting their own symlinks: the SDK
-        // emits one `ln -s {source} {target}` per symlink with no `-f` under `set -euo pipefail`,
-        // so a second artifact claiming `~/.claude/agents` aborts activation outright (E4,
-        // answered negative). `with_merge_path` copies the graph subtree into the same output.
-        // Basenames must stay disjoint — `tests/graph_fleet_collision.rs` asserts it, since a
-        // collision here would silently overwrite rather than fail.
-        //
-        // Graph hooks ARE now registered via `.with_hook` below (M3/G4): the `docket-*` files
-        // exist in `src/user/claude-code-graph/hooks/`, so registration follows the files as G1
-        // required. FOUR of the five, not five — `heartbeat` is dropped per D11's decided fallback
-        // because environment check E1 failed (shared `$TMPDIR` across subagents); see
-        // `claude-code-graph/hooks/docket-heartbeat-hook.sh.dropped` for the measurement and the
-        // re-instatement conditions.
         let agents = FileSource::new(
             &format!("{}-claude-code-agents", self.name),
-            "src/user/claude-code/agents",
+            "src/user/claude_code/agents",
             self.systems.clone(),
         )
-        .with_merge_path("src/user/claude-code-graph/agents")
         .build(context)
         .await?;
 
         let hooks = FileSource::new(
             &format!("{}-claude-code-hooks", self.name),
-            "src/user/claude-code/hooks",
+            "src/user/claude_code/hooks",
             self.systems.clone(),
         )
-        .with_merge_path("src/user/claude-code-graph/hooks")
         .build(context)
         .await?;
 
-        // The corpus is instance data for a target repo, not harness prose: nothing scans it and
-        // the harness never loads it. It renders to the sibling path `~/.claude/docket-config/`
-        // purely so `bootstrap` has a local, versioned source to copy into a target repo's
-        // `.docket/config/` without network access (TDD §5.1).
         let graph_config = FileSource::new(
             &format!("{}-claude-code-graph-config", self.name),
-            "src/user/claude-code-graph/config",
+            "src/user/claude_code/config",
             self.systems.clone(),
         )
         .build(context)
         .await?;
 
-        // Graph workflows (M4 finding F-M4-1): wave.js must be reachable by the
-        // Workflow tool, which loads saved workflows from ~/.claude/workflows/.
-        // G1 wired agents/hooks/skills; this dir was created by G2 and never wired.
         let graph_workflows = FileSource::new(
             &format!("{}-claude-code-graph-workflows", self.name),
-            "src/user/claude-code-graph/workflows",
+            "src/user/claude_code/workflows",
             self.systems.clone(),
         )
         .build(context)
         .await?;
 
-        // No `.with_agent(...)` pin here, deliberately. The settings `agent` key applies to EVERY
-        // session in scope and the harness offers no opt-out value — it can only be replaced by
-        // name (CLI `--agent` > local > project > user). Pinning `team-lead` therefore re-imposed
-        // the hub persona on graph and arc sessions, which is an M4 contamination hazard
-        // (graph-engine TDD §2.2 "settings surface", risk R11; operator-ratified).
-        //
-        // Fresh sessions now boot plain. The team-lead definition still renders, so a hub session
-        // stays one flag away: `claude --agent team-lead`. M5's cutover note owns documenting that
-        // fallback.
-        let settings_builder = ClaudeCodeSettings::new(&self.name, self.systems.clone())
+        let settings_builder = settings::ClaudeCodeSettings::new(&self.name, self.systems.clone())
             .with_always_thinking_enabled(false)
             .with_attribution_commit("")
             .with_attribution_pr("")
@@ -448,7 +411,7 @@ impl ClaudeCode {
 
         let scripts = FileSource::new(
             &format!("{}-claude-code-scripts", self.name),
-            "src/user/claude-code/scripts",
+            "src/user/claude_code/scripts",
             self.systems.clone(),
         )
         .build(context)
@@ -456,17 +419,16 @@ impl ClaudeCode {
 
         let skills = FileSource::new(
             &format!("{}-claude-code-skills", self.name),
-            "src/user/claude-code/skills",
+            "src/user/claude_code/skills",
             self.systems.clone(),
         )
-        .with_merge_path("src/user/claude-code-graph/skills")
         .build(context)
         .await?;
 
         let statusline = FileCreate::new(
             &format!("{}-claude-code-statusline", self.name),
             self.systems,
-            include_str!("statusline.sh"),
+            include_str!("claude_code_statusline.sh"),
         )
         .with_executable(true)
         .build(context)

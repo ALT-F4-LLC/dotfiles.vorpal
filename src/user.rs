@@ -4,7 +4,6 @@ use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, context::ConfigContext
 
 mod bat;
 mod claude_code;
-mod claude_code_settings;
 mod ghostty;
 mod k9s;
 mod neovim;

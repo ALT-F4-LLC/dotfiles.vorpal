@@ -32,6 +32,21 @@ that this file lacks gets added before disposition.
   disjoint-subset next (pairs with E-5).
 - E-7 (pre-existing, surfaced): TestNextHumanTableUnchanged flakes on
   relative-timestamp rendering ("1 second ago" vs "now") — pin the clock.
+- E-8 (pre-existing, judge-proven wave 4): attempt DOUBLE-COUNT — ClaimStep
+  increments attempt (steps.go:543) and FailStep bumps it again (human.go:269),
+  so max_attempts=N exhausts after N-1 failures and the retry branch is
+  unreachable; TestFailMetadataSurvivesIntoRetry is hollow-green (never
+  retries). Three judges converged independently; STEP-2 probe-proved it.
+  Also skews escalation arithmetic (attempt-derived rungs).
+- E-9 (judge-found wave 4): issue.diff omits UNTRACKED files — new files are
+  invisible to review (STEP-11's entire guard_stop_test.go and the cli/guard.go
+  adaptation were never in the reviewed diff). A review blind spot covering
+  exactly the class of change (new tests) reviews most need to see.
+- E-10 (observed wave 4): under overlapping scopes and the commit-at-end
+  workflow, issue.diff shows SIBLING issues' uncommitted work — a DKT-69
+  judge reviewed and flagged DKT-75's guard.go change (cross-issue diff
+  bleed; the fleet's cumulative-delta lesson reincarnated). Produced a
+  cross-issue blocker inside DKT-69's reconcile.
 
 Fixed pre-run by the patch session, verified live in-run: DKT-68 (completion
 metadata persisted; requested==resolved observed on real steps — no tier
@@ -77,7 +92,10 @@ drift) and DKT-70 (packet composition — see §5).
   snapshot at activation (freeze semantics, by design). Rulings go into
   bodies BEFORE activation, or flow via judge findings (inputs). The DKT-75
   gated ruling was reasoned around in a vacuum because it lived in a
-  comment.
+  comment. REFINED wave 4: a judge CAN reach mid-run rulings by reading
+  the tracker (read-class carries docket read verbs) — STEP-3 quoted the
+  DKT-75 ruling verbatim from its comment, unprompted. The channel exists;
+  it is discretionary, not guaranteed.
 - P-3: DKT-75 landed with `gated` in the blocking set — over-conservative
   deviation from the recorded operator ruling (annoys, never endangers; it
   held the conduct session open during STEP-1's saga, exactly as
@@ -88,6 +106,13 @@ drift) and DKT-70 (packet composition — see §5).
 - P-5: broad scope globs (internal/engine/**) make the whole run serialize;
   planner guidance for the next run: narrow globs per issue, and expect E-5/
   E-6 economics until fixed.
+- P-7 (wave 4, judge-found): FailStep validates content BEFORE authorizing
+  the holder (human.go:250 vs :265), inverting saga.go:277's stated rule —
+  a real defect in landed DKT-69, flowing to its fix loop via reconcile.
+- P-8: bootstrap prompt omits --artifact-file/--payload-file on complete
+  (conduct item 22) and read-class judges have no sanctioned scratch path —
+  one copied a probe file into the tree, removed it, and self-reported
+  (conduct item 23; the self-report is the discipline working).
 - P-6: AC7 cross-repo remainder — DKT-76's hook-note + m3 TDD updates live
   in dotfiles, outside the executor's reach (operator follow-up). The
   companion lesson: ACs must not name files outside the run's repo.
@@ -126,6 +151,12 @@ drift) and DKT-70 (packet composition — see §5).
 - The guards guarded: run-guard's denials were correct every firing; the
   commit guard blocked exactly the writes it should until fixed to
   three-case semantics.
+- P-9, LIVE-PROVEN (wave 4, reviewer-audited from transcripts): the severity
+  emit-time mapping (M2b batch 7) held in production — four judges' payloads
+  carried exactly the 02 §6 enum (blocker 1 / high 9 / medium 1 / low 7),
+  zero authoring-ladder words leaked. The three-line CONFLICT cap is
+  verbatim-complied across waves 4-5. Judges self-discovered the
+  --payload-file mechanics via --help (the P-8 gap's honest workaround).
 - Three real engine fixes landed with tests (DKT-75 closing 66+67, DKT-76
   closing 65, DKT-69), each through composed briefs, gates, and a human
   gate. Spend 4.5/30 declared at three-implementations-landed.

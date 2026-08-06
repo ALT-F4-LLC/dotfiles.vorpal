@@ -350,6 +350,16 @@ function bootstrap(row, r) {
 
    \`docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}'\`
    or \`docket step fail ${row.step} --note '<why>'\` on failure.
+
+   If the brief requires an emitted artifact, write it to a FRESH file whose
+   name starts with your step id — \`${row.step}-<kind>.md\`, in your own
+   scratch space — then pass \`--artifact-kind <kind> --artifact-file <path>\`
+   on the complete. Never write to or reuse a shared filename like
+   \`change-summary.md\`: executors in one wave share a scratch directory, and
+   under a shared name a racing sibling's bytes — or a predecessor's leftover
+   when your own write silently fails — get recorded as YOUR artifact
+   (H-13; RUN-3's STEP-11 recorded STEP-21's summary exactly this way).
+
    Copy model_requested and effort_requested EXACTLY as written above — they are
    the harness's record of its own intent, not yours to adjust. Fill the two
    resolved values with what actually served you.

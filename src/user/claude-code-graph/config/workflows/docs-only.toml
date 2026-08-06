@@ -51,6 +51,9 @@ on_fail = "waiting-human"            # attempts suffice (05 §2); nothing loops
 
 [[step]]
 name = "review"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["implement"]
 executor = "judge-correctness"       # the single judge 05 §2 specifies
 emits = "findings"
@@ -64,6 +67,9 @@ threshold = { "waiting-human" = "any(severity >= high)" }
 
 [[step]]
 name = "verify"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["review"]
 executor = "verify-ac"
 emits = "ac-report"

@@ -29,6 +29,9 @@ unless_labels = ["retro"]    # only `retro` outranks it (precedence order in
 
 [[step]]
 name = "verify"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = []
 executor = "verify-ac"               # run-level verify-ac over the union diff
 emits = "ac-report"

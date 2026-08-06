@@ -59,6 +59,9 @@ on_fail = "waiting-human"
 
 [[step]]
 name = "review"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["spec-author"]
 fanout = ["judge-architecture", "judge-correctness", "judge-simplicity"]
                                      # the "single review fanout" of 05 §2: one
@@ -75,6 +78,9 @@ inputs = ["spec-author.*", "issue.body"]
 
 [[step]]
 name = "synthesize"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"

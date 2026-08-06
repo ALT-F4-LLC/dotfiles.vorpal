@@ -32,6 +32,9 @@ unless_labels = ["spec-doc", "spec-project", "release", "retro"]
 
 [[step]]
 name = "investigate"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = []
 executor = "investigate"
 emits = "investigation"
@@ -43,6 +46,9 @@ on_fail = "waiting-human"
 
 [[step]]
 name = "research"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["investigate"]
 fanout = ["research", "research"]    # two parallel research hints (04: the
                                      #   research archetype); plain join — 05 §2
@@ -57,6 +63,9 @@ inputs = ["investigate.investigation", "issue.body"]
 
 [[step]]
 name = "report"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["investigate", "research"]
 executor = "investigate"             # the same node writes the report from its
                                      #   own findings plus whatever research

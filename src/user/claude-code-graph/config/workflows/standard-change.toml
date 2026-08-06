@@ -42,6 +42,9 @@ on_fail = "waiting-human"
 
 [[step]]
 name = "review"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
@@ -61,6 +64,9 @@ inputs = ["implement.change-summary", "issue.diff"]
 
 [[step]]
 name = "synthesize"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
@@ -96,6 +102,9 @@ after_loop = "review"                # re-review the delta; engine re-enters at 
 
 [[step]]
 name = "verify"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["reconcile"]
 executor = "verify-ac"
 emits = "ac-report"

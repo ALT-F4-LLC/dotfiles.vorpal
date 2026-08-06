@@ -60,16 +60,41 @@ deferring to `spec-project`. That pipeline needs `.docket/config/` (§1) and an
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
 
-Verify before moving on: seven files exist, each with frontmatter carrying today's
-date, and each ending in its gaps section. A missing or dateless file means its author
-stalled — respawn that one axis. Say plainly in §5 that these specs are seeded rather
-than gate-validated: `doc-validate` and `reserved-name-check` run under `spec-project`,
-not here, so their structural guarantees do not apply yet.
+**Verify before moving on.** Take `git status --porcelain > "$TMPDIR/pre-fanout"`
+before you spawn, and diff after all seven return:
+
+```bash
+git status --porcelain | diff "$TMPDIR/pre-fanout" - || true
+```
+
+Every added line must be a path under `docs/spec/`, and there must be seven.
+Anything else is a collateral write, and it happens: the `executor-write`
+archetype grants a full write surface, so the contract's prose is the only
+containment — and on the 2026-08-06 run prose did not hold: an author left a
+non-compiling Go file in `internal/engine/`, breaking test compilation for the
+whole package the run was about to gate. On a hit, revert the stray (`rm` an
+untracked file, `git checkout --` a modified one) and tell the operator what
+you reverted and which axis you suspect; if it might be the operator's own
+work in progress, leave it and say so instead.
+
+Then check the seven themselves: each exists, opens with a `# ` title and a
+`Status: … <today's date>` line, and ends in its gaps section. A missing or
+dateless file means its author stalled — respawn that one axis. Say plainly in
+§5 that these specs are seeded rather than gate-validated: `doc-validate` and
+`reserved-name-check` run under `spec-project`, not here, so their structural
+guarantees do not apply yet — and if the repo already ships a `doc-validate` of
+its own, diff its expectations against the contract's Emit section before
+promising the specs will pass.
 
 ## 1. Start from the corpus
 
 ```bash
 docket init                                   # if .docket/ does not exist
+
+# Bootstrap is for a repo with NO config. Refuse rather than overwrite one.
+if [ -n "$(ls -A .docket/config 2>/dev/null)" ]; then
+  echo "config exists — evolving it is retro's job, not bootstrap's"; exit 1
+fi
 cp -R ~/.claude/docket-config/. .docket/config/
 
 # The corpus does not activate without these two. Set them now; §4b argues the
@@ -77,6 +102,14 @@ cp -R ~/.claude/docket-config/. .docket/config/
 docket config set vote.rule.security-acceptance.threshold 0.67
 docket config set vote.rule.doc-acceptance.threshold 0.60
 ```
+
+**If the guard fires, stop.** `cp -R` is an overwrite, and what it overwrites is
+the per-file provenance header §3 tells you to write — the mined citations and
+`THIN SPOTS` records that are the only account of why the config looks the way
+it does (DKT-86 lost exactly this). The corpus does not carry them, so the copy
+replaces reasoning with defaults and nothing downstream notices. Refreshing an
+adapted config against a newer corpus is a merge, it is retro's job, and it goes
+through a version bump. Tell the operator and suggest `/retro`.
 
 **Why those two lines are here and not later.** Activation validates EVERY
 registered workflow, not just the one an issue binds, and two of the nine name a
@@ -86,9 +119,10 @@ them at copy time means the first activation an operator sees is a real one.
 They authorize no execution, so they are safe to set before approval; what needs
 approval is the NUMBER, which §4b puts in front of the operator.
 
-`~/.claude/docket-config/` is the shipped corpus: 9 workflows, 24 contracts, 16
-fragments, 2 schemas, and `policy.toml`. It is a local reference copy — no
-network, nothing to fetch. Start here whenever the repo's shape is anywhere near
+`~/.claude/docket-config/` is the shipped corpus: `workflows/`, `contracts/`,
+`fragments/`, `schemas/`, and `policy.toml`. List it for the current inventory —
+counts written here go stale. It is a local reference copy — no network, nothing
+to fetch. Start here whenever the repo's shape is anywhere near
 it, because it encodes a working review topology you would otherwise re-derive.
 
 For a repo unlike it, fall back to a template:
@@ -141,15 +175,16 @@ Rewrite the template into `.docket/config/`:
   under `items`. An object-shaped schema registers, then fails workflow
   validation with "declares no top-level properties." Ordered fields need
   `"ordered_enum": true` or `>=` is refused.
-- `policy.toml`, `contracts/`, `fragments/`, `templates/` — pinned, registered
-  as nothing. Instance knowledge lives here, including the fenced-check
+- `policy.toml`, `contracts/`, `fragments/` — pinned, registered as nothing. Instance knowledge lives here, including the fenced-check
   convention: a gate declaring `source = "fence:checks"` harvests ` ```checks `
   blocks from the issue body, one command per line, at activation only.
 
 Head each generated file with a comment naming what you mined and the date —
-that is what makes the next retro's diff legible.
+that is what makes the next retro's diff legible. These headers are the only
+record of why a file survived §2's citation test; nothing regenerates them,
+which is why §1 refuses to overwrite a populated config.
 
-**Adapting the corpus, if you started from it.** The nine workflows and 24
+**Adapting the corpus, if you started from it.** The shipped workflows and
 contracts encode *this project's* conventions — its build commands, its review
 shape, its scopes. A target repo differs, and transcribing someone else's
 conventions is worse than starting from the template, because the result looks
@@ -187,25 +222,43 @@ gate on a human. `--flaky` on a deterministic command hides a real failure
 behind a retry. Never propose `--global`; propose `--prefix` only when the argv
 genuinely varies, and say plainly that it over-authorizes.
 
+**A repo-internal script needs an ABSOLUTE argv[0].** Containment refuses any
+argv[0] that resolves at or under the repo root — a repo-owned script is content
+an executor can rewrite between approval and execution. The one exception: a
+trust entry whose own argv[0] is already absolute, which is read as the operator
+authorizing that exact in-repo path deliberately. So every entry pointing at
+`scripts/qa/*` (or anything else in the tree) is proposed as
+`$(git rev-parse --show-toplevel)/scripts/qa/tests.sh`, never
+`./scripts/qa/tests.sh`. A relative one registers happily and then refuses at
+run time — the failure RUN-3 shipped. Say in §5 that these entries are
+absolute-path-bound: a moved or re-cloned worktree needs them re-added.
+
 **Name every entry after what the script actually does — never after the gate you
 wish you had.** A trust entry's name is what the operator reads when approving
 and what every later report calls it, so a name that overstates the check buys a
 false sense of coverage that nothing will correct. If a repo has a
 `genericity.sh`, propose it as `genericity`; do not propose it as `scope` because
-a scope gate is what the pipeline wants. RUN-3 bound `genericity.sh` under the
-name `scope`, and the consequence was silent and total: all three landed changes
-reported a scope check that had never run, and the mislabel cost every one of
-them. If the honest name and the pipeline's expected gate name differ, that is
-information — surface the gap, do not paper it with a name.
+a scope gate is what the pipeline wants. RUN-3 proposed `genericity.sh` under the
+name `scope`, and what happened next is worth knowing precisely, because the
+usual telling gets it backwards: the script never ran. Containment refused its
+relative argv three times, and each refusal was recorded in `gate_results` as
+`scope unmatched (null)` with the reason and the remedy spelled out in full.
+Nobody read the verdicts, and three changes landed with a gate that had reported
+its own refusal each time. **Read the verdicts** — after a real run,
+`gate_results` is the only place that says whether a gate you proposed actually
+executed, and `unmatched` there means nothing ran. If the honest name and the
+pipeline's expected gate name differ, that is information — surface the gap, do
+not paper it with a name.
 
-**Say plainly when a gate is unavailable.** Right now there is **no scope-
-containment gate**: no shipped script checks a diff against an issue's declared
-scope glob. Do not propose one under any name, and do not let `genericity.sh` or
-any other script stand in for it. When you present the binding in §5, state the
-absence outright — "scope containment is NOT gated; the real script does not
-exist yet (docket-side, DKT-74's batch)" — so the operator approves a config
-whose coverage they can see. An unavailable gate named honestly is a known gap;
-an unavailable gate named `scope` is a lie the run will act on.
+**Say plainly when a gate is unavailable.** There is **no scope-containment
+gate**, and there cannot be one: a gate process receives no issue identity, so
+no script can learn which globs to check — the gap is action-shaped, not
+gate-shaped (DKT-84), and the shipped workflows no longer declare `scope`
+anywhere. Do not propose one under any name, and do not let `genericity.sh` or
+any other script stand in for it. When you present the binding in §5, state
+absences outright — a gate the operator cannot see missing is coverage they
+will assume they have. An unavailable gate named honestly is a known gap; an
+unavailable gate named `scope` is a lie the run will act on.
 
 ### 4a. Propose the `doc-record` trust entry
 
@@ -214,9 +267,13 @@ executor: recording an accepted doc is "insert a row and copy bytes", which the
 engine runs itself and never claims. An action named `doc-record` resolves
 through the trust store like any gate command, so it needs an entry:
 
+The corpus ships the action *name*, not the script — you write
+`.docket/bin/doc-record` yourself, and its argv is proposed absolute per the
+argv[0] rule above:
+
 ```
 name         doc-record
-argv         .docket/bin/doc-record
+argv         $(git rev-parse --show-toplevel)/.docket/bin/doc-record
 re-runnable  yes — `docket doc create` is idempotent on a doc that already
              exists for this issue; a crash between create and link re-runs clean
 tree         no  — writes into the docket database and docs/, not the build tree,
@@ -296,24 +353,46 @@ docket run start --issue DKT-1
 docket run activate RUN-1 --dry-run --pin .docket/config/policy.toml
 ```
 
-`--dry-run` computes the whole activation and writes nothing. It prints what
-registers, what pins, and **every harvested command verbatim**, annotated
-`matched` or `unmatched`. Show that output, not a summary of it. Before trust
-exists the command reads `(unmatched)` — the correct state to present: this is
-what would run, and nothing yet authorizes it.
+`--dry-run` computes the whole activation and writes nothing. Two blocks can
+come back:
 
-Ask for approval of the config and the trust proposals together. On yes:
+- **The registration report** — every workflow and schema this activation
+  would adopt, as `name@version  path  (outcome)`, plus the count of further
+  config files pinned by content hash. This proves the config is well-formed
+  and accepted; it says nothing about what will execute.
+- **The harvested-command list**, annotated `matched`/`unmatched` — printed
+  only when a kept workflow declares `source = "fence:checks"` AND the bound
+  issue carries a ` ```checks ` fence. No shipped corpus workflow declares
+  one, so on a corpus-derived config this block is absent, not empty. Its
+  absence is correct, not a failure to debug.
 
-```bash
-docket trust add checks --re-runnable --yes -- make check
-docket run activate RUN-1 --dry-run --pin .docket/config/policy.toml
+Show what printed verbatim, not a summary. Then supply what the dry run
+cannot: **named gates are invisible to it.** A `gates = ["build", ...]` entry
+resolves through the trust store at execution, not activation, so a gate with
+no trust entry looks identical here to a satisfied one. Compose the gate table
+yourself and put it beside the dry-run output:
+
+```
+gate       trust entry  argv                             status
+build      build        /abs/repo/scripts/qa/build.sh    proposed (absolute — ok)
+tests      tests        /abs/repo/scripts/qa/tests.sh    proposed (absolute — ok)
+<absent>   —            —                                NO GATE — say why
 ```
 
-The second dry-run must read `(matched: checks)`. Still unmatched means the
-argv differs from the fence line byte-for-byte — fix the entry, not the issue.
+Every gate named by a workflow you kept gets a row; a check you could not
+implement gets a row with no argv and the reason. A row with no trust entry
+will report `unmatched` on its first real run — say it in the row, not a
+footnote. This table, the registration report, and §4's flag arguments are
+what the operator approves, together. On yes, run the `trust add --yes`
+commands, re-run the dry-run to confirm it still registers clean (a fenced
+setup must now read `(matched: <name>)`; named gates resolve in the trust
+store, not here), then ask again, for the activation itself, and run it
+without `--dry-run`. Two approvals: one for what you wrote, one for what runs.
 
-Then ask again, for the activation itself, and run it without `--dry-run`.
-Two approvals: one for what you wrote, one for what runs.
+After the first real run, read the gate verdicts: `unmatched` in
+`gate_results` means the gate never executed — its entry is missing or
+containment refused its argv. The verdict text names the fix; follow it
+literally.
 
 ## 6. Where the corpus comes from
 

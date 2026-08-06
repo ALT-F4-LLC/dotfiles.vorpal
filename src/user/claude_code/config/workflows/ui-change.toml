@@ -35,7 +35,10 @@ inputs = ["issue.body"]              # the accepted ux-spec reaches this step as
                                      #   pinned file (06 §2's operator-supplied
                                      #   file pins); its ACs are carried verbatim
                                      #   in the issue body by the distillation rule
-gates = ["build", "tests", "scope", "self-hygiene", "secret-scan"]
+gates = ["build", "tests", "self-hygiene", "secret-scan"]
+                                     # `scope` removed: gates get no issue
+                                     #   identity, so scope containment is
+                                     #   un-mechanized (DKT-84)
 max_attempts = 2
 on_fail = "waiting-human"
 
@@ -85,7 +88,7 @@ packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true
 inputs = ["reconcile.findings", "implement.change-summary"]
-gates = ["build", "tests", "scope", "secret-scan"]
+gates = ["build", "tests", "secret-scan"]
 after_loop = "review"
 
 [[step]]
@@ -132,4 +135,6 @@ executor = "commit-author"
 emits = "commit-message"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
-gates = ["commit-msg", "commit-exec"]
+gates = ["commit-msg"]               # commit-exec retired: its checks fold
+                                     #   into commit-msg; a gate is argv-only
+                                     #   and cannot be handed run state (DKT-84)

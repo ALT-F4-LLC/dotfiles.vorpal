@@ -66,9 +66,9 @@ class = "write"
 emits = "commit-message"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
-gates = ["commit-msg", "commit-exec"]
-                                     # commit-exec runs only behind the human gate
-                                     #   plus the commit-guard hook (05 §3)
+gates = ["commit-msg"]               # commit-exec retired: its checks fold
+                                     #   into commit-msg; a gate is argv-only
+                                     #   and cannot be handed run state (DKT-84)
 inputs = ["issue.body", "issue.diff"]
 
 [[step]]
@@ -80,7 +80,10 @@ packet = ["contracts/{executor}.md"]
 expected_cost = 0.30
 when = "labels contains pr"          # the "optional" of 05 §2
 inputs = ["commit.commit-message", "issue.diff"]
-gates = ["gh-inline-comment"]        # the posting gate (05 §3's remaining-survivors
-                                     #   bucket: gh_inline_comment)
+                                     # no posting gate: gh-inline-comment needs
+                                     #   the comment body as $1, and a named gate
+                                     #   is spawned argv-verbatim with no step
+                                     #   artifacts (DKT-84) — posting is the
+                                     #   executor's own work
 on_fail = "skip"                     # a failed comment post must not undo a
                                      #   landed commit

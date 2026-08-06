@@ -12,8 +12,9 @@
 #     model a join over one sibling that 05 §2 does not ask for.
 # `synthesize`/`reconcile` are absent: clustering across judges is meaningless
 # with one judge, and `aggregate` over a single input computes nothing new.
-# Scope (`docs/**`) is issue data, not a pipeline field (02 §5) — the `scope`
-# gate is what enforces it.
+# Scope (`docs/**`) is issue data, not a pipeline field (02 §5). No gate
+# enforces it: gates receive no issue identity (DKT-84), so scope containment
+# is un-mechanized — an action-shaped gap, not a gate-shaped one.
 
 [pipeline]
 name    = "docs-only"
@@ -41,7 +42,10 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.80
 inputs = ["issue.body"]
-gates = ["build", "scope", "self-hygiene", "doc-validate", "citation-check"]
+gates = ["build", "self-hygiene", "doc-validate", "citation-check"]
+                                     # `scope` removed: gates get no issue
+                                     #   identity, so scope containment is
+                                     #   un-mechanized (DKT-84)
                                      # `doc-validate` is 05 §3's per-type gate:
                                      #   doc_validate.py per type. Per-type
                                      #   checks are its parameters, not sibling
@@ -109,4 +113,6 @@ executor = "commit-author"
 emits = "commit-message"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
-gates = ["commit-msg", "commit-exec"]
+gates = ["commit-msg"]               # commit-exec retired: its checks fold
+                                     #   into commit-msg; a gate is argv-only
+                                     #   and cannot be handed run state (DKT-84)

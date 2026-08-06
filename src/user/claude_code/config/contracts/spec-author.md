@@ -75,8 +75,11 @@ you find are stated plainly rather than smoothed — the gap section is where th
 earns its keep.
 
 # Emit
-`spec`: the specification for the file your step names. Frontmatter carries the project,
-maturity, date, scope one-liner, owner, and dependencies on sibling specs. The body is
+`spec`: the specification for the file your step names. The file opens with a `# ` title
+and, within its first eight lines, a `Status: <state> — YYYY-MM-DD` line — `doc-validate`
+enforces exactly that shape and nothing more. Carry the project, maturity, scope
+one-liner, owner, and dependencies on sibling specs in a metadata table beneath the
+Status line, not in YAML frontmatter. The body is
 sectioned by the axis's own domain and ends with the gaps and risks section — weaknesses,
 missing capabilities, and known risk, or an explicit statement that none were identified.
 Diagram the relationships and flows the subject involves; a spec about structure or flow

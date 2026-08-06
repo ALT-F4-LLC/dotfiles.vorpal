@@ -165,6 +165,17 @@ drift) and DKT-70 (packet composition — see §5).
   step-scoped artifact paths (scratchpad/STEP-N/<kind>.md) in the emit
   conventions, so a missing write is a missing file — loud — rather than a
   sibling's artifact.
+  FIXED (2026-08-06, reviewer-applied): the convention was a VACUUM — no
+  contract, fragment, or prompt ever named a path; both executors defaulted
+  to the same natural filename in a shared scratch dir. Locus of fix is the
+  wave.js bootstrap prompt, obligation 3 (the one harness-owned channel that
+  reaches every executor, with the step id already interpolated): artifacts
+  go to a fresh step-id-prefixed file, shared filenames forbidden, with the
+  RUN-3 incident cited in the prompt itself. Corpus contracts stay
+  path-silent by design — WHAT to emit is contract business, WHERE to write
+  is transport. node --check passed; parser untouched, policy golden
+  (2ca4a8bb) unaffected; rendered ~/.claude/workflows copy refreshes on the
+  next dotfiles rebuild.
 - H-11 LANDED (post-M4 batch, operator-designed, wave-6 observation): STAGED WAVES — wave.js
   currently spawns all rows in one parallel blast (one phase). Using data
   rows already carry (class, issue), it can stage: serial write rows first

@@ -89,8 +89,9 @@ impl FileSource {
         }
 
         let step_script = formatdoc! {r#"
-            pushd source
-            cp -r {name}-file-source/{source_path} $VORPAL_OUTPUT
+            pushd source/{name}-file-source
+
+            cp -r {source_path} ${{VORPAL_OUTPUT}}
         "#,
             name = self.name,
         };

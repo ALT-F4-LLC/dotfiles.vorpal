@@ -124,7 +124,7 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
-        let graph_workflows = FileSource::new(
+        let workflows = FileSource::new(
             &format!("{}-claude-code-graph-workflows", self.name),
             "src/user/claude_code/workflows",
             self.systems.clone(),
@@ -441,7 +441,7 @@ impl ClaudeCode {
                 "${HOME}/.claude/docket-config".to_string(),
             ),
             (
-                get_env_key(&graph_workflows),
+                get_env_key(&workflows),
                 "${HOME}/.claude/workflows".to_string(),
             ),
             (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
@@ -468,12 +468,12 @@ impl ClaudeCode {
         let artifacts = vec![
             agents,
             graph_config,
-            graph_workflows,
             hooks,
-            settings,
             scripts,
+            settings,
             skills,
             statusline,
+            workflows,
         ];
 
         Ok((artifacts, symlinks))

@@ -391,6 +391,11 @@ function bootstrap(row, r) {
 
    \`docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
 
+   \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
+   it. What you learned goes in the note (or the metadata bag); do not try to
+   attach an artifact to a failure. \`--artifact-file\` exists on \`complete\`
+   alone.
+
    The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
    (\`internal/cli/token.go\`; engine-spec.md §4, "Tokens pass via env/stdin,
    never argv"). NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export into
@@ -400,7 +405,11 @@ function bootstrap(row, r) {
    reproduce it in your reply. There is deliberately no \`--token\` flag on any
    verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
 
-   Then delete it: \`rm -f "$TMPDIR/${row.step}.token"\`
+   Delete it ONLY after the record command exits 0:
+   \`rm -f "$TMPDIR/${row.step}.token"\`. If \`complete\` or \`fail\` errored,
+   KEEP the token and stop — it is the only thing that can still drive this
+   step, and deleting it after a failed record turns a routine step failure
+   into a zombie claim the lease must reap.
 
    If the token file is missing or empty, or a record is refused for a missing
    or invalid token, say so plainly and stop. Do not reconstruct or guess it.

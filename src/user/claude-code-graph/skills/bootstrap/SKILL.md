@@ -112,6 +112,26 @@ gate on a human. `--flaky` on a deterministic command hides a real failure
 behind a retry. Never propose `--global`; propose `--prefix` only when the argv
 genuinely varies, and say plainly that it over-authorizes.
 
+**Name every entry after what the script actually does — never after the gate you
+wish you had.** A trust entry's name is what the operator reads when approving
+and what every later report calls it, so a name that overstates the check buys a
+false sense of coverage that nothing will correct. If a repo has a
+`genericity.sh`, propose it as `genericity`; do not propose it as `scope` because
+a scope gate is what the pipeline wants. RUN-3 bound `genericity.sh` under the
+name `scope`, and the consequence was silent and total: all three landed changes
+reported a scope check that had never run, and the mislabel cost every one of
+them. If the honest name and the pipeline's expected gate name differ, that is
+information — surface the gap, do not paper it with a name.
+
+**Say plainly when a gate is unavailable.** Right now there is **no scope-
+containment gate**: no shipped script checks a diff against an issue's declared
+scope glob. Do not propose one under any name, and do not let `genericity.sh` or
+any other script stand in for it. When you present the binding in §5, state the
+absence outright — "scope containment is NOT gated; the real script does not
+exist yet (docket-side, DKT-74's batch)" — so the operator approves a config
+whose coverage they can see. An unavailable gate named honestly is a known gap;
+an unavailable gate named `scope` is a lie the run will act on.
+
 ### 4a. Propose the `doc-record` trust entry
 
 If you kept `spec-doc.toml`, its `record` step is an **action**, not an

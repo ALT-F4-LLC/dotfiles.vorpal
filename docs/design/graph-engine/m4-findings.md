@@ -79,7 +79,7 @@ drift) and DKT-70 (packet composition — see §5).
 
 - H-1 FIXED: graph workflows/ was never rendered — wave.js unreachable at
   first spawn (F-M4-1). Render path added, committed.
-- H-2 FIXED (rendered copy only): the harness JSON-encodes workflow args in
+- H-2 FIXED IN SOURCE (post-M4 batch, 2026-08-05): the harness JSON-encodes workflow args in
   transit; wave.js now decodes string args, refuses garbage. MUST be ported
   to the dotfiles source (src/user/claude-code-graph/workflows/wave.js) —
   the next `just activate` overwrites the rendered fix. Hashes on DOC-1:
@@ -87,25 +87,25 @@ drift) and DKT-70 (packet composition — see §5).
 - H-3: Workflow({name:}) executes a stale registry snapshot — three runs ran
   pre-edit bytes after the file changed. scriptPath is the only
   deterministic invocation; conduct skill must say so.
-- H-4: the rendered claim command omits the REQUIRED --owner flag; every
+- H-4 FIXED (post-M4 batch): the rendered claim command omits the REQUIRED --owner flag; every
   executor errors (exit 3) and improvises an owner string. One-line wave.js
   prompt fix.
-- H-5: nothing tells executors DOCKET_TOKEN is already in env and must never
+- H-5 FIXED (post-M4 batch): nothing told executors DOCKET_TOKEN is already in env and must never
   be printed/re-exported — produced the token echo (token was dead-by-design
   at completion; transcripts retained as audit record). One-line prompt fix.
 - H-6: executors are never told to pass --usage on complete (root of E-3's
   visibility; blocked on E-3 anyway since executors cannot know their usage).
-- H-7 CAPPED: conflict-losers wrote 40-110KB investigation essays each;
+- H-7 CAPPED, PORTED TO SOURCE (post-M4 batch): conflict-losers wrote 40-110KB investigation essays each;
   prompt now caps CONFLICT reports at three lines (087c5ec4), effective
   after DISPATCH-5.
-- H-8: the wave skill's invoke hint advertises policyPath; the script reads
+- H-8 FIXED (post-M4 batch): the wave skill's invoke hint advertises policyPath; the script reads
   {rows, policyText} and can read no files. Cost failure #1.
 - H-12 (ledger 27): synthesize briefs supply judge PROSE but not payload
   severities, which the contract requires clusters to carry unchanged — the
   executor recovered them by reading a DB copy, noting local sqlite 3.51
   cannot open the 3.53-written file in place. Brief assembly for
   synthesize-class steps must include input payloads, not only bodies.
-- H-11 (operator-designed, wave-6 observation): STAGED WAVES — wave.js
+- H-11 LANDED (post-M4 batch, operator-designed, wave-6 observation): STAGED WAVES — wave.js
   currently spawns all rows in one parallel blast (one phase). Using data
   rows already carry (class, issue), it can stage: serial write rows first
   (each awaited), then read rows grouped per issue (parallel within, awaited
@@ -114,9 +114,38 @@ drift) and DKT-70 (packet composition — see §5).
   visible in /workflows. Residual races (cross-run holders, mid-wave state
   drift) remain the engine fix E-5/E-6 target; this is the interim that
   makes RUN-4 cheap. Lands in the dotfiles wave.js batch.
-- H-9: conduct-skill edits owed: open-first loop (next is D2-wedged for any
-  real run until E-4 resolves), back-fill-before-close ordering, the
-  scriptPath rule, stop-opening-empty-dispatches guidance.
+- H-9 FIXED (post-M4 batch): conduct-skill edits owed: open-first loop (next
+  is D2-wedged for any real run until E-4 resolves), back-fill-before-close
+  ordering, the scriptPath rule, stop-opening-empty-dispatches guidance. All
+  four written; the open-first fallback is written CONDITIONALLY (triggered by
+  the `usage-rows-missing` refusal, reverts to next-first when E-4/E-12 lands)
+  so it retires itself rather than becoming permanent folklore.
+
+### Post-M4 harness batch (2026-08-05) — what landed in dotfiles source
+
+Source of record: `src/user/claude-code-graph/`. The rendered copies under
+`~/.claude/` had drifted AHEAD of source via the two authorized mid-run edits;
+this batch heals that divergence in source, where it survives `just activate`.
+
+- `workflows/wave.js` — H-2, H-7 (ported from the rendered copy), H-4, H-5,
+  P-13, H-8, H-11. sha256 0c3aa1f8 -> 374e18ed. Verified: golden check PASS
+  against an UNCHANGED policy.expected.json (2ca4a8bb, parser untouched);
+  AC-2.2 resolver table re-run, 31/31 hints resolved, 0 unresolved, escalation
+  /sensitivity/diamond-gating spot checks unchanged; staged wave demonstrated
+  on a hand-built row set (2 writers + 2 issues' readers) — 10/10 assertions,
+  peak concurrency 2 not 6.
+- `skills/conduct/SKILL.md` — H-3 (scriptPath always), H-9's four items,
+  P-13's routing half (executor rows only).
+- `skills/plan/SKILL.md` — P-2 (rulings into BODIES; bodies freeze at
+  activation, comments never reach briefs), P-5 (narrowest honest glob; a
+  broad glob serializes the run against itself).
+- `skills/bootstrap/SKILL.md` — P-1 (name trust entries after what the script
+  does; propose genericity.sh as `genericity`, and state plainly that scope
+  containment is ungated until the real script exists, DKT-74's batch).
+
+Explicitly NOT in this batch, still open: H-12 and H-6 (engine-side — brief
+payloads, usage back-fill verb), the AC7 hook-note/TDD updates (deferred to
+RUN-4/DKT-76), and anything under the old fleet (M5's).
 
 ## 3. Process and instance-config findings
 
@@ -171,7 +200,7 @@ drift) and DKT-70 (packet composition — see §5).
   path DKT-76 exists for; refusal text claims fan-out risk that
   UNIQUE(reaped_seq) makes impossible (right code, wrong reason). Flows to
   DKT-76's synthesize/reconcile — which E-12 now blocks; carries to RUN-4.
-- P-13 (conduct item 25): an action-kind row was handed to the wave once;
+- P-13 FIXED (post-M4 batch): an action-kind row was handed to the wave once;
   wave refused correctly but misdiagnosed it as policy drift — wave.js
   message fix joins the dotfiles batch; conduct routes executor rows only
   (ratified).

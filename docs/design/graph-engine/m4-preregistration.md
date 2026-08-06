@@ -73,6 +73,15 @@ the cause, no rerun until the cause is dispositioned.
 - TTLs: lease.ttl.default 15m · lease.ttl.write 45m
 - vote rules: security-acceptance 0.67 · doc-acceptance 0.60
 
+**Post-run (2026-08-05, post-M4 harness batch).** The wave.js pin above is
+RUN-3's and stands as its record. Superseded for RUN-4 by sha256
+`374e18ed…75f50f79` — the source file now carries RUN-3's two authorized
+mid-run edits (H-2 decode, H-7 CONFLICT cap, previously rendered-copy only)
+plus H-4/H-5/P-13/H-8 and the H-11 staged-wave change. `policy.expected.json`
+is UNCHANGED at 2ca4a8bb…2fcce597 and the golden check passes against it, so
+policy parsing and the AC-2.2 resolver table are provably untouched by the
+batch.
+
 ## 7. No-touch rule
 
 The operator does not edit the repo, the tracker DB, or any config between

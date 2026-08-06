@@ -27,6 +27,25 @@ second-guess a `next` result.
 
 Run it from the top each time. Do not cache anything between iterations.
 
+**The loop is continuous. Keep going until the run is genuinely finished.** A
+workflow is many phases deep, and the engine hands you ONE phase at a time:
+activation expands the first phase, and `next` only ever offers what is ready
+right now. So a wave completing is not the run completing — it is one phase
+completing, and the phase it unblocked is waiting for you to ask again.
+
+After every close, go straight back to step 1 and ask again. Do not stop to
+report progress, do not ask the operator whether to continue, and do not treat
+"the wave finished" as a finishing line. **You stop for exactly three things:**
+
+1. A **human or vote gate** parks the run (`waiting-human`) — present it and wait.
+2. An engine **refusal** you cannot resolve — report it verbatim and stop.
+3. `next` returns **no rows and nothing is running** — the run is done.
+
+Anything else is the middle of the loop, and the middle of the loop is where you
+keep working. A run that stops after one wave because nobody asked the engine a
+second time looks exactly like a run that finished, which is why this is stated
+so plainly: RUN-3's operator observed the whole run execute as a single wave.
+
 ### 1. Ask what is ready
 
 ```bash
@@ -39,17 +58,12 @@ docket next --run $RUN --json
 - **A dispatch is already open** → reconcile before anything else:
   `docket dispatch verify --run $RUN`, then close it, or abandon it. Do not open
   a second one; the engine refuses, and the refusal is correct.
+- **Refuses with `usage-rows-missing`** (the D2 discrepancy) → you skipped the
+  back-fill. Run it (step 3), then ask again. The verb exists now, so this
+  refusal is a missed step in your own loop rather than a wedge to work around:
+  the earlier open-first fallback retired when `dispatch backfill-usage` landed.
 
-**Open-first fallback — conditional, and only on this exact refusal.** If `next`
-refuses with `usage-rows-missing` (the D2 discrepancy), treat `docket dispatch
-open` as the ready query for the rest of the run: open returns the same rows,
-and it is not gated behind the discrepancy probe that `next` runs first.
-
-This is a workaround for open engine gaps (E-4: acceptance cannot clear D2, so
-`next` refuses permanently once any step completes without usage; E-12: action
-steps are driven only from `next`, so the same refusal starves them). **Revert to
-next-first the moment the engine's E-4/E-12 fix lands.** Do not generalize it:
-any other refusal from `next` is a real stall — report it and stop.
+Any other refusal from `next` is a real stall — report it verbatim and stop.
 
 **Never open a dispatch while the run is parked.** If the run is in
 `waiting-human`, or you have nothing ready to hand the wave, do not open a
@@ -117,10 +131,18 @@ close is usage the probe never saw, and each subsequent close then re-reports th
 same stranded set. Back-fill, verify, close — in that order, every iteration.
 
 ```bash
-docket run report $RUN --json          # 1. read usage back from the journal
-# 2. back-fill per-spawn usage (see below) — BEFORE the close
-docket dispatch close --run $RUN       # 3. only now
+# 1. read each spawn's usage out of the wave's journal (see below for where)
+# 2. back-fill it — BEFORE the close. One transaction, whole batch or nothing:
+docket dispatch backfill-usage --from-json - <<'JSON'
+[{"step": "STEP-12", "unit": "tokens", "quantity": 48211}]
+JSON
+# 3. only now:
+docket dispatch close --run $RUN
 ```
+
+Rows land against the step's recorded attempt, and `--source` defaults to
+`backfilled`. Back-fill AFTER the steps complete and BEFORE the close — that
+window is the whole design, and the flow never needs another.
 
 Surface any `waiting-human` steps (below), then go back to step 1.
 
@@ -166,12 +188,13 @@ Silence is not a yes. An operator saying "keep going" about something else is
 not a yes. Only an answer to this question is a yes.
 
 **`--accept-missing-usage`.** Never on your own initiative — that is the
-invariant, and it has no exceptions. The flag exists for two known cases, and the
-authorization is the operator's in both, per run, reason recorded: a journal that
-genuinely lacks usage (E2 recorded failing), and RUN-3's discovered case — a
-journal that HAS usage the engine cannot receive (no back-fill verb; register
-E-3). When the engine gains that verb, the second case retires and this paragraph
-shrinks.
+invariant, and it has no exceptions. One case remains: a journal that genuinely
+lacks usage. The authorization is the operator's, per run, reason recorded.
+
+RUN-3's other case — a journal that HAS usage the engine could not receive —
+**retired when `dispatch backfill-usage` landed**. If the numbers exist, they go
+in the ledger. Reaching for this flag when you could have back-filled makes the
+ledger lie about work you measured.
 
 ## Human gates
 

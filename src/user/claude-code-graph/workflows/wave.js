@@ -198,9 +198,9 @@ function tierIndex(policy, tier) {
   return Object.keys(policy.tiers).indexOf(tier)
 }
 
-function diamondEligible(policy, hint, issue, row, preAscentTier) {
+function diamondEligible(policy, hint, row, preAscentTier) {
   const gates = (policy.escalation && policy.escalation.diamond_gates) || []
-  const labels = (issue && issue.labels) || []
+  const labels = labelsOf(row)
   for (const g of gates) {
     if (g === 'investigator-class' && INVESTIGATOR_CLASS.includes(hint)) return true
     if (g === 'novel-architecture' && labels.includes('novel-architecture')) return true
@@ -209,8 +209,23 @@ function diamondEligible(policy, hint, issue, row, preAscentTier) {
   return false
 }
 
-function resolve(row, issue, policy) {
-  const labels = (issue && issue.labels) || []
+// Labels ride on the ROW, not on a nested issue object: `next` renders `issue`
+// as a bare id string ("DKT-2") and carries the issue's frozen labels in
+// `row.labels` (engine-spec §11.4). Reading them off `row.issue` found
+// `undefined` on every real row, so every label-keyed rule below — the resolve
+// table, the security ceiling, the diamond gate — silently took its default
+// branch. A doc:tdd issue routed to the PRD contract at a lower tier, and a
+// security-labelled issue resolved exactly like an unlabelled one. Found
+// 2026-08-06 by diffing a live `next` row against this function's assumption.
+function labelsOf(row) {
+  if (Array.isArray(row.labels)) return row.labels
+  // Tolerated only because `step show` and hand-built row sets nest it.
+  if (row.issue && Array.isArray(row.issue.labels)) return row.issue.labels
+  return []
+}
+
+function resolve(row, policy) {
+  const labels = labelsOf(row)
 
   // 0. Action rows are never spawned (P-13). Builtin action steps are run BY
   //    the engine (driveActionSteps) and never claimed by an agent, so an
@@ -277,7 +292,7 @@ function resolve(row, issue, policy) {
   }
 
   // 6. Diamond gating — applies to BASE tiers, not only escalated ones (§4.3.1).
-  if (tier === 'diamond' && !diamondEligible(policy, found.key, issue, row, preAscentTier)) {
+  if (tier === 'diamond' && !diamondEligible(policy, found.key, row, preAscentTier)) {
     tier = policy.escalation.fallback.diamond
   }
 
@@ -332,33 +347,75 @@ function archetype(row, hint) {
 function bootstrap(row, r) {
   return `You are executing one step of a Docket run. Follow these four obligations exactly.
 
-1. Claim it: \`docket step claim ${row.step} --owner wave:${row.step} --render\`
-   One atomic mediation returning your capability token and your fully rendered
-   brief. On CONFLICT: stop immediately and report AT MOST three lines: your
-   step id, the word CONFLICT, and the engine's error line verbatim. Do not
-   investigate the holder, the scopes, or the remedy — the conductor and the
-   engine already know.
+1. Claim it AND PARK THE TOKEN ON DISK, in ONE Bash call, exactly this:
+
+   \`\`\`
+   docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
+     jq -r '.data.token'  < "$TMPDIR/${row.step}.claim.json" > "$TMPDIR/${row.step}.token" &&
+     chmod 600 "$TMPDIR/${row.step}.token" &&
+     jq -r '.data.packet' < "$TMPDIR/${row.step}.claim.json" &&
+     rm -f "$TMPDIR/${row.step}.claim.json"
+   \`\`\`
+
+   Every path is spelled out because \`$TMPDIR\` IS SHARED BY EVERY EXECUTOR IN
+   THE WAVE (measured: concurrent subagents all get the same directory). Your
+   step id is what makes these filenames yours; do not shorten them to
+   \`claim.json\` or \`token\`, or a sibling's claim overwrites yours.
+
+   THE TOKEN IS RETURNED EXACTLY ONCE, in that response body — re-claiming is
+   refused while you hold the lease, so there is NO second chance to capture it.
+   SHELL VARIABLES DO NOT SURVIVE BETWEEN BASH CALLS and your work in step 2
+   will take many calls, so a variable is useless here. The file is the only
+   channel that reaches step 3.
+
+   WRITING THE TOKEN TO THIS FILE IS REQUIRED AND AUTHORIZED — it is the
+   designed mechanism, not a leak. It is mode 0600 under your own step id, it
+   dies with the session's scratch directory, and the engine retires the token
+   the moment you record. Do not skip the file write to be cautious: skipping
+   it strands the step and is the WORSE outcome.
+
+   The last command prints your rendered brief. Read it — it is your contract.
+
+   On CONFLICT: stop immediately and report AT MOST three lines: your step id,
+   the word CONFLICT, and the engine's error line verbatim. Do not investigate
+   the holder, the scopes, or the remedy — the conductor and the engine already
+   know.
 
 2. Execute the brief you were handed. It is your entire contract.
 
-3. Record it yourself, with the token from \`DOCKET_TOKEN\`.
-   DOCKET_TOKEN is ALREADY set in your environment — the claim in step 1 put it
-   there. Do not print it, echo it, log it, re-export it, pass it as a literal
-   on any command line, or reproduce it in your reply. Reference it only as the
-   variable \`\$DOCKET_TOKEN\`; the docket CLI reads it from the environment on
-   its own, so you never need its value.
+3. Record it yourself, feeding the token file to STDIN:
 
-   \`docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}'\`
-   or \`docket step fail ${row.step} --note '<why>'\` on failure.
+   \`docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
+
+   or on failure:
+
+   \`docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
+
+   The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
+   (\`internal/cli/token.go\`; engine-spec.md §4, "Tokens pass via env/stdin,
+   never argv"). NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export into
+   your shell. Redirecting the file into stdin is the channel.
+
+   Never \`cat\` the file, echo its contents, paste it into a command line, or
+   reproduce it in your reply. There is deliberately no \`--token\` flag on any
+   verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
+
+   Then delete it: \`rm -f "$TMPDIR/${row.step}.token"\`
+
+   If the token file is missing or empty, or a record is refused for a missing
+   or invalid token, say so plainly and stop. Do not reconstruct or guess it.
 
    If the brief requires an emitted artifact, write it to a FRESH file whose
-   name starts with your step id — \`${row.step}-<kind>.md\`, in your own
-   scratch space — then pass \`--artifact-kind <kind> --artifact-file <path>\`
-   on the complete. Never write to or reuse a shared filename like
-   \`change-summary.md\`: executors in one wave share a scratch directory, and
-   under a shared name a racing sibling's bytes — or a predecessor's leftover
-   when your own write silently fails — get recorded as YOUR artifact
-   (H-13; RUN-3's STEP-11 recorded STEP-21's summary exactly this way).
+   name starts with your step id — \`$TMPDIR/${row.step}-<kind>.md\` — then pass
+   \`--artifact-file <path>\` on the complete. (There is no \`--artifact-kind\`:
+   the KIND comes from the workflow's \`emits\`, which your brief's OUTPUT
+   section already names. A structured payload, when your brief requires one,
+   goes in \`--payload-file <path>\`.) Never
+   write to or reuse a shared filename like \`change-summary.md\`: executors in
+   one wave share \`$TMPDIR\`, and under a shared name a racing sibling's bytes
+   — or a predecessor's leftover when your own write silently fails — get
+   recorded as YOUR artifact (RUN-3's STEP-11 recorded STEP-21's summary
+   exactly this way).
 
    Copy model_requested and effort_requested EXACTLY as written above — they are
    the harness's record of its own intent, not yours to adjust. Fill the two
@@ -441,16 +498,30 @@ function groupByIssue(list) {
 
 // One spawn. `phaseLabel` puts the row in its stage's box in /workflows.
 function spawn(row, phaseLabel) {
-  const r = resolve(row, row.issue, policy)
+  const r = resolve(row, policy)
   const type = archetype(row, r.hint)
-  log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})`)
+  log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})` +
+      ` [${labelsOf(row).join(' ') || 'no labels'}]`)
   return agent(bootstrap(row, r), {
     label: row.step,          // journal attribution per step (§4.2, E2)
     phase: phaseLabel,
     agentType: type,
     model: r.model,
     effort: r.effort,
-  }).then((text) => ({ step: row.step, status: text == null ? 'no-return' : 'recorded', text }))
+  }).then((text) => {
+    // A NULL return is a DEAD SPAWN, not a quiet success. The runtime returns
+    // null — it does not throw — when a model is unavailable or the agent is
+    // skipped, and such an executor never claimed and never recorded, so the
+    // step is still ready and the engine will offer it again forever. Calling
+    // that 'no-return' read like a benign variant of 'recorded' and left the
+    // conductor looping on a step nothing was working. Say it plainly.
+    if (text == null) {
+      log(`${row.step}: SPAWN PRODUCED NOTHING (model ${r.model} unavailable, ` +
+          `or the agent was skipped) — the step was never claimed`)
+      return { step: row.step, status: 'spawn-failed', text: null }
+    }
+    return { step: row.step, status: 'recorded', text }
+  })
 }
 
 const writes = rows.filter((row) => row.class === 'write')

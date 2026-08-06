@@ -47,6 +47,16 @@ executor = "spec-doc-author"         # label-keyed resolution table (05 §1):
                                      #   label. Opaque to core.
 class = "write"
 emits = "doc"
+packet = ["contracts/{executor}.md"]
+                                     # `{executor}` substitutes the DECLARED hint
+                                     #   (`spec-doc-author`) at expansion, not the
+                                     #   policy-resolved one: the resolution table
+                                     #   is harness-side and runs after the packet
+                                     #   is fixed. So the contract this names must
+                                     #   be the router — it dispatches on the
+                                     #   issue's `doc:<type>` label itself.
+                                     #   Without this line the step rendered a
+                                     #   contract-FREE brief (found 2026-08-06).
 expected_cost = 1.20
 inputs = ["issue.body"]
 gates = ["doc-validate", "tdd-preflight", "reserved-name-check"]
@@ -60,6 +70,9 @@ on_fail = "waiting-human"
 
 [[step]]
 name = "review"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["author"]
 fanout = ["judge-architecture", "judge-security", "judge-design"]
                                      # 05 §2's three lenses. The fanout width is
@@ -78,6 +91,9 @@ inputs = ["author.doc", "issue.body"]
 
 [[step]]
 name = "synthesize"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
@@ -101,6 +117,7 @@ executor = "spec-doc-author"         # same resolution table; the revision is th
                                      #   author's, not a separate node
 class = "write"
 emits = "doc"
+packet = ["contracts/{executor}.md"]  # same router contract as `author`
 expected_cost = 0.90
 loop = true
 inputs = ["reconcile.findings", "author.doc"]

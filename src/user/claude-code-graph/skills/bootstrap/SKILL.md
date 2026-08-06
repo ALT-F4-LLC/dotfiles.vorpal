@@ -22,7 +22,20 @@ Two rules you must not fight:
 ```bash
 docket init                                   # if .docket/ does not exist
 cp -R ~/.claude/docket-config/. .docket/config/
+
+# The corpus does not activate without these two. Set them now; §4b argues the
+# numbers and is where the operator approves or changes them.
+docket config set vote.rule.security-acceptance.threshold 0.67
+docket config set vote.rule.doc-acceptance.threshold 0.60
 ```
+
+**Why those two lines are here and not later.** Activation validates EVERY
+registered workflow, not just the one an issue binds, and two of the nine name a
+`vote_rule`. Until both rules exist, `run activate` refuses outright — on a
+virgin project, for an unlabelled issue that never touches a vote gate. Setting
+them at copy time means the first activation an operator sees is a real one.
+They authorize no execution, so they are safe to set before approval; what needs
+approval is the NUMBER, which §4b puts in front of the operator.
 
 `~/.claude/docket-config/` is the shipped corpus: 9 workflows, 24 contracts, 16
 fragments, 2 schemas, and `policy.toml`. It is a local reference copy — no

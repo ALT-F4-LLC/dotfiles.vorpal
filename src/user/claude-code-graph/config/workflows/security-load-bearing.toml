@@ -34,6 +34,9 @@ unless_labels = [
 
 [[step]]
 name = "threat-model"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = []                           # root: the threat model precedes implement
 executor = "threat-model"
 emits = "threat-model"
@@ -57,6 +60,9 @@ on_fail = "waiting-human"
 
 [[step]]
 name = "review"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing", "judge-security"]
 emits = "findings"
@@ -69,6 +75,9 @@ inputs = ["implement.change-summary", "threat-model.threat-model", "issue.diff"]
 
 [[step]]
 name = "synthesize"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["review"]
 executor = "synthesize-findings"
 emits = "findings"
@@ -118,6 +127,9 @@ inputs = ["reconcile.findings"]
 
 [[step]]
 name = "verify"
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
 after = ["reconcile"]
 executor = "verify-ac"
 emits = "ac-report"

@@ -47,6 +47,10 @@ that this file lacks gets added before disposition.
   invisible to review (STEP-11's entire guard_stop_test.go and the cli/guard.go
   adaptation were never in the reviewed diff). A review blind spot covering
   exactly the class of change (new tests) reviews most need to see.
+- E-11 (wave 5, PROBABLE — verify at fix time): all four DKT-75 review briefs
+  carried DKT-76's change-summary as their input artifact — cross-issue input
+  resolution bleed, likely keyed on the shared instance name implement@0.
+  Judges detected it and reviewed the correct diff anyway.
 - E-10 (observed wave 4): under overlapping scopes and the commit-at-end
   workflow, issue.diff shows SIBLING issues' uncommitted work — a DKT-69
   judge reviewed and flagged DKT-75's guard.go change (cross-issue diff
@@ -114,6 +118,21 @@ drift) and DKT-70 (packet composition — see §5).
 - P-7 (wave 4, judge-found): FailStep validates content BEFORE authorizing
   the holder (human.go:250 vs :265), inverting saga.go:277's stated rule —
   a real defect in landed DKT-69, flowing to its fix loop via reconcile.
+- P-10 (wave 5, judge-found, TWO independent probes with firing positive
+  controls): landed DKT-75 re-introduces its own defect class — the new
+  open-dispatch arm probes ALL discrepancies via refuseIfUnreconciledTx even
+  with no open dispatch, and D2 fires on terminal steps, so any run with
+  stranded usage (every real run until E-3/E-4) has a PERMANENTLY blockable
+  stop. NOT operational in RUN-3 (running binary pinned pre-change) but must
+  not ship unrepaired. Bundle: blocksStop helper no longer mirrors the
+  predicate (comment lies); materialized=1 clause mutation-untested (=99
+  stays green); no docs/ in the change set — contradicts §6.12 and H11's
+  reviewed 2026-08-03 decision; SKILL.md now contradicts the TDD. Routed:
+  wave-6 reconcile -> fix loop with judge findings as inputs (the designed
+  reopen).
+- P-11: item 23 RECURRED (second judge probe-file tree write, self-reported,
+  cleaned, git-verified) — the sanctioned scratch path for read-class judges
+  rises from nice-to-have to required.
 - P-8: bootstrap prompt omits --artifact-file/--payload-file on complete
   (conduct item 22) and read-class judges have no sanctioned scratch path —
   one copied a probe file into the tree, removed it, and self-reported

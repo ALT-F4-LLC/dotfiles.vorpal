@@ -36,5 +36,7 @@ Do not restate the diff; the engine snapshots it.
 # Stuck
 Missing input, contradictory ACs, scope too narrow for a correct fix, or an environment
 failure you cannot resolve in two attempts: emit a `gap` artifact naming exactly what is
-missing and what you recommend, then stop. An honest gap is a success condition; a
-workaround that hides one is a defect.
+missing and what you recommend, then stop. An honest gap is a success condition — record
+it with `step complete`, exactly as you would a change summary. `step fail` is for an
+attempt a retry might redeem, and it carries no artifact (`--note` only). A workaround
+that hides a gap is a defect.

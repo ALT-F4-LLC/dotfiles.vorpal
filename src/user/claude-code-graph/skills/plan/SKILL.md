@@ -73,11 +73,29 @@ allowed to live: the decomposition rationale, the risks you see, the phasing you
 suggest, and anything you asked about that turned out to matter. Write it for
 the person who reads this run in three months.
 
-**The issues** carry kind, labels, scope globs, and the ACs in the body. Scope
-is a path glob and it is checked mechanically against the diff — write the
-narrowest glob that can hold the change. An issue that writes files and declares
-no scope is refused at activation, which is the correct behavior and not a
-reason to write a wide glob.
+**The issues** carry kind, labels, scope globs, and the ACs in the body.
+
+**Everything an executor must know goes in the BODY, before activation.** Issue
+bodies snapshot at activation and are frozen from that moment — the body is what
+gets rendered into every brief. Comments added later never reach a brief. So any
+operator ruling, settled semantics, resolved ambiguity, or decision that came out
+of the conversation above must be written into the body now, in the issue it
+governs. "We agreed X in chat" is not a channel; "it's in a comment on the issue"
+is not a channel. RUN-3 had a gated-inclusion ruling live only in a comment, and
+the executor reasoned around it in a vacuum — it did the wrong thing correctly,
+because the right thing never reached it. If a ruling arrives mid-run, it cannot
+be back-fitted: it goes into the *next* planning pass, in a body.
+
+**Scope** is a path glob checked mechanically against the diff — write the
+narrowest glob that can honestly hold the change. Narrow is not a style
+preference here: scope overlap is how the engine decides two steps conflict, so a
+broad glob serializes the run **against itself**. RUN-3's `internal/engine/**`
+made every issue collide with every other issue, and ~40% of all spawns died on
+claim conflicts as a result. Prefer `internal/engine/dispatch/**` over
+`internal/engine/**`, and several narrow globs over one wide one. Widen only when
+the change genuinely spans that much — an honest wide glob is fine, a lazy one
+costs the whole run. An issue that writes files and declares no scope is refused
+at activation, which is correct and is not a reason to write a wide glob.
 
 **The edges** are `depends_on` relations. Declare only real dependencies:
 a false edge serializes work that could have run in parallel, and a missing one

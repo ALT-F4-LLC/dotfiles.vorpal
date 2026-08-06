@@ -40,6 +40,23 @@ docket next --run $RUN --json
   `docket dispatch verify --run $RUN`, then close it, or abandon it. Do not open
   a second one; the engine refuses, and the refusal is correct.
 
+**Open-first fallback — conditional, and only on this exact refusal.** If `next`
+refuses with `usage-rows-missing` (the D2 discrepancy), treat `docket dispatch
+open` as the ready query for the rest of the run: open returns the same rows,
+and it is not gated behind the discrepancy probe that `next` runs first.
+
+This is a workaround for open engine gaps (E-4: acceptance cannot clear D2, so
+`next` refuses permanently once any step completes without usage; E-12: action
+steps are driven only from `next`, so the same refusal starves them). **Revert to
+next-first the moment the engine's E-4/E-12 fix lands.** Do not generalize it:
+any other refusal from `next` is a real stall — report it and stop.
+
+**Never open a dispatch while the run is parked.** If the run is in
+`waiting-human`, or you have nothing ready to hand the wave, do not open a
+dispatch to "check". An opened-and-immediately-closed empty dispatch is pure
+audit noise — RUN-3 produced two rounds of it before retiring the habit. Ask the
+engine what is ready; open only when you have executor rows to dispatch.
+
 ### 2. Open the dispatch and hand it to the wave
 
 ```bash
@@ -47,8 +64,29 @@ docket dispatch open --run $RUN --json
 cat .docket/config/policy.toml
 ```
 
-Then invoke the saved `wave` workflow with `args = {rows, policyText}` — the
-dispatch rows verbatim, and policy.toml as text.
+Then invoke the wave **by scriptPath, always**:
+
+```
+Workflow({ scriptPath: "~/.claude/workflows/wave.js", args: {rows, policyText} })
+```
+
+**Never `Workflow({name: "wave"})`.** The name registry serves a stale snapshot:
+three RUN-3 waves executed pre-edit bytes after the file had already changed on
+disk, and nothing in the transcript said so. `scriptPath` is the only invocation
+that provably runs the file that is there now. This is not a preference; a
+by-name invocation is a defect regardless of how convenient it looks.
+
+Pass `args` as a **real object** — `{rows, policyText}` — never a JSON-encoded
+string and never `JSON.stringify`'d. (wave.js now decodes a string if one
+arrives, but it says so loudly; do not rely on the rescue.) There is no
+`policyPath` parameter: the script cannot read files, so policy.toml travels as
+TEXT in `policyText`.
+
+**Route executor rows only.** Filter the dispatch rows to those the wave can
+spawn and hand over only those. `kind: "action"` steps are engine-run — the
+engine drives them itself, they are never claimed by an agent, and handing one to
+the wave is a mistake the wave will refuse. Filtering them here is the primary
+control; the wave's refusal is the backstop, not the plan.
 
 **Your entire involvement with policy is three mechanical acts:**
 
@@ -60,9 +98,11 @@ dispatch rows verbatim, and policy.toml as text.
 You do not parse policy.toml. You do not interpret it, summarize it, or act on
 anything in it. It is a payload you carry, and `wave.js` is what reads it.
 
-Pass the rows through unchanged too. Do not filter them, reorder them, drop one
-that looks redundant, or add one. The manifest is hashed; what you were handed
-is what runs.
+Beyond that kind filter, pass the rows through unchanged. Do not reorder them,
+drop one that looks redundant, or add one. The manifest is hashed; what you were
+handed is what runs. In particular do **not** try to sequence them or hold rows
+back to avoid claim conflicts — wave.js stages the wave itself (writers serially,
+then readers grouped per issue) and that staging is code, not your judgment.
 
 Then await the wave's completion notification. The session is free meanwhile —
 the operator can do other things, and so can you.
@@ -71,13 +111,18 @@ the operator can do other things, and so can you.
 
 On the wave's completion notification:
 
+**Back-fill usage FIRST, then close. The order is binding.** Closing a dispatch
+is what triggers the engine's discrepancy probe; usage that arrives after the
+close is usage the probe never saw, and each subsequent close then re-reports the
+same stranded set. Back-fill, verify, close — in that order, every iteration.
+
 ```bash
-docket run report $RUN --json          # read usage back from the journal
-docket dispatch close --run $RUN
+docket run report $RUN --json          # 1. read usage back from the journal
+# 2. back-fill per-spawn usage (see below) — BEFORE the close
+docket dispatch close --run $RUN       # 3. only now
 ```
 
-Back-fill per-spawn usage from the wave journal, then close. Surface any
-`waiting-human` steps (below), then go back to step 1.
+Surface any `waiting-human` steps (below), then go back to step 1.
 
 **Where the numbers actually are** (E2, measured in G5). The journal directory
 holds three kinds of file, and only one carries usage:
@@ -120,17 +165,13 @@ docket dispatch open --run $RUN --ack-reap <seq>
 Silence is not a yes. An operator saying "keep going" about something else is
 not a yes. Only an answer to this question is a yes.
 
-**`--accept-missing-usage`.** Do not pass it. It closes over a real discrepancy
-and records the acceptance, and it is authorized only when environment check E2
-(wave-journal per-agent usage) has been recorded as failing. **E2 was run for
-real in G5 and PASSED** — per-agent usage is present and complete in the wave
-journal, and each agent is attributable to its step id. So the flag stays
-locked, now on evidence rather than on the absence of it: no path through this
-skill passes it.
-
-If usage rows are missing, that is a discrepancy and it should stall loudly.
-Report it. If it turns out E2 is the cause, that is a finding to record against
-E2 — not a flag to reach for mid-run.
+**`--accept-missing-usage`.** Never on your own initiative — that is the
+invariant, and it has no exceptions. The flag exists for two known cases, and the
+authorization is the operator's in both, per run, reason recorded: a journal that
+genuinely lacks usage (E2 recorded failing), and RUN-3's discovered case — a
+journal that HAS usage the engine cannot receive (no back-fill verb; register
+E-3). When the engine gains that verb, the second case retires and this paragraph
+shrinks.
 
 ## Human gates
 

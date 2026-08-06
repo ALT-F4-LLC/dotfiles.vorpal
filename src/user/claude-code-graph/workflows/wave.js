@@ -1,13 +1,23 @@
 export const meta = {
   name: 'wave',
-  description: 'Spawn one executor per dispatched step row, routed by policy.toml',
-  phases: [{ title: 'Wave', detail: 'one executor agent per spawn row' }],
+  description: 'Spawn one executor per dispatched step row, routed by policy.toml. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
+  whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
+  // Stage titles are computed per wave (writers, then one per issue), so the
+  // static list here names the shape rather than the exact boxes.
+  phases: [
+    { title: 'Writes (serial)', detail: 'write-class rows, one at a time' },
+    { title: 'Reads per issue', detail: 'read-class rows, parallel within an issue, awaited between' },
+  ],
 }
 
 // wave.js — the harness adapter (03 §1, §3). Static and versioned; never
 // per-run generated (01 §4 A2). Inputs are `args = {rows, policyText}` handed
 // in by the `run` skill: `next` rows verbatim (engine-spec §11.4) plus
 // policy.toml as TEXT, because workflow scripts have no filesystem access.
+// There is no policyPath parameter and never was (H-8).
+//
+// Rows are not spawned all at once: writers run serially, then readers run
+// grouped per issue — see "Staging (H-11)" below.
 //
 // Every routing decision below is code. No model resolves, compares, or
 // chooses a tier, model, effort, or executor anywhere in this path (AC-2.2b):
@@ -202,6 +212,20 @@ function diamondEligible(policy, hint, issue, row, preAscentTier) {
 function resolve(row, issue, policy) {
   const labels = (issue && issue.labels) || []
 
+  // 0. Action rows are never spawned (P-13). Builtin action steps are run BY
+  //    the engine (driveActionSteps) and never claimed by an agent, so an
+  //    action row reaching the wave is a routing mistake upstream, not policy
+  //    drift — the conduct skill filters to executor rows and this is the
+  //    belt-and-braces. Diagnose it accurately: falling through to the
+  //    coverage-invariant error below would blame policy.toml for a row that
+  //    should never have been handed over at all.
+  if (row.kind === 'action') {
+    throw new Error(
+      `wave.js: step ${row.step} is kind:"action" — action steps are engine-run; ` +
+      `not a spawn. Route executor rows to the wave only. Refusing to route.`
+    )
+  }
+
   // 1. hint <- row.executor
   let hint = row.executor
 
@@ -308,14 +332,22 @@ function archetype(row, hint) {
 function bootstrap(row, r) {
   return `You are executing one step of a Docket run. Follow these four obligations exactly.
 
-1. Claim it: \`docket step claim ${row.step} --render\`
+1. Claim it: \`docket step claim ${row.step} --owner wave:${row.step} --render\`
    One atomic mediation returning your capability token and your fully rendered
-   brief. On CONFLICT, STOP IMMEDIATELY and report the conflict — another agent
-   holds this step.
+   brief. On CONFLICT: stop immediately and report AT MOST three lines: your
+   step id, the word CONFLICT, and the engine's error line verbatim. Do not
+   investigate the holder, the scopes, or the remedy — the conductor and the
+   engine already know.
 
 2. Execute the brief you were handed. It is your entire contract.
 
-3. Record it yourself, with the token from \`DOCKET_TOKEN\`:
+3. Record it yourself, with the token from \`DOCKET_TOKEN\`.
+   DOCKET_TOKEN is ALREADY set in your environment — the claim in step 1 put it
+   there. Do not print it, echo it, log it, re-export it, pass it as a literal
+   on any command line, or reproduce it in your reply. Reference it only as the
+   variable \`\$DOCKET_TOKEN\`; the docket CLI reads it from the environment on
+   its own, so you never need its value.
+
    \`docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}'\`
    or \`docket step fail ${row.step} --note '<why>'\` on failure.
    Copy model_requested and effort_requested EXACTLY as written above — they are
@@ -326,8 +358,28 @@ function bootstrap(row, r) {
 }
 
 // --- The wave ---------------------------------------------------------------
-const rows = (args && args.rows) || []
-const policy = parseToml((args && args.policyText) || '')
+// [OBSERVED 2026-08-05, RUN-3] The harness JSON-encodes the args object in
+// transit, so `args` can arrive as a STRING. Decode it here rather than routing
+// against an empty document — an undecoded string has no .policyText, which
+// falls through to `|| ''` and refuses for the wrong reason entirely. Name the
+// real fault instead of parsing an empty document.
+let input = args
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch (e) {
+    throw new Error(
+      `wave.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
+      `Refusing to route.`
+    )
+  }
+}
+if (!input || typeof input !== 'object') throw new Error(
+  `wave.js: args is ${typeof input}, expected {rows, policyText}. Refusing to route.`
+)
+
+const rows = input.rows || []
+const policy = parseToml(input.policyText || '')
 
 if (policy.policy?.version !== 1) {
   throw new Error(
@@ -336,22 +388,98 @@ if (policy.policy?.version !== 1) {
   )
 }
 
-phase('Wave')
-log(`wave: ${rows.length} row(s)`)
+// --- Staging (H-11) ---------------------------------------------------------
+// RUN-3 spawned every row in ONE parallel blast: 21 of 53 spawns (~40%) died on
+// claim CONFLICT, because the engine offers mutually-conflicting ready sets
+// (E-5) and scope conflict is class-blind across issues (E-6). Both are engine
+// fixes. This is the interim that costs nothing and needs no new data: rows
+// ALREADY carry `class` and `issue`, and that is enough to schedule the wave so
+// the conflicting pairs never run concurrently in the first place.
+//
+//   Stage 1  — write-class rows, SERIAL, each awaited before the next starts.
+//              Writers are what hold broad tree scopes; running them one at a
+//              time makes writer-vs-writer and writer-vs-reader contention
+//              structurally impossible within a wave.
+//   Stage 2+ — read-class rows grouped BY ISSUE: parallel inside a group
+//              (same-issue reads already coexist — the ready.go:616-643
+//              same-issue exemption), awaited between groups (cross-issue
+//              reads exclude each other today; that is exactly E-6).
+//
+// Everything here is deterministic code: the partition is a `class` test, the
+// grouping is a `issue` key, and the order is first-appearance. No model judges
+// anything about ordering, and no row's routing changes — only WHEN it spawns.
+// Residual races (cross-run lease holders, mid-wave state drift) are out of
+// reach without the engine fix; this removes the intra-wave class entirely.
 
-const results = await parallel(rows.map((row) => () => {
+function issueKey(row) {
+  const iss = row.issue
+  if (iss == null) return '(no-issue)'
+  return typeof iss === 'object' ? (iss.id ?? iss.key ?? JSON.stringify(iss)) : String(iss)
+}
+
+// Group preserving first-appearance order — Map keeps insertion order, so the
+// stage sequence is a pure function of the row order the engine handed us.
+function groupByIssue(list) {
+  const groups = new Map()
+  for (const row of list) {
+    const k = issueKey(row)
+    if (!groups.has(k)) groups.set(k, [])
+    groups.get(k).push(row)
+  }
+  return groups
+}
+
+// One spawn. `phaseLabel` puts the row in its stage's box in /workflows.
+function spawn(row, phaseLabel) {
   const r = resolve(row, row.issue, policy)
   const type = archetype(row, r.hint)
   log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})`)
   return agent(bootstrap(row, r), {
     label: row.step,          // journal attribution per step (§4.2, E2)
-    phase: 'Wave',
+    phase: phaseLabel,
     agentType: type,
     model: r.model,
     effort: r.effort,
   }).then((text) => ({ step: row.step, status: text == null ? 'no-return' : 'recorded', text }))
-}))
+}
+
+const writes = rows.filter((row) => row.class === 'write')
+const reads = rows.filter((row) => row.class !== 'write')
+const readGroups = groupByIssue(reads)
+
+log(
+  `wave: ${rows.length} row(s) — ${writes.length} write (serial), ` +
+  `${reads.length} read in ${readGroups.size} issue group(s)`
+)
+
+// Results are collected per row and re-keyed by step id at the end, so the
+// return stays a flat checklist regardless of how the rows were staged.
+const byStep = new Map()
+
+// Stage 1 — writers, strictly serial. `await` inside the loop is the point.
+if (writes.length) {
+  const label = `Writes (serial, ${writes.length})`
+  phase(label)
+  for (const row of writes) {
+    const res = await spawn(row, label)
+    byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
+  }
+}
+
+// Stage 2+ — one stage per issue, parallel within, awaited between.
+let stage = 1
+for (const [key, group] of readGroups) {
+  stage++
+  const label = `Reads ${key} (stage ${stage}, ${group.length})`
+  phase(label)
+  const settled = await parallel(group.map((row) => () => spawn(row, label)))
+  settled.forEach((res, i) => {
+    const row = group[i]
+    byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
+  })
+}
 
 // The wave's return is a checklist; the engine's own discrepancy refusal in
-// `next` is the enforcement (03 §3).
-return results.map((x, i) => x || { step: rows[i].step, status: 'spawn-failed' })
+// `next` is the enforcement (03 §3). Order follows the INPUT rows, not the
+// staging, so the conductor reads it against the dispatch it handed in.
+return rows.map((row) => byStep.get(row.step) || { step: row.step, status: 'spawn-failed' })

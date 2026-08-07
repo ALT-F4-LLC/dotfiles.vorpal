@@ -286,8 +286,15 @@ GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 # guard-no-commit-hook.sh still prompts on its own permission_mode case split.
 # This hook re-keys the DECISION to engine truth where engine truth exists; it
 # does not manufacture a verdict where the engine has declined to give one.
+# "no docket database found" joins the not-applicable set for the same reason
+# as the absent-gate arm: no DB means no run means this guard has no opinion.
+# [MEASURED 2026-08-06] every guard verb exits 2 with that error in a repo
+# with no .docket up-tree — without this arm, this hook denies every git
+# commit/push/add in every non-docket repo. Engine-side fix (NOT_FOUND off
+# the deny channel) filed; this is the hook-side mitigation.
 case $GATE_REASON in
     *'in any active run'*) allow_default ;;
+    *'no docket database found'*) allow_default ;;
 esac
 
 deny "git write blocked: ${GATE_REASON}. A git write needs an APPROVED commit-gate step on an active run — approve it with \`docket step approve\`, then retry. If this command performs no git write, the retained text matcher has false-positived on git-write wording inside it (known limitation): to read a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); only if the command must pass literal content through as an argument, write that content to a file and pass the path instead."

@@ -49,6 +49,29 @@
 # this hook family's convention: an infrastructure gap must not strand a
 # session that cannot stop. Engine-state uncertainty inside a reachable engine
 # resolves the other way — that is the engine's own exit 2.
+#
+# TWO CARVE-OUTS, both observed on RUN-1 (2026-08-06):
+#
+# NO DATABASE = NOTHING IN FLIGHT. Every guard verb exits 2 with "✘ Error: no
+# docket database found" when no .docket exists up-tree — the same exit code as
+# a legitimate deny, so without this carve-out the hook blocks every turn-end
+# in every repo that is not docket's business. [OBSERVED] mid-bootstrap,
+# pre-init: the deny pushed the session to run `docket init` earlier than it
+# had deliberately planned. No DB means no run means nothing a stop interferes
+# with: allow. (The honest fix is engine-side — NOT_FOUND should not share the
+# deny channel — filed; this is the hook-side mitigation.)
+#
+# OPEN DISPATCH = WAVE IN FLIGHT = TURN-END IS THE DESIGN. The conduct skill's
+# await pattern ("await the wave's completion notification; the session is
+# free meanwhile") REQUIRES ending the turn — notifications only deliver at
+# turn boundaries. But claimed/running steps made this hook deny every
+# turn-end mid-wave, which taught the conductor to busy-wait ("I just need to
+# actually wait rather than end the turn" — RUN-1, verbatim), burning tokens
+# and starving itself of the very notification it awaited. `docket guard
+# record` exits 2 exactly while a dispatch is open or a discrepancy stands —
+# both states where the machine is working WITHOUT the session, so a yielding
+# conductor is correct and an abandoning operator loses nothing (any session
+# resumes from `run status --active`). Allow on that probe.
 
 set -uo pipefail
 
@@ -72,6 +95,17 @@ fi
 command -v docket >/dev/null 2>&1 || allow
 
 REASON=$(docket guard stop 2>&1 >/dev/null) && allow
+
+# Carve-out 1: no database — this repo is not docket's business.
+case "$REASON" in
+    *'no docket database found'*) allow ;;
+esac
+
+# Carve-out 2: a dispatch is open (or a discrepancy stands) — the wave is in
+# flight and turn-end is the designed await. guard record's exit 2 is exactly
+# that condition; any other exit falls through to the deny below.
+docket guard record >/dev/null 2>&1
+[ "$?" -eq 2 ] && allow
 
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
 

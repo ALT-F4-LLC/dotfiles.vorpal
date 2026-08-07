@@ -34,6 +34,13 @@ unit, say so plainly and name the seam it should split on. Apply the evidence ru
 throughout, and label each claim OBSERVED or INFERRED — a categorical claim about a
 symbol's surface needs a search you actually ran, not a narrow one generalized.
 
+On a re-review round — your inputs carry a previous round's findings — scope to
+the delta: state whether each prior finding in your dimension is closed or
+still open, examine what changed since, and do not re-derive findings at
+unchanged loci a prior round already recorded. Repetition is not discovery,
+and flat finding volume across rounds is the signal a fix loop cannot
+converge on.
+
 # Emit
 `findings`: markdown body with one section per finding (location · the general rule it
 instances · the second-order consequence · evidence label · suggested direction), plus

@@ -29,6 +29,13 @@ they gain, and label the claim OBSERVED (you traced it) or INFERRED (you suspect
 with the cheapest probe that would confirm). Absence of findings in a dimension is
 reported as examined-clean, not silence.
 
+On a re-review round — your inputs carry a previous round's findings — scope to
+the delta: state whether each prior finding in your dimension is closed or
+still open, examine what changed since, and do not re-derive findings at
+unchanged loci a prior round already recorded. Repetition is not discovery,
+and flat finding volume across rounds is the signal a fix loop cannot
+converge on.
+
 # Emit
 `findings`: markdown body with one section per finding (location · mechanism · impact ·
 evidence label · suggested direction), plus the findings payload — one entry per finding

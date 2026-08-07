@@ -30,9 +30,15 @@ command -v docket >/dev/null 2>&1 || exit 0
 
 # stdout dropped, stderr kept — see docket-spawn-guard-hook.sh for why: on exit 0
 # the harness parses stdout as JSON, and `✔ allowed` is not JSON. The guard's
-# reason travels on stderr either way.
-docket guard record >/dev/null
+# reason travels on stderr either way. The no-database case stays silent: exit 2
+# with "no docket database found" is the engine's NOT_FOUND riding the deny
+# channel ([MEASURED 2026-08-06]), not a discrepancy — advisory noise about a
+# repo that is not docket's business helps nobody.
+ERR=$(docket guard record 2>&1 >/dev/null)
 if [ "$?" -eq 2 ]; then
-  echo "wave-audit (advisory): dispatch open or discrepancy standing — normal mid-wave; the engine refuses 'next' if real drift persists" >&2
+  case "$ERR" in
+    *'no docket database found'*) : ;;
+    *) echo "wave-audit (advisory): dispatch open or discrepancy standing — normal mid-wave; the engine refuses 'next' if real drift persists" >&2 ;;
+  esac
 fi
 exit 0

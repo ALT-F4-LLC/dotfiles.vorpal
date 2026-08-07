@@ -55,6 +55,13 @@ or INFERRED (you suspect it, with the cheapest check that would confirm). Pair e
 Blocker with a concrete alternative; where none exists yet, say so in those words rather
 than downgrading the finding.
 
+On a re-review round — your inputs carry a previous round's findings — scope to
+the delta: state whether each prior finding in your dimension is closed or
+still open, examine what changed since, and do not re-derive findings at
+unchanged loci a prior round already recorded. Repetition is not discovery,
+and flat finding volume across rounds is the signal a fix loop cannot
+converge on.
+
 # Emit
 `findings`: markdown body with one section per finding (dimension · spec section ·
 expected versus observed · governing principle where one applies · evidence label ·

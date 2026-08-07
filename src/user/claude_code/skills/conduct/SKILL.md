@@ -102,7 +102,10 @@ Pass `args` as a **real object** — `{rows, policyText}` — never a JSON-encod
 string and never `JSON.stringify`'d. (wave.js now decodes a string if one
 arrives, but it says so loudly; do not rely on the rescue.) There is no
 `policyPath` parameter: the script cannot read files, so policy.toml travels as
-TEXT in `policyText`.
+TEXT in `policyText`. The tripwire: if you find yourself escaping quotes inside
+`args`, you are composing a string — stop and restructure the call so `args` is
+a JSON object node. RUN-2 stringified it four times despite this paragraph; the
+rescue held, but every occurrence logs a scolding into the wave output.
 
 **Route executor rows only.** Filter the dispatch rows to those the wave can
 spawn and hand over only those. `kind: "action"` steps are engine-run — the
@@ -167,13 +170,24 @@ Rows land against the step's recorded attempt, and `--source` defaults to
 `backfilled`. Back-fill AFTER the steps complete and BEFORE the close — that
 window is the whole design, and the flow never needs another.
 
-**Delegate the join; do not perform it.** You are an orchestrator: spawn ONE
-`executor-read` agent on the wave's transcript directory, hand it the "Where
-the numbers actually are" section below verbatim as its brief, and have it
-return exactly the backfill rows JSON (four typed units per step). You check
-the shape — every dispatched step present, quantities integers — and pipe it.
-Reading agent transcripts yourself is work that belongs below you, and it
-fills your context with what the run no longer needs.
+**The join is a script, not a judgment: run `~/.claude/scripts/wave-usage
+<transcript-dir>`.** It emits the backfill rows JSON directly — four typed
+units per step, usage deduplicated by message id (streamed assistant messages
+repeat across transcript lines; a per-line sum double-counts, measured
+1.65-2.36× on RUN-2), step attribution via the bootstrap prompt. It exits
+nonzero when an agent cannot be attributed or carries no usage — report that,
+do not paper over it. Only if the script is absent or refuses do you fall back
+to delegating: spawn ONE `executor-read` agent on the transcript directory
+with the "Where the numbers actually are" section below verbatim as its brief.
+Either way you check the shape — every dispatched step present, quantities
+integers — and pipe it. Reading agent transcripts yourself is work that
+belongs below you.
+
+A background helper you spawned is invisible to `TaskList` and `ListAgents`
+while it runs — its completion notification is the only status surface, and
+`SendMessage` to its name is the only nudge lever. Prefer
+`run_in_background: false` for the join; it is short and you need the result
+to proceed.
 
 Surface any `waiting-human` steps (below), then go back to step 1.
 
@@ -235,7 +249,10 @@ and you run the verb on their answer.
 
 Present the actual thing being decided — the diff for a commit gate, the finding
 summary for a held cluster, the numbers for a budget breach. A gate presented as
-"step 12 needs approval" is not a gate, it is a rubber stamp.
+"step 12 needs approval" is not a gate, it is a rubber stamp. Present it through
+the built-in question tool, recommended option first and labelled
+"(Recommended)", with what each answer actually routes to stated in its
+description — resolved from the FROZEN definitions, not the files on disk.
 
 On their answer:
 
@@ -244,6 +261,33 @@ docket step approve STEP-N --note "<their reasoning, their words>"
 docket step reject  STEP-N --note "<their reasoning, their words>"
 docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<why>"
 ```
+
+**Reject is an escape hatch, not an annotation.** On a held-cluster gate,
+`approve` accepts the computed value and falls through to the threshold;
+`reject` skips the threshold and routes the step per its `on_fail` — usually
+parking the issue (saga §7.7.3, by design). And the verdict is STICKY: a
+`--as retry` on the parked routing step re-runs the aggregate, re-reads the
+same terminal reject, and re-parks (DKT-24). Present reject as "stop this
+issue and ask me again," never as "same routing, different ledger mark" —
+RUN-2 lost a round-trip to exactly that misdescription. Severity is not
+settable at these gates either; an operator instruction the engine cannot
+execute is surfaced first, then materialized as a backlog issue so it cannot
+evaporate (the DKT-23 pattern).
+
+**A gate that failed on a broken check is settled on evidence, not overridden
+blind.** When a gate's output shows it never actually ran (RUN-2: govulncheck
+DNS-failing in the sandbox, then claiming "a reachable vulnerability was
+reported"), reproduce the check out-of-band — with the sandbox off if the
+operator has authorized that — and resolve `override-pass` with the real
+result in the note. The note then carries a clean scan, not an absence of one.
+
+**Order gate resolutions around in-flight work.** Resolving a hold, a verify,
+or any step whose routing can park the run will CONFLICT every claim still in
+flight — a park is run-wide. When executor rows and a human decision are ready
+together, dispatch the executors, let the wave land and close, THEN resolve
+the decision (RUN-2 lost 25 sibling spawns across four incidents before
+adopting this order). This governs the ORDER of your own acts; it is not
+license to reorder or hold back rows within a dispatch.
 
 The note carries *their* reasoning, not your summary of it. It is the audit
 trail's only record of why a human decided what they decided. When they answer

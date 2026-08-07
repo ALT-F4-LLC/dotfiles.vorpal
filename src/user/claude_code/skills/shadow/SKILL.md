@@ -187,6 +187,21 @@ Tail on a cadence, from your last offset. A quiet transcript is a run
 working, not a run stalled — the wave notifies on completion, and gates park
 runs for hours by design.
 
+Four measured limits of these surfaces (RUN-2's shadow):
+
+- **Transcripts flush lazily.** A pending question to the operator hits disk
+  only WITH its answer — you cannot watch a gate live, so interrupt-condition
+  3 must be caught from your own cross-checks, never from seeing the question.
+- **A wave that spawned nothing writes no journal.** The workflow task's
+  `.output` file is the only record of a zero-spawn wave.
+- **Binary provenance includes the PATH.** `which` on the operator's PATH,
+  not just in-repo copies — the shadow that checked only `./bin` and
+  `.docket/bin` missed a third, go-installed binary.
+- **"No agent ran" is not "nothing read the prompt."** The spawn classifier
+  screens rendered briefs before any agent exists; blocked-at-zero-tokens is
+  consistent with the TEXT being the problem. Never rule out prompt content
+  because no agent came to life.
+
 Cross-check the engine whenever a `.docket` is reachable — running the
 read-only verbs from the observed repo's root, because docket resolves its
 DB by cwd: `run status` against what the transcript believes mid-run;
@@ -236,8 +251,10 @@ Then:
    thresholds, TTLs, tiers, instance workflows — are `/retro`'s to evolve
    from engine evidence: name them and point at retro rather than bending
    them into definition edits.
-3. **Propose → approve → apply.** Only approved items get written; a
-   declined item stays in the log as the next shadow's watch list. Script
+3. **Propose → approve → apply.** Proposals go through the built-in question
+   tool — grouped, recommended option first, labelled "(Recommended)". Only
+   approved items get written; a declined item stays in the log as the next
+   shadow's watch list. Script
    extractions ride the same flow: the body lands in `$SRC/scripts/`
    (`chmod +x` it — file tools do not set the bit) and reaches
    `~/.claude/scripts` at the next `just activate`.

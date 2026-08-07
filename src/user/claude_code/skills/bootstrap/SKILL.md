@@ -511,6 +511,8 @@ commands, re-run the dry-run to confirm it still registers clean (a fenced
 setup must now read `(matched: <name>)`; named gates resolve in the trust
 store, not here), then ask again, for the activation itself, and run it
 without `--dry-run`. Two approvals: one for what you wrote, one for what runs.
+Every approval, here and everywhere this skill asks, goes through the built-in
+question tool with your recommended option first, labelled "(Recommended)".
 
 Two facts about the store that surface exactly here, at the moment of adding:
 

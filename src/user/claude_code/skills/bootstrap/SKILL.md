@@ -372,9 +372,13 @@ returns to `complete` a step it no longer holds — the ack loop. Under a
 heartbeat, a slow step renewed itself and the TTL only had to exceed the
 heartbeat interval. Without one, the TTL alone has to cover the whole step.
 
-Argue the number from the corpus's own cost declarations. `expected_cost` is the
-proxy you have: in the shipped corpus `implement` carries the highest at `1.50`,
-against `0.10` for the cheapest read steps. If your slowest write step has
+Argue the number from the corpus's own cost declarations — and from the one
+real datum a virgin repo has by the time you get here: the §0 spec authors'
+wall-clock. Seven write-class agents over this repo are a measured sample of
+what heavy agent work costs on this codebase; cite it (on the 2026-08-06 run,
+~6 minutes each made 45m a ~7× worst-case margin). Beyond that, `expected_cost`
+is the proxy you have: in the shipped corpus `implement` carries the highest at
+`1.50`, against `0.10` for the cheapest read steps. If your slowest write step has
 historically taken ~30 minutes, a 45m write-class TTL leaves 50% headroom —
 which is the right direction to be wrong in, because the two errors are not
 symmetric:

@@ -82,9 +82,18 @@ Then check the seven themselves: each exists, opens with a `# ` title and a
 dateless file means its author stalled — respawn that one axis. Say plainly in
 §5 that these specs are seeded rather than gate-validated: `doc-validate` and
 `reserved-name-check` run under `spec-project`, not here, so their structural
-guarantees do not apply yet — and if the repo already ships a `doc-validate` of
-its own, diff its expectations against the contract's Emit section before
-promising the specs will pass.
+guarantees do not apply yet. If the repo ships those gates itself, do not stop
+at promising — run them against the seven directly; a real exit 0 beats a
+predicted one, and the 2026-08-06 run got both green this way. Diff a shipped
+gate's expectations against the contract's Emit section only when running it
+is not possible.
+
+One staleness trap these specs carry: they describe the tree as it stood
+*before* §1 copied the config in, so a spec's true-when-written claim that
+`.docket/config/` is absent is false by activation. Do not hot-edit a spec to
+fix that — especially not while a write-class step holds the tree — note it in
+the hand-off and let the `spec-project` review pass catch it; that is the
+mechanism built for exactly this.
 
 ## 1. Start from the corpus
 
@@ -162,7 +171,14 @@ conventions and cadence. The test/doc layout tells you what a change touches,
 for `scope` and `class`.
 
 Run the check command once yourself. A command you have not seen exit 0 is a
-guess, not a gate.
+guess, not a gate. When it does not exit 0, attribute before you conclude:
+check the failure text for environment signatures first — a sandboxed session
+blocking the network reads as a gate failure and is not one (`vuln-scan` fails
+closed when `vuln.go.dev` is unreachable, with a message that blames
+vulnerabilities); rerun unsandboxed before deciding anything. And a gate that
+fails honestly on today's tree is doing its job — that is a finding to surface,
+never a reason to drop the gate. A gate that needs the network gets that fact
+argued explicitly in its §4 `--flaky` row either way.
 
 ## 3. Adapt
 
@@ -179,10 +195,16 @@ Rewrite the template into `.docket/config/`:
   convention: a gate declaring `source = "fence:checks"` harvests ` ```checks `
   blocks from the issue body, one command per line, at activation only.
 
-Head each generated file with a comment naming what you mined and the date —
-that is what makes the next retro's diff legible. These headers are the only
-record of why a file survived §2's citation test; nothing regenerates them,
-which is why §1 refuses to overwrite a populated config.
+Head each generated TOML with a comment naming what you mined and the date —
+that is what makes the next retro's diff legible. JSON carries no comment
+syntax, so schemas stay byte-clean and their reasoning goes in
+`.docket/config/PROVENANCE.md` instead: one config-wide record holding where
+the copy came from, the keep-or-cut rationale per directory, the
+gate-verification results, and a `THIN SPOTS` section for every gap found and
+deliberately not fixed. Activation pins it by content hash like any other
+config file and registers nothing. Headers and PROVENANCE.md together are the
+only record of why a file survived §2's citation test; nothing regenerates
+them, which is why §1 refuses to overwrite a populated config.
 
 **Adapting the corpus, if you started from it.** The shipped workflows and
 contracts encode *this project's* conventions — its build commands, its review
@@ -284,6 +306,26 @@ flaky        no  — no network, no clock; it either records or exits non-zero
 `--re-runnable` is the one flag genuinely arguable here: turn it **off** if your
 script appends rather than upserts, because then a retry duplicates a DOC-N.
 Read the script before arguing the flag.
+
+An action's contract is not a gate's, and the difference is what makes the
+script writable at all: the engine hands an action the run context as ONE JSON
+document on stdin — `{step, issue: {id, labels, …}, inputs: [{artifact, kind,
+body, …}], …}` — so unlike a gate it can know *what* to record. It must print
+exactly one JSON document back, `{"body": <string>, "payload": <array>}`; the
+reply parser rejects unknown fields and trailing bytes, so every diagnostic
+goes to stderr — one stray echo on stdout fails the step. The env is an
+allowlist (no `DOCKET_PATH`; cwd is the repo root, so `docket` finds the DB by
+ordinary discovery). Read the engine's action-exec source or the engine spec's
+context-bundle section rather than trusting this paragraph — the shape is the
+engine's to evolve.
+
+Then prove the script before proposing its entry: `chmod +x` it (file-writing
+tools do not set the execute bit, and the engine execs argv[0] directly), feed
+it a synthetic context bundle on stdin, and check it exits 0 printing one
+parseable reply — on the 2026-08-06 run this caught a wrong stdin-flag spelling
+a read-through had missed. Feed it the same bundle twice: the second run
+replaying the same DOC-N instead of minting another is the measured basis for
+`--re-runnable`, which beats arguing it from prose.
 
 ### 4b. Propose the vote-rule thresholds
 
@@ -389,6 +431,25 @@ commands, re-run the dry-run to confirm it still registers clean (a fenced
 setup must now read `(matched: <name>)`; named gates resolve in the trust
 store, not here), then ask again, for the activation itself, and run it
 without `--dry-run`. Two approvals: one for what you wrote, one for what runs.
+
+Two facts about the store that surface exactly here, at the moment of adding:
+
+- **The store is user-global** — `~/.config/docket/trust.toml`, outside every
+  repo — so a sandboxed session's first `trust add` fails on its lock file
+  with `operation not permitted`. That is the sandbox, not docket. Retry the
+  adds unsandboxed; this is the legitimate moment for it, because the operator
+  just approved these exact entries. (`config set` is unaffected — engine
+  config lives in the repo's DB.)
+- **The store survives un-bootstraps and earlier sessions**, so proposed names
+  may already exist. `trust add` is a silent no-op on a byte-identical entry
+  and *refuses* when anything differs — and its conflict error prints the argv
+  (identical) without naming the field that differs, which is usually a flag.
+  On a conflict: `trust list`, diff the surviving flags against what was just
+  approved, and put the difference in front of the operator as its own
+  question. Do not `trust rm` and re-add to make the store match your
+  proposal: the existing flags were once approved by the same authority you
+  just asked, and two approvals that disagree are the operator's to
+  reconcile, not yours.
 
 After the first real run, read the gate verdicts: `unmatched` in
 `gate_results` means the gate never executed — its entry is missing or

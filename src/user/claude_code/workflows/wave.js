@@ -2,11 +2,17 @@ export const meta = {
   name: 'wave',
   description: 'Spawn one executor per dispatched step row, routed by policy.toml. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
   whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
-  // Stage titles are computed per wave (writers, then one per issue), so the
-  // static list here names the shape rather than the exact boxes.
+  // The harness matches these titles to phase() strings EXACTLY, and meta is
+  // a pure literal — so only the genuinely static stage is declared. Writers
+  // always run first under this exact title (counts live in log lines, never
+  // in the title). Read stages are one-per-issue with computed titles, so
+  // they are deliberately NOT declared: each phase() call auto-creates its
+  // group after this one, numbering 2+ in true execution order. Declaring a
+  // title the code then computes past renders an empty box and shoves the
+  // real work into groups numbered after it ("why does my run start at
+  // phase 3?" — observed 2026-08-06).
   phases: [
-    { title: 'Writes (serial)', detail: 'write-class rows, one at a time' },
-    { title: 'Reads per issue', detail: 'read-class rows, parallel within an issue, awaited between' },
+    { title: 'Writes (serial)', detail: 'write-class rows, one at a time — holds_tree ordering is enforced by the await structure and the engine lease, not by this label' },
   ],
 }
 
@@ -554,8 +560,10 @@ log(
 const byStep = new Map()
 
 // Stage 1 — writers, strictly serial. `await` inside the loop is the point.
+// The label matches meta.phases EXACTLY — no count in it, or the match breaks
+// and the group is auto-created after an empty declared box.
 if (writes.length) {
-  const label = `Writes (serial, ${writes.length})`
+  const label = 'Writes (serial)'
   phase(label)
   for (const row of writes) {
     const res = await spawn(row, label)

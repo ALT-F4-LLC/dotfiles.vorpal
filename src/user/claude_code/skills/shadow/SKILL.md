@@ -11,8 +11,7 @@ friction review: every place the run was harder, noisier, or less correct than
 the definitions assume, with evidence, and the definition edit that would
 remove it. The definitions live in
 `~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code`
-— `$SRC` below; note the underscore, because `claude-code` is a different
-directory (the old fleet).
+— `$SRC` below; note the underscore.
 
 You are the only shadow. Every layer is yours, and a layer you skip is a layer
 nobody watched.

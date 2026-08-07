@@ -35,6 +35,13 @@ finding: time, ordering, network, entropy, and shared state are its usual source
 the evidence rules — read a test's assertion body before asserting what it covers;
 corroboration is not verification — and label each claim OBSERVED or INFERRED.
 
+On a re-review round — your inputs carry a previous round's findings — scope to
+the delta: state whether each prior finding in your dimension is closed or
+still open, examine what changed since, and do not re-derive findings at
+unchanged loci a prior round already recorded. Repetition is not discovery,
+and flat finding volume across rounds is the signal a fix loop cannot
+converge on.
+
 # Emit
 `findings`: markdown body with one section per finding (location · what is untested or
 falsely proven · why the current test does not establish it · evidence label · suggested

@@ -26,6 +26,10 @@ signal).
   behavior per test, one failure per reason.
 - **Arrange only what the behavior depends on** — builders with sensible defaults;
   arrange only the fields the assertion touches.
+- **Fixtures that must defeat a scanner are assembled at runtime.** A literal
+  credential-shaped string in a test file trips the secret gate on the test's
+  own diff; build it (`printf 'AKIA%s' '…'`) so no committed line matches the
+  pattern, and the positive control still fires at run time.
 - **Never weaken a test to make it pass.** Loosening an assertion, widening a tolerance,
   deleting a case, or marking it skipped converts a real failure into a false green. If
   a test is wrong, fix the test deliberately and say why; if the code is wrong, fix the

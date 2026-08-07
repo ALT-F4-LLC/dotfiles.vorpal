@@ -31,6 +31,16 @@ produces three patches where one belongs. Where findings genuinely conflict — 
 reviewers wanting opposite changes — say so in the summary and fix for the stronger
 argument rather than splitting the difference into something neither asked for.
 
+Stay inside existing loci. A fix plan that requires NEW files or scripts is
+implement-class construction wearing a fix charter — emit a `gap` recommending
+the split (or the label that routes it to `implement`) instead of authoring new
+surface here: one run's fix round created two new gate scripts at the cheap
+tier and fed three review rounds of defects found in them.
+
+A test fixture that must defeat a secret scanner is assembled at runtime —
+`printf 'AKIA%s' 'ABCDEFGHIJKLMNOP'` — never written as a literal. A literal
+fixture fails the very gate the test protects, on your own diff.
+
 Fix causes, not symptoms. A patch that suppresses the signal a finding was reporting —
 the swallowed error, the widened assertion, the loosened check, the test taught to accept
 the current output — is a defect that also destroys the evidence. When the honest fix is

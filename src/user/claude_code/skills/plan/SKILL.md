@@ -45,13 +45,16 @@ request, ask it outright.
 ## 2. Read before you decompose
 
 Guessing at scopes produces issues that fail their scope gate at execution
-time, which is expensive and late. Read instead:
+time, which is expensive and late. Read instead — through an agent: spawn ONE
+`executor-read` agent while the conversation continues, returning a scope
+map, and never survey the repo yourself. You are the intake, and your context
+belongs to the conversation, not to directory listings. The agent's brief:
 
 The layout tells you scopes — which directories a change of this shape actually
-touches. `docket workflow list` tells you which workflows exist to bind to, and
-therefore what kinds are available. `git log --format='%s' -30` tells you the
-repo's conventions. Existing issues (`docket issue list`) tell you whether some
-of this is already tracked.
+touches, narrow globs per area. `docket workflow list` tells you which
+workflows exist to bind to, and therefore what kinds are available.
+`git log --format='%s' -30` tells you the repo's conventions. Existing issues
+(`docket issue list`) tell you whether some of this is already tracked.
 
 ## 3. Record the run
 

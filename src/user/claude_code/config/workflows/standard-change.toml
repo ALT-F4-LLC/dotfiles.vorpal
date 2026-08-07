@@ -10,7 +10,15 @@
 
 [pipeline]
 name    = "standard-change"
-version = 1
+version = 2                  # v2 (2026-08-06): commit-exec action restored — v1
+                             #   ended at commit-author's MESSAGE with nothing
+                             #   performing the commit; RUN-1 completed with an
+                             #   approved message and a dirty tree. NOTE: bumping
+                             #   in a repo where v1 is registered trips the known
+                             #   engine defect (old [match] stays live and the
+                             #   activation refuses on 2 candidates) — verify
+                             #   against a real activation, and file it rather
+                             #   than renaming the pipeline.
 description = "Implement, review, reconcile, verify, and commit one ordinary change."
 
 [match]                      # binding rule, evaluated at run activation (02 §1.2)
@@ -135,6 +143,26 @@ executor = "commit-author"
 emits = "commit-message"             # aligned to 04 §2 (M2b batch 4)
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
-gates = ["commit-msg"]               # commit-exec retired: its checks fold
+gates = ["commit-msg"]               # the old commit-exec GATE's checks fold
                                      #   into commit-msg; a gate is argv-only
-                                     #   and cannot be handed run state (DKT-84)
+                                     #   and cannot be handed run state (DKT-84).
+                                     #   Its EXECUTION half is the action below —
+                                     #   retiring the gate without it left the
+                                     #   pipeline unable to commit (RUN-1).
+
+[[step]]                     # deterministic: an action, no node (see doc-record)
+name = "commit-exec"
+after = ["commit"]
+action = "commit-exec"               # trusted action, engine-run, never claimed:
+                                     #   stages ONLY paths under the issue's
+                                     #   scope globs, commits with commit-author's
+                                     #   message verbatim (git commit -F -), and
+                                     #   replies with the new HEAD sha. The
+                                     #   commit-author contract's "execution is
+                                     #   gated and happens without you" refers to
+                                     #   THIS step. Bootstrap §4a′ proposes its
+                                     #   trust entry; the script lives at
+                                     #   .docket/bin/commit-exec in the repo.
+params = { output = "commit-record" }
+inputs = ["commit.commit-message", "issue.body"]
+expected_cost = 0.05

@@ -71,6 +71,14 @@ dispatch to "check". An opened-and-immediately-closed empty dispatch is pure
 audit noise — RUN-3 produced two rounds of it before retiring the habit. Ask the
 engine what is ready; open only when you have executor rows to dispatch.
 
+**One exception: a ready set of ONLY `kind: "action"` rows.** Action steps are
+engine-run, and the engine runs them DURING `dispatch open` (measured on RUN-1:
+the `aggregate` action executed inside the open and materialized its
+held-cluster gate). So when `next` offers nothing but action rows, open the
+dispatch — there is no wave to launch — then close it and ask again. That
+open-and-close is the mechanism working, not audit noise; every other
+executor-empty open remains the mistake described above.
+
 ### 2. Open the dispatch and hand it to the wave
 
 ```bash
@@ -118,8 +126,15 @@ handed is what runs. In particular do **not** try to sequence them or hold rows
 back to avoid claim conflicts — wave.js stages the wave itself (writers serially,
 then readers grouped per issue) and that staging is code, not your judgment.
 
-Then await the wave's completion notification. The session is free meanwhile —
-the operator can do other things, and so can you.
+Then await the wave's completion notification — which means END YOUR TURN.
+Notifications only deliver at turn boundaries: a turn held open "waiting" is a
+turn that starves itself of the very signal it waits for (RUN-1 queued a
+teammate's completion report ~9 minutes behind a busy-wait). Ending the turn
+mid-wave may trip the run-guard Stop hook once; with an open dispatch the guard
+now allows it, and even where it denies, one deny per turn-end is expected
+noise — the retry passes. Do not busy-wait, do not poll in sleep loops, and do
+not treat the guard's deny as an instruction to keep working. The session is
+free meanwhile — the operator can do other things, and so can you.
 
 ### 3. Close the dispatch
 
@@ -131,10 +146,18 @@ close is usage the probe never saw, and each subsequent close then re-reports th
 same stranded set. Back-fill, verify, close — in that order, every iteration.
 
 ```bash
-# 1. read each spawn's usage out of the wave's journal (see below for where)
-# 2. back-fill it — BEFORE the close. One transaction, whole batch or nothing:
-docket dispatch backfill-usage --from-json - <<'JSON'
-[{"step": "STEP-12", "unit": "tokens", "quantity": 48211}]
+# 1. the usage join is DELEGATED (see below) — an executor-read agent returns
+#    the rows JSON; you validate the shape and pipe it through
+# 2. back-fill it — BEFORE the close. One transaction, whole batch or nothing.
+#    Four TYPED rows per step, and a --source naming the wave, so ledgers
+#    stay comparable across runs (RUN-1 set this convention; keep it):
+docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - <<'JSON'
+[
+  {"step": "STEP-12", "unit": "input_tokens",          "quantity": 146},
+  {"step": "STEP-12", "unit": "output_tokens",         "quantity": 30275},
+  {"step": "STEP-12", "unit": "cache_creation_tokens", "quantity": 170967},
+  {"step": "STEP-12", "unit": "cache_read_tokens",     "quantity": 4614079}
+]
 JSON
 # 3. only now:
 docket dispatch close --run $RUN
@@ -143,6 +166,14 @@ docket dispatch close --run $RUN
 Rows land against the step's recorded attempt, and `--source` defaults to
 `backfilled`. Back-fill AFTER the steps complete and BEFORE the close — that
 window is the whole design, and the flow never needs another.
+
+**Delegate the join; do not perform it.** You are an orchestrator: spawn ONE
+`executor-read` agent on the wave's transcript directory, hand it the "Where
+the numbers actually are" section below verbatim as its brief, and have it
+return exactly the backfill rows JSON (four typed units per step). You check
+the shape — every dispatched step present, quantities integers — and pipe it.
+Reading agent transcripts yourself is work that belongs below you, and it
+fills your context with what the run no longer needs.
 
 Surface any `waiting-human` steps (below), then go back to step 1.
 
@@ -215,14 +246,41 @@ docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<
 ```
 
 The note carries *their* reasoning, not your summary of it. It is the audit
-trail's only record of why a human decided what they decided.
+trail's only record of why a human decided what they decided. When they answer
+by clicking an option without typing, prefix the note `operator selected:`
+plus the option's label before its description — the trail must distinguish a
+click-endorsement from typed reasoning.
+
+**A note is audit-trail only; it never renders into any brief.** The packet
+template carries the step header, the FROZEN issue body, input artifacts,
+pins, and the output spec — nothing else (verified against the engine's
+template on RUN-1, after the conductor itself recommended a "retry with a
+note telling the fixer..." that no fixer would ever have seen). A retry
+renders the SAME brief as the failed attempt. Guidance for future work
+travels only as a body, which means a new issue in the next planning pass, or
+as a findings artifact a later step declares as input.
+
+**Present only what the decision actually reaches.** Never offer a gate
+option as "the fixer can/will X" unless the engine genuinely routes X on that
+answer: RUN-1's operator approved a held cluster on the promise "the fixer
+can document the boundary," and no fixer ever saw the ruling — the brief had
+rendered from the pre-decision snapshot. Say what an approve changes
+(severity routing, unblocking), and say plainly when the promised follow-on
+needs its own issue. Gathering the evidence FOR a presentation — an artifact
+larger than one engine command, a diff — may be delegated to an
+executor-read agent; the presenting itself is yours.
 
 Nothing here has an auto-approve, a default, or a timeout. A parked run stays
 parked, and that is fine — it can be resumed by any later session.
 
 ## Ending and resuming
 
-If the operator ends the session with work pending, that is allowed; the run
-parks. Any later session picks it up from `docket run status --active --json`.
-There is no handoff document to write and no continuity narrative to leave. The
-run record is the handoff.
+A run parked `waiting-human` ends cleanly with the session — gates do not
+block the stop guard, and a parked run stays parked for any later session to
+pick up from `docket run status --active --json`. While EXECUTABLE work is
+pending, the run-guard blocks the turn-end instead — and its deny is a guard
+answering, not the operator instructing. Do not start driving on its push:
+surface the choice (drive on, park at a gate, abandon) and let the operator
+make it, exactly as RUN-1's bootstrap did when the guard demanded a
+just-activated run be driven. There is no handoff document to write and no
+continuity narrative to leave. The run record is the handoff.

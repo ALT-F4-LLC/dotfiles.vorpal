@@ -60,14 +60,15 @@ deferring to `spec-project`. That pipeline needs `.docket/config/` (§1) and an
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
 
-**Verify before moving on.** Take `git status --porcelain > "$TMPDIR/pre-fanout"`
-before you spawn, and diff after all seven return:
-
-```bash
-git status --porcelain | diff "$TMPDIR/pre-fanout" - || true
-```
-
-Every added line must be a path under `docs/spec/`, and there must be seven.
+**Verify before moving on — with an agent, not your own eyes.** Take
+`git status --porcelain > "$TMPDIR/pre-fanout"` before you spawn. After all
+seven return, spawn ONE `executor-read` agent to verify and report a
+checklist: diff the snapshot against `git status --porcelain` now, confirm
+every added line is a path under `docs/spec/` and that there are seven, and
+check each file opens with a `# ` title, carries a `Status: … <date>` line,
+and ends in its gaps section. You act on the checklist — respawn a stalled
+axis, revert a stray — you do not perform the reading. You are an
+orchestrator; the whole of this skill's hands-on work belongs to agents.
 Anything else is a collateral write, and it happens: the `executor-write`
 archetype grants a full write surface, so the contract's prose is the only
 containment — and on the 2026-08-06 run prose did not hold: an author left a
@@ -77,16 +78,14 @@ untracked file, `git checkout --` a modified one) and tell the operator what
 you reverted and which axis you suspect; if it might be the operator's own
 work in progress, leave it and say so instead.
 
-Then check the seven themselves: each exists, opens with a `# ` title and a
-`Status: … <today's date>` line, and ends in its gaps section. A missing or
-dateless file means its author stalled — respawn that one axis. Say plainly in
-§5 that these specs are seeded rather than gate-validated: `doc-validate` and
-`reserved-name-check` run under `spec-project`, not here, so their structural
-guarantees do not apply yet. If the repo ships those gates itself, do not stop
-at promising — run them against the seven directly; a real exit 0 beats a
-predicted one, and the 2026-08-06 run got both green this way. Diff a shipped
-gate's expectations against the contract's Emit section only when running it
-is not possible.
+A missing or dateless file in the checklist means its author stalled —
+respawn that one axis. Say plainly in §5 that these specs are seeded rather
+than gate-validated: `doc-validate` and `reserved-name-check` run under
+`spec-project`, not here, so their structural guarantees do not apply yet. If
+the repo ships those gates itself, have the verification agent run them
+against the seven directly; a real exit 0 beats a predicted one, and the
+2026-08-06 run got both green this way. Diff a shipped gate's expectations
+against the contract's Emit section only when running it is not possible.
 
 One staleness trap these specs carry: they describe the tree as it stood
 *before* §1 copied the config in, so a spec's true-when-written claim that
@@ -148,7 +147,23 @@ adapting** — see §3.
 
 ## 2. Mine the repo
 
-Read, don't guess. Every adaptation in §3 cites something you found:
+Read, don't guess — and the reading is not yours. Spawn THREE `executor-read`
+miners in ONE message, each owning one seam and returning a structured,
+citation-bearing summary (`claim → file:line`); you compose their returns and
+never bulk-read the repo yourself. An orchestrator whose context fills with
+Makefile bodies has spent what §5's approval conversation needs:
+
+- **build/CI miner** — build files, CI config, the real check commands and
+  who runs them (the paragraphs below on build files are its brief).
+- **gate/script miner** — every gate-shaped script in the repo: what each
+  actually does, what it reads, what would make it exit non-zero. It also
+  RUNS each check command once and reports the real exit code (see below —
+  that instruction travels into its brief).
+- **docs/history miner** — `docs/spec/` (the paragraphs below on specs are
+  its brief), README/CONTRIBUTING, `git log --format='%s' -50`, and any
+  deleted-config archaeology the history shows.
+
+Every adaptation in §3 cites something a miner found:
 
 **Start with `docs/spec/`** — §0 wrote it, or it was already there, and it is the
 densest source you have. `testing.md` tells you whether a `tests` gate has anything
@@ -170,8 +185,9 @@ review shape: who approves, how many. `git log --format='%s' -50` gives
 conventions and cadence. The test/doc layout tells you what a change touches,
 for `scope` and `class`.
 
-Run the check command once yourself. A command you have not seen exit 0 is a
-guess, not a gate. When it does not exit 0, attribute before you conclude:
+The gate/script miner runs each check command once — for real. A command
+nobody has seen exit 0 is a guess, not a gate. When one does not exit 0, the
+miner attributes before you conclude:
 check the failure text for environment signatures first — a sandboxed session
 blocking the network reads as a gate failure and is not one (`vuln-scan` fails
 closed when `vuln.go.dev` is unreachable, with a message that blames
@@ -182,7 +198,14 @@ argued explicitly in its §4 `--flaky` row either way.
 
 ## 3. Adapt
 
-Rewrite the template into `.docket/config/`:
+Adaptation is WRITE work, and write work is an agent's: spawn one
+`executor-write` agent carrying the miners' summaries and this section's
+rules verbatim; it rewrites the config and authors PROVENANCE.md, and you
+review its diff against the citations before surfacing anything in §5. (On
+the 2026-08-06 run the orchestrator authored PROVENANCE.md itself — the last
+run where that is acceptable.)
+
+The agent rewrites the template into `.docket/config/`:
 
 - `workflows/<name>.toml` — named for the repo's work, `version = 1`, steps
   reflecting the real review shape.
@@ -289,9 +312,10 @@ executor: recording an accepted doc is "insert a row and copy bytes", which the
 engine runs itself and never claims. An action named `doc-record` resolves
 through the trust store like any gate command, so it needs an entry:
 
-The corpus ships the action *name*, not the script — you write
-`.docket/bin/doc-record` yourself, and its argv is proposed absolute per the
-argv[0] rule above:
+The corpus ships the action *name*, not the script — an `executor-write`
+agent writes `.docket/bin/doc-record` (you hand it this section and §4a's
+context-bundle facts as its brief; you review and propose, you do not
+author), and its argv is proposed absolute per the argv[0] rule above:
 
 ```
 name         doc-record
@@ -319,13 +343,47 @@ ordinary discovery). Read the engine's action-exec source or the engine spec's
 context-bundle section rather than trusting this paragraph — the shape is the
 engine's to evolve.
 
-Then prove the script before proposing its entry: `chmod +x` it (file-writing
-tools do not set the execute bit, and the engine execs argv[0] directly), feed
-it a synthetic context bundle on stdin, and check it exits 0 printing one
-parseable reply — on the 2026-08-06 run this caught a wrong stdin-flag spelling
-a read-through had missed. Feed it the same bundle twice: the second run
-replaying the same DOC-N instead of minting another is the measured basis for
-`--re-runnable`, which beats arguing it from prose.
+The same agent proves the script before you propose its entry: `chmod +x` it
+(file-writing tools do not set the execute bit, and the engine execs argv[0]
+directly), feed it a synthetic context bundle on stdin, and check it exits 0
+printing one parseable reply — on the 2026-08-06 run this caught a wrong
+stdin-flag spelling a read-through had missed, and a same-day probe harness
+caught two more real bugs (a missed `{ok,data}` envelope and a replay echoing
+its input instead of the stored record). Feed it the same bundle twice: the
+second run replaying the same DOC-N instead of minting another is the
+measured basis for `--re-runnable`, which beats arguing it from prose. The
+agent returns the script plus both probe transcripts; that evidence is what
+you attach to the proposal.
+
+### 4a′. Propose the `commit-exec` trust entry
+
+If you kept a workflow whose terminal step is `commit` (standard-change,
+ui-change, security-load-bearing), know what its author does NOT do: the
+`commit-author` contract composes the message only — "execution is gated and
+happens without you" — and the execution half is the `commit-exec` ACTION
+step those workflows declare after it. RUN-1 (2026-08-06) shipped without
+this script and completed with an approved message and a dirty tree; the
+conductor had to hand-commit under the approved gate. Do not repeat that.
+
+Same pattern and same delegation as `doc-record`: an `executor-write` agent
+writes `.docket/bin/commit-exec` — context bundle on stdin carries the
+`commit-message` artifact and the issue (id, scope globs); the script stages
+ONLY paths matching the issue's scope globs, commits with the artifact text
+verbatim (`git commit -F -`), prints one JSON reply carrying the new HEAD
+sha, and exits non-zero on an empty staging set or any path outside scope.
+Prove it twice in a scratch repo: the second run against a HEAD whose message
+already matches must be a detected no-op, which is the measured basis for:
+
+```
+name         commit-exec
+argv         $(git rev-parse --show-toplevel)/.docket/bin/commit-exec
+re-runnable  yes — measured: a re-run with the message already at HEAD is a
+             detected no-op, not a duplicate commit
+tree         yes — it writes the git index and object store; say so plainly
+             and argue it: it runs strictly AFTER the pipeline's read steps
+             and inside the engine's single-writer discipline
+flaky        no  — no network, no clock
+```
 
 ### 4b. Propose the vote-rule thresholds
 
@@ -362,7 +420,11 @@ the entire mechanism keeping a working executor's claim alive:
 
 ```bash
 docket config get lease.ttl.default          # ships as 15m
-docket config set lease.ttl.write 45m        # propose per class
+docket config set lease.ttl.write 45m        # propose BOTH classes, not one:
+docket config set lease.ttl.read  30m        #   RUN-1 sized only write; its
+                                             #   slowest silver judge then ran
+                                             #   13m of the 15m read default
+                                             #   on a three-file diff
 ```
 
 **Size it against worst-case step duration, not the typical one.** A TTL shorter
@@ -375,8 +437,10 @@ heartbeat interval. Without one, the TTL alone has to cover the whole step.
 Argue the number from the corpus's own cost declarations — and from the one
 real datum a virgin repo has by the time you get here: the §0 spec authors'
 wall-clock. Seven write-class agents over this repo are a measured sample of
-what heavy agent work costs on this codebase; cite it (on the 2026-08-06 run,
-~6 minutes each made 45m a ~7× worst-case margin). Beyond that, `expected_cost`
+what heavy agent work costs on this codebase; cite YOUR measurement, not a
+recorded one — observed runs vary widely (~6 minutes per author on one run,
+9–17+ minutes the next day under 7-way concurrency, same repo, same
+contracts). Beyond that, `expected_cost`
 is the proxy you have: in the shipped corpus `implement` carries the highest at
 `1.50`, against `0.10` for the cheapest read steps. If your slowest write step has
 historically taken ~30 minutes, a 45m write-class TTL leaves 50% headroom —
@@ -386,14 +450,26 @@ symmetric:
 - **TTL too short** → mid-work reaps, duplicated work, ack loops. Corrupts the
   run's accounting and wastes the spend already made.
 - **TTL too long** → a genuinely dead executor's step sits claimed until the TTL
-  expires. Costs latency on a failure path, and `max_step_duration` still bounds
-  it.
+  expires. Costs latency on a failure path — and NOTHING else bounds it: this
+  engine has no `max_step_duration` or per-step duration key at all (probed on
+  RUN-1; `dispatch.ttl`/`dispatch.grace` bound the dispatch, not a step). The
+  TTL is the failure path's only clock, which sharpens rather than weakens the
+  rule: size it long, and say plainly the number is provisional.
 
 Propose the long side, and say plainly that the number is provisional until real
 step durations exist to size it against. This is the first thing a retro should
 re-derive from evidence.
 
 ## 5. Surface the binding — the approval moment
+
+A virgin repo has no issue yet, and this skill does not say where DKT-1 comes
+from unless you make it say: take the issue the operator named; if none was
+named, propose ONE drawn from the specs' gap sections and offer the swap
+explicitly — never activate work the operator has not seen named. (RUN-1's
+conductor improvised exactly this, well; now it is the contract.) One smoke
+issue is this skill's ceiling: anything larger is `/plan`'s to structure
+BEFORE conducting — plan-up-front is the default, single-issue improvisation
+the exception.
 
 ```bash
 docket run start --issue DKT-1
@@ -478,7 +554,10 @@ fetch.
 ## 7. Hand off
 
 Report the config files you wrote, the trust entries they approved, and the run
-you activated. `.docket/config/` is git-versioned and machine-authored: changes
+you activated. Name the next move plainly: real work beyond the smoke issue
+goes through `/plan` (issues, phases, gates placed deliberately), then
+`/conduct` drives what plan recorded — do not slide from bootstrapping into
+driving on your own momentum, or on a stop-guard's push. `.docket/config/` is git-versioned and machine-authored: changes
 go through a version bump, because changed bytes at an unchanged `name@version`
 refuse the next activation outright.
 

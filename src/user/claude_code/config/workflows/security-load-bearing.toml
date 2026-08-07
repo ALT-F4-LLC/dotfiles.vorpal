@@ -19,7 +19,8 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 1
+version = 2                  # v2 (2026-08-06): commit-exec action restored — see
+                             #   standard-change.toml's v2 note; same hole, same fix
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 
 [match]                      # exactly-one-match (06 §11.1): security is the highest-
@@ -159,6 +160,14 @@ executor = "commit-author"
 emits = "commit-message"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.10
-gates = ["commit-msg"]               # commit-exec retired: its checks fold
-                                     #   into commit-msg; a gate is argv-only
-                                     #   and cannot be handed run state (DKT-84)
+gates = ["commit-msg"]               # the old commit-exec GATE's checks fold
+                                     #   into commit-msg; execution is the
+                                     #   action below (see standard-change.toml)
+
+[[step]]                     # deterministic: an action, no node (see doc-record)
+name = "commit-exec"
+after = ["commit"]
+action = "commit-exec"
+params = { output = "commit-record" }
+inputs = ["commit.commit-message", "issue.body"]
+expected_cost = 0.05

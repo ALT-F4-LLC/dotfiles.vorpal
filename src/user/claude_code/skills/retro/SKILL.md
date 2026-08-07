@@ -19,6 +19,13 @@ preference — the only way the edit activates.
 
 ## 1. Gather
 
+Gathering and analysis are agent work: spawn `executor-read` analysts (one,
+or one per run when runs are many), each briefed with the repo's
+`contracts/retro-analyst.md` — the node the corpus already defines for
+exactly this — plus §2's table verbatim. They run the verbs and return
+evidence-labelled findings; you compose §3's proposals and hold the approval
+conversation. The verbs, for their briefs:
+
 ```bash
 docket run report RUN-N --json          # per run; read-only, never advances a run
 docket events list --run RUN-N --json   # the transition trail
@@ -117,7 +124,9 @@ routine. For a trust proposal, follow bootstrap's rule: argue `re-runnable`,
 
 ## 4. Apply what was approved
 
-Only the approved items. A workflow edit stays in the same file with
+Only the approved items — applied by an `executor-write` agent carrying the
+approved diffs, with the dry-run verification below performed by an
+`executor-read` agent; you relay approvals and read their reports. A workflow edit stays in the same file with
 `[pipeline].version = N+1` and its mined-facts comment kept current. A schema
 edit is a new `schemas/<name>@N+1.json`, plus a bump to every workflow naming
 it. `policy.toml`, contracts, and fragments are pinned rather than registered —

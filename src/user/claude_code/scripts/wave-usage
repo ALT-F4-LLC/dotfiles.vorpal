@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""wave-usage <wave-transcript-dir> — emit backfill rows JSON for a completed wave.
+
+Joins each agent-<id>.jsonl's usage to its step id (named in the agent's first
+user message — the bootstrap prompt) and sums the four typed units per step.
+Usage entries are deduplicated BY MESSAGE ID before summing: streamed assistant
+messages repeat across transcript lines, and a per-line sum double-counts
+(measured 1.65-2.36x on RUN-2 before the dedup).
+
+Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
+attributed or a dispatched agent carries no usage — silence must not look like
+success.
+"""
+import json, os, re, sys
+
+UNITS = {
+    "input_tokens": "input_tokens",
+    "output_tokens": "output_tokens",
+    "cache_creation_input_tokens": "cache_creation_tokens",
+    "cache_read_input_tokens": "cache_read_tokens",
+}
+
+def main() -> int:
+    if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
+        print(f"usage: wave-usage <wave-transcript-dir>", file=sys.stderr)
+        return 2
+    d = sys.argv[1]
+    totals: dict[str, dict[str, int]] = {}
+    errors: list[str] = []
+    for name in sorted(os.listdir(d)):
+        if not (name.startswith("agent-") and name.endswith(".jsonl")):
+            continue
+        path = os.path.join(d, name)
+        step = None
+        seen_msg_ids: set[str] = set()
+        agent_sums = {u: 0 for u in UNITS.values()}
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if step is None and obj.get("type") == "user":
+                    content = obj.get("message", {}).get("content")
+                    text = content if isinstance(content, str) else json.dumps(content)
+                    m = re.search(r"STEP-\d+", text or "")
+                    if m:
+                        step = m.group(0)
+                if obj.get("type") == "assistant":
+                    msg = obj.get("message", {})
+                    usage = msg.get("usage")
+                    mid = msg.get("id")
+                    if not usage or not mid or mid in seen_msg_ids:
+                        continue
+                    seen_msg_ids.add(mid)
+                    for src, dst in UNITS.items():
+                        agent_sums[dst] += int(usage.get(src) or 0)
+        if step is None:
+            errors.append(f"{name}: no STEP-N found in first user message")
+            continue
+        if not any(agent_sums.values()):
+            errors.append(f"{name} ({step}): transcript carries no usage")
+            continue
+        t = totals.setdefault(step, {u: 0 for u in UNITS.values()})
+        for u, q in agent_sums.items():
+            t[u] += q
+    if errors:
+        for e in errors:
+            print(f"wave-usage: {e}", file=sys.stderr)
+        return 1
+    rows = [
+        {"step": step, "unit": unit, "quantity": qty}
+        for step in sorted(totals, key=lambda s: int(s.split("-")[1]))
+        for unit, qty in totals[step].items()
+    ]
+    json.dump(rows, sys.stdout, indent=2)
+    print()
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

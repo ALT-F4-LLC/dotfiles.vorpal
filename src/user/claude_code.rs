@@ -352,6 +352,9 @@ impl ClaudeCode {
                 "static.crates.io".to_string(),
                 "github.com".to_string(),
                 "api.github.com".to_string(),
+                // govulncheck's vulnerability DB — without it, sandboxed vuln-scan
+                // gates DNS-fail and misread as findings (RUN-2: 25 starved spawns).
+                "vuln.go.dev".to_string(),
             ])
             // 1Password requires per-use approval for SSH-agent signing operations, so
             // allowlisting only this socket (not `allow_all_unix_sockets`) keeps that

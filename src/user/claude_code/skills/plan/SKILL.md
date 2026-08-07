@@ -28,6 +28,13 @@ one round of three beats three rounds of one. Stop asking when you could write
 the issues; ambiguity that does not change the decomposition is not your
 problem to solve.
 
+Every question goes through the built-in question tool, every round — including
+open-ended asks like acceptance criteria, where you offer drafted candidates as
+options and the operator's selection or typed text becomes the verbatim source.
+Put your recommended option first, labelled "(Recommended)". A prose question
+costs the operator a redirect (it did, 2026-08-06); an exclusive-meaning label
+("X only") never belongs in a multi-select option set.
+
 The five things you need:
 
 | | What you are after |
@@ -56,17 +63,43 @@ workflows exist to bind to, and therefore what kinds are available.
 `git log --format='%s' -30` tells you the repo's conventions. Existing issues
 (`docket issue list`) tell you whether some of this is already tracked.
 
+**When the read contradicts the request's premise, verify before recording.**
+A scope map that says "this bug looks already fixed" changes the run's shape;
+spawn a second read-only agent to settle it — a forced verdict taxonomy, the
+hole hypotheses named, reproduction in an isolated scratch dir — while the
+conversation continues. The run record must not encode a premise a read has
+already cast doubt on. (RUN-2: the verifier found the reported mechanism fixed
+and a different one real; the recorded issues were built on the truth.)
+
+**Your reader's reply cannot reach you mid-turn.** Teammate messages deliver at
+turn boundaries only. If you are blocked on a delegate, end the turn and wait —
+do not re-derive its brief inline; a solo re-derivation under time pressure is
+how RUN-2's first record missed a test that already existed. If you must record
+before the reply lands, mark the bodies provisional and reconcile the moment it
+arrives — bodies stay editable while the run is in `planning`, and that window
+is the net.
+
 ## 3. Record the run
 
 In this order. Every command is one you run — the operator types none of them.
 
 ```bash
-docket run start --request-file <path>            # the request text, verbatim
-docket doc create -T plan -t "<title>" -d @<path> # the plan artifact
 docket issue create -t "<title>" -T <kind> \
-  -l <label> --scope '<glob>' -d @<body-file>     # one per unit of work
+  -l <label> --scope '<glob>' -d - < <body-file>  # one per unit of work
 docket issue link add DKT-<n> depends_on DKT-<m>  # the graph's edges
+docket run start --request-file <path> \
+  --budget <cap> --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
+docket doc create -T plan -t "<title>" -d @<path> # the plan artifact
 ```
+
+Issues first: `run start --issue` names them, so they must already exist —
+RUN-2's planner discovered the reverse order cannot work. Flag shapes differ by
+verb and it matters: `issue create -d` takes a literal string (`-` reads stdin);
+the `@<path>` form belongs to `doc create` alone — followed blindly, every issue
+body becomes the literal text "@/path/file", frozen at activation into every
+brief. Help-check each verb's flags on first use in a session; the CLI is the
+authority, not this block. `--budget` records the cap you elicited in §1
+(`docket run budget --set` adjusts it later).
 
 **The request** goes in verbatim via `--request-file`. It is the run's own
 record of what was asked; your summary of it is not a substitute.
@@ -104,6 +137,14 @@ at activation, which is correct and is not a reason to write a wide glob.
 a false edge serializes work that could have run in parallel, and a missing one
 lets a step run before its input exists.
 
+**Planning FROM an existing backlog issue** (`/plan DKT-N`): the existing issue
+stays OUT of the run. Create fresh run issues; give the one that settles it
+"resolve DKT-N" as a required deliverable (a written verdict with file:line
+evidence); link `issue link add <new> relates_to DKT-N`; let DKT-N close on the
+run's outcome, never by fiat at plan time. A verdict worth recording on DKT-N
+itself goes in a comment there — it is tracker-side, outside the run, so the
+body-freeze rule does not apply to it.
+
 ## 4. Leave later phases uncomposed when you honestly cannot compose them
 
 Some requests cannot be planned to the end — "audit and then build what we
@@ -128,3 +169,11 @@ Do not offer to activate it yourself as a convenience. Do not start the run.
 Do not keep the plan in your head for later; it is in Docket now, which is the
 point. If the operator wants it running, they say so, and the `conduct` skill
 takes it from there.
+
+If the operator asks for activation in THIS session, run the activate verb on
+their words (`--dry-run` first — it is the same transaction rolled back) and
+then hand off to `conduct` in-session by invoking the skill. Expect the
+run-guard to deny a plain stop while executable work is pending — that deny is
+a guard answering, not an instruction to start driving; the handoff through
+`conduct` (which surfaces the drive/park/abandon choice to the operator) is the
+designed path through it.

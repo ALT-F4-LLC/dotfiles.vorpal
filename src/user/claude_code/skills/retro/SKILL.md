@@ -105,7 +105,10 @@ at.
 
 ## 3. Propose
 
-Present a conversational summary — before writing anything:
+Proposals and approvals go through the built-in question tool — recommended
+option first, labelled "(Recommended)"; open-ended asks offer drafted
+candidates as options. Present a conversational summary — before writing
+anything:
 
 - what the evidence says, with the numbers and the run IDs it came from
 - the edit, as a diff against the current file

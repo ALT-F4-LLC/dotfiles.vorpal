@@ -31,6 +31,10 @@ problem to solve.
 Every question goes through the built-in question tool, every round — including
 open-ended asks like acceptance criteria, where you offer drafted candidates as
 options and the operator's selection or typed text becomes the verbatim source.
+If later verification refutes a FACT inside operator-selected text, strike the
+false premise, keep the criterion, and annotate the change with the evidence in
+the body — re-ask only if the correction changes what the operator would decide
+(RUN-5: a flake-artifact baseline was recorded into AC1 and corrected this way).
 Put your recommended option first, labelled "(Recommended)". A prose question
 costs the operator a redirect (it did, 2026-08-06); an exclusive-meaning label
 ("X only") never belongs in a multi-select option set.
@@ -54,8 +58,14 @@ request, ask it outright.
 Guessing at scopes produces issues that fail their scope gate at execution
 time, which is expensive and late. Read instead — through an agent: spawn ONE
 `executor-read` agent while the conversation continues, returning a scope
-map, and never survey the repo yourself. You are the intake, and your context
-belongs to the conversation, not to directory listings. The agent's brief:
+map, and never survey the repo yourself — engine-contract reads (CLI help,
+`docket workflow list`, the scope-matcher's own rules) are yours; the repo
+survey is the agent's. You are the intake, and your context belongs to the
+conversation, not to directory listings. If the spawn runs as a teammate, its
+reply is the only delivery channel — end every delegate brief with: send the
+finished deliverable to team-lead via the messaging tool; going idle without
+sending it is a failure (RUN-5's reader composed its report as final text no
+one received, and the run stalled asking for it). The agent's brief:
 
 The layout tells you scopes — which directories a change of this shape actually
 touches, narrow globs per area. `docket workflow list` tells you which
@@ -93,7 +103,9 @@ docket doc create -T plan -t "<title>" -d @<path> # the plan artifact
 ```
 
 Issues first: `run start --issue` names them, so they must already exist —
-RUN-2's planner discovered the reverse order cannot work. Flag shapes differ by
+RUN-2's planner discovered the reverse order cannot work. The issue set is also
+FIXED at `run start`: there is no attach verb, so record the run only once the
+issue list is final, or expect an abandon-and-restart (RUN-4 → RUN-5). Flag shapes differ by
 verb and it matters: `issue create -d` takes a literal string (`-` reads stdin);
 the `@<path>` form belongs to `doc create` alone — followed blindly, every issue
 body becomes the literal text "@/path/file", frozen at activation into every
@@ -111,6 +123,14 @@ the person who reads this run in three months.
 
 **The issues** carry kind, labels, scope globs, and the ACs in the body.
 
+**Every issue whose workflow binds write steps carries `--scope`.** The engine
+treats a scope-less issue as NEVER conflicting (S1 is permissive, not
+conservative), activation emits no lint for it, and under scope-parallel
+staging its writer runs beside anything — RUN-5 shipped its
+verify-everything-and-commit issue scopeless and only a shadow noticed. A
+write-bearing issue without scope globs is a planning defect, caught here or
+nowhere.
+
 **Everything an executor must know goes in the BODY, before activation.** Issue
 bodies snapshot at activation and are frozen from that moment — the body is what
 gets rendered into every brief. Comments added later never reach a brief. So any
@@ -127,7 +147,12 @@ narrowest glob that can honestly hold the change. Narrow is not a style
 preference here: scope overlap is how the engine decides two steps conflict, so a
 broad glob serializes the run **against itself**. RUN-3's `internal/engine/**`
 made every issue collide with every other issue, and ~40% of all spawns died on
-claim conflicts as a result. Prefer `internal/engine/dispatch/**` over
+claim conflicts as a result. And conflict is LITERAL-PREFIX containment, not real
+glob intersection (the engine's `scope.go`): everything before the first `*?[{`
+is the prefix, and containment either way is a collision — so brace globs and any
+two globs sharing a directory prefix collide regardless of what they'd actually
+match. Write prefix-disjoint globs (one owner per directory prefix) and check the
+partition against the matcher's own rules before recording it. Prefer `internal/engine/dispatch/**` over
 `internal/engine/**`, and several narrow globs over one wide one. Widen only when
 the change genuinely spans that much — an honest wide glob is fine, a lazy one
 costs the whole run. An issue that writes files and declares no scope is refused

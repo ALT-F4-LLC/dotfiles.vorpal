@@ -45,7 +45,9 @@ The session id is the argument: invoked as `/shadow <session-id>`,
 list the candidates — the freshest `*.jsonl` under `~/.claude/projects` — and
 confirm one with the operator; never guess, and never attach to two. Either
 way, take the target skill and the repo under observation from the operator
-when they know them.
+when they know them. Derive the observed repo from the transcript's own `.cwd`
+field — the project-directory name flattens `/`, `.`, and `_` identically and
+cannot be decoded back into a path.
 
 Live and post-mortem are the same job. Live, you tail the transcripts as they
 grow and can flag in real time; post-mortem, the transcripts are complete and
@@ -70,6 +72,16 @@ a conductor — expect these, and use them instead of fighting them:
 - **commit-guard** never denies a shadow keeping its rules, because you make
   no git writes while the run lives. If it does deny you, you have drifted
   into work that is not yours — stop and re-read rule 1.
+
+**A cross-repo seat works, with two frictions.** Launched from a different
+repo (the definitions repo is the usual case), engine verbs fail sandboxed —
+docket opens its DB read-write even for reads, and your write-root is your own
+repo. Take the sandbox override for the read-only verbs, or read the DB
+directly with `sqlite3 'file:<db>?immutable=1'` (plain `mode=ro` fails: WAL
+wants the -shm sidecar). `immutable=1` sees the last checkpoint only — fine
+for the pre-run baseline, stale for mid-run cross-checks; mid-run, the
+transcript's own `✔` result lines and the override verbs are the live
+surfaces.
 
 Ask your goal-oriented questions now, before attaching. Once attached, you go
 quiet.
@@ -105,7 +117,7 @@ the definitions assume. By layer:
 | Layer | Friction looks like |
 |---|---|
 | Skill contract | The §2 checklist: a MUST skipped, an ordering inverted, a stop condition ignored, a flag reached for without authorization. Conduct: see the appendix. |
-| wave.js | Staging violated (anything overlapping a writer; cross-issue reads overlapping), routing that disagrees with policy.toml re-derived by hand, empty or misnumbered phase boxes, the args-as-string rescue firing at all, refusals that misname the fault, journal gaps. |
+| wave.js | Staging that disagrees with the rows' engine `stage` labels, routing that disagrees with policy.toml re-derived by hand, empty or misnumbered phase boxes, spawns launched into a parked run, refusals that misname the fault, journal gaps. (The args-string decode is normal harness transport — never a finding.) |
 | Executors | A brief that was not self-sufficient (the agent went hunting), tool churn, permission prompts mid-step, sandbox denials, schema/StructuredOutput retries, wrong archetype or model vs `agent-<id>.meta.json`, token-file misuse, a CONFLICT report longer than three lines. |
 | Model | Mistakes as weather, not exceptions: an invented flag or path, a misquoted verbatim, a transposed id, misread tool output, a confident summary the transcript contradicts, arithmetic that does not check. The mistake is the datum — the finding is whatever let it through (triage below). |
 | Hooks | session-start, run-guard, spawn-guard, commit-guard, wave-audit: a deny on a legitimate action, an allow on what the guard exists to stop, advisory noise on every return, a hook that should have fired and did not, a stderr reason that misleads. |
@@ -183,11 +195,23 @@ Step attribution is a JOIN on `agentId`: the step id is in the agent's first
 `user` message, because the bootstrap prompt names it. Do not look for a
 `label` field.
 
-Tail on a cadence, from your last offset. A quiet transcript is a run
-working, not a run stalled — the wave notifies on completion, and gates park
-runs for hours by design.
+Tail on a cadence, from your last offset —
+`shadow-transcript-summary.sh <transcript.jsonl> [from-line]` (installed to
+`~/.claude/scripts`) renders the compact per-line view; don't retype the jq.
+A quiet transcript is a run working, not a run stalled — the wave notifies on
+completion, and gates park runs for hours by design.
 
-Four measured limits of these surfaces (RUN-2's shadow):
+Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
+
+- **A session can ROLL TO A NEW TRANSCRIPT ID at context compaction.** RUN-5's
+  conductor continued under a fresh file whose replayed history was
+  byte-identical; every watcher keyed on the old id went silently stale for an
+  hour. If the engine moves while your transcript is quiet, re-find the live
+  file by cwd + recency before concluding anything — and watch engine events
+  in parallel; they are rollover-proof.
+- **Gate-recorded EVENTS carry no verdicts.** Pass/fail lives only in
+  `gate_results` (or `run report`'s tally); "gates green" read off the event
+  stream is a guess.
 
 - **Transcripts flush lazily.** A pending question to the operator hits disk
   only WITH its answer — you cannot watch a gate live, so interrupt-condition
@@ -276,8 +300,9 @@ Pre-derived because conduct is the richest target. The conductor:
   `Workflow({scriptPath: "~/.claude/workflows/wave.js"})` only — a by-name
   invocation is a defect even when it works (the name registry served
   pre-edit bytes on RUN-3). `args` is a real object `{rows, policyText}`,
-  policy as TEXT; wave.js logging its string-decode rescue means a string
-  was passed — a finding even though the wave survived.
+  policy as TEXT. (wave.js's args-decode log line is normal harness
+  transport — the harness stringifies args regardless of the caller; proven
+  by controlled probe on RUN-5. Never count it as a finding.)
 - **Row hygiene.** `kind: "action"` rows filtered before handoff (the wave's
   refusal is the backstop, not the plan); rows otherwise untouched — no
   reordering, no dropping, no sequencing to dodge claim conflicts.

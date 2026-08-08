@@ -23,6 +23,25 @@ serve a step, you have left this skill's contract: that resolution is
 finding clustering, retries — all engine and pipeline mechanics. You do not
 second-guess a `next` result.
 
+## Before the loop
+
+**Permission surface.** Wave executors run engine verbs (`docket step
+claim/complete/fail`) inside YOUR session's permission context. In default
+mode their very first Bash call takes a human prompt — RUN-5's first conduct
+session died exactly there, orphaning a dispatch and a live wave. Before the
+first dispatch, confirm the session runs a mode that pre-authorizes those
+calls (auto/acceptEdits, or an allowlist covering `docket`); if not, say so
+and let the operator switch before you open anything.
+
+**A run still in `planning` is not yours to activate alone.** Activation is an
+operator gate, and it PINS config bytes for the whole run. In order: diff the
+config chain — `diff -r ~/.claude/docket-config .docket/config` — and surface
+any divergence (a stale pin cannot be fixed mid-run; RUN-5 executed a whole
+run on contracts eight edits behind, and paid in re-review churn an operator
+gate had already ruled on). Then `docket run activate $RUN --dry-run`, present
+the binding — issues bound, steps, pins, any lint, plus the chain-diff — via
+the question tool, and activate only on the operator's yes.
+
 ## The loop
 
 Run it from the top each time. Do not cache anything between iterations.
@@ -83,13 +102,20 @@ executor-empty open remains the mistake described above.
 
 ```bash
 docket dispatch open --run $RUN --json
-cat .docket/config/policy.toml
+cat .docket/config/policy.toml   # fresh EVERY dispatch — do not reuse a prior
+                                 # iteration's text, and do not substitute a
+                                 # hash check for the re-read (RUN-5's
+                                 # conductor "verified" against a hash it had
+                                 # never recorded)
 ```
 
-Then invoke the wave **by scriptPath, always**:
+Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
+Workflow tool does not expand `~` and resolves relative paths against the
+observed repo's cwd (both RUN-5 conductor sessions lost their first launch to
+the tilde form):
 
 ```
-Workflow({ scriptPath: "~/.claude/workflows/wave.js", args: {rows, policyText} })
+Workflow({ scriptPath: "/Users/erikreinert/.claude/workflows/wave.js", args: {rows, policyText} })
 ```
 
 **Never `Workflow({name: "wave"})`.** The name registry serves a stale snapshot:
@@ -98,20 +124,18 @@ disk, and nothing in the transcript said so. `scriptPath` is the only invocation
 that provably runs the file that is there now. This is not a preference; a
 by-name invocation is a defect regardless of how convenient it looks.
 
-Pass `args` as a **real object** — `{rows, policyText}` — never a JSON-encoded
-string and never `JSON.stringify`'d. (wave.js now decodes a string if one
-arrives, but it says so loudly; do not rely on the rescue.) There is no
-`policyPath` parameter: the script cannot read files, so policy.toml travels as
-TEXT in `policyText`. The tripwire: if you find yourself escaping quotes inside
-`args`, you are composing a string — stop and restructure the call so `args` is
-a JSON object node. RUN-2 stringified it four times despite this paragraph; the
-rescue held, but every occurrence logs a scolding into the wave output.
+Pass `args` as `{rows, policyText}`. The harness JSON-encodes args in transit
+regardless of what you emit — wave.js decodes it as normal transport (proven
+by controlled probe, RUN-5 shadow; the string in your transcript is the
+harness's doing, not yours). There is no `policyPath` parameter: the script
+cannot read files, so policy.toml travels as TEXT in `policyText`.
 
-**Route executor rows only.** Filter the dispatch rows to those the wave can
-spawn and hand over only those. `kind: "action"` steps are engine-run — the
-engine drives them itself, they are never claimed by an agent, and handing one to
-the wave is a mistake the wave will refuse. Filtering them here is the primary
-control; the wave's refusal is the backstop, not the plan.
+**Route executor rows only.** Filter the dispatch rows to `kind: "executor"`
+and hand over only those. `kind: "action"` steps are engine-run — the engine
+drives them itself during dispatch open — and `kind: "human"` steps are gates
+you present, not spawns; handing either to the wave is a mistake the wave will
+refuse. Filtering here is the primary control; the wave's refusal is the
+backstop, not the plan.
 
 **Your entire involvement with policy is three mechanical acts:**
 
@@ -176,7 +200,9 @@ units per step, usage deduplicated by message id (streamed assistant messages
 repeat across transcript lines; a per-line sum double-counts, measured
 1.65-2.36× on RUN-2), step attribution via the bootstrap prompt. It exits
 nonzero when an agent cannot be attributed or carries no usage — report that,
-do not paper over it. Only if the script is absent or refuses do you fall back
+do not paper over it. Capture ITS exit, not a pipeline's: `$?` after
+`script | tail` reports tail's exit, and RUN-5's first close checked exactly
+that dead value (redirect to a file, then test). Only if the script is absent or refuses do you fall back
 to delegating: spawn ONE `executor-read` agent on the transcript directory
 with the "Where the numbers actually are" section below verbatim as its brief.
 Either way you check the shape — every dispatched step present, quantities

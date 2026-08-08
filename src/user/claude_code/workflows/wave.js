@@ -356,9 +356,16 @@ function archetype(row, hint) {
 //
 // Observed on RUN-1's first wave: every executor took a permission prompt at
 // its very last step because `rm` on the token file is a deletion. Truncation
-// (`: > file`) is a plain redirect and costs nothing, and the file is already
-// inert by then — the engine retires the token the moment the record lands.
-// So truncation is the better instruction on its own merits.
+// is a plain redirect and costs nothing, and the file is already inert by
+// then — the engine retires the token the moment the record lands. So
+// truncation is the better instruction on its own merits.
+//
+// TRUNCATE VIA `cat /dev/null >`, NOT `: >` (RUN-5 shadow). In default
+// permission mode the classifier evaluates every command in the compound,
+// and the `:` builtin matches no allowlist entry — the whole claim compound
+// then parks on a human prompt (RUN-5's first conductor session died exactly
+// there). `cat` is allowlisted; rendered briefs use allowlisted commands
+// only, so a default-mode session degrades to a prompt-free wave.
 //
 // It must be justified to the executor on THOSE merits and no others. An
 // earlier revision of this prompt told the executor to prefer truncation
@@ -382,7 +389,7 @@ function bootstrap(row, r) {
      jq -r '.data.token'  < "$TMPDIR/${row.step}.claim.json" > "$TMPDIR/${row.step}.token" &&
      chmod 600 "$TMPDIR/${row.step}.token" &&
      jq -r '.data.packet' < "$TMPDIR/${row.step}.claim.json" &&
-     : > "$TMPDIR/${row.step}.claim.json"
+     cat /dev/null > "$TMPDIR/${row.step}.claim.json"
    \`\`\`
 
    The last command TRUNCATES the claim file rather than deleting it. Its
@@ -441,8 +448,8 @@ function bootstrap(row, r) {
    verb, because argv is world-readable through \`ps\`. Redirect it; never read it.
 
    After the record command exits 0, leave the token file alone or truncate
-   it (\`: > "$TMPDIR/${row.step}.token"\`) — the engine retires the token the
-   moment the record lands, so the file is inert either way. If \`complete\` or
+   it (\`cat /dev/null > "$TMPDIR/${row.step}.token"\`) — the engine retires
+   the token the moment the record lands, so the file is inert either way. If \`complete\` or
    \`fail\` errored, KEEP the token file INTACT and stop — it is the only
    thing that can still drive this step, and losing it after a failed record
    turns a routine step failure into a zombie claim the lease must reap.
@@ -475,20 +482,17 @@ function bootstrap(row, r) {
 }
 
 // --- The wave ---------------------------------------------------------------
-// [OBSERVED 2026-08-05, RUN-3] The harness JSON-encodes the args object in
-// transit, so `args` can arrive as a STRING. Decode it here rather than routing
-// against an empty document — an undecoded string has no .policyText, which
-// falls through to `|| ''` and refuses for the wrong reason entirely. Name the
-// real fault instead of parsing an empty document.
+// [OBSERVED 2026-08-05 RUN-3; PROVEN 2026-08-08 RUN-5 shadow] The harness
+// JSON-encodes the args object in transit — ALWAYS. A controlled probe passing
+// a genuine object node received typeof "string" in the script runtime, so
+// this decode is the permanent transport adapter, not a rescue for caller
+// error: no caller behavior can deliver an object here. (Three documents spent
+// two runs scolding conductors for this; the conductors were innocent.)
 let input = args
 if (typeof input === 'string') {
   try {
     input = JSON.parse(input)
-    // LOUD by contract: the conduct skill promises this rescue announces
-    // itself, and RUN-1 passed a string on all seven waves with nothing in
-    // the record saying so. The log line is the deviation's only witness.
-    log('wave.js: args arrived as a JSON-encoded STRING and was decoded — ' +
-        'pass {rows, policyText} as a real object; do not rely on this rescue')
+    log('wave.js: decoded args from the harness JSON-encoded transport (normal)')
   } catch (e) {
     throw new Error(
       `wave.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
@@ -510,52 +514,47 @@ if (policy.policy?.version !== 1) {
   )
 }
 
-// --- Staging (H-11) ---------------------------------------------------------
-// RUN-3 spawned every row in ONE parallel blast: 21 of 53 spawns (~40%) died on
-// claim CONFLICT, because the engine offers mutually-conflicting ready sets
-// (E-5) and scope conflict is class-blind across issues (E-6). Both are engine
-// fixes. This is the interim that costs nothing and needs no new data: rows
-// ALREADY carry `class` and `issue`, and that is enough to schedule the wave so
-// the conflicting pairs never run concurrently in the first place.
+// --- Staging (stage-driven; engine-certified) -------------------------------
+// [REWRITTEN 2026-08-08, RUN-5 shadow — operator priority: conflict waste.]
+// The old interim here ran writers strictly serial and read-groups one issue
+// at a time, because the engine of RUN-3's era offered mutually-conflicting
+// ready sets (E-5) and its scope conflict was class-blind across issues (E-6).
+// BOTH ENGINE FIXES HAVE SINCE LANDED, and the guarantees are stronger than
+// the interim ever was:
 //
-//   Stage 1  — write-class rows, SERIAL, each awaited before the next starts.
-//              Writers are what hold broad tree scopes; running them one at a
-//              time makes writer-vs-writer and writer-vs-reader contention
-//              structurally impossible within a wave.
-//   Stage 2+ — read-class rows grouped BY ISSUE: parallel inside a group
-//              (same-issue reads already coexist — the ready.go:616-643
-//              same-issue exemption), awaited between groups (cross-issue
-//              reads exclude each other today; that is exactly E-6).
+//   - R4 readiness runs scopeConflict() (ready.go): only tree-HOLDERS exclude,
+//     same-issue steps share their scope by construction, and cross-issue
+//     writers reach one offer only when their issues' scope_globs are
+//     disjoint. Foreign runs' scopes are counted eagerly.
+//   - `next` narrows every offer through DisjointPrefix (next.go): the offered
+//     rows are claimable AS A SET. The RUN-3 claim-race class is dead at the
+//     source, not worked around here.
+//   - Where ordering INSIDE a set exists, the engine says so: DKT-18 stage
+//     labels ride the rows (`stage`, int, omitempty — a fix loop's fixer is
+//     stage 0, its re-review judges stage 1). Measured on RUN-5: review@N
+//     siblings carry "stage":1; six disjoint implement rows offered stage-less
+//     (= stage 0, engine-certified concurrent — which the old interim then ran
+//     one at a time, ~6x the necessary wall clock).
 //
-// WRITERS-FIRST IS A CORRECTNESS DEPENDENCY, not only contention control.
-// The engine offers a loop's fixer and its re-review judges in ONE ready set
-// (observed RUN-1 DISPATCH-5: fix@1 + review@1#0..3 together) and relies on
-// this staging to sequence them — a judge spawned before the writer finishes
-// would review the PRE-fix tree. Do not relax the serialization or reorder
-// the stages without accounting for that.
+// So staging is now a RELAY of the engine's own schedule: group rows by
+// `stage`, run each stage fully parallel, await between stages, ascending.
+// Writers-before-re-review is preserved BY THE ENGINE'S LABELS, not by a
+// class heuristic. Rows without a stage field are stage 0. Deterministic
+// code throughout; no model judges ordering.
 //
-// Everything here is deterministic code: the partition is a `class` test, the
-// grouping is a `issue` key, and the order is first-appearance. No model judges
-// anything about ordering, and no row's routing changes — only WHEN it spawns.
-// Residual races (cross-run lease holders, mid-wave state drift) are out of
-// reach without the engine fix; this removes the intra-wave class entirely.
+// EARLY ABORT (RUN-5 shadow; operator priority). A human gate parks the run
+// RUN-WIDE the moment a step routes waiting-human. The old loops kept booting
+// agents into the parked run — 14 then ~17 spawns in consecutive RUN-5 waves
+// returned "run is not active" CONFLICTs, pure waste. Now: when any spawn's
+// report shows the run parked, later stages are not launched; their rows
+// return status "not-launched-run-parked" and the engine re-offers those
+// steps after the park lifts. (Within a stage, claims land in seconds —
+// before any writer's gates can park the run — so parallel claiming also
+// shrinks the stranding window the serial interim created.)
 
-function issueKey(row) {
-  const iss = row.issue
-  if (iss == null) return '(no-issue)'
-  return typeof iss === 'object' ? (iss.id ?? iss.key ?? JSON.stringify(iss)) : String(iss)
-}
-
-// Group preserving first-appearance order — Map keeps insertion order, so the
-// stage sequence is a pure function of the row order the engine handed us.
-function groupByIssue(list) {
-  const groups = new Map()
-  for (const row of list) {
-    const k = issueKey(row)
-    if (!groups.has(k)) groups.set(k, [])
-    groups.get(k).push(row)
-  }
-  return groups
+function runParked(res) {
+  return res != null && res.status === 'returned' &&
+    typeof res.text === 'string' && res.text.includes('run is not active')
 }
 
 // One spawn. `phaseLabel` puts the row in its stage's box in /workflows.
@@ -594,51 +593,52 @@ function spawn(row, phaseLabel) {
   })
 }
 
-const writes = rows.filter((row) => row.class === 'write')
-const reads = rows.filter((row) => row.class !== 'write')
-const readGroups = groupByIssue(reads)
+// Partition by the engine's stage label. Map keys sorted ascending; rows
+// without a label are stage 0 (no ordering constraint — engine-certified
+// concurrent with everything else it offered).
+const stages = new Map()
+for (const row of rows) {
+  const s = Number.isInteger(row.stage) ? row.stage : 0
+  if (!stages.has(s)) stages.set(s, [])
+  stages.get(s).push(row)
+}
+const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
 // The FIRST log line names the payload: every launch is a fresh workflow all
 // listed as "wave" in /workflows, so the list preview is the only place a
 // wave can say which wave it is ("each one is new" — operator, 2026-08-06).
 log(`wave: ${rows.map((r) => `${r.step}·${r.executor}`).join(', ')}`)
 log(
-  `wave: ${rows.length} row(s) — ${writes.length} write (serial), ` +
-  `${reads.length} read in ${readGroups.size} issue group(s)`
+  `wave: ${rows.length} row(s) across ${stageKeys.length} engine stage(s): ` +
+  stageKeys.map((k) => `stage ${k}×${stages.get(k).length}`).join(', ')
 )
 
 // Results are collected per row and re-keyed by step id at the end, so the
 // return stays a flat checklist regardless of how the rows were staged.
 const byStep = new Map()
+let parked = false
 
-// Stage 1 — writers, strictly serial. `await` inside the loop is the point.
-// meta declares no phases, so the title is free to carry its count.
-if (writes.length) {
-  const label = `Writes (${writes.length}, serial)`
-  phase(label)
-  for (const row of writes) {
-    const res = await spawn(row, label)
-    byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
-  }
-}
-
-// Stage 2+ — one stage per issue, parallel within, awaited between. The
-// counter is seeded by whether a write stage actually ran, so labels reflect
-// stages that exist in THIS wave: a read-only wave's first group is stage 1,
-// not a "stage 2" under a phantom stage 1 (operator screenshots, 2026-08-06).
-let stage = writes.length ? 1 : 0
-for (const [key, group] of readGroups) {
-  stage++
-  const label = `Reads ${key} (stage ${stage}, ${group.length})`
+for (const k of stageKeys) {
+  if (parked) break
+  const group = stages.get(k)
+  const label = `Stage ${k} (${group.length} row${group.length === 1 ? '' : 's'}, parallel)`
   phase(label)
   const settled = await parallel(group.map((row) => () => spawn(row, label)))
   settled.forEach((res, i) => {
     const row = group[i]
     byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
   })
+  if (settled.some(runParked)) {
+    parked = true
+    log('wave: run parked mid-wave — later stages not launched; the engine ' +
+        're-offers their steps after the park lifts')
+  }
 }
 
 // The wave's return is a checklist; the engine's own discrepancy refusal in
 // `next` is the enforcement (03 §3). Order follows the INPUT rows, not the
 // staging, so the conductor reads it against the dispatch it handed in.
-return rows.map((row) => byStep.get(row.step) || { step: row.step, status: 'spawn-failed' })
+// "not-launched-run-parked" rows were never spawned at all — no claim, no
+// usage, nothing to reconcile; they simply come back in a later dispatch.
+return rows.map((row) => byStep.get(row.step) ||
+  { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })

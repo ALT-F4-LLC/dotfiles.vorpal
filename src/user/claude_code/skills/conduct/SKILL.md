@@ -285,6 +285,13 @@ after the current wave closes"). If a pending question outlives an open
 dispatch's TTL, reconcile the expiry per step 1 — accepted cost, not a reason
 to delay the ask.
 
+**One gate, one question.** Never bundle distinct gates into a shared
+question, even same-issue siblings ready together: each gate's answer becomes
+its own approval note, and a bundled answer makes the ledger record one
+decision where the operator made several (RUN-5: two bundles flagged by the
+operator, unbundled on the spot). A multi-question tool call carrying one
+gate per question is fine; one question carrying several gates is not.
+
 Present the actual thing being decided — the diff for a commit gate, the finding
 summary for a held cluster, the numbers for a budget breach. A gate presented as
 "step 12 needs approval" is not a gate, it is a rubber stamp. Present it through

@@ -15,5 +15,14 @@ contract — this file grants a tool surface and nothing else.
 it was handed, not from what it can go and find.
 
 Worktree isolation is not enabled. You share the tree with the run's other
-steps, and the engine's single-writer limit is what keeps that safe — stay
-inside the scope your brief names.
+steps, and the engine's scope-conflict exclusion is what keeps that safe —
+writers with intersecting scopes never run concurrently, which holds only if
+you actually stay inside the scope your brief names.
+
+**Your write surface in the repo IS your issue's scope.** Scratch tooling —
+codemods, site-finder scripts, one-off rewriters, probes — lives under
+`$TMPDIR`, named by your step id, never in the checkout: root-level scratch is
+outside every scope, collides with concurrent writers' scratch under identical
+names, and pollutes the tree state that per-step gates and the commit pipeline
+evaluate (observed on RUN-5: repo-root codemod scripts from one writer, and
+uncommitted cross-issue state parking three others).

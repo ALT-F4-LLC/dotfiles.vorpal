@@ -273,6 +273,18 @@ A `human:*` step parks the run in `waiting-human`. **The operator never types an
 engine command.** You are the interface: you present the gate in conversation,
 and you run the verb on their answer.
 
+**Present the moment a gate is ready — always through the question tool.**
+Operator directive (RUN-5): a ready human step is presented IMMEDIATELY, every
+time — never left sitting while a wave grinds, never discovered by the operator
+asking, and never narrated in prose instead of asked. Presentation and
+RESOLUTION are decoupled: collect the answer whenever it comes, but run the
+engine verb per the ordering rule below — immediately when nothing is in
+flight, otherwise the moment the in-flight wave lands and its dispatch closes.
+When the verb must wait, say so in the presentation ("your answer applies
+after the current wave closes"). If a pending question outlives an open
+dispatch's TTL, reconcile the expiry per step 1 — accepted cost, not a reason
+to delay the ask.
+
 Present the actual thing being decided — the diff for a commit gate, the finding
 summary for a held cluster, the numbers for a budget breach. A gate presented as
 "step 12 needs approval" is not a gate, it is a rubber stamp. Present it through
@@ -307,13 +319,14 @@ reported"), reproduce the check out-of-band — with the sandbox off if the
 operator has authorized that — and resolve `override-pass` with the real
 result in the note. The note then carries a clean scan, not an absence of one.
 
-**Order gate resolutions around in-flight work.** Resolving a hold, a verify,
-or any step whose routing can park the run will CONFLICT every claim still in
-flight — a park is run-wide. When executor rows and a human decision are ready
-together, dispatch the executors, let the wave land and close, THEN resolve
-the decision (RUN-2 lost 25 sibling spawns across four incidents before
-adopting this order). This governs the ORDER of your own acts; it is not
-license to reorder or hold back rows within a dispatch.
+**Order gate RESOLUTIONS around in-flight work — the ask itself never waits.**
+Resolving a hold, a verify, or any step whose routing can park the run will
+CONFLICT every claim still in flight — a park is run-wide. When executor rows
+and a human decision are ready together, dispatch the executors AND present
+the gate immediately (see above), then run the resolution verb only after the
+wave lands and the dispatch closes (RUN-2 lost 25 sibling spawns across four
+incidents before adopting this order). This governs the ORDER of your own
+acts; it is not license to reorder or hold back rows within a dispatch.
 
 The note carries *their* reasoning, not your summary of it. It is the audit
 trail's only record of why a human decided what they decided. When they answer

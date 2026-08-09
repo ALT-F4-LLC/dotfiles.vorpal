@@ -7,6 +7,7 @@ packet_includes:
   - fragments/code-philosophy.md
   - fragments/evidence-rules.md
   - fragments/truth-first.md
+  - fragments/rerun-discipline.md
 emits: findings
 payload: findings@1
 ---

@@ -7,6 +7,7 @@ packet_includes:
   - fragments/laziness-ladder.md
   - fragments/severity-ladder-general.md
   - fragments/evidence-rules.md
+  - fragments/rerun-discipline.md
 emits: findings
 payload: findings@1
 ---

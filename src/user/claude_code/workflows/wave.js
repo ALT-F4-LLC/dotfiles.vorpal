@@ -384,26 +384,51 @@ function bootstrap(row, r, isolated) {
   // positive-control probes can never leak into a sibling's inputs (three
   // distinct leaks observed in RUN-5: a reverted mutant served as one judge's
   // diff input, a live mutation served to another, a third watched foreign
-  // edits appear mid-step). The worktree has no database — .docket/*.db is
-  // gitignored — so every docket command in the isolated brief carries an
-  // inline DOCKET_PATH derivation pointing at the MAIN repo's .docket.
-  // Inline on every command, not exported once: shell state does not survive
-  // between an executor's Bash calls.
+  // edits appear mid-step). Two facts about that worktree, both measured live
+  // on RUN-6's first wave: the harness bases it on the repo's DEFAULT branch,
+  // which can sit far behind the branch the run is on (139 commits, that
+  // wave), and it has no engine database — .docket/*.db is gitignored, and in
+  // a bare-repo+worktrees layout the old git-common-dir derivation pointed at
+  // a directory that does not exist. Obligation 0 therefore has the executor
+  // fix both at boot: locate the sibling checkout whose .docket resolves this
+  // step id (the DB that dispatched you is the only one that knows your
+  // step), park that path on disk, and check out that checkout's HEAD.
+  // Docket commands then read the parked path back inline on every call —
+  // inline, not exported once: shell state does not survive between an
+  // executor's Bash calls, but files in $TMPDIR do.
   const dp = isolated
-    ? 'DOCKET_PATH="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.docket" '
+    ? `DOCKET_PATH="$(cat "$TMPDIR/${row.step}.docket-path")" `
     : ''
   const isolationNote = isolated ? `
 
 0. YOU ARE IN A PRIVATE WORKTREE of the repository. Your tree is yours alone:
    probes, scratch edits, and reverts are safe here and MUST stay here — never
-   cd out to the shared repository tree. The engine's database lives in the
-   MAIN repo, which is why every docket command below carries an inline
-   DOCKET_PATH prefix. Keep that prefix on EVERY docket command you run,
-   exactly as written; without it docket finds no database from here. Your
-   worktree is the committed branch head: uncommitted work in the shared tree
-   is deliberately not visible, and your inputs arrive in the rendered packet,
-   not from the tree.` : ''
-  return `You are executing one step of a Docket run. Follow these four obligations exactly.${isolationNote}
+   cd out to the shared repository tree. But TWO defects need correcting
+   before anything else: your worktree may be checked out at the WRONG COMMIT
+   (the harness bases it on the default branch, not the run's branch), and
+   the engine's database lives only in the main checkout. Fix both in ONE
+   Bash call, exactly this:
+
+   \`\`\`
+   ROOT="$(git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r w; do
+       [ -e "$w/.docket/issues.db" ] || continue
+       DOCKET_PATH="$w/.docket" docket step show ${row.step} --json 2>/dev/null | grep -q '"ok":true' && { printf '%s' "$w"; break; }
+     done)" &&
+     [ -n "$ROOT" ] &&
+     printf '%s/.docket' "$ROOT" > "$TMPDIR/${row.step}.docket-path" &&
+     git checkout --detach --quiet "$(git -C "$ROOT" rev-parse HEAD)" &&
+     echo "worktree bootstrapped: HEAD=$(git rev-parse HEAD) docket=$ROOT/.docket" ||
+     { echo "WORKTREE BOOTSTRAP FAILED for ${row.step} — no sibling checkout resolves this step, or the checkout failed"; exit 1; }
+   \`\`\`
+
+   If that call fails, report its output verbatim and STOP — do not hunt for
+   the database, guess at paths, or work from the tree you booted with. After
+   it succeeds, keep the inline DOCKET_PATH prefix on EVERY docket command
+   you run, exactly as written below; without it docket finds no database
+   from here. Uncommitted work in the shared tree is deliberately not
+   visible, and your inputs arrive in the rendered packet, not from the
+   tree.` : ''
+  return `You are executing one step of a Docket run. Follow these obligations exactly.${isolationNote}
 
 1. Claim it AND PARK THE TOKEN ON DISK, in ONE Bash call, exactly this:
 
@@ -591,27 +616,30 @@ function spawn(row, phaseLabel) {
   log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})` +
       ` [${labelsOf(row).join(' ') || 'no labels'}]` +
       (isolated ? ' [worktree]' : ''))
-  return agent(bootstrap(row, r, isolated), {
-    // Display label for the fleet TUI ONLY — the journal never persists it
-    // (attribution is the agentId join; E2). Bare step ids read as noise in
-    // /workflows ("more informed names" — operator, 2026-08-06), and since
-    // nothing downstream consumes the label, it is free to inform.
+  // Display label for the fleet TUI ONLY — the journal never persists it
+  // (attribution is the agentId join; E2). Bare step ids read as noise in
+  // /workflows ("more informed names" — operator, 2026-08-06), and since
+  // nothing downstream consumes the label, it is free to inform.
+  const opts = (iso) => ({
     label: `${row.step} · ${r.hint}`,
     phase: phaseLabel,
     agentType: type,
     model: r.model,
     effort: r.effort,
-    ...(isolated ? { isolation: 'worktree' } : {}),
-  }).then((text) => {
+    ...(iso ? { isolation: 'worktree' } : {}),
+  })
+  const handle = (text) => {
     // A NULL return is a DEAD SPAWN, not a quiet success. The runtime returns
     // null — it does not throw — when a model is unavailable or the agent is
-    // skipped, and such an executor never claimed and never recorded, so the
-    // step is still ready and the engine will offer it again forever. Calling
-    // that 'no-return' read like a benign variant of a success and left the
-    // conductor looping on a step nothing was working. Say it plainly.
+    // skipped. Whether a claim was recorded before the spawn died is UNKNOWN
+    // from here: RUN-6's operator-stopped wave left steps CLAIMED while this
+    // path asserted "never claimed" six times. Say what is known, and point
+    // the conductor at the engine instead of asserting engine state.
     if (text == null) {
       log(`${row.step}: SPAWN PRODUCED NOTHING (model ${r.model} unavailable, ` +
-          `or the agent was skipped) — the step was never claimed`)
+          `the agent was skipped, or it died mid-flight) — whether a claim ` +
+          `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
+          `and \`docket step show ${row.step}\` before retrying`)
       return { step: row.step, status: 'spawn-failed', text: null }
     }
     // 'returned', not 'recorded': the executor came back with a report, but
@@ -619,7 +647,26 @@ function spawn(row, phaseLabel) {
     // RUN-1's STEP-1 returned a token-lost report and recorded nothing. The
     // conductor must read text, never trust this status as an outcome.
     return { step: row.step, status: 'returned', text }
-  })
+  }
+  return agent(bootstrap(row, r, isolated), opts(isolated)).then(handle)
+    .catch((err) => {
+      // Isolation setup can fail outright before any agent exists (measured
+      // live, RUN-6: a checkout with no resolvable default-branch ref failed
+      // worktree creation for EVERY spawn — the whole wave died to the
+      // guard). Losing the guard for one spawn beats losing the wave: retry
+      // once in the shared tree, loudly, so the journal records the tradeoff.
+      if (isolated && /base branch|worktree/i.test(String(err))) {
+        log(`${row.step}: worktree isolation unavailable (${err}) — retrying ` +
+            `WITHOUT isolation; cross-contamination guard is OFF for this spawn`)
+        return agent(bootstrap(row, r, false), opts(false)).then(handle)
+          .catch((err2) => {
+            log(`${row.step}: spawn error on non-isolated retry: ${err2}`)
+            return { step: row.step, status: 'spawn-failed', text: null }
+          })
+      }
+      log(`${row.step}: spawn error: ${err}`)
+      return { step: row.step, status: 'spawn-failed', text: null }
+    })
 }
 
 // Partition by the engine's stage label. Map keys sorted ascending; rows

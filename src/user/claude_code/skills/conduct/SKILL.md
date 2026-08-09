@@ -39,8 +39,16 @@ config chain — `diff -r ~/.claude/docket-config .docket/config` — and surfac
 any divergence (a stale pin cannot be fixed mid-run; RUN-5 executed a whole
 run on contracts eight edits behind, and paid in re-review churn an operator
 gate had already ruled on). Then `docket run activate $RUN --dry-run`, present
-the binding — issues bound, steps, pins, any lint, plus the chain-diff — via
-the question tool, and activate only on the operator's yes.
+the binding — issues bound, steps, pins, any lint (the dry-run JSON's
+`scope_warnings`, VERBATIM — RUN-6's gate dropped all five warnings behind
+the generic word "lint"), plus the chain-diff — via the question tool, and
+activate only on the operator's yes.
+
+The roster of WHAT was bound comes from the engine, never from the run's
+request prose: the request names the plan's SUBJECTS, not the bound issues,
+and the dry-run reports only counts (DKT-94). RUN-6's conductor queried the
+request's issue ids, found them label-less, and built a false misrouting
+theory before hand-mapping the real roster out of the scope warnings.
 
 ## The loop
 
@@ -171,6 +179,12 @@ On the wave's completion notification:
 is what triggers the engine's discrepancy probe; usage that arrives after the
 close is usage the probe never saw, and each subsequent close then re-reports the
 same stranded set. Back-fill, verify, close — in that order, every iteration.
+
+The same order governs the crashed-relay exit: back-fill BEFORE `dispatch
+abandon` too — abandon has no later back-fill window, and RUN-6 stranded
+~141k measured tokens by abandoning first (DKT-98). If the back-fill refuses
+against a dispatch being abandoned, cite DKT-98 and the refusal verbatim in
+the abandon `--reason`.
 
 ```bash
 # 1. the usage join is DELEGATED (see below) — an executor-read agent returns

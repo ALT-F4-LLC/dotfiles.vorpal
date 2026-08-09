@@ -70,7 +70,15 @@ diamond = { model = "fable",  effort = "max"    }   # scarce and gated; reserved
 implement         = { tier = "bronze" }   # routine change; static-Large or >1-day work escalates per [escalation]
 test-infra        = { tier = "bronze" }   # implement's label-keyed resolution (below); same class, same rung
 fix               = { tier = "bronze" }   # bounded, finding-directed rework
-commit-author     = { tier = "bronze" }   # mechanical: compose message under gates
+# `commit-author` row removed 2026-08-09 (operator policy, ratified in
+# conversation): the commit tail is gone from every workflow — automated
+# commits are incompatible with the harness security model (interactive
+# 1Password commit-signing authorization is unavailable to headless
+# executors). No workflow references the hint, and an unreferenced row
+# violates the every-row-reachable invariant. The operator commits by hand;
+# the contract and its git-commit action script were removed with this row
+# ("remove anything no longer needed", 2026-08-09) — git history keeps
+# contracts/commit-author.md if its drafting discipline is ever wanted.
 
 # Review nodes — silver is the floor, and dispatching review below it is a
 # routing defect. The reason is the value review produces: a judge exists to

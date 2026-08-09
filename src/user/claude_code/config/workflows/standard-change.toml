@@ -4,22 +4,21 @@
 # attempts, artifact recording, context assembly, event logging (02 §5, §8).
 # A pipeline author writes topology and thresholds only (05 §1).
 # `issue.diff` is the engine-provided virtual artifact — referenced, never emitted.
-# Requires `findings@1` registered first: `reconcile` declares it, and the ordered
-# `any(severity >= high)` compiles only because that schema declares severity's
-# order (06 §11.2, V21c/V29).
+# Requires `findings@2` AND `findings@1` registered first: the review fanout
+# declares findings@2 (judge-boundary anchor keys required — retro after RUN-5;
+# 7 judge-architecture findings keyed location/rule were silently dropped
+# downstream, see DKT-79), while `reconcile` stays on findings@1, whose declared
+# severity order the ordered `any(severity >= high)` compiles from (06 §11.2,
+# V21c/V29). The split is deliberate: `aggregate` carries through only input
+# keys, so a schema requiring `id` on the reconcile document trips V30.
 
 [pipeline]
 name    = "standard-change"
-version = 2                  # v2 (2026-08-06): commit-exec action restored — v1
-                             #   ended at commit-author's MESSAGE with nothing
-                             #   performing the commit; RUN-1 completed with an
-                             #   approved message and a dirty tree. NOTE: bumping
-                             #   in a repo where v1 is registered trips the known
-                             #   engine defect (old [match] stays live and the
-                             #   activation refuses on 2 candidates) — verify
-                             #   against a real activation, and file it rather
-                             #   than renaming the pipeline.
-description = "Implement, review, reconcile, verify, and commit one ordinary change."
+version = 6                  # 6, not 5: @5 registered and a comment edit then
+                             #   changed the file's bytes — a registered
+                             #   name@version is frozen, so the edit forces the
+                             #   bump (same content otherwise)
+description = "Implement, review, reconcile, and verify one ordinary change; the operator commits by hand."
 
 [match]                      # binding rule, evaluated at run activation (02 §1.2)
                              # EXACTLY ONE workflow may match an issue (06 §11.1), so
@@ -29,11 +28,45 @@ description = "Implement, review, reconcile, verify, and commit one ordinary cha
                              # remaining four bind on labels only because Docket's
                              # issue kinds are a closed set (see the variants' [match]
                              # notes), so they are excluded here too. DKT filed.
-kind   = ["task", "feature", "bug", "chore"]
+                             # NO `kind` CLAUSE (DKT-25): an absent list already
+                             #   matches every kind (match.go:48). DKT-22 spelled
+                             #   out the whole closed set here, which decided
+                             #   nothing and made a sixth kind unroutable in all
+                             #   nine workflows at once. The label terms below are
+                             #   what actually discriminate.
 unless_labels = [
   "security-load-bearing", "ui", "docs-only", "investigation",
   "spec-doc", "spec-project", "release", "retro",
 ]
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   Durations are derived from RUN-1's measured steps,
+                             #   not guessed: `write` peaked at 735m (the runaway
+                             #   this bounds) against a 104m average, and every read
+                             #   class finished inside 13m.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"judge-architecture"  = { max = 4, max_step_duration = "1h" }
+"judge-correctness"   = { max = 4, max_step_duration = "1h" }
+"judge-simplicity"    = { max = 4, max_step_duration = "1h" }
+"judge-testing"       = { max = 4, max_step_duration = "1h" }
+"synthesize-findings" = { max = 4, max_step_duration = "1h" }
+"verify-ac"           = { max = 4, max_step_duration = "1h" }
+"write"               = { max = 1, max_step_duration = "2h" }
 
 [[step]]
 name = "implement"
@@ -47,7 +80,7 @@ expected_cost = 1.50
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
                                      # `scope` removed: gates get no issue
                                      #   identity, so scope containment is
-                                     #   un-mechanized (DKT-84)
+                                     #   un-mechanized (DKT-66)
 max_attempts = 2
 on_fail = "waiting-human"
 
@@ -60,7 +93,7 @@ after = ["implement"]
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
-payload = "findings@1"               # validates at the JUDGE boundary: each judge
+payload = "findings@2"               # validates at the JUDGE boundary: each judge
                                      #   emits a scalar `severity`, so a malformed
                                      #   payload fails its own sibling's `complete`
                                      #   with per-judge attribution, rather than
@@ -128,41 +161,13 @@ gates = [{ name = "ac-commands", pre = true }]   # pre-gate: runs at claim, resu
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
 threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
 
-[[step]]
-name = "commit-gate"
-after = ["verify"]
-type = "human"                       # human:commit-authorized (03 §5, §6)
-on_fail = "fix-loop"                 # reject routes to rework; explicit on_fail is
-                                     #   required on human steps and waiting-human
-                                     #   is invalid there (V13/V13a)
-
-[[step]]
-name = "commit"
-after = ["commit-gate"]
-executor = "commit-author"
-emits = "commit-message"             # aligned to 04 §2 (M2b batch 4)
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.10
-gates = ["commit-msg"]               # the old commit-exec GATE's checks fold
-                                     #   into commit-msg; a gate is argv-only
-                                     #   and cannot be handed run state (DKT-84).
-                                     #   Its EXECUTION half is the action below —
-                                     #   retiring the gate without it left the
-                                     #   pipeline unable to commit (RUN-1).
-
-[[step]]                     # deterministic: an action, no node (see doc-record)
-name = "commit-exec"
-after = ["commit"]
-action = "commit-exec"               # trusted action, engine-run, never claimed:
-                                     #   stages ONLY paths under the issue's
-                                     #   scope globs, commits with commit-author's
-                                     #   message verbatim (git commit -F -), and
-                                     #   replies with the new HEAD sha. The
-                                     #   commit-author contract's "execution is
-                                     #   gated and happens without you" refers to
-                                     #   THIS step. Bootstrap §4a′ proposes its
-                                     #   trust entry; the script lives at
-                                     #   .docket/bin/commit-exec in the repo.
-params = { output = "commit-record" }
-inputs = ["commit.commit-message", "issue.body"]
-expected_cost = 0.05
+# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
+# commit-exec are gone from every pipeline. Automated commits are incompatible
+# with the harness security model — commit signing requires interactive
+# 1Password authorization no headless executor or engine action can obtain
+# (op-ssh-sign "failed to fill whole buffer"; the `commit-msg` gate went 0 pass
+# / 1 fail in RUN-1, RUN-2 and RUN-5 alike, every failure cleared only by
+# operator override-pass; DKT-13/DKT-61 lineage). The operator commits by hand
+# via a manual skill (contracts/commit-author.md and .docket/bin/git-commit
+# were removed with the tail; git history keeps both). `verify` is the terminal
+# engine step; acceptance is the operator's own commit, outside the engine.

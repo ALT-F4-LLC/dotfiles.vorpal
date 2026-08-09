@@ -1,8 +1,10 @@
-# release — the commit/PR tail as its own pipeline for multi-issue runs (05 §2).
-# Per 05 §2: "aggregate verify (run-level verify-ac over the union diff) -> human
-# commit gate -> `commit-author` -> optional `pr-comment-author` + posting gates.
-# Keeps per-issue commits available (standard-change) while giving runs a
-# one-commit option; which applies is a plan-time choice recorded on the run."
+# release — the run-level verification/PR tail for multi-issue runs (05 §2).
+# WAS the commit/PR tail; the commit half is removed (operator decision,
+# 2026-08-09 — see the note at the end of this file). What remains of 05 §2's
+# "aggregate verify (run-level verify-ac over the union diff) -> ... optional
+# `pr-comment-author`": the aggregate verify and the optional PR comment. The
+# release COMMIT itself is the operator's, made by hand via a manual skill
+# after reading the aggregate ac-report.
 #
 # The plan-time choice is expressed as a LABEL, which is the only thing `[match]`
 # and `when` can read (06 §11.1, V22): an issue labeled `release` binds here
@@ -17,15 +19,46 @@
 
 [pipeline]
 name    = "release"
-version = 1
-description = "Run-level release tail: aggregate AC verification, operator commit gate, one commit, optional PR comment."
+version = 5
+description = "Run-level release tail: aggregate AC verification and optional PR comment; the operator commits by hand."
 
 [match]                      # closed kind set (see spec-doc's note): `release` is a
                              #   label, not a kind. Engine wins over 05; DKT filed.
-kind        = ["task", "chore"]
+                             # NO `kind` CLAUSE (DKT-25): an absent list already
+                             #   matches every kind (match.go:48). DKT-22 spelled
+                             #   out the whole closed set here, which decided
+                             #   nothing and made a sixth kind unroutable in all
+                             #   nine workflows at once. The label terms below are
+                             #   what actually discriminate.
 labels_any  = ["release"]
 unless_labels = ["retro"]    # only `retro` outranks it (precedence order in
                              #   docs-only.toml)
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   Durations are derived from RUN-1's measured steps,
+                             #   not guessed: `write` peaked at 735m (the runaway
+                             #   this bounds) against a 104m average, and every read
+                             #   class finished inside 13m.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"pr-comment-author" = { max = 4, max_step_duration = "1h" }
+"verify-ac"         = { max = 4, max_step_duration = "1h" }
+                             # the `write` row left with the commit step — no
+                             #   write-class step remains in this pipeline
 
 [[step]]
 name = "verify"
@@ -47,43 +80,34 @@ threshold = { "waiting-human" = "any(status == unmet)" }
 max_attempts = 2
 on_fail = "waiting-human"
 
-[[step]]
-name = "commit-gate"
-after = ["verify"]
-type = "human"                       # the operator authorizes the release commit
-on_fail = "abandon-issue"            # V13 bars `waiting-human`; a refused RELEASE
-                                     #   is abandoned rather than looped — the
-                                     #   release issue is a wrapper with no work of
-                                     #   its own to repair, and the underlying
-                                     #   changes keep their own issues
-inputs = ["verify.ac-report"]
-
-[[step]]
-name = "commit"
-after = ["commit-gate"]
-executor = "commit-author"
-class = "write"
-emits = "commit-message"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.10
-gates = ["commit-msg"]               # commit-exec retired: its checks fold
-                                     #   into commit-msg; a gate is argv-only
-                                     #   and cannot be handed run state (DKT-84)
-inputs = ["issue.body", "issue.diff"]
+# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
+# commit-exec are gone from every pipeline — automated commits are incompatible
+# with the harness security model (interactive 1Password commit-signing
+# authorization is unavailable to headless executors and engine actions;
+# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
+# DKT-61). Full rationale in standard-change.toml's matching note. The release
+# commit is the operator's, by hand, after reading `verify`'s aggregate
+# ac-report. `pr-comment` therefore follows `verify` directly and composes from
+# the issue and the union diff rather than a drafted commit message.
 
 [[step]]
 name = "pr-comment"
-after = ["commit"]
+after = ["verify"]           # was after commit-exec; the commit tail is removed
 executor = "pr-comment-author"
 emits = "comment-set"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.30
 when = "labels contains pr"          # the "optional" of 05 §2
-inputs = ["commit.commit-message", "issue.diff"]
+inputs = ["issue.body", "issue.diff"]
+                                     # was ["commit.commit-message", ...]; the
+                                     #   drafted message no longer exists — the
+                                     #   comment is composed from the release
+                                     #   issue and the union diff
                                      # no posting gate: gh-inline-comment needs
                                      #   the comment body as $1, and a named gate
                                      #   is spawned argv-verbatim with no step
-                                     #   artifacts (DKT-84) — posting is the
-                                     #   executor's own work
-on_fail = "skip"                     # a failed comment post must not undo a
-                                     #   landed commit
+                                     #   artifacts (DKT-66; comments elsewhere
+                                     #   citing "DKT-84" mean DKT-66) — posting
+                                     #   is the executor's own work
+on_fail = "skip"                     # a failed comment post must not block the
+                                     #   operator's manual commit

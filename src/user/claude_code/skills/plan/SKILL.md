@@ -63,11 +63,15 @@ map — and the premise verdict, when the request rides on one ("already
 fixed", "already done") — and never survey the repo yourself — engine-contract reads (CLI help,
 `docket workflow list`, the scope-matcher's own rules) are yours; the repo
 survey is the agent's. You are the intake, and your context belongs to the
-conversation, not to directory listings. If the spawn runs as a teammate, its
-reply is the only delivery channel — end every delegate brief with: send the
-finished deliverable to team-lead via the messaging tool; going idle without
-sending it is a failure (RUN-5's reader composed its report as final text no
-one received, and the run stalled asking for it). The agent's brief:
+conversation, not to directory listings. End every delegate brief —
+unconditionally, whatever the spawn mechanism — with: send the finished
+deliverable to team-lead via the messaging tool; going idle without sending it
+is a failure. The mechanism is not knowable at brief-writing time, and
+background spawns run as in-process teammates whose final text is delivered to
+no one; a redundant send costs one duplicated message, a missing one costs the
+report (RUN-5's reader composed its report as final text no one received;
+RUN-7's reader repeated it when its brief said "no separate send needed" —
+never write that into a brief). The agent's brief:
 
 The layout tells you scopes — which directories a change of this shape actually
 touches, narrow globs per area. `docket workflow list` tells you which
@@ -164,13 +168,18 @@ at activation, which is correct and is not a reason to write a wide glob.
 a false edge serializes work that could have run in parallel, and a missing one
 lets a step run before its input exists.
 
-**Planning FROM an existing backlog issue** (`/plan DKT-N`): the existing issue
-stays OUT of the run. Create fresh run issues; give the one that settles it
-"resolve DKT-N" as a required deliverable (a written verdict with file:line
-evidence); link `issue link add <new> relates_to DKT-N`; let DKT-N close on the
-run's outcome, never by fiat at plan time. A verdict worth recording on DKT-N
-itself goes in a comment there — it is tracker-side, outside the run, so the
-body-freeze rule does not apply to it.
+**Planning FROM an existing backlog issue** (`/plan DKT-N`) — four obligations,
+each checked independently before `run start` (RUN-7's first body carried three
+and dropped the deliverable; a shadow caught it inside the planning window):
+
+- DKT-N itself stays OUT of the run — create fresh run issues; never bind it
+  with `--issue`.
+- The issue that settles it carries, in its BODY, "resolve DKT-N" as a required
+  deliverable: a written verdict with file:line evidence.
+- Link `issue link add <new> relates_to DKT-N`.
+- DKT-N closes on the run's outcome, never by fiat at plan time. A verdict
+  worth recording on DKT-N itself goes in a comment there — it is tracker-side,
+  outside the run, so the body-freeze rule does not apply to it.
 
 ## 4. Leave later phases uncomposed when you honestly cannot compose them
 

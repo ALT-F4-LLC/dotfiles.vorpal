@@ -228,11 +228,41 @@ impl ClaudeCode {
             .with_permission_allow("Bash(gh pr list:*)")
             .with_permission_allow("Bash(gh pr view:*)")
             .with_permission_allow("Bash(git branch:*)")
+            // `git checkout --detach <sha>` is how wave.js obligation 0 syncs an isolated
+            // read-class executor's PRIVATE worktree to the run's commit. A freshly created
+            // private worktree has no uncommitted work to lose, it is shared with nobody, and
+            // read-class archetypes carry no Edit/Write tools at all — so the detached form
+            // cannot destroy what the `git checkout` family deny below exists to protect.
+            // This narrow allow sits INSIDE the broader `ask` below and MUST take precedence
+            // over it for the unattended bootstrap to run. That is an assumption, and the
+            // existing `ask("Bash(docket trust:*)")`-inside-`allow("Bash(docket:*)")` pair does
+            // NOT confirm it: that case is explained equally well by "narrower rule wins" and
+            // by "ask outranks allow", and only the first reading helps here. So VERIFY AFTER
+            // `just activate`, before trusting a review fanout to it:
+            //   git checkout --detach --quiet HEAD    # must run with no prompt
+            // If it prompts, this rule is inert, an unattended wave will hang on it exactly as
+            // it did under the old deny, and the answer is the wave.js change below rather than
+            // a wider allow.
+            // KNOWN HOLE (DKT-190's warning, restated honestly rather than waved off):
+            // `git checkout --detach -f <sha>` matches this prefix and IS destructive, while
+            // `git checkout -f --detach <sha>` does not match and falls through to `ask`.
+            // Prefix matching cannot express "--detach but not -f". The durable fix is to stop
+            // obligation 0 from moving HEAD at all (read inputs at the sha via
+            // `git show <sha>:<path>`), which retires this rule; until then this is the
+            // narrowest opening that unblocks isolated read-class steps.
+            .with_permission_allow("Bash(git checkout --detach:*)")
             .with_permission_allow("Bash(git diff:*)")
             .with_permission_allow("Bash(git log:*)")
             .with_permission_allow("Bash(git remote get-url:*)")
+            // Read-only, and required by wave.js obligation 0 alongside the `--detach` allow
+            // above: the bootstrap resolves the sibling checkout's commit before syncing to it.
+            .with_permission_allow("Bash(git rev-parse:*)")
             .with_permission_allow("Bash(git show:*)")
             .with_permission_allow("Bash(git status:*)")
+            // `list` only — NOT `Bash(git worktree:*)`, which would also admit
+            // `git worktree remove` and `git worktree prune`. Obligation 0 enumerates
+            // checkouts to find the one whose .docket resolves its step id.
+            .with_permission_allow("Bash(git worktree list:*)")
             .with_permission_allow("Bash(go build:*)")
             .with_permission_allow("Bash(go doc:*)")
             .with_permission_allow("Bash(go list:*)")
@@ -250,7 +280,15 @@ impl ClaudeCode {
             .with_permission_allow("Bash(npm run lint:*)")
             .with_permission_allow("Bash(npm run test:*)")
             .with_permission_allow("Bash(npx tsc:*)")
+            // Writes to stdout only; wave.js obligation 0 uses it to park the resolved
+            // .docket path on disk (the redirection is shell, not printf's doing).
+            .with_permission_allow("Bash(printf:*)")
             .with_permission_allow("Bash(rg:*)")
+            // `-n` only, DELIBERATELY. A bare `Bash(sed:*)` would admit `sed -i`, an
+            // in-place file-writing primitive that bypasses the Edit tool's guards entirely
+            // — a much larger grant than the deny list above would tolerate. Obligation 0's
+            // use is `sed -n 's/^worktree //p'`, which this covers.
+            .with_permission_allow("Bash(sed -n:*)")
             .with_permission_allow("Bash(sort:*)")
             .with_permission_allow("Bash(staticcheck:*)")
             .with_permission_allow("Bash(tail:*)")
@@ -290,7 +328,19 @@ impl ClaudeCode {
             // Deny whole subcommand families, not just destructive flag combos: deny rules can't
             // carry allowlist exceptions, and narrow rules here are still bypassable via global
             // options (e.g. `git -C`) or argument variants. See DKT-190.
-            .with_permission_deny("Bash(git checkout:*)")
+            //
+            // `git checkout` is the ONE member of this family demoted from `deny` to `ask`, and
+            // only because `deny` is absolute: it cannot be excepted, so it took RUN-7's entire
+            // review fanout down. All four judge agents died at their first call on
+            // `git checkout --detach` (wave.js obligation 0), after the run's write step had
+            // passed clean and made the permission surface look fine. `ask` is the weakest
+            // demotion that still works — a destructive `git checkout` now needs a human to say
+            // yes rather than being impossible — and it pairs with the narrow
+            // `allow("Bash(git checkout --detach:*)")` above, which is what actually lets the
+            // unattended bootstrap through. Note `ask` alone would NOT have fixed this: a
+            // background subagent has nobody to answer a prompt, so an unanswered `ask` fails
+            // exactly like a `deny`.
+            .with_permission_ask("Bash(git checkout:*)")
             .with_permission_deny("Bash(git clean:*)")
             .with_permission_deny("Bash(git reset:*)")
             .with_permission_deny("Bash(git restore:*)")

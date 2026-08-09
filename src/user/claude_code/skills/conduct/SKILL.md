@@ -30,8 +30,23 @@ claim/complete/fail`) inside YOUR session's permission context. In default
 mode their very first Bash call takes a human prompt — RUN-5's first conduct
 session died exactly there, orphaning a dispatch and a live wave. Before the
 first dispatch, confirm the session runs a mode that pre-authorizes those
-calls (auto/acceptEdits, or an allowlist covering `docket`); if not, say so
-and let the operator switch before you open anything.
+calls; if not, say so and let the operator switch before you open anything.
+
+**A clean write step proves NOTHING about a read step, and an allowlist is not
+the thing to check.** Isolated (non-write) executors run wave.js's obligation-0
+worktree bootstrap BEFORE any docket verb, and it is a single compound Bash
+call — which the harness denies if ANY component is denied. RUN-7 lost all four
+judges of its first review fanout to `git checkout --detach` sitting in the
+session's **deny** list, after its write step had run clean and made the surface
+look fine (a write executor is not isolated, so it never runs obligation 0).
+Deny beats allow, so that class of failure cannot be fixed by adding an allow
+rule. So: read the DENY list, not just the allow list, and do it before the
+first dispatch carrying read-class rows — not after a fanout dies. If a
+component of the bootstrap is denied, surface the choice (narrow the deny, or
+switch the session mode) and do not dispatch read-class rows into it and hope.
+Symptom to recognize instantly: every agent in a fanout returns `BOOTSTRAP
+DENIED` or a quoted permission refusal, at near-zero tokens, having claimed
+nothing.
 
 **A run still in `planning` is not yours to activate alone.** Activation is an
 operator gate, and it PINS config bytes for the whole run. In order: diff the
@@ -49,6 +64,19 @@ request prose: the request names the plan's SUBJECTS, not the bound issues,
 and the dry-run reports only counts (DKT-94). RUN-6's conductor queried the
 request's issue ids, found them label-less, and built a false misrouting
 theory before hand-mapping the real roster out of the scope warnings.
+
+**There is no verb that lists a planning run's issues. Do not go looking for
+one** — RUN-7's conductor spent 14 tool calls and 99 seconds establishing that,
+and the answer is: `run issue` has only `add`/`remove`, `issue list` has no
+`--run` and no run field in its rows, `events list --run` is empty until
+activation, and the dry-run JSON carries `issues_bound` as a COUNT with no ids.
+So the roster is DERIVED, not read. Take it from the dry-run's
+`scope_warnings[].issue` when those are non-empty; otherwise from `docket issue
+list --json` narrowed to issues created between the run's `created_at_ms` and
+its activation. Then SAY IN THE GATE that it was derived rather than read, so
+the operator is checking a claim and not rubber-stamping one. After activation
+`docket next --run $RUN --json` reports the real roster — if it disagrees with
+what you presented, that is a stop-and-report, not a shrug.
 
 ## The loop
 
@@ -319,6 +347,15 @@ summary for a held cluster, the numbers for a budget breach. A gate presented as
 the built-in question tool, recommended option first and labelled
 "(Recommended)", with what each answer actually routes to stated in its
 description — resolved from the FROZEN definitions, not the files on disk.
+
+**Keep shell and JSON literals OUT of the question text.** A question string
+carrying nested quotes and `$(...)` has been rejected outright —
+`InputValidationError: AskUserQuestion was called with input that could not be
+parsed as JSON` (RUN-7, 20:21:28), costing a round-trip at the exact moment a
+blocked run was being surfaced. When the thing being decided IS a command, put
+the literal in a fenced block in your own message and keep the question text
+plain prose that refers to it. The gate still presents the actual artifact;
+it just does not try to smuggle it through the tool call.
 
 On their answer:
 

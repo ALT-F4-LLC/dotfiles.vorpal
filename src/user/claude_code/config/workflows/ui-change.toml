@@ -11,18 +11,53 @@
 
 [pipeline]
 name    = "ui-change"
-version = 2                  # v2 (2026-08-06): commit-exec action restored — see
-                             #   standard-change.toml's v2 note; same hole, same fix
-description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd before commit."
+version = 5
+description = "UI change bound to an accepted ux-spec, design-judged and design-QA'd; the operator commits by hand."
 
 [match]                      # exactly-one-match (06 §11.1): security outranks ui,
                              #   and the doc/meta pipelines outrank both
-kind        = ["task", "feature", "bug", "chore"]
+                             # NO `kind` CLAUSE (DKT-25): an absent list already
+                             #   matches every kind (match.go:48). DKT-22 spelled
+                             #   out the whole closed set here, which decided
+                             #   nothing and made a sixth kind unroutable in all
+                             #   nine workflows at once. The label terms below are
+                             #   what actually discriminate.
 labels_any  = ["ui"]
 unless_labels = [
   "security-load-bearing", "docs-only", "investigation",
   "spec-doc", "spec-project", "release", "retro",
 ]
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   Durations are derived from RUN-1's measured steps,
+                             #   not guessed: `write` peaked at 735m (the runaway
+                             #   this bounds) against a 104m average, and every read
+                             #   class finished inside 13m.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"design-qa"           = { max = 4, max_step_duration = "1h" }
+"judge-architecture"  = { max = 4, max_step_duration = "1h" }
+"judge-correctness"   = { max = 4, max_step_duration = "1h" }
+"judge-design"        = { max = 4, max_step_duration = "1h" }
+"judge-simplicity"    = { max = 4, max_step_duration = "1h" }
+"judge-testing"       = { max = 4, max_step_duration = "1h" }
+"synthesize-findings" = { max = 4, max_step_duration = "1h" }
+"verify-ac"           = { max = 4, max_step_duration = "1h" }
+"write"               = { max = 1, max_step_duration = "2h" }
 
 [[step]]
 name = "implement"
@@ -39,7 +74,7 @@ inputs = ["issue.body"]              # the accepted ux-spec reaches this step as
 gates = ["build", "tests", "self-hygiene", "secret-scan"]
                                      # `scope` removed: gates get no issue
                                      #   identity, so scope containment is
-                                     #   un-mechanized (DKT-84)
+                                     #   un-mechanized (DKT-66)
 max_attempts = 2
 on_fail = "waiting-human"
 
@@ -123,27 +158,11 @@ gates = ["render-verify", "copy-verify"]
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
 threshold = { "fix-loop" = "any(severity >= high)" }
 
-[[step]]
-name = "commit-gate"
-after = ["design-qa"]
-type = "human"
-on_fail = "fix-loop"
-
-[[step]]
-name = "commit"
-after = ["commit-gate"]
-executor = "commit-author"
-emits = "commit-message"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.10
-gates = ["commit-msg"]               # the old commit-exec GATE's checks fold
-                                     #   into commit-msg; execution is the
-                                     #   action below (see standard-change.toml)
-
-[[step]]                     # deterministic: an action, no node (see doc-record)
-name = "commit-exec"
-after = ["commit"]
-action = "commit-exec"
-params = { output = "commit-record" }
-inputs = ["commit.commit-message", "issue.body"]
-expected_cost = 0.05
+# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
+# commit-exec are gone from every pipeline — automated commits are incompatible
+# with the harness security model (interactive 1Password commit-signing
+# authorization is unavailable to headless executors and engine actions;
+# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
+# DKT-61). Full rationale in standard-change.toml's matching note. The operator
+# commits by hand via a manual skill; `design-qa` is the terminal engine step,
+# and its fix-loop threshold on high findings remains the rework route.

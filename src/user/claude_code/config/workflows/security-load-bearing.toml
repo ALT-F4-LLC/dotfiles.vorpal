@@ -6,10 +6,14 @@
 #   - adds gates `vuln-scan` (govulncheck), stricter `secret-scan`, and
 #     `sdet-abuse` (Q4 closure — named abuse cases from the threat model
 #     actually executed; 05 §3)
-#   - threshold: any security finding >= medium => fix-loop; any high+ security
-#     finding entering `pass` requires a VOTE GATE (05 §4) instead of silent
-#     acceptance
-#   - commit gate requires the vote reference
+#   - threshold: medium security findings => fix-loop; a payload carrying high+
+#     findings and no mediums requires a VOTE GATE (05 §4) instead of silent
+#     acceptance. The two predicates are disjoint by construction — see the
+#     reconcile step's comment for why they have to be.
+#   - (was: commit gate requires the vote reference — the commit tail is
+#     removed, see the note at the end of this file; the vote outcome reaches
+#     the operator through the reconciled payload and the run report, and the
+#     operator's own manual commit is the acceptance act)
 # The vote gate is interposed by routing a threshold to a STEP NAME, which is
 # exactly 06 §11.2's interposition rule: "the reference instance's security
 # workflow interposes its vote gate this way — upstream 05 §2".
@@ -19,19 +23,57 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 2                  # v2 (2026-08-06): commit-exec action restored — see
-                             #   standard-change.toml's v2 note; same hole, same fix
+version = 6
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 
 [match]                      # exactly-one-match (06 §11.1): security is the highest-
                              #   precedence CODE pipeline, but the doc/meta pipelines
                              #   are different work and still outrank it
-kind        = ["task", "feature", "bug", "chore"]
+                             # NO `kind` CLAUSE (DKT-25): an absent list already
+                             #   matches every kind (match.go:48). DKT-22 spelled
+                             #   out the whole closed set here, which decided
+                             #   nothing and made a sixth kind unroutable in all
+                             #   nine workflows at once. The label terms below are
+                             #   what actually discriminate.
 labels_any  = ["security-load-bearing"]
 unless_labels = [
   "docs-only", "investigation",
   "spec-doc", "spec-project", "release", "retro",
 ]
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   The values are RUNAWAY CEILINGS, not budgets, and
+                             #   they sit well above observed behaviour: RUN-1's
+                             #   entire run was 161.5m of wall clock, its
+                             #   claim-to-record `write` peak was 20.1m (fix@1)
+                             #   against a 10.8m average, and every read class
+                             #   finished inside 12.0m — so 2h/1h bound a dead or
+                             #   runaway holder without constraining a real step.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"judge-architecture"  = { max = 4, max_step_duration = "1h" }
+"judge-correctness"   = { max = 4, max_step_duration = "1h" }
+"judge-security"      = { max = 4, max_step_duration = "1h" }
+"judge-simplicity"    = { max = 4, max_step_duration = "1h" }
+"judge-testing"       = { max = 4, max_step_duration = "1h" }
+"synthesize-findings" = { max = 4, max_step_duration = "1h" }
+"threat-model"        = { max = 4, max_step_duration = "1h" }
+"verify-ac"           = { max = 4, max_step_duration = "1h" }
+"write"               = { max = 1, max_step_duration = "2h" }
 
 [[step]]
 name = "threat-model"
@@ -58,7 +100,7 @@ inputs = ["threat-model.threat-model", "issue.body"]   # the threat model feeds
 gates = ["build", "tests", "self-hygiene", "secret-scan", "vuln-scan", "sdet-abuse"]
                                      # `scope` removed: gates get no issue
                                      #   identity, so scope containment is
-                                     #   un-mechanized (DKT-84)
+                                     #   un-mechanized (DKT-66)
 max_attempts = 2
 on_fail = "waiting-human"
 
@@ -96,13 +138,22 @@ action = "aggregate"
 params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
 inputs = ["synthesize.findings"]
 payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= medium)", "security-vote" = "any(severity >= high)" }
-                                     # 05 §2's two security thresholds, in
-                                     #   evaluation order (first match routes,
-                                     #   06 §11.2): >= medium routes fix-loop;
-                                     #   what survives to `pass` carrying a
-                                     #   high+ finding interposes the vote gate
-                                     #   rather than being silently accepted
+threshold = { "security-vote" = "any(severity >= high)", "fix-loop" = "any(severity == medium)" }
+                                     # `fix-loop` is evaluated BEFORE any
+                                     #   interposed step routing regardless of
+                                     #   declaration order (ThresholdOrder,
+                                     #   internal/engine/threshold.go) — so the
+                                     #   two predicates must be DISJOINT or the
+                                     #   vote gate is unreachable. RUN-2
+                                     #   recorded zero votes for exactly this
+                                     #   reason. The §11.2 grammar has no
+                                     #   compound predicates, so `==` is the
+                                     #   disjoint form: payloads with mediums
+                                     #   loop, and the vote fires when a payload
+                                     #   carries highs and no mediums. A payload
+                                     #   with both mediums and highs loops first
+                                     #   — fix the fixable, vote when only highs
+                                     #   remain.
 max_fix_loops = 2
 
 [[step]]
@@ -144,30 +195,14 @@ gates = [{ name = "ac-commands", pre = true }]
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
 threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
 
-[[step]]
-name = "commit-gate"
-after = ["verify"]
-type = "human"
-on_fail = "fix-loop"
-inputs = ["reconcile.findings"]      # the vote reference the commit gate requires
-                                     #   (05 §2) rides in the reconciled payload
-                                     #   the vote recorded its outcome over
-
-[[step]]
-name = "commit"
-after = ["commit-gate"]
-executor = "commit-author"
-emits = "commit-message"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.10
-gates = ["commit-msg"]               # the old commit-exec GATE's checks fold
-                                     #   into commit-msg; execution is the
-                                     #   action below (see standard-change.toml)
-
-[[step]]                     # deterministic: an action, no node (see doc-record)
-name = "commit-exec"
-after = ["commit"]
-action = "commit-exec"
-params = { output = "commit-record" }
-inputs = ["commit.commit-message", "issue.body"]
-expected_cost = 0.05
+# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
+# commit-exec are gone from every pipeline — automated commits are incompatible
+# with the harness security model (interactive 1Password commit-signing
+# authorization is unavailable to headless executors and engine actions;
+# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
+# DKT-61). Full rationale in standard-change.toml's matching note. The threat-
+# model / judge-security / sdet-abuse / vote-gated path above is unchanged:
+# `security-vote` remains the acceptance gate and `verify` the terminal engine
+# step. The vote reference the removed commit-gate carried rides in the
+# reconciled payload and the run report; the operator reads it there before
+# committing by hand.

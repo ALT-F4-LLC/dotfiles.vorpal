@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "findings@2",
+  "description": "Judge-boundary successor to findings@1, from the retro after RUN-5. Declared on review fanout steps ONLY, never on reconcile: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` on the aggregate document makes the §7.6 E5 conjunction unsatisfiable and V30 refuses the workflow at register time — findings@1 remains the reconcile document for exactly that reason. This version requires the canonical anchor keys after RUN-5 recorded 7 judge-architecture findings keyed `location`/`rule` instead of `file`/`id`/`line`, which anything downstream keyed on `id` silently dropped. Under this document a malformed judge payload refuses at that judge's own `complete`, with per-judge attribution, instead of vanishing later. Aggregate-only properties (`members`, `held`, `demoted_from`, `operator_resolved`) are removed — judges never emit them and the aggregate never validates against this document.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "Stable identifier for the finding, unique within the payload. Required here, unlike findings@1: this document is never declared on the aggregate step, so the V30 concern that kept `id` optional there does not apply.",
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "description": "One-line statement of the defect.",
+        "type": "string",
+        "minLength": 1
+      },
+      "severity": {
+        "description": "The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`): info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.",
+        "type": "string",
+        "enum": ["info", "low", "medium", "high", "blocker"],
+        "ordered_enum": true
+      },
+      "file": {
+        "description": "Repo-relative path the finding is anchored to. Required: an unanchored finding cannot be clustered by locus or acted on by fix.",
+        "type": "string",
+        "minLength": 1
+      },
+      "line": {
+        "description": "1-indexed line within `file`. Optional per 02 §6.",
+        "type": "integer",
+        "minimum": 1
+      },
+      "evidence": {
+        "description": "What a skeptic can re-run or re-read to confirm the finding.",
+        "type": "string"
+      },
+      "alternative": {
+        "description": "A concrete alternative to the flagged approach. Optional at every severity (see findings@1's note on DKT-51).",
+        "type": "string"
+      }
+    },
+    "required": ["id", "title", "severity", "file"],
+    "additionalProperties": true
+  }
+}

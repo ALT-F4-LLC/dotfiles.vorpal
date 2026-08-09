@@ -13,13 +13,13 @@
 # `synthesize`/`reconcile` are absent: clustering across judges is meaningless
 # with one judge, and `aggregate` over a single input computes nothing new.
 # Scope (`docs/**`) is issue data, not a pipeline field (02 §5). No gate
-# enforces it: gates receive no issue identity (DKT-84), so scope containment
+# enforces it: gates receive no issue identity (DKT-66), so scope containment
 # is un-mechanized — an action-shaped gap, not a gate-shaped one.
 
 [pipeline]
 name    = "docs-only"
-version = 1
-description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop."
+version = 5
+description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop; the operator commits by hand."
 
 [match]                      # no `docs` kind exists (closed set, see spec-doc's
                              #   note); `docs-only` is the label 05 §2 names anyway
@@ -29,9 +29,38 @@ description = "Documentation change: one correctness judge, doc-validate and cit
                              #   retro > release > spec-project > spec-doc >
                              #   investigation > docs-only > security > ui >
                              #   standard-change.
-kind        = ["task", "feature", "bug", "chore"]
+                             # `kind` carries all five closed-set kinds (DKT-22):
+                             #   `epic` included so an epic carrying this label
+                             #   routes here like any other kind — see the parallel
+                             #   note on `standard-change`, the workflow that
+                             #   catches an unlabeled epic.
 labels_any  = ["docs-only"]
 unless_labels = ["investigation", "spec-doc", "spec-project", "release", "retro"]
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   Durations are derived from RUN-1's measured steps,
+                             #   not guessed: `write` peaked at 735m (the runaway
+                             #   this bounds) against a 104m average, and every read
+                             #   class finished inside 13m.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"judge-correctness" = { max = 4, max_step_duration = "1h" }
+"verify-ac"         = { max = 4, max_step_duration = "1h" }
+"write"             = { max = 1, max_step_duration = "2h" }
 
 [[step]]
 name = "implement"
@@ -45,7 +74,7 @@ inputs = ["issue.body"]
 gates = ["build", "self-hygiene", "doc-validate", "citation-check"]
                                      # `scope` removed: gates get no issue
                                      #   identity, so scope containment is
-                                     #   un-mechanized (DKT-84)
+                                     #   un-mechanized (DKT-66)
                                      # `doc-validate` is 05 §3's per-type gate:
                                      #   doc_validate.py per type. Per-type
                                      #   checks are its parameters, not sibling
@@ -87,32 +116,11 @@ threshold = { "waiting-human" = "any(status == unmet)" }
                                      #   `unverifiable` clause collapses into the
                                      #   same routing, so it is not restated
 
-[[step]]
-name = "commit-gate"
-after = ["verify"]
-type = "human"                       # a human gate, not a vote (05 §2: "no
-                                     #   commit vote")
-on_fail = "skip"                     # 05 §2 says "no fix-loop" for this pipeline,
-                                     #   but V13 forbids `waiting-human` on a human
-                                     #   step and V13a requires an explicit value —
-                                     #   leaving "fix-loop", "skip", "abandon-issue".
-                                     #   `skip` is the only one that means what a
-                                     #   rejected docs commit means: drop the commit,
-                                     #   keep the reviewed work and the operator's
-                                     #   note. `fix-loop` would name a loop body this
-                                     #   pipeline deliberately does not have (V17-
-                                     #   adjacent nonsense), and `abandon-issue`
-                                     #   discards a change whose only fault is that
-                                     #   it should not land yet. Engine wins over 05's
-                                     #   prose per the standing rule; DKT filed.
-
-[[step]]
-name = "commit"
-after = ["commit-gate"]
-executor = "commit-author"
-emits = "commit-message"
-packet = ["contracts/{executor}.md"]
-expected_cost = 0.10
-gates = ["commit-msg"]               # commit-exec retired: its checks fold
-                                     #   into commit-msg; a gate is argv-only
-                                     #   and cannot be handed run state (DKT-84)
+# COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
+# commit-exec are gone from every pipeline — automated commits are incompatible
+# with the harness security model (interactive 1Password commit-signing
+# authorization is unavailable to headless executors and engine actions;
+# `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
+# DKT-61). Full rationale in standard-change.toml's matching note. The operator
+# commits by hand via a manual skill; `verify` is the terminal engine step, and
+# its `waiting-human` threshold on unmet ACs remains the pipeline's park point.

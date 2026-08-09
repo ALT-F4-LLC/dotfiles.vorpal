@@ -14,7 +14,7 @@
 
 [pipeline]
 name    = "investigation"
-version = 1
+version = 3
 description = "Read-only root-cause investigation with optional research fanout, ending at an operator read."
 
 [match]                      # 05 §2 calls this "kind-matched", but Docket's issue
@@ -24,11 +24,40 @@ description = "Read-only root-cause investigation with optional research fanout,
                              #   refuses one. Labels are the extensible dimension,
                              #   so the match moves there. Engine wins over 05's
                              #   prose per the standing rule; DKT filed.
-kind        = ["task", "bug", "chore"]
+                             # NO `kind` CLAUSE (DKT-25): an absent list already
+                             #   matches every kind (match.go:48). DKT-22 spelled
+                             #   out the whole closed set here, which decided
+                             #   nothing and made a sixth kind unroutable in all
+                             #   nine workflows at once. The label terms below are
+                             #   what actually discriminate.
 labels_any  = ["investigation"]
 unless_labels = ["spec-doc", "spec-project", "release", "retro"]
                              # excludes only what outranks it in the precedence
                              #   order recorded in docs-only.toml
+
+
+
+
+[limits]                     # per-class bounds (DKT-16). `max_step_duration` is a
+                             #   SCHEDULE-TO-CLOSE bound measured from the claim,
+                             #   independent of heartbeats — a runaway holder cannot
+                             #   renew past it (02 §11.1, enforced in
+                             #   Scheduler.Expired). Without it the lease TTL is the
+                             #   only clock, so a dead executor's step sits claimed
+                             #   for the full TTL with nothing shorter-circuiting it.
+                             #   Durations are derived from RUN-1's measured steps,
+                             #   not guessed: `write` peaked at 735m (the runaway
+                             #   this bounds) against a 104m average, and every read
+                             #   class finished inside 13m.
+                             # `max` is required by V24 and is CONCURRENCY, a
+                             #   separate question from duration. `write` = 1 is the
+                             #   writer serialization the spec's reference instance
+                             #   specifies (02 §11.1); read classes take 4, the
+                             #   fanout width these pipelines actually declare, so
+                             #   the bound records existing behaviour rather than
+                             #   newly throttling anything.
+"investigate" = { max = 4, max_step_duration = "1h" }
+"research"    = { max = 4, max_step_duration = "1h" }
 
 [[step]]
 name = "investigate"

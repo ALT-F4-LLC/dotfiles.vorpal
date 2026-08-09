@@ -396,6 +396,25 @@ function bootstrap(row, r, isolated) {
   // Docket commands then read the parked path back inline on every call —
   // inline, not exported once: shell state does not survive between an
   // executor's Bash calls, but files in $TMPDIR do.
+  //
+  // EVERY COMMAND BELOW MUST BE PERMISSION-MATCHABLE. Obligation 0 is a single
+  // compound Bash call, and a compound is denied if ANY component is — so the
+  // whole bootstrap is only as runnable as its least-permitted piece. RUN-7 lost
+  // all four judges of its first review fanout here: `git checkout` was a blanket
+  // deny, and the run's write step had already passed clean (a write executor is
+  // not isolated, so it never runs obligation 0) which made the permission
+  // surface look fine right up until the fanout.
+  // The rule that follows: prefix-match what you emit. Permission rules match on
+  // a command's leading tokens, so a LEADING GLOBAL OPTION MAKES A COMMAND
+  // UNMATCHABLE — `git -C "$ROOT" rev-parse HEAD` does not start with
+  // `git rev-parse` and no allow rule can reach it. That is the same property
+  // DKT-190 recorded as making narrow DENY rules bypassable, seen from the other
+  // side. Hence `cd "$ROOT" && git rev-parse HEAD` inside the command
+  // substitution: `cd` is a shell builtin, the matched component is plain
+  // `git rev-parse`, and the subshell means the executor's own cwd never moves.
+  // Adding a command here means adding its allow rule in
+  // dotfiles src/user/claude_code.rs — the two ship together and nothing checks
+  // them against each other.
   const dp = isolated
     ? `DOCKET_PATH="$(cat "$TMPDIR/${row.step}.docket-path")" `
     : ''
@@ -416,10 +435,19 @@ function bootstrap(row, r, isolated) {
      done)" &&
      [ -n "$ROOT" ] &&
      printf '%s/.docket' "$ROOT" > "$TMPDIR/${row.step}.docket-path" &&
-     git checkout --detach --quiet "$(git -C "$ROOT" rev-parse HEAD)" &&
+     git checkout --detach --quiet "$(cd "$ROOT" && git rev-parse HEAD)" &&
      echo "worktree bootstrapped: HEAD=$(git rev-parse HEAD) docket=$ROOT/.docket" ||
      { echo "WORKTREE BOOTSTRAP FAILED for ${row.step} — no sibling checkout resolves this step, or the checkout failed"; exit 1; }
    \`\`\`
+
+   The \`cd "$ROOT"\` in there is not an exception to "never cd out": it runs
+   inside \`$( )\`, which is a subshell, purely to read a commit sha. Your own
+   working directory never moves, and you still must not cd out yourself.
+
+   If the call is DENIED by the permission system rather than failing on its
+   own output, say \`BOOTSTRAP DENIED\` and quote the denial verbatim — that is
+   an operator permission gap, not a repository-state problem, and it needs a
+   different fix from the message below.
 
    If that call fails, report its output verbatim and STOP — do not hunt for
    the database, guess at paths, or work from the tree you booted with. After
@@ -462,6 +490,14 @@ function bootstrap(row, r, isolated) {
    it strands the step and is the WORSE outcome.
 
    The last command prints your rendered brief. Read it — it is your contract.
+
+   IF THE HARNESS REPLIES \`<persisted-output> Output too large\`, WHAT YOU SEE
+   INLINE IS NOT YOUR BRIEF. It is the first 2KB of it, and the cut lands inside
+   the REQUEST section — everything that actually binds you sits BELOW it: your
+   contract file, every fragment, PINNED, and OUTPUT. Read the named file with
+   the Read tool before doing anything else. A 30KB brief is the normal case for
+   a step carrying several pinned files, not an anomaly (RUN-7 STEP-319: 30,697
+   bytes, of which ~2,000 were shown).
 
    On CONFLICT: stop immediately and report AT MOST three lines: your step id,
    the word CONFLICT, and the engine's error line verbatim. Do not investigate

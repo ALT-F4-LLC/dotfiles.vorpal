@@ -7,6 +7,18 @@ Usage entries are deduplicated BY MESSAGE ID before summing: streamed assistant
 messages repeat across transcript lines, and a per-line sum double-counts
 (measured 1.65-2.36x on RUN-2 before the dedup).
 
+DEDUP TAKES THE LAST OCCURRENCE OF A MESSAGE ID, NOT THE FIRST, and that
+direction is load-bearing — do not "simplify" it back to a seen-set. Streaming
+rewrites one message id across many lines and `output_tokens` GROWS with each
+rewrite, so the first occurrence is a PARTIAL count. Taking the first
+under-reported output ~3x (measured on RUN-7 STEP-319: 4,488 recorded against
+14,691 actual) while input and both cache units, which never change across
+occurrences, matched exactly — which is why it went unnoticed. The original
+double-count this dedup was written to fix was driven by those cache units
+(cache_read per-line 3,823,178 vs 2,231,212 true, 1.71x, right in the band
+above); output_tokens per-line was already within ~1% of correct. So the two
+failure modes pull in opposite directions and last-wins is what satisfies both.
+
 Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
 attributed or a dispatched agent carries no usage — silence must not look like
 success.
@@ -32,8 +44,7 @@ def main() -> int:
             continue
         path = os.path.join(d, name)
         step = None
-        seen_msg_ids: set[str] = set()
-        agent_sums = {u: 0 for u in UNITS.values()}
+        per_msg: dict[str, dict] = {}
         with open(path, encoding="utf-8") as f:
             for line in f:
                 try:
@@ -50,11 +61,13 @@ def main() -> int:
                     msg = obj.get("message", {})
                     usage = msg.get("usage")
                     mid = msg.get("id")
-                    if not usage or not mid or mid in seen_msg_ids:
+                    if not usage or not mid:
                         continue
-                    seen_msg_ids.add(mid)
-                    for src, dst in UNITS.items():
-                        agent_sums[dst] += int(usage.get(src) or 0)
+                    per_msg[mid] = usage  # last write wins — see module docstring
+        agent_sums = {u: 0 for u in UNITS.values()}
+        for usage in per_msg.values():
+            for src, dst in UNITS.items():
+                agent_sums[dst] += int(usage.get(src) or 0)
         if step is None:
             errors.append(f"{name}: no STEP-N found in first user message")
             continue

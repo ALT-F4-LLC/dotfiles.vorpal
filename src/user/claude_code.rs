@@ -138,7 +138,7 @@ impl ClaudeCode {
         .await?;
 
         let settings_builder = settings::ClaudeCodeSettings::new(&self.name, self.systems.clone())
-            .with_always_thinking_enabled(false)
+            .with_always_thinking_enabled(true)
             .with_attribution_commit("")
             .with_attribution_pr("")
             .with_auto_updates_channel("latest")

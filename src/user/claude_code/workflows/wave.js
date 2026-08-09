@@ -379,13 +379,36 @@ function archetype(row, hint) {
 // Keep the mechanic. Never restore the rationale to the emitted string, and
 // never reword it to get past the classifier — the classifier is not the
 // problem the wording had.
-function bootstrap(row, r) {
-  return `You are executing one step of a Docket run. Follow these four obligations exactly.
+function bootstrap(row, r, isolated) {
+  // DKT-76: a non-write executor runs in a PRIVATE WORKTREE, so its
+  // positive-control probes can never leak into a sibling's inputs (three
+  // distinct leaks observed in RUN-5: a reverted mutant served as one judge's
+  // diff input, a live mutation served to another, a third watched foreign
+  // edits appear mid-step). The worktree has no database — .docket/*.db is
+  // gitignored — so every docket command in the isolated brief carries an
+  // inline DOCKET_PATH derivation pointing at the MAIN repo's .docket.
+  // Inline on every command, not exported once: shell state does not survive
+  // between an executor's Bash calls.
+  const dp = isolated
+    ? 'DOCKET_PATH="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.docket" '
+    : ''
+  const isolationNote = isolated ? `
+
+0. YOU ARE IN A PRIVATE WORKTREE of the repository. Your tree is yours alone:
+   probes, scratch edits, and reverts are safe here and MUST stay here — never
+   cd out to the shared repository tree. The engine's database lives in the
+   MAIN repo, which is why every docket command below carries an inline
+   DOCKET_PATH prefix. Keep that prefix on EVERY docket command you run,
+   exactly as written; without it docket finds no database from here. Your
+   worktree is the committed branch head: uncommitted work in the shared tree
+   is deliberately not visible, and your inputs arrive in the rendered packet,
+   not from the tree.` : ''
+  return `You are executing one step of a Docket run. Follow these four obligations exactly.${isolationNote}
 
 1. Claim it AND PARK THE TOKEN ON DISK, in ONE Bash call, exactly this:
 
    \`\`\`
-   docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
+   ${dp}docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
      jq -r '.data.token'  < "$TMPDIR/${row.step}.claim.json" > "$TMPDIR/${row.step}.token" &&
      chmod 600 "$TMPDIR/${row.step}.token" &&
      jq -r '.data.packet' < "$TMPDIR/${row.step}.claim.json" &&
@@ -424,11 +447,11 @@ function bootstrap(row, r) {
 
 3. Record it yourself, feeding the token file to STDIN:
 
-   \`docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
+   \`${dp}docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
 
    or on failure:
 
-   \`docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
+   \`${dp}docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
 
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
    it. What you learned goes in the note (or the metadata bag); do not try to
@@ -561,9 +584,14 @@ function runParked(res) {
 function spawn(row, phaseLabel) {
   const r = resolve(row, policy)
   const type = archetype(row, r.hint)
+  // DKT-76: read- and research-archetype executors get a private worktree
+  // (see bootstrap). Write archetypes stay in the shared tree — their writes
+  // ARE the deliverable, and the engine's scope exclusion serializes them.
+  const isolated = type !== 'executor-write'
   log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})` +
-      ` [${labelsOf(row).join(' ') || 'no labels'}]`)
-  return agent(bootstrap(row, r), {
+      ` [${labelsOf(row).join(' ') || 'no labels'}]` +
+      (isolated ? ' [worktree]' : ''))
+  return agent(bootstrap(row, r, isolated), {
     // Display label for the fleet TUI ONLY — the journal never persists it
     // (attribution is the agentId join; E2). Bare step ids read as noise in
     // /workflows ("more informed names" — operator, 2026-08-06), and since
@@ -573,6 +601,7 @@ function spawn(row, phaseLabel) {
     agentType: type,
     model: r.model,
     effort: r.effort,
+    ...(isolated ? { isolation: 'worktree' } : {}),
   }).then((text) => {
     // A NULL return is a DEAD SPAWN, not a quiet success. The runtime returns
     // null — it does not throw — when a model is unavailable or the agent is

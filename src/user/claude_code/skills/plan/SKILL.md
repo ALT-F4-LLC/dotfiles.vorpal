@@ -37,7 +37,8 @@ the body — re-ask only if the correction changes what the operator would decid
 (RUN-5: a flake-artifact baseline was recorded into AC1 and corrected this way).
 Put your recommended option first, labelled "(Recommended)". A prose question
 costs the operator a redirect (it did, 2026-08-06); an exclusive-meaning label
-("X only") never belongs in a multi-select option set.
+("X only", "neither") never belongs in a multi-select option set — a set
+that needs one is a single-select question.
 
 The five things you need:
 
@@ -58,7 +59,8 @@ request, ask it outright.
 Guessing at scopes produces issues that fail their scope gate at execution
 time, which is expensive and late. Read instead — through an agent: spawn ONE
 `executor-read` agent while the conversation continues, returning a scope
-map, and never survey the repo yourself — engine-contract reads (CLI help,
+map — and the premise verdict, when the request rides on one ("already
+fixed", "already done") — and never survey the repo yourself — engine-contract reads (CLI help,
 `docket workflow list`, the scope-matcher's own rules) are yours; the repo
 survey is the agent's. You are the intake, and your context belongs to the
 conversation, not to directory listings. If the spawn runs as a teammate, its

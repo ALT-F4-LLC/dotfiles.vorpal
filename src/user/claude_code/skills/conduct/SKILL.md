@@ -258,6 +258,13 @@ docket dispatch open --run $RUN --ack-reap <seq>
 Silence is not a yes. An operator saying "keep going" about something else is
 not a yes. Only an answer to this question is a yes.
 
+**Budget: project before the wall.** When the running spend-per-step times the
+pending count no longer fits the cap, surface the arithmetic THEN — a raise
+granted before the breach costs nothing, while a breach mid-wave pauses the
+run and strands every queued claim (RUN-5 paid once, then flagged the second
+shortfall early and never paused again). Numbers, not vibes: done-count,
+spend, per-step rate, pending count, unexpanded issues named.
+
 **`--accept-missing-usage`.** Never on your own initiative — that is the
 invariant, and it has no exceptions. One case remains: a journal that genuinely
 lacks usage. The authorization is the operator's, per run, reason recorded.

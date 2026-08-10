@@ -256,6 +256,10 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   3 must be caught from your own cross-checks, never from seeing the question.
 - **A wave that spawned nothing writes no journal.** The workflow task's
   `.output` file is the only record of a zero-spawn wave.
+- **A task's `.output` file exists from LAUNCH, empty.** The harness creates
+  it as a 0-byte placeholder when the task starts, so file-existence is a
+  false completion signal — one RUN-1 watcher fired on it mid-flight. Wave
+  completion is `.output` NON-EMPTY; executor progress is journal growth.
 - **Binary provenance includes the PATH.** `which` on the operator's PATH,
   not just in-repo copies — the shadow that checked only `./bin` and
   `.docket/bin` missed a third, go-installed binary.

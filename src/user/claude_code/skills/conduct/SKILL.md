@@ -397,11 +397,18 @@ means you make the commit on its behalf first — `git -C <its worktree> add
 
 Worktrees clean themselves up ONLY when unchanged: the harness sweep removes
 read-only worktrees and their branches, but every write worktree and its
-`worktree-wf_*` branch persists indefinitely (measured, RUN-1). Once a step's
-sha is integrated, its worktree and branch are redundant — at run close, list
-the survivors (`git worktree list`) and present them to the operator as prune
-candidates (`git worktree remove <path>`, `git branch -D <worktree-branch>`);
-a worktree branch holding the sole copy of UNintegrated work is never pruned.
+`worktree-wf_*` branch persists indefinitely (measured, RUN-1). Cleanup is
+YOURS and AUTOMATIC (operator policy, RUN-1): the moment a step's sha is
+integrated, remove its worktree and branch in the same breath —
+`git worktree remove <path>` (add `--force` only when it refuses over its own
+leftover scratch), then `git branch -D worktree-<its name>`. The integration
+commit carries the content, so nothing is lost. At run close, sweep the
+stragglers: every remaining `.claude/worktrees/wf_*` entry from this run's
+waves goes the same way. If one holds a recorded-but-never-integrated sha,
+remove it too but NAME the sha in your close report — it stays reachable in
+the object database until gc, and naming it is what keeps it recoverable.
+Only ever remove worktrees this run's waves created; other checkouts are not
+yours.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first

@@ -1,9 +1,11 @@
 ---
 name: docket
 description: >
-  Comprehensive reference for using the Docket CLI (`docket`), a local-first,
-  SQLite-backed issue tracker. Use this skill whenever the user asks to
-  create, edit, list, move, close, or reopen issues; attach files, add
+  Reference for the issue-tracker surface of the Docket CLI (`docket`), a
+  local-first, SQLite-backed tracker. Covers issues, docs, votes and
+  export/import — NOT the engine groups (run, step, dispatch, workflow,
+  schema, trust, guard, events, project). Use this skill whenever the user
+  asks to create, edit, list, move, close, or reopen issues; attach files, add
   comments, apply labels, or link relations between issues; generate an
   execution plan or find work-ready issues; create or cast a consensus vote
   ("run a vote", "start a proposal"); author, edit, or link a document; watch
@@ -18,12 +20,37 @@ Docket (`docket`) is a local-first, SQLite-backed issue tracker driven
 entirely through a single CLI binary. There is no server and no network
 call — all state lives in an `issues.db` SQLite file, resolved in order:
 `$DOCKET_PATH` → a repo-local `.docket/issues.db` found by walking up to the
-worktree toplevel → the shared per-user store at `~/.docket` (the default;
-each repo is a separate PROJECT there, and most verbs are project-scoped).
-This skill teaches an agent how to drive `docket` end to
-end: issue CRUD and lifecycle, file attachments, comments, labels,
+worktree toplevel → the shared per-user store at `~/.docket` (the default,
+and the only arrangement the union model expects).
+
+**One store, many projects — and scoping is split.** Under the shared store
+each repo is a separate PROJECT, identified by the checkout's git dir, and
+the engine's definition corpus is the union of the config roots listed in
+`~/.docket/config` (the user-global root plus any repo roots it names);
+nothing is materialized in the repo. The split that trips agents up:
+
+- **Id lookups resolve store-wide.** `docket issue show DKT-1` returns an
+  issue owned by a different project from inside this checkout.
+- **Collections filter to the current project.** `issue list`, `stats`,
+  `board`, `plan`, and `next` return only this project's rows. So
+  `docket issue list --json --all` answering `{"issues":[],"total":0}` and
+  `docket stats --json` answering all zeros is the correct result for a
+  project with no issues — NOT an empty store and NOT a create that failed.
+
+Run `docket config --json` when a result surprises you: it reports which
+store and project the current directory binds to.
+
+This skill teaches an agent how to drive the tracker surface of `docket` end
+to end: issue CRUD and lifecycle, file attachments, comments, labels,
 relations, dependency graphs, execution planning, consensus voting, docs,
 watch mode, and export/import.
+
+**Not covered here.** The engine half of the binary is a separate surface
+with its own groups — `run`, `step`, `dispatch`, `workflow`, `schema`,
+`trust`, `guard`, `events`, `project`. Their absence below is not evidence
+they do not exist: `docket step record`, `docket next --run`, and `docket
+dispatch` are all real verbs. Read `docket <group> --help` for them, or use
+the `plan` and `conduct` skills, which drive that surface.
 
 Every command supports **two output modes**: human-readable (default,
 colorized via lipgloss when the terminal supports it) and machine-readable
@@ -33,17 +60,27 @@ parsing — the examples below show both.
 ## Quick Start
 
 ```bash
-docket init                                   # join the shared ~/.docket store (use --local for a repo-local .docket/issues.db)
+docket config --json                          # FIRST: which store and project am I bound to?
 docket issue create -t "Fix login bug" --json # create an issue, get its ID back
-docket issue list --json                      # list open issues
+docket issue list --json                      # list THIS project's open issues
 docket issue show DKT-1 --json                # show full detail incl. comments/activity
 docket next --json                            # what's ready to work on right now?
 ```
 
-Issue IDs are formatted `DKT-<n>` (e.g. `DKT-42`), document IDs `DOC-<n>`,
-and proposal (vote) IDs `DKT-V<n>` — all three accept either the bare number
-or the formatted string as CLI arguments (`model.ParseID`, `ParseDocID`,
-`ParseProposalID` all strip the prefix case-insensitively).
+`docket init` is rarely needed — the shared `~/.docket` store is created on
+first use. **Never run `docket init --local`.** It materializes a repo-local
+`.docket/issues.db` that shadows the shared store for every command run
+inside the checkout and cuts the repo off from the union config corpus.
+
+Issue IDs are formatted `<PREFIX>-<n>` (e.g. `DKT-42`), document IDs
+`DOC-<n>`, and proposal (vote) IDs `<PREFIX>-V<n>`. **The issue prefix is
+per-project, not a constant** — `DKT-` is one project's value, set with
+`docket project set-prefix` and readable from `docket config --json`; every
+`DKT-` in this skill is illustrative. Numbering is a single store-wide
+sequence, so one project's ids are not contiguous. All three forms accept
+either the bare number or the formatted string as CLI arguments
+(`model.ParseID`, `ParseDocID`, `ParseProposalID` all strip the prefix
+case-insensitively).
 
 ## Global Flags & Output Contract
 
@@ -53,14 +90,17 @@ subcommand:
 | Flag | Shorthand | Type | Default | Behavior |
 |---|---|---|---|---|
 | `--json` | — | string | off | Machine-readable JSON envelope on stdout. Bare `--json` = the frozen v1 shape (what this skill documents); `--json=v2` reshapes collections to `{items, total, truncated}`. |
+| `--format` | — | string | `""` | Output format selector. `--format json` is an **alias for `--json=v2`**, not for bare `--json` — collections come back as `{items, total, truncated}` and v1 parsers mis-read them. Use `--json`. |
 | `--quiet` | `-q` | bool | `false` | Suppress non-essential human-mode info/warning lines on stderr. No effect in `--json` mode (already silent). |
-| `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Only valid on read-only, watch-eligible commands (see below); write commands reject it with a `VALIDATION_ERROR`. |
+| `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Accepted only on the allowlist below; every other command rejects it with a `VALIDATION_ERROR`, read-only or not. |
 | `--interval` | — | duration | `2s` | Refresh interval for `--watch`. Minimum `500ms`; anything lower is a `VALIDATION_ERROR`. |
 
 ### `--watch` eligibility
 
-`--watch`/`-w` and `--interval` are hidden (via Cobra `MarkHidden`) on every
-command NOT in this allowlist, defined in `internal/cli/watch_commands.go`:
+`--watch`/`-w` and `--interval` are global flags: they are listed under
+Global Flags in **every** `--help`, including `issue create`, so `--help` is
+no guide to eligibility. The engine accepts them only on this allowlist,
+defined in `internal/cli/watch_commands.go`:
 
 ```
 docket board
@@ -81,8 +121,12 @@ docket vote show
 docket vote result
 ```
 
-Attempting `--watch` on any other (write) command fails with:
-`--watch is not supported on write commands` (`VALIDATION_ERROR`).
+The allowlist is the tracker surface only — no engine read verb is on it.
+**Anything off the list is rejected whether or not it writes**, and the
+error text lies about why: read-only `docket project list --watch --json`
+returns the same `{"ok":false,"error":"--watch is not supported on write
+commands","code":"VALIDATION_ERROR"}` that `issue create --watch` does.
+Ignore the "write commands" wording; the rule is membership in the list.
 
 ### JSON envelope shape
 
@@ -101,6 +145,14 @@ Error:
 {"ok": false, "error": "issue DKT-99 not found", "code": "NOT_FOUND"}
 ```
 
+**`ok: false` does not always mean failure.** A few engine verbs use it as a
+state answer about the thing they inspected — `docket dispatch verify`
+reports an unsatisfied dispatch with `ok:false` on its happy path, and that
+verb is outside this skill's scope, so do not carry "ok:false = broken" into
+a run. Discriminate on `code` plus the process exit status: a real failure
+carries a `code` from the table below and exits non-zero; a state answer
+exits `0`.
+
 ### Error codes & exit codes
 
 Defined in `internal/output/json.go`. The process exit code always matches
@@ -111,7 +163,7 @@ the table below, in both JSON and human mode (`ExitCodeForError`):
 | `GENERAL_ERROR` | 1 | Unclassified failure (DB error, I/O error, etc.) |
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
 | `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags |
-| `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty DB on import without `--merge`/`--replace` |
+| `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty project on import without `--merge`/`--replace` |
 
 Exit code `0` is success. A missing repo-local store is NOT an error: with no
 `.docket/` up-tree, commands fall back to the shared `~/.docket` store
@@ -143,10 +195,18 @@ docket issue create --json \
   -t "Add rate limiting to API" \
   -d "Prevent abuse on public endpoints" \
   -s todo -p high -T feature \
+  --scope internal/api \
   -l backend -l must-have \
   -f internal/api/router.go \
   -a "@alice"
 ```
+
+**Always pass `--scope`.** Cobra does not require it, so leaving it off
+silently produces a scopeless issue — the field is load-bearing for
+downstream planning and scheduling, and nothing in the create response tells
+you it is missing. If you are unsure what value belongs, read `docket issue
+create --help` and copy the convention already used by
+`docket issue list --json`.
 
 Description can be piped from stdin with `-d -`:
 
@@ -255,14 +315,18 @@ radius.
 
 ## Workflow: Planning (`docket plan` and `docket next`)
 
-`docket plan` groups all non-done issues into dependency-ordered execution
-phases (topological sort; a cycle returns `CONFLICT`):
+`docket plan` groups issues into dependency-ordered execution phases
+(topological sort; a cycle returns `CONFLICT`). It does **not** cover all
+non-done issues: the default status set is `backlog`, `todo`, `in-progress`,
+so `review` issues are silently excluded — name them with `-s` to include
+them:
 
 ```bash
 docket plan --json
 docket plan --json --root DKT-1                      # scope to a parent issue's subtree
 docket plan --json -s backlog -s todo -l must-have    # filter by status/label
 docket plan --json -p high -p critical -T bug -a alice # filter by priority/type/assignee
+docket plan --json -s backlog -s todo -s in-progress -s review # include review too
 ```
 
 `docket next` finds work-ready issues — no incomplete blockers, in one of
@@ -272,6 +336,12 @@ the ready statuses (default `backlog`,`todo`):
 docket next --json
 docket next --json -s todo -p high -p critical -l must-have --limit 5
 ```
+
+`docket next --run` switches the verb to a different subject entirely: the
+ready STEPS of an activated run rather than issues. That is the form the
+`conduct` skill lives on, and its rows are what the wave workflow consumes.
+Run `docket next --help` for the argument it takes; the step and dispatch
+surface around it is out of scope here.
 
 ---
 
@@ -348,8 +418,9 @@ docket board --watch                       # human-mode live board, default 2s i
 docket vote result DKT-V1 --watch --interval 1s
 ```
 
-`--watch` is rejected with `VALIDATION_ERROR` on any write command (e.g.
-`docket issue create --watch` fails immediately). Watch mode runs until
+`--watch` is rejected with `VALIDATION_ERROR` on every command off the
+allowlist — write commands like `docket issue create --watch`, but equally
+read-only ones like `docket project list --watch`. Watch mode runs until
 `Ctrl-C` (SIGINT) or SIGTERM.
 
 ---
@@ -361,27 +432,45 @@ docket export --json -o json -f backup.json
 docket export -o csv -f issues.csv -s todo -s in-progress
 docket export -o markdown > issues.md
 
-docket import backup.json --json --merge      # skip duplicates by ID
-docket import backup.json --json --replace    # destructive: wipes DB first, needs confirmation (or --json to skip it)
-docket import backup.json --json              # default: requires an EMPTY database, else CONFLICT
+docket import backup.json --json --merge      # colliding ids are REMAPPED, nothing is dropped
+docket import backup.json --json --replace    # destructive: replaces THIS PROJECT's data
+docket import backup.json --json              # default: requires an EMPTY project, else CONFLICT
 ```
 
 `export` streams to stdout when `-f`/`--file` is omitted. `import` requires
-`--merge` XOR `--replace`, or an empty database — passing both is a
-`VALIDATION_ERROR`, and importing into a non-empty DB without either flag
-is a `CONFLICT`.
+`--merge` XOR `--replace`, or an empty project — passing both is a
+`VALIDATION_ERROR`, and importing into a non-empty project without either
+flag is a `CONFLICT`.
+
+Two corrections worth holding onto: `--merge` does **not** skip duplicates —
+an incoming id that collides is remapped to a fresh one, so every record in
+the file lands and ids shift. And `--replace` replaces the current
+PROJECT's data, not the whole store — under the shared store other projects
+survive it, but this project's issues do not. It destroys data; get the
+operator's confirmation before running it.
 
 ---
 
-## Complete Command & Flag Reference
+## Command & Flag Reference (tracker subset)
 
-Every flag below is transcribed directly from the `cmd.Flags().*` calls in
-the corresponding `internal/cli/*.go` file's `init()`. "Req." marks flags
+The tables below cover the tracker surface only. They are transcribed from
+the `cmd.Flags().*` calls in the corresponding `internal/cli/*.go` file's
+`init()` and were checked against `docket --help` on engine
+`s7-51-g79fbf69` (schema v12) on 2026-08-10. **A flag's absence here is not
+evidence it does not exist** — the engine groups are omitted by design and a
+newer engine may have added flags; confirm with `docket <command> --help`
+before concluding something is unsupported. "Req." marks flags
 enforced via `cmd.Flags().MarkFlagRequired` (Cobra rejects the command
 before `RunE` runs if absent) — distinct from flags that are merely
 required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
 
 ### `docket issue` (alias `i`) — `internal/cli/issue.go`
+
+Beyond the subcommands documented below, `docket issue` carries three lease
+verbs the engine uses for work assignment: `claim` (take a lease on an
+issue), `heartbeat` (extend a lease you hold before its TTL expires), and
+`release` (hand it back). They are part of the engine surface — see
+`docket issue <verb> --help`.
 
 #### `docket issue create` — `issue_create.go`
 
@@ -396,6 +485,8 @@ required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
 | `--file` | `-f` | stringSlice | `nil` | repeatable |
 | `--assignee` | `-a` | string | `""` | |
 | `--parent` | — | string | `""` | parent issue ID |
+| `--scope` | — | string | `""` | work scope; **pass it** — omitting it silently creates a scopeless issue |
+| `--idempotency-key` | — | string | `""` | dedupe key for safe retries: a repeated create with the same key does not produce a second issue |
 
 #### `docket issue edit [id]` — `issue_edit.go`
 
@@ -409,6 +500,8 @@ required *in JSON mode* by manual checks inside `RunE` (noted in Notes).
 | `--assignee` | `-a` | string | `""` | |
 | `--file` | `-f` | stringSlice | `nil` | repeatable; **replaces** existing file list |
 | `--parent` | — | string | `""` | `"0"` or `"none"` clears parent |
+| `--scope` | — | string | `""` | set/change the work scope; the way to fix an issue created without one |
+| `--if-version` | — | — | — | optimistic-concurrency guard: pass the version you read and the edit is refused if the issue changed under you (see `--help` for the accepted form) |
 
 #### `docket issue show [id]` — `issue_show.go`
 
@@ -502,7 +595,7 @@ Watch-eligible.
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
 | `--root` | — | string | `""` | scope to a parent issue subtree |
-| `--status` | `-s` | stringSlice | `nil` | repeatable |
+| `--status` | `-s` | stringSlice | `nil` (engine applies `backlog`,`todo`,`in-progress`) | repeatable; when unset, `review` and `done` are excluded |
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--priority` | `-p` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
@@ -526,6 +619,7 @@ from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 | `--label` | `-l` | stringSlice | `nil` | repeatable |
 | `--type` | `-T` | stringSlice | `nil` | repeatable |
 | `--limit` | — | int | `10` | |
+| `--run` | — | run selector | — | switches the subject from ready ISSUES to the ready STEPS of a run — the engine form `conduct` uses; check `docket next --help` for the exact argument |
 
 Watch-eligible.
 
@@ -544,6 +638,7 @@ Watch-eligible.
 | `--domain-tags` | — | string | `""` | comma-separated |
 | `--files-changed` | — | string | `""` | comma-separated |
 | `--escalation-reason` | — | string | `""` | |
+| `--idempotency-key` | — | string | `""` | dedupe key for safe retries: a repeated create with the same key does not open a second proposal |
 
 #### `docket vote cast <id>` — `vote_cast.go`
 
@@ -601,6 +696,7 @@ No local flags. Watch-eligible.
 | `--description` | `-d` | string | `""` | `"@path"` loads a file, `"-"` reads stdin (1 MiB cap each) |
 | `--type` | `-T` | string | `""` | free-form (no enum validation) |
 | `--status` | `-s` | string | `""` | free-form (no enum validation) |
+| `--idempotency-key` | — | string | `""` | dedupe key for safe retries: a repeated create with the same key does not produce a second doc |
 
 #### `docket doc edit <id>` — `doc_edit.go`
 
@@ -666,8 +762,8 @@ Watch-eligible.
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--merge` | — | bool | `false` | skip duplicates by ID; mutually exclusive with `--replace` |
-| `--replace` | — | bool | `false` | destructive: clears DB first; mutually exclusive with `--merge` |
+| `--merge` | — | bool | `false` | merge in; colliding ids are **remapped, nothing is dropped**; mutually exclusive with `--replace` |
+| `--replace` | — | bool | `false` | destructive: replaces THIS PROJECT's data (not the whole store); mutually exclusive with `--merge` |
 
 ### `docket board` — `board.go`
 
@@ -686,8 +782,15 @@ No local flags. Watch-eligible.
 
 ### `docket init` — `init.go`
 
-No local flags. `Annotations: {"skipDB": "true"}` — runs before any DB
-check/open, since its job is to create the DB.
+| Flag | Short | Type | Default | Notes |
+|---|---|---|---|---|
+| `--local` | — | bool | `false` | create a repo-local `.docket/issues.db` instead of joining the shared store — **do not use** |
+
+`Annotations: {"skipDB": "true"}` — runs before any DB check/open, since its
+job is to create the DB. Under the union model you do not pass `--local`: a
+repo-local store shadows `~/.docket` for every command run inside the
+checkout and severs the repo from the union config corpus. Plain
+`docket init`, or no init at all, is what you want.
 
 ### `docket version` — `version.go`
 
@@ -695,8 +798,20 @@ No local flags. `skipDB` annotated.
 
 ### `docket config` — `config.go`
 
-No local flags. `skipDB` annotated (reads config even if no DB exists yet,
-to report that fact). Watch-eligible.
+Bare `docket config` prints the resolved binding — store path, project
+identity and prefix, config roots — and is the first command to run when a
+result looks wrong. No local flags; `skipDB` annotated (reads config even if
+no DB exists yet, to report that fact); watch-eligible.
+
+| Subcommand | Effect | Notes |
+|---|---|---|
+| `config get <key>` | reads | one resolved engine setting |
+| `config set <key> <value>` | **WRITES the DB** | persists an engine default; despite living under `config` it is not read-only |
+
+Keys `config set` accepts include `lease.ttl.default`, `lease.ttl.<class>`,
+`attempt.max`, `budget.default`, `context.warn_bytes`, and
+`context.error_bytes`. Treat it as a mutation: it changes engine defaults
+that later runs inherit, so confirm with the operator before running it.
 
 ---
 
@@ -724,6 +839,13 @@ with no enum validation in the CLI layer — pick a project convention (e.g.
 
 | Entity | Prefix | Example | Parse accepts |
 |---|---|---|---|
-| Issue | `DKT-` | `DKT-42` | `DKT-42`, `dkt-42`, or bare `42` |
+| Issue | project prefix | `DKT-42` | `DKT-42`, `dkt-42`, or bare `42` |
 | Document | `DOC-` | `DOC-7` | `DOC-7`, `doc-7`, or bare `7` |
-| Proposal (vote) | `DKT-V` (no separator before digits) | `DKT-V3` | `DKT-V3`, `dkt-v3`, or bare `3` |
+| Proposal (vote) | project prefix + `V` (no separator before digits) | `DKT-V3` | `DKT-V3`, `dkt-v3`, or bare `3` |
+
+The issue/proposal prefix belongs to the PROJECT, not to Docket: `DKT-` is a
+default, other projects in the same store use their own, and
+`docket project set-prefix` changes it. Read the live value from
+`docket config --json` rather than assuming `DKT-`. Issue numbering is one
+sequence across the whole store, so gaps in a project's ids are normal and
+say nothing about missing issues.

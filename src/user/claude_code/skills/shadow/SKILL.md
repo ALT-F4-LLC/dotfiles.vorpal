@@ -22,11 +22,18 @@ Three rules you must not fight:
   its repo, answer no gate, claim nothing, and run no engine verb that can
   advance state. Yours are the read verbs — `run status`, `run report`,
   `events list`, `issue list`, `project list`, `config get`, `trust list`,
-  `workflow list|show|lint`, `step show|context|artifacts|artifact` — every
-  one write-free, `run report` included, in any run status. A verb off that
-  list does not run from this seat, `next` and everything under `dispatch`
-  included. Until the run ends, your entire write surface is your findings log
-  under `/tmp`.
+  `workflow list|show|lint`, `step show|context|render|artifacts|artifact` —
+  every one write-free, `run report` included, in any run status. `step
+  render` is the only one that shows what a packet actually CONTAINED —
+  template-rendered, tokenless, and it refuses on a pin mismatch rather than
+  re-pinning — which is how you evidence the known packet defects (§3). A
+  verb off that list does not run from this seat, `next` and everything under
+  `dispatch` included. Until the run ends, your entire write surface is your
+  findings log under `/tmp`. Every helper you spawn inherits this discipline VERBATIM, in
+  its brief — no engine write verbs, no repo writes, probes on scratch copies
+  only, report back via SendMessage — because a helper cannot infer the seat
+  it serves, and one measured audit helper otherwise executed a `config set`
+  it found quoted in the very document it was auditing.
 - **Every fix waits for the run to end.** The run may be mutating the very
   files you would edit — bootstrap writes config, runs commit, and a run over
   the dotfiles repo edits the definitions themselves. The findings log is the
@@ -60,12 +67,14 @@ have no one to interrupt. Orientation, layers, log, review are identical.
 
 **Sit in the observed repo's root.** Same-repo shadowing is the common case
 and the right one: where you stand picks both the store and the project the
-verbs answer for (§4), and the session-start hook hands you the active-run
-status the moment you boot. Sharing the repo means sharing the hooks, and
-hooks cannot tell a shadow from a conductor — but **check which hooks are live
-before attributing any behavior to one:** all five docket hooks are commented
-out of the settings builder today (`src/user/claude_code.rs:148-178`). Where
-they run, expect these and use them instead of fighting them:
+verbs answer for (§4), and where the hooks are live the session-start hook
+hands you the active-run status the moment you boot. Sharing the repo means
+sharing the hooks, and hooks cannot tell a shadow from a conductor — but
+**check which hooks are live before attributing any behavior to one, and
+never wait on output from one that is not:** read the settings builder's hook
+block (`src/user/claude_code.rs:153-183`), commented out in full today, all
+five docket hooks with it. Where they run, expect these and use them instead
+of fighting them:
 
 - **run-guard** denies your turn-end while the machine half of the run is in
   flight. That is the conductor's guard answering from the wrong seat; each
@@ -85,16 +94,19 @@ easy to misread — no docket database up-tree ALSO exits 0, carrying
 `{"allowed":true,"not_applicable":true}`: an abstention, not a blessing. Under
 `--json` a denial's reason rides in `.error`, code `NOT_FOUND`, not `.data`.
 
-**A sandboxed seat cannot run docket at all.** Every DB-touching verb opens
-the store read-write and migrates it forward before answering — there is no
-read-only open — so under the global store at `~/.docket` a sandboxed shell
-fails with `unable to open database file (14)` wherever it stands. Take the
-sandbox override for the read verbs, or read the DB with
+**Test one read verb before assuming the sandbox blocks docket.** Every
+DB-touching verb opens the store read-write and migrates it forward before
+answering — there is no read-only open — so a seat that cannot write the
+store fails with `unable to open database file (14)` wherever it stands. But
+`~/.docket` is in the sandbox write allowlist today: run `docket run status`
+from the observed repo's root at attach and believe that result, not this
+line. Only if it fails do you need the sandbox override for the read verbs,
+or the DB read directly with
 `sqlite3 'file:$HOME/.docket/issues.db?immutable=1'` (plain `mode=ro` fails:
 WAL wants the -shm sidecar); `immutable=1` sees the last checkpoint only, fine
 for the pre-run baseline and stale for mid-run cross-checks, where the
-transcript's own `✔` result lines and the override verbs are the live
-surfaces. `--help` opens nothing. And **never point an older docket binary at
+transcript's own `✔` result lines and the live verbs are the true surfaces.
+`--help` opens nothing. And **never point an older docket binary at
 that store**: migration is silent, forward-only, and unguarded, so an old
 binary reads and writes every project's rows with no project predicate and
 nothing behind you — no down-migration, no backup verb. Binary provenance (§4)
@@ -120,13 +132,17 @@ Before reading one transcript line:
    corpus at `~/.docket/config`, a repo's additions layering second, never
    from the source tree.
 3. **Establish which bytes are actually running — starting with whether an
-   installed copy exists at all.** The `~/.claude/{workflows,scripts,hooks,
-   agents}` symlinks `just activate` USED to install are all commented out
-   today (`src/user/claude_code.rs:280-290`) and none exist on disk, so
-   resolve every definition as the session must: installed path if present,
-   else the source under `$SRC` — a session invoking wave.js right now runs
-   `$SRC/workflows/wave.js`. Docket config travels a chain of its own, and it
-   is ONE hop now: `src/user/docket/config/` → (`just activate`) →
+   installed copy exists at all.** Resolve it at attach rather than trusting
+   this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
+   against the builder's symlink vec (`src/user/claude_code.rs:290-293`).
+   Today that returns `agents` and `skills` as live symlinks into the
+   content-addressed vorpal store; `workflows/wave.js` as a hand-made symlink
+   to the source file, so both spellings are the same bytes (`diff` it); and
+   no `scripts` or `hooks` at all, those two being the commented-out entries.
+   `workflows` was never in the builder — its install is hand-made and will
+   not survive a rebuild. Resolve every definition as the session must:
+   installed path if present, else the source under `$SRC`. Docket config
+   travels a chain of its own, and it is ONE hop now: `src/user/docket/config/` → (`just activate`) →
    `~/.docket/config/`, which the engine reads directly as the first of its
    ordered roots, the observed repo's own `.docket/config/` layering second when
    it exists. So the stale-install audit is the whole audit, and the source
@@ -159,6 +175,17 @@ the definitions assume. By layer:
 | Harness | Permission prompts the definitions did not budget for, sandbox denials, workflow-registry staleness, notification latency or loss, `$TMPDIR` shared across executors surprising someone — anything that makes the conductor's or operator's job harder than the skill text assumes. |
 | Repetition | The same pipeline retyped — by the conductor every loop iteration, or by every executor because a brief inlines it. The third appearance is a finding; take it to the extraction bar below. |
 | Engine | Refusal text that misleads, a documented flag that does not exist, a read surface missing (usage absent from `journal.jsonl` is the canonical case). Rule-3 territory: file it. |
+
+**Two engine defects are known-open: evidence them, never re-file them.**
+Both are packet-composition defects, and both surface as an executor working
+from content that is missing or belongs to another step. (a) `issue.diff`
+renders EMPTY in the packet for any step recorded with `--worktree`. (b) A
+review round's packet inputs the PRIOR step's change-summary rather than the
+step-under-review's own — which mis-targeted a full re-review, measured on
+RUN-1 graph-engine. Confirm with `step render` (§1) before you attribute
+either to the brief: a definition edit proposed against these is a wrong fix,
+and a fresh issue against them is duplicate noise. Anything BEYOND these two
+is rule-3 territory as usual.
 
 **Repetition becomes a script — when it passes the bar.** Watch for command
 shapes the session keeps rebuilding: the journal→usage join before every
@@ -263,14 +290,23 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
 - **Binary provenance includes the PATH.** `which` on the operator's PATH,
   not just in-repo copies — the shadow that checked only `./bin` and
   `.docket/bin` missed a third, go-installed binary.
-- **"No agent ran" is not "nothing read the prompt."** The spawn classifier
-  screens rendered briefs before any agent exists; blocked-at-zero-tokens is
-  consistent with the TEXT being the problem. Never rule out prompt content
-  because no agent came to life.
-- **Direct Agent-tool spawns (no wave) transcribe under the SPAWNING session:**
-  `<projects-dir>/<session-id>/subagents/agent-a<name>-<hash>.jsonl`. And a
-  named background agent's final text is delivered to NOBODY — its spawner
-  gets a content-free idle ping — so "went idle, no report" means finished
+- **"No agent ran" is not "nothing read the prompt."** The harness spawn
+  classifier — NOT the docket spawn-guard hook of §1; a different mechanism,
+  and this one is always live whatever the hooks are doing — screens rendered
+  briefs before any agent exists, so blocked-at-zero-tokens is consistent
+  with the TEXT being the problem. Never rule out prompt content because no
+  agent came to life. Three facts decide what you may propose about it: the
+  classifier carries context ACROSS attempts and sessions; a reworded
+  resubmission of flagged content therefore reads as obfuscated retry rather
+  than as a fix; and the sanctioned unblock is explicit operator confirmation
+  in-session. Since your product is definition edits to exactly the briefs it
+  reads (wave.js), "reword it until it passes" is the obvious proposal and
+  the wrong one.
+- **Direct Agent-tool spawns (no wave) transcribe under the SPAWNING session**,
+  three levels down and the flattened-cwd level is the one people drop:
+  `~/.claude/projects/<flattened-cwd-dir>/<session-id>/subagents/agent-a<name>-<hash>.jsonl`.
+  And a named background agent's final text is delivered to NOBODY — its
+  spawner gets a content-free idle ping — so "went idle, no report" means finished
   work sitting in that file, recoverable (measured twice, 2026-08-10; one
   such loss stalled the observed run nine minutes and was then misreported
   as "report received" in its recap).
@@ -282,8 +318,8 @@ also picks the project the project-scoped verbs answer for. `run status`
 against what the transcript believes mid-run; `run report` and `events list`
 post-mortem; `step artifacts STEP-N` then `step artifact ARTIFACT-N
 [--payload]` for what a step actually produced — those two retired reading
-artifacts out of the DB by hand, though sqlite immutable stays the sandboxed
-route. Daylight between what the engine recorded and what the transcripts show
+artifacts out of the DB by hand, though sqlite immutable stays the fallback
+wherever your seat turns out not to be able to open the store (§1). Daylight between what the engine recorded and what the transcripts show
 is usually a finding on whichever side wrote less. One caution when you read
 with `--json`: it suppresses ALL stderr diagnostics — reap notices,
 held-headroom reasons, context-size warnings — so when something looks stuck
@@ -354,11 +390,19 @@ Then:
    resolve (`~/.claude/...`, `~/.docket/...`) whenever one exists or the
    resolution would find one. A fix applied to source alone is not applied:
    the operator had to interrupt a RUN-1 wave launch to demand the installed
-   half by hand. Prefer symlinking the installed path to the source file for
-   the run's duration — further approved fixes then flow automatically — and
-   log every hand-made install as transition debris the next `just activate`
-   must be allowed to replace. Where the install is a real copy (skills,
-   agents), edit both copies with identical bytes.
+   half by hand. Which route you take follows from what §2.3's `ls -ld`
+   found. Where nothing is installed, source IS the whole job. Where the
+   installed path is a symlink to the source file — today
+   `~/.claude/workflows/wave.js` — one edit lands both. Where it is a symlink
+   into the content-addressed vorpal store (`~/.claude/{agents,skills}`
+   today), the store holds a second set of bytes you must edit as well, and
+   through the file tools: Bash writes into the store are sandbox-denied, so
+   `cp` and `sed` fail there where Edit and Write go through. Prefer replacing
+   such an install with a symlink to the source file for the rest of the session
+   — the observed run has already ended by §6, so this breaks no rule — and
+   further approved fixes then flow automatically. Log every hand-made
+   install as transition debris the next `just activate` must be allowed to
+   replace.
 4. **File the engine defects** (rule 3), one issue per defect, refusal text
    and repro verbatim.
 5. **Close** by naming the log path, the fixes applied, the issues filed,
@@ -379,8 +423,10 @@ Pre-derived because conduct is the richest target. The conductor:
 - **No cached run state.** Any "I remember step N…" reasoning instead of
   re-asking the engine.
 - **Wave invocation.** By `scriptPath` only — the installed
-  `~/.claude/workflows/wave.js` if it exists, else `$SRC/workflows/wave.js`,
-  which is what a session runs today. A by-name invocation is a defect even
+  `~/.claude/workflows/wave.js` if it exists, else `$SRC/workflows/wave.js`.
+  The installed one exists today AS a symlink to the source file, so the two
+  spellings resolve to identical bytes and neither is a finding; re-resolve
+  (§2.3) before flagging either. A by-name invocation is a defect even
   when it works (the name registry served pre-edit bytes on RUN-3). `args` is
   a real object `{rows, policyText}`, policy as TEXT, `cat`-ed fresh from
   `~/.docket/config/policy.toml` every dispatch. (wave.js's args-decode
@@ -398,6 +444,25 @@ Pre-derived because conduct is the richest target. The conductor:
   alias built for exactly these sandboxed and worktree-isolated shells;
   completing on one's behalf is now a finding rather than a protocol, and a
   token parked in `$TMPDIR` is the fallback only when `record` itself failed.
+- **Integration is the conductor's**, at reconcile, write steps first and in
+  step-id order — the newest and most failure-prone obligation, so watch it
+  hardest. Per write step: verify the sha the change-summary's first line
+  names (`git cat-file -e <sha>^{commit}`), `git cherry-pick --no-gpg-sign
+  <sha>` as a REAL commit on the shared branch, then remove that worktree and
+  its `worktree-wf_*` branch in the same breath. Each of these is a finding:
+  integrating without the verify; leaving the pick staged but uncommitted
+  (the retired model — staged content found in the shared tree is a
+  stop-and-ask, never a base to build on); leaving the worktree standing;
+  and above all resolving a conflicting pick by judgment, when a conflict is
+  a stop-and-ask gate presenting the sha and the hunks. A `COMMIT BLOCKED`
+  report means committing inside the executor's own worktree on its behalf
+  first, then integrating that sha from the verify onward. Nothing here
+  pushes — publishing stays the operator's.
+- **The close-time straggler sweep.** Every `.claude/worktrees/wf_*` left
+  from this run's waves goes at close, and only those this run created. The
+  exception to watch: a worktree holding a recorded-but-never-integrated sha
+  is still removed, but that sha must be NAMED in the close report — naming
+  is what keeps it recoverable before gc.
 - **Row hygiene.** `kind: "action"` rows filtered before handoff (the wave's
   refusal is the backstop, not the plan); rows otherwise untouched — no
   reordering, no dropping, no sequencing to dodge claim conflicts.
@@ -411,7 +476,11 @@ Pre-derived because conduct is the richest target. The conductor:
   set empty (open-and-close is pure audit noise); an already-open dispatch
   reconciled before any new one. While one is open `next --run` REFUSES rather
   than returning empty — a conductor reading that refusal as "no work left" is
-  a finding. `dispatch verify` writes nothing at all, not even a reap.
+  a finding. `dispatch verify` writes nothing at all, not even a reap — and
+  read its answer by SHAPE, not by exit: `ok:false` after a step recorded
+  successfully is the ready set having legitimately advanced past the stored
+  rows, which `close` then reconciles. A verify mismatch is a finding only
+  when the step it names did NOT record.
 - **Gates.** Presented with the actual artifact — the diff, the findings,
   the numbers — never "step N needs approval"; notes carrying the operator's
   words, not a summary of them.

@@ -75,7 +75,10 @@ fix               = { tier = "bronze" }   # bounded, finding-directed rework
 # commits are incompatible with the harness security model (interactive
 # 1Password commit-signing authorization is unavailable to headless
 # executors). No workflow references the hint, and an unreferenced row
-# violates the every-row-reachable invariant. The operator commits by hand;
+# violates the every-row-reachable invariant. Since 2026-08-10 the split is:
+# executors commit unsigned in their private worktrees, the conductor
+# integrates each sha as a real unsigned commit, and the operator alone
+# publishes (push/PR/release) — no hand-commit step remains in the loop;
 # the contract and its git-commit action script were removed with this row
 # ("remove anything no longer needed", 2026-08-09) — git history keeps
 # contracts/commit-author.md if its drafting discipline is ever wanted.

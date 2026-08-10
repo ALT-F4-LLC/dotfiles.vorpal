@@ -11,15 +11,21 @@ together, in this skill, before any executor exists.
 
 Three rules you must not fight:
 
-- **You record; you never execute.** You do not activate the run, spawn
-  anything, or start work. Activation is the operator's approval gate and it is
-  theirs to give.
+- **You record; you never execute.** You do not spawn anything or start work,
+  and you never activate unprompted — activation is the operator's approval
+  gate and it is theirs to give. If they ask for it in this session, §5 has the
+  path.
 - **You never observe execution.** When you stop, you are done. Re-planning is a
   *fresh* invocation of this skill that reads the run record — not this one
   continuing to watch.
 - **Acceptance criteria are copied verbatim.** Whatever the operator states as
   done-ness goes into the issue body word for word. You may add ACs you derived
   and say you derived them; you may not paraphrase theirs.
+
+Every `RUN-N` and `DKT-N` cited below is a lesson from the PRE-RESET store
+epoch. The episodes are real; the ids are not — the store has since been reset,
+so those numbers now name unrelated live entities. Read them as history, never
+resolve one against the current store.
 
 ## 1. Converse until it decomposes
 
@@ -60,9 +66,9 @@ Guessing at scopes produces issues that fail their scope gate at execution
 time, which is expensive and late. Read instead — through an agent: spawn ONE
 `executor-read` agent while the conversation continues, returning a scope
 map — and the premise verdict, when the request rides on one ("already
-fixed", "already done") — and never survey the repo yourself — engine-contract reads (CLI help,
-`docket workflow list`, the scope-matcher's own rules) are yours; the repo
-survey is the agent's. You are the intake, and your context belongs to the
+fixed", "already done") — and never survey the repo yourself — engine-contract
+reads (CLI help, the workflow corpus under `~/.docket/config/`, the
+scope-matcher's own rules) are yours; the repo survey is the agent's. You are the intake, and your context belongs to the
 conversation, not to directory listings. End every delegate brief —
 unconditionally, whatever the spawn mechanism — with: send the finished
 deliverable to team-lead via the messaging tool; going idle without sending it
@@ -74,10 +80,14 @@ RUN-7's reader repeated it when its brief said "no separate send needed" —
 never write that into a brief). The agent's brief:
 
 The layout tells you scopes — which directories a change of this shape actually
-touches, narrow globs per area. `docket workflow list` tells you which
-workflows exist to bind to, and therefore what kinds are available.
-`git log --format='%s' -30` tells you the repo's conventions. Existing issues
-(`docket issue list`) tell you whether some of this is already tracked.
+touches, narrow globs per area. `ls ~/.docket/config/workflows/` tells you which
+workflows exist to bind to — activation auto-registers them from the config
+roots, so `docket workflow list` reads empty on a store that has not activated
+yet and is not the corpus. LABELS are what bind: every `[match]` block routes on
+`labels_any`/`unless_labels` and none of them look at kind, which is a closed
+field (`bug feature task epic chore`, enforced by `issue create -T`) that routes
+nothing. `git log --format='%s' -30` tells you the repo's conventions. Existing
+issues (`docket issue list`) tell you whether some of this is already tracked.
 
 **When the read contradicts the request's premise, verify before recording.**
 A scope map that says "this bug looks already fixed" changes the run's shape;
@@ -92,15 +102,19 @@ turn boundaries only. If you are blocked on a delegate, end the turn and wait �
 do not re-derive its brief inline; a solo re-derivation under time pressure is
 how RUN-2's first record missed a test that already existed. If you must record
 before the reply lands, mark the bodies provisional and reconcile the moment it
-arrives — bodies stay editable while the run is in `planning`, and that window
-is the net.
+arrives — a body stays editable until the activate that BINDS it, which is the
+whole `planning` window and, for an issue added to an already-active run, up to
+the next activate. That window is the net.
 
 ## 3. Record the run
 
-In this order, and from an unsandboxed shell — under the global store every
-docket verb opens `~/.docket` read-write and migrates before it does anything,
-so a sandboxed seat fails at `unable to open database file` (`--help` alone is
-safe). Every command is one you run; the operator types none of them.
+In this order. Under the global store every docket verb opens `~/.docket`
+read-write and migrates before it does anything, so the seat you run from needs
+write access to that path — a sandboxed seat is fine wherever `~/.docket` is in
+the sandbox's write allowlist, which it normally is. `unable to open database
+file` is the symptom when it is not, and it is the only evidence that justifies
+asking for an unsandboxed seat (`--help` alone never opens the store). Every
+command is one you run; the operator types none of them.
 First, if the scope read or premise verdict is more than a few minutes old,
 re-check it now: one `git log --since=<read time>` over the scoped paths. A fix
 that lands between the read and the record otherwise becomes a bound issue whose
@@ -145,20 +159,24 @@ the person who reads this run in three months.
 
 **The issues** carry kind, labels, scope globs, and the ACs in the body.
 
-**Every issue whose workflow binds write steps carries `--scope`.** The engine
-treats a scope-less issue as NEVER conflicting (S1 is permissive, not
-conservative), activation emits no lint for it, and under scope-parallel
-staging its writer runs beside anything — RUN-5 shipped its
+**Every issue whose workflow binds a tree-holding step carries `--scope`.** The
+engine keys exclusion and the lint on `holds_tree`, not on write-ness, and reads
+an unset `holds_tree` as TRUE — "does it hold the tree" is the question, and it
+is answered yes by default. A scope-less issue is treated as NEVER
+conflicting (S1 is permissive, not conservative); activation emits a scope
+warning for it and then activates anyway — the only lint that refuses is a graph
+cycle. So under scope-parallel execution its holder runs beside anything and
+ships regardless, unless you act on the warning here: RUN-5 shipped its
 verify-everything-and-commit issue scopeless and only a shadow noticed. A
-write-bearing issue without scope globs is a planning defect, caught here or
+tree-holding issue without scope globs is a planning defect, caught here or
 nowhere.
 
 **Everything an executor must know goes in the BODY, before activation.** Issue
-bodies snapshot at activation and are frozen from that moment — the body is what
-gets rendered into every brief. Comments added later never reach a brief. So any
-operator ruling, settled semantics, resolved ambiguity, or decision that came out
-of the conversation above must be written into the body now, in the issue it
-governs. "We agreed X in chat" is not a channel; "it's in a comment on the issue"
+bodies snapshot at the activation that binds them, frozen from that moment — the
+body is what gets rendered into every brief. Comments added later never reach a
+brief. So any operator ruling, settled semantics, resolved ambiguity, or decision
+that came out of the conversation above must be written into the body now, in the
+issue it governs. "We agreed X in chat" is not a channel; "it's in a comment on the issue"
 is not a channel. RUN-3 had a gated-inclusion ruling live only in a comment, and
 the executor reasoned around it in a vacuum — it did the wrong thing correctly,
 because the right thing never reached it. If a ruling arrives mid-run, it cannot
@@ -171,16 +189,25 @@ broad glob serializes the run **against itself**. RUN-3's `internal/engine/**`
 made every issue collide with every other issue, and ~40% of all spawns died on
 claim conflicts as a result. And conflict is LITERAL-PREFIX containment, not real
 glob intersection (the engine's `scope.go`): everything before the first `*?[{`
-is the prefix, and containment either way is a collision — so brace globs and any
-two globs sharing a directory prefix collide regardless of what they'd actually
-match. Write prefix-disjoint globs (one owner per directory prefix) and check the
-partition against the matcher's own rules before recording it. A glob you correct
+is the prefix, and containment either way is a collision — so a brace glob
+collides with everything under the head it shares, and a nested glob collides
+with the one above it, regardless of what they'd actually match. The prefix is
+NOT trimmed back to a separator, so sibling-looking globs are honestly disjoint:
+`internal/db/**` and `internal/dbx/**` do not collide. The trap is a LEADING
+wildcard — `**/*_test.go` has an EMPTY literal prefix, which is contained in
+every scope in the run, so one such glob serializes the whole run against
+everything and nothing warns you. Write prefix-disjoint globs (one owner per
+directory prefix), never lead with a wildcard, and check the partition against
+the matcher's own rules before recording it. A glob you correct
 later goes through `issue edit --scope`, which REPLACES the whole list rather
-than appending — pass every glob you mean to keep. Prefer `internal/engine/dispatch/**` over
-`internal/engine/**`, and several narrow globs over one wide one. Widen only when
-the change genuinely spans that much — an honest wide glob is fine, a lazy one
-costs the whole run. An issue that writes files and declares no scope is refused
-at activation, which is correct and is not a reason to write a wide glob.
+than appending — pass every glob you mean to keep. Prefer
+`internal/engine/dispatch/**` over `internal/engine/**`, and several narrow globs
+over one wide one. Widen only when the change genuinely spans that much — an
+honest wide glob is fine, a lazy one costs the whole run. An issue that holds the
+tree and declares no scope draws a scope warning at activation, not a refusal:
+the engine will ship it, so the warning is yours to act on — and the way to
+answer it is narrow globs, never a wide one that silences it by colliding with
+everything.
 
 **The edges** are `depends_on` relations. Declare only real dependencies:
 a false edge serializes work that could have run in parallel, and a missing one
@@ -226,8 +253,10 @@ takes it from there.
 
 If the operator asks for activation in THIS session, run the activate verb on
 their words (`--dry-run` first — it is the same transaction rolled back) and
-then hand off to `conduct` in-session by invoking the skill. Expect the
-run-guard to deny a plain stop while executable work is pending — that deny is
-a guard answering, not an instruction to start driving; the handoff through
-`conduct` (which surfaces the drive/park/abandon choice to the operator) is the
-designed path through it.
+then hand off to `conduct` in-session by invoking the skill. If a run-guard hook
+is installed on this seat, it will deny a plain stop while executable work is
+pending — that deny is a guard answering, not an instruction to start driving.
+Whether or not it fires (today none is registered, so a plain stop goes through
+unchallenged), the handoff through `conduct` — which surfaces the
+drive/park/abandon choice to the operator — is the designed path, and a silent
+stop is not permission to skip it.

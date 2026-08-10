@@ -32,12 +32,15 @@ session died exactly there, orphaning a dispatch and a live wave. Before the
 first dispatch, confirm the session runs a mode that pre-authorizes those
 calls; if not, say so and let the operator switch before you open anything.
 
-**Every docket verb needs an UNSANDBOXED Bash path — yours and the wave's.**
-The store is global (`~/.docket/issues.db`); every command opens it read-write
-and migrates forward first, and there is no read-only open. A sandboxed shell
-therefore fails `unable to open database file (14)` on every verb (`--help`
-alone is safe). Confirm that path before the first dispatch: the failure reads
-like a docket bug and is not one.
+**Docket verbs need WRITE access to the store — test it in the seat you will
+actually use, yours and the wave's, before the first dispatch.** Every command
+opens `~/.docket/issues.db` read-write and migrates forward first; there is no
+read-only open. Where the sandbox write-allows `~/.docket` the verbs run fine
+sandboxed (measured 2026-08-10); where it does not, every verb fails `unable
+to open database file (14)` (`--help` alone is safe). Run one read verb —
+`docket run status` — and believe that result over any remembered rule: the
+failure reads like a docket bug and is not one, and the fix is the seat's
+write access, not the engine.
 
 **A clean write step proves NOTHING about a read step, and an allowlist is not
 the thing to check.** Isolated executors run wave.js's obligation-0 worktree
@@ -58,8 +61,8 @@ operator gate, and it PINS config bytes for the whole run — from the shared ro
 checks first.
 **Stale install:** diff the dotfiles checkout's corpus source against the
 installed corpus — the source mirrors the install tree for tree, so
-`SRC=~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/docket;
-diff -r "$SRC/config" "$HOME/.docket/config"; diff -r "$SRC/bin"
+`DOCKET_SRC=~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/docket;
+diff -r "$DOCKET_SRC/config" "$HOME/.docket/config"; diff -r "$DOCKET_SRC/bin"
 "$HOME/.docket/bin"` is the whole check, and neither side holds `issues.db`
 (the rows live one level up, at `~/.docket/`). Surface any
 divergence (a stale pin cannot be fixed mid-run; RUN-5 executed a whole run on
@@ -119,14 +122,22 @@ completing, and the phase it unblocked is waiting for you to ask again.
 
 After every close, go straight back to step 1 and ask again. Do not stop to
 report progress, do not ask the operator whether to continue, and do not treat
-"the wave finished" as a finishing line. **You stop for exactly three things:**
+"the wave finished" as a finishing line. **The LOOP terminates for exactly
+three things:**
 
 1. A **human or vote gate** parks the run (`waiting-human`) — present it and wait.
 2. An engine **refusal** you cannot resolve — report it verbatim and stop.
 3. `next` returns **no rows and nothing is running** — the run is done.
 
 Anything else is the middle of the loop, and the middle of the loop is where you
-keep working. A run that stops after one wave because nobody asked the engine a
+keep working. Middle-of-the-loop is not the same as unattended, though: several
+stop-and-ASK gates live INSIDE it, each stated where it arises rather than
+listed here — symlink debris in `.docket/config`, a `next` set that disagrees
+with the roster you presented, added issues left unexpanded, parked payload
+whose provenance you cannot tie to its step, a cherry-pick conflict, and
+content staged but uncommitted in the shared tree. Every one of those is the
+operator's call and never yours to settle by judgment; what none of them does
+is end the run. A run that stops after one wave because nobody asked the engine a
 second time looks exactly like a run that finished, which is why this is stated
 so plainly: RUN-3's operator observed the whole run execute as a single wave.
 
@@ -140,11 +151,15 @@ docket next --run $RUN --json
 - **Empty, nothing running** → report the run's state from
   `docket run status $RUN` and stop.
 - **A dispatch is already open** → `next --run` REFUSES rather than returning
-  empty, so that refusal IS the signal. Reconcile before anything else:
-  `docket dispatch verify --run $RUN` — which writes NOTHING, not even a lease
-  reap, so it can never mutate the set it compares — then close it (`dispatch
-  close` takes no reason flag; its JSON OUTPUT reports the reason under
-  `close_reason`), or abandon it. Never open a second one.
+  empty, so that refusal IS the signal. Reconcile before anything else — in
+  step 3's binding order, not a shortened one: BACK-FILL usage first (step 3),
+  because this is the path you take after a crashed relay and so the likeliest
+  place for measured tokens to strand (DKT-98); then `docket dispatch verify
+  --run $RUN` — which writes NOTHING, not even a lease reap, so it can never
+  mutate the set it compares — then close it (`dispatch close` takes no reason
+  flag; its JSON OUTPUT reports the reason under `close_reason`), or abandon
+  it. Abandon gets the back-fill first too: it has no later window. Never open
+  a second one.
 - **Refuses with `usage-rows-missing`** (the D2 discrepancy) → you skipped the
   back-fill. Run it (step 3), then ask again. Since `dispatch backfill-usage`
   landed this is a missed step in your own loop, not a wedge to work around.
@@ -187,11 +202,14 @@ cat ~/.docket/config/policy.toml # fresh EVERY dispatch — do not reuse a prior
 Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
 Workflow tool does not expand `~` and resolves relative paths against the
 observed repo's cwd (both RUN-5 conductor sessions lost their first launch to
-the tilde form). RESOLVE it, never assume it: `~/.claude/workflows/wave.js`
-when that file exists, otherwise `$SRC/workflows/wave.js` where `$SRC` is
-`<...>/dotfiles.vorpal.git/main/src/user/claude_code`. The `~/.claude`
-symlinks are currently not installed, so the source tree is normally the live
-copy — test for it, and expand the `~` to a literal path yourself.
+the tilde form). RESOLVE it, never assume it: `test -f
+~/.claude/workflows/wave.js` and use that path when the test passes, otherwise
+`$CC_SRC/workflows/wave.js` where `$CC_SRC` is
+`<...>/dotfiles.vorpal.git/main/src/user/claude_code`. Several `~/.claude`
+entries are symlinks INTO that source tree, so the two paths frequently name
+the same bytes and either resolution is right — but WHICH entries are linked
+moves with the install, so run the test instead of assuming a default either
+way, and expand the `~` to a literal path yourself.
 
 ```
 Workflow({ scriptPath: "<resolved absolute path to wave.js>", args: {rows, policyText} })
@@ -230,8 +248,12 @@ backstop, not the plan.
 
 1. `cat` policy.toml as text.
 2. Pass it through as `policyText`, unread.
-3. Confirm the text contains `[policy] version = 1` — a substring check. If it
-   does not, refuse and stop; do not guess at an unknown schema.
+3. Confirm the `[policy]` table declares `version = 1`. The table header and
+   the key sit on SEPARATE lines, so this is `grep -A1 '^\[policy\]'` and
+   NEVER a substring search for `[policy] version = 1` — that literal occurs
+   nowhere in the file, and a conductor checking for it refuses a healthy
+   policy before the first wave. If the table declares some other version,
+   refuse and stop; do not guess at an unknown schema.
 
 You do not parse policy.toml. You do not interpret it, summarize it, or act on
 anything in it. It is a payload you carry, and `wave.js` is what reads it.
@@ -247,10 +269,14 @@ Then await the wave's completion notification — which means END YOUR TURN.
 Notifications only deliver at turn boundaries: a turn held open "waiting" is a
 turn that starves itself of the very signal it waits for (RUN-1 queued a
 teammate's completion report ~9 minutes behind a busy-wait). Ending the turn
-mid-wave may trip the run-guard Stop hook once; with an open dispatch the guard
-now allows it, and even where it denies, one deny per turn-end is expected
-noise — the retry passes. Do not busy-wait, do not poll in sleep loops, and do
-not treat the guard's deny as an instruction to keep working. The session is
+mid-wave may trip the run-guard Stop hook once — but only where that hook is
+actually wired: check the `hooks` key in `~/.claude/settings.json`, because
+the `.with_hook(...)` calls that install the docket guards live in
+`src/user/claude_code.rs` and can be commented out, in which case no guard
+fires at all. Where one does, an open dispatch makes it allow, and even where
+it denies, one deny per turn-end is expected noise — the retry passes. Do not
+busy-wait, do not poll in sleep loops, and do not treat the guard's deny as an
+instruction to keep working. The session is
 free meanwhile — the operator can do other things, and so can you.
 
 ### 3. Close the dispatch
@@ -308,8 +334,8 @@ engine, ≤32 per call. The config key `budget.unit` names the one unit the
 run's cap counts; every other unit is ledger only.
 
 **The join is a script, not a judgment: run `wave-usage <transcript-dir>`**,
-resolved the same way as wave.js — `~/.claude/scripts/wave-usage` if it
-exists, else `$SRC/scripts/wave-usage`. It emits the backfill rows JSON
+resolved the same way as wave.js — `~/.claude/scripts/wave-usage` when `test
+-f` passes, else `$CC_SRC/scripts/wave-usage`. It emits the backfill rows JSON
 directly: four typed units per step, usage deduplicated by message id
 (streamed assistant messages repeat across lines; a per-line sum
 double-counts, measured 1.65-2.36× on RUN-2), attribution via the bootstrap
@@ -318,7 +344,8 @@ usage — report that, do not paper over it. Capture ITS exit, not a pipeline's:
 `$?` after `script | tail` reports tail's exit, and RUN-5's first close
 checked exactly that dead value (redirect to a file, then test). Only if the
 script is absent or refuses do you delegate: ONE `executor-read` agent on the
-transcript directory, with the section below verbatim as its brief. Either way
+transcript directory, with the **Where the numbers actually are** section
+below — that heading's whole body — verbatim as its brief. Either way
 you check the shape — every dispatched step present, quantities integers — and
 pipe it. Reading agent transcripts yourself is work that belongs below you.
 
@@ -360,8 +387,12 @@ path, so the report is greppable the way `COMMIT BLOCKED` is below; from your
 seat, BEFORE the back-fill so the close sees it, confirm the step still
 shows `claimed`, validate the parked payload as JSON, run its `docket step
 record … --artifact-file <parked> --payload-file <parked> < <parked token>`,
-and NAME what you completed on whose behalf. Parked state whose provenance you
-cannot tie to the step is a stop-and-ask, not a judgment call.
+and NAME what you completed on whose behalf. On a WRITE-class step, carry
+`--worktree <its checkout>` through as well: the flag DEFAULTS to the invoking
+checkout, so a record run from your seat without it diffs your tree and not
+the one the work happened in — the same failure the next paragraph exists to
+prevent. Parked state whose provenance you cannot tie to the step is a
+stop-and-ask, not a judgment call.
 
 **Worktree writers: they record, then you integrate.** Every executor — write
 archetypes included — runs in a private worktree; a write executor's
@@ -369,7 +400,13 @@ deliverable is a COMMIT there, its sha on the first line of the change-summary
 and in the report. It records with `--worktree <its checkout>` so the engine
 computes the recorded diff where the work happened (DKT-106, answered) — the
 record does NOT wait on integration, and the old cherry-pick-first ordering is
-gone. The merge back is still never automatic, so at reconcile, write steps
+gone. **Known engine defect: for a worktree-recorded step, `issue.diff`
+renders EMPTY in every downstream packet.** The record itself is sound; it is
+the PACKET that carries nothing, so any later step meant to read the change
+through its brief reads a blank instead. The sha is therefore the only
+reliable handle on what a write step produced — keep it in front of you and
+hand it to downstream readers explicitly (see the re-review rule under Human
+gates). The merge back is still never automatic, so at reconcile, write steps
 first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
@@ -395,20 +432,27 @@ means you make the commit on its behalf first — `git -C <its worktree> add
 -A` then `git -C <its worktree> commit --no-gpg-sign -m "<step> <issue>:
 <its summary>"` — and proceed from step 1.
 
-Worktrees clean themselves up ONLY when unchanged: the harness sweep removes
-read-only worktrees and their branches, but every write worktree and its
-`worktree-wf_*` branch persists indefinitely (measured, RUN-1). Cleanup is
-YOURS and AUTOMATIC (operator policy, RUN-1): the moment a step's sha is
-integrated, remove its worktree and branch in the same breath —
-`git worktree remove <path>` (add `--force` only when it refuses over its own
-leftover scratch), then `git branch -D worktree-<its name>`. The integration
-commit carries the content, so nothing is lost. At run close, sweep the
-stragglers: every remaining `.claude/worktrees/wf_*` entry from this run's
-waves goes the same way. If one holds a recorded-but-never-integrated sha,
-remove it too but NAME the sha in your close report — it stays reachable in
-the object database until gc, and naming it is what keeps it recoverable.
-Only ever remove worktrees this run's waves created; other checkouts are not
-yours.
+Worktrees clean themselves up ONLY when UNCHANGED: the harness sweep removes
+worktrees whose tree is unmodified, and their branches. Every write worktree
+and its `worktree-wf_*` branch therefore persists indefinitely (measured,
+RUN-1) — and so does a READ worktree whose executor left scratch behind, since
+the sweep tests the TREE, not the archetype. Cleanup is YOURS and AUTOMATIC
+(operator policy, RUN-1): the moment a step's sha is integrated, remove its
+worktree and branch in the same breath — `git worktree remove <path>` (add
+`--force` only when it refuses over its own leftover scratch), then `git
+branch -D <its branch>`. Read the path and its branch as a PAIR off `git
+worktree list` rather than constructing the name from a step or workflow id:
+the branch is `worktree-<basename of the worktree directory>`, and a wrong
+expansion force-deletes an unrelated branch. The integration commit carries
+the content, so nothing is lost. At run close, sweep the stragglers — and the
+sweep set is exactly the `.claude/worktrees/wf_*` directories whose `wfId`
+matches a wave THIS session launched. You already hold those ids: each is what
+you passed as `--source "wave-journal:<wfId>"` at back-fill. Those go the same
+way. If one holds a recorded-but-never-integrated sha, remove it too but NAME
+the sha in your close report — it stays reachable in the object database until
+gc, and naming it is what keeps it recoverable. Any other `wf_*` entry belongs
+to some other session's run: leave it alone. Only ever remove worktrees this
+run's waves created; other checkouts are not yours.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first
@@ -512,6 +556,7 @@ On their answer:
 
 ```bash
 docket step approve STEP-N --note "<their reasoning, their words>"
+docket step approve STEP-N --value <enum member> --note "<their words>"
 docket step reject  STEP-N --note "<their reasoning, their words>"
 docket step resolve STEP-N --as retry|skip|abandon-issue|override-pass --note "<why>"
 ```
@@ -530,10 +575,20 @@ parking the issue (saga §7.7.3, by design). And the verdict is STICKY: a
 `--as retry` on the parked routing step re-runs the aggregate, re-reads the
 same terminal reject, and re-parks (DKT-24). Present reject as "stop this
 issue and ask me again," never as "same routing, different ledger mark" —
-RUN-2 lost a round-trip to exactly that misdescription. Severity is not
-settable at these gates either; an operator instruction the engine cannot
-execute is surfaced first, then materialized as a backlog issue so it cannot
-evaporate (the DKT-23 pattern).
+RUN-2 lost a round-trip to exactly that misdescription.
+
+**A held cluster has a THIRD answer: correct the value.** `docket step approve
+STEP-N --value <member>` overrides the cluster's aggregated field with a value
+the operator names — and on a spec-doc hold that aggregated field IS severity
+(the workflow aggregates `field = "severity"` by median, holding on spread).
+So "the median is wrong, call it high" is one flag, not a backlog issue. The
+value must be a member of the pinned schema's declared enum; the engine
+refuses anything else, and the enum comes from the FROZEN pins, not the files
+on disk. Offer all three at a held-cluster gate: approve the computed value,
+approve a corrected one, or reject. An operator instruction the engine
+genuinely cannot execute is still surfaced first, then materialized as a
+backlog issue so it cannot evaporate (the DKT-23 pattern) — but check for a
+flag before reaching for that.
 
 **A gate that failed on a broken check is settled on evidence, not overridden
 blind.** When a gate's output shows it never actually ran (RUN-2: govulncheck
@@ -566,6 +621,19 @@ renders the SAME brief as the failed attempt. Guidance for future work
 travels only as a body, which means a new issue in the next planning pass, or
 as a findings artifact a later step declares as input.
 
+**A re-review round judges the PRIOR commit unless you intervene.** Compound
+the two facts: a retry renders the same brief, and `issue.diff` renders EMPTY
+for a worktree-recorded step (the defect noted under integration). A
+re-review packet's inputs are therefore the PRIOR step's change-summary plus
+that empty diff — nothing in it points at the fix that was just made.
+Measured: a full four-judge re-review round judged the superseded commit.
+So hand the reviewers the integrated sha EXPLICITLY — a findings artifact the
+review step declares as input, or a fresh issue body naming it — and then
+check each judge report's reviewed sha against the step actually under review.
+A mismatch means the round is invalid: surface it to the operator as a round
+to re-run, and never fold its verdicts into the ledger as if they had seen the
+work.
+
 **Present only what the decision actually reaches.** Never offer a gate
 option as "the fixer can/will X" unless the engine genuinely routes X on that
 answer: RUN-1's operator approved a held cluster on the promise "the fixer
@@ -584,7 +652,11 @@ parked, and that is fine — it can be resumed by any later session.
 A run parked `waiting-human` ends cleanly with the session — gates do not
 block the stop guard, and a parked run stays parked for any later session to
 pick up from `docket run status --active --json`. While EXECUTABLE work is
-pending, the run-guard blocks the turn-end instead — and its deny is a guard
+pending, the run-guard is what blocks the turn-end instead — WHEN it is
+installed. Check the `hooks` key in `~/.claude/settings.json` before you lean
+on it: with no `Stop` hook wired there, nothing mechanical stops you ending a
+turn on a run that still has ready rows, and the continuous-loop obligation
+above is yours alone to keep. Where the guard does fire, its deny is a guard
 answering, not the operator instructing. Do not start driving on its push:
 surface the choice (drive on, park at a gate, abandon) and let the operator
 make it, exactly as RUN-1's bootstrap did when the guard demanded a

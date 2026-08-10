@@ -6,9 +6,10 @@ description: Wire a repo into the shared docket corpus for the first time — se
 # bootstrap
 
 You bind this repo to the shared corpus. The developer provides work and
-approvals; you do everything else. By default nothing lands in the repo at all:
-the engine reads the corpus from `~/.docket/config`, and a `.docket/` directory
-exists only when this repo genuinely owns something (§3, §4a′).
+approvals; you do everything else. No corpus file lands in the repo at all: the
+engine reads the corpus from `~/.docket/config`, and a `.docket/` directory
+exists only when this repo genuinely owns something (§3, §4a′). The one thing
+this skill writes into the tree is §0's seven specs under `docs/spec/`.
 
 Two rules you must not fight:
 
@@ -57,12 +58,12 @@ without ever blocking on one.
 These are leaf agents. They must not spawn, form a team, or call `Skill()`.
 ONE message means one response carrying all seven Agent calls — one-spawn-per-
 message staggers starts for nothing and was the 2026-08-10 deviation, twice.
-`executor-write`/`executor-read` name installed archetypes under
-`~/.claude/agents/`; when none are installed (the install is commented out of
-the settings builder today), spawn `general-purpose` for writers and `Explore`
-for readers, carry the archetype file's text (`src/user/claude_code/agents/`
-in the dotfiles repo) inline in the brief, and say in §5 that archetype
-containment ran prompt-only. And every agent brief in this skill ends the same
+`executor-write`/`executor-read` name the archetypes the settings builder
+installs under `~/.claude/agents/`; that install is live, so use them. Fall back
+only when `ls ~/.claude/agents` comes back missing or empty: spawn
+`general-purpose` for writers and `Explore` for readers, carry the archetype
+file's text (`src/user/claude_code/agents/` in the dotfiles repo) inline in the
+brief, and say in §5 that archetype containment ran prompt-only. And every agent brief in this skill ends the same
 way: **deliver your report by calling SendMessage to `team-lead` (ToolSearch
 `select:SendMessage` first) BEFORE ending your turn** — a background agent's
 final text is delivered to nobody, the idle ping that replaces it is
@@ -75,10 +76,13 @@ deferring to `spec-project`. That pipeline needs a registered project (§1) and 
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
 
-While the seven run, wait properly: schedule ONE fallback wakeup (15+ minutes)
-and stop — completion notifications drive the next step. Polling the output
-directory and rescheduling on every idle ping bought the 2026-08-10 run ~30
-wakeup schedules and ~10 polls that changed nothing.
+While the seven run, wait properly: ONE `Monitor` call (ToolSearch
+`select:Monitor` first) with an until-loop and a 15+ minute timeout, then stop
+— completion notifications drive the next step and the Monitor is only the
+fallback for when none arrives. Not `CronCreate`, which schedules recurring
+work rather than waiting out this one. Polling the output directory and
+rescheduling on every idle ping bought the 2026-08-10 run ~30 wakeup schedules
+and ~10 polls that changed nothing.
 
 **Verify before moving on — with an agent, not your own eyes.** Take
 `git status --porcelain > "$TMPDIR/pre-fanout"` before you spawn. After all
@@ -118,10 +122,13 @@ that is the mechanism built for exactly this.
 
 ## 1. Register the repo
 
-**Every docket verb needs an unsandboxed shell.** The store is user-global at
-`~/.docket`, outside the sandbox write root, and every DB-touching command opens
-it read-write and migrates forward before doing anything else — sandboxed it
-fails with `unable to open database file (14)`. Only `--help` is safe sandboxed.
+**Every verb that opens the SHARED store needs an unsandboxed shell.** That
+store is user-global at `~/.docket`, outside the sandbox write root, and every
+command touching its DB opens it read-write and migrates forward before doing
+anything else — sandboxed it fails with `unable to open database file (14)`.
+What stays safe sandboxed is anything that opens no DB at all (`--help`,
+`workflow init`) and anything aimed by `DOCKET_PATH` at a store inside the
+sandbox write root (§4a's scratch probe).
 
 ```bash
 docket init          # only if no store exists yet. Bare init targets the SHARED
@@ -242,15 +249,17 @@ conventions and cadence. The test/doc layout tells you what a change touches,
 for `scope` and `class`.
 
 The gate/script miner runs each check command once — for real. A command
-nobody has seen exit 0 is a guess, not a gate. When one does not exit 0, the
-miner attributes before you conclude:
-check the failure text for environment signatures first — a sandboxed session
-blocking the network reads as a gate failure and is not one (`vuln-scan` fails
-closed when `vuln.go.dev` is unreachable, with a message that blames
-vulnerabilities); rerun unsandboxed before deciding anything. And a gate that
-fails honestly on today's tree is doing its job — that is a finding to surface,
-never a reason to drop the gate. A gate that needs the network gets that fact
-argued explicitly in its §4 `--flaky` row either way.
+nobody has seen exit 0 is a guess, not a gate. Its brief carries positive
+discipline ONLY: run each check command, report the exit code and the first 20
+lines of any failure text verbatim, attribute nothing. Attribution is yours,
+over its returns, and the environment is what you check first — a sandboxed
+session blocking the network reads as a gate failure and is not one
+(`vuln-scan` fails closed when `vuln.go.dev` is unreachable, with a message
+that blames vulnerabilities), so have it rerun unsandboxed before you decide
+anything. And a gate that fails honestly on today's tree is doing its job —
+that is a finding to surface, never a reason to drop the gate. A gate that
+needs the network gets that fact argued explicitly in its §4 `--flaky` row
+either way.
 
 ## 3. Adapt — the repo-specific layer
 
@@ -367,7 +376,7 @@ authorizing that exact in-repo path deliberately. So every entry pointing at
 `scripts/qa/*` (or anything else in the tree) is proposed as
 `$(git rev-parse --show-toplevel)/scripts/qa/tests.sh`, never
 `./scripts/qa/tests.sh`. A relative one registers happily and then refuses at
-run time — the failure RUN-3 shipped. Say in §5 that these entries are
+run time — the failure a pre-refactor run shipped. Say in §5 that these entries are
 absolute-path-bound: a moved or re-cloned worktree needs them re-added.
 
 **Name every entry after what the script actually does — never after the gate you
@@ -375,9 +384,9 @@ wish you had.** A trust entry's name is what the operator reads when approving
 and what every later report calls it, so a name that overstates the check buys a
 false sense of coverage that nothing will correct. If a repo has a
 `genericity.sh`, propose it as `genericity`; do not propose it as `scope` because
-a scope gate is what the pipeline wants. RUN-3 proposed `genericity.sh` under the
-name `scope`, and what happened next is worth knowing precisely, because the
-usual telling gets it backwards: the script never ran. Containment refused its
+a scope gate is what the pipeline wants. That same pre-refactor run proposed
+`genericity.sh` under the name `scope`, and what happened next is worth knowing
+precisely, because the usual telling gets it backwards: the script never ran. Containment refused its
 relative argv three times, and each refusal was recorded in `gate_results` as
 `scope unmatched (null)` with the reason and the remedy spelled out in full.
 Nobody read the verdicts, and three changes landed with a gate that had reported
@@ -404,9 +413,9 @@ unavailable gate named honestly is a known gap; an unavailable gate named
 
 ### 4a. Propose the `doc-record` trust entry
 
-If you kept `spec-doc.toml`, its `record` step is an **action**, not an
-executor: recording an accepted doc is "insert a row and copy bytes", which the
-engine runs itself and never claims. An action named `doc-record` resolves
+`spec-doc.toml` ships with the corpus, and its `record` step is an **action**,
+not an executor: recording an accepted doc is "insert a row and link it", which
+the engine runs itself and never claims. An action named `doc-record` resolves
 through the trust store like any gate command, so it needs an entry:
 
 The corpus ships the script itself — `~/.docket/bin/doc-record`, versioned
@@ -423,8 +432,10 @@ argv         <absolute $HOME>/.docket/bin/doc-record
 re-runnable  yes — the script passes `--idempotency-key` (doc create, issue
              create, and both comment-add verbs take one), so a crash between
              create and link re-runs to the same DOC-N instead of a second
-tree         no  — writes into the docket database and docs/, not the build tree,
-             so it races nothing a parallel read step is reading
+tree         no  — measured: it records through the CLI and writes no file in
+             the working tree at all (its only write is a context file under
+             its own temp work dir), so it races nothing a parallel read step
+             is reading
 flaky        no  — no network, no clock; it either records or exits non-zero
 ```
 
@@ -433,7 +444,11 @@ makes the yes defensible: read the shipped script before arguing the flag,
 and turn it **off** if a corpus revision ever drops the key. A repo whose
 trust store already binds `doc-record` to an old repo-local argv needs
 `docket trust rm doc-record` first — trust refuses a changed argv under an
-existing name rather than updating it.
+existing name rather than updating it. That is the one rm-and-re-add §5's
+prohibition does not cover, and the split is exact: a differing ARGV is a
+different command, so rm it and re-add under a FRESH approval; differing FLAGS
+under an identical argv are never yours to overwrite — those go back to the
+operator as a question (§5).
 
 An action's contract is not a gate's, and the difference is what makes the
 script writable at all: the engine hands an action the run context as ONE JSON
@@ -460,25 +475,27 @@ measured basis for `--re-runnable`, which beats arguing it from prose — the
 2026-08-06 authoring-era probes caught three real bugs this way, which is why
 the ritual survives the script moving into the corpus. The agent returns both
 probe transcripts; that evidence is what you attach to the proposal. Probe
-against a SCRATCH store, not the shared one:
-`export DOCKET_PATH=$(mktemp -d); docket init`, then run both probes with that
-env (verified 2026-08-10: the CLI honors DOCKET_PATH even sandboxed; the
-engine denies it only to real action children at exec time). A probe against
-the resolved store writes real DOC/issue rows into shared history — the
+against a SCRATCH store, not the shared one, and brief the sequence itself:
+`export DOCKET_PATH=$(mktemp -d)`, confirm it came back non-empty before using
+it, `docket init`, then both probes under that same env, reporting every exit
+code and transcript verbatim. A probe against the resolved store writes real
+DOC/issue rows into shared history — the
 2026-08-10 run needed an operator-approved destructive delete to clean up, and
 the id sequence keeps the scar either way.
 
 ### 4a′. Propose the `commit-exec` trust entry
 
-The 2026-08 corpus mechanizes NO commit: every shipped pipeline ends before
-it, and the commit is the operator's, made by hand (1Password-gated signing
-is unavailable to headless executors — the workflow headers say so). This
+The 2026-08 corpus mechanizes NO commit inside a pipeline: every shipped
+pipeline ends before one. The boundary is conductor-commits /
+operator-publishes — the conductor cherry-picks write-step output into real
+unsigned commits at integration, and only push and PR stay the operator's
+(1Password-gated signing is unavailable to headless executors). This
 section applies ONLY if a repo-local workflow YOU wrote declares a
 commit-terminal ACTION step; skip it otherwise, and do not invent a
 commit-exec entry nothing consumes. Where it does apply, the history in one
-line: RUN-1 (2026-08-06, pre-refactor corpus) shipped without the script and
-completed with an approved message and a dirty tree — the conductor had to
-hand-commit under the approved gate.
+line: the 2026-08-06 run (pre-refactor corpus) shipped without the script and
+completed with an approved message and a dirty tree, leaving its conductor to
+commit by hand under the approved gate.
 
 Unlike `doc-record`, this one IS repo-authored — it encodes the repo's own
 commit discipline, so it cannot ship with the corpus: an `executor-write` agent
@@ -501,9 +518,14 @@ tree         yes — it writes the git index and object store; say so plainly
 flaky        no  — no network, no clock
 ```
 
-The script is tracked repo content — **nothing here is `.gitignore`'d.** The one
-ignorable artifact docket can leave in a repo is a local store, and only if
-someone ran `docket init --local`: ignore `.docket/issues.db*` then, nothing else.
+The script is meant to be tracked repo content, so **check that it is** —
+`git check-ignore -v .docket/bin/commit-exec`, and the same for whatever §3
+wrote under `.docket/config/`. Where §1's era-debris `.gitignore` block
+survives it ignores the whole `.docket/` tree, which makes both layers
+invisible to git and absent from a fresh clone; surface that with §1's
+recommendation rather than editing their `.gitignore` yourself. The one
+artifact that SHOULD be ignored is a local store, and only if someone ran
+`docket init --local`: ignore `.docket/issues.db*` then, nothing else.
 
 ### 4b. Propose the vote-rule thresholds
 
@@ -546,10 +568,11 @@ to a clock. Size the TTL for the working case; the other two cover the failures.
 ```bash
 docket config get lease.ttl.default          # ships as 15m
 docket config set lease.ttl.write 45m        # project scope, no --global.
-docket config set lease.ttl.read  30m        # Propose BOTH classes: RUN-1 sized
-                                             #   only write, and its slowest
-                                             #   silver judge then ran 13m of the
-                                             #   15m read default on 3 files
+docket config set lease.ttl.read  30m        # Propose BOTH classes: the
+                                             #   2026-08-06 run sized only
+                                             #   write, and its slowest silver
+                                             #   judge then ran 13m of the 15m
+                                             #   read default on 3 files
 ```
 
 **Size it against worst-case step duration, not the typical one.** A TTL shorter
@@ -568,8 +591,8 @@ recorded one — observed runs vary widely (~6 minutes per author on one run,
 Beyond that, `expected_cost` is the proxy you have: in the shipped corpus
 `implement` carries the highest at `1.50`, against `0.20` at the cheap end
 (spec-doc's `record`) — a 7x spread, and nothing declares less. Read the numbers
-off the config you kept rather than quoting these; they move when you cut a
-workflow. If your slowest write step has historically taken ~30 minutes, a 45m
+off the installed corpus rather than quoting these; they move whenever the
+corpus does. If your slowest write step has historically taken ~30 minutes, a 45m
 write-class TTL leaves 50% headroom — the right direction to be wrong in,
 because the two errors are not symmetric:
 
@@ -589,11 +612,12 @@ from evidence.
 
 ## 5. Surface the binding — the approval moment
 
-A virgin repo has no issue yet, and this skill does not say where DKT-1 comes
-from unless you make it say: take the issue the operator named; if none was
-named, propose ONE drawn from the specs' gap sections and offer the swap
-explicitly — never activate work the operator has not seen named. (RUN-1's
-conductor improvised exactly this, well; now it is the contract.) One smoke
+A virgin repo has no issue yet, and this skill does not say where the first one
+comes from unless you make it say: take the issue the operator named; if none
+was named, propose ONE drawn from the specs' gap sections and offer the swap
+explicitly — never activate work the operator has not seen named. (The
+2026-08-06 run's conductor improvised exactly this, well; now it is the
+contract.) One smoke
 issue is this skill's ceiling: anything larger is `/plan`'s to structure
 BEFORE conducting — plan-up-front is the default, single-issue improvisation
 the exception.
@@ -629,8 +653,10 @@ this way on 2026-08-10). Lint resolving refs across the registered roots is the
 engine fix, owed upstream; until it lands, this is the expected path.
 
 ```bash
-docket run start --issue DKT-1
-docket run activate RUN-1 --dry-run
+docket run start --issue DKT-<n>       # the id `issue create` printed — one
+                                       # rowid sequence store-wide, so a virgin
+                                       # repo's first issue is rarely DKT-1
+docket run activate RUN-<n> --dry-run  # the id `run start` printed
 ```
 
 `--dry-run` computes the whole activation and writes nothing. It needs no
@@ -646,16 +672,21 @@ back:
   config files pinned by content hash. This proves the config is well-formed
   and accepted; it says nothing about what will execute.
 - **The harvested-command list**, annotated `matched`/`unmatched` — printed
-  only when a kept workflow declares `source = "fence:<tag>"` AND the bound
-  issue carries a fence with that exact tag. No shipped corpus workflow declares
+  only when a workflow this activation binds declares `source = "fence:<tag>"`
+  AND the bound issue carries a fence with that exact tag. No shipped corpus workflow declares
   one, so on a corpus-derived config this block is absent, not empty. Its
   absence is correct, not a failure to debug.
 
-Both blocks are printed prose in human mode only. Under `--json` they become
-payload keys — `registered[]` (`{kind,name,version,path,sha256,outcome}`) and
-`fences[]`, beside `bound_issues[]`, `promoted_issues[]`, `scope_warnings[]`,
-`pins_recorded`, `steps_created` — and every stderr diagnostic is suppressed.
-Read it in human mode when the point is showing the operator what printed.
+Both blocks are printed prose in human mode only. Under `--json` the
+registration report becomes `registered[]`
+(`{kind,name,version,path,sha256,outcome}`); the fence block has no list
+counterpart at all — the payload carries `fences_harvested`, an INTEGER count
+(`0` on a corpus-derived config), never the harvested commands. Others sit
+beside them (`issues_bound`, `issues_expanded`, `pins_recorded`,
+`pins_from_config`, `steps_created`, `scope_warnings`, `dry_run`,
+`projected_status`), so read one real payload rather than trusting this list.
+Every stderr diagnostic is suppressed under `--json`; read it in human mode
+when the point is showing the operator what printed.
 
 Show what printed verbatim, not a summary. Then supply what the dry run
 cannot: **named gates are invisible to it.** A `gates = ["build", ...]` entry
@@ -670,7 +701,7 @@ tests      tests        /abs/repo/scripts/qa/tests.sh    proposed (absolute — 
 <absent>   —            —                                NO GATE — say why
 ```
 
-Every gate named by a workflow you kept gets a row; a check you could not
+Every gate named by a bound workflow gets a row; a check you could not
 implement gets a row with no argv and the reason. A row with no trust entry
 will report `unmatched` on its first real run — say it in the row, not a
 footnote. This table, the registration report, and §4's flag arguments are
@@ -700,7 +731,10 @@ Two facts about the store that surface exactly here, at the moment of adding:
   question. Do not `trust rm` and re-add to make the store match your
   proposal: the existing flags were once approved by the same authority you
   just asked, and two approvals that disagree are the operator's to
-  reconcile, not yours.
+  reconcile, not yours. That prohibition is about FLAGS. A surviving entry
+  whose ARGV differs cannot be updated at all — trust refuses it outright, so
+  that one IS `trust rm` plus a fresh `trust add --yes` under a new approval
+  (§4a).
 
 After the first real run, read the gate verdicts: `unmatched` in
 `gate_results` means the gate never executed — its entry is missing or

@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Evolve the shared docket corpus (src/user/docket/, operator-installed by `just activate`) and a repo's own .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
+description: Evolve the shared docket corpus (src/user/docket/config/, operator-installed by `just activate`) and a repo's own optional .docket/config/ additions from run evidence — read run reports and the event log, find what recent runs actually cost and caught, and propose versioned config edits for approval. Operator-invoked only; suggest it after about five completed runs.
 ---
 
 # retro
@@ -20,40 +20,49 @@ preference — the only way the edit activates.
 ## 1. Gather
 
 Gathering and analysis are agent work: spawn `executor-read` analysts (one,
-or one per run when runs are many), each briefed with the repo's
-`contracts/retro-analyst.md` — the node the corpus already defines for
-exactly this — plus §2's table verbatim. They run the verbs and return
-evidence-labelled findings; you compose §3's proposals and hold the approval
-conversation. The verbs, for their briefs:
+or one per run when runs are many), each briefed with the corpus contract
+`~/.docket/config/contracts/retro-analyst.md` (source in the dotfiles
+checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
+corpus already defines for exactly this — plus §2's table verbatim. The tier
+`policy.toml` gives `retro-analyst` binds only when the retro pipeline
+dispatches that node through the wave; a skill-side spawn carries no tier, so
+name the intended model and effort in the spawn or the analysts silently run
+at the session default. They run the verbs and return evidence-labelled
+findings; you compose §3's proposals and hold the approval conversation. The
+verbs, for their briefs:
 
 ```bash
 docket run report RUN-N --json           # per run; read-only, never advances a run
 docket events list --run RUN-N --json    # the transition trail
 docket events list --json --limit 500    # this project's feed; trust grants live here
 docket events list --json --all-projects # every project sharing the store
+docket step artifacts STEP-N --json      # one step's artifact index
+docket step artifact <id> --json         # one artifact's body; the report indexes only
 ```
 
 Collect every run since the last retro before concluding anything — one run is
 an anecdote. `events list` is project-scoped and the store is machine-global,
 so other repos' runs share the ledger; `--all-projects` is for a store-wide
-audit. **Every docket verb opens the store read-write and migrates forward, so
-all of these need an unsandboxed shell** — sandboxed, `sqlite3
-'file:<store>/issues.db?immutable=1'` is the only read-only open.
+audit. **Every docket verb opens the store read-write and migrates forward**,
+so all of these run sandboxed only where the store path is itself writable
+under the sandbox's policy — check the store path against the write allowlist
+rather than assuming an unsandboxed shell is needed. Where it is not writable,
+`sqlite3 'file:<store>/issues.db?immutable=1'` is the read-only fallback.
 
 ## 2. Read the evidence
 
 | Question | Where | What a finding looks like |
 |---|---|---|
-| Where does spend go? | `budget`: `floor` vs `reported[]` (per unit, never summed; `budget_unit` names the counted one), `spend` = max of the two, `cap` + `cap_source`, `burn_rate`, `breach_reason`; `attempts` | one step carries most of the floor, or `reported` dwarfs `floor` → `expected_cost` miscalibrated; a `breach_reason` under `cap_source: config` means the run met a default nobody sized for it |
-| Judge value (D2) | `artifacts` by producer + their payloads | a judge that never uniquely contributes above `low` across 5 runs → cut it in a version bump |
-| Dedup rate (D3) | duplicate findings across a fanout's artifacts | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize` |
+| Where does spend go? | `budget`: `floor` vs `reported[]` (per unit, never summed; `budget_unit` names the counted one), `spend` = max of the two, `cap` + `cap_source`, `burn_rate`, `breach_reason` (`attempts` is its own top-level section, not a budget field) | one step carries most of the floor, or `reported` dwarfs `floor` → `expected_cost` miscalibrated; a `breach_reason` under `cap_source: config` means the run met a default nobody sized for it |
+| Judge value (D2) | `artifacts` grouped by `executor` (+`issue`) — `producer` is the fanout ordinal (`review@0#2`), which says WHERE in the topology, never WHO; bodies come from `step artifact` | a judge that never uniquely contributes above `low` across 5 runs → cut it in a version bump |
+| Dedup rate (D3) | duplicate findings across a fanout's artifacts — the report is an index and carries no bodies, so read them with `step artifacts` then `step artifact` | under 10% at width ≤ 4 across 5 runs → propose exact-locus dedup instead of `synthesize` |
 | Recurring shapes (D5) | the same topology planned ≥ 3 times | migrate it into a workflow template — never leave the planner to re-improvise |
 | Gate health | `gates` pass/fail/**unmatched**, `gate_trail` (its `output` rides non-pass rows only, last 2000 bytes) | any `unmatched` is a missing trust entry, not a failing check |
-| Intervention profile | `waiting-human` events by reason; `lease-reaped` behind the holds | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
+| Intervention profile | `run-paused`, `step-held`, and `step-routed` with destination `waiting-human` — that string is a run/step STATUS, not an event kind, so filtering events on it returns nothing; `lease-reaped` behind the holds | designed gate vs breach vs held — three different fixes; a hold behind a `lease-reaped` carrying `data.forced` was a relay declaring a dead spawn, not a slow step |
 | Attempt pressure | `attempts`, loop ordinals | a step repeatedly at `max_attempts` wants a smaller charter, not a bigger budget |
 | Trust drift (D14) | `trust-added`/`trust-removed` (store-level; visible in either scoping) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn (D15) | your own proposals per run over time | churn trending up means bootstrap mined the repo wrong; fix the source, not each symptom |
-| Routing drift | `data.metadata`'s four keys (below) | requested ≠ resolved across runs means policy asks for a model it does not get |
+| Routing drift | the four metadata keys (below), read per step with `docket step show` / `step context` — `run report`'s `metadata` is a key → distinct-values rollup that never pairs requested with resolved on one step, so it shows aggregate skew only | requested ≠ resolved across runs means policy asks for a model it does not get |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
 | Tier fit | `[executors]` rows vs attempts + cost at that tier | a row failing repeatedly at its tier is mis-tiered, not under-budgeted |
 
@@ -91,18 +100,26 @@ docket config set --global vote.rule.<name>.threshold <0-1>   # every project
 
 A rule exists iff its threshold is set, and a threshold sized from one repo's
 runs belongs on that project's override — `--global` only for a default every
-project should inherit. They ship provisional (`security-acceptance` 0.67,
-`doc-acceptance` 0.60) and were never calibrated against real votes — sizing
-them from evidence is explicitly retro's job. A rule whose outcome never
+project should inherit. **Thresholds are store state, not shipped config** —
+the corpus sets none, so a fresh or reset store has none either, and a corpus
+workflow naming a rule (today `security-acceptance` and `doc-acceptance`)
+fails `docket workflow lint` with `vote_rule "<name>" is not registered` until
+the `config set` above runs. Read `docket config get
+vote.rule.<name>.threshold` before assuming a rule exists; empty means the job
+is creating it, not calibrating it. Sizing these from evidence — and creating
+the missing ones — is explicitly retro's job. A rule whose outcome never
 differs from a plain human gate is a rule to question, not tune.
 
 **The four metadata keys.** Every completed step carries
 `model_requested` / `effort_requested` (what policy asked for) and
 `model_resolved` / `effort_resolved` (what actually served). The gap between
-them is routing drift, and it is invisible anywhere else. Known blind spot,
-stated so you do not misread a clean report: **a failed or crashed step
-contributes none of the four**, so drift concentrated in failures will not
-appear here. Read attempt counts alongside.
+them is routing drift, and it is invisible anywhere else. Read the pair off
+the step itself (`docket step show` / `step context`): `run report`'s
+`metadata` is a rollup of key → distinct values with counts, so it can show
+that resolutions disagree in aggregate but never which step asked for what.
+Known blind spot, stated so you do not misread a clean report: **a failed or
+crashed step contributes none of the four**, so drift concentrated in failures
+will not appear here. Read attempt counts alongside.
 
 **Lease and duration limits, if steps are being reaped mid-work.** Liveness is
 no longer TTL-only: `step heartbeat` extends a live claim, `step reap STEP-N
@@ -141,17 +158,23 @@ routine. For a trust proposal, follow bootstrap's rule: argue `re-runnable`,
 
 Only the approved items — applied by an `executor-write` agent carrying the
 approved diffs, with the dry-run verification below performed by an
-`executor-read` agent; you relay approvals and read their reports.
+`executor-read` agent; you relay approvals and read their reports. Same tier
+caveat as §1: spawned from here, neither agent carries a `policy.toml` tier.
 
 **Approved corpus edits land in the dotfiles checkout, not in the repo.** The
-engine reads the corpus from `~/.docket/config`, installed read-only, so there
-is nothing there to edit in place. Edit `src/user/docket/config/` instead (`contracts/`,
-`fragments/`, `schemas/`, `workflows/`, `policy.toml`); the operator installs
-it with `just activate`, BETWEEN runs, because an install changes what
-already-pinned refs resolve to. A repo's own additions layer in `.docket/config/`
-is the only in-place edit left — and every repo sharing the corpus reads the
-same bytes, so an edit at an unchanged `name@version` refuses the next
-activation in ALL of them. Say that blast radius when you propose. An ADDITION
+engine reads the corpus from `~/.docket/config`, a content-addressed store
+path replaced wholesale by `just activate` — never edit there even when the
+filesystem lets you, because the next install silently reverts it and you will
+believe you fixed something. Edit `src/user/docket/config/` instead
+(`contracts/`, `fragments/`, `schemas/`, `workflows/`, `policy.toml`); the
+operator installs it with `just activate`, BETWEEN runs, because an install
+changes what already-pinned refs resolve to. **Every repo sharing the corpus
+reads the same bytes**, so a corpus edit at an unchanged `name@version`
+refuses the next activation in ALL of them. Say that blast radius when you
+propose.
+
+A repo may also carry an optional second layer of its own in `.docket/config/`
+— repos have none by default, and only that repo reads it. An ADDITION there
 that collides with a shared `name@version`, or a pinned ref, refuses every
 activation in its own repo until one side moves: bump the shared version, or
 rename the addition — and say which you chose and why.
@@ -163,12 +186,19 @@ mined-facts comment kept current. A schema edit is a new
 edit freely, but note the change so the next retro can attribute what followed.
 Approved trust goes in with `docket trust add <name> --yes -- <argv>`.
 
-Verify twice. `docket workflow lint <file.toml>` on the edited bytes *before*
-the proposal reaches the human — it runs the exact validation `register` runs,
-writes nothing, and returns `CONFLICT` when the edit sits on a frozen
-`name@version` with the bump missing. Then `docket run activate RUN-M
---dry-run` must show the new version registering and every fence still
-`matched`.
+Verify twice, and the order is load-bearing. First, `docket workflow lint
+<file.toml>` on the edited checkout bytes *before* the proposal reaches the
+human — it runs the exact validation `register` runs, writes nothing, and
+returns `CONFLICT` when the edit sits on a frozen `name@version` with the bump
+missing. Second, only after the operator has run `just activate`: activation
+reads the config roots (`~/.docket/config`, then a repo's `.docket/config` if
+it has one) and never the dotfiles checkout, so a dry-run before the install
+proves nothing about bytes that are not installed yet. Then `docket run
+activate RUN-M --dry-run` must show the new version registering and every
+fence still `matched` — against a run still in `planning`. Re-activating an
+already-active run expands newly-unblocked phases only and inherits its
+original pin set, so a re-registered workflow never reaches it and the dry-run
+shows the old version; make a throwaway planning run if none is available.
 
 **Retiring a version.** Binding reduces each name to its highest *non-retired*
 version before `[match]` runs, so a bump binds the new version on its own; the

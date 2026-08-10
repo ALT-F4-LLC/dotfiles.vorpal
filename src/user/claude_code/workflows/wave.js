@@ -174,10 +174,15 @@ function labelsOf(row) {
 function resolve(row, policy) {
     const labels = labelsOf(row)
 
-    if (row.kind === 'action') {
+    if (row.kind !== 'executor') {
+        const why = {
+            action: 'action steps are engine-run; not a spawn',
+            human: 'human gate steps are never claimed — they are approved or ' +
+                'rejected directly',
+        }[row.kind] || 'only kind:"executor" rows are spawnable'
         throw new Error(
-            `wave.js: step ${row.step} is kind:"action" — action steps are engine-run; ` +
-            `not a spawn. Route executor rows to the wave only. Refusing to route.`
+            `wave.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
+            `Route executor rows to the wave only. Refusing to route.`
         )
     }
 
@@ -267,7 +272,6 @@ function archetype(row, hint) {
 }
 
 function bootstrap(row, r, isolated, isWrite) {
-    const dp = isolated ? `DOCKET_PATH="<DOCKET>" ` : ''
     const isolationNote = isolated ? `
 
 0. YOU ARE IN A PRIVATE WORKTREE of the repository, AND A GUARD SCREENS EVERY
@@ -287,38 +291,36 @@ function bootstrap(row, r, isolated, isWrite) {
    - git aimed at another checkout (\`git -C\`, \`--git-dir\`, cd-then-git)
      is refused. git against your own tree passes. Pipes pass.
 
+   RUN \`docket\` BARE — no DOCKET_PATH prefix, ever. The store resolves from
+   anywhere inside the repository, this worktree included: nothing to probe
+   for, nothing to prepend.
+
    Bootstrap, one plain command at a time:
 
    a. \`printenv TMPDIR\` — your literal scratch root. Call it <TMP>;
       substitute its literal value wherever <TMP> or \`$TMPDIR\` appears in
       this brief. (\`echo "$TMPDIR"\` trips the guard; printenv does not.)
    b. \`git worktree list --porcelain\` — every checkout's path and HEAD sha.
-   c. For each sibling checkout that is not under \`.claude/worktrees\`, run
-      \`DOCKET_PATH="<that path>/.docket" docket step show ${row.step} --json\`
-      until one answers \`"ok":true\`. That path is your <DOCKET>. Write
-      \`DOCKET_PATH="<DOCKET>" \` — the literal — in front of EVERY docket
-      command from here on; there is no parked file, the value lives in
-      your context. Without it docket finds no database from here.
-   d. Compare \`git rev-parse HEAD\` in your tree to the resolving
-      checkout's HEAD from (b). If they differ, run
-      \`git checkout --detach --quiet <that sha>\`. Config bases your
-      worktree on the run's HEAD, so this is normally a no-op — verify,
+   c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
+      checkout from (b) — the one NOT under \`.claude/worktrees\`. If they
+      differ, run \`git checkout --detach --quiet <that sha>\`. Config bases
+      your worktree on the run's HEAD, so this is normally a no-op — verify,
       never assume.
 
    If any of these is DENIED by the guard or the permission system, say
    \`BOOTSTRAP DENIED\`, quote the denial verbatim, and STOP — that is an
    operator permission gap, not a repository-state problem. If a command
-   fails on its own output (no checkout resolves the step), report that
-   verbatim and STOP. Either way, do not hunt, do not guess, and NEVER
-   claim after a failed bootstrap: an unclaimed step re-dispatches for
-   free; a claimed one strands a token.
+   fails on its own output instead, report that verbatim and STOP. Either
+   way, do not hunt, do not guess, and NEVER claim after a failed
+   bootstrap: an unclaimed step re-dispatches for free; a claimed one
+   strands a token.
 
    TRANSLATION RULES — obligations 1 and 3 below print code blocks written
    for the shared tree; run their ISOLATED forms instead, everything else
    in their prose still binding:
 
    1'. Claim, as separate plain commands, literal paths throughout:
-       \`DOCKET_PATH="<DOCKET>" docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.claim.json\`
+       \`docket step claim ${row.step} --owner wave:${row.step} --render --json > <TMP>/${row.step}.claim.json\`
        \`jq -r '.data.token' <TMP>/${row.step}.claim.json > <TMP>/${row.step}.token\`
        \`chmod 600 <TMP>/${row.step}.token\`
        \`jq -r '.data.packet' <TMP>/${row.step}.claim.json > <TMP>/${row.step}.packet.md\`
@@ -326,12 +328,12 @@ function bootstrap(row, r, isolated, isWrite) {
        Then open <TMP>/${row.step}.packet.md with the Read tool — the packet
        goes to a FILE here, not stdout, which also keeps a large brief from
        being truncated by the harness's inline-output cap.
+       If the claim itself errors naming a packet file ("pinned by this run
+       but is no longer on disk"), report the error verbatim and STOP — the
+       claim already recorded and the token is gone; a re-claim burns an
+       attempt on the same wall, and the relay's reap is the only way out.
    3'. Record with the token fed to stdin from its literal path:
-       \`DOCKET_PATH="<DOCKET>" docket step complete ${row.step} ... < <TMP>/${row.step}.token\`
-       If the guard refuses that stdin redirect even with the literal path,
-       pipe instead: \`cat <TMP>/${row.step}.token | DOCKET_PATH="<DOCKET>" docket step complete ${row.step} ...\`
-       — obligation 3's "never cat the file" rule forbids PRINTING the
-       token, and a pipe prints nothing; it still never touches argv.
+       \`docket step record ${row.step} ... < <TMP>/${row.step}.token\`
 
    Uncommitted work in the shared tree is deliberately not visible, and
    your inputs arrive in the rendered packet, not from the tree.` : ''
@@ -343,7 +345,7 @@ function bootstrap(row, r, isolated, isWrite) {
    binds you.` : ', in ONE Bash call, exactly this:'}
 
    \`\`\`
-   ${dp}docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
+   docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
      jq -r '.data.token'  < "$TMPDIR/${row.step}.claim.json" > "$TMPDIR/${row.step}.token" &&
      chmod 600 "$TMPDIR/${row.step}.token" &&
      jq -r '.data.packet' < "$TMPDIR/${row.step}.claim.json" &&
@@ -414,34 +416,46 @@ ${isolated && isWrite ? `
    blockages are independent).
 ` : ''}
 
-3. Record it yourself, feeding the token file to STDIN${isolated ? ` — ISOLATED:
-   run form 3' from obligation 0 (literal token path; pipe fallback) in place
-   of the commands below; everything else here still binds you.` : ':'}
+3. Record it yourself with \`docket step record\`, feeding the token file to
+   STDIN${isolated ? ` — ISOLATED: run form 3' from obligation 0 (literal
+   token path) in place of the command below; everything else still binds you.` : ':'}
 
-   \`${dp}docket step complete ${row.step} --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
+   \`docket step record ${row.step}${isWrite ? ' --worktree <YOUR CHECKOUT>' : ''} --artifact-file "$TMPDIR/${row.step}-<kind>.md" --metadata '{"model_requested":"${r.model_requested}","effort_requested":"${r.effort_requested}","model_resolved":"<model that served you>","effort_resolved":"<effort you ran at>"}' < "$TMPDIR/${row.step}.token"\`
 
+   \`record\` is an exact alias of \`step complete\` — identical saga, identical
+   flags — and it is the verb to use: some shells parse the bare word
+   \`complete\` as their own builtin and refuse the line before docket sees it.
+${isWrite ? `
+   \`--worktree\` names the checkout the work happened in, and the engine
+   computes the recorded diff THERE. Get its literal path once with \`git
+   rev-parse --show-toplevel\` and paste that in; without it the engine diffs
+   the wrong tree, because your edits live in your own worktree.
+` : ''}
    \`model_resolved\` is the exact model id your environment reports (e.g.
    \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger
    fragments every tier-drift query that reads it (measured, RUN-8).
 
    or on failure:
 
-   \`${dp}docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
+   \`docket step fail ${row.step} --note '<why>' < "$TMPDIR/${row.step}.token"\`
 
    \`fail\` takes ONLY --note and --metadata — there is no --artifact-file on
    it. What you learned goes in the note (or the metadata bag); do not try to
-   attach an artifact to a failure. \`--artifact-file\` exists on \`complete\`
-   alone. A gap artifact — your contract's Stuck clause — is a SUCCESS
-   condition: record it with \`complete\`, exactly as you would the normal
-   artifact. Reach for \`fail\` only when a retry might genuinely redeem the
-   attempt.
+   attach an artifact to a failure. \`--artifact-file\` exists on \`record\`
+   alone, where it is MANDATORY. Reach for \`fail\` only when a retry might
+   redeem the attempt.
+
+   AN OUT-OF-SCOPE PROBLEM YOUR WORK SURFACED IS NEITHER A FAILURE NOR YOUR
+   DECLARED ARTIFACT. Write each one to its own file and pass \`--gap-file
+   <path>\` (repeatable) on the record: every gap file lands as a \`gap\`
+   artifact beside your declared emit AND files a related backlog issue in the
+   SAME transaction, so the residue cannot evaporate — no workflow declaration
+   needed, that channel is always open. Your contract's Stuck clause is a
+   SUCCESS recorded this way, never a \`fail\`.
 ${isolated ? `
-   THE GUARD MAY REFUSE THE RECORD VERB ITSELF. Measured on RUN-8, 11 of 11
-   isolated records: the worktree guard misreads the bare word \`complete\` as
-   the shell builtin and refuses EVERY form — stdin redirect, pipe, even
-   \`--help\`; quoting, splitting, and env-prefixing change nothing. If that
-   refusal hits, attempt the record ONCE and STOP TRYING FORMS. Leave your
-   deliverables parked where the brief already has them —
+   IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
+   TRYING FORMS. Leave your deliverables parked where the brief already has
+   them —
 
      $TMPDIR/${row.step}.token       (intact, 0600 — do NOT truncate it)
      $TMPDIR/${row.step}-<kind>.md   (your artifact body)
@@ -449,19 +463,16 @@ ${isolated ? `
 
    — and report RECORD BLOCKED: your step id, the refusal's first line
    verbatim, and every parked path including the token's. The conductor is not
-   isolated and completes the step from your parked state; the claim outlives
-   you, so nothing is lost. Two rules while blocked: NEVER record \`fail\` for
-   work that succeeded — a false failure burns an attempt and re-runs the whole
-   step to relearn what your parked artifacts already hold (RUN-8 measured one
-   full re-judging) — and do not smuggle the verb through a generated script
-   run by \`sh\`: it works today only by riding a guard hole the harness may
-   close, and the parked-state report is the designed channel.
+   isolated and records the step from your parked state; the claim outlives
+   you, so nothing is lost. NEVER record \`fail\` for work that succeeded — a
+   false failure burns an attempt and re-runs the whole step to relearn what
+   your parked artifacts already hold (RUN-8 measured one full re-judging).
 ` : ''}
 
    The CLI reads the token from DOCKET_TOKEN or, when that is unset, from stdin
    (\`internal/cli/token.go\`; engine-spec.md §4, "Tokens pass via env/stdin,
-   never argv"). NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export into
-   your shell. Redirecting the file into stdin is the channel.
+   never argv"). NOTHING SETS DOCKET_TOKEN FOR YOU — a claim cannot export
+   into your shell. Redirecting the file into stdin is the channel.
 
    Never \`cat\` the file, echo its contents, paste it into a command line, or
    reproduce it in your reply. There is deliberately no \`--token\` flag on any
@@ -469,7 +480,7 @@ ${isolated ? `
 
    After the record command exits 0, leave the token file alone or truncate
    it (\`cat /dev/null > "$TMPDIR/${row.step}.token"\`) — the engine retires
-   the token the moment the record lands, so the file is inert either way. If \`complete\` or
+   the token the moment the record lands, so the file is inert either way. If \`record\` or
    \`fail\` errored, KEEP the token file INTACT and stop — it is the only
    thing that can still drive this step, and losing it after a failed record
    turns a routine step failure into a zombie claim the lease must reap.
@@ -477,17 +488,19 @@ ${isolated ? `
    If the token file is missing or empty, or a record is refused for a missing
    or invalid token, say so plainly and stop. Do not reconstruct or guess it.
 
-   If the brief requires an emitted artifact, create it WITH BASH (a heredoc:
-   \`cat > "$TMPDIR/${row.step}-<kind>.md" <<'EOF' ... EOF\`) as a FRESH file
-   whose name starts with your step id, then pass \`--artifact-file <path>\`
-   on the complete. NEVER create this file with the Write tool: under the
+   EVERY record carries an artifact file. The engine refuses a record without
+   \`--artifact-file\` before it validates anything else — "a step completes by
+   recording what it produced" — so the file is never optional. Create it WITH
+   BASH (a heredoc: \`cat > "$TMPDIR/${row.step}-<kind>.md" <<'EOF' ... EOF\`)
+   as a FRESH file whose name starts with your step id, then pass that path as
+   \`--artifact-file\`. NEVER create this file with the Write tool: under the
    sandbox the Write tool materializes files at a DIFFERENT physical path
-   than the \`$TMPDIR\` your Bash commands resolve, and the complete then
+   than the \`$TMPDIR\` your Bash commands resolve, and the record then
    fails "no such file or directory" against a file you just wrote
-   (observed: RUN-1 STEP-32). (There is no \`--artifact-kind\`:
-   the KIND comes from the workflow's \`emits\`, which your brief's OUTPUT
-   section already names. A structured payload, when your brief requires one,
-   goes in \`--payload-file <path>\`.) Never
+   (observed: RUN-1 STEP-32). (There is no \`--artifact-kind\`: the workflow's
+   \`emits\` declares the artifact's KIND — which your brief's OUTPUT section
+   already names — it does not make the file optional. A structured payload,
+   when your brief requires one, goes in \`--payload-file <path>\`.) Never
    write to or reuse a shared filename like \`change-summary.md\`: executors in
    one wave share \`$TMPDIR\`, and under a shared name a racing sibling's bytes
    — or a predecessor's leftover when your own write silently fails — get
@@ -553,7 +566,10 @@ function spawn(row, phaseLabel) {
             log(`${row.step}: SPAWN PRODUCED NOTHING (model ${r.model} unavailable, ` +
                 `the agent was skipped, or it died mid-flight) — whether a claim ` +
                 `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
-                `and \`docket step show ${row.step}\` before retrying`)
+                `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
+                `by this dead spawn, return it to the pool with \`docket step reap ` +
+                `${row.step} --reason '<what you observed>'\` (token-free) before ` +
+                `any retry`)
             return { step: row.step, status: 'spawn-failed', text: null }
         }
         return { step: row.step, status: 'returned', text }

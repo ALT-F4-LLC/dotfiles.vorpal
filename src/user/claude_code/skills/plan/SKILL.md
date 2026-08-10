@@ -97,7 +97,10 @@ is the net.
 
 ## 3. Record the run
 
-In this order. Every command is one you run — the operator types none of them.
+In this order, and from an unsandboxed shell — under the global store every
+docket verb opens `~/.docket` read-write and migrates before it does anything,
+so a sandboxed seat fails at `unable to open database file` (`--help` alone is
+safe). Every command is one you run; the operator types none of them.
 First, if the scope read or premise verdict is more than a few minutes old,
 re-check it now: one `git log --since=<read time>` over the scoped paths. A fix
 that lands between the read and the record otherwise becomes a bound issue whose
@@ -105,24 +108,32 @@ implement step exists to discover the work is done (RUN-8: DKT-99's fix was
 committed nine minutes before `run start` recorded it as work to do).
 
 ```bash
-docket issue create -t "<title>" -T <kind> \
+docket issue create -t "<title>" -T <kind> --idempotency-key <key> \
   -l <label> --scope '<glob>' -d - < <body-file>  # one per unit of work
 docket issue link add DKT-<n> depends_on DKT-<m>  # the graph's edges
 docket run start --request-file <path> \
   --budget <cap> --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
-docket doc create -T plan -t "<title>" -d @<path> # the plan artifact
+docket doc create -T plan -t "<title>" --idempotency-key <key> -d @<path>  # the plan artifact
 ```
 
 Issues first: `run start --issue` names them, so they must already exist —
-RUN-2's planner discovered the reverse order cannot work. The issue set is also
-FIXED at `run start`: there is no attach verb, so record the run only once the
-issue list is final, or expect an abandon-and-restart (RUN-4 → RUN-5). Flag shapes differ by
-verb and it matters: `issue create -d` takes a literal string (`-` reads stdin);
-the `@<path>` form belongs to `doc create` alone — followed blindly, every issue
-body becomes the literal text "@/path/file", frozen at activation into every
-brief. Help-check each verb's flags on first use in a session; the CLI is the
-authority, not this block. `--budget` records the cap you elicited in §1
-(`docket run budget --set` adjusts it later).
+RUN-2's planner discovered the reverse order cannot work. The set is not frozen
+there: `docket run issue add RUN-N DKT-N...` attaches and `run issue remove`
+detaches while the run is in `planning`, and `add` still works on an `active`
+run, where the next activate binds the newcomers as it would a later phase.
+ACTIVATION is the freeze, not `run start` — so a list that turns out short costs
+an add, not the abandon-and-restart it cost RUN-4 → RUN-5. `--idempotency-key`
+makes the creates re-runnable: the same key returns the original entity, never a
+duplicate. Flag shapes differ by verb and it matters: `issue create -d` takes a
+literal string (`-` reads stdin); the `@<path>` form belongs to `doc create`
+alone — followed blindly, every issue body becomes the literal text
+"@/path/file", frozen at activation into every brief. Help-check each verb's
+flags on first use in a session; the CLI is the authority, not this block.
+`--budget` records the cap you elicited in §1
+(`docket run budget --set <n> --reason '<why>'` adjusts it later, with
+`--if-version` when a concurrent change would matter). Ids render with each
+project's prefix — the store is machine-global and the number is the identity,
+so `DKT-<n>` and a bare number parse in any project.
 
 **The request** goes in verbatim via `--request-file`. It is the run's own
 record of what was asked; your summary of it is not a substitute.
@@ -163,7 +174,9 @@ glob intersection (the engine's `scope.go`): everything before the first `*?[{`
 is the prefix, and containment either way is a collision — so brace globs and any
 two globs sharing a directory prefix collide regardless of what they'd actually
 match. Write prefix-disjoint globs (one owner per directory prefix) and check the
-partition against the matcher's own rules before recording it. Prefer `internal/engine/dispatch/**` over
+partition against the matcher's own rules before recording it. A glob you correct
+later goes through `issue edit --scope`, which REPLACES the whole list rather
+than appending — pass every glob you mean to keep. Prefer `internal/engine/dispatch/**` over
 `internal/engine/**`, and several narrow globs over one wide one. Widen only when
 the change genuinely spans that much — an honest wide glob is fine, a lazy one
 costs the whole run. An issue that writes files and declares no scope is refused

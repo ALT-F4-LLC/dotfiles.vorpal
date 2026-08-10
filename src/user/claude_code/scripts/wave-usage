@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """wave-usage <wave-transcript-dir> — emit backfill rows JSON for a completed wave.
 
+THE TRANSCRIPT-DERIVED TOKEN PATH, and a designed one rather than a workaround:
+a claimant cannot observe its own token consumption, so the relay that spawned
+it measures the transcripts here and pipes the result to `docket dispatch
+backfill-usage --from-json -`. The engine's at-source channel, `docket step
+record --usage`, covers the different case — units a claimant CAN measure.
+
 Joins each agent-<id>.jsonl's usage to its step id (named in the agent's first
 user message — the bootstrap prompt) and sums the four typed units per step.
 Usage entries are deduplicated BY MESSAGE ID before summing: streamed assistant

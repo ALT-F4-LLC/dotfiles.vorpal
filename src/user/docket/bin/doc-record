@@ -1,0 +1,208 @@
+#!/bin/sh
+# doc-record — the trusted ACTION behind spec-doc.toml's `record` step.
+#
+# CONTRACT (verified against the engine, not assumed):
+#
+#   stdin   ONE JSON document: the §11.4 context bundle, exactly as
+#           `docket step context --json` emits it. The engine assembles it in a
+#           transaction and hands it over as bytes on fd 0, then closes.
+#           internal/engine/action_exec.go:270 (`Stdin: a.Context`),
+#           internal/engine/action.go:59-63, internal/engine/context.go:43-63.
+#           Shape used here:
+#             .step.{run,instance,step,issue}   internal/model/step.go:52-94
+#             .issue.{id,title,labels}          internal/engine/context.go:69-76
+#             .inputs[].{artifact,kind,producer_step,body}
+#                                               internal/engine/context.go:79-104
+#
+#   stdout  EXACTLY ONE JSON document, then EOF:
+#             {"body": <string>, "payload": [ <object>, … ]}
+#           Unknown keys are refused, a second document is refused, and the
+#           whole thing is parsed with DisallowUnknownFields
+#           (internal/engine/action_exec.go:411-454). A single stray byte on
+#           stdout fails the step, so EVERY diagnostic in this script goes to
+#           stderr and every `docket` invocation has its stdout captured.
+#           stdout and stderr are separate pipes here (`SplitStdout: true`,
+#           action_exec.go:271) precisely so stderr cannot corrupt the reply.
+#
+#   env     ALLOWLIST ONLY (internal/exec/env.go:36-50): PATH HOME USER LOGNAME
+#           SHELL LANG LC_ALL LC_CTYPE TZ TMPDIR SSL_CERT_FILE SSL_CERT_DIR
+#           XDG_CACHE_HOME, plus TERM=dumb, CI=1, DOCKET_GATE=<action name>,
+#           DOCKET_REPO=<repo root>. DOCKET_TOKEN and DOCKET_PATH are DENIED
+#           (env.go:78-81) — so this script never reads them and resolves the
+#           store the ordinary way from cwd, which the engine sets to the repo
+#           root (action_exec.go:265). NOTE: actions get no DOCKET_ISSUE and no
+#           DOCKET_SCOPE — action_exec.go:237 builds the policy with only
+#           {Gate, Repo} — so the issue identity comes from stdin, never env.
+#
+#   exit    non-zero ⇒ step failure routed per the step's `on_fail`. Exit 0 with
+#           unparseable stdout is ALSO a failure (actionAttemptIsPass,
+#           action_exec.go:383-389).
+#
+# RE-RUNNABILITY (the basis for `--re-runnable yes` in the trust proposal):
+# the DOC is created through `docket doc create --idempotency-key`, whose
+# replay returns the ORIGINAL entity rather than a second row
+# (internal/db/docs.go:81-88, CreateDocIdempotent → beginIdempotentCreate). The
+# key is derived from the run + issue + step instance, so a crash-and-retry of
+# this step lands on the same DOC-N. `docket doc link add` is not
+# idempotency-keyed and answers a repeated link with exit 4 / code CONFLICT,
+# which this script treats as the no-op it is.
+
+set -eu
+
+me="doc-record"
+
+log() { printf '%s: %s\n' "$me" "$*" >&2; }
+die() { log "$*"; exit 1; }
+
+command -v jq >/dev/null 2>&1 || die "jq is required but not on PATH"
+command -v docket >/dev/null 2>&1 || die "docket is required but not on PATH"
+
+work="$(mktemp -d "${TMPDIR:-/tmp}/doc-record.XXXXXX")" || die "cannot create a scratch dir"
+trap 'rm -rf "$work"' EXIT INT TERM
+
+ctx="$work/context.json"
+cat >"$ctx" || die "reading the context bundle from stdin failed"
+jq -e . >/dev/null 2>"$work/jqerr" <"$ctx" ||
+	die "stdin is not one JSON document: $(cat "$work/jqerr")"
+
+field() { jq -r "$1 // \"\"" <"$ctx"; }
+
+issue="$(field '.issue.id')"
+[ -n "$issue" ] && [ "$issue" != "null" ] || die "the context carries no .issue.id"
+issue_title="$(field '.issue.title')"
+run="$(field '.step.run')"
+instance="$(field '.step.instance')"
+[ -n "$instance" ] || instance="$(field '.step.step')"
+
+# The accepted doc is the LAST input artifact that is a real artifact body —
+# engine-produced pseudo-inputs (`issue.body`, `issue.diff`, gate results) are
+# excluded by kind. `record` declares inputs = ["author.doc"], so in practice
+# there is exactly one; taking the last keeps a revised doc winning over the
+# original if the step is ever given both.
+jq -r '
+  [ .inputs[]?
+    | select((.kind // "") as $k
+             | $k != "issue.body" and $k != "issue.diff" and $k != "gate-results")
+    | select((.body // "") != "")
+  ] | last // empty
+' <"$ctx" >"$work/input.json"
+[ -s "$work/input.json" ] || die "no input artifact with a body to record (issue $issue)"
+
+jq -r '.body' <"$work/input.json" >"$work/body.md"
+input_kind="$(jq -r '.kind // ""' <"$work/input.json")"
+producer="$(jq -r '.producer_step // ""' <"$work/input.json")"
+
+# Doc type: the issue's `doc-<type>` label is the authority (05 §1 keys the
+# author resolution table on exactly that label). The artifact's own kind is the
+# fallback, and "doc" the last resort — `docs.type` is free-form at the model
+# layer (internal/model/doc.go:44-51), so nothing here is validated against an
+# enum that does not exist.
+doc_type="$(jq -r '
+  [ .issue.labels[]? | select(startswith("doc-")) | ltrimstr("doc-") ] | first // ""
+' <"$ctx")"
+if [ -z "$doc_type" ]; then
+	case "$input_kind" in
+	prd | tdd | adr | ux-spec | spec) doc_type="$input_kind" ;;
+	*) doc_type="doc" ;;
+	esac
+fi
+
+# Title: the document's own H1 when it has one, else the issue's title. A doc
+# that names itself should not be filed under the issue's phrasing of it.
+title="$(awk '/^# / { sub(/^# +/, ""); print; exit }' "$work/body.md")"
+[ -n "$title" ] || title="$issue_title"
+[ -n "$title" ] || title="$issue"
+
+# The key that makes this step re-runnable. Derived from the step identity, NOT
+# from the body: a retry of the same step must reuse its DOC-N even if the
+# author's bytes changed, and two different steps must never collide.
+key="doc-record:${run}:${issue}:${instance}"
+
+started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# --- create ---------------------------------------------------------------
+# stdout is captured, never inherited; stderr is folded into the capture so a
+# libc-level complaint cannot reach the engine's stdout pipe either.
+set +e
+create_out="$(
+	docket doc create \
+		--title "$title" \
+		--type "$doc_type" \
+		--status accepted \
+		--description - \
+		--idempotency-key "$key" \
+		--json=v2 <"$work/body.md" 2>&1
+)"
+create_rc=$?
+set -e
+if [ "$create_rc" -ne 0 ] || [ "$(printf '%s' "$create_out" | jq -r '.ok // false' 2>/dev/null)" != "true" ]; then
+	log "docket doc create failed (exit $create_rc): $create_out"
+	exit 1
+fi
+
+doc_id="$(printf '%s' "$create_out" | jq -r '.data.id')"
+created_at="$(printf '%s' "$create_out" | jq -r '.data.created_at')"
+[ -n "$doc_id" ] && [ "$doc_id" != "null" ] || die "docket doc create returned no id: $create_out"
+
+# Replay detection, first half. `doc create` gives a replayed create output
+# IDENTICAL to a fresh one, so one available signal is the row's own created_at
+# against a timestamp taken before the call. RFC3339 here is second-granular, so
+# a replay landing in the same second as the original reads as fresh — the link
+# check below is what actually closes that gap.
+replayed=false
+[ "$created_at" \< "$started" ] && replayed=true
+
+# --- link -----------------------------------------------------------------
+# Not idempotency-keyed. A repeated link answers exit 4 / code CONFLICT
+# ("link already exists"), which is this action's no-op, not its failure.
+set +e
+link_out="$(docket doc link add "$doc_id" --issue "$issue" --json=v2 2>&1)"
+link_rc=$?
+set -e
+link_code="$(printf '%s' "$link_out" | jq -r '.code // ""' 2>/dev/null || printf '')"
+if [ "$link_rc" -eq 0 ]; then
+	link_state=created
+elif [ "$link_code" = "CONFLICT" ]; then
+	link_state=existed
+	# Replay detection, second half, and the exact one: this doc was ALREADY
+	# linked to this issue, so the row cannot have been created by this
+	# invocation regardless of what the second-granular timestamps say.
+	replayed=true
+	log "$doc_id was already linked to $issue; treating as a no-op"
+else
+	log "docket doc link add failed (exit $link_rc): $link_out"
+	exit 1
+fi
+
+log "recorded $doc_id ($doc_type) for $issue; link=$link_state replayed=$replayed"
+
+# --- the one document on stdout -------------------------------------------
+# Built with `jq -n` so every string is escaped by a JSON encoder rather than by
+# this script's quoting, and emitted compactly as a single line.
+jq -n -c \
+	--arg doc "$doc_id" \
+	--arg issue "$issue" \
+	--arg doc_type "$doc_type" \
+	--arg title "$title" \
+	--arg producer "$producer" \
+	--arg artifact_kind "$input_kind" \
+	--arg link "$link_state" \
+	--arg key "$key" \
+	--argjson replayed "$replayed" \
+	'{
+	   body: ("Recorded " + $doc + " (" + $doc_type + ") — \"" + $title
+	          + "\" — and linked it to " + $issue + "."
+	          + (if $replayed then " Replayed an existing record." else "" end)
+	          + (if $link == "existed" then " The link was already present." else "" end)),
+	   payload: [ {
+	     doc: $doc,
+	     issue: $issue,
+	     doc_type: $doc_type,
+	     title: $title,
+	     producer_step: $producer,
+	     artifact_kind: $artifact_kind,
+	     link: $link,
+	     replayed: $replayed,
+	     idempotency_key: $key
+	   } ]
+	 }'

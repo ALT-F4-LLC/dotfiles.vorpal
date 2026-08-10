@@ -53,25 +53,27 @@ recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
 **A run still in `planning` is not yours to activate alone.** Activation is an
-operator gate, and it PINS config bytes for the whole run. Two checks first.
-**Dangling links:** `find -L .docket/config -type l` prints exactly the broken
-ones — the repo's config is a link farm into `~/.docket`, empty output is
-healthy, and any line is a stop-and-report, since a dangling file link fails
-activation outright naming the file. A REPLACED link is invisible to it, so pair
-it with `find .docket/config -type f`: real files are legitimate as the repo's
-own deliberate additions, but one bearing a corpus filename is a link a tool
-overwrote rather than edited — diverged, and a stop-and-report too.
-**Stale install:** diff the dotfiles checkout's `src/user/docket/` against the
-installed corpus PER ENTRY BY NAME —
+operator gate, and it PINS config bytes for the whole run — from the shared root
+`~/.docket/config` first, then this repo's `.docket/config/` if it has one. Two
+checks first.
+**Stale install:** diff the dotfiles checkout's corpus source against the
+installed corpus — the source mirrors the install tree for tree, so
 `SRC=~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/docket;
-for e in contracts fragments schemas workflows policy.toml; do diff -r
-"$SRC/$e" "$HOME/.docket/$e"; done` — never `diff -r`
-over `~/.docket` whole, because `issues.db` lives in that directory too. The
-linked view cannot drift from `~/.docket`; it IS those bytes. Surface any
+diff -r "$SRC/config" "$HOME/.docket/config"; diff -r "$SRC/bin"
+"$HOME/.docket/bin"` is the whole check, and neither side holds `issues.db`
+(the rows live one level up, at `~/.docket/`). Surface any
 divergence (a stale pin cannot be fixed mid-run; RUN-5 executed a whole run on
 contracts eight edits behind, and paid in re-review churn an operator gate had
 already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
-activate` changes what already-pinned refs resolve to. Then `docket run
+activate` changes what already-pinned refs resolve to, and it changes them for
+every repo at once, since all of them read the same bytes.
+**Transition debris:** a `.docket/config/` full of SYMLINKS is the retired
+link-farm model, and against the shared root it is now a second additions layer
+that duplicates or dangles — a dangling file link inside a scanned root refuses
+activation naming the file. Any symlink `find .docket/config -type l` reports is
+a stop-and-report for the operator to delete; real files there are legitimate,
+being the repo's own additions. A repo with no `.docket` at all is the normal
+case, and this check is simply vacuous there. Then `docket run
 activate $RUN --dry-run`, present the binding — issues bound, steps, pins, any
 lint (the dry-run JSON's `scope_warnings`, VERBATIM — RUN-6's gate dropped all
 five warnings behind the generic word "lint"), plus what the two checks said —
@@ -175,7 +177,7 @@ remains the mistake above.
 
 ```bash
 docket dispatch open --run $RUN --json
-cat .docket/config/policy.toml   # fresh EVERY dispatch — do not reuse a prior
+cat ~/.docket/config/policy.toml # fresh EVERY dispatch — do not reuse a prior
                                  # iteration's text, and do not substitute a
                                  # hash check for the re-read (RUN-5's
                                  # conductor "verified" against a hash it had

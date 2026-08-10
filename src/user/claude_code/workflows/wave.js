@@ -330,7 +330,9 @@ function bootstrap(row, r, isolated, isWrite) {
        being truncated by the harness's inline-output cap.
        If the claim itself errors naming a packet file ("pinned by this run
        but is no longer on disk"), report the error verbatim and STOP — the
-       claim already recorded and the token is gone; a re-claim burns an
+       ref came from a REPO-ADDITION config layer, which is repo-root-relative
+       and absent from your worktree (shared-corpus refs resolve from any cwd);
+       the claim already recorded and the token is gone; a re-claim burns an
        attempt on the same wall, and the relay's reap is the only way out.
    3'. Record with the token fed to stdin from its literal path:
        \`docket step record ${row.step} ... < <TMP>/${row.step}.token\`

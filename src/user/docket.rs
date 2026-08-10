@@ -1,4 +1,4 @@
-use crate::file::{FileCreate, FileSource};
+use crate::file::FileSource;
 use anyhow::Result;
 use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::ConfigContext};
 
@@ -19,41 +19,17 @@ impl Docket {
         self,
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
-        let contracts = FileSource::new(
-            &format!("{}-docket-contracts", self.name),
-            "src/user/docket/contracts",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
-        let fragments = FileSource::new(
-            &format!("{}-docket-fragments", self.name),
-            "src/user/docket/fragments",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
-        let policy = FileCreate::new(
-            &format!("{}-docket-policy", self.name),
-            self.systems.clone(),
-            include_str!("docket/policy.toml"),
-        )
-        .build(context)
-        .await?;
-
-        let schemas = FileSource::new(
-            &format!("{}-docket-schemas", self.name),
-            "src/user/docket/schemas",
-            self.systems.clone(),
-        )
-        .build(context)
-        .await?;
-
-        let workflows = FileSource::new(
-            &format!("{}-docket-workflows", self.name),
-            "src/user/docket/workflows",
+        // One artifact holding the whole shared corpus. The source tree
+        // mirrors the installed tree: config/{contracts,fragments,schemas,
+        // workflows,policy.toml} is what the engine scans as its shared
+        // config root, and bin/ holds the corpus-shipped action scripts
+        // trust entries bind to at their absolute ~/.docket path. The
+        // engine canonicalizes the config-root symlink before walking, so
+        // everything behind it must be real files — one merged artifact,
+        // not per-entry links.
+        let corpus = FileSource::new(
+            &format!("{}-docket", self.name),
+            "src/user/docket",
             self.systems,
         )
         .build(context)
@@ -61,26 +37,15 @@ impl Docket {
 
         let symlinks = vec![
             (
-                get_env_key(&contracts),
-                "${HOME}/.docket/contracts".to_string(),
+                format!("{}/bin", get_env_key(&corpus)),
+                "${HOME}/.docket/bin".to_string(),
             ),
             (
-                get_env_key(&fragments),
-                "${HOME}/.docket/fragments".to_string(),
-            ),
-            (
-                format!("{}/{}-docket-policy", get_env_key(&policy), self.name),
-                "${HOME}/.docket/policy.toml".to_string(),
-            ),
-            (get_env_key(&schemas), "${HOME}/.docket/schemas".to_string()),
-            (
-                get_env_key(&workflows),
-                "${HOME}/.docket/workflows".to_string(),
+                format!("{}/config", get_env_key(&corpus)),
+                "${HOME}/.docket/config".to_string(),
             ),
         ];
 
-        let artifacts = vec![contracts, fragments, policy, schemas, workflows];
-
-        Ok((artifacts, symlinks))
+        Ok((vec![corpus], symlinks))
     }
 }

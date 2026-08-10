@@ -114,28 +114,29 @@ Before reading one transcript line:
    target; any other target gets the same treatment fresh.
 2. **Skim every surface the run will cross.** `$SRC/workflows/wave.js`,
    `$SRC/agents/executor-*.md`, `$SRC/hooks/`, and the docket config source —
-   not under `$SRC` but beside it at `src/user/docket/` (`contracts/`,
+   not under `$SRC` but beside it at `src/user/docket/config/` (`contracts/`,
    `fragments/`, `schemas/`, `workflows/`, `policy.toml`) — plus the observed
-   repo's `.docket/config/` when the engine is in play: a link farm back into
-   `~/.docket`, so briefs render THROUGH those links, not from source.
+   repo's `.docket/config/` when it has one: briefs render from the INSTALLED
+   corpus at `~/.docket/config`, a repo's additions layering second, never
+   from the source tree.
 3. **Establish which bytes are actually running — starting with whether an
    installed copy exists at all.** The `~/.claude/{workflows,scripts,hooks,
    agents}` symlinks `just activate` USED to install are all commented out
    today (`src/user/claude_code.rs:280-290`) and none exist on disk, so
    resolve every definition as the session must: installed path if present,
    else the source under `$SRC` — a session invoking wave.js right now runs
-   `$SRC/workflows/wave.js`. Docket config travels a chain of its own —
-   `src/user/docket/` → (`just activate`) → those same five names under
-   `~/.docket/` → (bootstrap's link step) → the repo's `.docket/config/`,
-   whose files are SYMLINKS back into `~/.docket`. Two hops that go stale
-   independently, plus a link layer that can dangle but cannot drift: diff
-   source against installed BY NAME (never recursing over `~/.docket` whole,
-   because `issues.db` lives there too), then `find -L .docket/config -type l`
-   for broken links and `find .docket/config -type f` for real files —
-   legitimate as the repo's own deliberate additions, but one bearing a corpus
-   filename is a link a tool overwrote rather than edited, diverged and
-   invisible to the dangle check. Those are the two ways the view goes wrong.
-   Record `git -C $SRC rev-parse HEAD`. A divergence is your first finding —
+   `$SRC/workflows/wave.js`. Docket config travels a chain of its own, and it
+   is ONE hop now: `src/user/docket/config/` → (`just activate`) →
+   `~/.docket/config/`, which the engine reads directly as the first of its
+   ordered roots, the observed repo's own `.docket/config/` layering second when
+   it exists. So the stale-install audit is the whole audit, and the source
+   mirrors the install tree for tree: `diff -r` source `config` against
+   `~/.docket/config` and source `bin` against `~/.docket/bin`, then inventory
+   the repo's additions layer if there is one —
+   real tracked files there are legitimate, while SYMLINKS are link-farm debris
+   from the retired model, each entry either duplicating the shared root or
+   dangling against it. Record `git -C $SRC rev-parse HEAD`. A divergence is
+   your first finding —
    and the baseline for every later one, because a fix proposed against bytes
    that did not run is a wrong fix.
 4. `mkdir -p /tmp/claude/shadow/<session-id>` and start the log (§5).
@@ -152,7 +153,7 @@ the definitions assume. By layer:
 | Executors | A brief that was not self-sufficient (the agent went hunting), tool churn, permission prompts mid-step, sandbox denials, schema/StructuredOutput retries, wrong archetype or model vs `agent-<id>.meta.json`, token-file misuse, a CONFLICT report longer than three lines. |
 | Model | Mistakes as weather, not exceptions: an invented flag or path, a misquoted verbatim, a transposed id, misread tool output, a confident summary the transcript contradicts, arithmetic that does not check. The mistake is the datum — the finding is whatever let it through (triage below). |
 | Hooks | session-start, run-guard, spawn-guard, commit-guard, wave-audit: a deny on a legitimate action, an allow on what the guard exists to stop, advisory noise on every return, a hook that should have fired and did not (uninstalled is not broken — §1), a stderr reason that misleads. |
-| Config rendering | contracts, fragments, and policy.toml reaching briefs wrong — paraphrased where a skill says verbatim, a stale install anywhere in the `src/user/docket/` → `~/.docket/` → linked `.docket/config/` chain, a fragment dropped, the `[policy] version = 1` check passing on a broken file. Three signatures worth recognizing on sight: a broken FILE link inside config fails activation with a `VALIDATION_ERROR` naming that file; a broken `.docket/config` ROOT link is skipped SILENTLY and surfaces much later as an issue "matching no registered workflow"; and a `packet`-declaring step claimed from an isolated worktree fails with `packet file "…" is pinned by this run but is no longer on disk` — AFTER recording the claim, so the step sits claimed and tokenless until a reap (worktrees lack the gitignored link farm). |
+| Config rendering | contracts, fragments, and policy.toml reaching briefs wrong — paraphrased where a skill says verbatim, a stale install in the `src/user/docket/config/` → `~/.docket/config/` hop, a fragment dropped, the `[policy] version = 1` check passing on a broken file. Four signatures worth recognizing on sight: a dangling FILE link inside a SCANNED root fails activation with a `VALIDATION_ERROR` naming that file; an ABSENT root is silent dormancy, and both roots absent surfaces much later as an issue "matching no registered workflow" — but a DANGLING root symlink refuses loudly, naming the link and its unresolvable target; a `name@version` or pinned ref present in BOTH roots with differing bytes refuses activation naming both paths; and a `packet`-declaring step claimed from an isolated worktree fails with `packet file "…" is pinned by this run but is no longer on disk` — AFTER recording the claim, so the step sits claimed and tokenless until a reap — which now indicts REPO-ADDITION packet refs only, shared-root refs resolving from any cwd. |
 | Harness | Permission prompts the definitions did not budget for, sandbox denials, workflow-registry staleness, notification latency or loss, `$TMPDIR` shared across executors surprising someone — anything that makes the conductor's or operator's job harder than the skill text assumes. |
 | Repetition | The same pipeline retyped — by the conductor every loop iteration, or by every executor because a brief inlines it. The third appearance is a finding; take it to the extraction bar below. |
 | Engine | Refusal text that misleads, a documented flag that does not exist, a read surface missing (usage absent from `journal.jsonl` is the canonical case). Rule-3 territory: file it. |
@@ -191,7 +192,7 @@ survivable. So attribute every mistake before proposing anything:
   served from `agent-<id>.meta.json` and hand the excerpts to `/retro` —
   tiering lives in instance policy, and your transcript evidence is exactly
   what its engine reports cannot see. Propose against
-  `src/user/docket/policy.toml` only when the shipped default itself is wrong.
+  `src/user/docket/config/policy.toml` only when the shipped default itself is wrong.
 - **Unforced** — right model, clear brief, still wrong: a transposed id, a
   wrong jq path, an invented verb. Wishing the model better is not a fix.
   Move the work into code — a script past the bar above, a schema, a guard
@@ -330,10 +331,10 @@ Then:
    against what is on disk now, noted against what ran then.
 2. **Deliver the review.** Findings ranked by severity; each carries its
    claim, its evidence, the diff, and what it costs if the diff is wrong.
-   Findings that point at the observed repo's `.docket/config/` —
-   thresholds, TTLs, tiers, instance workflows — are `/retro`'s to evolve
-   from engine evidence: name them and point at retro rather than bending
-   them into definition edits.
+   Findings that point at instance config rather than at a definition —
+   thresholds, TTLs, tiers, the corpus's own workflows, a repo's additions —
+   are `/retro`'s to evolve from engine evidence: name them and point at
+   retro rather than bending them into definition edits.
 3. **Propose → approve → apply.** Proposals go through the built-in question
    tool — grouped, recommended option first, labelled "(Recommended)". Only
    approved items get written; a declined item stays in the log as the next
@@ -350,6 +351,11 @@ Then:
 
 Pre-derived because conduct is the richest target. The conductor:
 
+- **Pre-activation checks.** Two, and only two: the stale-install diff of
+  `src/user/docket/{config,bin}` against `~/.docket/{config,bin}`, and the
+  transition guard — SYMLINKS under the observed repo's `.docket/config/` are
+  retired link-farm debris, stopped and reported rather than deleted. A repo
+  with no `.docket` at all is the normal case, not a missing step.
 - **The loop is continuous.** A wave completing treated as the run completing
   is the classic failure (RUN-3 executed a whole run as one wave); so is
   stopping to report, or asking permission to continue, between iterations.
@@ -359,7 +365,8 @@ Pre-derived because conduct is the richest target. The conductor:
   `~/.claude/workflows/wave.js` if it exists, else `$SRC/workflows/wave.js`,
   which is what a session runs today. A by-name invocation is a defect even
   when it works (the name registry served pre-edit bytes on RUN-3). `args` is
-  a real object `{rows, policyText}`, policy as TEXT. (wave.js's args-decode
+  a real object `{rows, policyText}`, policy as TEXT, `cat`-ed fresh from
+  `~/.docket/config/policy.toml` every dispatch. (wave.js's args-decode
   log line is normal harness transport — the harness stringifies args
   regardless of the caller; proven by controlled probe on RUN-5. Never count
   it as a finding.)
@@ -423,7 +430,8 @@ And the wave:
 - **`returned` is not `recorded`.** The wave's status only says the executor
   came back; whether the engine accepted a record lives in the text. A
   conductor trusting the status is a finding.
-- **Routing spot-check.** Re-derive a row or two by hand against policy.toml
+- **Routing spot-check.** Re-derive a row or two by hand against the shared
+  root's policy.toml
   — `[[resolve]]` → `[executors]` → security ceiling → escalation → diamond
   gate → never-list — and compare to the logged
   `STEP-N: hint -> archetype @ model/effort (tier …)` line. Disagreement is

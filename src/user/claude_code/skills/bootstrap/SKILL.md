@@ -1,18 +1,20 @@
 ---
 name: bootstrap
-description: Wire a repo into the shared docket corpus for the first time — seed the seven project specs, link ~/.docket's corpus into .docket/config/ (real dirs, file-level symlinks), mine the repo, set the repo-specific layer (project prefix, engine config, trust proposals), and surface the whole binding for approval before the first run. Use at project start, or when `docket run activate` reports no workflow matches an issue. Also the way to bootstrap docs/spec/ on a repo with no engine running yet ("create specs", "generate project specs").
+description: Wire a repo into the shared docket corpus for the first time — seed the seven project specs, mine the repo, and register the repo itself (project prefix, engine config, trust proposals), then surface the whole binding for approval before the first run. The corpus is read straight from ~/.docket/config and nothing is materialized in the repo; no .docket directory is created. Use at project start, or when `docket run activate` reports no workflow matches an issue. Also the way to bootstrap docs/spec/ on a repo with no engine running yet ("create specs", "generate project specs").
 ---
 
 # bootstrap
 
-You draft this repo's instance config. The developer provides work and
-approvals; you do everything else. `.docket/config/` is machine-authored and
-nobody hand-edits it after.
+You bind this repo to the shared corpus. The developer provides work and
+approvals; you do everything else. By default nothing lands in the repo at all:
+the engine reads the corpus from `~/.docket/config`, and a `.docket/` directory
+exists only when this repo genuinely owns something (§3, §4a′).
 
 Two rules you must not fight:
 
 - **Never run `workflow register` or `schema register`.** Activation
-  auto-registers `.docket/config/`, schemas before workflows. Registering by
+  auto-registers both config roots — `~/.docket/config` first, then this repo's
+  `.docket/config/` if it has one — schemas before workflows. Registering by
   hand freezes a `name@version` before the human has seen it.
 - **Never add a trust entry before the human approves it.** You propose; they
   say yes; then you run `trust add --yes`.
@@ -27,7 +29,7 @@ that says "no tests exist" decides, on its own, whether you keep a workflow with
 Skip this section when `docs/spec/` already holds the seven. Re-authoring them is
 the `spec-project` pipeline's job, not yours (§0's closing note).
 
-**The contract is the authority.** Read `~/.docket/contracts/spec-author.md`
+**The contract is the authority.** Read `~/.docket/config/contracts/spec-author.md`
 before spawning anything: it defines the seven axes, what each one explores, and the
 rigorous-honesty rule that governs all of them. Do not restate its guidance here or
 paraphrase it into a brief — hand the file's text to each author and let it speak.
@@ -67,9 +69,9 @@ final text is delivered to nobody, the idle ping that replaces it is
 content-free, and on 2026-08-10 two of five agents finished silently exactly
 this way, one stalling the run nine minutes.
 
-**No engine is running yet, and that is the point.** There is no `.docket/` to claim
+**No engine is running yet, and that is the point.** There is no run to claim
 against, no lease, no gate — which is exactly why this section exists rather than
-deferring to `spec-project`. That pipeline needs `.docket/config/` (§1) and an
+deferring to `spec-project`. That pipeline needs a registered project (§1) and an
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
 
@@ -106,13 +108,15 @@ against the seven directly; a real exit 0 beats a predicted one, and the
 against the contract's Emit section only when running it is not possible.
 
 One staleness trap these specs carry: they describe the tree as it stood
-*before* §1 linked the config in, so a spec's true-when-written claim that
-`.docket/config/` is absent is false by activation. Do not hot-edit a spec to
-fix that — especially not while a write-class step holds the tree — note it in
-the hand-off and let the `spec-project` review pass catch it; that is the
-mechanism built for exactly this.
+*before* the rest of this run. §1 puts nothing in it — registering a repo is
+config-store work — but §3 and §4a′ can each create a real file
+(`.docket/config/`, `.docket/bin/commit-exec`), and a spec's true-when-written
+claim that the repo has no `.docket/` is false the moment one does. Do not
+hot-edit a spec to fix that — especially not while a write-class step holds the
+tree — note it in the hand-off and let the `spec-project` review pass catch it;
+that is the mechanism built for exactly this.
 
-## 1. Link the shared corpus in
+## 1. Register the repo
 
 **Every docket verb needs an unsandboxed shell.** The store is user-global at
 `~/.docket`, outside the sandbox write root, and every DB-touching command opens
@@ -123,42 +127,39 @@ fails with `unable to open database file (14)`. Only `--help` is safe sandboxed.
 docket init          # only if no store exists yet. Bare init targets the SHARED
                      # ~/.docket store; --local makes a repo-local .docket/issues.db
 
-# Bootstrap is for a repo with NO config. Refuse rather than re-link over one.
-if [ -n "$(ls -A .docket/config 2>/dev/null)" ]; then
-  echo "config exists — evolving it is retro's job, not bootstrap's"; exit 1
-fi
-
-# REAL dirs, LINKED files, corpus entries BY NAME (issues.db lives there too).
-# -L: the five entries are themselves symlinks into the store. ln -sfn re-runs.
-mkdir -p .docket/config
-(cd "$HOME/.docket" && find -L contracts fragments schemas workflows -type d) |
-  while read -r d; do mkdir -p ".docket/config/$d"; done
-(cd "$HOME/.docket" && find -L contracts fragments schemas workflows -type f) |
-  while read -r f; do ln -sfn "$HOME/.docket/$f" ".docket/config/$f"; done
-ln -sfn "$HOME/.docket/policy.toml" .docket/config/policy.toml
-
-find -L .docket/config -type l   # broken links — must print nothing
-grep -qxF '.docket/*' .gitignore 2>/dev/null ||   # the view is machine-local;
-  printf '.docket/*\n!.docket/bin/\n' >> .gitignore   # .docket/bin stays tracked
-
 # The corpus does not activate without these two. Set them now; §4b argues the
 # numbers and is where the operator approves or changes them.
 docket config set vote.rule.security-acceptance.threshold 0.67
 docket config set vote.rule.doc-acceptance.threshold 0.60
 ```
 
-**Real dirs, linked files** — the shape is not stylistic, and §6 holds the
-mechanism behind it. The
-`.gitignore` line ignores `.docket/*` rather than `.docket/` deliberately, so
-`.docket/bin/` — the §4a and §4a′ scripts, real repo content a trust entry binds
-to by absolute path — stays versioned while the machine-local view does not. A
-fresh clone re-runs the link block; nothing else.
+**Nothing about the corpus lands in this repo, and that is the design.** The
+engine resolves instance config from ORDERED ROOTS: the shared corpus at
+`~/.docket/config` FIRST, then `<repo>/.docket/config` as an OPTIONAL additions
+layer. It registers across both, schemas before workflows, shared root first. So
+binding a repo copies nothing, links nothing, and ignores nothing: **by default
+a repo has no `.docket` directory at all.** One exists only when something is
+genuinely this repo's — a workflow or schema addition under `.docket/config/`
+(§3), or a repo action script under `.docket/bin/` (§4a′) — and both are
+ordinary tracked files. A `name@version`, or a pinned ref, present in BOTH roots
+with differing bytes refuses activation naming both paths; byte-identical
+duplicates are a no-op. That is the entire collision surface between shared and
+local.
 
-The rows and the config are different places now. **`.docket/config/` is
-repo-side instance config**: it sits at the exec root and activation pins what it
-finds there, whether the rows live in the shared store or a local one — a normal
-arrangement, not a misconfiguration. Every `config set` in this skill takes the
-project scope; `--global` re-policies every project sharing the store.
+**An existing `.docket/config/` is not a refusal.** Real files there are this
+repo's additions layer: inventory them (`find .docket/config -type f`), report
+what each is, and carry them into §3 and §5 as decisions already made rather
+than facts to re-derive. What bootstrap will not do is re-argue an engine config
+the repo already carries — if the additions read as a previous bootstrap's whole
+output, say so and suggest `/retro`, whose job evolving them is.
+
+**SYMLINKS there are transition debris.** The retired model built a link farm
+into `~/.docket` at that path; against the shared root every entry of it now
+either duplicates the corpus or dangles, and a dangling file link inside a
+scanned root refuses activation naming the file. Surface the directory to the
+operator recommending deletion, and let *them* delete it — removing a directory
+in their repo is not yours to do. A `.gitignore` block ignoring `.docket/*` is
+debris from the same era; name it in the same breath.
 
 **Claim a prefix, operator-gated like everything else.** Ids are one rowid
 sequence across the whole store; only the display prefix tells projects apart,
@@ -172,30 +173,29 @@ docket project set-prefix VOR          # 1-8 letters; DOC/RUN/STEP reserved
 Display only — `DKT-42` and `VOR-42` are the same issue, and `DKT-` or a bare
 number always parses — so it costs nothing and buys legible reports.
 
-**If the guard fires, stop.** Re-running the link block is harmless — `ln -sfn`
-replaces a link with itself, real files beside the links are untouched (measured).
-The rest of this skill is not: it sizes engine config, proposes trust entries, and
-activates a first run as if none of that had been decided. A populated
-`.docket/config/` means it was, and evolving it is retro's job — tell the operator
-and suggest `/retro`.
+The rows and the config are different places now. **Neither config root holds
+issues**: the rows sit in whichever store resolution finds, shared or local — a
+normal arrangement either way. Every `config set` in this skill takes the
+project scope; `--global` re-policies every project sharing the store.
 
 **Why those two lines are here and not later.** Activation validates EVERY
 registered workflow, not just the one an issue binds, and two of the nine name a
 `vote_rule`. Until both rules exist, `run activate` refuses outright — on a
 virgin project, for an unlabelled issue that never touches a vote gate. Setting
-them at link time means the first activation an operator sees is a real one.
+them now means the first activation an operator sees is a real one.
 They authorize no execution, so they are safe to set before approval; what needs
 approval is the NUMBER, which §4b puts in front of the operator.
 
-`~/.docket/` holds the shipped corpus — `workflows/`, `contracts/`, `fragments/`,
-`schemas/`, `policy.toml` — alongside `issues.db`, which is why the loop names the
-five entries and never globs the directory. List it for the inventory; counts
+`~/.docket/` holds three things: `config/` — the shared corpus, one canonicalized
+symlink to the installed artifact of `contracts/`, `fragments/`, `schemas/`,
+`workflows/`, `policy.toml` — plus `bin/` for corpus-shipped action scripts (§4a)
+and `issues.db` for the rows. List `~/.docket/config/` for the inventory; counts
 written here go stale. The Vorpal builder installs it from `src/user/docket/` (§6).
 
-**Every repo links the whole corpus** — you do not pick a subset and you do not
+**Every repo gets the whole corpus** — you do not pick a subset and you do not
 adapt it; it is generic on purpose, and one repo's opinion of it would become
-every repo's. What a repo adds for itself is a REAL file beside the links, which
-is §3's business.
+every repo's, since every repo reads the same bytes. What a repo adds for itself
+lives in its own additions layer, which is §3's business.
 
 ## 2. Mine the repo
 
@@ -215,7 +215,7 @@ Makefile bodies has spent what §5's approval conversation needs:
   its brief), README/CONTRIBUTING, `git log --format='%s' -50`, and any
   deleted-config archaeology the history shows.
 
-Mining no longer decides what to keep — the corpus is linked whole. It sizes §3's
+Mining no longer decides what to keep — the corpus is read whole. It sizes §3's
 repo-specific layer: which globs bound a scope, which commands a fence carries,
 which gates earn a trust entry, how long a step really takes. Every one of those
 cites something a miner found:
@@ -261,13 +261,19 @@ issue (`architecture.md`'s module boundaries, the real test/doc layout); the
 ` ```<tag> ` blocks, one command per line, at activation only — any tag a bound
 workflow declares, `checks` being a convention rather than the only one);
 **engine config** at project scope (§4b, §4c); **trust entries** and their
-scripts (§4); and **repo-local workflow or schema files** when the shared corpus
-has no shape for this repo's work.
+scripts (§4); and **an additions layer of workflow or schema files** when the
+shared corpus has no shape for this repo's work.
 
-That last one is WRITE work, and write work is an agent's: spawn one
-`executor-write` agent carrying the miners' summaries and this section's rules
-verbatim, and review its diff against the citations before surfacing anything in
-§5. It writes REAL files beside the links, never over them:
+That last one has a first preference before it is an addition at all: a shape
+the corpus lacks usually belongs IN the corpus, proposed into `src/user/docket/`
+with a label-scoped `[match]` so it lies dormant everywhere it does not apply.
+Add locally only when the shape is genuinely this repo's and nobody else's —
+then it is WRITE work, and write work is an agent's: spawn one `executor-write`
+agent carrying the miners' summaries and this section's rules verbatim, and
+review its diff against the citations before surfacing anything in §5. Its files
+create `.docket/config/` — that directory's only reason to exist alongside
+§4a′'s `.docket/bin/` — as ordinary tracked files under names the corpus does
+not use, a colliding `name@version` or pinned ref refusing activation outright:
 
 - `workflows/<name>.toml` — named for the repo's work, `version = 1`, steps
   reflecting the real review shape; seed it with `docket workflow init --template
@@ -279,22 +285,23 @@ verbatim, and review its diff against the citations before surfacing anything in
   `holds_tree = false` serializes against the tree for nothing; and `packet` (a
   list of config-relative paths, `{executor}` substitutable, `packet_includes`
   in frontmatter, include depth exactly one) carries fragments to a claimant.
-  **Do not declare `packet` on a step an isolated executor will claim.** The
-  engine resolves packet includes against the CLAIMER's checkout, worktrees do
-  not carry the gitignored link farm, and the claim then fails with `packet
-  file "…" is pinned by this run but is no longer on disk` — AFTER recording
-  the claim, stranding a tokenless claimed step until a reap (measured). Until
-  the engine serves packets from pinned bytes, packet steps claim only from
-  the shared checkout.
+  **`packet` is safe on a shared-corpus workflow and banned on a repo addition
+  an isolated executor will claim.** The engine resolves packet includes against
+  the CLAIMER's checkout: a ref into the shared root resolves from any cwd,
+  worktrees included, while a ref into this repo's own `.docket/config/` is
+  repo-root-relative and simply absent from a private worktree — the claim then
+  fails with `packet file "…" is pinned by this run but is no longer on disk`
+  AFTER recording the claim, stranding a tokenless claimed step until a reap
+  (measured).
 - `schemas/<name>@1.json` — only if a threshold consumes a step's `payload`, and
   the corpus already ships the common ones. **The filename IS the identity**
   (`findings@1.json` → `findings@1`); **a payload schema describes an array**,
   `type: "array"` with the object under `items`, an object-shaped one registering
   and then failing validation with "declares no top-level properties"; ordered
   fields need `"ordered_enum": true` or `>=` is refused.
-- `policy.toml`, `contracts/`, `fragments/` — links, every one: pinned by content
-  hash, registered as nothing, shared by every repo. Read them freely; write
-  nothing there.
+- `policy.toml`, `contracts/`, `fragments/` — the shared root's, every one:
+  pinned by content hash, registered as nothing, read by every repo. Read them
+  freely; write nothing there.
 
 Head each generated TOML with a comment naming what you mined and the date —
 that is what makes the next retro's diff legible; schemas carry no comment
@@ -302,22 +309,21 @@ syntax, so their reasoning goes in the header of the workflow consuming them.
 **Do not author a `PROVENANCE.md`.** No copy exists whose origin needs recording:
 the corpus's provenance is `src/user/docket/`'s git history.
 
-**A shared file is not yours to change here.** Nothing you write may land on a
-link: the store is read-only, so an in-place write is refused outright, and a
-tool that edits by REPLACING leaves a real file where the link was — diverged,
-and invisible to `find -L` because a real file is not a broken link (§6's second
-check is what catches it). A shared file wrong for everyone is a change proposed
-against `src/user/docket/` for the operator to install — retro's discipline, not
-a local edit. Wrong for this repo only is a repo-local file standing beside the
-link. And a pipeline whose review shape this repo does not practice will be
-routed around: a finding for §5, not a silent local edit.
+**A shared file is not yours to change here.** The shared root is read-only
+installed bytes, so an in-place write is refused outright — and it would be the
+wrong edit anyway, since every repo reads exactly those bytes. A shared file
+wrong for everyone is a change proposed against `src/user/docket/` for the
+operator to install — retro's discipline, not a local edit. Wrong for this repo
+only is an addition in `.docket/config/`, under a name the corpus does not use.
+And a pipeline whose review shape this repo does not practice will be routed
+around: a finding for §5, not a silent local edit.
 
-Two coupled invariants any repo-local file must keep:
+Two coupled invariants any addition must keep:
 
 - **Every executor hint needs exactly one `[executors]` row, and every row needs
   a hint.** A new workflow strands a hint the moment its row is missing, and the
-  shared `policy.toml` is a link you cannot add the row to — so a repo-local
-  workflow reusing a shared hint is the safe shape, and inventing a hint means
+  shared `policy.toml` is installed bytes you cannot add the row to — so an
+  addition reusing a shared hint is the safe shape, and inventing a hint means
   proposing the row upstream. The wave refuses to route on either gap, loudly
   and by design.
 - **`fanout` members are the sibling's identity.** Distinct names (the seven
@@ -403,14 +409,17 @@ executor: recording an accepted doc is "insert a row and copy bytes", which the
 engine runs itself and never claims. An action named `doc-record` resolves
 through the trust store like any gate command, so it needs an entry:
 
-The corpus ships the action *name*, not the script — an `executor-write`
-agent writes `.docket/bin/doc-record` (you hand it this section and §4a's
-context-bundle facts as its brief; you review and propose, you do not
-author), and its argv is proposed absolute per the argv[0] rule above:
+The corpus ships the script itself — `~/.docket/bin/doc-record`, versioned
+beside `spec-doc.toml` because they change together: the script reads
+`record`'s declared inputs and the `doc-<type>` label convention, both corpus
+decisions. You never author it and never copy it into the repo; you verify
+the shipped bytes (below) and propose the entry. The argv is the literal
+absolute expansion of `~/.docket/bin/doc-record` (trust argv takes no
+variables and no `~`), identical in every repo:
 
 ```
 name         doc-record
-argv         $(git rev-parse --show-toplevel)/.docket/bin/doc-record
+argv         <absolute $HOME>/.docket/bin/doc-record
 re-runnable  yes — the script passes `--idempotency-key` (doc create, issue
              create, and both comment-add verbs take one), so a crash between
              create and link re-runs to the same DOC-N instead of a second
@@ -420,8 +429,11 @@ flaky        no  — no network, no clock; it either records or exits non-zero
 ```
 
 `--re-runnable` is the one flag genuinely arguable here, and the key is what
-makes the yes defensible: turn it **off** if your script appends without one,
-because then a retry duplicates a DOC-N. Read the script before arguing the flag.
+makes the yes defensible: read the shipped script before arguing the flag,
+and turn it **off** if a corpus revision ever drops the key. A repo whose
+trust store already binds `doc-record` to an old repo-local argv needs
+`docket trust rm doc-record` first — trust refuses a changed argv under an
+existing name rather than updating it.
 
 An action's contract is not a gate's, and the difference is what makes the
 script writable at all: the engine hands an action the run context as ONE JSON
@@ -437,17 +449,18 @@ the global `~/.docket`. Read the engine's action-exec source or the engine spec'
 context-bundle section rather than trusting this paragraph — the shape is the
 engine's to evolve.
 
-The same agent proves the script before you propose its entry: `chmod +x` it
-(file-writing tools do not set the execute bit, and the engine execs argv[0]
-directly), feed it a synthetic context bundle on stdin, and check it exits 0
-printing one parseable reply — on the 2026-08-06 run this caught a wrong
-stdin-flag spelling a read-through had missed, and a same-day probe harness
-caught two more real bugs (a missed `{ok,data}` envelope and a replay echoing
-its input instead of the stored record). Feed it the same bundle twice: the
+Verify the shipped script before you propose its entry — an agent's job, and
+cheap: `[ -x "$HOME/.docket/bin/doc-record" ]` first (the engine execs argv[0]
+directly, and the exec bit must survive the install chain — a non-executable
+file here is an install defect to report, never a `chmod` into the
+read-only install), then feed it a synthetic context bundle on stdin and check
+it exits 0 printing one parseable reply. Feed it the same bundle twice: the
 second run replaying the same DOC-N instead of minting another is the
-measured basis for `--re-runnable`, which beats arguing it from prose. The
-agent returns the script plus both probe transcripts; that evidence is what
-you attach to the proposal. Probe against a SCRATCH store, not the shared one:
+measured basis for `--re-runnable`, which beats arguing it from prose — the
+2026-08-06 authoring-era probes caught three real bugs this way, which is why
+the ritual survives the script moving into the corpus. The agent returns both
+probe transcripts; that evidence is what you attach to the proposal. Probe
+against a SCRATCH store, not the shared one:
 `export DOCKET_PATH=$(mktemp -d); docket init`, then run both probes with that
 env (verified 2026-08-10: the CLI honors DOCKET_PATH even sandboxed; the
 engine denies it only to real action children at exec time). A probe against
@@ -467,7 +480,8 @@ line: RUN-1 (2026-08-06, pre-refactor corpus) shipped without the script and
 completed with an approved message and a dirty tree — the conductor had to
 hand-commit under the approved gate.
 
-Same pattern and same delegation as `doc-record`: an `executor-write` agent
+Unlike `doc-record`, this one IS repo-authored — it encodes the repo's own
+commit discipline, so it cannot ship with the corpus: an `executor-write` agent
 writes `.docket/bin/commit-exec` — context bundle on stdin carries the
 `commit-message` artifact and the issue (id, scope globs); the script stages
 ONLY paths matching the issue's scope globs, commits with the artifact text
@@ -487,11 +501,15 @@ tree         yes — it writes the git index and object store; say so plainly
 flaky        no  — no network, no clock
 ```
 
+The script is tracked repo content — **nothing here is `.gitignore`'d.** The one
+ignorable artifact docket can leave in a repo is a local store, and only if
+someone ran `docket init --local`: ignore `.docket/issues.db*` then, nothing else.
+
 ### 4b. Propose the vote-rule thresholds
 
-Vote rules live in **engine config**, not `.docket/config/`, so activation never
-auto-registers them — and a pipeline naming an unregistered rule **fails to
-register at all**:
+Vote rules live in **engine config**, not in either config root, so activation
+never auto-registers them — and a pipeline naming an unregistered rule **fails
+to register at all**:
 
 ```
 ✘ Error: step "security-vote": `vote_rule` "security-acceptance" is not registered; none are registered. Register one with `docket config set vote.rule.security-acceptance.threshold <0-1>`
@@ -588,22 +606,26 @@ rules, schema cross-checks — and writes nothing:
 for f in .docket/config/workflows/*.toml; do docket workflow lint "$f"; done
 ```
 
+Only additions need this — a repo with no additions layer has nothing here to
+lint, and the shared corpus was linted before it was installed.
+
 Each verdict is `new`, `unchanged` (identical bytes already registered), or
 CONFLICT — changed bytes at a frozen `name@version`, which fails the lint and
 would refuse the whole activation. Clear every one first: a lint failure is a
 five-second loop, the same failure at activation is a refusal the operator sits
-through. A CONFLICT on a LINKED workflow is not yours to clear — the shared corpus
-moved without a bump and is refusing every repo that links it; the fix is in
-`src/user/docket/` (§6), so say that rather than editing around it.
+through. A CONFLICT you did not cause has two causes worth naming apart: the
+shared corpus moved without a bump, which refuses every repo that reads it and
+is fixed in `src/user/docket/` (§6) rather than around; or your addition
+collides with a shared `name@version`, which is fixed by renaming the addition.
+Say which one it is.
 
-On a FIRST bootstrap the registry is empty, so lint refuses every LINKED
-workflow that names a payload schema — `` `payload` names "findings@1", which
-is not registered `` — and its remedy line says to `schema register`, which
-rule 1 forbids. That refusal is the empty registry, not the file: lint your
-repo-local additions for grammar, expect the unresolved-schema refusals on
-linked files, and let the dry-run's registration report stand in for them (it
-validates schemas before workflows; all 12 proved clean this way on
-2026-08-10). Lint resolving refs from the config tree it lints within is the
+On a FIRST bootstrap the registry is empty, so lint refuses any workflow naming
+a payload schema — `` `payload` names "findings@1", which is not registered ``
+— and its remedy line says to `schema register`, which rule 1 forbids. That
+refusal is the empty registry, not the file: lint your additions for grammar,
+expect the unresolved-schema refusals, and let the dry-run's registration report
+stand in for them (it validates schemas before workflows; all 12 proved clean
+this way on 2026-08-10). Lint resolving refs across the registered roots is the
 engine fix, owed upstream; until it lands, this is the expected path.
 
 ```bash
@@ -612,10 +634,12 @@ docket run activate RUN-1 --dry-run
 ```
 
 `--dry-run` computes the whole activation and writes nothing. It needs no
-`--pin` for anything already under `.docket/config/`: the scan pins every file
-there recursively, with refs relative to the config directory so they survive a
-re-clone. An explicit `--pin .docket/config/policy.toml` only adds a second row
-for the same bytes under a checkout-bound path. Two blocks can come back:
+`--pin` for anything under either config root: the scan pins every file it finds
+there recursively, with refs relative to the root it found them in — which is
+why a shared-root ref resolves from any cwd and a repo-root ref does not (§3's
+packet rule). An explicit `--pin` on a file the scan already covers only adds a
+second row for the same bytes under a checkout-bound path. Two blocks can come
+back:
 
 - **The registration report** — every workflow and schema this activation
   would adopt, as `name@version  path  (outcome)`, plus the count of further
@@ -685,38 +709,41 @@ literally.
 
 ## 6. Where the corpus comes from
 
-`src/user/docket/` → (`just activate`) → `~/.docket/{contracts, fragments,
-schemas, workflows, policy.toml}` → (§1's link step) → this repo's
-`.docket/config/`. Two hops that go stale independently, and a link layer that
-cannot: the bytes activation pins through a link ARE the bytes `~/.docket` holds.
-**Link files in, never copy them** — one centrally maintained corpus is the whole
-point, and a copy diverges the moment either side moves with nothing reporting it.
+`src/user/docket/config/{contracts, fragments, schemas, workflows,
+policy.toml}` → (`just activate`) → `~/.docket/config/` → the engine reads it directly, as
+the first of its ordered roots. ONE hop, no repo-side copy, nothing to keep in
+sync: the bytes activation pins ARE the bytes `~/.docket/config` holds. A repo's
+own additions, when it has any, are ordinary tracked files in the second root
+and travel with the clone. **Never copy a corpus file into a repo** — one
+centrally maintained corpus is the whole point, and a copy diverges the moment
+either side moves with nothing reporting it.
 
-What the engine tolerates, measured both ways: linked FILES read through
-byte-identically — same registered SHA256s, same pin count, relative pin refs,
-packet resolution included — but the walker does not follow directory symlinks,
-so a linked `.docket/config`, or a real config dir holding linked subdirectories,
-fails with `reading the pinned config file …/config: is a directory`.
+One walker fact survives the change: the engine CANONICALIZES a config root
+before walking it, which is what lets `~/.docket/config` be itself a symlink to
+the installed artifact and still read byte-identically — same registered
+SHA256s, same pin count, packet resolution included. It does NOT follow
+directory symlinks INSIDE a root; one there fails with `reading the pinned
+config file …: is a directory`. So an additions layer is real directories
+holding real files, never a linked subtree.
 
-Drift is gone; two failure modes replace it. A **dangling file link** is a hard
-`VALIDATION_ERROR` naming the file — the good one, loud and before anything runs.
-A **dangling config root** is skipped SILENTLY and surfaces later as "matches no
-registered workflow", which is why §1 builds a real root directory. Run both
-checks before any activation: `find -L .docket/config -type l` prints the broken
-links, `find .docket/config -type f` prints the real files, which should be only
-§3's deliberate additions.
+That store is READ-ONLY, and the refusal is the design: corpus edits are made in
+`src/user/docket/` and installed by the operator's `just activate`. Because an
+install rewrites the bytes already-pinned refs resolve to, corpus installs land
+BETWEEN runs, never during one; and because every repo reads the same bytes, an
+edit at an unchanged `name@version` refuses the next activation in ALL of them.
+That is the cost of sharing, and why corpus edits go through `src/user/docket/`
+with a bump.
 
-Staleness lives one hop up now — `~/.docket` sits behind `src/user/docket/` until
-the operator runs `just activate` — so check that before concluding anything
-about the corpus's contents. Because an install rewrites the bytes already-pinned
-refs resolve to, corpus installs land BETWEEN runs, never during one; and because
-every repo links the same bytes, an edit at an unchanged `name@version` refuses
-the next activation in all of them. That is the cost of sharing, and why corpus
-edits go through `src/user/docket/` with a bump.
+Staleness therefore lives in exactly one place — `~/.docket/config` sits behind
+`src/user/docket/config/` until the operator runs `just activate` — so diff them
+before concluding anything about the corpus's contents. The source mirrors the
+install tree for tree, so `diff -r "$SRC/config" "$HOME/.docket/config"` and
+`diff -r "$SRC/bin" "$HOME/.docket/bin"` is the whole check, `$SRC` being the
+dotfiles checkout's `src/user/docket`.
 
-There is no network step anywhere in this flow. If `~/.docket/` holds only
-`issues.db` and no corpus, there is nothing to link — say so, and fall back to
-`workflow init --template` for a repo-local workflow.
+There is no network step anywhere in this flow. If `~/.docket/config` does not
+exist, there is no corpus to read — say so, and fall back to `workflow init
+--template` for a workflow in this repo's own additions layer.
 
 ## 7. Hand off
 
@@ -724,12 +751,13 @@ Report the config files you wrote, the trust entries they approved, and the run
 you activated. Name the next move plainly: real work beyond the smoke issue
 goes through `/plan` (issues, phases, gates placed deliberately), then
 `/conduct` drives what plan recorded — do not slide from bootstrapping into
-driving on your own momentum, or on a stop-guard's push. Say plainly that
-`.docket/config/` is a machine-local linked view rebuilt by §1's link block after
-a fresh clone, and that shared bytes change only through `src/user/docket/` and a
-version bump — the blast radius being every repo that links the corpus (§6).
-Retiring a superseded version is `workflow deprecate` — a binding-time filter,
-never a deletion, and retro's call rather than yours.
+driving on your own momentum, or on a stop-guard's push. Say plainly that this
+repo materializes no corpus of its own: the engine reads `~/.docket/config`
+directly, a fresh clone needs no setup step, and shared bytes change only
+through `src/user/docket/` and a version bump — the blast radius being every
+repo that reads the corpus (§6). Name any additions layer you did create and why
+it exists. Retiring a superseded version is `workflow deprecate` — a
+binding-time filter, never a deletion, and retro's call rather than yours.
 
 Activation's refusals name the file and the fix; follow them literally. Two
 worth pre-empting: an issue matching zero workflows is a `[match]` too narrow —

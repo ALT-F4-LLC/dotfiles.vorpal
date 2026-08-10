@@ -82,7 +82,7 @@ exactly one row, and every row is reachable from some hint.** The wave refuses
 to route otherwise. A proposal that deletes a workflow must delete the rows it
 orphans in the same breath.
 
-**Vote-rule thresholds.** These live in engine config, not `.docket/config/`:
+**Vote-rule thresholds.** These live in engine config, not in either config root:
 
 ```bash
 docket config set vote.rule.<name>.threshold <0-1>            # this project
@@ -143,16 +143,18 @@ Only the approved items — applied by an `executor-write` agent carrying the
 approved diffs, with the dry-run verification below performed by an
 `executor-read` agent; you relay approvals and read their reports.
 
-**Approved corpus edits land in the dotfiles checkout, not in the repo.** A
-repo's `.docket/config/` is a link farm into `~/.docket`, so editing a file
-there rewrites the SHARED corpus through the link — unversioned, and behind
-the operator's install gate. Edit `src/user/docket/` instead (`contracts/`,
+**Approved corpus edits land in the dotfiles checkout, not in the repo.** The
+engine reads the corpus from `~/.docket/config`, installed read-only, so there
+is nothing there to edit in place. Edit `src/user/docket/config/` instead (`contracts/`,
 `fragments/`, `schemas/`, `workflows/`, `policy.toml`); the operator installs
 it with `just activate`, BETWEEN runs, because an install changes what
-already-pinned refs resolve to. Real files a repo dropped beside its links are
-the only in-place edits left — and every repo sharing the corpus binds the
+already-pinned refs resolve to. A repo's own additions layer in `.docket/config/`
+is the only in-place edit left — and every repo sharing the corpus reads the
 same bytes, so an edit at an unchanged `name@version` refuses the next
-activation in ALL of them. Say that blast radius when you propose.
+activation in ALL of them. Say that blast radius when you propose. An ADDITION
+that collides with a shared `name@version`, or a pinned ref, refuses every
+activation in its own repo until one side moves: bump the shared version, or
+rename the addition — and say which you chose and why.
 
 A workflow edit stays in the same file with `[pipeline].version = N+1` and its
 mined-facts comment kept current. A schema edit is a new

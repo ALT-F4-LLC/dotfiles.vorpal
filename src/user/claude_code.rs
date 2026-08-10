@@ -289,14 +289,6 @@ impl ClaudeCode {
 
         let symlinks = vec![
             (get_env_key(&agents), "${HOME}/.claude/agents".to_string()),
-            // (
-            //     get_env_key(&graph_config),
-            //     "${HOME}/.claude/docket-config".to_string(),
-            // ),
-            // (
-            //     get_env_key(&workflows),
-            //     "${HOME}/.claude/workflows".to_string(),
-            // ),
             // (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
             // (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
             (

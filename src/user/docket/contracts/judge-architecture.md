@@ -55,3 +55,9 @@ examined; an empty payload is a valid, meaningful result.
 If no design document or stated intent reaches you and the change is large enough that
 conformance is the question, emit your findings plus a `gap` note saying so. Judging
 architecture against an unstated design produces preference dressed as a finding.
+
+An empty `issue.diff` beside a change-summary that names commits is not a missing
+input: the fix landed as ordinary commits before this step ran. Review those
+commits (`git show <sha>` in your own worktree) as the diff under judgment, and
+say in your findings that the target was reconstructed that way (RUN-8 set this
+pattern). Gap only when neither the diff nor any named commit is reachable.

@@ -98,6 +98,11 @@ is the net.
 ## 3. Record the run
 
 In this order. Every command is one you run — the operator types none of them.
+First, if the scope read or premise verdict is more than a few minutes old,
+re-check it now: one `git log --since=<read time>` over the scoped paths. A fix
+that lands between the read and the record otherwise becomes a bound issue whose
+implement step exists to discover the work is done (RUN-8: DKT-99's fix was
+committed nine minutes before `run start` recorded it as work to do).
 
 ```bash
 docket issue create -t "<title>" -T <kind> \

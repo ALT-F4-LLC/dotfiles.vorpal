@@ -22,13 +22,21 @@ workflow state beyond your own step.
 # Method
 Read the issue's acceptance criteria before any code. For each AC that is expressible as
 a test, write the failing test first and observe it fail; an AC that passes before your
-change is evidence the issue is mis-stated — emit a gap, do not proceed. Implement the
+change is evidence the issue is mis-stated — emit a gap, do not proceed. One exception:
+when EVERY AC already passes because the fix landed before your step ran (a commit beat
+the run to it), the issue is already satisfied, not mis-stated — verify each AC against
+the tree, emit a change-summary naming the pre-existing commit(s) with the AC → evidence
+mapping, and record it with `step complete`. Re-implementing or gapping an
+already-satisfied issue are both waste; the verify path still feeds the review fanout,
+which can find real defects in the landed fix (RUN-8 did). Implement the
 smallest change that satisfies the ACs under the code-philosophy fragment. Run the
 project's build and test commands and include their real output in the summary. If an AC
 is untestable as written, say so explicitly in the summary rather than approximating it.
 
 # Emit
-`change-summary` (markdown): Files changed (with one-line why each) · ACs addressed
+`change-summary` (markdown): FIRST LINE is the worktree commit sha your
+obligations require (the conductor integrates by that sha; a summary without it
+strands your work in the worktree) · Files changed (with one-line why each) · ACs addressed
 (AC → test/evidence mapping, with observed pre-fail and post-pass output) · Decisions
 made where the issue left latitude · Known limits (anything a reviewer should probe).
 Do not restate the diff; the engine snapshots it.

@@ -56,3 +56,9 @@ If the issue body does not state the contract the code was meant to uphold, or t
 is unreadable from your inputs, emit your findings plus a `gap` note naming exactly what
 is missing. Do not infer the intended behavior from the implementation — that reasoning
 is circular and cannot find a defect.
+
+An empty `issue.diff` beside a change-summary that names commits is not a missing
+input: the fix landed as ordinary commits before this step ran. Review those
+commits (`git show <sha>` in your own worktree) as the diff under judgment, and
+say in your findings that the target was reconstructed that way (RUN-8 set this
+pattern). Gap only when neither the diff nor any named commit is reachable.

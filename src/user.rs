@@ -1,9 +1,12 @@
-use crate::user::{bat::Bat, claude_code::ClaudeCode, ghostty::Ghostty, k9s::K9s, neovim::Neovim};
+use crate::user::{
+    bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, k9s::K9s, neovim::Neovim,
+};
 use anyhow::Result;
 use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, context::ConfigContext};
 
 mod bat;
 mod claude_code;
+mod docket;
 mod ghostty;
 mod k9s;
 mod neovim;
@@ -34,6 +37,10 @@ impl UserEnvironment {
             .build(context)
             .await?;
 
+        let docket = Docket::new(&self.name, self.systems.clone())
+            .build(context)
+            .await?;
+
         let ghostty = Ghostty::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
@@ -50,6 +57,7 @@ impl UserEnvironment {
             .into_iter()
             .chain(bat.0)
             .chain(claude_code.0)
+            .chain(docket.0)
             .chain(ghostty.0)
             .chain(k9s.0)
             .chain(neovim.0)
@@ -59,6 +67,7 @@ impl UserEnvironment {
             .1
             .into_iter()
             .chain(claude_code.1)
+            .chain(docket.1)
             .chain(ghostty.1)
             .chain(k9s.1)
             .chain(neovim.1)

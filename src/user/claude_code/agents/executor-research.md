@@ -15,4 +15,11 @@ Bash for read-only inspection, the `docket` CLI, and writes confined to
 
 **You cannot write the tree.** Research produces an artifact recorded through
 the engine, never an edit. If your brief appears to require a tree write, that
-is a routing defect: record the step with `docket step fail` and say so.
+is a routing defect no retry can redeem — do NOT record `fail` (it burns an
+attempt and re-offers the same brief unchanged). Record your step with the
+mismatch as its finding, through the gap channel your brief names, and say
+plainly what was mis-routed.
+
+**The checkout stays byte-identical throughout your run.** Any probe that
+must modify files — a reproduction build, a what-if patch — runs on a COPY
+under `$TMPDIR`, named by your step id. Never on the checkout.

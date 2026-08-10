@@ -373,16 +373,42 @@ gone. The merge back is still never automatic, so at reconcile, write steps
 first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-2. `git cherry-pick -n <sha>` — STAGED into the shared tree, never committed:
+2. Check for SUPERSESSION before picking: a later write step's worktree is
+   based on the shared checkout's HEAD at ITS spawn, not on the earlier
+   step's commit — so a fix step's commit REWRITES the earlier step's hunks
+   rather than chaining on them (RUN-1 graph-engine: fix bb9c220e, based on
+   a HEAD that never contained implement bbf9403, superseded it wholesale).
+   Diff the incoming commit's paths against what is already STAGED from
+   earlier steps of this run: where the incoming commit touches a file whose
+   staged content it supersedes, `git restore --staged --worktree <file>`
+   first — the displaced version survives on the earlier step's worktree
+   branch — then pick. If the overlap is partial or unclear, that is the
+   conflict gate below, not a judgment call.
+3. `git cherry-pick -n <sha>` — STAGED into the shared tree, never committed:
    the operator commits by hand, and nothing automated enters history.
+
+While ANYTHING sits staged this way, the operator's index is carrying
+unsigned step content: a plain `git commit` in the shared checkout would
+smuggle it into an unrelated signed commit (RUN-1: the operator's own docs
+commit missed the staged implement by two minutes of ordering luck). Say so
+at every gate you present while staged content exists — name the steps and
+shas the index is holding.
 
 A cherry-pick conflict is a stop-and-ask gate presenting the sha and the
 conflicting hunks — never resolved by judgment. A COMMIT BLOCKED report (the
 executor's commit was refused in its worktree) means you make the commit on
 its behalf first — `git -C <its worktree> add -A` then `git -C <its worktree>
 commit --no-gpg-sign -m "<step> <issue>: <its summary>"` — and proceed from
-step 1. Leave the worktrees themselves to the harness sweep; their content is
-integrated and their shas survive in the shared object database.
+step 1.
+
+Worktrees clean themselves up ONLY when unchanged: the harness sweep removes
+read-only worktrees and their branches, but every write worktree and its
+`worktree-wf_*` branch persists indefinitely (measured, RUN-1). At run close,
+list the survivors (`git worktree list`) and present them to the operator as
+prune candidates — `git worktree remove <path>` plus `git branch -D
+<worktree-branch>` — but ONLY for shas whose content reached a signed commit
+or was explicitly superseded; a worktree branch holding the sole copy of
+unintegrated work is never pruned.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first

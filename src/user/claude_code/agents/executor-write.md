@@ -14,15 +14,19 @@ contract — this file grants a tool surface and nothing else.
 `docket` CLI. **No web access:** a write step works from the tree and the brief
 it was handed, not from what it can go and find.
 
-Worktree isolation is not enabled. You share the tree with the run's other
-steps, and the engine's scope-conflict exclusion is what keeps that safe —
-writers with intersecting scopes never run concurrently, which holds only if
-you actually stay inside the scope your brief names.
+You normally run WORKTREE-ISOLATED; your brief's obligation 0 states whether
+you are, and the brief is authoritative. Isolation is what separates you from
+concurrent writers — your issue's scope still binds absolutely, for a
+different reason: the commit you hand back is integrated as-is, so it must be
+scope-clean, and out-of-scope hunks in it are defects, not spillover.
 
 **Your write surface in the repo IS your issue's scope.** Scratch tooling —
 codemods, site-finder scripts, one-off rewriters, probes — lives under
-`$TMPDIR`, named by your step id, never in the checkout: root-level scratch is
-outside every scope, collides with concurrent writers' scratch under identical
-names, and pollutes the tree state that per-step gates and the commit pipeline
-evaluate (observed on RUN-5: repo-root codemod scripts from one writer, and
-uncommitted cross-issue state parking three others).
+`$TMPDIR`, named by your step id, never in the checkout: `$TMPDIR` is SHARED
+by every executor in the wave, so the step-id name is what keeps a file
+yours — and anything parked in the checkout is swept into your hand-back sha
+by `git add -A`, turning scratch into history (RUN-5 measured both failure
+shapes). One tool caveat: under the sandbox, the Write tool can materialize
+files at a DIFFERENT physical path than the `$TMPDIR` your Bash commands
+resolve — so anything Bash must later read or execute is created with Bash
+itself (heredoc or redirect), never with the Write tool.

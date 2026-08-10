@@ -278,9 +278,9 @@ function bootstrap(row, r, isolated, isWrite) {
    BASH CALL YOU MAKE. The worktree protects your SIBLINGS from you — it does
    not change your own discipline: your archetype's byte-identical rule still
    holds, and any probe that must modify files still runs on a COPY under
-   <TMP>, never on this checkout. (The revert verbs — git restore, checkout
-   --, reset, clean — are deny/ask in this session and will stall you;
-   probing on copies means never needing them.) Never cd out to the shared
+   <TMP>, never on this checkout. (Never reach for the revert verbs — git
+   restore, checkout --, reset, clean: probing on copies means never needing
+   them, and this protocol has no undo step.) Never cd out to the shared
    repository tree. Command discipline, non-negotiable — every call you make
    must be obvious at a glance, exactly what it says and nothing more:
 

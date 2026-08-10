@@ -281,15 +281,16 @@ function bootstrap(row, r, isolated, isWrite) {
    <TMP>, never on this checkout. (The revert verbs — git restore, checkout
    --, reset, clean — are deny/ask in this session and will stall you;
    probing on copies means never needing them.) Never cd out to the shared
-   repository tree. The guard's contract, measured live:
+   repository tree. Command discipline, non-negotiable — every call you make
+   must be obvious at a glance, exactly what it says and nothing more:
 
-   - Compound commands (\`&&\` chains, \`$(...)\` around git) are refused as
-     "too complex to verify". Run every command PLAIN and SEPARATE.
-   - A redirect whose target contains a shell VARIABLE is refused;
-     the SAME redirect written with the literal path passes. Use LITERAL
-     paths in every redirect.
-   - git aimed at another checkout (\`git -C\`, \`--git-dir\`, cd-then-git)
-     is refused. git against your own tree passes. Pipes pass.
+   - ONE action per Bash call: no \`&&\` chains, no \`$(...)\` substitution
+     around git. Run every command PLAIN and SEPARATE.
+   - Spell every redirect target as a LITERAL absolute path. (Shell
+     variables do not survive between your calls anyway — see the token
+     protocol below.)
+   - Run git against YOUR OWN tree only — never \`git -C\` or \`--git-dir\`
+     aimed at another checkout, never cd-then-git elsewhere. Pipes are fine.
 
    RUN \`docket\` BARE — no DOCKET_PATH prefix, ever. The store resolves from
    anywhere inside the repository, this worktree included: nothing to probe
@@ -299,7 +300,8 @@ function bootstrap(row, r, isolated, isWrite) {
 
    a. \`printenv TMPDIR\` — your literal scratch root. Call it <TMP>;
       substitute its literal value wherever <TMP> or \`$TMPDIR\` appears in
-      this brief. (\`echo "$TMPDIR"\` trips the guard; printenv does not.)
+      this brief. (Use \`printenv\`, not \`echo\` — no variable expansion
+      anywhere in your calls, this one included.)
    b. \`git worktree list --porcelain\` — every checkout's path and HEAD sha.
    c. Compare \`git rev-parse HEAD\` in your tree to the HEAD of the shared
       checkout from (b) — the one NOT under \`.claude/worktrees\`. If they
@@ -343,8 +345,8 @@ function bootstrap(row, r, isolated, isWrite) {
 
 1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — ISOLATED: run form 1' from
    obligation 0 (separate plain commands, literal paths) instead of the block
-   below; the guard refuses the one-shot form. Every rule after the block still
-   binds you.` : ', in ONE Bash call, exactly this:'}
+   below — the one-shot block violates your one-action-per-call discipline.
+   Every rule after the block still binds you.` : ', in ONE Bash call, exactly this:'}
 
    \`\`\`
    docket step claim ${row.step} --owner wave:${row.step} --render --json > "$TMPDIR/${row.step}.claim.json" &&
@@ -397,8 +399,8 @@ ${isolated && isWrite ? `
    commit is the hand-back channel: worktrees share the repository's object
    database, so once committed your sha is reachable from every checkout, and
    the conductor integrates it. Two SEPARATE plain calls, exactly this shape
-   (no compounds — the guard refuses them; no leading global options — they
-   defeat permission prefix-matching):
+   (two SEPARATE plain calls exactly as shown — no compounds, and no global
+   options before \`add\`/\`commit\`):
 
    git add -A
    git commit --no-gpg-sign -m "${row.step} <issue-id>: <one-line summary>"
@@ -565,8 +567,10 @@ function spawn(row, phaseLabel) {
     })
     const handle = (text) => {
         if (text == null) {
-            log(`${row.step}: SPAWN PRODUCED NOTHING (model ${r.model} unavailable, ` +
-                `the agent was skipped, or it died mid-flight) — whether a claim ` +
+            log(`${row.step}: SPAWN PRODUCED NOTHING (launch blocked before the ` +
+                `agent existed — this wave's task .output workflowProgress[].error ` +
+                `carries the stated reason when there is one — or model ${r.model} ` +
+                `unavailable, the agent was skipped, or it died mid-flight) — whether a claim ` +
                 `was recorded is UNKNOWN; reconcile via \`docket dispatch verify\` ` +
                 `and \`docket step show ${row.step}\`, then, if it is still claimed ` +
                 `by this dead spawn, return it to the pool with \`docket step reap ` +

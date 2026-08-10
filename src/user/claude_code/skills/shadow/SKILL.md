@@ -138,7 +138,9 @@ Before reading one transcript line:
    dangling against it. Record `git -C $SRC rev-parse HEAD`. A divergence is
    your first finding —
    and the baseline for every later one, because a fix proposed against bytes
-   that did not run is a wrong fix.
+   that did not run is a wrong fix. The same chain read backwards governs your
+   own fixes: the surface you would edit is only half of what a session
+   resolves, so plan every fix against BOTH ends — source and install (§6.3).
 4. `mkdir -p /tmp/claude/shadow/<session-id>` and start the log (§5).
 
 ## 3. Watch
@@ -342,6 +344,17 @@ Then:
    in `$SRC/scripts/` (`chmod +x` it — file tools do not set the bit), and
    until the `~/.claude/scripts` symlink is restored, every call site you edit
    must name that source path.
+
+   **A live fix lands on BOTH surfaces in the same breath** — the source under
+   `$SRC` (what gets committed) and the installed path sessions actually
+   resolve (`~/.claude/...`, `~/.docket/...`) whenever one exists or the
+   resolution would find one. A fix applied to source alone is not applied:
+   the operator had to interrupt a RUN-1 wave launch to demand the installed
+   half by hand. Prefer symlinking the installed path to the source file for
+   the run's duration — further approved fixes then flow automatically — and
+   log every hand-made install as transition debris the next `just activate`
+   must be allowed to replace. Where the install is a real copy (skills,
+   agents), edit both copies with identical bytes.
 4. **File the engine defects** (rule 3), one issue per defect, refusal text
    and repro verbatim.
 5. **Close** by naming the log path, the fixes applied, the issues filed,

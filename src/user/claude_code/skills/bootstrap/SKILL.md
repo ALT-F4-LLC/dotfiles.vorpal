@@ -53,12 +53,30 @@ never a name outside the seven, and skim siblings already on disk to avoid overl
 without ever blocking on one.
 
 These are leaf agents. They must not spawn, form a team, or call `Skill()`.
+ONE message means one response carrying all seven Agent calls — one-spawn-per-
+message staggers starts for nothing and was the 2026-08-10 deviation, twice.
+`executor-write`/`executor-read` name installed archetypes under
+`~/.claude/agents/`; when none are installed (the install is commented out of
+the settings builder today), spawn `general-purpose` for writers and `Explore`
+for readers, carry the archetype file's text (`src/user/claude_code/agents/`
+in the dotfiles repo) inline in the brief, and say in §5 that archetype
+containment ran prompt-only. And every agent brief in this skill ends the same
+way: **deliver your report by calling SendMessage to `team-lead` (ToolSearch
+`select:SendMessage` first) BEFORE ending your turn** — a background agent's
+final text is delivered to nobody, the idle ping that replaces it is
+content-free, and on 2026-08-10 two of five agents finished silently exactly
+this way, one stalling the run nine minutes.
 
 **No engine is running yet, and that is the point.** There is no `.docket/` to claim
 against, no lease, no gate — which is exactly why this section exists rather than
 deferring to `spec-project`. That pipeline needs `.docket/config/` (§1) and an
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
+
+While the seven run, wait properly: schedule ONE fallback wakeup (15+ minutes)
+and stop — completion notifications drive the next step. Polling the output
+directory and rescheduling on every idle ping bought the 2026-08-10 run ~30
+wakeup schedules and ~10 polls that changed nothing.
 
 **Verify before moving on — with an agent, not your own eyes.** Take
 `git status --porcelain > "$TMPDIR/pre-fanout"` before you spawn. After all
@@ -328,6 +346,13 @@ was approved in unless `--global` is given, which authorizes the argv in every
 repo on the machine. Propose `--prefix` only when the argv genuinely varies, and
 say plainly that it over-authorizes.
 
+The verb's real shape — stated because both wrong shapes got tried on
+2026-08-10: `docket trust add <name> [--re-runnable] [--tree] [--flaky] --yes
+-- /abs/path/script` — entry flags BEFORE the `--`. Everything after `--` is
+stored verbatim as the argv, so a flag placed there becomes an argument your
+gate script gets executed with (the engine's `trusting …` echo is where that
+mistake shows; read it).
+
 **A repo-internal script needs an ABSOLUTE argv[0].** Containment refuses any
 argv[0] that resolves at or under the repo root — a repo-owned script is content
 an executor can rewrite between approval and execution. The one exception: a
@@ -422,17 +447,25 @@ its input instead of the stored record). Feed it the same bundle twice: the
 second run replaying the same DOC-N instead of minting another is the
 measured basis for `--re-runnable`, which beats arguing it from prose. The
 agent returns the script plus both probe transcripts; that evidence is what
-you attach to the proposal.
+you attach to the proposal. Probe against a SCRATCH store, not the shared one:
+`export DOCKET_PATH=$(mktemp -d); docket init`, then run both probes with that
+env (verified 2026-08-10: the CLI honors DOCKET_PATH even sandboxed; the
+engine denies it only to real action children at exec time). A probe against
+the resolved store writes real DOC/issue rows into shared history — the
+2026-08-10 run needed an operator-approved destructive delete to clean up, and
+the id sequence keeps the scar either way.
 
 ### 4a′. Propose the `commit-exec` trust entry
 
-If you kept a workflow whose terminal step is `commit` (standard-change,
-ui-change, security-load-bearing), know what its author does NOT do: the
-`commit-author` contract composes the message only — "execution is gated and
-happens without you" — and the execution half is the `commit-exec` ACTION
-step those workflows declare after it. RUN-1 (2026-08-06) shipped without
-this script and completed with an approved message and a dirty tree; the
-conductor had to hand-commit under the approved gate. Do not repeat that.
+The 2026-08 corpus mechanizes NO commit: every shipped pipeline ends before
+it, and the commit is the operator's, made by hand (1Password-gated signing
+is unavailable to headless executors — the workflow headers say so). This
+section applies ONLY if a repo-local workflow YOU wrote declares a
+commit-terminal ACTION step; skip it otherwise, and do not invent a
+commit-exec entry nothing consumes. Where it does apply, the history in one
+line: RUN-1 (2026-08-06, pre-refactor corpus) shipped without the script and
+completed with an approved message and a dirty tree — the conductor had to
+hand-commit under the approved gate.
 
 Same pattern and same delegation as `doc-record`: an `executor-write` agent
 writes `.docket/bin/commit-exec` — context bundle on stdin carries the
@@ -562,6 +595,16 @@ five-second loop, the same failure at activation is a refusal the operator sits
 through. A CONFLICT on a LINKED workflow is not yours to clear — the shared corpus
 moved without a bump and is refusing every repo that links it; the fix is in
 `src/user/docket/` (§6), so say that rather than editing around it.
+
+On a FIRST bootstrap the registry is empty, so lint refuses every LINKED
+workflow that names a payload schema — `` `payload` names "findings@1", which
+is not registered `` — and its remedy line says to `schema register`, which
+rule 1 forbids. That refusal is the empty registry, not the file: lint your
+repo-local additions for grammar, expect the unresolved-schema refusals on
+linked files, and let the dry-run's registration report stand in for them (it
+validates schemas before workflows; all 12 proved clean this way on
+2026-08-10). Lint resolving refs from the config tree it lints within is the
+engine fix, owed upstream; until it lands, this is the expected path.
 
 ```bash
 docket run start --issue DKT-1

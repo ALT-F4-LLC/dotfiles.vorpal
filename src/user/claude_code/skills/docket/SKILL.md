@@ -16,8 +16,11 @@ description: >
 
 Docket (`docket`) is a local-first, SQLite-backed issue tracker driven
 entirely through a single CLI binary. There is no server and no network
-call — all state lives in a `.docket/docket.db` SQLite file, resolved via
-`internal/config`. This skill teaches an agent how to drive `docket` end to
+call — all state lives in an `issues.db` SQLite file, resolved in order:
+`$DOCKET_PATH` → a repo-local `.docket/issues.db` found by walking up to the
+worktree toplevel → the shared per-user store at `~/.docket` (the default;
+each repo is a separate PROJECT there, and most verbs are project-scoped).
+This skill teaches an agent how to drive `docket` end to
 end: issue CRUD and lifecycle, file attachments, comments, labels,
 relations, dependency graphs, execution planning, consensus voting, docs,
 watch mode, and export/import.
@@ -30,7 +33,7 @@ parsing — the examples below show both.
 ## Quick Start
 
 ```bash
-docket init                                   # create .docket/docket.db in the cwd
+docket init                                   # join the shared ~/.docket store (use --local for a repo-local .docket/issues.db)
 docket issue create -t "Fix login bug" --json # create an issue, get its ID back
 docket issue list --json                      # list open issues
 docket issue show DKT-1 --json                # show full detail incl. comments/activity
@@ -49,7 +52,7 @@ subcommand:
 
 | Flag | Shorthand | Type | Default | Behavior |
 |---|---|---|---|---|
-| `--json` | — | bool | `false` | Switch to machine-readable JSON envelope on stdout. |
+| `--json` | — | string | off | Machine-readable JSON envelope on stdout. Bare `--json` = the frozen v1 shape (what this skill documents); `--json=v2` reshapes collections to `{items, total, truncated}`. |
 | `--quiet` | `-q` | bool | `false` | Suppress non-essential human-mode info/warning lines on stderr. No effect in `--json` mode (already silent). |
 | `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Only valid on read-only, watch-eligible commands (see below); write commands reject it with a `VALIDATION_ERROR`. |
 | `--interval` | — | duration | `2s` | Refresh interval for `--watch`. Minimum `500ms`; anything lower is a `VALIDATION_ERROR`. |
@@ -110,8 +113,10 @@ the table below, in both JSON and human mode (`ExitCodeForError`):
 | `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags |
 | `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty DB on import without `--merge`/`--replace` |
 
-Exit code `0` is success. Note `PersistentPreRunE` also returns `NOT_FOUND`
-(exit 2) if no `.docket/` database exists yet — run `docket init` first.
+Exit code `0` is success. A missing repo-local store is NOT an error: with no
+`.docket/` up-tree, commands fall back to the shared `~/.docket` store
+silently (creating it on first use). Codes 5-9 also exist on the current
+engine (AUTH_ERROR 5, STALE_LEASE 6, GONE 9); 1-4 are frozen.
 
 ### Interactive forms
 

@@ -27,6 +27,11 @@ const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] =
 
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
+// The docket global store: every docket verb opens ~/.docket/issues.db
+// read-write (WAL + auto-migrate), so without this every sandboxed docket
+// invocation fails with "unable to open database file (14)". The corpus
+// symlink targets stay in the read-only Vorpal store and are not covered.
+const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
@@ -180,6 +185,11 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
             .with_permission_allow("Bash(~/.claude/scripts/wave-usage:*)")
+            // ~/.claude/scripts is not currently installed (symlinks below are
+            // commented out); the skills resolve installed-else-source, so the
+            // source paths need the same allowance.
+            .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/shadow-transcript-summary.sh:*)")
+            .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/wave-usage:*)")
             .with_permission_allow("WebFetch(domain:api.github.com)")
             .with_permission_allow("WebFetch(domain:claude.ai)")
             .with_permission_allow("WebFetch(domain:code.claude.com)")
@@ -231,6 +241,7 @@ impl ClaudeCode {
                     .iter()
                     .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
+                    .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
                     .map(|p| p.to_string())
                     .collect(),
             )
@@ -307,14 +318,7 @@ impl ClaudeCode {
             ),
         ];
 
-        let artifacts = vec![
-            agents,
-            hooks,
-            scripts,
-            settings,
-            skills,
-            statusline,
-        ];
+        let artifacts = vec![agents, hooks, scripts, settings, skills, statusline];
 
         Ok((artifacts, symlinks))
     }

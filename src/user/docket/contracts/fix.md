@@ -66,7 +66,8 @@ Run the project's build and test commands and include their real output. A findi
 addressed while another test broke is not addressed.
 
 # Emit
-`change-summary` (markdown): Findings addressed (finding id → what the cause was → what
+`change-summary` (markdown): FIRST LINE is the worktree commit sha your
+obligations require (the conductor integrates by that sha) · Findings addressed (finding id → what the cause was → what
 changed → the evidence it is closed, with observed pre-fail and post-pass output where a
 test carries it) · Findings not addressed (id → why: not reproducible, disagreed with the
 premise, or out of declared scope — with the evidence, never as a bare assertion) ·

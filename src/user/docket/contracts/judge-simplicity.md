@@ -60,3 +60,9 @@ nothing, report examined-clean — a clean result here is common and meaningful.
 If the change's scope or intent is unclear enough that you cannot tell speculative
 generality from a stated requirement, emit your findings plus a `gap` note. Deleting
 something the issue asked for is the failure mode this node must avoid.
+
+An empty `issue.diff` beside a change-summary that names commits is not a missing
+input: the fix landed as ordinary commits before this step ran. Review those
+commits (`git show <sha>` in your own worktree) as the diff under judgment, and
+say in your findings that the target was reconstructed that way (RUN-8 set this
+pattern). Gap only when neither the diff nor any named commit is reachable.

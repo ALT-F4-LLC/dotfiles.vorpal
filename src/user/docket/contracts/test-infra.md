@@ -64,7 +64,8 @@ code directly, never through a pipe — a piped exit reports the last stage, so 
 suite reads as a clean pass.
 
 # Emit
-`change-summary` (markdown): What was built and the defect class each piece catches ·
+`change-summary` (markdown): FIRST LINE is the worktree commit sha your
+obligations require (the conductor integrates by that sha) · What was built and the defect class each piece catches ·
 Size classification, with the justification for anything above small · Seams and fakes
 introduced (what is now injectable that was not) · Evidence the infrastructure reports
 red (the deliberate break and the failure it produced) · Files changed with one line of

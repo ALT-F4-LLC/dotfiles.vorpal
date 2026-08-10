@@ -48,3 +48,9 @@ examined-clean report; an empty payload is a valid, meaningful result.
 If the brief lacks the context to judge a boundary (e.g. the caller of changed code is
 outside the provided artifacts), emit your findings plus a `gap` note naming the missing
 context — never assume it safe, never guess it dangerous.
+
+An empty `issue.diff` beside a change-summary that names commits is not a missing
+input: the fix landed as ordinary commits before this step ran. Review those
+commits (`git show <sha>` in your own worktree) as the diff under judgment, and
+say in your findings that the target was reconstructed that way (RUN-8 set this
+pattern). Gap only when neither the diff nor any named commit is reachable.

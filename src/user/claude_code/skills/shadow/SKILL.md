@@ -261,6 +261,14 @@ Interrupt the operator mid-run for exactly three things:
 Everything else is a log entry. A shadow that narrates is noise, and noise is
 friction — do not become your own finding.
 
+If the operator directs you to message the observed session directly, expect
+the conductor to hold your message as an unverifiable peer claim rather than
+act on it — that skepticism is its permission model working, and it should not
+be argued with. Say so when relaying, and prefer pointing the operator at the
+observed session's own next gate: an instruction given there is the only form
+it can execute on (RUN-8: relayed instruction correctly refused, validated
+after the fact, and still unexecuted).
+
 ## 6. After the run
 
 The run is over when the transcript goes terminal or the operator says so.
@@ -320,8 +328,14 @@ Pre-derived because conduct is the richest target. The conductor:
 
 And the wave:
 
-- **Staging.** Writers strictly serial, then readers grouped per issue;
-  anything overlapping a writer is a finding.
+- **Staging.** Stage-label-driven (2026-08-08 rewrite; the old
+  writers-serial interim is retired): rows sharing an engine `stage` value
+  run fully parallel, stages ascend with an await between, and a stage-less
+  row is stage 0. A stage-0 set offered together IS engine-certified
+  concurrent regardless of class — verified live on RUN-8 in both regimes
+  (all-stage-0 reader/writer mix; fixer-0/judges-1 ordering). If a claim
+  then conflicts, the finding is the engine's certification or the
+  dispatch's row set, never the wave's staging.
 - **A null return is a dead spawn.** The step was never claimed and the
   engine will offer it forever; a conductor looping on one is load-bearing.
 - **`returned` is not `recorded`.** The wave's status only says the executor

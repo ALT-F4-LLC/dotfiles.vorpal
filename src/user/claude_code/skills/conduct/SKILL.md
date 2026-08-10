@@ -211,8 +211,13 @@ by-name invocation is a defect regardless of how convenient it looks.
 Pass `args` as `{rows, policyText}`. The harness JSON-encodes args in transit
 regardless of what you emit — wave.js decodes it as normal transport (proven
 by controlled probe, RUN-5 shadow; the string in your transcript is the
-harness's doing, not yours). There is no `policyPath` parameter: the script
-cannot read files, so policy.toml travels as TEXT in `policyText`.
+harness's doing, not yours). Still, EMIT the object as a literal JSON value in
+the tool call — do not hand-stringify it into a quoted string. The transport
+converges either way, but hand-escaping a multi-KB policy text into a JSON
+string is an escaping error waiting to happen, and the harness's own encoder
+never makes one (RUN-1 graph-engine shadow, observed twice). There is no
+`policyPath` parameter: the script cannot read files, so policy.toml travels
+as TEXT in `policyText`.
 
 **Route executor rows only.** Filter the dispatch rows to `kind: "executor"`
 and hand over only those. `kind: "action"` steps are engine-run — the engine
@@ -284,6 +289,15 @@ docket dispatch close --run $RUN
 Rows land against the step's recorded attempt, `--source` defaults to
 `backfilled`, and the window between the steps recording and the close is the
 whole design — the flow never needs another.
+
+Read `verify`'s answer by shape, not by exit alone: after a step RECORDED
+successfully, `verify` reports `ok:false` — "does not match the current ready
+set" — because the ready set has legitimately advanced past the stored rows.
+That mismatch is what completed work looks like, not a conflict; proceed to
+`close`, whose own reconciliation (`close_reason: "reconciled"`) is the
+authority. A verify mismatch is a finding only when the step it names did NOT
+record (RUN-1 graph-engine observed both shapes: ok:true after a dead spawn,
+ok:false after every successful record).
 
 **This is the transcript-token path, not a workaround for one.** An executor
 cannot observe its own token consumption; transcripts are the only source and

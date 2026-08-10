@@ -260,6 +260,13 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   screens rendered briefs before any agent exists; blocked-at-zero-tokens is
   consistent with the TEXT being the problem. Never rule out prompt content
   because no agent came to life.
+- **Direct Agent-tool spawns (no wave) transcribe under the SPAWNING session:**
+  `<projects-dir>/<session-id>/subagents/agent-a<name>-<hash>.jsonl`. And a
+  named background agent's final text is delivered to NOBODY — its spawner
+  gets a content-free idle ping — so "went idle, no report" means finished
+  work sitting in that file, recoverable (measured twice, 2026-08-10; one
+  such loss stalled the observed run nine minutes and was then misreported
+  as "report received" in its recap).
 
 Cross-check the engine whenever the store is reachable, from the observed
 repo's root: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`

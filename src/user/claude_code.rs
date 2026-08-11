@@ -278,6 +278,16 @@ impl ClaudeCode {
         .build(context)
         .await?;
 
+        // Declared before `statusline` because that binding moves `self.systems`;
+        // every FileSource above clones it and this one must too.
+        let workflows = FileSource::new(
+            &format!("{}-claude-code-workflows", self.name),
+            "src/user/claude_code/workflows",
+            self.systems.clone(),
+        )
+        .build(context)
+        .await?;
+
         let statusline = FileCreate::new(
             &format!("{}-claude-code-statusline", self.name),
             self.systems,
@@ -308,9 +318,15 @@ impl ClaudeCode {
                 ),
                 "${HOME}/.claude/statusline.sh".to_string(),
             ),
+            (
+                get_env_key(&workflows),
+                "${HOME}/.claude/workflows".to_string(),
+            ),
         ];
 
-        let artifacts = vec![agents, hooks, scripts, settings, skills, statusline];
+        let artifacts = vec![
+            agents, hooks, scripts, settings, skills, statusline, workflows,
+        ];
 
         Ok((artifacts, symlinks))
     }

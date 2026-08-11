@@ -179,6 +179,8 @@ function resolve(row, policy) {
             action: 'action steps are engine-run; not a spawn',
             human: 'human gate steps are never claimed — they are approved or ' +
                 'rejected directly',
+            vote: 'vote gate steps convene the tribunal — conduct routes them ' +
+                'to tribunal.js, never to a wave executor',
         }[row.kind] || 'only kind:"executor" rows are spawnable'
         throw new Error(
             `wave.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +

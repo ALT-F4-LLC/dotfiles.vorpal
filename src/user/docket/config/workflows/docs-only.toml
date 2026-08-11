@@ -18,8 +18,9 @@
 
 [pipeline]
 name    = "docs-only"
-version = 5
-description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop; the operator commits by hand."
+version = 6   # 6: description + commit-tail note updated to the
+              #   conductor-integrates model (2026-08-10)
+description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop; the conductor integrates commits, the operator publishes."
 
 [match]                      # no `docs` kind exists (closed set, see spec-doc's
                              #   note); `docs-only` is the label 05 §2 names anyway
@@ -121,6 +122,7 @@ threshold = { "waiting-human" = "any(status == unmet)" }
 # with the harness security model (interactive 1Password commit-signing
 # authorization is unavailable to headless executors and engine actions;
 # `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. The operator
-# commits by hand via a manual skill; `verify` is the terminal engine step, and
+# DKT-61). Full rationale in standard-change.toml's matching note. Since 2026-08-10 the
+# conductor integrates each write sha as a real unsigned commit; only
+# publishing stays the operator's. `verify` is the terminal engine step, and
 # its `waiting-human` threshold on unmet ACs remains the pipeline's park point.

@@ -8,7 +8,7 @@
 # declares findings@2 (judge-boundary anchor keys required — retro after RUN-5;
 # 7 judge-architecture findings keyed location/rule were silently dropped
 # downstream, see DKT-79), while `reconcile` stays on findings@1, whose declared
-# severity order the ordered `any(severity >= high)` compiles from (06 §11.2,
+# severity order the ordered severity threshold compiles from (06 §11.2,
 # V21c/V29). The split is deliberate: `aggregate` carries through only input
 # keys, so a schema requiring `id` on the reconcile document trips V30.
 
@@ -193,7 +193,8 @@ threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status
 # 1Password authorization no headless executor or engine action can obtain
 # (op-ssh-sign "failed to fill whole buffer"; the `commit-msg` gate went 0 pass
 # / 1 fail in RUN-1, RUN-2 and RUN-5 alike, every failure cleared only by
-# operator override-pass; DKT-13/DKT-61 lineage). The operator commits by hand
-# via a manual skill (contracts/commit-author.md and .docket/bin/git-commit
-# were removed with the tail; git history keeps both). `verify` is the terminal
+# operator override-pass; DKT-13/DKT-61 lineage). Since 2026-08-10 the conductor
+# integrates each write sha as a real unsigned commit; publishing stays the
+# operator's (contracts/commit-author.md and .docket/bin/git-commit were
+# removed with the tail; git history keeps both). `verify` is the terminal
 # engine step; acceptance is the operator's own commit, outside the engine.

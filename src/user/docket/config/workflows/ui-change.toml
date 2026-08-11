@@ -175,6 +175,7 @@ threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING
 # with the harness security model (interactive 1Password commit-signing
 # authorization is unavailable to headless executors and engine actions;
 # `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
-# DKT-61). Full rationale in standard-change.toml's matching note. The operator
-# commits by hand via a manual skill; `design-qa` is the terminal engine step,
-# and its fix-loop threshold on high findings remains the rework route.
+# DKT-61). Full rationale in standard-change.toml's matching note. Since
+# 2026-08-10 the conductor integrates write shas as real unsigned commits and
+# publishing stays the operator's; `design-qa` is the terminal engine step,
+# and its fix-loop threshold on BLOCKER findings remains the rework route.

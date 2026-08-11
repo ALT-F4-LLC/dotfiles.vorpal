@@ -176,16 +176,19 @@ the definitions assume. By layer:
 | Repetition | The same pipeline retyped — by the conductor every loop iteration, or by every executor because a brief inlines it. The third appearance is a finding; take it to the extraction bar below. |
 | Engine | Refusal text that misleads, a documented flag that does not exist, a read surface missing (usage absent from `journal.jsonl` is the canonical case). Rule-3 territory: file it. |
 
-**Two engine defects are known-open: evidence them, never re-file them.**
-Both are packet-composition defects, and both surface as an executor working
-from content that is missing or belongs to another step. (a) `issue.diff`
-renders EMPTY in the packet for any step recorded with `--worktree`. (b) A
-review round's packet inputs the PRIOR step's change-summary rather than the
-step-under-review's own — which mis-targeted a full re-review, measured on
-RUN-1 graph-engine. Confirm with `step render` (§1) before you attribute
-either to the brief: a definition edit proposed against these is a wrong fix,
-and a fresh issue against them is duplicate noise. Anything BEYOND these two
-is rule-3 territory as usual.
+**The two packet-composition defects earlier shadows carried are FIXED and
+live-verified — do not expect them, and re-file nothing against them.**
+(a) `issue.diff` rendering EMPTY for `--worktree`-recorded steps: fixed by
+a9eaebd + 43fb186 (the diff base is the RUN's recorded exec root, DKT-25);
+first real diffs confirmed in production on RUN-2, 2026-08-11. (b) A review
+round inputting the PRIOR step's change-summary: fixed by b98150a (loop
+inputs rebind to the loop's latest emit); verified live on the same run
+(`step context` showed review@1's change-summary AND diff both from fix@1).
+STORED artifacts from before those fixes remain empty/stale forever — a
+judge reading one and falling back to `git show` is history, not a live
+defect. An empty diff on a NEW record, or a stale summary in a NEW packet,
+is a fresh regression: rule-3 territory, evidence it with `step render`/
+`step context` and file it.
 
 **Repetition becomes a script — when it passes the bar.** Watch for command
 shapes the session keeps rebuilding: the journal→usage join before every

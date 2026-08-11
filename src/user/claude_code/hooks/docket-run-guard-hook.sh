@@ -101,6 +101,25 @@ case "$REASON" in
     *'no docket database found'*) allow ;;
 esac
 
+# Carve-out 1b: this project has no live run. The global store answers for
+# every project on the machine, which made carve-out 1 dead code (a database
+# always exists up-tree now) and widened `guard stop`'s no-run-argument
+# wiring from repo-wide to machine-wide — a session standing in an unrelated
+# repo was denied over another project's run [OBSERVED 2026-08-11, RUN-2:
+# dotfiles cwd, deny named docket.git's steps]. `run status` IS
+# project-scoped (same probe: 0 runs from dotfiles, RUN-2 from docket.git),
+# so zero live runs in the cwd's project means a stop here interferes with
+# nothing: allow. The affirmative zero is the only new allow path — missing
+# jq or a parse failure falls through to the deny, keeping conductor-seat
+# behavior byte-identical. (Engine asymmetry — guards store-wide, sibling
+# reads project-scoped — is filed; this is the hook-side mitigation.)
+if command -v jq >/dev/null 2>&1; then
+    LIVE=$(docket run status --json 2>/dev/null \
+        | jq -r '[.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed")] | length' 2>/dev/null) \
+        || LIVE=""
+    [ "$LIVE" = "0" ] && allow
+fi
+
 # Carve-out 2: a dispatch is open (or a discrepancy stands) — the wave is in
 # flight and turn-end is the designed await. guard record's exit 2 is exactly
 # that condition; any other exit falls through to the deny below.

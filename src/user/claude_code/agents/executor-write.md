@@ -4,8 +4,6 @@ description: >
   Graph-fleet executor archetype — full file-write tool surface, no web.
   Spawned by wave.js per dispatched step; the rendered brief carries the
   entire contract.
-skills:
- - commit
 tools: Read, Edit, Write, Grep, Glob, Bash, LSP
 ---
 

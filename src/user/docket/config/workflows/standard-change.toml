@@ -14,11 +14,17 @@
 
 [pipeline]
 name    = "standard-change"
-version = 7                  # 7: fix-loop threshold high -> blocker (operator
-                             #   convergence policy, 2026-08-10 — see the
-                             #   threshold comment) plus description update to
-                             #   the conductor-integrates model. (6: @5 was
-                             #   frozen and a comment edit forced the bump.)
+version = 8                  # 8: write concurrency 1 -> 20 (operator directive,
+                             #   2026-08-10): per-executor worktrees isolate
+                             #   writers, so class-wide serialization guards
+                             #   nothing; the conflicting-cherry-pick
+                             #   stop-and-ask gate at integration backstops
+                             #   scope overlap. (7: fix-loop threshold high ->
+                             #   blocker, operator convergence policy,
+                             #   2026-08-10 — see the threshold comment — plus
+                             #   description update to the conductor-integrates
+                             #   model. 6: @5 was frozen and a comment edit
+                             #   forced the bump.)
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 
 [match]                      # binding rule, evaluated at run activation (02 §1.2)
@@ -55,19 +61,20 @@ unless_labels = [
                              #   this bounds) against a 104m average, and every read
                              #   class finished inside 13m.
                              # `max` is required by V24 and is CONCURRENCY, a
-                             #   separate question from duration. `write` = 1 is the
-                             #   writer serialization the spec's reference instance
-                             #   specifies (02 §11.1); read classes take 4, the
-                             #   fanout width these pipelines actually declare, so
-                             #   the bound records existing behaviour rather than
-                             #   newly throttling anything.
+                             #   separate question from duration. `write` takes 20
+                             #   since @8: 02 §11.1's write=1 reference instance
+                             #   predates per-executor worktrees, which isolate
+                             #   writers; overlap surfaces at integration as a
+                             #   conflicting cherry-pick, a stop-and-ask gate.
+                             #   Read classes take 4, the fanout width these
+                             #   pipelines actually declare.
 "judge-architecture"  = { max = 4, max_step_duration = "1h" }
 "judge-correctness"   = { max = 4, max_step_duration = "1h" }
 "judge-simplicity"    = { max = 4, max_step_duration = "1h" }
 "judge-testing"       = { max = 4, max_step_duration = "1h" }
 "synthesize-findings" = { max = 4, max_step_duration = "1h" }
 "verify-ac"           = { max = 4, max_step_duration = "1h" }
-"write"               = { max = 1, max_step_duration = "2h" }
+"write"               = { max = 20, max_step_duration = "2h" }
 
 [[step]]
 name = "implement"

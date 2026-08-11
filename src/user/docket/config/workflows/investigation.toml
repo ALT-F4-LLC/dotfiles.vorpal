@@ -10,12 +10,14 @@
 #     `when` expands the step as `skipped` (terminal), so `report`'s join stays
 #     resolvable either way (06 §11.1).
 #   - "No gates beyond report recording" is read literally: no step declares a
-#     `gates` list. The human gate is a step, not a gate.
+#     `gates` list. The acceptance gate is a step, not a gate — a vote step since
+#     2026-08-11, escalating to the operator rather than being one.
 
 [pipeline]
 name    = "investigation"
-version = 3
-description = "Read-only root-cause investigation with optional research fanout, ending at an operator read."
+version = 4   # 4: `read-gate` human -> tribunal vote (operator policy,
+              #   2026-08-11)
+description = "Read-only root-cause investigation with optional research fanout, ending at a tribunal read that escalates to the operator."
 
 [match]                      # 05 §2 calls this "kind-matched", but Docket's issue
                              #   kinds are a CLOSED set — {bug, feature, task,
@@ -107,11 +109,31 @@ inputs = ["investigate.investigation", "research.*", "issue.body"]
 [[step]]
 name = "read-gate"
 after = ["report"]
-type = "human"                       # the operator reads (05 §2)
-on_fail = "skip"                     # V13 forbids `waiting-human` here and V13a
-                                     #   requires an explicit value; an
-                                     #   investigation the operator does not accept
-                                     #   is simply not adopted — there is no loop
-                                     #   body to re-enter and no reason to abandon
-                                     #   the issue
+type = "vote"                        # TRIBUNAL (operator policy, ratified in
+                                     #   conversation 2026-08-11): 05 §2's "the
+                                     #   operator reads" becomes a three-seat panel
+                                     #   that reads FIRST and escalates only what it
+                                     #   will not pass. The operator's attention is
+                                     #   the scarcest resource in the loop; a gate
+                                     #   that spends it on every acceptance spends it
+                                     #   mostly on acceptances.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+                                     # the three standing seats; each has an
+                                     #   [executors] row in policy.toml, which is
+                                     #   what the tribunal spawner routes on
+vote_rule = "tribunal"               # registered engine-side at canary time
+                                     #   (`docket config set
+                                     #   vote.rule.tribunal.threshold 0.67`) — V26
+                                     #   refuses to register a workflow naming an
+                                     #   unregistered rule, so registration precedes
+                                     #   re-registration
+on_fail = "waiting-human"            # ANY non-approval escalates to the human. Legal
+                                     #   here only because the step is no longer
+                                     #   `type="human"`: V13 bars `waiting-human` on
+                                     #   human steps precisely because there is
+                                     #   nobody further to escalate to. A vote step
+                                     #   has somewhere to send it, and that
+                                     #   destination is the operator — replacing the
+                                     #   old `skip`, which dropped an unaccepted
+                                     #   investigation silently.
 inputs = ["report.investigation"]

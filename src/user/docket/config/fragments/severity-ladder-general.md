@@ -26,24 +26,35 @@ become payload entries at all:
 
 | Author as  | Emit as   | Why                                                     |
 |------------|-----------|---------------------------------------------------------|
-| Blocker    | `blocker` | must fix — always routes to the fix loop                |
-| Concern    | `high`    | `high` is the lowest value the fix loop triggers on     |
-| Suggestion | `low`     | below the gate; leaves `medium` free (see below)        |
+| Blocker    | `blocker` | must fix — the ONLY value that opens a fix round        |
+| Concern    | `high`    | recorded and surfaced; resolved at gates, never looped  |
+| Suggestion | `low`     | below every gate; leaves `medium` free (see below)      |
 | Question   | body — or a `gap` | not a defect; see below                         |
 | Praise     | body only | a payload entry is a defect record                      |
 
-**Concern is `high`, not `medium.`** The threshold that matters is `any(severity >=
-high)`: `high` and above open a fix round, everything below flows to the reconciled set
-untouched. A Concern is "should fix or explicitly justify" — at `medium` it would pass
-silently, and the justification this rung demands would have nowhere to happen. `high` is
-what gives it a venue.
+**Only a Blocker opens a fix round** (operator convergence policy, 2026-08-10). The
+fix loop's question is "may this change ship?", and a loop keyed on anything judges
+can produce indefinitely never closes — measured: three rounds and a growing findings
+payload on a five-line change. So `blocker` is the loop's whole fuel, and a Blocker
+means exactly that: the change as it stands must not ship — an AC violated, the build
+or tests broken by the change, a security regression, data loss. Distance from ideal
+is never a Blocker.
 
-**Suggestion is `low`, keeping `medium` in reserve.** Both sit below the gate, so routing
-does not distinguish them. `low` is the better home because a cluster's severity is a
-median over its members, and a security judge on the same change emits on a ladder whose
-own threshold is `≥ medium`; parking general-track niceties at `low` keeps them from
-pulling a mixed cluster upward. `medium` stays available for a Concern you have
-deliberately downgraded but are not willing to drop.
+**Concern is `high`, not `medium`, and its venue is the RECORD, not the loop.** A
+Concern is "should fix or explicitly justify" — the justification now happens where a
+human can weigh it: `high` outranks everything below it in cluster medians, is what a
+held cluster's disagreement is measured over, surfaces at the reconcile and operator
+gates, and lands in the run record and backlog the operator reviews before publishing.
+What it no longer does is conscript a fix round: mechanical rework is the Blocker's
+venue alone.
+
+**Suggestion is `low`, keeping `medium` in reserve.** Both sit below every gate, so
+routing does not distinguish them. `low` is the better home because a cluster's
+severity is a median over its members, and a security judge on the same change emits
+on a ladder whose serious values route to a human security vote; parking
+general-track niceties at `low` keeps them from pulling a mixed cluster upward.
+`medium` stays available for a Concern you have deliberately downgraded but are not
+willing to drop.
 
 **A Question is not a severity.** `severity` orders defects, and no value on it means "I
 could not judge." Emitting `info` files a blocking question as the least consequential

@@ -20,7 +20,7 @@
 
 [pipeline]
 name    = "spec-project"
-version = 3
+version = 4   # 4: fix-loop threshold high -> blocker (2026-08-10)
 description = "Author the seven reserved project spec files in parallel, review them once, and accept by operator."
 
 [match]                      # closed kind set (see spec-doc's note): the label is
@@ -127,7 +127,13 @@ action = "aggregate"
 params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
 inputs = ["synthesize.findings"]
 payload = "findings@1"
-threshold = { "fix-loop" = "any(severity >= high)" }
+threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):
+                                     #   high findings are recorded and surface at
+                                     #   gates/backlog, never re-loop — Opus-tier
+                                     #   judges sustain finding pressure forever and
+                                     #   a high-keyed loop cannot converge (RUN-1
+                                     #   graph-engine; full rationale in
+                                     #   standard-change.toml).
 max_fix_loops = 2
 
 [[step]]

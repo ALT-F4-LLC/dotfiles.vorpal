@@ -245,7 +245,9 @@ find ~/.claude/projects -name '<session-id>*'   # the main transcript; tail it
 ```
 
 Each `Workflow` call in the main transcript names its wave run; the wave's
-transcript directory holds three kinds of file, and only one carries usage:
+transcript directory is
+`~/.claude/projects/<flattened-cwd>/<session-id>/subagents/workflows/<wfId>/`
+and holds three kinds of file, of which only one carries usage:
 
 - `journal.jsonl` — one `started` and one `result` line per agent: `agentId`
   and return value. No usage, no step id — the `label` passed to `agent()` is

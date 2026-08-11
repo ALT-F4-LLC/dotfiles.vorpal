@@ -14,11 +14,12 @@
 
 [pipeline]
 name    = "standard-change"
-version = 6                  # 6, not 5: @5 registered and a comment edit then
-                             #   changed the file's bytes — a registered
-                             #   name@version is frozen, so the edit forces the
-                             #   bump (same content otherwise)
-description = "Implement, review, reconcile, and verify one ordinary change; the operator commits by hand."
+version = 7                  # 7: fix-loop threshold high -> blocker (operator
+                             #   convergence policy, 2026-08-10 — see the
+                             #   threshold comment) plus description update to
+                             #   the conductor-integrates model. (6: @5 was
+                             #   frozen and a comment edit forced the bump.)
+description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 
 [match]                      # binding rule, evaluated at run activation (02 §1.2)
                              # EXACTLY ONE workflow may match an issue (06 §11.1), so
@@ -105,6 +106,18 @@ payload = "findings@2"               # validates at the JUDGE boundary: each jud
                                      #   schema's property-level enum would refuse
 expected_cost = 0.60                 # per expanded sibling
 inputs = ["implement.change-summary", "issue.diff"]
+                                     # KNOWN LIMIT: these inputs are STATIC
+                                     #   across fix-loop re-entries — a
+                                     #   re-review round still receives
+                                     #   implement's change-summary, never
+                                     #   fix@N's (engine issue pending; RUN-1
+                                     #   graph-engine measured a full re-review
+                                     #   judging the superseded commit). Until
+                                     #   the engine rebinds loop inputs, the
+                                     #   conductor hands re-review rounds the
+                                     #   integrated sha explicitly and checks
+                                     #   each judge report's reviewed sha
+                                     #   (conduct SKILL.md).
 
 [[step]]
 name = "synthesize"
@@ -129,7 +142,20 @@ params = { field = "severity", method = "median", hold_spread = 2, output = "fin
 inputs = ["synthesize.findings"]     # the clusters the builtin reduces (DKT-28,
                                      #   V31: required non-empty)
 payload = "findings@1"               # severity's declared order (V29)
-threshold = { "fix-loop" = "any(severity >= high)" }   # no match -> pass (06 §11.2)
+threshold = { "fix-loop" = "any(severity >= blocker)" }   # no match -> pass (06 §11.2)
+                                     # BLOCKER-ONLY LOOPING (operator policy,
+                                     #   2026-08-10): `high` findings are
+                                     #   recorded, surface in held clusters and
+                                     #   at the operator's gates, and land as
+                                     #   backlog — they never re-enter the fix
+                                     #   loop. Opus-tier judges sustain Concern
+                                     #   pressure indefinitely (RUN-1
+                                     #   graph-engine: 3 rounds, findings GREW
+                                     #   to 30KB on a 5-line change), so a loop
+                                     #   keyed on `high` cannot converge; a loop
+                                     #   keyed on `blocker` closes when the
+                                     #   change is shippable, which is the
+                                     #   question the loop exists to answer.
 max_fix_loops = 2                    # loops exhausted -> waiting-human (06 §11.3)
 
 [[step]]

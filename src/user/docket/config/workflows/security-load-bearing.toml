@@ -23,7 +23,7 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 6
+version = 7   # 7: medium auto fix-loop retired (2026-08-10)
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 
 [match]                      # exactly-one-match (06 §11.1): security is the highest-
@@ -138,7 +138,12 @@ action = "aggregate"
 params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
 inputs = ["synthesize.findings"]
 payload = "findings@1"
-threshold = { "security-vote" = "any(severity >= high)", "fix-loop" = "any(severity == medium)" }
+threshold = { "security-vote" = "any(severity >= high)" }   # AUTO FIX-LOOP RETIRED for the
+                                     #   security track (2026-08-10): Medium
+                                     #   findings are recorded, never looped;
+                                     #   high+ still routes to the HUMAN vote,
+                                     #   which converges by decision. Same
+                                     #   rationale as standard-change.toml.
                                      # `fix-loop` is evaluated BEFORE any
                                      #   interposed step routing regardless of
                                      #   declaration order (ThresholdOrder,

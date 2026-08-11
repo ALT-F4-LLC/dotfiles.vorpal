@@ -150,37 +150,37 @@ impl ClaudeCode {
             .with_env("OTEL_METRICS_EXPORTER", "otlp")
             .with_env("OTEL_METRIC_EXPORT_INTERVAL", "15000");
 
-        // let settings_builder = settings_builder
-        //     .with_hook(
-        //         "PreToolUse",
-        //         Some("Workflow|Agent"),
-        //         "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
-        //         "command",
-        //     )
-        //     .with_hook(
-        //         "PostToolUse",
-        //         Some("Workflow"),
-        //         "bash ~/.claude/hooks/docket-wave-audit-hook.sh",
-        //         "command",
-        //     )
-        //     .with_hook(
-        //         "Stop",
-        //         None,
-        //         "bash ~/.claude/hooks/docket-run-guard-hook.sh",
-        //         "command",
-        //     )
-        //     .with_hook(
-        //         "PreToolUse",
-        //         Some("Bash"),
-        //         "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
-        //         "command",
-        //     )
-        //     .with_hook(
-        //         "SessionStart",
-        //         None,
-        //         "bash ~/.claude/hooks/docket-session-start-hook.sh",
-        //         "command",
-        //     );
+        let settings_builder = settings_builder
+            .with_hook(
+                "PreToolUse",
+                Some("Workflow|Agent"),
+                "bash ~/.claude/hooks/docket-spawn-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "PostToolUse",
+                Some("Workflow"),
+                "bash ~/.claude/hooks/docket-wave-audit-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "Stop",
+                None,
+                "bash ~/.claude/hooks/docket-run-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "PreToolUse",
+                Some("Bash"),
+                "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
+                "SessionStart",
+                None,
+                "bash ~/.claude/hooks/docket-session-start-hook.sh",
+                "command",
+            );
 
         let settings_builder = settings_builder
             .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
@@ -289,8 +289,8 @@ impl ClaudeCode {
 
         let symlinks = vec![
             (get_env_key(&agents), "${HOME}/.claude/agents".to_string()),
-            // (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
-            // (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
+            (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
+            (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
             (
                 format!(
                     "{}/{}-claude-code-settings",

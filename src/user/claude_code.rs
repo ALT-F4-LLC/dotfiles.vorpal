@@ -185,9 +185,9 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
             .with_permission_allow("Bash(~/.claude/scripts/wave-usage:*)")
-            // ~/.claude/scripts is not currently installed (symlinks below are
-            // commented out); the skills resolve installed-else-source, so the
-            // source paths need the same allowance.
+            // ~/.claude/scripts is installed from the vorpal store, but the
+            // store lags source until the next activate and the skills resolve
+            // installed-else-source, so the source paths keep the same allowance.
             .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/shadow-transcript-summary.sh:*)")
             .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/wave-usage:*)")
             .with_permission_allow("WebFetch(domain:api.github.com)")

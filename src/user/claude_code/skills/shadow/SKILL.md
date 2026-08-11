@@ -72,8 +72,9 @@ hands you the active-run status the moment you boot. Sharing the repo means
 sharing the hooks, and hooks cannot tell a shadow from a conductor — but
 **check which hooks are live before attributing any behavior to one, and
 never wait on output from one that is not:** read the settings builder's hook
-block (`src/user/claude_code.rs:153-183`), commented out in full today, all
-five docket hooks with it. Where they run, expect these and use them instead
+block (the `with_hook` chain in `src/user/claude_code.rs`) against the built
+`~/.claude/settings.json` — all five docket hooks are LIVE today (verified
+firing 2026-08-11). Where they run, expect these and use them instead
 of fighting them:
 
 - **run-guard** denies your turn-end while the machine half of the run is in
@@ -134,13 +135,12 @@ Before reading one transcript line:
 3. **Establish which bytes are actually running — starting with whether an
    installed copy exists at all.** Resolve it at attach rather than trusting
    this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
-   against the builder's symlink vec (`src/user/claude_code.rs:290-293`).
-   Today that returns `agents` and `skills` as live symlinks into the
-   content-addressed vorpal store; `workflows/wave.js` as a hand-made symlink
-   to the source file, so both spellings are the same bytes (`diff` it); and
-   no `scripts` or `hooks` at all, those two being the commented-out entries.
-   `workflows` was never in the builder — its install is hand-made and will
-   not survive a rebuild. Resolve every definition as the session must:
+   against the builder's symlink vec (`src/user/claude_code.rs:290-311`).
+   Today that returns `agents`, `skills`, `hooks`, and `scripts` as live
+   symlinks into the content-addressed vorpal store, and `workflows/wave.js`
+   as a hand-made symlink to the source file, so both spellings are the same
+   bytes (`diff` it). `workflows` was never in the builder — its install is
+   hand-made and will not survive a rebuild. Resolve every definition as the session must:
    installed path if present, else the source under `$SRC`. Docket config
    travels a chain of its own, and it is ONE hop now: `src/user/docket/config/` → (`just activate`) →
    `~/.docket/config/`, which the engine reads directly as the first of its
@@ -195,8 +195,10 @@ shapes the session keeps rebuilding: the journal→usage join before every
 close, the transcript-find, a jq chain every executor re-derives. Each retype
 spends tokens and invites drift — the iteration where the jq path comes out
 wrong is the iteration the ledger lies. The fix is a script proposed into
-`$SRC/scripts/` — also where its callers must name it while the
-`~/.claude/scripts` symlink stays uninstalled.
+`$SRC/scripts/` — and note the install lag: `~/.claude/scripts` is a live
+store symlink today, but it serves the store's bytes, so a NEW script exists
+only at its source path until the next `just activate`; callers must name
+whichever path will actually resolve when they run (§2.3).
 
 The bar is a small function, and it is strict:
 
@@ -260,8 +262,8 @@ Step attribution is a JOIN on `agentId`: the step id is in the agent's first
 
 Tail on a cadence, from your last offset —
 `$SRC/scripts/shadow-transcript-summary.sh <transcript.jsonl> [from-line]`
-renders the compact per-line view; don't retype the jq, and call it at that
-source path, since `~/.claude/scripts` is not installed. A quiet transcript is
+renders the compact per-line view; don't retype the jq — the installed
+`~/.claude/scripts/` spelling works too today (§2.3). A quiet transcript is
 a run working, not a run stalled — the wave notifies on completion, and gates
 park runs for hours by design.
 
@@ -312,7 +314,12 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   spawner gets a content-free idle ping — so "went idle, no report" means finished
   work sitting in that file, recoverable (measured twice, 2026-08-10; one
   such loss stalled the observed run nine minutes and was then misreported
-  as "report received" in its recap).
+  as "report received" in its recap). Even a SENT report (SendMessage,
+  success acknowledged) waits for the spawner's next turn BOUNDARY: a spawner
+  that keeps probing inside one turn blocks its own delivery, and "no report
+  landed" from such a session indicts the session, not the delegate
+  (measured 2026-08-11: 94s queued, delivered the same second the turn
+  ended).
 
 Cross-check the engine whenever the store is reachable, from the observed
 repo's root: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`
@@ -385,8 +392,9 @@ Then:
    approved items get written; a declined item stays in the log as the next
    shadow's watch list. Script extractions ride the same flow: the body lands
    in `$SRC/scripts/` (`chmod +x` it — file tools do not set the bit), and
-   until the `~/.claude/scripts` symlink is restored, every call site you edit
-   must name that source path.
+   since the installed `~/.claude/scripts` store symlink lags source until the
+   next `just activate`, every call site you edit must name the source path
+   for a script that is new or newly changed.
 
    **A live fix lands on BOTH surfaces in the same breath** — the source under
    `$SRC` (what gets committed) and the installed path sessions actually
@@ -397,7 +405,7 @@ Then:
    found. Where nothing is installed, source IS the whole job. Where the
    installed path is a symlink to the source file — today
    `~/.claude/workflows/wave.js` — one edit lands both. Where it is a symlink
-   into the content-addressed vorpal store (`~/.claude/{agents,skills}`
+   into the content-addressed vorpal store (`~/.claude/{agents,skills,hooks,scripts}`
    today), the store holds a second set of bytes you must edit as well, and
    through the file tools: Bash writes into the store are sandbox-denied, so
    `cp` and `sed` fail there where Edit and Write go through. Prefer replacing

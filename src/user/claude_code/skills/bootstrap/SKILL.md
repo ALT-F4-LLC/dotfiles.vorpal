@@ -18,7 +18,9 @@ Two rules you must not fight:
   `.docket/config/` if it has one — schemas before workflows. Registering by
   hand freezes a `name@version` before the human has seen it.
 - **Never add a trust entry before the human approves it.** You propose; they
-  say yes; then you run `trust add --yes`.
+  say yes; then you run `trust add --yes`. The human, specifically: no panel of
+  agents can approve a trust entry, and no trust entry is ever one item among
+  several in a single question (§5).
 
 ## 0. Seed the specs
 
@@ -134,10 +136,11 @@ sandbox write root (§4a's scratch probe).
 docket init          # only if no store exists yet. Bare init targets the SHARED
                      # ~/.docket store; --local makes a repo-local .docket/issues.db
 
-# The corpus does not activate without these two. Set them now; §4b argues the
+# The corpus does not activate without these three. Set them now; §4b argues the
 # numbers and is where the operator approves or changes them.
 docket config set vote.rule.security-acceptance.threshold 0.67
 docket config set vote.rule.doc-acceptance.threshold 0.60
+docket config set vote.rule.tribunal.threshold 0.67
 ```
 
 **Nothing about the corpus lands in this repo, and that is the design.** The
@@ -185,11 +188,14 @@ issues**: the rows sit in whichever store resolution finds, shared or local — 
 normal arrangement either way. Every `config set` in this skill takes the
 project scope; `--global` re-policies every project sharing the store.
 
-**Why those two lines are here and not later.** Activation validates EVERY
-registered workflow, not just the one an issue binds, and two of the nine name a
-`vote_rule`. Until both rules exist, `run activate` refuses outright — on a
-virgin project, for an unlabelled issue that never touches a vote gate. Setting
-them now means the first activation an operator sees is a real one.
+**Why those three lines are here and not later.** Activation validates EVERY
+registered workflow, not just the one an issue binds, and the pipelines naming a
+`vote_rule` are five of today's nine, between them naming three distinct rules.
+Until all three exist, `run activate` refuses outright — on a virgin project,
+for an unlabelled issue that never touches a vote gate. Setting them now means
+the first activation an operator sees is a real one. Re-derive the set from the
+installed corpus (`grep -r vote_rule ~/.docket/config/workflows/`) rather than
+trusting that count; a corpus revision that adds a rule adds a line here.
 They authorize no execution, so they are safe to set before approval; what needs
 approval is the NUMBER, which §4b puts in front of the operator.
 
@@ -537,20 +543,27 @@ to register at all**:
 ✘ Error: step "security-vote": `vote_rule` "security-acceptance" is not registered; none are registered. Register one with `docket config set vote.rule.security-acceptance.threshold <0-1>`
 ```
 
-Two of the nine pipelines need one each:
+Five of the nine pipelines name one, across three distinct rules:
 
 ```bash
 docket config set vote.rule.security-acceptance.threshold 0.67   # project scope:
 docket config set vote.rule.doc-acceptance.threshold 0.60        # no --global
+docket config set vote.rule.tribunal.threshold 0.67              # on any of them
 ```
 
-A rule exists exactly when its threshold is set, so these two writes are what
+A rule exists exactly when its threshold is set, so these three writes are what
 bring the rules into being — unqualified, for this project only. `0.67` is
 two-thirds: a security acceptance needs a clear majority, and with a
 three-judge panel it means two must agree. `0.60` is a simple majority with a
 margin — a doc is accepted when most reviewers say yes, and the lower bar
-reflects that a doc's cost of being wrong is a revision, not an incident. Both
-are provisional; the first retro with five runs of vote data should revisit them.
+reflects that a doc's cost of being wrong is a revision, not an incident.
+`tribunal` is the rule the four converted workflow acceptance gates tally
+under — investigation's read-gate, spec-doc's PRD/ux acceptance, spec-project's
+and retro's accepts, operator questions until 2026-08-11 (free-standing
+fix-batch proposals carry their own `--threshold` and name no rule) — and
+it takes `0.67` for the same arithmetic as the security rule: two of three, so
+no single seat passes a gate or vetoes one alone. All three are provisional;
+the first retro with five runs of vote data should revisit them.
 
 These are **config writes, not trust entries** — they authorize no execution, so
 no `--yes` handshake applies. Surface them for approval anyway: a threshold is
@@ -704,14 +717,29 @@ tests      tests        /abs/repo/scripts/qa/tests.sh    proposed (absolute — 
 Every gate named by a bound workflow gets a row; a check you could not
 implement gets a row with no argv and the reason. A row with no trust entry
 will report `unmatched` on its first real run — say it in the row, not a
-footnote. This table, the registration report, and §4's flag arguments are
-what the operator approves, together. On yes, run the `trust add --yes`
-commands, re-run the dry-run to confirm it still registers clean (a fenced
-setup must now read `(matched: <name>)`; named gates resolve in the trust
-store, not here), then ask again, for the activation itself, and run it
-without `--dry-run`. Two approvals: one for what you wrote, one for what runs.
-Every approval, here and everywhere this skill asks, goes through the built-in
-question tool with your recommended option first, labelled "(Recommended)".
+footnote.
+
+**Trust is approved alone.** What you wrote, the registration report, this gate
+table, and the thresholds may go to the operator batched into one question.
+Every trust entry gets a question to ITSELF, carrying that one entry's argv and
+its three flag arguments and nothing else — never a second trust entry, never a
+config item riding along. The reason is measured: an audit of a day of this
+skill's approvals found a trust write approved inside a four-item bundle in a
+single click, which is what a bundle does to the one item in it that authorizes
+execution. If that means four questions in a row, ask four questions in a row.
+
+On the yeses, run `trust add --yes` for each entry that got its own yes, re-run
+the dry-run to confirm it still registers clean (a fenced setup must now read
+`(matched: <name>)`; named gates resolve in the trust store, not here), then ask
+again, for the activation itself, and run it without `--dry-run`. Two approval
+moments whatever the question count: one for what you wrote, one for what runs
+— and both are the OPERATOR's. No panel stands in for either, and the tribunal
+that clears definition-fix batches elsewhere has no seat here: bootstrap is
+where a repo's trust is established, a ceremony rather than a run gate, and the
+authority that establishes trust cannot be delegated to the thing being
+trusted. Every approval, here and everywhere this skill asks, goes through the
+built-in question tool with your recommended option first, labelled
+"(Recommended)".
 
 Two facts about the store that surface exactly here, at the moment of adding:
 

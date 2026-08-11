@@ -6,7 +6,8 @@ description: Evolve the shared docket corpus (src/user/docket/config/, operator-
 # retro
 
 You turn what runs actually did into config changes. Evidence first, proposal
-second, write only after the human says yes.
+second, write only after the panel says yes — or, where the panel splits and
+where trust is involved, after the operator does (§3).
 
 **Never run automatically.** The operator invokes you. After roughly five
 completed runs a session may *say* "five runs since the last retro — worth
@@ -134,32 +135,73 @@ holder reaped there wants a smaller charter or a bigger ceiling, not a TTL.
 
 ## 3. Propose
 
-Proposals and approvals go through the built-in question tool — recommended
-option first, labelled "(Recommended)"; open-ended asks offer drafted
-candidates as options. Present a conversational summary — before writing
-anything:
+Proposals go to a three-judge panel of agents. Compose the batch first — one
+proposal per finding, ranked by evidence strength; stop at the ones you can
+defend — and give every one of them, before anything is written:
 
 - what the evidence says, with the numbers and the run IDs it came from
 - the edit, as a diff against the current file
 - the version bump it carries
 - what it costs if you are wrong
 
-One proposal per finding, ranked by evidence strength; stop at the ones you can
-defend. A batch the human cannot evaluate line by line gets approved blindly.
+That packet is the panel's entire input, so it travels to them whole rather
+than summarized. A batch nobody can evaluate line by line gets approved
+blindly — which is exactly why the line-by-line burden is the PANEL's now,
+three readers against one batch, and why the operator sees only what the panel
+could not settle. Open the proposal from the repo the edits target:
+
+```bash
+docket vote create -d "<what the batch changes, plainly>" \
+  -r "<the evidence: the numbers, the run IDs>" \
+  -n 3 -c medium --threshold 0.67 --created-by retro
+```
+
+then convene the judges on it:
+
+```
+Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
+  voteId: "<id>",
+  voters: ["tribunal-architecture", "tribunal-security", "tribunal-correctness"],
+  policyText: <literal text of ~/.docket/config/policy.toml>,
+  context: "<every proposal with its evidence, its diff, and its bump>",
+  gateKind: "fix-batch", cwd: "<the repo the edits target>"}})
+```
+
+By `scriptPath` only and never by name, `args` a real object, policy passed as
+TEXT rather than as a path — the script reads no files. Resolve the path before
+you call it: the installed `~/.claude/workflows/tribunal.js` where one exists,
+else the source at `src/user/claude_code/workflows/tribunal.js` in the dotfiles
+checkout, since that install lags source until the operator's `just activate`.
+Then `docket vote
+result <id>`: **approved is the authority to apply, and §4 runs immediately** —
+there is no follow-up question about whether to apply now or later. A rejection
+or a split goes to the operator through the built-in question tool — recommended
+option first, labelled "(Recommended)" — carrying EVERY judge's verdict,
+confidence, and summary verbatim, because they are ruling on the dispute and a
+tally you have condensed is not one. Only what they approve is applied.
+
 A retro that proposes nothing because five runs went cleanly is a correct
-retro — say so rather than manufacturing work.
+retro — say so rather than manufacturing work, and convene no panel to hear it.
 
 Never propose a change that adds manual upkeep for the developer; that violates
 zero-touch on its face. The answer is config or engine, not a step in someone's
-routine. For a trust proposal, follow bootstrap's rule: argue `re-runnable`,
-`tree`, `flaky` per command, default off, never add before approval.
+routine.
+
+**A trust proposal is the operator's alone, and rides no batch.** Follow
+bootstrap's rule — argue `re-runnable`, `tree`, `flaky` per command, default
+off, never add before approval — and ask it in its OWN question, never bundled
+with config edits the panel already cleared. Trust authorizes execution; a
+panel of agents cannot grant that, and a trust row inside a four-item bundle is
+approved in one click without being read.
 
 ## 4. Apply what was approved
 
-Only the approved items — applied by an `executor-write` agent carrying the
-approved diffs, with the dry-run verification below performed by an
-`executor-read` agent; you relay approvals and read their reports. Same tier
-caveat as §1: spawned from here, neither agent carries a `policy.toml` tier.
+Only the approved items — whether the panel approved them or the operator did
+on escalation — and the moment the result is in, not after asking again.
+Applied by an `executor-write` agent carrying the approved diffs, with the
+dry-run verification below performed by an `executor-read` agent; you relay
+approvals and read their reports. Same tier caveat as §1: spawned from here,
+neither agent carries a `policy.toml` tier.
 
 **Approved corpus edits land in the dotfiles checkout, not in the repo.** The
 engine reads the corpus from `~/.docket/config`, a content-addressed store
@@ -184,11 +226,12 @@ mined-facts comment kept current. A schema edit is a new
 `schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
 `policy.toml`, contracts, and fragments are pinned rather than registered —
 edit freely, but note the change so the next retro can attribute what followed.
-Approved trust goes in with `docket trust add <name> --yes -- <argv>`.
+Trust the OPERATOR approved goes in with `docket trust add <name> --yes --
+<argv>` — no other approval opens that door.
 
 Verify twice, and the order is load-bearing. First, `docket workflow lint
 <file.toml>` on the edited checkout bytes *before* the proposal reaches the
-human — it runs the exact validation `register` runs, writes nothing, and
+panel — it runs the exact validation `register` runs, writes nothing, and
 returns `CONFLICT` when the edit sits on a frozen `name@version` with the bump
 missing. Second, only after the operator has run `just activate`: activation
 reads the config roots (`~/.docket/config`, then a repo's `.docket/config` if
@@ -210,7 +253,9 @@ and renaming a pipeline still loses the version lineage pinning preserves.
 
 ## 5. Close
 
-Report which proposals were approved, which declined, and what the next retro
-should watch — a declined proposal with accumulating evidence is the first
-thing to re-raise. A finding that belongs upstream (an engine limitation, a
+Report which proposals were approved and by which authority — the panel, or the
+operator on an escalation — which were declined, and what the next retro should
+watch. A declined proposal with accumulating evidence is the first thing to
+re-raise, and a panel that split is worth naming as such: the disagreement is
+evidence about the proposal. A finding that belongs upstream (an engine limitation, a
 design deviation) gets filed as an issue, not bent into config.

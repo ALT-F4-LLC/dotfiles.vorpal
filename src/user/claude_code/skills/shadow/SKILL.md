@@ -37,8 +37,8 @@ Three rules you must not fight:
 - **Every fix waits for the run to end.** The run may be mutating the very
   files you would edit — bootstrap writes config, runs commit, and a run over
   the dotfiles repo edits the definitions themselves. The findings log is the
-  buffer that makes waiting cheap. After the end: propose, get the yes, apply
-  only what got it.
+  buffer that makes waiting cheap. After the end: propose the batch to the
+  tribunal, and write what it approves (§6.3).
 - **Engine defects are filed, never fixed.** Docket is a separate codebase.
   Write the defect up — verb, refusal text verbatim, minimal repro — and file
   it from the docket repo's own checkout (`docket issue create`), which is
@@ -135,12 +135,16 @@ Before reading one transcript line:
 3. **Establish which bytes are actually running — starting with whether an
    installed copy exists at all.** Resolve it at attach rather than trusting
    this line: `ls -ld ~/.claude/{agents,skills,workflows,scripts,hooks}`
-   against the builder's symlink vec (`src/user/claude_code.rs:290-311`).
-   Today that returns `agents`, `skills`, `hooks`, and `scripts` as live
-   symlinks into the content-addressed vorpal store, and `workflows/wave.js`
-   as a hand-made symlink to the source file, so both spellings are the same
-   bytes (`diff` it). `workflows` was never in the builder — its install is
-   hand-made and will not survive a rebuild. Resolve every definition as the session must:
+   against the builder's symlink vec (`src/user/claude_code.rs:300-325`).
+   All five come back as live symlinks into the content-addressed vorpal
+   store — from the first `just activate` after 2026-08-11, when `workflows`
+   joined the builder; before that activation it is still a real directory
+   holding the retired hand-made `wave.js` symlink, which you flag as
+   transition debris, not normal. **No definition
+   surface is live-edited any more.** Source and install are two sets of bytes
+   everywhere, and a workflow script — `wave.js`, `tribunal.js` — reaches a
+   session only through the operator's `just activate`, exactly like a skill.
+   Resolve every definition as the session must:
    installed path if present, else the source under `$SRC`. Docket config
    travels a chain of its own, and it is ONE hop now: `src/user/docket/config/` → (`just activate`) →
    `~/.docket/config/`, which the engine reads directly as the first of its
@@ -389,10 +393,55 @@ Then:
    thresholds, TTLs, tiers, the corpus's own workflows, a repo's additions —
    are `/retro`'s to evolve from engine evidence: name them and point at
    retro rather than bending them into definition edits.
-3. **Propose → approve → apply.** Proposals go through the built-in question
-   tool — grouped, recommended option first, labelled "(Recommended)". Only
-   approved items get written; a declined item stays in the log as the next
-   shadow's watch list. Script extractions ride the same flow: the body lands
+3. **Propose → tribunal → apply.** The definition-fix batch goes to a
+   three-judge panel of agents, not to the operator. Assemble it exactly as
+   before — findings grouped, each carrying its concrete edit — then open the
+   proposal **from the repo the edits target**, which for definition fixes is
+   the dotfiles checkout and not the observed repo you have been sitting in
+   (§1):
+
+   ```bash
+   docket vote create -d "<what the batch changes, plainly>" \
+     -r "<the evidence: the findings, the run refs>" \
+     -n 3 -c medium --threshold 0.67 --created-by shadow
+   ```
+
+   (`vote create` writes, and rule 1's read-verbs-only list bounds the observed
+   run's LIFETIME — §6 is the far side of that line. Nothing here touches the
+   observed run's state.) Then put the panel on it:
+
+   ```
+   Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
+     voteId: "<id>",
+     voters: ["tribunal-architecture", "tribunal-security", "tribunal-correctness"],
+     policyText: <literal text of ~/.docket/config/policy.toml>,
+     context: "<the batch: every proposed edit with its evidence>",
+     gateKind: "fix-batch", cwd: "<the repo the edits target>"}})
+   ```
+
+   The wave's call discipline governs this one too: `scriptPath` only and never
+   by name, `args` a real object, policy passed as TEXT `cat`-ed fresh rather
+   than as a path — and resolved like every other definition (§2.3), the
+   installed path if one exists, else `$SRC/workflows/tribunal.js`.
+
+   `docket vote result <id>` decides what happens next. **Approved is your
+   authority to write, and you write immediately** — there is no "apply now or
+   later?" question, because the answer was always now. A rejection or a split
+   goes to the operator through the built-in question tool carrying EVERY
+   judge's verdict, confidence, and summary verbatim — they are ruling on the
+   dispute, and a tally you have summarized is not one. Only what they approve
+   gets written; a declined item stays in the log as the next shadow's watch
+   list.
+
+   **Trust and permission findings never ride this path.** A fix that would add
+   a trust entry, widen a sandbox allowlist, change what a hook permits, or
+   destroy uncommitted work goes to the operator directly and ALONE in its own
+   question, whatever else the batch holds. The panel's remit is definition
+   edits; an authorization granted by agents is not an authorization, and a
+   trust write bundled with three cosmetic edits is approved in one click
+   without being read.
+
+   Script extractions ride the approved batch: the body lands
    in `$SRC/scripts/` (`chmod +x` it — file tools do not set the bit), and
    since the installed `~/.claude/scripts` store symlink lags source until the
    next `just activate`, every call site you edit must name the source path
@@ -404,18 +453,19 @@ Then:
    resolution would find one. A fix applied to source alone is not applied:
    the operator had to interrupt a RUN-1 wave launch to demand the installed
    half by hand. Which route you take follows from what §2.3's `ls -ld`
-   found. Where nothing is installed, source IS the whole job. Where the
-   installed path is a symlink to the source file — today
-   `~/.claude/workflows/wave.js` — one edit lands both. Where it is a symlink
-   into the content-addressed vorpal store (`~/.claude/{agents,skills,hooks,scripts}`
-   today), the store holds a second set of bytes you must edit as well, and
-   through the file tools: Bash writes into the store are sandbox-denied, so
-   `cp` and `sed` fail there where Edit and Write go through. Prefer replacing
-   such an install with a symlink to the source file for the rest of the session
-   — the observed run has already ended by §6, so this breaks no rule — and
-   further approved fixes then flow automatically. Log every hand-made
-   install as transition debris the next `just activate` must be allowed to
-   replace.
+   found. Where nothing is installed, source IS the whole job. Everywhere else
+   the install is a symlink into the content-addressed vorpal store —
+   `~/.claude/{agents,skills,hooks,scripts,workflows}`, workflows included since
+   2026-08-11 — so the store holds a second set of bytes you must edit as well,
+   and through the file tools: Bash writes into the store are sandbox-denied, so
+   `cp` and `sed` fail there where Edit and Write go through. **No surface lands
+   both from one edit any more**: the hand-made `~/.claude/workflows/wave.js`
+   symlink that used to be that exception is retired, so a workflow fix left in
+   source alone is a fix no session runs until the next `just activate` — so a
+   workflow fix lands in BOTH the source file and the installed store copy,
+   through the file tools, like every other surface. Never recreate the
+   hand-made symlink; log any you find as transition debris the next
+   `just activate` must be allowed to replace.
 4. **File the engine defects** (rule 3), one issue per defect, refusal text
    and repro verbatim.
 5. **Close** by naming the log path, the fixes applied, the issues filed,
@@ -437,9 +487,11 @@ Pre-derived because conduct is the richest target. The conductor:
   re-asking the engine.
 - **Wave invocation.** By `scriptPath` only — the installed
   `~/.claude/workflows/wave.js` if it exists, else `$SRC/workflows/wave.js`.
-  The installed one exists today AS a symlink to the source file, so the two
-  spellings resolve to identical bytes and neither is a finding; re-resolve
-  (§2.3) before flagging either. A by-name invocation is a defect even
+  The installed one is a vorpal-store symlink now rather than the source file,
+  so the two spellings are NO LONGER the same bytes: source edited since the
+  last `just activate` means the wave is dispatching stale bytes, which is
+  §5's first interrupt condition and not a paper-cut. `diff` them at §2.3 and
+  again before flagging either. A by-name invocation is a defect even
   when it works (the name registry served pre-edit bytes on RUN-3). `args` is
   a real object `{rows, policyText}`, policy as TEXT, `cat`-ed fresh from
   `~/.docket/config/policy.toml` every dispatch. (wave.js's args-decode

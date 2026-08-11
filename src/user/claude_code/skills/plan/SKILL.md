@@ -12,9 +12,11 @@ together, in this skill, before any executor exists.
 Three rules you must not fight:
 
 - **You record; you never execute.** You do not spawn anything or start work,
-  and you never activate unprompted — activation is the operator's approval
-  gate and it is theirs to give. If they ask for it in this session, §5 has the
-  path.
+  and you never activate unprompted. Activation is a gate you do not hold:
+  approving it is a tribunal vote that `conduct` convenes and surfaces, so what
+  you hand over is the recorded run itself, never a promise that a question is
+  waiting for the operator. If they ask for activation in this session, §5 has
+  the path.
 - **You never observe execution.** When you stop, you are done. Re-planning is a
   *fresh* invocation of this skill that reads the run record — not this one
   continuing to watch.
@@ -45,6 +47,13 @@ Put your recommended option first, labelled "(Recommended)". A prose question
 costs the operator a redirect (it did, 2026-08-06); an exclusive-meaning label
 ("X only", "neither") never belongs in a multi-select option set — a set
 that needs one is a single-select question.
+
+**Every question in this skill is the operator's, and no panel's.** Elsewhere
+a three-judge tribunal now clears batches of proposed definition fixes; it is
+the wrong instrument here and you do not convene one. What the work IS — the
+goal, the constraints, the done-ness, the security answer — is intent, and
+intent has exactly one source. A panel asked to supply it would return a
+confident guess, which is the failure this whole section exists to prevent.
 
 The five things you need:
 
@@ -255,16 +264,19 @@ This is a designed shape, not a fallback. Use it whenever the honest answer to
 ## 5. Stop
 
 Present the plan — the issues, their edges, the scopes, the budget — and say
-plainly that activating it is the operator's call. Then stop.
+plainly where the approval to activate lives now: it is a tribunal vote that
+`conduct` convenes and surfaces when the run is driven. Then stop.
 
 Do not offer to activate it yourself as a convenience. Do not start the run.
 Do not keep the plan in your head for later; it is in Docket now, which is the
-point. If the operator wants it running, they say so, and the `conduct` skill
-takes it from there.
+point. When the run is to move, `conduct` takes it from there and carries the
+activation through that gate.
 
 If the operator asks for activation in THIS session, run the activate verb on
 their words (`--dry-run` first — it is the same transaction rolled back) and
-then hand off to `conduct` in-session by invoking the skill. If a run-guard hook
+then hand off to `conduct` in-session by invoking the skill — a direct
+instruction from the operator outranks the panel that would otherwise have
+voted on it, and it is the only route to activation from this seat. If a run-guard hook
 is installed on this seat, it will deny a plain stop while executable work is
 pending — that deny is a guard answering, not an instruction to start driving.
 Whether or not it fires (today the Stop→run-guard IS registered and fires on

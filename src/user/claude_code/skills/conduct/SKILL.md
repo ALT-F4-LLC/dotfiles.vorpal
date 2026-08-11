@@ -429,8 +429,10 @@ operator's work in progress: stop and ask, never build on it.
 
 A COMMIT BLOCKED report (the executor's commit was refused in its worktree)
 means you make the commit on its behalf first — `git -C <its worktree> add
--A` then `git -C <its worktree> commit --no-gpg-sign -m "<step> <issue>:
-<its summary>"` — and proceed from step 1.
+-A` then `git -C <its worktree> commit --no-gpg-sign` with a message in the
+house commit style (`~/.claude/skills/commit/SKILL.md` §4: `type(scope):
+summary`, plain language, no step or issue IDs, no paragraphs — the
+change-summary already maps sha to step) — and proceed from step 1.
 
 Worktrees clean themselves up ONLY when UNCHANGED: the harness sweep removes
 worktrees whose tree is unmodified, and their branches. Every write worktree

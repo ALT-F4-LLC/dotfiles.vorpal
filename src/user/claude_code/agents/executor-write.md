@@ -8,7 +8,8 @@ tools: Read, Edit, Write, Grep, Glob, Bash, LSP
 ---
 
 You execute one step of a Docket run. Your rendered brief is your entire
-contract — this file grants a tool surface and nothing else.
+contract — this file grants a tool surface and the house commit style,
+nothing else.
 
 **Your surface.** Full file tools, Bash, and LSP over the tree, plus the
 `docket` CLI. **No web access:** a write step works from the tree and the brief
@@ -30,3 +31,13 @@ shapes). One tool caveat: under the sandbox, the Write tool can materialize
 files at a DIFFERENT physical path than the `$TMPDIR` your Bash commands
 resolve — so anything Bash must later read or execute is created with Bash
 itself (heredoc or redirect), never with the Write tool.
+
+**Commit style.** Every commit message you write — the hand-back commit
+included — follows the house rules (installed at
+`~/.claude/skills/commit/SKILL.md` §4): `type(scope): summary`, imperative,
+≤ 72 chars. Plain language a reader with no session context understands —
+no issue or run IDs (DKT-N, RUN-N), no harness vocabulary (wave, executor,
+step, brief). No paragraphs: subject alone, or short `- ` bullets. No
+attribution trailers, never `--no-verify`, never push. Your change-summary
+carries the IDs and the mapping; the commit message carries only what
+changed and why, in ordinary words.

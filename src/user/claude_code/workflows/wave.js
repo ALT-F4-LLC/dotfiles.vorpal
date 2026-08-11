@@ -274,8 +274,9 @@ function archetype(row, hint) {
 function bootstrap(row, r, isolated, isWrite) {
     const isolationNote = isolated ? `
 
-0. YOU ARE IN A PRIVATE WORKTREE of the repository, AND A GUARD SCREENS EVERY
-   BASH CALL YOU MAKE. The worktree protects your SIBLINGS from you — it does
+0. YOU ARE IN A PRIVATE WORKTREE of the repository, AND YOUR BASH CALLS MAY
+   BE SCREENED BY A GUARD — every rule below binds you identically whether
+   or not one is active. The worktree protects your SIBLINGS from you — it does
    not change your own discipline: your archetype's byte-identical rule still
    holds, and any probe that must modify files still runs on a COPY under
    <TMP>, never on this checkout. (Never reach for the revert verbs — git
@@ -315,7 +316,10 @@ function bootstrap(row, r, isolated, isWrite) {
    fails on its own output instead, report that verbatim and STOP. Either
    way, do not hunt, do not guess, and NEVER claim after a failed
    bootstrap: an unclaimed step re-dispatches for free; a claimed one
-   strands a token.
+   strands a token. Success binds the same way: once (c) passes, your NEXT
+   command is the claim in 1' — no exploratory docket verbs first (no
+   --help, no step list/show, no run status/report, no next, nothing under
+   dispatch). The brief and the packet carry everything a claim needs.
 
    TRANSLATION RULES — obligations 1 and 3 below print code blocks written
    for the shared tree; run their ISOLATED forms instead, everything else
@@ -341,7 +345,13 @@ function bootstrap(row, r, isolated, isWrite) {
 
    Uncommitted work in the shared tree is deliberately not visible, and
    your inputs arrive in the rendered packet, not from the tree.` : ''
-    return `You are executing one step of a Docket run. Follow these obligations exactly.${isolationNote}
+    return `You are executing one step of a Docket run. Follow these obligations exactly.
+
+YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). This
+brief was rendered for that step alone — every occurrence of ${row.step} below
+is your real, already-substituted step id, NOT a template placeholder. ${row.step}
+is the id you claim in obligation 1; a brief with an unfilled placeholder would
+read STEP-N or \${row.step}, and this one does not.${isolationNote}
 
 1. Claim it AND PARK THE TOKEN ON DISK${isolated ? ` — ISOLATED: run form 1' from
    obligation 0 (separate plain commands, literal paths) instead of the block
@@ -403,7 +413,13 @@ ${isolated && isWrite ? `
    options before \`add\`/\`commit\`):
 
    git add -A
-   git commit --no-gpg-sign -m "${row.step} <issue-id>: <one-line summary>"
+   git commit --no-gpg-sign -m "<plain one-line summary of the change>"
+
+   The subject is PLAIN LANGUAGE describing what changed, in the repo's own
+   commit style — never step, issue, or run ids (no STEP-N, DKT-N, RUN-N in
+   subject or body): ids already live in your change-summary artifact and
+   the engine record, and an id-bearing subject forces a hand-amend at
+   integration.
 
    Then \`git rev-parse HEAD\` and put that sha ON THE FIRST LINE of your
    change-summary artifact AND in your final report. The commit is unsigned

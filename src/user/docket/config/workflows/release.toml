@@ -3,7 +3,8 @@
 # 2026-08-09 — see the note at the end of this file). What remains of 05 §2's
 # "aggregate verify (run-level verify-ac over the union diff) -> ... optional
 # `pr-comment-author`": the aggregate verify and the optional PR comment. The
-# release COMMIT itself is the operator's, made by hand via a manual skill
+# release PUBLICATION (push/PR/tag) is the operator's; integration commits
+# are the conductor's (2026-08-10)
 # after reading the aggregate ac-report.
 #
 # The plan-time choice is expressed as a LABEL, which is the only thing `[match]`
@@ -19,8 +20,9 @@
 
 [pipeline]
 name    = "release"
-version = 5
-description = "Run-level release tail: aggregate AC verification and optional PR comment; the operator commits by hand."
+version = 6   # 6: description + commit notes updated to the
+              #   conductor-integrates model (2026-08-10)
+description = "Run-level release tail: aggregate AC verification and optional PR comment; the conductor integrates commits, the operator publishes."
 
 [match]                      # closed kind set (see spec-doc's note): `release` is a
                              #   label, not a kind. Engine wins over 05; DKT filed.
@@ -86,8 +88,8 @@ on_fail = "waiting-human"
 # authorization is unavailable to headless executors and engine actions;
 # `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
 # DKT-61). Full rationale in standard-change.toml's matching note. The release
-# commit is the operator's, by hand, after reading `verify`'s aggregate
-# ac-report. `pr-comment` therefore follows `verify` directly and composes from
+# PUBLICATION is the operator's, after reading `verify`'s aggregate
+# ac-report; integration commits are the conductor's (2026-08-10). `pr-comment` therefore follows `verify` directly and composes from
 # the issue and the union diff rather than a drafted commit message.
 
 [[step]]

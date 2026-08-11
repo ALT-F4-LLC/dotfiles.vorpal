@@ -413,10 +413,14 @@ ${isolated && isWrite ? `
    options before \`add\`/\`commit\`):
 
    git add -A
-   git commit --no-gpg-sign -m "<plain one-line summary of the change>"
+   git commit --no-gpg-sign -m "type(scope): summary"
 
-   The subject is PLAIN LANGUAGE describing what changed, in the repo's own
-   commit style — never step, issue, or run ids (no STEP-N, DKT-N, RUN-N in
+   The subject is a CONVENTIONAL COMMIT, whatever the repo's history does:
+   "type(scope): summary" — type one of feat|fix|docs|refactor|test|perf|
+   build|ci|chore, scope named for the area you touched, summary imperative
+   plain language, 72 chars max, no trailing period. No body paragraphs —
+   most commits are a subject alone; when the subject cannot carry the why,
+   short "- " bullets. Never step, issue, or run ids (no STEP-N, DKT-N, RUN-N in
    subject or body): ids already live in your change-summary artifact and
    the engine record, and an id-bearing subject forces a hand-amend at
    integration.
@@ -482,9 +486,14 @@ ${isolated ? `
      $TMPDIR/${row.step}-payload.json (your payload, when the contract has one)
 
    — and report RECORD BLOCKED: your step id, the refusal's first line
-   verbatim, and every parked path including the token's. The conductor is not
-   isolated and records the step from your parked state; the claim outlives
-   you, so nothing is lost. NEVER record \`fail\` for work that succeeded — a
+   verbatim, and every parked path including the token's. ONE refusal is an
+   instruction, not a wall: "the lease has expired; claim it again to
+   continue" means run the claim from 1' again for a FRESH token and record
+   immediately — your finished work is still valid and the re-claim costs
+   seconds (measured twice; the agent that parked instead cost a duplicate
+   run). Park and report only when the re-claim or the record refuses for
+   any OTHER reason; the conductor is not isolated and records the step from
+   your parked state. NEVER record \`fail\` for work that succeeded — a
    false failure burns an attempt and re-runs the whole step to relearn what
    your parked artifacts already hold (RUN-8 measured one full re-judging).
 ` : ''}

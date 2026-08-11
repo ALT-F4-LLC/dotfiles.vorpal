@@ -198,7 +198,11 @@ cat ~/.docket/config/policy.toml # fresh EVERY dispatch — do not reuse a prior
                                  # iteration's text, and do not substitute a
                                  # hash check for the re-read (RUN-5's
                                  # conductor "verified" against a hash it had
-                                 # never recorded)
+                                 # never recorded). The version grep below is
+                                 # a CHECK, not the re-read: this full cat IS
+                                 # how policyText gets produced, in the same
+                                 # iteration as the launch it feeds (RUN-3
+                                 # drifted to grep-only by dispatch 3)
 ```
 
 Then invoke the wave **by scriptPath, always** — with the ABSOLUTE path: the
@@ -288,7 +292,10 @@ On the wave's completion notification:
 **Back-fill usage FIRST, then close. The order is binding.** Closing a dispatch
 is what triggers the engine's discrepancy probe; usage that arrives after the
 close is usage the probe never saw, and each subsequent close then re-reports the
-same stranded set. Back-fill, verify, close — in that order, every iteration.
+same stranded set. Back-fill, verify, close — in that order, every iteration,
+as three SEPARATE calls: chaining close unconditionally behind the back-fill
+in one compound command closes on stranded usage the moment the back-fill
+fails (RUN-3's last iteration ran the chain and got lucky).
 
 The same order governs the crashed-relay exit: back-fill BEFORE `dispatch
 abandon` too — abandon has no later back-fill window, and RUN-6 stranded
@@ -318,14 +325,13 @@ Rows land against the step's recorded attempt, `--source` defaults to
 `backfilled`, and the window between the steps recording and the close is the
 whole design — the flow never needs another.
 
-Read `verify`'s answer by shape, not by exit alone: after a step RECORDED
-successfully, `verify` reports `ok:false` — "does not match the current ready
-set" — because the ready set has legitimately advanced past the stored rows.
-That mismatch is what completed work looks like, not a conflict; proceed to
-`close`, whose own reconciliation (`close_reason: "reconciled"`) is the
-authority. A verify mismatch is a finding only when the step it names did NOT
-record (RUN-1 graph-engine observed both shapes: ok:true after a dead spawn,
-ok:false after every successful record).
+Read `verify`'s answer by shape, not by exit alone — and since the engine
+learned to reconcile staging and row position, a cleanly recorded dispatch
+verifies `ok:true` (RUN-3 measured four in a row). A mismatch now points at
+something REAL: the step it names did not record — a dead lease, a reaped
+claim. Read which step it names and `step show` it before closing. `close`'s
+own reconciliation (`close_reason: "reconciled"`) remains the authority, and
+it refuses outright while a genuine discrepancy stands, naming its remedy.
 
 **This is the transcript-token path, not a workaround for one.** An executor
 cannot observe its own token consumption; transcripts are the only source and
@@ -389,7 +395,15 @@ path, so the report is greppable the way `COMMIT BLOCKED` is below; from your
 seat, BEFORE the back-fill so the close sees it, confirm the step still
 shows `claimed`, validate the parked payload as JSON, run its `docket step
 record … --artifact-file <parked> --payload-file <parked> < <parked token>`,
-and NAME what you completed on whose behalf. On a WRITE-class step, carry
+and NAME what you completed on whose behalf. If the step shows `ready`
+instead — its lease expired and a reap returned it to the pool — the parked
+token is dead but the parked WORK is not: claim the step fresh from your own
+seat (`docket step claim STEP-N --owner conduct:recovery --json`, keep the
+token it returns), then run the same record against the fresh token. The
+refusal "the lease has expired; claim it again to continue" is naming this
+exact path. Never redispatch a step whose complete parked payload you hold —
+that burns a duplicate executor run to relearn what is already on disk
+(RUN-3 paid one full judge round). On a WRITE-class step, carry
 `--worktree <its checkout>` through as well: the flag DEFAULTS to the invoking
 checkout, so a record run from your seat without it diffs your tree and not
 the one the work happened in — the same failure the next paragraph exists to
@@ -402,14 +416,14 @@ deliverable is a COMMIT there, its sha on the first line of the change-summary
 and in the report. It records with `--worktree <its checkout>` so the engine
 computes the recorded diff where the work happened (DKT-106, answered) — the
 record does NOT wait on integration, and the old cherry-pick-first ordering is
-gone. **Known engine defect: for a worktree-recorded step, `issue.diff`
-renders EMPTY in every downstream packet.** The record itself is sound; it is
-the PACKET that carries nothing, so any later step meant to read the change
-through its brief reads a blank instead. The sha is therefore the only
-reliable handle on what a write step produced — keep it in front of you and
-hand it to downstream readers explicitly (see the re-review rule under Human
-gates). The merge back is still never automatic, so at reconcile, write steps
-first, in step-id order:
+gone. **The empty-`issue.diff` packet defect is FIXED** (diff base pinned to
+the run's own exec root) and verified in production — worktree-recorded steps
+now render real diffs into every downstream packet. Keep the sha in front of
+you anyway: it is the handle integration needs, and the cheapest cross-check
+that a packet carries the change it claims (spot-check `step render` if one
+looks blank — a NEW empty diff is a regression to surface, not a norm to
+work around). The merge back is still never automatic, so at reconcile,
+write steps first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
 2. `git cherry-pick --no-gpg-sign <sha>` — a REAL COMMIT on the shared
@@ -585,7 +599,9 @@ parked `waiting-human` takes `resolve --as …` and nothing else (RUN-8's
 conductor ran `approve` on one and burned the operator's answer on the
 refusal). And the artifact a gate presents is found, then read, as a PAIR of verbs:
 `docket step artifacts STEP-N` lists the producing step's artifact ids,
-`docket step artifact ARTIFACT-N [--payload]` prints one. There is no
+`docket step artifact ARTIFACT-N [--payload]` prints one — `--payload` only
+where the listing shows a structured payload; a body-only artifact refuses
+the flag, so omit it to read the body. There is no
 `docket artifact` command, and the events log carries no artifact bodies —
 RUN-2's conductor burned six calls rediscovering this hop through events
 greps and `--help`.
@@ -643,17 +659,13 @@ renders the SAME brief as the failed attempt. Guidance for future work
 travels only as a body, which means a new issue in the next planning pass, or
 as a findings artifact a later step declares as input.
 
-**A re-review round judges the PRIOR commit unless you intervene.** Compound
-the two facts: a retry renders the same brief, and `issue.diff` renders EMPTY
-for a worktree-recorded step (the defect noted under integration). A
-re-review packet's inputs are therefore the PRIOR step's change-summary plus
-that empty diff — nothing in it points at the fix that was just made.
-Measured: a full four-judge re-review round judged the superseded commit.
-So hand the reviewers the integrated sha EXPLICITLY — a findings artifact the
-review step declares as input, or a fresh issue body naming it — and then
-check each judge report's reviewed sha against the step actually under review.
-A mismatch means the round is invalid: surface it to the operator as a round
-to re-run, and never fold its verdicts into the ledger as if they had seen the
+**A re-review round rebinds to the fix.** Loop inputs re-render from the
+loop's latest emit (fixed and verified in production — RUN-3's re-review
+packets carried fix@1's change-summary AND its real diff, unprompted). The
+cheap discipline that remains: glance at each judge report's reviewed sha
+against the step actually under review. A mismatch means a packet regressed —
+surface it to the operator as a round to re-run and as an engine defect to
+file, and never fold its verdicts into the ledger as if they had seen the
 work.
 
 **Present only what the decision actually reaches.** Never offer a gate

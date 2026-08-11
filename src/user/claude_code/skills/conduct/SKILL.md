@@ -445,7 +445,11 @@ worktree and branch in the same breath — `git worktree remove <path>` (add
 branch -D <its branch>`. Read the path and its branch as a PAIR off `git
 worktree list` rather than constructing the name from a step or workflow id:
 the branch is `worktree-<basename of the worktree directory>`, and a wrong
-expansion force-deletes an unrelated branch. The integration commit carries
+expansion force-deletes an unrelated branch. A `could not lock config file …
+update of config-file failed` warning from `git worktree remove` on this
+bare-repo layout is benign chatter (2-for-2 on RUN-2's integrations):
+confirm with `git worktree list` and move on — never retry the remove over
+it. The integration commit carries
 the content, so nothing is lost. At run close, sweep the stragglers — and the
 sweep set is exactly the `.claude/worktrees/wf_*` directories whose `wfId`
 matches a wave THIS session launched. You already hold those ids: each is what
@@ -567,8 +571,12 @@ Which verb is the step's TYPE, not your reading of the situation:
 `approve`/`reject` exist only on `type="human"` gate steps; an EXECUTOR step
 parked `waiting-human` takes `resolve --as …` and nothing else (RUN-8's
 conductor ran `approve` on one and burned the operator's answer on the
-refusal). And the artifact a gate presents is read with `docket step artifact
-ARTIFACT-N` — there is no `docket artifact` command.
+refusal). And the artifact a gate presents is found, then read, as a PAIR of verbs:
+`docket step artifacts STEP-N` lists the producing step's artifact ids,
+`docket step artifact ARTIFACT-N [--payload]` prints one. There is no
+`docket artifact` command, and the events log carries no artifact bodies —
+RUN-2's conductor burned six calls rediscovering this hop through events
+greps and `--help`.
 
 **Reject is an escape hatch, not an annotation.** On a held-cluster gate,
 `approve` accepts the computed value and falls through to the threshold;

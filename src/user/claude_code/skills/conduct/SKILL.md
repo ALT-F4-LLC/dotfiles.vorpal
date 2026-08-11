@@ -95,7 +95,9 @@ created_at_ms-window reconstruction earlier runs needed is retired, and so is
 hunting for a verb that lists a planning run's issues. After activation
 `docket next --run $RUN --json` reports what is ready; if it disagrees with
 what you presented, that is a stop-and-report, not a shrug. Keep the promotion
-vigilance regardless: check `events list --run $RUN` for `issue-promoted` —
+vigilance regardless: check `events list --run $RUN` for `issue-promoted` (tail
+the feed with `--since <last-seq>` or `--tail N`; it pages at 100 and has no
+--offset — RUN-2's conductor burned three invented flags learning this) —
 activation can promote a fix-issue in at the last instant, `run status` keeps
 counting only the originally bound issues, and the promoted issue's steps can
 surface first in `dispatch open` rows rather than in `next` (RUN-8).
@@ -484,9 +486,19 @@ docket dispatch open --run $RUN --ack-reap <seq>
 ```
 
 `docket guard spawn --run $RUN --ack-reap <seq>` acks the same way, before its
-own predicate, so one command both acks and answers. Silence is not a yes. An
-operator saying "keep going" about something else is not a yes. Only an answer
-to this question is a yes.
+own predicate, so one command both acks and answers — and it is the ONLY form
+that works while a dispatch is already open: `dispatch open --ack-reap` then
+answers CONFLICT without acking anything (RUN-2 measured the retry loop).
+Silence is not a yes. An operator saying "keep going" about something else is
+not a yes. Only an answer to this question is a yes.
+
+One carve-out, exactly as narrow as its reason: a reap YOU performed this
+session, on a READ-class step, with the holder's death observed first-party
+(the wave agent returned RECORD BLOCKED / exited in front of you), may be
+acked without a fresh gate — the ack's question ("is the old writer gone?")
+is one you answered yourself, and a read-class step stakes no tree. A
+write-class reap, or any reap you did not perform and witness, still goes to
+the operator every time.
 
 **Budget: project before the wall.** When the running spend-per-step times the
 pending count no longer fits the cap, surface the arithmetic THEN — a raise

@@ -612,39 +612,65 @@ function spawn(row, phaseLabel) {
         })
 }
 
-const stages = new Map()
+// PER-ISSUE STAGE LANES (RUN-2, 2026-08-11). Engine stages only order
+// SAME-ISSUE work — the staging relation requires one issue — so a global
+// stage barrier serialized one issue's staged re-review behind ANOTHER
+// issue's slowest stage-0 row for no correctness reason (measured: DKT-20's
+// judges waited on DKT-19's mutation-testing judge). Rows group into one
+// lane per issue; stages ascend WITHIN a lane with an await between; lanes
+// run fully parallel. An issue-less row rides a lane of its own. The
+// per-agent `phase` option carries the progress grouping — the global
+// phase() call is gone because lanes run concurrently and would race it.
+const lanes = new Map()
 for (const row of rows) {
-    const s = Number.isInteger(row.stage) ? row.stage : 0
-    if (!stages.has(s)) stages.set(s, [])
-    stages.get(s).push(row)
+    const lane = row.issue || `row:${row.step}`
+    if (!lanes.has(lane)) lanes.set(lane, [])
+    lanes.get(lane).push(row)
 }
-const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
 log(`wave: ${rows.map((r) => `${r.step}·${r.executor}`).join(', ')}`)
 log(
-    `wave: ${rows.length} row(s) across ${stageKeys.length} engine stage(s): ` +
-    stageKeys.map((k) => `stage ${k}×${stages.get(k).length}`).join(', ')
+    `wave: ${rows.length} row(s) in ${lanes.size} issue lane(s): ` +
+    [...lanes.entries()].map(([name, laneRows]) => {
+        const ks = [...new Set(laneRows.map((r) => (Number.isInteger(r.stage) ? r.stage : 0)))]
+            .sort((a, b) => a - b)
+        return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
+    }).join(', ')
 )
 
 const byStep = new Map()
+// One shared flag: a park observed in ANY lane stops every lane's LATER
+// stages (in-flight groups finish; the engine re-offers unlaunched steps
+// after the park lifts). Single-threaded event loop, so a plain flag is
+// sound.
 let parked = false
 
-for (const k of stageKeys) {
-    if (parked) break
-    const group = stages.get(k)
-    const label = `Stage ${k} (${group.length} row${group.length === 1 ? '' : 's'}, parallel)`
-    phase(label)
-    const settled = await parallel(group.map((row) => () => spawn(row, label)))
-    settled.forEach((res, i) => {
-        const row = group[i]
-        byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
-    })
-    if (settled.some(runParked)) {
-        parked = true
-        log('wave: run parked mid-wave — later stages not launched; the engine ' +
-            're-offers their steps after the park lifts')
+async function runLane(laneName, laneRows) {
+    const stages = new Map()
+    for (const row of laneRows) {
+        const s = Number.isInteger(row.stage) ? row.stage : 0
+        if (!stages.has(s)) stages.set(s, [])
+        stages.get(s).push(row)
+    }
+    const stageKeys = [...stages.keys()].sort((a, b) => a - b)
+    for (const k of stageKeys) {
+        if (parked) break
+        const group = stages.get(k)
+        const label = `${laneName} stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
+        const settled = await parallel(group.map((row) => () => spawn(row, label)))
+        settled.forEach((res, i) => {
+            const row = group[i]
+            byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
+        })
+        if (settled.some(runParked)) {
+            parked = true
+            log('wave: run parked mid-wave — later stages not launched in any ' +
+                'lane; the engine re-offers their steps after the park lifts')
+        }
     }
 }
+
+await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name, laneRows)))
 
 return rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })

@@ -97,14 +97,25 @@ conversation continues. The run record must not encode a premise a read has
 already cast doubt on. (RUN-2: the verifier found the reported mechanism fixed
 and a different one real; the recorded issues were built on the truth.)
 
-**Your reader's reply cannot reach you mid-turn.** Teammate messages deliver at
-turn boundaries only. If you are blocked on a delegate, end the turn and wait —
-do not re-derive its brief inline; a solo re-derivation under time pressure is
-how RUN-2's first record missed a test that already existed. If you must record
-before the reply lands, mark the bodies provisional and reconcile the moment it
-arrives — a body stays editable until the activate that BINDS it, which is the
-whole `planning` window and, for an issue added to an already-active run, up to
-the next activate. That window is the net.
+**Your reader's reply cannot reach you mid-turn — and your own turn is what
+blocks it.** Teammate messages deliver at turn boundaries only, so waiting
+means ENDING THE TURN: schedule ONE long-fallback wakeup (15+ minutes) and
+stop. ScheduleWakeup does not end a turn, and probe calls — ListAgents (which
+does not list a busy in-process delegate), re-schedules, tool searches — keep
+the turn alive and block the very delivery you are waiting on. A 2026-08-11
+planner probed for 40 seconds inside one unbroken turn, declared its reader
+dead 114 seconds after spawning it, and recorded solo; the "missing" report
+was queued the whole time and delivered the same second the turn finally
+ended. A delegate is not failed until a wakeup has actually FIRED and found
+nothing, and there is no fallback allowance to re-derive its brief inline — a
+solo re-derivation under time pressure is how RUN-2's first record missed a
+test that already existed, and how that planner's solo scopes missed every
+test file its reader had already mapped. If the operator's pace forces
+recording before the reply lands, mark the bodies PROVISIONAL in so many
+words and reconcile the moment it arrives — a body stays editable until the
+activate that BINDS it, which is the whole `planning` window and, for an
+issue added to an already-active run, up to the next activate. That window is
+the net, and it only nets what you marked.
 
 ## 3. Record the run
 
@@ -256,7 +267,8 @@ their words (`--dry-run` first — it is the same transaction rolled back) and
 then hand off to `conduct` in-session by invoking the skill. If a run-guard hook
 is installed on this seat, it will deny a plain stop while executable work is
 pending — that deny is a guard answering, not an instruction to start driving.
-Whether or not it fires (today none is registered, so a plain stop goes through
-unchallenged), the handoff through `conduct` — which surfaces the
+Whether or not it fires (today the Stop→run-guard IS registered and fires on
+every stop; it allows a stop while the run is merely `planning` — measured
+2026-08-11), the handoff through `conduct` — which surfaces the
 drive/park/abandon choice to the operator — is the designed path, and a silent
 stop is not permission to skip it.

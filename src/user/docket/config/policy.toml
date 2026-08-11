@@ -22,8 +22,10 @@
 # and effort workarounds "all collapse into this one file". This file satisfies
 # that instruction by ADOPTION, not transcription: the tier values, security
 # pins, and escalation policy below are OPERATOR POLICY, ratified in
-# conversation on 2026-08-05. They are authoritative because the operator
-# ratified them — no other document is their source, and none needs to be.
+# conversation on 2026-08-05, and amended the same way since (most recently
+# 2026-08-11: the three tribunal seats). They are authoritative because the
+# operator ratified them — no other document is their source, and none needs
+# to be.
 
 [policy]
 version = 1
@@ -50,7 +52,9 @@ version = 1
 bronze  = { model = "sonnet", effort = "medium" }   # volume execution
 silver  = { model = "opus",   effort = "high"   }   # the default, and the floor for authoring/review/verify
 gold    = { model = "opus",   effort = "xhigh"  }   # buys reasoning, not a different model — entering it costs effort only
-diamond = { model = "fable",  effort = "max"    }   # scarce and gated; reserved for hard problems, never a default seat
+diamond = { model = "fable",  effort = "max"    }   # scarce and gated; reserved for hard problems, and a standing
+                                                    #   seat only for investigator-class and, ratified 2026-08-11,
+                                                    #   the three tribunal seats (see [executors])
 
 # --- Executor routing -------------------------------------------------------
 # executor hint -> {model, effort} (02 §7), expressed as a tier so the ladder
@@ -145,6 +149,37 @@ investigate       = { tier = "diamond" }
 research          = { tier = "diamond" }
 retro-analyst     = { tier = "diamond" } # mines run ledgers -> proposals (04, 05 §6)
 
+# Tribunal seats — the standing panel that sits where a workflow used to declare
+# `type = "human"`. OPERATOR POLICY, ratified in conversation 2026-08-11: "2 Fable
+# and 1 Opus". Architecture and correctness take diamond (Fable at max effort);
+# security takes gold, because the standing classifier pin below applies to a
+# security seat exactly as it applies to any other security node, and gold is that
+# work's ceiling. The composition is the ratified shape, not an accident of
+# routing: two seats read at full capability and one reads under the pin, so a
+# tribunal is never unanimous by construction of a single model's judgement.
+#
+# Why these are worth diamond when review nodes sit at silver: a judge's finding
+# is advisory and lands in a reconcile step that the loop can absorb. A tribunal
+# vote CONSUMES an operator gate — the whole point is that approval means the
+# operator never sees the artifact. A seat that misses what the operator would
+# have caught does not produce a weak review; it produces a silent one. Every
+# non-approval escalates to `waiting-human` (the four converted workflows), so the
+# cost of a wrong REJECTION is one operator read — the cost of a wrong APPROVAL is
+# unbounded, and the tier buys down that asymmetry.
+#
+# Reachability: these rows are referenced by the `voters` lists in
+# investigation.toml (`read-gate`), spec-doc.toml (`accept-human`),
+# spec-project.toml (`accept`), and retro.toml (`accept`) — the tribunal spawner
+# routes each seat by the row below. Retiring any of those four conversions
+# retires the row with it (the every-row-reachable invariant).
+tribunal-architecture = { tier = "diamond" }
+tribunal-correctness  = { tier = "diamond" }
+tribunal-security     = { tier = "gold", never = ["fable"], reason = "security-classifier-reroute" }
+                                          # gold, not diamond: [security].ceiling
+                                          #   binds this seat, and it is listed in
+                                          #   [security].nodes below. This is the
+                                          #   "1 Opus" of the ratified 2-and-1.
+
 # Security nodes — see [security] for why these never reach diamond.
 threat-model      = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
 
@@ -171,7 +206,15 @@ threat-model      = { tier = "silver", never = ["fable"], reason = "security-cla
 #     no higher rung to reach for.
 
 [security]
-nodes   = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security"]
+nodes   = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
+                                          # `tribunal-security` added 2026-08-11
+                                          #   with the seat itself: a tribunal seat
+                                          #   reading for security concerns trips
+                                          #   the classifier by the same nature as
+                                          #   judge-security, and its vote is
+                                          #   RECORDED per voter — the provenance
+                                          #   argument below is strongest exactly
+                                          #   where the ledger names who voted.
 never   = ["fable"]
 ceiling = "gold"
 reason  = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."

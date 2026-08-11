@@ -10,11 +10,17 @@
 # interprets the hint (06 §11.1) — resolution is policy-side, keyed on the
 # issue's labels, which is exactly why one step covers all five authors.
 #
-# TWO acceptance steps, not one: 05 §2 splits acceptance by doc type, and a step
-# is either `type="vote"` or `type="human"` — never both (V5). Each is guarded by
-# `when` over the issue's labels, so exactly one materializes per issue and the
-# other is `skipped` (06 §11.1). That is the engine's own conditional; no
-# expression language is invented here.
+# THREE acceptance steps, not one: 05 §2 splits acceptance by doc type, and each
+# is guarded by `when` over the issue's labels, so exactly one materializes per
+# issue and the other two are `skipped` (06 §11.1). That is the engine's own
+# conditional; no expression language is invented here.
+#
+# All three are `type="vote"` since 2026-08-11, but they are not the same gate
+# wearing three names. The TDD and ADR steps carry 05 §2's own review panels under
+# `doc-acceptance` — judges deciding whether a design is sound. The third carries
+# the tribunal under `tribunal`, standing where 05 §2 wrote "human gate": it does
+# not replace the operator, it filters for them, and anything short of approval
+# routes to `waiting-human` so the operator still decides the contested cases.
 #
 # `emits` on the author step is "doc": the five author contracts emit five
 # different artifact kinds (prd | tdd | adr | ux-spec | spec), but `emits` is a
@@ -23,8 +29,10 @@
 
 [pipeline]
 name    = "spec-doc"
-version = 4   # 4: fix-loop threshold high -> blocker (2026-08-10)
-description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote (TDD/ADR) or operator (PRD/ux-spec)."
+version = 5   # 5: `accept-human` human -> tribunal vote (operator policy,
+              #   2026-08-11). (4: fix-loop threshold high -> blocker,
+              #   2026-08-10.)
+description = "Author a PRD/TDD/ADR/ux-spec, validate, review, and accept by vote: the doc-acceptance panel (TDD/ADR) or the tribunal (PRD/ux-spec), escalating to the operator."
 
 [match]                      # Docket's issue kinds are a CLOSED set — {bug, feature,
                              #   task, epic, chore} (internal/model/issue.go) — so a
@@ -189,13 +197,32 @@ on_fail = "fix-loop"
 when = "labels contains doc-adr"
 inputs = ["author.doc", "reconcile.findings"]
 
-[[step]]                     # PRD acceptance: the operator (05 §2). ux-specs fall
+[[step]]                     # PRD acceptance: 05 §2 names the operator, and since
+                             #   2026-08-11 the operator is reached THROUGH the
+                             #   tribunal rather than instead of it. ux-specs fall
                              #   here too — 05 §2 names a vote only for TDD and
-                             #   ADR, so everything else accepts by operator.
-name = "accept-human"
+                             #   ADR, so everything else accepts by this step.
+name = "accept-human"        # NAME RETAINED deliberately though the type changed:
+                             #   `record`'s `after` joins on this literal, and a
+                             #   rename is a graph edit disguised as a cosmetic one.
+                             #   Read it as "the acceptance that ends with a human",
+                             #   which `on_fail` below makes true.
 after = ["reconcile"]
-type = "human"
-on_fail = "fix-loop"
+type = "vote"                        # TRIBUNAL (operator policy, ratified in
+                                     #   conversation 2026-08-11). Distinct from the
+                                     #   two doc-acceptance votes above: those are
+                                     #   05 §2's own panels, judging the design.
+                                     #   This one stands in the operator's place, so
+                                     #   it carries the tribunal seats and rule.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side before registration
+                                     #   (see investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human —
+                                     #   replacing `fix-loop`, which sent a disputed
+                                     #   PRD back to the author without the operator
+                                     #   ever learning it was disputed. Legal only
+                                     #   because this is no longer `type="human"`
+                                     #   (V13).
 when = "labels != doc-tdd and labels != doc-adr"
                                      # the complement of the two vote clauses,
                                      #   written with the one connective that

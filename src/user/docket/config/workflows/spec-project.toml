@@ -20,8 +20,9 @@
 
 [pipeline]
 name    = "spec-project"
-version = 4   # 4: fix-loop threshold high -> blocker (2026-08-10)
-description = "Author the seven reserved project spec files in parallel, review them once, and accept by operator."
+version = 5   # 5: `accept` human -> tribunal vote (operator policy, 2026-08-11).
+              #   (4: fix-loop threshold high -> blocker, 2026-08-10.)
+description = "Author the seven reserved project spec files in parallel, review them once, and accept by tribunal vote that escalates to the operator."
 
 [match]                      # closed kind set (see spec-doc's note): the label is
                              #   what binds. Engine wins over 05's prose; DKT filed.
@@ -159,6 +160,20 @@ after_loop = "review"
 [[step]]
 name = "accept"
 after = ["reconcile"]
-type = "human"                       # human acceptance (05 §2)
-on_fail = "fix-loop"
+type = "vote"                        # TRIBUNAL (operator policy, ratified in
+                                     #   conversation 2026-08-11) standing where
+                                     #   05 §2 wrote "human acceptance". Seven specs
+                                     #   is the largest artifact any pipeline hands
+                                     #   an operator at once, which is exactly the
+                                     #   gate where an unaided read degrades into a
+                                     #   rubber stamp.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side before registration
+                                     #   (see investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human,
+                                     #   replacing `fix-loop`: a contested spec set
+                                     #   is the operator's call, not an automatic
+                                     #   round trip to seven authors. Legal only
+                                     #   because this is no longer `type="human"`
+                                     #   (V13).
 inputs = ["spec-author.*", "reconcile.findings"]

@@ -6,7 +6,8 @@
 # pipeline/policy changes, gate additions) -> those issues flow through
 # `standard-change`/`spec-doc` pipelines like any change."
 #
-# The pipeline ENDS at operator acceptance of the proposals. What follows —
+# The pipeline ENDS at acceptance of the proposals — since 2026-08-11 a tribunal
+# vote that escalates anything short of approval to the operator. What follows —
 # "planner turns accepted proposals into issues" — is a planner invocation
 # (03 §2), not a step: the planner is an in-session skill, and the issues it
 # creates bind to their OWN pipelines. Modelling that tail here would put one
@@ -18,8 +19,9 @@
 
 [pipeline]
 name    = "retro"
-version = 4   # 4: fix-loop threshold high -> blocker (2026-08-10)
-description = "Mine recent run evidence into config-change proposals for operator acceptance."
+version = 5   # 5: `accept` human -> tribunal vote (operator policy, 2026-08-11).
+              #   (4: fix-loop threshold high -> blocker, 2026-08-10.)
+description = "Mine recent run evidence into config-change proposals, accepted by tribunal vote that escalates to the operator."
 
 [match]                      # closed kind set (see spec-doc's note): `retro` is a
                              #   label, not a kind. Engine wins over 05; DKT filed.
@@ -129,10 +131,23 @@ after_loop = "review"
 [[step]]
 name = "accept"
 after = ["reconcile"]
-type = "human"                       # the operator accepts proposals in
-                                     #   conversation (T9); accepted ones become
-                                     #   issues via a fresh planner invocation
-on_fail = "skip"                     # V13 bars `waiting-human`; rejected proposals
-                                     #   are simply not adopted — the run's evidence
-                                     #   stays recorded either way
+type = "vote"                        # TRIBUNAL (operator policy, ratified in
+                                     #   conversation 2026-08-11). The operator still
+                                     #   accepts proposals in conversation (T9) and
+                                     #   accepted ones still become issues via a
+                                     #   fresh planner invocation — the tribunal
+                                     #   decides which proposals are worth that
+                                     #   conversation, and a retro's output is a long
+                                     #   list of small config edits, which is the
+                                     #   shape that most rewards a first pass.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side before registration
+                                     #   (see investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human. The
+                                     #   old `skip` was forced: V13 bars
+                                     #   `waiting-human` on `type="human"` steps, so
+                                     #   a rejected proposal set had nowhere to go
+                                     #   but silence. A vote step lifts that bar, and
+                                     #   the run's evidence stays recorded either
+                                     #   way.
 inputs = ["analyze.proposals", "reconcile.findings"]

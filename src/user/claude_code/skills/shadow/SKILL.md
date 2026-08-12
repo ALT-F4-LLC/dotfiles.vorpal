@@ -184,7 +184,9 @@ the definitions assume. By layer:
 **The two packet-composition defects earlier shadows carried are FIXED and
 live-verified — do not expect them, and re-file nothing against them.**
 (a) `issue.diff` rendering EMPTY for `--worktree`-recorded steps: fixed by
-a9eaebd + 43fb186 (the diff base is the RUN's recorded exec root, DKT-25);
+a9eaebd + 43fb186 (the diff base is the RUN's recorded exec root, DKT-25 — a
+retired-epoch id, provenance only; bare DKT-nn ids from before the 2026-08
+store reset no longer resolve);
 first real diffs confirmed in production on RUN-2, 2026-08-11. (b) A review
 round inputting the PRIOR step's change-summary: fixed by b98150a (loop
 inputs rebind to the loop's latest emit); verified live on the same run

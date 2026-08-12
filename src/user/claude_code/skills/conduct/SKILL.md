@@ -26,6 +26,15 @@ second-guess a `next` result. The one panel shape you ever type is the tribunal
 proposal's, and it is a constant this contract fixes (`-n 3 --threshold 0.67`),
 not a width you chose.
 
+**Historical citations.** Bare `DKT-nn` ids in this text predate the 2026-08
+store reset and no longer resolve in the live store — read them as provenance
+markers naming which run taught the lesson, never as live references. Only ids
+written "docket-repo DKT-nn" are current. Do not quote a bare id into a
+proposal, note, or reason as if it resolved: a judge or auditor re-deriving it
+finds nothing, and the dangling id then lives in the audit trail forever (a
+vote rationale citing one drew a "does not resolve" concern from its own
+panel, measured).
+
 ## Before the loop
 
 **Permission surface.** Wave executors run engine verbs (`docket step

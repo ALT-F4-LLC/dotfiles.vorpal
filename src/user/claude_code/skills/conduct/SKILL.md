@@ -291,9 +291,9 @@ refusal is the backstop, not the plan.
 
 1. `cat` policy.toml as text.
 2. Pass it through as `policyText`, unread.
-3. Confirm the `[policy]` table declares `version = 1`. The table header and
+3. Confirm the `[policy]` table declares `version = 2`. The table header and
    the key sit on SEPARATE lines, so this is `grep -A1 '^\[policy\]'` and
-   NEVER a substring search for `[policy] version = 1` — that literal occurs
+   NEVER a substring search for `[policy] version = 2` — that literal occurs
    nowhere in the file, and a conductor checking for it refuses a healthy
    policy before the first wave. If the table declares some other version,
    refuse and stop; do not guess at an unknown schema.

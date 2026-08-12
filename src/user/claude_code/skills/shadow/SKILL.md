@@ -159,8 +159,9 @@ Before reading one transcript line:
    your first finding —
    and the baseline for every later one, because a fix proposed against bytes
    that did not run is a wrong fix. The same chain read backwards governs your
-   own fixes: the surface you would edit is only half of what a session
-   resolves, so plan every fix against BOTH ends — source and install (§6.3).
+   own fixes: sessions resolve the INSTALLED copy, and fixes land in source
+   only — so note, for every fix, which installed copy will lag it until the
+   operator's next `just activate` (§6.3).
 4. `mkdir -p /tmp/claude/shadow/<session-id>` and start the log (§5).
 
 ## 3. Watch
@@ -447,25 +448,21 @@ Then:
    next `just activate`, every call site you edit must name the source path
    for a script that is new or newly changed.
 
-   **A live fix lands on BOTH surfaces in the same breath** — the source under
-   `$SRC` (what gets committed) and the installed path sessions actually
-   resolve (`~/.claude/...`, `~/.docket/...`) whenever one exists or the
-   resolution would find one. A fix applied to source alone is not applied:
-   the operator had to interrupt a RUN-1 wave launch to demand the installed
-   half by hand. Which route you take follows from what §2.3's `ls -ld`
-   found. Where nothing is installed, source IS the whole job. Everywhere else
-   the install is a symlink into the content-addressed vorpal store —
-   `~/.claude/{agents,skills,hooks,scripts,workflows}`, workflows included since
-   2026-08-11 — so the store holds a second set of bytes you must edit as well,
-   and through the file tools: Bash writes into the store are sandbox-denied, so
-   `cp` and `sed` fail there where Edit and Write go through. **No surface lands
-   both from one edit any more**: the hand-made `~/.claude/workflows/wave.js`
-   symlink that used to be that exception is retired, so a workflow fix left in
-   source alone is a fix no session runs until the next `just activate` — so a
-   workflow fix lands in BOTH the source file and the installed store copy,
-   through the file tools, like every other surface. Never recreate the
-   hand-made symlink; log any you find as transition debris the next
-   `just activate` must be allowed to replace.
+   **A fix lands in SOURCE ONLY, and is committed.** The installed surfaces —
+   `~/.claude/{agents,skills,hooks,scripts,workflows}`, `~/.docket/config` —
+   are content-addressed store artifacts behind the operator's `just activate`
+   gate: hand-editing one desynchronizes bytes from hash, is invisible to git,
+   and changes what every session on the machine executes without the
+   operator's install act (operator ruling, 2026-08-11, on tribunal-security's
+   DKT-V6 finding; this RETIRES the both-surfaces practice recorded after
+   RUN-1 graph-engine). The store's Bash write-deny is the only mechanical
+   guard and Edit/Write pass through it — the rule holds because it is the
+   rule, not because a tool will stop you. So: write the edit under `$SRC`,
+   commit it, and state in the close report that the fixes are PENDING the
+   operator's next `just activate` — name every skill or script whose
+   installed copy is now behind source. A call site that must work before
+   then names the source path explicitly. Never recreate a hand-made symlink
+   into the source tree; log any you find as debris.
 4. **File the engine defects** (rule 3), one issue per defect, refusal text
    and repro verbatim.
 5. **Close** by naming the log path, the fixes applied, the issues filed,

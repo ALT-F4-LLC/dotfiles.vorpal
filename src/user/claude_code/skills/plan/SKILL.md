@@ -163,9 +163,12 @@ literal string (`-` reads stdin); the `@<path>` form belongs to `doc create`
 alone — followed blindly, every issue body becomes the literal text
 "@/path/file", frozen at activation into every brief. Help-check each verb's
 flags on first use in a session; the CLI is the authority, not this block.
-`--budget` records the cap you elicited in §1
-(`docket run budget --set <n> --reason '<why>'` adjusts it later, with
-`--if-version` when a concurrent change would matter). Ids render with each
+`--budget` records the cap you elicited in §1 — and elicit it against the
+work's projected cost: when the likely workflow binding is known, its steps'
+expected-cost sum is the floor to recommend (RUN-4's cap of 3 against a
+4.8-cost workflow forced a mid-run raise panel and serialized its review
+fanout). (`docket run budget --set <n> --reason '<why>'` adjusts it later,
+with `--if-version` when a concurrent change would matter). Ids render with each
 project's prefix — the store is machine-global and the number is the identity,
 so `DKT-<n>` and a bare number parse in any project.
 

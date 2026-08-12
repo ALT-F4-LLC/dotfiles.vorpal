@@ -388,7 +388,7 @@ if (policy.policy?.version !== 1) {
 // script fills a proposal, and never creates, approves, tallies, or commits one.
 const seats = voters.map((v) => resolveSeat(v, policy))
 
-log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), cwd ${cwd}`)
+log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), policy ${(input.policyText || '').length} chars, cwd ${cwd}`)
 for (const s of seats) {
     log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (tier ${s.tier})`)
 }

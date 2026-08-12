@@ -152,17 +152,15 @@ function parseToml(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Seat routing. A seat is not a step: there is no attempt ladder, no
+// Seat routing. A seat is not a step: there is no attempt chain, no
 // label-keyed [[resolve]] table, and no [security].labels match (a seat carries
-// no issue labels). [escalation].diamond_gates gate a step's ASCENT into
-// diamond after a failure; a seat's tier is its declared standing home, so a
-// diamond seat resolves to diamond. What still binds: the [security] node pins
-// and ceiling, the row's own `never` list, and [escalation.fallback].
+// no issue labels). [escalation].fable_gates gate a step's chain-walk into a
+// fable variant after failures; a seat's variant is its declared standing
+// home, so a fable-max seat resolves to fable-max. What still binds: the
+// [security] node pins — the never-list, and the ceiling as a chain-derived
+// bound: everything reachable FROM [security].ceiling by escalate_to lies
+// beyond it, and a pinned seat standing there is clamped back to the ceiling.
 // ---------------------------------------------------------------------------
-
-function tierIndex(policy, tier) {
-    return Object.keys(policy.tiers || {}).indexOf(tier)
-}
 
 function resolveSeat(seat, policy) {
     const row = (policy.executors || {})[seat]
@@ -174,39 +172,52 @@ function resolveSeat(seat, policy) {
         )
     }
 
-    let tier = row.tier
+    let variant = row.variant
     let never = (row.never || []).slice()
 
     const sec = policy.security || {}
     if ((sec.nodes || []).includes(seat)) {
         never = never.concat(sec.never || [])
-        if (sec.ceiling && tierIndex(policy, tier) > tierIndex(policy, sec.ceiling)) {
-            tier = sec.ceiling
+        if (sec.ceiling) {
+            const beyond = new Set()
+            let c = (policy.variants || {})[sec.ceiling]
+            if (!c) {
+                throw new Error(
+                    `tribunal.js: [security].ceiling ${JSON.stringify(sec.ceiling)} ` +
+                    `has no [variants] row — a mistyped ceiling would silently stop ` +
+                    `binding. Fix policy.toml. Refusing to seat the panel.`
+                )
+            }
+            while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
+                beyond.add(c.escalate_to)
+                c = (policy.variants || {})[c.escalate_to]
+            }
+            if (beyond.has(variant)) variant = sec.ceiling
         }
     }
 
-    let spec = (policy.tiers || {})[tier]
+    let spec = (policy.variants || {})[variant]
     if (!spec) {
         throw new Error(
-            `tribunal.js: seat ${JSON.stringify(seat)} names tier ${JSON.stringify(tier)}, ` +
-            `which has no [tiers] row. Refusing to seat the panel.`
+            `tribunal.js: seat ${JSON.stringify(seat)} names variant ${JSON.stringify(variant)}, ` +
+            `which has no [variants] row. Refusing to seat the panel.`
         )
     }
 
     if (never.includes(spec.model)) {
         const fallback = (policy.escalation || {}).fallback || {}
-        tier = fallback[tier] || fallback.diamond
-        spec = (policy.tiers || {})[tier]
+        variant = fallback[variant]
+        spec = (policy.variants || {})[variant]
         if (!spec || never.includes(spec.model)) {
             throw new Error(
                 `tribunal.js: no permitted model for seat ${JSON.stringify(seat)} — ` +
-                `fallback tier ${JSON.stringify(tier)} is missing or also names a ` +
+                `fallback variant ${JSON.stringify(variant)} is missing or also names a ` +
                 `never-listed model. Refusing to seat the panel.`
             )
         }
     }
 
-    return { seat, tier, model: spec.model, effort: spec.effort }
+    return { seat, variant, model: spec.model, effort: spec.effort }
 }
 
 // A seat's lens is its trailing name segment: `tribunal-security` -> security.
@@ -377,10 +388,10 @@ if (!Array.isArray(input.voters) || input.voters.length === 0) {
 const { voteId, voters, context, gateKind, cwd } = input
 const policy = parseToml(input.policyText)
 
-if (policy.policy?.version !== 1) {
+if (policy.policy?.version !== 2) {
     throw new Error(
-        `tribunal.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 1. ` +
-        `Refusing to route against an unknown schema.`
+        `tribunal.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 2 ` +
+        `(the [variants]/escalate_to shape). Refusing to route against an unknown schema.`
     )
 }
 
@@ -390,7 +401,7 @@ const seats = voters.map((v) => resolveSeat(v, policy))
 
 log(`tribunal: ${voteId} — ${gateKind} gate, ${seats.length} seat(s), policy ${(input.policyText || '').length} chars, cwd ${cwd}`)
 for (const s of seats) {
-    log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (tier ${s.tier})`)
+    log(`  ${s.seat}: role ${lensOf(s.seat).role} @ ${s.model}/${s.effort} (variant ${s.variant})`)
 }
 
 // ---------------------------------------------------------------------------

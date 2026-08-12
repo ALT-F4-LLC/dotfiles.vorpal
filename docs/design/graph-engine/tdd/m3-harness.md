@@ -685,6 +685,15 @@ pre-registration; §6's checks re-run immediately before M4 against that pin.
 
 ### 4.3 Policy resolution algorithm (the DKT-62 interface, executable form)
 
+> **SUPERSEDED 2026-08-11 (policy.toml version 2).** The four-tier ladder this
+> section specifies was replaced by literal model+effort `[variants]` with
+> explicit `escalate_to` chains, a chain-derived security ceiling, and
+> `fable_gates` in place of `diamond_gates` — evidence-ratified in
+> conversation. The binding algorithm is now wave.js's `resolve()` against
+> that shape; this section stays as the M3-era record and its invariants
+> (coverage, never-list, gated top-model entry, requested-vs-resolved echo)
+> all carry forward.
+
 **Owner: wave.js, as code** (§4.2). Runs per row, over the `policy` object
 handed in `args`. No model judgment anywhere in it, and no step of it is
 performed by following prose.

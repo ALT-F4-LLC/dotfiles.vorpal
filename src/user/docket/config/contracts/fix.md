@@ -51,8 +51,10 @@ scope, that is a gap, not a license to widen.
 Prove each finding closed. For a finding with a test-expressible failure, write the test
 that fails against the current code, observe it fail, then fix — the finding's own claim
 is your red. For a finding about a control or a guard, the regression test must drive the
-real entry point rather than the guard function in isolation, and you falsify it by
-temporarily neutering the call site, confirming the new test fails, and reverting: a test
+real entry point rather than the guard function in isolation, and you falsify it against
+a COPY: mirror the tree (or its smallest testable subset) under your temp directory,
+neuter the call site in the mirror, and observe the new test fail there — your checkout
+never holds the neutered state, so no revert step exists, and none is permitted: a test
 that pins a function nobody calls proves nothing about the wiring. For a finding you
 cannot express as a test, cite the file:line and the reasoning that shows it addressed,
 and label the claim OBSERVED or INFERRED.

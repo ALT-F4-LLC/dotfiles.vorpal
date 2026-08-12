@@ -104,7 +104,7 @@ impl ClaudeCode {
             .with_auto_updates_channel("latest")
             .with_away_summary_enabled(false)
             .with_cleanup_period_days(14)
-            .with_effort_level("medium")
+            .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
             .with_model("sonnet")

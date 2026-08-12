@@ -268,7 +268,12 @@ function resolve(row, policy) {
                     `(step ${row.step}). Fix policy.toml. Refusing to route.`
                 )
             }
-            if (ceiling && beyond.has(cur.escalate_to)) break
+            if (ceiling && beyond.has(cur.escalate_to)) {
+                // A chain hop that would overshoot the ceiling clamps UP to
+                // it rather than stranding the step below its permitted top.
+                variant = ceiling
+                break
+            }
             if (never.includes(next.model)) break
             variant = cur.escalate_to
         }
@@ -315,7 +320,7 @@ function resolve(row, policy) {
 }
 
 const WRITE_HINTS = [
-    'implement', 'test-infra', 'fix', 'commit-author',
+    'implement', 'test-infra', 'fix',
     'prd-author', 'tdd-author', 'tdd-author-security',
     'adr-author', 'ux-spec-author', 'pr-comment-author',
     'spec-author-architecture', 'spec-author-security', 'spec-author-operations',

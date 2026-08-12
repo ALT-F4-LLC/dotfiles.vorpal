@@ -54,7 +54,9 @@ test-environment blocker to surface.
 
 Prove the infrastructure works by making it fail. A harness that has never been observed
 to report red is unproven: demonstrate a deliberately broken input reaching it and the
-failure it produces, then revert. For each resilience behavior the infrastructure
+failure it produces — via a throwaway probe (a temp test file you then delete, or a
+mirror of the tree under your temp directory), never by breaking and restoring the
+checkout itself, which has no permitted revert step. For each resilience behavior the infrastructure
 supports — retry, timeout, degradation — the harness must be able to inject the failure
 it defends against; a fallback path with no failure injection is untestable by
 construction.

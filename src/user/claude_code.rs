@@ -37,6 +37,7 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cargo/git",
     "~/.cargo/registry",
     "~/Library/Caches/go-build",
+    "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
 ];
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];

@@ -24,9 +24,9 @@ Gathering and analysis are agent work: spawn `executor-read` analysts (one,
 or one per run when runs are many), each briefed with the corpus contract
 `~/.docket/config/contracts/retro-analyst.md` (source in the dotfiles
 checkout: `src/user/docket/config/contracts/retro-analyst.md`) — the node the
-corpus already defines for exactly this — plus §2's table verbatim. The tier
+corpus already defines for exactly this — plus §2's table verbatim. The variant
 `policy.toml` gives `retro-analyst` binds only when the retro pipeline
-dispatches that node through the wave; a skill-side spawn carries no tier, so
+dispatches that node through the wave; a skill-side spawn carries no variant, so
 name the intended model and effort in the spawn or the analysts silently run
 at the session default. They run the verbs and return evidence-labelled
 findings; you compose §3's proposals and hold the approval conversation. The
@@ -65,7 +65,7 @@ rather than assuming an unsandboxed shell is needed. Where it is not writable,
 | Config churn (D15) | your own proposals per run over time | churn trending up means bootstrap mined the repo wrong; fix the source, not each symptom |
 | Routing drift | the four metadata keys (below), read per step with `docket step show` / `step context` — `run report`'s `metadata` is a key → distinct-values rollup that never pairs requested with resolved on one step, so it shows aggregate skew only | requested ≠ resolved across runs means policy asks for a model it does not get |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
-| Tier fit | `[executors]` rows vs attempts + cost at that tier | a row failing repeatedly at its tier is mis-tiered, not under-budgeted |
+| Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
 
 Label every claim by what it rests on: a count from the report is observed, a
 pattern across five runs is inferred. Say which one you have.
@@ -81,11 +81,11 @@ bump — but note it, because the next retro attributes what followed to it.
 
 | Table | A finding that touches it |
 |---|---|
-| `[tiers]` | a tier's {model, effort} consistently over- or under-serving its rows |
-| `[executors]` | a hint mis-tiered; a row orphaned by a deleted workflow; a hint with no row |
+| `[variants]` | a variant's {model, effort} consistently over- or under-serving its rows; an `escalate_to` hop that lands wrong |
+| `[executors]` | a hint mis-sized; a row orphaned by a deleted workflow; a hint with no row |
 | `[security]` | security-labelled work landing on an unpinned row — widen `nodes` or `labels` |
 | `[[resolve]]` | a rule that never matches, or ordering that lets the general rule shadow the specific one |
-| `[escalation]` | `one-rung` under- or over-shooting; a `diamond_gates` entry that never fires |
+| `[escalation]` | `one-hop` under- or over-shooting; a `fable_gates` entry that never fires |
 
 Two invariants any `[executors]` proposal must preserve: **every hint has
 exactly one row, and every row is reachable from some hint.** The wave refuses
@@ -200,8 +200,8 @@ Only the approved items — whether the panel approved them or the operator did
 on escalation — and the moment the result is in, not after asking again.
 Applied by an `executor-write` agent carrying the approved diffs, with the
 dry-run verification below performed by an `executor-read` agent; you relay
-approvals and read their reports. Same tier caveat as §1: spawned from here,
-neither agent carries a `policy.toml` tier.
+approvals and read their reports. Same variant caveat as §1: spawned from here,
+neither agent carries a `policy.toml` variant.
 
 **Approved corpus edits land in the dotfiles checkout, not in the repo.** The
 engine reads the corpus from `~/.docket/config`, a content-addressed store

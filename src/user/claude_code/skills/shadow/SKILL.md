@@ -580,9 +580,9 @@ And the wave:
   conductor trusting the status is a finding.
 - **Routing spot-check.** Re-derive a row or two by hand against the shared
   root's policy.toml
-  — `[[resolve]]` → `[executors]` → security ceiling → escalation → diamond
-  gate → never-list — and compare to the logged
-  `STEP-N: hint -> archetype @ model/effort (tier …)` line. Disagreement is
+  — `[[resolve]]` → `[executors]` → security pins → escalate_to chain → fable
+  gate → never-list/fallback — and compare to the logged
+  `STEP-N: hint -> archetype @ model/effort (variant …)` line. Disagreement is
   load-bearing.
 - **Journal completeness.** Every spawned `agentId` with its meta and
   transcript; usage present where the back-fill will look for it.

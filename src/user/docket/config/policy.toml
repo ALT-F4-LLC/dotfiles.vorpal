@@ -3,10 +3,10 @@
 # THE ENGINE NEVER READS THIS FILE. Core pins it by content hash at activation
 # and registers nothing (06 §2; docket's own TDD states it outright: "No
 # `policy.toml` interpretation. It is pinned as bytes and never parsed").
-# Its only consumer is wave.js, which reads these tables and delivers the
-# result as step `metadata` on `next` rows — the workflow script reads no files
-# (05 §5). Everything engine-ENFORCED lives core-side instead (06 §11.1):
-# budget cap, attempt defaults, lease TTLs, and context-size caps via
+# Its only consumers are wave.js and tribunal.js, which read these tables and
+# deliver the result as spawn model/effort — the workflow scripts read no
+# files (05 §5). Everything engine-ENFORCED lives core-side instead (06
+# §11.1): budget cap, attempt defaults, lease TTLs, and context-size caps via
 # `docket config` / run flags and `[limits]`; gate timeout and flake policy in
 # trust entries (06 §4).
 #
@@ -18,205 +18,255 @@
 # Provenance (T9): machine-authored, human-approved in conversation, never
 # hand-maintained (05 §1).
 #
-# 05 §5 instructs that a four-tier ladder, dispatch tables, census exemptions,
-# and effort workarounds "all collapse into this one file". This file satisfies
-# that instruction by ADOPTION, not transcription: the tier values, security
-# pins, and escalation policy below are OPERATOR POLICY, ratified in
-# conversation on 2026-08-05, and amended the same way since (most recently
-# 2026-08-11: the three tribunal seats). They are authoritative because the
-# operator ratified them — no other document is their source, and none needs
-# to be.
+# VERSION 2 (2026-08-11): the four generic tiers (bronze/silver/gold/diamond)
+# are retired. Variants are named for what they literally are — model plus
+# effort — and each executor row names the variant sized to its workload. The
+# operator directed 2026-08-11 that values be DECIDED FROM MINED EVIDENCE,
+# not preference, so every CHANGED row below cites its evidence: the ledger
+# mining of this epoch (6 runs, 180 steps, 580 usage rows, 826 events since
+# the 2026-08-10 store reset) or, where a node has never spawned, the
+# workload analysis of its contract and workflow position. Structure —
+# literal variant names, escalate_to chains, gated fable entry, the version
+# bump — was operator-ratified in the same conversation. 05 §5's four-tier
+# ladder is superseded by the same authority that adopted it: operator
+# ratification in conversation.
 
 [policy]
-version = 1
+version = 2
 
-# --- Tier ladder ------------------------------------------------------------
-# Four named tiers, ordered by capability. Each names a model alias together
-# with the reasoning effort it is meant to run at. Ascend by a single step, and
-# only after an attempt has actually failed — not because a task looks hard up
-# front.
+# --- Variants ---------------------------------------------------------------
+# Model+effort combos, named literally. There is NO implied ordering and no
+# generic ladder: escalation is the explicit `escalate_to` chain on each
+# variant, one hop per failed attempt. Rungs are still earned by a failed
+# attempt, never by predicted difficulty.
 #
-# Aliases, not model IDs. Exactly one other file turns an alias into a concrete
-# model ID: src/user/claude_code.rs:135-138, the ANTHROPIC_DEFAULT_*_MODEL
-# env bindings (verified 2026-08-05 — every alias below has a binding there:
-# fable:135, opus:137, sonnet:138; haiku:136 is bound but no tier needs it).
-# Duplicating model IDs here would create a second source of truth that drifts.
+# Aliases, not model IDs. Exactly one other file turns an alias into a
+# concrete model ID: src/user/claude_code.rs:135-138, the
+# ANTHROPIC_DEFAULT_*_MODEL env bindings (fable:135, opus:137, sonnet:138;
+# haiku:136 is bound but no variant needs it). Duplicating model IDs here
+# would create a second source of truth that drifts.
 #
-# This is where 05 §5's "effort workarounds" stop being needed. Previously only
-# the model half of a tier could actually be dispatched; the effort half was a
-# target nobody could bind per spawn, so naming a high-effort tier described
-# what a task deserved rather than what it received. Wave carries both halves
-# to the spawn as metadata, so both bind.
+# EVIDENCE NOTE on chains: the old ladder's escalation NEVER FIRED in this
+# epoch — all 22 lease-reaped events map exactly onto the 19 attempt>1 steps,
+# and zero step-failed/escalation events exist. Every observed "retry" was a
+# lease timeout, not a capability failure. The chains below are therefore
+# sized from workload shape and failure asymmetry, not observed ascent, and
+# the next retro should re-read them once a real escalation has fired.
+#
+# Every variant here is referenced by an executor row or a chain hop — an
+# unreferenced variant violates the every-row-reachable invariant.
 
-[tiers]
-bronze  = { model = "sonnet", effort = "medium" }   # volume execution
-silver  = { model = "opus",   effort = "high"   }   # the default, and the floor for authoring/review/verify
-gold    = { model = "opus",   effort = "xhigh"  }   # buys reasoning, not a different model — entering it costs effort only
-diamond = { model = "fable",  effort = "max"    }   # scarce and gated; reserved for hard problems, and a standing
-                                                    #   seat only for investigator-class and, ratified 2026-08-11,
-                                                    #   the three tribunal seats (see [executors])
+[variants]
+sonnet-high = { model = "sonnet", effort = "high",   escalate_to = "opus-high" }
+                          # a failed cheap-model attempt earns review-grade
+                          #   capability in one hop (the old bronze->silver
+                          #   jump), not an effort tweak on the same model
+opus-medium = { model = "opus",   effort = "medium", escalate_to = "opus-high" }
+opus-high   = { model = "opus",   effort = "high",   escalate_to = "opus-xhigh" }
+opus-xhigh  = { model = "opus",   effort = "xhigh",  escalate_to = "opus-max" }
+opus-max    = { model = "opus",   effort = "max",    escalate_to = "fable-max" }
+                          # the pre-fable rung: failed deep work escalates
+                          #   within Opus before the fable gate fires
+fable-max   = { model = "fable",  effort = "max" }
+                          # top of the system; no escalate_to. Entry by chain
+                          #   is gated — see [escalation].fable_gates.
 
 # --- Executor routing -------------------------------------------------------
-# executor hint -> {model, effort} (02 §7), expressed as a tier so the ladder
-# stays the single ordering. Keys are node names from 04 — opaque strings core
-# never interprets (05 §1).
+# executor hint -> variant (02 §7). Keys are node names from 04 — opaque
+# strings core never interprets (05 §1).
 #
 # The step records requested vs resolved model (the harness may substitute),
-# which makes tier drift measurable from the ledger itself (02 §7). That is why
-# 05 §5's "census exemptions" have no successor here: an exemption list exists
-# only to stop a text-scanning audit from misreading model names written in
-# prose. Typed rows are read by parsing, not scanning, so there is nothing to
-# exempt — the category dissolves rather than collapsing.
+# which makes routing drift measurable from the ledger itself (02 §7). This
+# epoch measured it: 179/180 steps resolved faithfully; the single drift was
+# one judge-simplicity step requesting effort=high and resolving effort=medium.
 
 [executors]
 
 # Write nodes.
-implement         = { tier = "bronze" }   # routine change; static-Large or >1-day work escalates per [escalation]
-test-infra        = { tier = "bronze" }   # implement's label-keyed resolution (below); same class, same rung
-fix               = { tier = "bronze" }   # bounded, finding-directed rework
+implement         = { variant = "sonnet-high" }
+                          # RAISED from sonnet/medium on ledger evidence: its
+                          #   output drew 371 findings (26 blockers, 124 high)
+                          #   across 11 issues, 7 of 11 needed a fix round,
+                          #   and every quality-attributable gate failure in
+                          #   the epoch traces to implement. Review costs
+                          #   7.8x the tokens and 7.3x the wall clock of the
+                          #   writing it reviews, so effort spent here
+                          #   discounts the system's dominant expense.
+test-infra        = { variant = "opus-high" }
+                          # RAISED from sonnet/medium on workload evidence
+                          #   (zero spawns this epoch): its contract asks for
+                          #   permanent API design — seams no downstream test
+                          #   can retrofit — and it is the rarest write node
+                          #   (label-keyed only), so the per-spawn saving the
+                          #   cheap tier bought was negligible against the
+                          #   durability of what it writes.
+fix               = { variant = "opus-medium" }
+                          # RAISED from sonnet/medium on workload evidence:
+                          #   fix adjudicates between opposing opus-high judge
+                          #   findings ("fix for the stronger argument"),
+                          #   falsifies INFERRED findings, and carries the
+                          #   corpus's only recorded tier-attributed failure
+                          #   (a cheap-tier fix round wrote two gate scripts
+                          #   that fed three review rounds of defects). It
+                          #   fires 0-2 times per issue, so the saving was
+                          #   small — and its worst failure modes (the
+                          #   swallowed error, the widened assertion) PASS
+                          #   gates, so escalation can never reach them:
+                          #   capability must be set at dispatch. Ledger
+                          #   corroborates the workload weight: fix averaged
+                          #   3.3x the output tokens and 2.3x the wall clock
+                          #   of implement while both sat at the same tier.
 # `commit-author` row removed 2026-08-09 (operator policy, ratified in
 # conversation): the commit tail is gone from every workflow — automated
 # commits are incompatible with the harness security model (interactive
 # 1Password commit-signing authorization is unavailable to headless
-# executors). No workflow references the hint, and an unreferenced row
-# violates the every-row-reachable invariant. Since 2026-08-10 the split is:
-# executors commit unsigned in their private worktrees, the conductor
-# integrates each sha as a real unsigned commit, and the operator alone
-# publishes (push/PR/release) — no hand-commit step remains in the loop;
-# the contract and its git-commit action script were removed with this row
-# ("remove anything no longer needed", 2026-08-09) — git history keeps
-# contracts/commit-author.md if its drafting discipline is ever wanted.
+# executors). Executors commit unsigned in their private worktrees, the
+# conductor integrates each sha, and the operator alone publishes.
 
-# Review nodes — silver is the floor, and dispatching review below it is a
-# routing defect. The reason is the value review produces: a judge exists to
-# find defects the author missed, and a model that misses them too returns a
-# clean verdict that is worth less than no review at all, because the run then
-# records the code as reviewed. Cheap review does not buy weaker assurance; it
-# buys false assurance.
-judge-correctness = { tier = "silver" }
-judge-architecture = { tier = "silver" }
-judge-simplicity  = { tier = "silver" }
-judge-testing     = { tier = "silver" }
-judge-design      = { tier = "silver" }
-judge-security    = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
-design-qa         = { tier = "silver" }
-verify-ac         = { tier = "silver" }   # routine verification; paired/new-architecture verification is still silver
-synthesize-findings = { tier = "silver" } # reduces N judge outputs; cheaper tier loses cross-finding signal
-pr-comment-author = { tier = "silver" }
+# Review nodes — opus-high is the floor for ASSURANCE-BEARING review, and
+# dispatching such review below it is a routing defect: a judge exists to find
+# defects the author missed, and a model that misses them too returns a clean
+# verdict worth less than no review at all. The floor now binds by what a
+# node's output DOES rather than by section membership: nodes whose findings
+# gate shipping keep it; nodes that transcribe or advise are sized to that.
+judge-correctness = { variant = "opus-high" }   # blocker yield 0.42/spawn (n=20) — earns the floor
+judge-architecture = { variant = "opus-high" }  # blocker yield 0.58/spawn (n=20) — highest in the epoch
+judge-testing     = { variant = "opus-high" }   # blocker yield 0.32/spawn (n=20)
+judge-design      = { variant = "opus-high" }   # zero spawns (ui-change never ran); floor by class
+judge-security    = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
+judge-simplicity  = { variant = "opus-medium" }
+                          # LOWERED from opus/high on ledger evidence: 611,318
+                          #   output tokens across 22 spawns produced 1
+                          #   blocker and 11 highs (yield 0.05/spawn, 12x
+                          #   below judge-architecture). Fix loops are
+                          #   blocker-only, so its output is almost entirely
+                          #   advisory. Same model, less effort — the lens
+                          #   stays, the spend matches the yield. WATCH ITEM
+                          #   for the next retro: if its blocker yield was
+                          #   effort-bound rather than dimension-bound, this
+                          #   reverts.
+design-qa         = { variant = "opus-high" }   # zero spawns; terminal verification of BUILT output, once per UI issue
+verify-ac         = { variant = "opus-high" }
+                          # kept at the floor despite a near-mechanical
+                          #   contract: it is the terminal step, and its one
+                          #   judgment (gate passed but intent visibly unmet)
+                          #   is exactly the false-assurance case the floor
+                          #   exists for.
+synthesize-findings = { variant = "opus-high" } # clustering IS the judgment; all downstream severity arithmetic derives from it
+pr-comment-author = { variant = "sonnet-high" }
+                          # LOWERED from opus/high on workload evidence (zero
+                          #   spawns): transcription of already-made findings
+                          #   into PR prose — no assurance produced, smallest
+                          #   packet in the corpus (7.9KB), 0-1 spawns per
+                          #   release. Stakes are reputational (posts under
+                          #   the operator's GitHub account), which is a
+                          #   review-the-draft concern, not a capability one.
 
-# Authoring nodes — capability-bound, gold is their standing home.
-spec-doc-author   = { tier = "gold" }     # the resolution table below refines this per doc type
-prd-author        = { tier = "silver" }   # ratified at silver: a PRD states product intent and
-                                          #   acceptance criteria, which is authoring-class but not
-                                          #   the architectural design work that earns gold
-tdd-author        = { tier = "gold" }
-tdd-author-security = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
-adr-author        = { tier = "gold" }     # a decision record fixes a choice and its rejected
-                                          #   alternatives for future readers — authoring-class work
-                                          #   whose cost lands later, when the record is relied on
-ux-spec-author    = { tier = "gold" }
+# Authoring nodes — open-ended synthesis whose cost lands later, when the
+# document is relied on. The through-line in their contracts is that DECLINING
+# to write is part of the deliverable ("say so and name the cheaper route"),
+# a judgment cheaper spawns reliably get wrong in the productive direction:
+# they write the document. Zero authoring spawns this epoch (only
+# standard-change and investigation have ever run), so these stand on
+# workload analysis, unchanged in effect from their prior ratification.
+# There is deliberately NO `spec-doc-author` executor row. The [[resolve]]
+# table below REPLACES that hint unconditionally — every rule names a concrete
+# author and the `default` catches the rest — so a row here would be
+# unreachable (the every-row-reachable invariant; verified against wave.js's
+# resolution order 2026-08-11: the table default always wins).
+prd-author        = { variant = "opus-high" }   # product intent and acceptance criteria — authoring-class
+                                                #   but not the architectural design work above it;
+                                                #   also the unlabeled-doc default in [[resolve]]
+tdd-author        = { variant = "opus-xhigh" }
+tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+                          # RAISED from opus/high: it is the same design work
+                          #   as tdd-author — the security pin bars a MODEL,
+                          #   it does not discount the work. The old row
+                          #   under-sized it relative to its unpinned twin.
+adr-author        = { variant = "opus-xhigh" }
+ux-spec-author    = { variant = "opus-xhigh" }
 
 # spec-project's seven reserved spec files (05 §2), one row per fanout hint.
-# [OBSERVED] These are seven DISTINCT executor hints, not seven spawns of one:
+# [OBSERVED] Seven DISTINCT executor hints, not seven spawns of one:
 # `internal/workflow/expand.go:160-168` assigns `row.Executor = hint` per
-# sibling, and `internal/engine/packets/default.tmpl:5-6` renders it as
-# `target: {{.Step.Executor}}`. The hint IS the per-sibling identity carrier —
-# it is what tells sibling #1 to write the architecture spec and #4 the
-# performance spec. A bare `spec-author` x7 would render seven identical briefs
-# with no declared way to say which file each writes (DKT-64's open question).
-# Contrast investigation.toml's `["research","research"]`, where the siblings
-# ARE interchangeable and the repeated literal key is therefore correct.
-#
-# Gold across the board: each is authoring-class work standing up a project's
-# reference documentation.
-spec-author-architecture   = { tier = "gold" }
-spec-author-security       = { tier = "gold", never = ["fable"], reason = "security-classifier-reroute" }
-                                          # the one sibling whose subject matter trips
-                                          #   the classifier by its nature — pinned for
-                                          #   the same reason as tdd-author-security,
-                                          #   and listed in [security].nodes below
-spec-author-operations     = { tier = "gold" }
-spec-author-performance    = { tier = "gold" }
-spec-author-code-quality   = { tier = "gold" }
-spec-author-review-strategy = { tier = "gold" }
-spec-author-testing        = { tier = "gold" }
+# sibling — the hint IS the per-sibling identity carrier telling sibling #1
+# to write the architecture spec and #4 the performance spec.
+spec-author-architecture   = { variant = "opus-xhigh" }
+spec-author-security       = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
+spec-author-operations     = { variant = "opus-xhigh" }
+spec-author-performance    = { variant = "opus-xhigh" }
+spec-author-code-quality   = { variant = "opus-xhigh" }
+spec-author-review-strategy = { variant = "opus-xhigh" }
+spec-author-testing        = { variant = "opus-xhigh" }
 
-# Investigator-class — diagnosis and synthesis with no map to follow, and the
-# only work that sits at diamond by default. Sending it somewhere cheaper first
-# is a false economy: the weaker pass tends to miss defaults and negative cases,
-# and the question then has to be asked again at full price.
-investigate       = { tier = "diamond" }
-research          = { tier = "diamond" }
-retro-analyst     = { tier = "diamond" } # mines run ledgers -> proposals (04, 05 §6)
+# Investigator-class — diagnosis and synthesis with no map to follow; the only
+# work standing at fable-max. Ledger (n=2, small): investigate at fable/max
+# averaged 3.6 minutes and 16.3k output tokens — the top of the system was
+# also its CHEAPEST band this epoch (0.6% of output tokens), so there is no
+# cost case against the standing home and a capability case for it: the
+# smallest declared input of any node (issue body only) means everything else
+# must be found, and a confident wrong guess costs a full cycle.
+investigate       = { variant = "fable-max" }
+research          = { variant = "fable-max" }   # never executed this epoch (both spawns skipped); sized with its class
+retro-analyst     = { variant = "fable-max" }   # mines the entire run ledger -> proposals (04, 05 §6)
 
-# Tribunal seats — the standing panel that sits where a workflow used to declare
-# `type = "human"`. OPERATOR POLICY, ratified in conversation 2026-08-11: "2 Fable
-# and 1 Opus". Architecture and correctness take diamond (Fable at max effort);
-# security takes gold, because the standing classifier pin below applies to a
-# security seat exactly as it applies to any other security node, and gold is that
-# work's ceiling. The composition is the ratified shape, not an accident of
-# routing: two seats read at full capability and one reads under the pin, so a
-# tribunal is never unanimous by construction of a single model's judgement.
+# Tribunal seats — the standing panel where workflows used to declare
+# `type = "human"`. Composition ratified 2026-08-11 ("2 Fable and 1 Opus")
+# and now VALIDATED by ledger evidence: across 36 votes and 12 decided
+# proposals, no tribunal verdict was ever overturned by the operator, and all
+# three rejections caught real defects and were answered by rework. The
+# asymmetry argument stands: a wrong rejection costs one operator read; a
+# wrong approval consumes the operator gate unbounded.
 #
-# Why these are worth diamond when review nodes sit at silver: a judge's finding
-# is advisory and lands in a reconcile step that the loop can absorb. A tribunal
-# vote CONSUMES an operator gate — the whole point is that approval means the
-# operator never sees the artifact. A seat that misses what the operator would
-# have caught does not produce a weak review; it produces a silent one. Every
-# non-approval escalates to `waiting-human` (the four converted workflows), so the
-# cost of a wrong REJECTION is one operator read — the cost of a wrong APPROVAL is
-# unbounded, and the tier buys down that asymmetry.
+# Reachability: referenced by the `voters` lists in investigation.toml
+# (`read-gate`), spec-doc.toml (`accept-human`), spec-project.toml (`accept`),
+# and retro.toml (`accept`). Retiring any of those four retires the row.
 #
-# Reachability: these rows are referenced by the `voters` lists in
-# investigation.toml (`read-gate`), spec-doc.toml (`accept-human`),
-# spec-project.toml (`accept`), and retro.toml (`accept`) — the tribunal spawner
-# routes each seat by the row below. Retiring any of those four conversions
-# retires the row with it (the every-row-reachable invariant).
-tribunal-architecture = { tier = "diamond" }
-tribunal-correctness  = { tier = "diamond" }
-tribunal-security     = { tier = "gold", never = ["fable"], reason = "security-classifier-reroute" }
-                                          # gold, not diamond: [security].ceiling
-                                          #   binds this seat, and it is listed in
-                                          #   [security].nodes below. This is the
-                                          #   "1 Opus" of the ratified 2-and-1.
+# UNMEASURED: vote steps carry no usage rows and record no model, so seat
+# cost and resolved-model faithfulness are invisible to the ledger — a filed
+# engine gap, and the reason these rows cite vote outcomes, not spend.
+tribunal-architecture = { variant = "fable-max" }
+tribunal-correctness  = { variant = "fable-max" }
+tribunal-security     = { variant = "opus-max", never = ["fable"], reason = "security-classifier-reroute" }
+                          # RAISED from opus/xhigh: the security ceiling is
+                          #   now opus-max (see [security]), and this seat
+                          #   earned the headroom — it was the swing rejector
+                          #   on both split-decision rejections this epoch
+                          #   (P6, P11), each sustained. Still the "1 Opus"
+                          #   of the ratified 2-and-1: the pin bars fable,
+                          #   and top-of-Opus is the most the pin permits.
 
-# Security nodes — see [security] for why these never reach diamond.
-threat-model      = { tier = "silver", never = ["fable"], reason = "security-classifier-reroute" }
+# Security nodes — see [security] for why these never reach fable.
+threat-model      = { variant = "opus-high", never = ["fable"], reason = "security-classifier-reroute" }
 
 # --- Security model pins ----------------------------------------------------
-# 02 §7: "Security-sensitive node types carry a `never: [model...]` list honored
-# at spawn (the vendor-classifier constraint that pinned security work off Fable
-# is a policy row with a reason, not folklore)."
+# 02 §7: "Security-sensitive node types carry a `never: [model...]` list
+# honored at spawn (the vendor-classifier constraint that pinned security work
+# off Fable is a policy row with a reason, not folklore)."
 #
-# This block IS that de-folklorization. The reason is a durable property of the
-# model, not a fact about today's entitlements:
+# The reason is a durable property of the model, not a fact about today's
+# entitlements:
 #
 #   Fable screens cyber and bio content and quietly serves Opus instead when a
 #   request trips those screens. Security review trips them by its nature. The
 #   harm is the silence, not the substitution: the ledger would attribute the
 #   finding to a model that never produced it, so the provenance of a security
-#   judgement becomes unreliable. Naming Opus up front keeps the recorded model
-#   and the executing model the same, whatever the screens decide.
+#   judgement becomes unreliable. Naming Opus up front keeps the recorded
+#   model and the executing model the same, whatever the screens decide.
 #
 # Consequences, both deliberate:
-#   - Sensitivity is checked ahead of any escalation gate. Security-sensitive
+#   - Sensitivity is checked ahead of any escalation hop. Security-sensitive
 #     work takes these pins even when its node's own row says otherwise.
-#   - Gold is the ceiling for this work. Since it stays on Opus throughout, a
-#     security step that fails at gold gets broken into smaller pieces; there is
-#     no higher rung to reach for.
+#   - opus-max is the ceiling for this work — the top Opus rung, raised from
+#     the old gold/opus-xhigh when opus-max entered the menu, because the
+#     ceiling's purpose was always "climb Opus fully, never fable", not a cap
+#     below Opus's top. A security step that fails AT opus-max gets broken
+#     into smaller pieces; there is no higher rung the pin permits.
 
 [security]
 nodes   = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-                                          # `tribunal-security` added 2026-08-11
-                                          #   with the seat itself: a tribunal seat
-                                          #   reading for security concerns trips
-                                          #   the classifier by the same nature as
-                                          #   judge-security, and its vote is
-                                          #   RECORDED per voter — the provenance
-                                          #   argument below is strongest exactly
-                                          #   where the ledger names who voted.
 never   = ["fable"]
-ceiling = "gold"
+ceiling = "opus-max"
 reason  = "Fable screens cyber/bio content and silently serves Opus when a request trips those screens, which security review does by its nature. The ledger would then credit a model that never ran. Name Opus up front so recorded and executing model agree."
 
 # Sensitivity is a property of the TASK, not only the node. A step on an issue
@@ -244,8 +294,15 @@ default  = "prd-author"                   # PRD is the unlabeled doc type; its
                                           #   acceptance is the human gate (05 §2)
 [[resolve.rule]]
 doc_type = "tdd"
-labels   = ["security-load-bearing"]      # security label wins over plain tdd:
-to       = "tdd-author-security"          #   listed FIRST so it matches first
+labels   = ["security-load-bearing"]      # security labels win over plain tdd:
+to       = "tdd-author-security"          #   listed FIRST so they match first
+[[resolve.rule]]
+doc_type = "tdd"
+labels   = ["security"]                   # both [security].labels spellings
+to       = "tdd-author-security"          #   route the same — the pin already
+                                          #   treated them as equivalent, and a
+                                          #   split here only skewed the
+                                          #   recorded hint (found 2026-08-11)
 [[resolve.rule]]
 doc_type = "tdd"
 to       = "tdd-author"
@@ -260,25 +317,39 @@ doc_type = "prd"
 to       = "prd-author"
 
 # --- Escalation -------------------------------------------------------------
-# Rungs are earned by a failed attempt, not predicted difficulty. The presence
-# of a security-sounding keyword in an issue is not on its own a reason to move.
+# One `escalate_to` hop per failed attempt, following the chain from the
+# row's standing variant. Rungs are earned by a failed attempt, not predicted
+# difficulty — the presence of a security-sounding keyword in an issue is not
+# on its own a reason to move.
 #
 # Note the asymmetry with core: the engine's `max_attempts` / `on_fail` decide
-# WHETHER a step retries (06 §11.1, engine-enforced). This decides what tier the
-# retry SPAWNS at. Two different questions; the engine owns the first.
+# WHETHER a step retries (06 §11.1, engine-enforced). This decides what
+# variant the retry SPAWNS at. Two different questions; the engine owns the
+# first.
+#
+# KNOWN LIMIT, deliberate and now evidence-backed: escalation is structurally
+# blind to failure modes that PASS gates (the symptom-suppressing fix, the
+# interaction-coupled test seam) — which is why fix and test-infra were
+# right-sized at dispatch above instead of left to earn rungs they can never
+# earn.
 
 [escalation]
-on_failure   = "one-rung"                 # exactly one rung per failed attempt
-security_max = "gold"                     # at this ceiling security work is split up, not promoted further
-diamond_gates = [                         # diamond needs a gate to fire even for an eligible row
-  "investigator-class",                   # diagnosis with no map to follow
+on_failure   = "one-hop"                  # exactly one escalate_to hop per failed attempt
+                                          # (security work stops at [security].ceiling — declared
+                                          #   ONCE there, and it is a true bound: a walk never
+                                          #   enters what lies beyond the ceiling on the chain)
+fable_gates  = [                          # entering a fable-model variant BY CHAIN-WALK needs a gate;
+                                          #   a row STANDING on a fable variant needs none — its
+                                          #   residency is this file's own declaration
+  "investigator-class",                   # diagnosis with no map to follow — admits a walk into fable
+                                          #   should an investigator-class hint ever stand lower
   "novel-architecture",                   # a TDD/ADR/UX spec standing up a subsystem or seam with no precedent here
-  "failed-gold-round",                    # non-security work that already came back failed from gold
+  "failed-top-opus-round",                # work STANDING at opus-xhigh or opus-max that already failed there —
+                                          #   cheap-tier and floor-tier rows top out at opus-max instead
 ]
 
-# When diamond cannot be used, the step keeps its role and drops a single rung to
-# gold — it does not fall all the way to the cheap tier. This path gets exercised
-# for real: under zero-data-retention a Fable request fails outright instead of
-# degrading, so unavailability is a normal condition, not a hypothetical.
+# When fable cannot be used — gate unmet, never-listed, or unavailable (under
+# zero-data-retention a Fable request fails outright instead of degrading, so
+# unavailability is a normal condition) — the step drops to the top Opus rung.
 [escalation.fallback]
-diamond = "gold"
+fable-max = "opus-max"

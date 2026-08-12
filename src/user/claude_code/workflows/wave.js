@@ -150,17 +150,26 @@ function executorRow(policy, hint) {
     return row ? { key: hint, row } : null
 }
 
-function tierIndex(policy, tier) {
-    return Object.keys(policy.tiers).indexOf(tier)
+function variantSpec(policy, name) {
+    return (policy.variants || {})[name]
 }
 
-function diamondEligible(policy, hint, row, preAscentTier) {
-    const gates = (policy.escalation && policy.escalation.diamond_gates) || []
+// Entering a fable-model variant BY CHAIN-WALK needs a gate; rows STANDING on
+// a fable variant need none — resolve() consults this only when the walk
+// actually moved the variant, so a standing home declared in policy.toml is
+// honored without a hardcoded roster. The failed-top-opus-round gate is
+// structural, not name-matched: work whose standing variant is already at the
+// top Opus efforts (xhigh/max) has nowhere left in Opus to earn.
+function fableEligible(policy, hint, row, standingVariant) {
+    const gates = (policy.escalation && policy.escalation.fable_gates) || []
     const labels = labelsOf(row)
+    const standing = variantSpec(policy, standingVariant) || {}
     for (const g of gates) {
         if (g === 'investigator-class' && INVESTIGATOR_CLASS.includes(hint)) return true
         if (g === 'novel-architecture' && labels.includes('novel-architecture')) return true
-        if (g === 'failed-gold-round' && row.attempt > 1 && preAscentTier === 'gold') return true
+        if (g === 'failed-top-opus-round' && row.attempt > 1 &&
+            standing.model === 'opus' &&
+            (standing.effort === 'xhigh' || standing.effort === 'max')) return true
     }
     return false
 }
@@ -210,49 +219,96 @@ function resolve(row, policy) {
         )
     }
     const rowPolicy = found.row
-    let tier = rowPolicy.tier
+    let variant = rowPolicy.variant
     let never = (rowPolicy.never || []).slice()
 
     const sec = policy.security || {}
     const sensitive =
         (sec.nodes || []).includes(found.key) ||
         (sec.labels || []).some((l) => labels.includes(l))
-    let ceiling = null
-    if (sensitive) {
-        never = never.concat(sec.never || [])
-        ceiling = sec.ceiling
-        if (tierIndex(policy, tier) > tierIndex(policy, ceiling)) tier = ceiling
+    if (sensitive) never = never.concat(sec.never || [])
+
+    // The security ceiling is a TRUE BOUND without needing a variant ordering:
+    // everything reachable FROM the ceiling by escalate_to chain lies beyond
+    // it. A sensitive row standing beyond the ceiling is clamped back to it,
+    // and the walk below never enters the beyond set — so a ceiling off a
+    // row's chain path still binds instead of being skipped as a waypoint.
+    const ceiling = sensitive ? sec.ceiling : null
+    const beyond = new Set()
+    if (ceiling) {
+        let c = variantSpec(policy, ceiling)
+        if (!c) {
+            throw new Error(
+                `wave.js: [security].ceiling ${JSON.stringify(ceiling)} has no ` +
+                `[variants] row (step ${row.step}) — a mistyped ceiling would ` +
+                `silently stop binding. Fix policy.toml. Refusing to route.`
+            )
+        }
+        while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
+            beyond.add(c.escalate_to)
+            c = variantSpec(policy, c.escalate_to)
+        }
+        if (beyond.has(variant)) variant = ceiling
     }
 
-    const preAscentTier = tier
+    const standing = variant
+    // Escalation: one escalate_to hop per failed attempt, from the standing
+    // variant. The walk stops at the chain's end, at the security ceiling, or
+    // just before a variant whose model is never-listed.
     if (row.attempt > 1) {
-        const names = Object.keys(policy.tiers)
-        const target = Math.min(tierIndex(policy, tier) + (row.attempt - 1), names.length - 1)
-        tier = names[target]
-        const max = sensitive ? (policy.escalation.security_max || ceiling) : null
-        if (max && tierIndex(policy, tier) > tierIndex(policy, max)) tier = max
+        for (let hop = 1; hop < row.attempt; hop++) {
+            if (ceiling && variant === ceiling) break
+            const cur = variantSpec(policy, variant)
+            if (!cur || !cur.escalate_to) break
+            const next = variantSpec(policy, cur.escalate_to)
+            if (!next) {
+                throw new Error(
+                    `wave.js: variant ${JSON.stringify(variant)} escalates to ` +
+                    `${JSON.stringify(cur.escalate_to)}, which has no [variants] row ` +
+                    `(step ${row.step}). Fix policy.toml. Refusing to route.`
+                )
+            }
+            if (ceiling && beyond.has(cur.escalate_to)) break
+            if (never.includes(next.model)) break
+            variant = cur.escalate_to
+        }
     }
 
-    if (tier === 'diamond' && !diamondEligible(policy, found.key, row, preAscentTier)) {
-        tier = policy.escalation.fallback.diamond
+    let spec = variantSpec(policy, variant)
+    if (!spec) {
+        throw new Error(
+            `wave.js: executor ${JSON.stringify(found.key)} names variant ` +
+            `${JSON.stringify(variant)}, which has no [variants] row ` +
+            `(step ${row.step}). Fix policy.toml. Refusing to route.`
+        )
     }
 
-    let spec = policy.tiers[tier]
+    if (spec.model === 'fable' && variant !== standing &&
+        !fableEligible(policy, found.key, row, standing)) {
+        variant = ((policy.escalation || {}).fallback || {})[variant]
+        spec = variantSpec(policy, variant)
+        if (!spec) {
+            throw new Error(
+                `wave.js: fable gate unmet for step ${row.step} and ` +
+                `[escalation.fallback] names no usable variant. Refusing to route.`
+            )
+        }
+    }
 
     if (never.includes(spec.model)) {
-        tier = policy.escalation.fallback[tier] || policy.escalation.fallback.diamond
-        spec = policy.tiers[tier]
-        if (never.includes(spec.model)) {
+        variant = ((policy.escalation || {}).fallback || {})[variant]
+        spec = variantSpec(policy, variant)
+        if (!spec || never.includes(spec.model)) {
             throw new Error(
-                `wave.js: no permitted model for step ${row.step} — fallback tier ` +
-                `${JSON.stringify(tier)} also names a never-listed model ` +
-                `${JSON.stringify(spec.model)}. Refusing to route.`
+                `wave.js: no permitted model for step ${row.step} — fallback variant ` +
+                `${JSON.stringify(variant)} is missing or also names a never-listed ` +
+                `model. Refusing to route.`
             )
         }
     }
 
     return {
-        hint: found.key, tier,
+        hint: found.key, variant,
         model: spec.model, effort: spec.effort,
         model_requested: spec.model, effort_requested: spec.effort,
     }
@@ -260,7 +316,7 @@ function resolve(row, policy) {
 
 const WRITE_HINTS = [
     'implement', 'test-infra', 'fix', 'commit-author',
-    'spec-doc-author', 'prd-author', 'tdd-author', 'tdd-author-security',
+    'prd-author', 'tdd-author', 'tdd-author-security',
     'adr-author', 'ux-spec-author', 'pr-comment-author',
     'spec-author-architecture', 'spec-author-security', 'spec-author-operations',
     'spec-author-performance', 'spec-author-code-quality',
@@ -459,7 +515,7 @@ ${isWrite ? `
 ` : ''}
    \`model_resolved\` is the exact model id your environment reports (e.g.
    \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger
-   fragments every tier-drift query that reads it (measured, RUN-8).
+   fragments every routing-drift query that reads it (measured, RUN-8).
 
    or on failure:
 
@@ -564,10 +620,10 @@ if (!input || typeof input !== 'object') throw new Error(
 const rows = input.rows || []
 const policy = parseToml(input.policyText || '')
 
-if (policy.policy?.version !== 1) {
+if (policy.policy?.version !== 2) {
     throw new Error(
-        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 1. ` +
-        `Refusing to route against an unknown schema.`
+        `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 2 ` +
+        `(the [variants]/escalate_to shape). Refusing to route against an unknown schema.`
     )
 }
 
@@ -581,7 +637,7 @@ function spawn(row, phaseLabel) {
     const type = archetype(row, r.hint)
     const isolated = true
     const isWrite = type === 'executor-write'
-    log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (tier ${r.tier})` +
+    log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
         ` [${labelsOf(row).join(' ') || 'no labels'}]` +
         (isolated ? ' [worktree]' : ''))
     const opts = (iso) => ({

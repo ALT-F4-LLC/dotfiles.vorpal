@@ -639,7 +639,7 @@ for (const row of rows) {
     lanes.get(lane).push(row)
 }
 
-log(`wave: ${rows.map((r) => `${r.step}·${r.executor}`).join(', ')}`)
+log(`wave: ${rows.map((r) => `${r.step}·${r.executor}`).join(', ')} — policy ${(input.policyText || '').length} chars`)
 log(
     `wave: ${rows.length} row(s) in ${lanes.size} issue lane(s): ` +
     [...lanes.entries()].map(([name, laneRows]) => {

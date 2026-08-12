@@ -88,8 +88,10 @@ Then `docket run activate $RUN --dry-run`, and put the binding to the PANEL —
 issues bound, steps, pins, any lint (the dry-run JSON's `scope_warnings`,
 VERBATIM — RUN-6's gate dropped all five warnings behind the generic word
 "lint"), plus what the two checks said, all of it as the proposal's context.
-Activate only on a clean dry-run and an approved tally, citing the proposal id
-in the activation's reason. Anything short of approval goes to the operator
+Activate only on a clean dry-run and an approved tally. `run activate` takes no
+--reason flag (measured RUN-4; filed as docket-repo DKT-53): cite the proposal
+id in your own activation report — the engine record cannot carry the citation
+until that lands. Anything short of approval goes to the operator
 with the full tally, per **Gates**.
 
 The roster of WHAT was bound comes from the engine, never from the run's
@@ -259,7 +261,14 @@ converges either way, but hand-escaping a multi-KB policy text into a JSON
 string is an escaping error waiting to happen, and the harness's own encoder
 never makes one (RUN-1 graph-engine shadow, observed twice). There is no
 `policyPath` parameter: the script cannot read files, so policy.toml travels
-as TEXT in `policyText`.
+as TEXT in `policyText`. And policyText is the cat output BYTE-FOR-BYTE —
+never a condensation, however faithful the tables look. RUN-4's conductor
+cat'd the 16.9KB file six times and emitted a ~4.7KB condensed rendering into
+six of eight launches and a 791-byte splice into the two panel launches —
+the splice dropped `[escalation]` and `[[resolve]]` entirely (tribunal.js
+reads `escalation.fallback`), and nothing logged the difference. wave.js and
+tribunal.js log `policy <N> chars` at startup — if that number does not match
+`wc -m ~/.docket/config/policy.toml`, the launch did not carry the file.
 
 **Route executor rows only.** Filter the dispatch rows to `kind: "executor"`
 and hand over only those. `kind: "action"` steps are engine-run — the engine
@@ -314,7 +323,10 @@ close is usage the probe never saw, and each subsequent close then re-reports th
 same stranded set. Back-fill, verify, close — in that order, every iteration,
 as three SEPARATE calls: chaining close unconditionally behind the back-fill
 in one compound command closes on stranded usage the moment the back-fill
-fails (RUN-3's last iteration ran the chain and got lucky).
+fails (RUN-3's last iteration ran the chain and got lucky). RUN-4 chained four
+of six closes and demonstrated the failure live: a chained `verify` refused
+and the queued `close` ran anyway, unread. The chain's real cost is that each
+verb's answer scrolls past undecided — three calls, three read answers.
 
 The same order governs the crashed-relay exit: back-fill BEFORE `dispatch
 abandon` too — abandon has no later back-fill window, and RUN-6 stranded
@@ -537,7 +549,14 @@ not cheap to skip, and they go to the panel like the rest. What survives of it
 is the evidence: a death witnessed first-party is the strongest rationale a
 proposal can carry, so put it in verbatim.
 
-**Budget: project before the wall.** When the running spend-per-step times the
+**Budget: project before the wall.** Project it first at activation: the
+moment the run is active, sum the created steps' `expected_cost` against the
+cap, and when the cap falls short convene the raise panel BEFORE the first
+dispatch — a wall found mid-phase serializes that phase's fanout around a
+panel (RUN-4: cap 3 vs 4.8 split a 4-judge review into two waves around a
+6-minute panel, ~18 wasted minutes). Until the engine grows a run-scoped step
+listing (filed as docket-repo DKT-54), state in the proposal how you
+enumerated the steps. When the running spend-per-step times the
 pending count no longer fits the cap, put the arithmetic to the panel THEN — a
 raise granted before the breach costs nothing, while a breach mid-wave pauses
 the run and strands every queued claim (RUN-5 paid once, then flagged the
@@ -619,16 +638,22 @@ Resolve the path and emit `args` exactly as you do for wave.js — absolute,
 `args` a REAL object the harness stringifies for you. `voters` comes off the
 row verbatim and the row's `proposal` field supplies `voteId`; `policyText` is
 the literal pinned policy.toml text,
-re-read in the same iteration as the launch it feeds; `context` is the rendered
-gate payload (`step render`/`step context`, a held cluster's numbers WITH its
-computed value, the artifact under decision); `cwd` is the repo the run belongs
-to.
+re-read in the same iteration as the launch it feeds and passed byte-for-byte
+(see step 2 — RUN-4 condensed it in all eight launches); `context` is the
+rendered gate payload (`step render`/`step context`, a held cluster's numbers
+WITH its computed value, the artifact under decision); `cwd` is the repo the
+run belongs to. `gateKind` for an engine vote row is the row's own gate class
+— a held cluster is `"held-cluster"` — never one of the conversational labels
+below (RUN-4 sent `"activation"` to a held-cluster panel).
 
 **Then ask the ENGINE, not the workflow.** When the spawner returns, run
 `docket next --run $RUN --json` again: the engine tallied on the last vote cast
 and has already routed the step — through, into rework where the gate's
 `on_fail` names a fix loop, or parked `waiting-human`. Route on what the engine
-now says. The spawner's return carries a
+now says. If that first `next` still offers the vote row, ask ONCE more before
+concluding anything — the engine can materialize the tally behind the first
+read's own snapshot (measured RUN-4; filed as docket-repo DKT-55). Never open
+a dispatch to force the routing. The spawner's return carries a
 PROBE of the record, not a decision, and that probe can come back empty without
 meaning the casts failed; it never stands in for the engine's answer.
 
@@ -637,10 +662,16 @@ when you are conducting one — have no vote step, so you open the proposal
 yourself, then convene identically:
 
 ```bash
+cat ~/.docket/config/policy.toml   # policyText — the WHOLE file, byte-for-byte, fresh
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
   -n 3 -c <criticality> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
 ```
+
+Read the proposal id from the create's OWN output (`--json` emits it
+machine-readably; the ✔ line names it in human mode) and link in a SEPARATE
+command. Never recover the id by re-listing votes through a guessed filter —
+RUN-4's first gate linked an empty id doing exactly that.
 
 Then tribunal.js with the id it returns as `voteId`. A conversational gate has
 no row, so the seats are a constant this contract fixes, like the proposal

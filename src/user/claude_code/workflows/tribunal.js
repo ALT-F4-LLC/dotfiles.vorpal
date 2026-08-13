@@ -258,6 +258,17 @@ function lensOf(seat) {
 
 function judgeBrief(r, voteId, gateKind, context, cwd, isRespawn) {
     const { role, text } = lensOf(r.seat)
+    // Provenance claim recorded on the cast (--metadata): which seat/variant/
+    // model/effort cast this vote, so routing and cost are auditable from the
+    // ledger. Argv is world-readable via ps, so ONLY these non-sensitive
+    // routing identifiers go in. JSON.stringify emits no single quotes for
+    // identifier values, so the single-quoted shell literal below is safe.
+    const metadataClaim = JSON.stringify({
+        seat: r.seat,
+        variant: r.variant,
+        model: r.model,
+        effort: r.effort,
+    })
     const respawnNote = isRespawn ? `
 
 THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
@@ -311,7 +322,7 @@ reject; do not approve to keep things moving.
 
 CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call:
 
-  cd ${cwd} && docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --summary "<one-paragraph reasoning>"
+  cd ${cwd} && docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "<one-paragraph reasoning>"
 
   --verdict/-v      approve                = nothing you found should stop this
                     approve-with-concerns  = proceed, with the risks you name recorded
@@ -322,6 +333,10 @@ CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call:
   --domain-relevance how much of this decision falls inside YOUR lens. A seat
                     with little purchase on the question says so with a low
                     number rather than inflating one — the tally weighs it.
+  --metadata        pre-filled above with your seat's routing claim (seat,
+                    variant, model, effort) so the ledger records what cast
+                    this vote. Pass it VERBATIM — do not edit it, and add
+                    nothing to it: it is unverified, stored as-is, and public.
   --summary         ONE paragraph, on ONE line, in double quotes: your verdict's
                     reasoning and the specific evidence behind it. No line
                     breaks; escape any embedded double quote as \\". Name files,

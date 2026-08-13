@@ -112,11 +112,15 @@ gates = ["commit-msg", "commit-exec"]
 
 Semantics supplied by the engine, not restated per pipeline: step readiness (02 §5),
 lease/attempt handling, artifact recording, brief assembly, event logging. A pipeline
-author writes topology and thresholds only. A step's `executor` may also be a
-label-keyed resolution table — how `implement` becomes `test-infra` on
-`test-infra`-labeled issues, and how `spec-doc`'s author step resolves to
-`prd-author`/`tdd-author`/`tdd-author-security`/`adr-author`/`ux-spec-author` by doc
-type and security label. `issue.diff` is an engine-provided virtual
+author writes topology and thresholds only. A step's `executor` is always a CONCRETE
+node name; label-conditional routing is expressed as `when`-gated sibling steps, each
+declaring its own concrete executor — how `implement` splits from
+`implement-test-infra` on `test-infra`-labeled issues, and how `spec-doc`'s six
+author siblings select `prd-author`/`tdd-author`/`tdd-author-security`/`adr-author`/
+`ux-spec-author` by `doc:` type and security label. (The earlier label-keyed
+resolution-table design is retired: the engine composes each step's packet from its
+declared executor, so only a concrete declaration keeps brief and executor aligned —
+tdd/m3-harness.md F-W1, implemented 2026-08-13.) `issue.diff` is an engine-provided virtual
 artifact: the tree diff snapshot for the issue's scope, fingerprinted (freeze semantics —
 review always binds to an exact tree state, replacing the prose freeze protocol).
 

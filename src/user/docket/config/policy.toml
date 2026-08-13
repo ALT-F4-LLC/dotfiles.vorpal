@@ -169,14 +169,14 @@ pr-comment-author = { variant = "sonnet-high" }
 # they write the document. Zero authoring spawns this epoch (only
 # standard-change and investigation have ever run), so these stand on
 # workload analysis, unchanged in effect from their prior ratification.
-# There is deliberately NO `spec-doc-author` executor row. The [[resolve]]
-# table below REPLACES that hint unconditionally — every rule names a concrete
-# author and the `default` catches the rest — so a row here would be
-# unreachable (the every-row-reachable invariant; verified against wave.js's
-# resolution order 2026-08-11: the table default always wins).
+# There is deliberately NO `spec-doc-author` row and no router of that name
+# anywhere: spec-doc's authoring is six when-gated workflow steps, each
+# declaring one of the five concrete authors below directly (DKT-70 decision
+# (d), 2026-08-13 — the label-keyed [[resolve]] tables are retired).
 prd-author        = { variant = "opus-high" }   # product intent and acceptance criteria — authoring-class
                                                 #   but not the architectural design work above it;
-                                                #   also the unlabeled-doc default in [[resolve]]
+                                                #   also the doc-type-unlabeled default, via
+                                                #   spec-doc's author-prd `when` clause
 tdd-author        = { variant = "opus-xhigh" }
 tdd-author-security = { variant = "opus-xhigh", never = ["fable"], reason = "security-classifier-reroute" }
                           # RAISED from opus/high: it is the same design work
@@ -274,47 +274,15 @@ reason  = "Fable screens cyber/bio content and silently serves Opus when a reque
 # executor row is unpinned.
 labels  = ["security-load-bearing", "security"]
 
-# --- Label-keyed executor resolution ---------------------------------------
-# 05 §1: "A step's `executor` may also be a label-keyed resolution table."
-# Core never interprets the hint (06 §11.1) — resolution is policy-side, keyed
-# on the issue's labels, which is exactly why one step covers all five authors.
-#
-# Resolution is: match the first rule whose keys all match; otherwise `default`.
-
-[[resolve]]
-executor = "implement"                    # standard-change's implement step (05 §1)
-default  = "implement"
-[[resolve.rule]]
-labels = ["test-infra"]
-to     = "test-infra"
-
-[[resolve]]
-executor = "spec-doc-author"              # spec-doc's author AND revise steps
-default  = "prd-author"                   # PRD is the unlabeled doc type; its
-                                          #   acceptance is the human gate (05 §2)
-[[resolve.rule]]
-doc_type = "tdd"
-labels   = ["security-load-bearing"]      # security labels win over plain tdd:
-to       = "tdd-author-security"          #   listed FIRST so they match first
-[[resolve.rule]]
-doc_type = "tdd"
-labels   = ["security"]                   # both [security].labels spellings
-to       = "tdd-author-security"          #   route the same — the pin already
-                                          #   treated them as equivalent, and a
-                                          #   split here only skewed the
-                                          #   recorded hint (found 2026-08-11)
-[[resolve.rule]]
-doc_type = "tdd"
-to       = "tdd-author"
-[[resolve.rule]]
-doc_type = "adr"
-to       = "adr-author"
-[[resolve.rule]]
-doc_type = "ux-spec"
-to       = "ux-spec-author"
-[[resolve.rule]]
-doc_type = "prd"
-to       = "prd-author"
+# --- Label-keyed executor resolution: RETIRED (2026-08-13) ------------------
+# The two [[resolve]] tables that lived here (implement -> test-infra, and the
+# spec-doc-author doc-type router) are gone: the engine composes packets from
+# a step's DECLARED executor, so a table-resolved hint always rendered the
+# wrong contract (m3-harness.md F-W1). Label routing is now when-gated sibling
+# steps in the workflow files, each declaring its concrete executor —
+# standard-change's implement/implement-test-infra and spec-doc's six author
+# variants. wave.js refuses to route while any [[resolve]] table is present,
+# so a stale install fails loudly instead of mis-briefing silently.
 
 # --- Escalation -------------------------------------------------------------
 # One `escalate_to` hop per failed attempt, following the chain from the

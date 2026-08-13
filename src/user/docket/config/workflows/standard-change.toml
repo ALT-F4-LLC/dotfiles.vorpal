@@ -14,7 +14,12 @@
 
 [pipeline]
 name    = "standard-change"
-version = 8                  # 8: write concurrency 1 -> 20 (operator directive,
+version = 9                  # 9: implement split into when-gated siblings
+                             #   (implement / implement-test-infra), each a
+                             #   concrete executor; the label-keyed [[resolve]]
+                             #   table is retired (DKT-70 decision (d),
+                             #   2026-08-13).
+                             # 8: write concurrency 1 -> 20 (operator directive,
                              #   2026-08-10): per-executor worktrees isolate
                              #   writers, so class-wide serialization guards
                              #   nothing; the conflicting-cherry-pick
@@ -77,10 +82,17 @@ unless_labels = [
 "write"               = { max = 20, max_step_duration = "2h" }
 
 [[step]]
-name = "implement"
-executor = "implement"       # label-keyed resolution to `test-infra` on
-                             #   test-infra-labeled issues is a policy-side
-                             #   concern (05 §1); the hint stays opaque here
+name = "implement"           # the general case; test-infra-labeled issues take
+                             #   the when-gated sibling below instead, each
+                             #   declaring its CONCRETE executor so the engine
+                             #   renders the right contract (packet.go
+                             #   substitutes {executor} from the step's own
+                             #   declaration; the retired [[resolve]] table
+                             #   mis-briefed test-infra work silently —
+                             #   m3-harness.md F-W1, DKT-70).
+after = []
+executor = "implement"
+when = "labels != test-infra"
 class = "write"
 emits = "change-summary"
 packet = ["contracts/{executor}.md"]
@@ -93,11 +105,27 @@ max_attempts = 2
 on_fail = "waiting-human"
 
 [[step]]
+name = "implement-test-infra"
+after = []
+executor = "test-infra"
+when = "labels contains test-infra"
+class = "write"
+emits = "change-summary"
+packet = ["contracts/{executor}.md"]
+expected_cost = 1.50
+gates = ["build", "tests", "self-hygiene", "secret-scan"]
+max_attempts = 2
+on_fail = "waiting-human"
+
+[[step]]
 name = "review"
 holds_tree = false            # reads the tree, never writes it: exempt from scope
                              #   exclusion so this step coexists with other issues'
                              #   steps instead of serialising against them
-after = ["implement"]
+after = ["implement", "implement-test-infra"]
+                             # joins over whichever implement variant ran; the
+                             #   `skipped` sibling is terminal, and a join waits
+                             #   for terminal siblings (06 §2)
 fanout = ["judge-correctness", "judge-architecture", "judge-simplicity", "judge-testing"]
 emits = "findings"
 packet = ["contracts/{executor}.md"]
@@ -112,7 +140,7 @@ payload = "findings@2"               # validates at the JUDGE boundary: each jud
                                      #   array (engine `clusterMembers`), which this
                                      #   schema's property-level enum would refuse
 expected_cost = 0.60                 # per expanded sibling
-inputs = ["implement.change-summary", "issue.diff"]
+inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
                                      # KNOWN LIMIT: these inputs are STATIC
                                      #   across fix-loop re-entries — a
                                      #   re-review round still receives
@@ -173,7 +201,7 @@ emits = "change-summary"
 packet = ["contracts/{executor}.md"]
 expected_cost = 1.00
 loop = true                          # instantiated per fix-loop entry (06 §11.3)
-inputs = ["reconcile.findings", "implement.change-summary"]
+inputs = ["reconcile.findings", "implement.change-summary", "implement-test-infra.change-summary"]
 gates = ["build", "tests", "secret-scan"]
 after_loop = "review"                # re-review the delta; engine re-enters at review
 
@@ -191,7 +219,7 @@ payload = "ac-report@1"              # status is a plain enum: the thresholds be
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]   # pre-gate: runs at claim, results
                                      #   land in the context bundle (02 §6)
-inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement-test-infra.change-summary"]
 threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and

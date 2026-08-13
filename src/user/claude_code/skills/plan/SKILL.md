@@ -95,7 +95,13 @@ roots, so `docket workflow list` reads empty on a store that has not activated
 yet and is not the corpus. LABELS are what bind: every `[match]` block routes on
 `labels_any`/`unless_labels` and none of them look at kind, which is a closed
 field (`bug feature task epic chore`, enforced by `issue create -T`) that routes
-nothing. `git log --format='%s' -30` tells you the repo's conventions. Existing
+nothing. Labels route INSIDE a bound workflow too, via `when`-gated steps: a
+`spec-doc` issue picks its author by the COLON-form doc label — `doc:tdd`,
+`doc:adr`, `doc:ux-spec`; no doc label means PRD — and `security` /
+`security-load-bearing` push a TDD to the security author, so file
+doc-producing issues with `doc:<type>` or accept the PRD default (the hyphen
+spellings route nothing). `git log --format='%s' -30` tells you the repo's
+conventions. Existing
 issues (`docket issue list`) tell you whether some of this is already tracked.
 
 **When the read contradicts the request's premise, verify before recording.**

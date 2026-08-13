@@ -1,6 +1,6 @@
 ---
 name: conduct
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it, invoke the wave workflow, close the dispatch, repeat. Routes gates to a tribunal panel by default, escalates every non-approval and every reserved matter to the operator, and runs the engine verb on the outcome. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it, invoke the wave workflow, close the dispatch, repeat. Routes gates to a tribunal panel by default, escalates every non-approval that parks, and every reserved matter, to the operator, and runs the engine verb on the outcome. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
 ---
 
 # conduct
@@ -83,6 +83,10 @@ contracts eight edits behind, and paid in re-review churn an operator gate had
 already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
 activate` changes what already-pinned refs resolve to, and it changes them for
 every repo at once, since all of them read the same bytes.
+Attaching to an ALREADY-ACTIVE run skips activation but not the probe: run the
+same two diffs, plus `diff` of installed wave.js and tribunal.js against their
+source, before your first dispatch. An existence check proves nothing about
+bytes. Divergence mid-run is stop-and-report all the same.
 **Transition debris:** a `.docket/config/` full of SYMLINKS is the retired
 link-farm model, and against the shared root it is now a second additions layer
 that duplicates or dangles — a dangling file link inside a scanned root refuses
@@ -253,7 +257,10 @@ Workflow({ scriptPath: "<resolved absolute path to wave.js>", args: {rows, polic
 `scriptPath` and `args` are the ONLY parameters. There is no
 `run_in_background` — the tool rejects unknown keys outright (RUN-8 lost a
 launch round-trip to exactly that) and the workflow is background-launched
-already.
+already. Resuming a stopped workflow (`resumeFromRunId`) needs the FULL
+original `args` again, verbatim — the harness does not restore them, and an
+arg-less resume dies at startup (measured: three tribunal resumes, all
+failed).
 
 **Never `Workflow({name: "wave"})`.** The name registry serves a stale snapshot:
 three RUN-3 waves executed pre-edit bytes after the file had already changed on
@@ -462,8 +469,14 @@ now render real diffs into every downstream packet. Keep the sha in front of
 you anyway: it is the handle integration needs, and the cheapest cross-check
 that a packet carries the change it claims (spot-check `step render` if one
 looks blank — a NEW empty diff is a regression to surface, not a norm to
-work around). The merge back is still never automatic, so at reconcile,
-write steps first, in step-id order:
+work around). The merge back is still never automatic. Integrate at the
+FIRST window after a write step records — before dispatching any step that
+consumes its emit, re-review rounds included; reconcile is the backstop, not
+the schedule. (When the engine offers a write step and its consumers in ONE
+dispatch, the wave's internal stage barrier leaves no window — expect the
+judges to reconstruct the target from the shared object DB, and know the
+packet's issue.diff is issue-cumulative.) At each integration point, write
+steps first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
 2. `git cherry-pick --no-gpg-sign <sha>` — a REAL COMMIT on the shared
@@ -507,8 +520,11 @@ bare-repo layout is benign chatter (2-for-2 on RUN-2's integrations):
 confirm with `git worktree list` and move on — never retry the remove over
 it. The integration commit carries
 the content, so nothing is lost. At run close, sweep the stragglers — and the
-sweep set is exactly the `.claude/worktrees/wf_*` directories whose `wfId`
-matches a wave THIS session launched. You already hold those ids: each is what
+sweep set is derived from `git worktree list`: every entry whose branch is
+`worktree-wf_<id>-*` for a wave THIS session launched. (Do not glob a path
+for discovery — the harness roots these at the git common dir's parent, which
+on a bare-repo layout is ABOVE your checkout, where a checkout-rooted glob
+sees nothing.) You already hold those ids: each is what
 you passed as `--source "wave-journal:<wfId>"` at back-fill. Those go the same
 way. If one holds a recorded-but-never-integrated sha, remove it too but NAME
 the sha in your close report — it stays reachable in the object database until
@@ -750,7 +766,11 @@ escalate now.
 judge's verdict, confidence, and one-line summary, not a count and not your
 paraphrase, plus the panel's recommended correction where it named one. A
 below-threshold vote on an engine vote step parks ITSELF by its `on_fail`: you
-neither park it nor un-park it, you present the park. Present the actual thing
+neither park it nor un-park it, you present the park. A below-threshold vote
+whose `on_fail` routes machine-side (`fix-loop`) is NOT an operator gate: the
+engine schedules the rework itself. Carry the tally and every verdict into
+your next status report, not into a question — the operator hears about it
+without being asked to decide what the engine already routed. Present the actual thing
 being decided alongside it — the diff for a commit gate, the finding summary
 for a held cluster, the numbers for a budget breach. "Step 12 needs approval"
 is not a gate, it is a rubber stamp. Question tool, recommended option first

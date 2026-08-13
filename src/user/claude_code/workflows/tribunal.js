@@ -433,6 +433,7 @@ function verify() {
         label: `verify:${voteId}`,
         phase: 'Verify',
         agentType: 'executor-read',
+        model: 'haiku',
         effort: 'low',
     }).then((text) => text == null ? '' : text)
         .catch((err) => {

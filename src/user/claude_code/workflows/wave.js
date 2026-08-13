@@ -592,11 +592,16 @@ ${isolated ? `
    (observed: RUN-1 STEP-32). (There is no \`--artifact-kind\`: the workflow's
    \`emits\` declares the artifact's KIND — which your brief's OUTPUT section
    already names — it does not make the file optional. A structured payload,
-   when your brief requires one, goes in \`--payload-file <path>\` — and its
-   JSON goes out COMPACT, on ONE line (the \`jq -c\` shape): the sandbox's
-   isolation guard refuses any heredoc whose body carries a brace alone on a
-   line, which is exactly what pretty-printed JSON is, while a one-line body
-   passes the same guard deterministically.) Never
+   when your brief requires one, goes in \`--payload-file <path>\` — and you
+   BUILD that JSON with \`jq -n\`, never as a JSON literal in a heredoc or
+   command: an isolated shell's guard refuses any heredoc body carrying \`{\`
+   immediately followed by \`"\` — which is every JSON object literal, compact
+   or pretty, so no formatting gets a literal past it. \`jq -n --arg id AC1
+   --arg status met '{id: $id, status: $status}' > "$path"\` is the honest
+   shape: the command text carries only \`{id:\` (which the guard allows) and
+   jq writes the real JSON to the file. Keys needing quotes go as
+   \`{("kebab-key"): $v}\`; arrays as \`jq -n '[ ... ]'\` or by \`jq -s\` over
+   per-element files.) Never
    write to or reuse a shared filename like \`change-summary.md\`: executors in
    one wave share \`$TMPDIR\`, and under a shared name a racing sibling's bytes
    — or a predecessor's leftover when your own write silently fails — get
@@ -652,8 +657,16 @@ function runParked(res) {
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
     const type = archetype(row, r.hint)
-    const isolated = true
+    // Only writers get a worktree (RUN-8 docket, 2026-08-12). Isolation exists
+    // so parallel WRITERS cannot cross-contaminate the shared tree; read-class
+    // steps never mutate it. And the harness guard that polices an isolated
+    // shell refuses any heredoc body carrying `{` immediately followed by `"`
+    // — every JSON object literal, compact or pretty — so isolating readers
+    // taxed exactly the steps whose payloads are JSON: 89 refusals across 21
+    // agents in 6 waves, including the one that evaded the guard and tripped
+    // the security classifier (STEP-197).
     const isWrite = type === 'executor-write'
+    const isolated = isWrite
     log(`${row.step}: ${r.hint} -> ${type} @ ${r.model}/${r.effort} (variant ${r.variant})` +
         ` [${labelsOf(row).join(' ') || 'no labels'}]` +
         (isolated ? ' [worktree]' : ''))

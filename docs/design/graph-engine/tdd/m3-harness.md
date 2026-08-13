@@ -1013,7 +1013,8 @@ per-agent usage present and complete, attributable to step ids — but via an
 (2026-08-05, G1: one symlink target per artifact; artifact-level merge is the
 remedy).
 
-**F-W1 (corpus wave, 2026-08-05 — durable record; tracker DKT-73).**
+**F-W1 (corpus wave, 2026-08-05 — durable record; tracker DKT-70.
+IMPLEMENTED 2026-08-13.)**
 Resolution-table executor hints are structurally incompatible with engine-side
 packet composition: the engine renders briefs from the raw hint before and
 independent of harness resolution. Two manifestations — spec-doc-author
@@ -1021,10 +1022,14 @@ refuses loudly (no backing file; its author/revise steps ship packet-less,
 correct-but-thin per the §1.3.1 interim), and implement->test-infra mis-briefs
 silently (a test-infra-labeled issue gets implement’s charter AND a truncated
 closure — test-infra declares six fragments to implement’s five, so
-laziness-ladder never reaches it). LOAD-BEARING for M4: the shadow run
-excludes test-infra-labeled issues and doc pipelines. Likely fix, post-M4:
-dissolve each alias into label-gated sibling steps (the spec-doc acceptance
-trio is the in-corpus precedent); DKT-73 carries five acceptance criteria.
+laziness-ladder never reaches it). The prescribed fix — dissolve each alias
+into label-gated sibling steps (the spec-doc acceptance trio is the in-corpus
+precedent) — landed 2026-08-13 per DKT-70's decision (d): both [[resolve]]
+tables retired, spec-doc's author/revise split into six `when`-gated
+concrete-executor siblings (spec-doc.toml@6), standard-change's implement
+split into implement/implement-test-infra (standard-change.toml@9), and the
+spec-doc-author router contract deleted; wave.js now refuses any policy still
+carrying a [[resolve]] table.
 
 [SPEC] 09 §M3 Done, verbatim: "the **three environment checks recorded**
 (private $TMPDIR per subagent; wave-journal per-agent usage; permission config =

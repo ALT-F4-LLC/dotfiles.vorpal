@@ -197,19 +197,13 @@ function resolve(row, policy) {
         )
     }
 
-    let hint = row.executor
-
-    const table = (policy.resolve || []).find((e) => e.executor === hint)
-    if (table) {
-        let matched = null
-        for (const rule of table.rule || []) {
-            const labelsOk = !rule.labels || rule.labels.every((l) => labels.includes(l))
-            const docOk = !rule.doc_type || labels.includes('doc:' + rule.doc_type)
-            if (labelsOk && docOk) { matched = rule.to; break }
-        }
-        hint = matched || table.default
-    }
-
+    // Executor hints are CONCRETE [executors] names. The label-keyed
+    // [[resolve]] tables are retired (2026-08-13): label routing is when-gated
+    // sibling steps in the workflow files, each declaring its concrete
+    // executor, so the engine's own packet substitution renders the right
+    // contract and no harness-side hint rewrite exists anymore. The guard at
+    // module load refuses a policy that still carries tables.
+    const hint = row.executor
     const found = executorRow(policy, hint)
     if (!found) {
         throw new Error(
@@ -709,6 +703,17 @@ if (policy.policy?.version !== 2) {
     throw new Error(
         `wave.js: policy.toml [policy] version is ${JSON.stringify(policy.policy?.version)}, expected 2 ` +
         `(the [variants]/escalate_to shape). Refusing to route against an unknown schema.`
+    )
+}
+
+if (policy.resolve) {
+    throw new Error(
+        'wave.js: policy.toml still carries [[resolve]] tables, but label-keyed ' +
+        'hint resolution is retired (2026-08-13) — label routing lives in ' +
+        'when-gated workflow steps declaring concrete executors, and silently ' +
+        'ignoring a table would mis-route the very steps it named. Update the ' +
+        'installed corpus (policy.toml + workflow files move together). ' +
+        'Refusing to route.'
     )
 }
 

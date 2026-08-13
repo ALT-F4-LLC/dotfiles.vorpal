@@ -119,14 +119,15 @@ docket config
 docket vote list
 docket vote show
 docket vote result
+docket events list
 ```
 
-The allowlist is the tracker surface only — no engine read verb is on it.
-**Anything off the list is rejected whether or not it writes**, and the
-error text lies about why: read-only `docket project list --watch --json`
-returns the same `{"ok":false,"error":"--watch is not supported on write
-commands","code":"VALIDATION_ERROR"}` that `issue create --watch` does.
-Ignore the "write commands" wording; the rule is membership in the list.
+`docket events list` is the one engine read verb on the list; the rest is
+the tracker surface. **Anything off the list is rejected whether or not it
+writes**: rejection is `{"ok":false,"error":"--watch is limited to: docket
+board, docket config, ...","code":"VALIDATION_ERROR"}`, and the error's own
+enumeration is authoritative — if this copy ever disagrees with the live
+message, trust the message. The rule is membership in the list.
 
 ### JSON envelope shape
 

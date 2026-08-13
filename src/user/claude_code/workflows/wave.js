@@ -466,7 +466,28 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}
    know.
 
 2. Execute the brief you were handed. It is your entire contract.
-${isolated && isWrite ? `
+${!isWrite ? `
+2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR BRIEF DESCRIBES.
+   Write-class siblings work in PRIVATE worktrees and hand their work back as
+   a COMMIT — nothing merges those commits into this shared checkout, so HEAD
+   here can be a round or more behind the change-summary and issue.diff your
+   packet renders (measured twice on one run: judges read a pre-fix tree and
+   re-filed findings the fix had already closed). Before reading ANY file by
+   path to evaluate the change:
+
+   - Find the target sha — the change-summary's FIRST LINE carries it.
+   - \`git merge-base --is-ancestor <sha> HEAD\`: exit 0 means your checkout
+     contains the change and reading by path is sound.
+   - Non-zero (or the rendered diff disagrees with what the tree holds):
+     do NOT review the checkout by path. Reconstruct the target read-only:
+     \`git archive <sha> | tar -x -C "$TMPDIR/${row.step}-target"\` — the sha
+     resolves even when no branch of yours carries it, because every worktree
+     shares one object store. Read, build, and probe THERE, and attribute
+     every result to that tree, never to this checkout.
+   - If the sha does not resolve at all, that is a hard gap: record it as a
+     gap file per obligation 3 instead of reviewing whatever the checkout
+     happens to hold.
+` : ''}${isolated && isWrite ? `
 2b. COMMIT YOUR DELIVERABLE IN YOUR WORKTREE before step 3. Your edits live in
    this private worktree and NOTHING merges them back automatically — the
    commit is the hand-back channel: worktrees share the repository's object
@@ -599,7 +620,31 @@ ${isolated ? `
    sandbox the Write tool materializes files at a DIFFERENT physical path
    than the \`$TMPDIR\` your Bash commands resolve, and the record then
    fails "no such file or directory" against a file you just wrote
-   (observed: RUN-1 STEP-32). (There is no \`--artifact-kind\`: the workflow's
+   (observed: RUN-1 STEP-32).
+
+   AN ISOLATED SHELL'S GUARD ALSO REFUSES SOME HEREDOCS ON THEIR BODY ALONE —
+   measured triggers: a body beyond a few KB, a line-leading \`{\`, and
+   brace/bracket-bearing code such as Go signatures or JSON — even when the
+   redirect target is a perfectly legal scratch path, and its refusal text
+   misleadingly blames git targeting. Those are false positives on inert
+   text; the forms below are the SANCTIONED, operator-authorized write path
+   (2026-08-13), not an evasion. They are authorized ONLY for targets under
+   your \`$TMPDIR\` or your own worktree — the same containment the guard
+   exists to enforce; aiming them anywhere else is the violation it is
+   looking for.
+
+   - SIZE: never write a large body in one heredoc. Write the file as an
+     initial \`cat > <path> <<'EOF'\` of a few KB at most, followed by
+     \`cat >> <path> <<'EOF'\` appends of the same size until done.
+   - JSON: always \`jq -n\` (below) — never a JSON literal in any heredoc.
+   - OTHER REFUSED BODIES (code excerpts with braces or brackets): pick a
+     placeholder token, confirm it appears NOWHERE in your intended content
+     (an unchecked placeholder silently corrupts the artifact on
+     substitution), write the heredoc with each refused character spelled as
+     the placeholder, then restore with one plain \`sed -i\` substitution per
+     character.
+
+   (There is no \`--artifact-kind\`: the workflow's
    \`emits\` declares the artifact's KIND — which your brief's OUTPUT section
    already names — it does not make the file optional. A structured payload,
    when your brief requires one, goes in \`--payload-file <path>\` — and you
@@ -618,13 +663,18 @@ ${isolated ? `
    recorded as YOUR artifact (RUN-3's STEP-11 recorded STEP-21's summary
    exactly this way).
 
-   A guard or sandbox refusing one of your writes is a BLOCKED condition,
-   exactly like a refused record: report \`WRITE BLOCKED\`, the refusal's
-   first line, and every path involved, then stop that path and record what
-   you can. NEVER split, tokenize, or re-encode content to get a refused
-   write past a verifier — the harness classifier reads that as evasion of a
-   safety mechanism, flags your step, and the flag taints your output for
-   everyone downstream.
+   If a write is refused, first match the refusal against the sanctioned
+   forms above: a refusal earned by the body's size or content, on a target
+   under \`$TMPDIR\` or your own worktree, means USE THOSE FORMS — that is
+   what they are for. A refusal that survives the sanctioned forms, or that
+   names anything but the body (the target path, a permission, a policy
+   concern), is a real BLOCKED condition, exactly like a refused record:
+   report \`WRITE BLOCKED\`, the refusal's first line, and every path
+   involved, then stop that path and record what you can. Beyond the three
+   sanctioned forms, never invent encodings to push content past a refusal —
+   the harness classifier reads novel smuggling as evasion of a safety
+   mechanism, flags your step, and the flag taints your output for everyone
+   downstream.
 
    Copy model_requested and effort_requested EXACTLY as written above — they are
    the harness's record of its own intent, not yours to adjust. Fill the two

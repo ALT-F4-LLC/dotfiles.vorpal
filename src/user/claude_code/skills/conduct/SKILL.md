@@ -101,10 +101,11 @@ Then `docket run activate $RUN --dry-run`, and put the binding to the PANEL —
 issues bound, steps, pins, any lint (the dry-run JSON's `scope_warnings`,
 VERBATIM — RUN-6's gate dropped all five warnings behind the generic word
 "lint"), plus what the two checks said, all of it as the proposal's context.
-Activate only on a clean dry-run and an approved tally. `run activate` takes no
---reason flag (measured RUN-4; filed as docket-repo DKT-53): cite the proposal
-id in your own activation report — the engine record cannot carry the citation
-until that lands. Anything short of approval goes to the operator
+Activate only on a clean dry-run and an approved tally, and pass
+`--reason "approved by <proposal-id>"` so the run-activated event carries the
+citation in the engine ledger — the activation's rationale belongs on the
+engine record first, with your own activation report repeating it as the
+secondary copy. Anything short of approval goes to the operator
 with the full tally, per **Gates**.
 
 The roster of WHAT was bound comes from the engine, never from the run's

@@ -512,6 +512,16 @@ ${isolated && isWrite ? `
    \`record\` is an exact alias of \`step complete\` — identical saga, identical
    flags — and it is the verb to use: some shells parse the bare word
    \`complete\` as their own builtin and refuse the line before docket sees it.
+
+   RUN THIS ONE COMMAND WITH THE SANDBOX DISABLED (the Bash tool's
+   dangerouslyDisableSandbox: true) — operator-authorized, 2026-08-13.
+   \`record\` executes the operator's TRUSTED gate scripts, and the sandbox
+   blocks their TLS trust-store access, so a sandboxed record fails
+   network-dependent gates on infrastructure the gate then honestly reports
+   as its own failure (measured: a vulnerability scan 0-for-9 in-sandbox,
+   clean outside). The gate argv is pinned in the per-user trust store and
+   the permission classifier still screens the call. Elevation is for this
+   record command ONLY — every other command you run stays sandboxed.
 ${isWrite ? `
    \`--worktree\` names the checkout the work happened in, and the engine
    computes the recorded diff THERE. Get its literal path once with \`git

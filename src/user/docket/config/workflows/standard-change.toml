@@ -141,18 +141,25 @@ payload = "findings@2"               # validates at the JUDGE boundary: each jud
                                      #   schema's property-level enum would refuse
 expected_cost = 0.60                 # per expanded sibling
 inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
-                                     # KNOWN LIMIT: these inputs are STATIC
-                                     #   across fix-loop re-entries — a
-                                     #   re-review round still receives
-                                     #   implement's change-summary, never
-                                     #   fix@N's (engine issue pending; RUN-1
-                                     #   graph-engine measured a full re-review
-                                     #   judging the superseded commit). Until
-                                     #   the engine rebinds loop inputs, the
-                                     #   conductor hands re-review rounds the
-                                     #   integrated sha explicitly and checks
+                                     # Fix-loop re-entries REBIND: the engine
+                                     #   re-renders loop inputs from the loop
+                                     #   producer's latest emit (landed
+                                     #   engine-side; verified in production,
+                                     #   RUN-3), so a re-review round receives
+                                     #   fix@N's change-summary, not
+                                     #   implement's. The conductor's remaining
+                                     #   discipline is only the cheap glance —
                                      #   each judge report's reviewed sha
-                                     #   (conduct SKILL.md).
+                                     #   against the step under review (conduct
+                                     #   SKILL.md); the hand-the-sha-explicitly
+                                     #   workaround this comment used to
+                                     #   prescribe is retired. STILL OPEN: a
+                                     #   re-review round receives no PREVIOUS
+                                     #   round's findings — when the engine's
+                                     #   input grammar can bind a prior round's
+                                     #   emit, declare it here so judges see
+                                     #   what the last round found (docket-side
+                                     #   DKT-63 tracks the grammar half).
 
 [[step]]
 name = "synthesize"

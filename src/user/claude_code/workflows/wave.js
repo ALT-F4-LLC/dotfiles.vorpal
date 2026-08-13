@@ -620,7 +620,10 @@ ${isolated ? `
    the harness's record of its own intent, not yours to adjust. Fill the two
    resolved values with what actually served you.
 
-4. End your reply with the step id and the status you recorded.`
+4. End your reply with exactly this line, filled in from the record
+   response: <step-id> recorded (<status>) — for example "STEP-12 recorded
+   (done)" or "STEP-12 recorded (waiting-human)". The wave parses this tail
+   to stop launching later stages into a parked run; do not paraphrase it.`
 }
 
 let input = args
@@ -649,9 +652,19 @@ if (policy.policy?.version !== 2) {
     )
 }
 
+// Two park signals, both in-band: the claim-CONFLICT text of an agent that
+// launched INTO a park ('run is not active'), and the record-status tail of
+// the agent whose own record CAUSED the park ('STEP-N recorded
+// (waiting-human)') — the second stops the next stage before it spawns
+// corpses (measured twice on RUN-8: 5 judges launched into a park the prior
+// stage's result already announced). The tail format is mandated by the
+// brief's closing instruction below. Fail-open: no match keeps launching.
 function runParked(res) {
     return res != null && res.status === 'returned' &&
-        typeof res.text === 'string' && res.text.includes('run is not active')
+        typeof res.text === 'string' && (
+            res.text.includes('run is not active') ||
+            /recorded \((waiting-human|paused)\)/.test(res.text)
+        )
 }
 
 function spawn(row, phaseLabel) {

@@ -259,7 +259,15 @@ impl ClaudeCode {
             .with_sandbox_network_allow_unix_sockets(vec![
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
-            .with_sandbox_network_allow_local_binding(false)
+            // Local binding ON so sandboxed test suites can listen: daemon/CLI
+            // suites bind unix sockets under the scratch root and Go httptest
+            // binds loopback TCP; with binding denied, `make test`-class
+            // acceptance criteria fail 134-deep on `bind: operation not
+            // permitted` for environmental reasons no change causes or cures
+            // (measured on harness.git, pre- and post-change identically).
+            // Loopback listeners accept no traffic from off-host; the outbound
+            // allowlist above is unaffected.
+            .with_sandbox_network_allow_local_binding(true)
             .build(context)
             .await?;
 

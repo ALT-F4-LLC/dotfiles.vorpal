@@ -28,6 +28,16 @@ met / unmet / unverifiable with the evidence attached. An AC whose gate command 
 but whose intent is visibly unmet by the diff is `unmet` — say why; the arithmetic
 trusts you to judge intent, the gates cover the literal.
 
+A command that fails on an ENVIRONMENTAL denial is evidence about the environment,
+not the change. Under the agent sandbox the classic case is listener binds — test
+suites failing `bind: operation not permitted` on a unix socket or `httptest:
+failed to listen` — which no code change causes or cures. Prove it environmental
+with a control: the same command at the pre-change commit, on a scratch copy,
+failing the same way. Then judge that AC `unverifiable`, quoting the denial and the
+control, never `unmet` — and name the profile gap in your report so the operator
+can extend the sandbox or supply an out-of-band run. Never infer a pass from an
+implement artifact's claim of one; a run you cannot reproduce is not your evidence.
+
 # Emit
 `ac-report`: markdown body with one section per AC (classification · evidence ·
 judgment), plus the ac-report payload (per-AC: id, status ∈ met|unmet|unverifiable).

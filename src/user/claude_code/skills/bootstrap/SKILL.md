@@ -29,6 +29,17 @@ engineering specs are what make those citations cheap and honest — a `testing.
 that says "no tests exist" decides, on its own, whether you keep a workflow with a
 `tests` gate. So they are an *input* to mining, and they are written first.
 
+**They are a bootstrap-time snapshot, and that is the whole of their contract.**
+This skill is their reader: §2's miners start from them, §3's scope and gate
+decisions draw on them, and §5's proposed issue can come out of their gap
+sections. Nothing downstream ever opens them again — not `/plan`, not
+`/conduct`, not a retro, not a brief, not a gate. So they carry no maintenance
+obligation whatever: they are never regenerated as the source moves, and going
+stale under a changing tree is what a snapshot does rather than a defect anyone
+owes a fix for. The source tree stays the ongoing source of truth. Re-authoring
+them is a deliberate act — someone choosing to run `spec-project` — never
+routine upkeep.
+
 Skip this section when `docs/spec/` already holds the seven. Re-authoring them is
 the `spec-project` pipeline's job, not yours (§0's closing note).
 
@@ -119,8 +130,10 @@ config-store work — but §3 and §4a′ can each create a real file
 (`.docket/config/`, `.docket/bin/commit-exec`), and a spec's true-when-written
 claim that the repo has no `.docket/` is false the moment one does. Do not
 hot-edit a spec to fix that — especially not while a write-class step holds the
-tree — note it in the hand-off and let the `spec-project` review pass catch it;
-that is the mechanism built for exactly this.
+tree — note it in the hand-off and leave it there. Nothing closes the gap
+afterwards either: the drift that starts inside this run simply keeps going as
+the source moves, and no later step is watching for it. Only a deliberate
+`spec-project` run ever re-authors these files.
 
 ## 1. Register the repo
 
@@ -245,7 +258,10 @@ than one you invent an entry for.
 
 Treat the specs as a map, not as testimony. They point at the file; §3 still demands
 you cite the file. A spec that claims a `make check` target is a reason to open the
-`Makefile`, never a substitute for it.
+`Makefile`, never a substitute for it. That holds harder the older the map is:
+where §0 skipped because the seven were already on disk, they are an earlier
+bootstrap's snapshot and nothing has refreshed them since — the tree may have
+moved out from under every line. Cite the source; it is the thing that is true.
 
 Build files (`Makefile`, `justfile`, `package.json`, `Cargo.toml`, `*.nix`) and
 CI config give you the real check command — the one a contributor actually

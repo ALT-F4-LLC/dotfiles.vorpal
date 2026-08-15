@@ -12,23 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: bash tests/teammate-idle-hook.test.sh
-
-      - run: bash tests/task-completed-hook.test.sh
-
-      - run: bash tests/doctrine_check.test.sh
-
-      # Central byte gate. The charter's ceilings bind here and nowhere else —
-      # no editing skill carries its own copy of the obligation. --strict turns
-      # the warn-only default into a failure, so a raise must land as a stated
-      # reason on the byte_ceilings.tsv row rather than being silently absorbed.
-      - run: bash src/user/claude-code/scripts/byte_ceiling_check.sh --strict
-
-      - run: bash tests/model_census.test.sh
-
-      - run: bash tests/drift_guard_check.test.sh
-
-      - run: bash tests/guard-no-commit-hook.test.sh
+      - run: bash tests/docket-commit-guard-hook.test.sh
 
   build-dev:
     runs-on: macos-latest

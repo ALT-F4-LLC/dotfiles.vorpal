@@ -66,7 +66,7 @@ Skills support the team:
 | Skill | Location | Purpose |
 |-------|----------|---------|
 | **adr** | `src/user/claude-code/skills/adr/` | Authors an Architecture Decision Record as a Docket doc |
-| **bootstrap** | `src/user/claude_code/skills/bootstrap/` | Binds a repo to the shared Docket corpus and seeds its `docs/spec/` project specs |
+| **bootstrap** | `src/user/claude_code/skills/bootstrap/` | Binds a repo to the shared Docket corpus, writing throwaway `docs/spec/` working specs it mines during setup and removes before hand-off |
 | **code-review-verdict** | `src/user/claude-code/skills/code-review-verdict/` | Conducts a scoped code review (general 6-dimension or security playbook) |
 | **design-qa** | `src/user/claude-code/skills/design-qa/` | Post-implementation QA of a shipped UX surface against its spec |
 | **design-review** | `src/user/claude-code/skills/design-review/` | Peer design review of a UX spec across six dimensions |

@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Wire a repo into the shared docket corpus for the first time — seed the seven project specs, mine the repo, and register the repo itself (project prefix, engine config, trust proposals), then surface the whole binding for approval before the first run. The corpus is read straight from ~/.docket/config and nothing is materialized in the repo; no .docket directory is created. Use at project start, or when `docket run activate` reports no workflow matches an issue. Also the way to bootstrap docs/spec/ on a repo with no engine running yet ("create specs", "generate project specs").
+description: Wire a repo into the shared docket corpus for the first time — seed the seven project specs, mine the repo, and register the repo itself (project prefix, engine config, trust proposals), then surface the whole binding for approval before the first run. The corpus is read straight from ~/.docket/config and nothing is materialized in the repo; no .docket directory is created. Use at project start, or when `docket run activate` reports no workflow matches an issue. The seven docs/spec/ files it writes are working input to its own mining and are deleted again before it hands off, so it is not the way to obtain lasting project specs ("create specs", "generate project specs") — that is the spec-project workflow.
 ---
 
 # bootstrap
@@ -9,7 +9,9 @@ You bind this repo to the shared corpus. The developer provides work and
 approvals; you do everything else. No corpus file lands in the repo at all: the
 engine reads the corpus from `~/.docket/config`, and a `.docket/` directory
 exists only when this repo genuinely owns something (§3, §4a′). The one thing
-this skill writes into the tree is §0's seven specs under `docs/spec/`.
+this skill writes into the tree is §0's seven specs under `docs/spec/`, and §5a
+takes those back out again — they are scaffolding for the work below, not
+output.
 
 Two rules you must not fight:
 
@@ -29,19 +31,21 @@ engineering specs are what make those citations cheap and honest — a `testing.
 that says "no tests exist" decides, on its own, whether you keep a workflow with a
 `tests` gate. So they are an *input* to mining, and they are written first.
 
-**They are a bootstrap-time snapshot, and that is the whole of their contract.**
-This skill is their reader: §2's miners start from them, §3's scope and gate
-decisions draw on them, and §5's proposed issue can come out of their gap
-sections. Nothing downstream ever opens them again — not `/plan`, not
-`/conduct`, not a retro, not a brief, not a gate. So they carry no maintenance
-obligation whatever: they are never regenerated as the source moves, and going
-stale under a changing tree is what a snapshot does rather than a defect anyone
-owes a fix for. The source tree stays the ongoing source of truth. Re-authoring
-them is a deliberate act — someone choosing to run `spec-project` — never
-routine upkeep.
+**They are working artifacts of this run, and that is the whole of their
+contract.** This skill is their reader: §2's miners start from them, §3's scope
+and gate decisions draw on them, and §5's proposed issue can come out of their
+gap sections. Nothing downstream ever opens them again — not `/plan`, not
+`/conduct`, not a retro, not a brief, not a gate — so §5a deletes them once the
+last of those readers is done, and bootstrap leaves no spec file behind at all.
+They are consumed, not maintained: nothing regenerates them, and nothing stale
+is left in the tree to tell a later reader something that stopped being true.
+The source tree is the source of truth, before and after. Specs meant to
+persist are a deliberate act — someone choosing to run `spec-project` — never a
+by-product of binding a repo.
 
-Skip this section when `docs/spec/` already holds the seven. Re-authoring them is
-the `spec-project` pipeline's job, not yours (§0's closing note).
+Skip this section when `docs/spec/` already holds the seven; a skipped §0 leaves
+§5a nothing to do, since it removes only what §0 wrote. Re-authoring them is
+the `spec-project` pipeline's job, not yours.
 
 **The contract is the authority.** Read `~/.docket/config/contracts/spec-author.md`
 before spawning anything: it defines the seven axes, what each one explores, and the
@@ -103,17 +107,18 @@ seven return, spawn ONE `executor-read` agent to verify and report a
 checklist: diff the snapshot against `git status --porcelain` now, confirm
 every added line is a path under `docs/spec/` and that there are seven, and
 check each file opens with a `# ` title, carries a `Status: … <date>` line,
-and ends in its gaps section. You act on the checklist — respawn a stalled
-axis, revert a stray — you do not perform the reading. You are an
-orchestrator; the whole of this skill's hands-on work belongs to agents.
-Anything else is a collateral write, and it happens: the `executor-write`
-archetype grants a full write surface, so the contract's prose is the only
-containment — and on the 2026-08-06 run prose did not hold: an author left a
-non-compiling Go file in `internal/engine/`, breaking test compilation for the
-whole package the run was about to gate. On a hit, revert the stray (`rm` an
-untracked file, `git checkout --` a modified one) and tell the operator what
-you reverted and which axis you suspect; if it might be the operator's own
-work in progress, leave it and say so instead.
+and ends in its gaps section. Keep the paths it returns: §5a deletes exactly
+those, so the record of what §0 wrote has to survive until then. You act on
+the checklist — respawn a stalled axis, revert a stray — you do not perform
+the reading. You are an orchestrator; the whole of this skill's hands-on work
+belongs to agents. Anything else is a collateral write, and it happens: the
+`executor-write` archetype grants a full write surface, so the contract's
+prose is the only containment — and on the 2026-08-06 run prose did not hold:
+an author left a non-compiling Go file in `internal/engine/`, breaking test
+compilation for the whole package the run was about to gate. On a hit, revert
+the stray (`rm` an untracked file, `git checkout --` a modified one) and tell
+the operator what you reverted and which axis you suspect; if it might be the
+operator's own work in progress, leave it and say so instead.
 
 A missing or dateless file in the checklist means its author stalled —
 respawn that one axis. Say plainly in §5 that these specs are seeded rather
@@ -124,16 +129,16 @@ against the seven directly; a real exit 0 beats a predicted one, and the
 2026-08-06 run got both green this way. Diff a shipped gate's expectations
 against the contract's Emit section only when running it is not possible.
 
-One staleness trap these specs carry: they describe the tree as it stood
-*before* the rest of this run. §1 puts nothing in it — registering a repo is
-config-store work — but §3 and §4a′ can each create a real file
-(`.docket/config/`, `.docket/bin/commit-exec`), and a spec's true-when-written
-claim that the repo has no `.docket/` is false the moment one does. Do not
-hot-edit a spec to fix that — especially not while a write-class step holds the
-tree — note it in the hand-off and leave it there. Nothing closes the gap
-afterwards either: the drift that starts inside this run simply keeps going as
-the source moves, and no later step is watching for it. Only a deliberate
-`spec-project` run ever re-authors these files.
+One staleness trap these specs carry, and §5a is what bounds it: they describe
+the tree as it stood *before* the rest of this run. §1 puts nothing in it —
+registering a repo is config-store work — but §3 and §4a′ can each create a real
+file (`.docket/config/`, `.docket/bin/commit-exec`), and a spec's
+true-when-written claim that the repo has no `.docket/` is false the moment one
+does. Do not hot-edit a spec to fix that — especially not while a write-class
+step holds the tree — and do not chase it afterwards either. The drift lasts
+exactly as long as the files do, which is until §5a removes them; a claim that
+was true when written and false an hour later never gets the chance to mislead
+anybody outside this run.
 
 ## 1. Register the repo
 
@@ -259,9 +264,10 @@ than one you invent an entry for.
 Treat the specs as a map, not as testimony. They point at the file; §3 still demands
 you cite the file. A spec that claims a `make check` target is a reason to open the
 `Makefile`, never a substitute for it. That holds harder the older the map is:
-where §0 skipped because the seven were already on disk, they are an earlier
-bootstrap's snapshot and nothing has refreshed them since — the tree may have
-moved out from under every line. Cite the source; it is the thing that is true.
+where §0 skipped, the seven on disk are not this run's — a `spec-project` run
+authored them, or the repo keeps them deliberately — and nothing says how long
+ago, so the tree may have moved out from under every line. Cite the source; it
+is the thing that is true.
 
 Build files (`Makefile`, `justfile`, `package.json`, `Cargo.toml`, `*.nix`) and
 CI config give you the real check command — the one a contributor actually
@@ -785,6 +791,32 @@ After the first real run, read the gate verdicts: `unmatched` in
 containment refused its argv. The verdict text names the fix; follow it
 literally.
 
+### 5a. Remove the working specs
+
+Everything that reads §0's seven has now read them: §2's miners mined them, §3
+cited them into scopes and gates, and §5's issue may have come out of a gap
+section. They were input to this run rather than output of it, so they go here,
+and bootstrap leaves no spec file in the tree at all. The moment is chosen, not
+incidental: activation creates steps but `/conduct` dispatches them and has not
+run, so no executor holds the tree and nothing claimed is reading what you
+remove.
+
+**Delete exactly what §0 wrote.** The verification agent returned the
+`docs/spec/` paths added against `$TMPDIR/pre-fanout`, and that list is this
+step's whole authority. Name each path in the `rm` — never a glob, never
+`rm -rf docs/spec` — then `rmdir docs/spec`, whose refusal on a non-empty
+directory is precisely the behaviour you want: a sibling file somebody else
+keeps there survives by construction, and the refusal is how you find out it
+is there.
+
+**A skipped §0 deletes nothing.** Seven specs already on disk when you arrived
+are not yours — a `spec-project` run authored them, or the repo keeps them
+deliberately — and they outlive this bootstrap untouched, as does any file
+under `docs/spec/` that git already tracks. Deleting in the operator's repo is
+otherwise not yours to do; §1 hands their symlink debris back to them for
+exactly that reason. The exception here is narrow and it is the whole
+justification: you wrote these seven, this session, for your own use.
+
 ## 6. Where the corpus comes from
 
 `src/user/docket/config/{contracts, fragments, schemas, workflows,
@@ -826,7 +858,9 @@ exist, there is no corpus to read — say so, and fall back to `workflow init
 ## 7. Hand off
 
 Report the config files you wrote, the trust entries they approved, and the run
-you activated. Name the next move plainly: real work beyond the smoke issue
+you activated — and name §0's seven specs as working input you have since
+removed (§5a), so nobody goes looking for a `docs/spec/` that was never meant
+to survive. Name the next move plainly: real work beyond the smoke issue
 goes through `/plan` (issues, phases, gates placed deliberately), then
 `/conduct` drives what plan recorded — do not slide from bootstrapping into
 driving on your own momentum, or on a stop-guard's push. Say plainly that this

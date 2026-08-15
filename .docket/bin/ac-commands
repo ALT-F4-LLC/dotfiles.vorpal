@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# ac-commands — run the repo's checks and print their results for the verifier.
+#
+# Wired as a PRE-GATE on `verify`
+# (src/user/docket/config/workflows/standard-change.toml): it runs at claim, and
+# its output lands in the step's context bundle. That is the whole point.
+# `verify-ac` judges acceptance criteria against the diff, and an AC of the form
+# "the tests pass" is one it cannot settle by reading code — without recorded
+# command results it must return `unverifiable`, which parks the step on the
+# operator.
+#
+# It reports rather than judges: it prints what ran and what each exited, and
+# ALWAYS EXITS 0. A failing test is evidence the verifier should see and weigh,
+# not a reason to refuse the claim — `build` and `tests` are the gates that fail
+# a step, and they run on `implement` where the failure belongs.
+
+set -euo pipefail
+
+# Anchored to this script's own repository rather than the caller's cwd: the
+# commands below build and test whatever tree they are run in, so a hand-run
+# from elsewhere must not report on a different checkout as if it were this one.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "ac-commands: $script_dir is not inside a git repository; nothing to report" >&2
+  exit 0
+fi
+cd "$repo_root"
+
+run() {
+  local label="$1"; shift
+  echo "--- $label: $* ---"
+  if "$@" 2>&1 | tail -20; then
+    echo "[$label] exit 0"
+  else
+    echo "[$label] exit ${PIPESTATUS[0]}"
+  fi
+  echo
+}
+
+echo "=== ac-commands: recorded results for the verifier ==="
+echo "commit: $(git rev-parse --short HEAD)"
+echo "tree:   $(git status --porcelain | wc -l | tr -d ' ') uncommitted path(s)"
+echo
+
+# `just` rather than raw cargo: the justfile is where each command's flags
+# (--locked --offline --all-targets) are defined, and the `build` and `tests`
+# gates on `implement` run those same recipes. Naming the recipe keeps the
+# verifier's evidence and the gate's verdict describing one command, not two
+# that drift.
+run build just build
+run tests just tests
+
+echo "=== end ac-commands ==="
+exit 0

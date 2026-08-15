@@ -1,4 +1,3 @@
-.docket/
 docs/tdd
 
 # next_doc_number.sh --claim: permanent number-only lock markers (DKT-307)

@@ -66,17 +66,17 @@ Skills support the team:
 | Skill | Location | Purpose |
 |-------|----------|---------|
 | **adr** | `src/user/claude-code/skills/adr/` | Authors an Architecture Decision Record as a Docket doc |
+| **bootstrap** | `src/user/claude_code/skills/bootstrap/` | Binds a repo to the shared Docket corpus and seeds its `docs/spec/` project specs |
 | **code-review-verdict** | `src/user/claude-code/skills/code-review-verdict/` | Conducts a scoped code review (general 6-dimension or security playbook) |
 | **design-qa** | `src/user/claude-code/skills/design-qa/` | Post-implementation QA of a shipped UX surface against its spec |
 | **design-review** | `src/user/claude-code/skills/design-review/` | Peer design review of a UX spec across six dimensions |
-| **init-specs** | `src/user/claude-code/skills/init-specs/` | Bootstraps `docs/spec/` project specifications for new repositories |
 | **prd** | `src/user/claude-code/skills/prd/` | Authors a Product Requirements Document as a Docket doc |
 | **simplify-scout** | `src/user/claude-code/skills/simplify-scout/` | Scouts code for simplification/refactor opportunities (report-only) |
 | **tdd** | `src/user/claude-code/skills/tdd/` | Authors a Technical Design Document as a Docket doc |
 | **ux-spec** | `src/user/claude-code/skills/ux-spec/` | Authors a UX design spec as a Docket doc |
 | **verify-ac** | `src/user/claude-code/skills/verify-ac/` | Verifies a Docket issue's acceptance criteria against the diff |
 | **vote** | `src/user/claude-code/skills/vote/` | Multi-agent consensus voting protocol |
-| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `src/user/claude-code/agents/*.md` |
+| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `src/user/claude_code/agents/*.md` |
 | **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
 | **evolve-coherence** | `.claude/skills/evolve-coherence/` | Audits agent↔skill coherence across four dimensions and routes fixes to evolve-agents/evolve-skills (report-and-route; never edits files) |
 

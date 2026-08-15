@@ -16,9 +16,10 @@
 # ([OBSERVED] `no type="human" step named "commit-gate" in any active run`
 # → exit 2). The matcher is what decides whether the engine is even the right
 # question to ask. Everything between the `set -uo pipefail` below and the
-# `[ "$MATCH" = "MATCH" ]` guard is byte-identical to
-# claude-code/hooks/guard-no-commit-hook.sh lines 62-278 and is maintained
-# there, not here; only the terminal decision differs.
+# `[ "$MATCH" = "MATCH" ]` guard was lifted byte-identical from the retired
+# fleet's claude-code/hooks/guard-no-commit-hook.sh (deleted 2026-08-06 in
+# fc0663d). This file is now that matcher's only home; its behavior is pinned
+# by tests/docket-commit-guard-hook.test.sh.
 #
 # THE DECISION, and how it differs from the old fleet's. The old hook resolves
 # on permission_mode: interactive modes get an `ask`, non-interactive modes get
@@ -282,10 +283,10 @@ GATE_REASON=$(docket guard gate --step commit-gate 2>&1 >/dev/null) || true
 # found.
 #
 # Allowing here does NOT make those commits unguarded: `git commit` remains a
-# `Bash(git commit:*)` permission-ask (E3), and the old fleet's
-# guard-no-commit-hook.sh still prompts on its own permission_mode case split.
-# This hook re-keys the DECISION to engine truth where engine truth exists; it
-# does not manufacture a verdict where the engine has declined to give one.
+# `Bash(git commit:*)` permission-ask (E3), which is the whole of the remaining
+# defense now that the old fleet's guard-no-commit-hook.sh is deleted. This hook
+# re-keys the DECISION to engine truth where engine truth exists; it does not
+# manufacture a verdict where the engine has declined to give one.
 # "no docket database found" joins the not-applicable set for the same reason
 # as the absent-gate arm: no DB means no run means this guard has no opinion.
 # [MEASURED 2026-08-06] every guard verb exits 2 with that error in a repo

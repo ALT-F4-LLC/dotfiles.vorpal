@@ -9,7 +9,6 @@ const OTEL_METRICS_ENDPOINT_MIMIR: &str = "https://mimir.bulbasaur.altf4.domains
 const OTEL_OTLP_PROTOCOL: &str = "http/protobuf";
 
 const SENSITIVE_PATHS: &[&str] = &[
-    "~/.aws/**",
     "~/.claude.json",
     "~/.doppler/**",
     "~/.gemini/**",
@@ -21,9 +20,8 @@ const SENSITIVE_PATHS: &[&str] = &[
     "~/Desktop/**",
     "~/Downloads/**",
 ];
-
-const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] =
-    &["//Applications/**", "//Library/**", "//System/**"];
+const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &["/Applications/**", "/Library/**", "/System/**"];
+const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
@@ -40,7 +38,6 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
 ];
-const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 
 pub struct ClaudeCode {
     name: String,
@@ -186,11 +183,6 @@ impl ClaudeCode {
         let settings_builder = settings_builder
             .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
             .with_permission_allow("Bash(~/.claude/scripts/wave-usage:*)")
-            // ~/.claude/scripts is installed from the vorpal store, but the
-            // store lags source until the next activate and the skills resolve
-            // installed-else-source, so the source paths keep the same allowance.
-            .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/shadow-transcript-summary.sh:*)")
-            .with_permission_allow("Bash(~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code/scripts/wave-usage:*)")
             .with_permission_allow("WebFetch(domain:api.github.com)")
             .with_permission_allow("WebFetch(domain:claude.ai)")
             .with_permission_allow("WebFetch(domain:code.claude.com)")
@@ -202,7 +194,8 @@ impl ClaudeCode {
             .with_permission_allow("WebSearch");
 
         let settings_builder = settings_builder
-            .with_permission_ask("Bash(docket trust:*)")
+            .with_permission_ask("Bash(docket trust add:*)")
+            .with_permission_ask("Bash(docket trust rm:*)")
             .with_permission_ask("Bash(git push:*)");
 
         let settings_builder = deny_sensitive_paths(

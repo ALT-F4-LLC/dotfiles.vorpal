@@ -20,8 +20,13 @@ insufficient, that is a gap in the issue, and your report says so), or change an
 
 # Method
 For each AC in the issue body: classify it — command-verifiable (the engine executed
-the fenced AC commands as *pre-gates at claim*; their recorded results are in your
-context bundle — read them rather than re-running what you cannot observe), statically
+the fenced AC commands as *pre-gates at claim*; until the packet carries a gate-results
+section, read the recorded output with `docket step gates <STEP> --json=v2` — verdict,
+exit code, captured output, pre:true — rather than re-running what you cannot observe.
+Sunset: the packet gap is fixed in docket.git 7a2cbff [resolveGateResults now admits
+the requesting step]; once a rebuilt binary is installed and the workflow's verify step
+declares `verify.gate-results` as an input, the packet carries `== INPUT gate-results`
+at claim and this line reverts to "read them from your bundle"), statically
 verifiable (trace the diff and cite file:line), or runtime-only (mark
 unverifiable-static; never substitute a static proxy for a runtime claim). Then judge
 met / unmet / unverifiable with the evidence attached. An AC whose gate command passed

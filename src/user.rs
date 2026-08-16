@@ -1,7 +1,8 @@
 use crate::user::{
     bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, k9s::K9s, neovim::Neovim,
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
+use std::collections::BTreeSet;
 use vorpal_sdk::{api::artifact::ArtifactSystem, artifact, context::ConfigContext};
 
 mod bat;
@@ -15,6 +16,22 @@ mod utilities;
 pub struct UserEnvironment {
     name: String,
     systems: Vec<ArtifactSystem>,
+}
+
+/// Install destinations claimed by more than one artifact, sorted and listed
+/// once each. Activation aborts when two symlinks target the same path, so the
+/// build stops here instead, naming the collision.
+fn duplicate_symlink_targets(symlinks: &[(String, String)]) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    let mut duplicates = BTreeSet::new();
+
+    for (_, target) in symlinks {
+        if !seen.insert(target) {
+            duplicates.insert(target.clone());
+        }
+    }
+
+    duplicates.into_iter().collect()
 }
 
 impl UserEnvironment {
@@ -73,6 +90,15 @@ impl UserEnvironment {
             .chain(neovim.1)
             .collect();
 
+        let duplicates = duplicate_symlink_targets(&symlinks_chain);
+
+        if !duplicates.is_empty() {
+            bail!(
+                "activation would abort: more than one artifact links {}",
+                duplicates.join(", ")
+            );
+        }
+
         let symlinks: Vec<(&str, &str)> = symlinks_chain
             .iter()
             .map(|(a, b)| (a.as_str(), b.as_str()))
@@ -98,5 +124,83 @@ impl UserEnvironment {
             .with_symlinks(symlinks)
             .build(context)
             .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::duplicate_symlink_targets;
+
+    fn symlinks(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+        pairs
+            .iter()
+            .map(|(source, target)| (source.to_string(), target.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn distinct_targets_are_not_duplicates() {
+        let links = symlinks(&[
+            ("/store/output/user/aaa", "${HOME}/.claude/agents"),
+            ("/store/output/user/bbb", "${HOME}/.claude/hooks"),
+            ("/store/output/user/ccc/bin", "${HOME}/.docket/bin"),
+        ]);
+
+        assert!(duplicate_symlink_targets(&links).is_empty());
+    }
+
+    #[test]
+    fn two_artifacts_claiming_one_target_are_reported() {
+        let links = symlinks(&[
+            ("/store/output/user/aaa", "${HOME}/.claude/skills"),
+            ("/store/output/user/bbb", "${HOME}/.claude/skills"),
+        ]);
+
+        assert_eq!(
+            duplicate_symlink_targets(&links),
+            vec!["${HOME}/.claude/skills".to_string()]
+        );
+    }
+
+    #[test]
+    fn a_repeated_target_is_reported_once_however_many_claim_it() {
+        let links = symlinks(&[
+            ("/store/output/user/aaa", "${HOME}/.docket/config"),
+            ("/store/output/user/bbb", "${HOME}/.docket/config"),
+            ("/store/output/user/ccc", "${HOME}/.docket/config"),
+        ]);
+
+        assert_eq!(
+            duplicate_symlink_targets(&links),
+            vec!["${HOME}/.docket/config".to_string()]
+        );
+    }
+
+    #[test]
+    fn several_collisions_are_reported_in_sorted_order() {
+        let links = symlinks(&[
+            ("/store/output/user/aaa", "${HOME}/.docket/config"),
+            ("/store/output/user/bbb", "${HOME}/.claude/agents"),
+            ("/store/output/user/ccc", "${HOME}/.docket/config"),
+            ("/store/output/user/ddd", "${HOME}/.claude/agents"),
+        ]);
+
+        assert_eq!(
+            duplicate_symlink_targets(&links),
+            vec![
+                "${HOME}/.claude/agents".to_string(),
+                "${HOME}/.docket/config".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn one_artifact_linked_to_two_destinations_is_allowed() {
+        let links = symlinks(&[
+            ("/store/output/user/aaa/bin", "${HOME}/.docket/bin"),
+            ("/store/output/user/aaa/config", "${HOME}/.docket/config"),
+        ]);
+
+        assert!(duplicate_symlink_targets(&links).is_empty());
     }
 }

@@ -125,7 +125,7 @@ impl ClaudeCode {
             .with_effort_level("xhigh")
             .with_feedback_survey_rate(0.0)
             .with_include_git_instructions(false)
-            .with_model("fable")
+            .with_model("sonnet")
             .with_output_style("Proactive")
             .with_permission_default_mode("auto")
             .with_permission_disable_bypass_permissions_mode("disable")

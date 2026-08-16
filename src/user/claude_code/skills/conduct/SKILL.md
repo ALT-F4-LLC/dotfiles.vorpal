@@ -1,6 +1,6 @@
 ---
 name: conduct
-description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it, invoke the wave workflow, close the dispatch, repeat. Routes gates to a tribunal panel by default, escalates every non-approval that parks, and every reserved matter, to the operator, and runs the engine verb on the outcome. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
+description: Drive an activated Docket run to completion — ask the engine what is ready, dispatch it (the manifest carries the staged closure, whole dependency chains per wave), invoke the wave workflow, close the dispatch, repeat. Vote gates ride the wave (it seats the panel mid-wave); conversational gates go to tribunal.js; every non-approval that parks, and every reserved matter, escalates to the operator, and the engine verb runs on the outcome. Holds no run state and makes no routing decisions; the engine schedules and wave.js routes.
 ---
 
 # conduct
@@ -287,13 +287,19 @@ reads `escalation.fallback`), and nothing logged the difference. wave.js and
 tribunal.js log `policy <N> chars` at startup — if that number does not match
 `wc -m ~/.docket/config/policy.toml`, the launch did not carry the file.
 
-**Route executor rows only.** Filter the dispatch rows to `kind: "executor"`
-and hand over only those. `kind: "action"` steps are engine-run — the engine
-drives them itself during dispatch open — and `kind: "human"` and `kind:
-"vote"` steps are gates, not spawns: one you present to the operator, one you
-convene a panel on, neither you hand the wave. Passing any of them through is a
-mistake the wave will refuse. Filtering here is the primary control; the wave's
-refusal is the backstop, not the plan.
+**Keep human rows; hand the wave everything else.** Filter OUT only
+`kind: "human"` rows — those are the operator's — and pass every other row
+through: executor rows (ready and `staged` alike), `kind: "vote"` rows (the
+wave seats the judge panel itself mid-wave — the recording that readies the
+gate opens its proposal, the seats cast, the deciding cast routes it), and
+`kind: "action"` rows (the wave spawns nothing for them — the engine runs one
+the moment a recording readies it — but the row keeps the stage numbering
+transparent). A manifest now carries the STAGED CLOSURE: rows with
+`status: "staged"` are not claimable yet and become claimable exactly when
+their stage arrives, which is the wave's own scheduling — one wave can carry
+judges → gate → reconcile → report end to end. A `kind: "human"` row passed
+through is the one mistake the wave still refuses; filtering here is the
+primary control, the wave's refusal the backstop.
 
 **Your entire involvement with policy is three mechanical acts:**
 
@@ -313,8 +319,11 @@ Beyond that kind filter, pass the rows through unchanged. Do not reorder them,
 drop one that looks redundant, or add one. The manifest is hashed; what you were
 handed is what runs. In particular do **not** try to sequence them or hold rows
 back to avoid claim conflicts — wave.js stages the wave itself (by the rows'
-engine `stage` labels; stage-less rows are engine-certified concurrent) and
-that staging is code, not your judgment.
+engine `stage` labels, which since the staged closure are ONE global schedule:
+same-stage rows are engine-certified concurrent, later-stage rows become
+claimable when their stage arrives) and that staging is code, not your
+judgment. Never drop a `staged` row because it "isn't ready" — offering it
+ahead of readiness is the entire mechanism.
 
 Then await the wave's completion notification — which means END YOUR TURN.
 Notifications only deliver at turn boundaries: a turn held open "waiting" is a
@@ -651,41 +660,26 @@ reconcile the expiry per step 1 — accepted cost, not a reason to delay the ask
 
 ### The panel
 
-**Engine vote steps.** On a `kind: "vote"` row — held clusters the engine
-minted as vote steps included — invoke the spawner:
-
-```
-Workflow({ scriptPath: "<absolute path to tribunal.js>",
-           args: {voteId, voters, policyText, context, gateKind, cwd} })
-```
-
-Resolve the path and emit `args` exactly as you do for wave.js — absolute,
-`test -f ~/.claude/workflows/tribunal.js` else `$CC_SRC/workflows/tribunal.js`,
-`args` a REAL object the harness stringifies for you. `voters` comes off the
-row verbatim and the row's `proposal` field supplies `voteId`; `policyText` is
-the literal pinned policy.toml text,
-re-read in the same iteration as the launch it feeds and passed byte-for-byte
-(see step 2 — RUN-4 condensed it in all eight launches); `context` is the
-rendered gate payload (`step render`/`step context`, a held cluster's numbers
-WITH its computed value, the artifact under decision); `cwd` is the repo the
-run belongs to. `gateKind` for an engine vote row is the row's own gate class
-— a held cluster is `"held-cluster"` — never one of the conversational labels
-below (RUN-4 sent `"activation"` to a held-cluster panel).
-
-**Then ask the ENGINE, not the workflow.** When the spawner returns, run
-`docket next --run $RUN --json` again: the engine tallied on the last vote cast
-and has already routed the step — through, into rework where the gate's
-`on_fail` names a fix loop, or parked `waiting-human`. Route on what the engine
-now says. If that first `next` still offers the vote row, ask ONCE more before
-concluding anything — the engine can materialize the tally behind the first
-read's own snapshot (measured RUN-4; filed as docket-repo DKT-55). Never open
-a dispatch to force the routing. The spawner's return carries a
-PROBE of the record, not a decision, and that probe can come back empty without
-meaning the casts failed; it never stands in for the engine's answer.
+**Engine vote steps ride the wave.** Since the staged closure (2026-08-15) a
+`kind: "vote"` row — held clusters the engine minted as vote steps included —
+is dispatched and handed to wave.js with the rest of the manifest, and the
+WAVE seats the panel: it polls the row's proposal off `step show` (the
+recording that readied the gate opened it), spawns one seat per `voters`
+entry, and the quorum-reaching cast routes the gate engine-side before the
+next stage starts. You do not invoke tribunal.js for a vote row anymore, and
+you do NOT hold the row back for a separate panel round — that re-creates the
+one-gate-one-dispatch cost the closure removed. Your part is what it always
+was after any wave: back-fill, close, and ask the engine again — the vote's
+outcome shows up in `next`'s answer (routed through, into rework, or parked),
+never in the wave's own return, which is a probe of the record and no
+decision. If a vote row somehow reaches you OUTSIDE a manifest (a resumed run
+with a gate already sitting ready), just dispatch it — it is a row like any
+other now.
 
 **Conversational gates** — ack-reap, activation, budget, and skill fix batches
-when you are conducting one — have no vote step, so you open the proposal
-yourself, then convene identically:
+when you are conducting one — have no step row and no wave to ride, so
+tribunal.js is still yours to convene: open the proposal yourself, then
+invoke the spawner:
 
 ```bash
 cat ~/.docket/config/policy.toml   # policyText — the WHOLE file, byte-for-byte, fresh
@@ -699,11 +693,25 @@ machine-readably; the ✔ line names it in human mode) and link in a SEPARATE
 command. Never recover the id by re-listing votes through a guessed filter —
 RUN-4's first gate linked an empty id doing exactly that.
 
-Then tribunal.js with the id it returns as `voteId`. A conversational gate has
-no row, so the seats are a constant this contract fixes, like the proposal
-shape: `voters: ["tribunal-architecture", "tribunal-security",
+Then tribunal.js with the id it returns as `voteId`:
+
+```
+Workflow({ scriptPath: "<absolute path to tribunal.js>",
+           args: {voteId, voters, policyText, context, gateKind, cwd} })
+```
+
+Resolve the path and emit `args` exactly as you do for wave.js — absolute,
+`test -f ~/.claude/workflows/tribunal.js` else `$CC_SRC/workflows/tribunal.js`,
+`args` a REAL object the harness stringifies for you. `policyText` is the
+literal pinned policy.toml text, re-read in the same iteration as the launch
+it feeds and passed byte-for-byte (see step 2 — RUN-4 condensed it in all
+eight launches); `context` is the decision's rendered evidence, verbatim;
+`cwd` is the repo the run belongs to. A conversational gate has no row, so
+the seats are a constant this contract fixes, like the proposal shape:
+`voters: ["tribunal-architecture", "tribunal-security",
 "tribunal-correctness"]` — and `gateKind` names the gate class, `"ack-reap"`,
-`"activation"`, `"budget"`, or `"fix-batch"`. Then `docket vote result
+`"activation"`, `"budget"`, or `"fix-batch"`, never a label invented per gate
+(RUN-4 sent `"activation"` to a held-cluster panel). Then `docket vote result
 <proposal-id>`: approved → run the underlying verb, citing the proposal id in
 its note or reason; anything else → the operator. **The evidence bar does not
 drop because a panel is cheap** — whatever the gate demanded before it still

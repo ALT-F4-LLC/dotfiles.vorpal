@@ -2,8 +2,9 @@
 #
 # citation-check — a changed design doc cites its evidence.
 #
-# Wired as the `citation-check` gate on docs-only's implement step. Adapted
-# from docket.git's scripts/qa/citation-check.sh: anchored to THIS repository
+# Wired as a gate by workflow definitions under
+# src/user/docket/config/workflows/. Adapted from docket.git's
+# scripts/qa/citation-check.sh: anchored to THIS repository
 # (the upstream script cd's into docket.git and would scan that repo's docs),
 # and the citation shapes are this repo's — tracker issues here are DOT-N
 # (DKT-N still accepted for cross-repo references), and source locations are
@@ -27,7 +28,7 @@ cd "$repo_root"
 
 changed=$( { git diff --cached --name-only -- 'docs/design/*.md'
              git diff --name-only -- 'docs/design/*.md'
-             git ls-files --others --exclude-standard -- 'docs/design/*.md'
+             git ls-files --others --exclude-standard -- 'docs/design/*.md' 2>/dev/null
            } | sort -u )
 
 if [ -z "$changed" ]; then

@@ -1,7 +1,7 @@
 export const meta = {
     name: 'wave',
-    description: 'Spawn one executor per dispatched step row, routed by policy.toml. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
-    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
+    description: 'Run one dispatched manifest end to end: spawn one executor per executor row (routed by policy.toml), seat a judge panel on each vote row, and skip action rows (engine-run at record time). Stages run as awaited groups — the staged closure means one wave can carry judges -> gate -> reconcile -> report. Invoke by scriptPath ONLY, with args {rows, policyText} as a real object — policy.toml is passed as TEXT, never a path; the script cannot read files.',
+    whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
 }
 
 const SUBSET = 'tables, array-of-tables, inline tables, quoted strings, integers, arrays of strings, # comments outside quotes'
@@ -184,16 +184,16 @@ function resolve(row, policy) {
     const labels = labelsOf(row)
 
     if (row.kind !== 'executor') {
+        // action and vote rows never reach resolve(): the stage loop below
+        // handles both natively (skip / seat a panel). Anything else here is
+        // a misrouted row.
         const why = {
-            action: 'action steps are engine-run; not a spawn',
             human: 'human gate steps are never claimed — they are approved or ' +
-                'rejected directly',
-            vote: 'vote gate steps convene the tribunal — conduct routes them ' +
-                'to tribunal.js, never to a wave executor',
+                'rejected directly, and they stay with the conductor',
         }[row.kind] || 'only kind:"executor" rows are spawnable'
         throw new Error(
             `wave.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
-            `Route executor rows to the wave only. Refusing to route.`
+            `Refusing to route.`
         )
     }
 
@@ -797,65 +797,369 @@ function spawn(row, phaseLabel) {
         })
 }
 
-// PER-ISSUE STAGE LANES (RUN-2, 2026-08-11). Engine stages only order
-// SAME-ISSUE work — the staging relation requires one issue — so a global
-// stage barrier serialized one issue's staged re-review behind ANOTHER
-// issue's slowest stage-0 row for no correctness reason (measured: DKT-20's
-// judges waited on DKT-19's mutation-testing judge). Rows group into one
-// lane per issue; stages ascend WITHIN a lane with an await between; lanes
-// run fully parallel. An issue-less row rides a lane of its own. The
-// per-agent `phase` option carries the progress grouping — the global
-// phase() call is gone because lanes run concurrently and would race it.
-const lanes = new Map()
-for (const row of rows) {
-    const lane = row.issue || `row:${row.step}`
-    if (!lanes.has(lane)) lanes.set(lane, [])
-    lanes.get(lane).push(row)
-}
+// ---------------------------------------------------------------------------
+// Vote rows: the in-wave panel. A `kind:"vote"` row rides the manifest —
+// ready, or STAGED behind the work it judges (the engine's dependency
+// closure) — and the wave seats the panel itself: it cannot nest tribunal.js
+// (workflow nesting is one level, and the wave IS the child), so the seat
+// contract lives here too, adapted from tribunal.js. The engine remains the
+// only authority: `step record` on the gate's last predecessor opens the
+// proposal (record-driving, engine drive.go), each seat casts a REAL
+// `docket vote cast`, the engine tallies, and the quorum-reaching cast
+// routes the gate — by the time the seats settle, downstream staged rows are
+// claimable. This script never casts, approves, or tallies.
+//
+// Seat routing mirrors tribunal.js's resolveSeat: no attempt chain, no fable
+// gates (a seat's variant is its standing home); the [security] node pins
+// still bind.
+// ---------------------------------------------------------------------------
 
-log(`wave: ${rows.map((r) => `${r.step}·${r.executor}`).join(', ')} — policy ${(input.policyText || '').length} chars`)
-log(
-    `wave: ${rows.length} row(s) in ${lanes.size} issue lane(s): ` +
-    [...lanes.entries()].map(([name, laneRows]) => {
-        const ks = [...new Set(laneRows.map((r) => (Number.isInteger(r.stage) ? r.stage : 0)))]
-            .sort((a, b) => a - b)
-        return `${name}×${laneRows.length}${ks.length > 1 ? ` (stages ${ks.join('→')})` : ''}`
-    }).join(', ')
-)
-
-const byStep = new Map()
-// One shared flag: a park observed in ANY lane stops every lane's LATER
-// stages (in-flight groups finish; the engine re-offers unlaunched steps
-// after the park lifts). Single-threaded event loop, so a plain flag is
-// sound.
-let parked = false
-
-async function runLane(laneName, laneRows) {
-    const stages = new Map()
-    for (const row of laneRows) {
-        const s = Number.isInteger(row.stage) ? row.stage : 0
-        if (!stages.has(s)) stages.set(s, [])
-        stages.get(s).push(row)
+function resolveSeat(seat, policy) {
+    const row = (policy.executors || {})[seat]
+    if (!row) {
+        throw new Error(
+            `wave.js: seat ${JSON.stringify(seat)} has no [executors] row. ` +
+            `Every voter named by a vote gate must be routable — policy.toml and ` +
+            `the workflow corpus have drifted. Refusing to seat the panel.`
+        )
     }
-    const stageKeys = [...stages.keys()].sort((a, b) => a - b)
-    for (const k of stageKeys) {
-        if (parked) break
-        const group = stages.get(k)
-        const label = `${laneName} stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
-        const settled = await parallel(group.map((row) => () => spawn(row, label)))
-        settled.forEach((res, i) => {
-            const row = group[i]
-            byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
-        })
-        if (settled.some(runParked)) {
-            parked = true
-            log('wave: run parked mid-wave — later stages not launched in any ' +
-                'lane; the engine re-offers their steps after the park lifts')
+
+    let variant = row.variant
+    let never = (row.never || []).slice()
+
+    const sec = policy.security || {}
+    if ((sec.nodes || []).includes(seat)) {
+        never = never.concat(sec.never || [])
+        if (sec.ceiling) {
+            const beyond = new Set()
+            let c = (policy.variants || {})[sec.ceiling]
+            if (!c) {
+                throw new Error(
+                    `wave.js: [security].ceiling ${JSON.stringify(sec.ceiling)} ` +
+                    `has no [variants] row — a mistyped ceiling would silently stop ` +
+                    `binding. Fix policy.toml. Refusing to seat the panel.`
+                )
+            }
+            while (c && c.escalate_to && !beyond.has(c.escalate_to)) {
+                beyond.add(c.escalate_to)
+                c = (policy.variants || {})[c.escalate_to]
+            }
+            if (beyond.has(variant)) variant = sec.ceiling
         }
     }
+
+    let spec = (policy.variants || {})[variant]
+    if (!spec) {
+        throw new Error(
+            `wave.js: seat ${JSON.stringify(seat)} names variant ${JSON.stringify(variant)}, ` +
+            `which has no [variants] row. Refusing to seat the panel.`
+        )
+    }
+
+    if (never.includes(spec.model)) {
+        const fallback = (policy.escalation || {}).fallback || {}
+        variant = fallback[variant]
+        spec = (policy.variants || {})[variant]
+        if (!spec || never.includes(spec.model)) {
+            throw new Error(
+                `wave.js: no permitted model for seat ${JSON.stringify(seat)} — ` +
+                `fallback variant ${JSON.stringify(variant)} is missing or also names a ` +
+                `never-listed model. Refusing to seat the panel.`
+            )
+        }
+    }
+
+    return { seat, variant, model: spec.model, effort: spec.effort }
 }
 
-await parallel([...lanes.entries()].map(([name, laneRows]) => () => runLane(name, laneRows)))
+// A seat's lens is its trailing name segment — tribunal.js's table, kept in
+// sync (edit both or neither, same rule as the TOML parser).
+const LENSES = {
+    architecture:
+        'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
+        'lands in, or does it bolt a second way of doing something onto a first? What ' +
+        'does it couple that was separate, and what does it make harder to change ' +
+        'next? What precedent does accepting it set for the next twenty things like it?',
+    security:
+        'TRUST BOUNDARIES, PROVENANCE, AND BLAST RADIUS. What boundary does this move ' +
+        'data or execution across, and who is trusted after it that was not before? ' +
+        'Where did the inputs come from and can that provenance be checked? If this is ' +
+        'wrong, how far does the damage reach and how would anyone notice?',
+    correctness:
+        'EVIDENCE, REPRODUCIBILITY, AND VERIFICATION. What is actually demonstrated ' +
+        'here versus asserted? Was the claimed behaviour reproduced, and could you ' +
+        'reproduce it from what is in front of you? What would have to be true for this ' +
+        'to be wrong, and does anything check that?',
+}
+const WHOLE_SYSTEM_LENS =
+    'WHOLE-SYSTEM REVIEW. No narrower lens is declared for your seat, so read this ' +
+    'as a generalist: design fit, trust and blast radius, and the quality of the ' +
+    'evidence behind every claim.'
+
+function lensOf(seat) {
+    const parts = seat.split('-')
+    const key = parts[parts.length - 1]
+    return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
+}
+
+function seatBrief(r, voteId, row, isRespawn) {
+    const { role, text } = lensOf(r.seat)
+    const metadataClaim = JSON.stringify({
+        seat: r.seat,
+        variant: r.variant,
+        model: r.model,
+        effort: r.effort,
+    })
+    const respawnNote = isRespawn ? `
+
+THIS IS A SECOND ATTEMPT AT YOUR SEAT. A prior agent held it and returned
+without a recorded cast — \`docket vote show ${voteId}\` shows no entry for
+${r.seat}. Nothing it may have concluded reached anyone, so decide the case
+yourself from scratch. Whatever stopped the first attempt, the cast is the one
+thing that must happen this time: if the command errors, do not abandon it
+silently — end with the verbatim error as instructed below.` : ''
+
+    return `You are ONE SEAT of a tribunal deciding a gate step MID-WAVE in a Docket run.
+You decide alone. You cannot see the other seats, you do not coordinate with
+them, and your vote is recorded on its own merits — the engine tallies the
+panel, not you.
+
+YOUR SEAT:      ${r.seat}
+YOUR LENS:      ${text}
+THE GATE:       step ${row.step} (${row.instance}, issue ${row.issue}, run ${row.run})
+THE PROPOSAL:   ${voteId}${respawnNote}
+
+Run \`docket\` BARE from your working directory — the store resolves from
+anywhere inside the repository; nothing to probe for, nothing to prepend.
+
+THE CASE IS IN THE RECORD, not in this brief: this gate readied mid-wave, so
+read what is being decided yourself before you vote —
+
+  docket vote show ${voteId}          (the proposal body: the question)
+  docket step show ${row.step} / docket step context ${row.step}
+  docket step artifacts ${row.step}   (then \`docket step artifact ARTIFACT-N\`)
+  git log --oneline -20 / git diff / git show <sha>
+
+plus reading any file those name. The gate sits downstream of the work it
+judges — its issue's earlier steps recorded THIS wave, and their artifacts and
+payloads are the evidence. Read what the claims rest on. Do not write, edit,
+commit, or run anything that mutates state — the ONE state change you are
+authorized to make is your own cast, below.
+
+EVIDENCE-QUALITY RULE: A finding backed by reproduced evidence — a mutation
+test, a demonstrated failure, a verified repro — outranks any aggregate that
+demotes it. Never discount reproduced evidence because other reviewers scored
+the issue lower.
+
+ESCALATION (operator-ratified): a reject does not block work forever — the
+gate routes onward per its declared routing, to the human operator or into a
+rework loop that answers your findings, so reject when the evidence says
+reject; do not approve to keep things moving.
+
+CAST YOUR VOTE — exactly once, as your last action, in ONE Bash call:
+
+  docket vote cast ${voteId} --voter ${r.seat} --role ${role} -v <approve|approve-with-concerns|reject> --confidence <0.0-1.0> --domain-relevance <0.0-1.0> --metadata '${metadataClaim}' --summary "<one-paragraph reasoning>"
+
+  --verdict/-v      approve                = nothing you found should stop this
+                    approve-with-concerns  = proceed, with the risks you name recorded
+                    reject                 = the evidence says do not proceed as presented
+  --confidence      how sure you are of that verdict GIVEN WHAT YOU ACTUALLY
+                    CHECKED. A confident verdict on an uninvestigated payload is
+                    a lie about your own work; lower the number instead.
+  --domain-relevance how much of this decision falls inside YOUR lens. A seat
+                    with little purchase on the question says so with a low
+                    number rather than inflating one — the tally weighs it.
+  --metadata        pre-filled above with your seat's routing claim (seat,
+                    variant, model, effort) so the ledger records what cast
+                    this vote. Pass it VERBATIM — do not edit it, and add
+                    nothing to it: it is unverified, stored as-is, and public.
+  --summary         ONE paragraph, on ONE line, in double quotes: your verdict's
+                    reasoning and the specific evidence behind it. No line
+                    breaks; escape any embedded double quote as \\". Name files,
+                    shas, and commands you ran — a summary that could have been
+                    written without investigating will read like one.
+
+YOUR FINAL TEXT IS NOT DELIVERED ANYWHERE. THE CAST IS YOUR DELIVERABLE. If the
+cast command errors, read the error, fix what it names, and retry ONCE. If it
+still fails, end your reply with the verbatim error text and nothing else —
+that is the only case where your final text matters.`
+}
+
+function probeBrief(command) {
+    return `Run exactly this one command:
+
+  ${command}
+
+Return its output VERBATIM as your entire final reply — every line, unedited,
+no summary, no commentary, no code fence, nothing added. If the command errors,
+return the error text verbatim instead.
+
+Do not cast a vote, do not investigate, do not run anything else. You are a
+read-only probe reporting what the record currently says.`
+}
+
+function probe(command, label, phaseLabel) {
+    return agent(probeBrief(command), {
+        label,
+        phase: phaseLabel,
+        agentType: 'executor-read',
+        model: 'haiku',
+        effort: 'low',
+    }).then((text) => text == null ? '' : text)
+        .catch((err) => {
+            log(`${label}: probe spawn error: ${err}`)
+            return ''
+        })
+}
+
+async function runGate(row, phaseLabel) {
+    // The ballot: record-driving opened the proposal when the gate's last
+    // predecessor recorded — an earlier stage this wave already awaited — so
+    // one probe normally finds it. A gate with NO proposal means the
+    // predecessors did not all record (a failure upstream): the gate is
+    // blocked, its issue's later rows are dead for this wave, and the next
+    // round routes whatever on_fail produced.
+    let show = await probe(`docket step show ${row.step} --json`,
+        `${row.step} · gate:show`, phaseLabel)
+    if (/"status"\s*:\s*"(done|skipped|superseded)"/.test(show)) {
+        log(`${row.step}: gate already decided — continuing`)
+        return { step: row.step, status: 'gate-passed', text: show }
+    }
+    const m = show.match(/"proposal"\s*:\s*"(PROP-\d+)"/)
+    if (!m) {
+        log(`${row.step}: gate has no proposal — its predecessors did not all ` +
+            `record, so the panel cannot seat; skipping this issue's later stages`)
+        return { step: row.step, status: 'gate-blocked', text: show }
+    }
+    const voteId = m[1]
+    const voters = Array.isArray(row.voters) ? row.voters : []
+    if (voters.length === 0) {
+        log(`${row.step}: vote row carries no voters — the engine renders the ` +
+            `roster on vote rows, so this manifest predates the contract; ` +
+            `escalate instead of guessing a panel`)
+        return { step: row.step, status: 'gate-blocked', text: show }
+    }
+    const seats = voters.map((v) => resolveSeat(v, policy))
+    log(`${row.step}: ${voteId} — seating ${seats.map((s) => s.seat).join(', ')}`)
+    await parallel(seats.map((r) => () =>
+        agent(seatBrief(r, voteId, row, false), {
+            label: `${row.step} · seat:${r.seat}`,
+            phase: phaseLabel,
+            agentType: 'executor-read',
+            model: r.model,
+            effort: r.effort,
+        }).catch((err) => {
+            log(`${row.step} seat ${r.seat}: spawn error: ${err}`)
+            return null
+        })))
+
+    // One re-spawn for seats whose cast never landed — tribunal.js's rule.
+    let record = await probe(`docket vote show ${voteId}`,
+        `${row.step} · gate:record`, phaseLabel)
+    const missing = seats.filter((s) => !record.includes(s.seat))
+    if (missing.length > 0) {
+        log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
+            `cast (${missing.map((s) => s.seat).join(', ')}) — re-spawning each ONCE`)
+        await parallel(missing.map((r) => () =>
+            agent(seatBrief(r, voteId, row, true), {
+                label: `${row.step} · seat:${r.seat} (retry)`,
+                phase: phaseLabel,
+                agentType: 'executor-read',
+                model: r.model,
+                effort: r.effort,
+            }).catch((err) => {
+                log(`${row.step} seat ${r.seat}: respawn error: ${err}`)
+                return null
+            })))
+    }
+
+    // The outcome is the STEP's, not the tally's: the quorum-reaching cast
+    // routes the gate engine-side, so `done` here means passed and anything
+    // else means the gate did not clear this wave (rejected, short a vote, or
+    // parked) — the conductor escalates after close, per its contract.
+    show = await probe(`docket step show ${row.step} --json`,
+        `${row.step} · gate:outcome`, phaseLabel)
+    if (/"status"\s*:\s*"done"/.test(show)) {
+        log(`${row.step}: gate passed — continuing`)
+        return { step: row.step, status: 'gate-passed', text: show }
+    }
+    log(`${row.step}: gate did NOT clear (${(show.match(/"status"\s*:\s*"([a-z-]+)"/) || [])[1] || 'unknown'}) ` +
+        `— skipping this issue's later stages; the conductor escalates`)
+    return { step: row.step, status: 'gate-parked', text: show }
+}
+
+// GLOBAL STAGE BARRIERS (2026-08-15, superseding RUN-2's per-issue lanes).
+// The lanes existed because engine stages only ordered SAME-ISSUE work, so a
+// global barrier made one issue's re-review wait on another issue's slowest
+// row for nothing. The staged closure changed what a stage MEANS: the engine
+// now also packs CROSS-ISSUE cohort constraints into stage numbers — two
+// issues' writers sharing one bounded class slot, or one scope, are placed in
+// DIFFERENT stages, and per-issue lanes would run them concurrently and
+// bounce the later one off `claim` (the exact corpse-spawn waste DKT-23
+// measured). Stages are one schedule now; the wave runs them as one ladder.
+// The residual cross-issue wait is the price of that schedule being honored —
+// rows the engine certifies concurrent share a stage and still run together.
+const stages = new Map()
+for (const row of rows) {
+    const s = Number.isInteger(row.stage) ? row.stage : 0
+    if (!stages.has(s)) stages.set(s, [])
+    stages.get(s).push(row)
+}
+const stageKeys = [...stages.keys()].sort((a, b) => a - b)
+
+log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')} — policy ${(input.policyText || '').length} chars`)
+log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
+
+const byStep = new Map()
+// A park observed anywhere stops every LATER stage (in-flight groups finish;
+// the engine re-offers unlaunched steps after the park lifts). A CONFLICT or
+// an uncleared gate kills only its own ISSUE's later rows — the chain behind
+// it cannot become claimable this wave, and spawning it anyway boots corpses.
+let parked = false
+const deadIssues = new Set()
+
+function chainDead(res) {
+    if (res == null) return false
+    if (res.status === 'gate-parked' || res.status === 'gate-blocked') return true
+    return res.status === 'returned' && typeof res.text === 'string' &&
+        res.text.includes('CONFLICT')
+}
+
+for (const k of stageKeys) {
+    if (parked) break
+    const group = stages.get(k).filter((row) => {
+        if (row.issue && deadIssues.has(row.issue)) {
+            byStep.set(row.step, { step: row.step, status: 'skipped-dead-issue', text: null })
+            log(`${row.step}: skipped — issue ${row.issue}'s chain died at an earlier stage`)
+            return false
+        }
+        return true
+    })
+    if (group.length === 0) continue
+    const label = `stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
+    const settled = await parallel(group.map((row) => () => {
+        if (row.kind === 'action') {
+            // Engine-run, and normally already DONE: the record of its last
+            // predecessor drove it (engine drive.go) before that record
+            // returned. Nothing to spawn; the row is in the manifest so the
+            // stage numbering stays transparent.
+            log(`${row.step}: action step — engine-run at record time, no spawn`)
+            return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
+        }
+        if (row.kind === 'vote') return runGate(row, label)
+        return spawn(row, label)
+    }))
+    settled.forEach((res, i) => {
+        const row = group[i]
+        byStep.set(row.step, res || { step: row.step, status: 'spawn-failed' })
+        if (chainDead(res) && row.issue) deadIssues.add(row.issue)
+    })
+    if (settled.some(runParked)) {
+        parked = true
+        log('wave: run parked mid-wave — later stages not launched; the ' +
+            'engine re-offers their steps after the park lifts')
+    }
+}
 
 return rows.map((row) => byStep.get(row.step) ||
     { step: row.step, status: parked ? 'not-launched-run-parked' : 'spawn-failed' })

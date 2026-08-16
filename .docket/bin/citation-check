@@ -9,9 +9,12 @@
 # (DKT-N still accepted for cross-repo references), and source locations are
 # Rust/TOML/shell rather than Go.
 #
-# The glob is docs/design/*.md, matching upstream. If the tree holds no
-# design docs the gate passes vacuously — it guards the convention should
-# design docs ever (re)appear, and costs nothing while they don't.
+# The glob is docs/design/*.md, matching upstream. docs/design/ itself is
+# retired (RUN-3 deleted it deliberately, ef307d0; the operator ruled on
+# 2026-08-15 the convention is retired for good) — the gate passes
+# vacuously on the now-permanently-empty tree. The glob is kept anyway, on
+# purpose, as a guard: if design docs are ever reintroduced, citations get
+# enforced again with no code change needed.
 
 set -euo pipefail
 

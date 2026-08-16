@@ -489,13 +489,21 @@ packet's issue.diff is issue-cumulative.) At each integration point, write
 steps first, in step-id order:
 
 1. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-2. `git cherry-pick --no-gpg-sign <sha>` — a REAL COMMIT on the shared
-   branch. (Operator policy since RUN-1 graph-engine: integration commits
-   land immediately; the staged-not-committed interim is RETIRED — it left
-   unsigned content camped in the operator's index and made every fix step
-   supersede its predecessor instead of chaining on it.) The integration
-   commit is unsigned relay plumbing; PUBLISHING — push, PR, release —
-   remains the operator's alone, and nothing you do pushes.
+2. `git cherry-pick -x --no-gpg-sign <sha>` — a REAL COMMIT on the shared
+   branch, `-x` appending "(cherry picked from commit <sha>)" to the message
+   so the mapping from writer sha to integrated sha survives in history even
+   after the worktree branch is gone. (Operator policy since RUN-1
+   graph-engine: integration commits land immediately; the
+   staged-not-committed interim is RETIRED — it left unsigned content camped
+   in the operator's index and made every fix step supersede its predecessor
+   instead of chaining on it.) The integration commit is unsigned relay
+   plumbing; PUBLISHING — push, PR, release — remains the operator's alone,
+   and nothing you do pushes.
+3. If a resolution comment or deliverable already cites the writer's sha
+   (the change-summary from record does — see above), update it, or add a
+   follow-up, with the integrated sha at this same integration point: the
+   writer's sha lives only until its worktree branch is swept, and a
+   permanent record needs an anchor that still resolves once it is.
 
 Because integrations commit immediately, a later write step's worktree —
 based on the shared checkout's HEAD at its spawn — already contains every

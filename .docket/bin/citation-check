@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# citation-check — a changed design doc cites its evidence.
+#
+# Wired as the `citation-check` gate on docs-only's implement step. Adapted
+# from docket.git's scripts/qa/citation-check.sh: anchored to THIS repository
+# (the upstream script cd's into docket.git and would scan that repo's docs),
+# and the citation shapes are this repo's — tracker issues here are DOT-N
+# (DKT-N still accepted for cross-repo references), and source locations are
+# Rust/TOML/shell rather than Go.
+#
+# The glob is docs/design/*.md, matching upstream. If the tree holds no
+# design docs the gate passes vacuously — it guards the convention should
+# design docs ever (re)appear, and costs nothing while they don't.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "citation-check FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+changed=$( { git diff --cached --name-only -- 'docs/design/*.md'
+             git diff --name-only -- 'docs/design/*.md'
+             git ls-files --others --exclude-standard -- 'docs/design/*.md'
+           } | sort -u )
+
+if [ -z "$changed" ]; then
+  echo "citation-check: no design docs changed"
+  exit 0
+fi
+
+# A citation is any of: a spec section (§N), a tracker issue (DOT-N or
+# DKT-N), or a source location (path.rs:NN and friends). Deliberately broad —
+# the gate asks whether the author pointed at evidence AT ALL; only a human
+# can judge whether the evidence supports the claim.
+CITATION='§[0-9]|\b(DOT|DKT)-[0-9]+\b|\.(rs|toml|sh|js):[0-9]+'
+
+# `while IFS= read -r`, never `for f in $changed`: word splitting would turn
+# a name with a space into two non-files the `[ -f ]` guard skips — an
+# uncited doc reported as OK. `[ -f ]` also lets deletions pass: a deleted
+# doc has nothing left to cite.
+failed=0
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  [ -f "$f" ] || continue
+  if ! grep -qE "$CITATION" "$f"; then
+    echo "citation-check: $f cites nothing — no §section, tracker issue, or source location" >&2
+    failed=1
+  fi
+done <<< "$changed"
+
+if [ "$failed" -ne 0 ]; then
+  echo "" >&2
+  echo "citation-check FAILED: a design doc must point at evidence outside" >&2
+  echo "itself — a spec section, a tracker issue, or a source location." >&2
+  exit 1
+fi
+
+echo "citation-check: ok"

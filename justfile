@@ -14,5 +14,11 @@ self-hygiene:
 secret-scan:
     .docket/bin/secret-scan
 
+doc-validate:
+    .docket/bin/doc-validate
+
+citation-check:
+    .docket/bin/citation-check
+
 ac-commands:
     .docket/bin/ac-commands

@@ -44,16 +44,37 @@ pub struct ClaudeCode {
     systems: Vec<ArtifactSystem>,
 }
 
+/// Artifact name for one Claude Code component. `FileCreate` writes its single
+/// file under the artifact name, so the same string names the artifact and the
+/// file a symlink has to point at.
+fn component_name(user: &str, component: &str) -> String {
+    format!("{user}-claude-code-{component}")
+}
+
+/// Install destination for one entry under the user's Claude Code directory.
+fn claude_home(entry: &str) -> String {
+    format!("${{HOME}}/.claude/{entry}")
+}
+
+/// Permission patterns in a stable order, so the generated settings file does
+/// not churn when a path is added in the middle of a list.
+fn sorted_permission_patterns(
+    wrap: impl Fn(&str) -> String,
+    paths: impl IntoIterator<Item = &'static str>,
+) -> Vec<String> {
+    let mut paths: Vec<&str> = paths.into_iter().collect();
+    paths.sort_unstable();
+    paths.into_iter().map(wrap).collect()
+}
+
 fn deny_sensitive_paths(
     builder: settings::ClaudeCodeSettings,
     wrap: impl Fn(&str) -> String,
     paths: impl IntoIterator<Item = &'static str>,
 ) -> settings::ClaudeCodeSettings {
-    let mut paths: Vec<&str> = paths.into_iter().collect();
-    paths.sort_unstable();
-    paths
-        .into_iter()
-        .fold(builder, |b, p| b.with_permission_deny(&wrap(p)))
+    sorted_permission_patterns(wrap, paths)
+        .iter()
+        .fold(builder, |b, p| b.with_permission_deny(p))
 }
 
 fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
@@ -79,7 +100,7 @@ impl ClaudeCode {
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
         let agents = FileSource::new(
-            &format!("{}-claude-code-agents", self.name),
+            &component_name(&self.name, "agents"),
             "src/user/claude_code/agents",
             self.systems.clone(),
         )
@@ -87,7 +108,7 @@ impl ClaudeCode {
         .await?;
 
         let hooks = FileSource::new(
-            &format!("{}-claude-code-hooks", self.name),
+            &component_name(&self.name, "hooks"),
             "src/user/claude_code/hooks",
             self.systems.clone(),
         )
@@ -265,7 +286,7 @@ impl ClaudeCode {
             .await?;
 
         let scripts = FileSource::new(
-            &format!("{}-claude-code-scripts", self.name),
+            &component_name(&self.name, "scripts"),
             "src/user/claude_code/scripts",
             self.systems.clone(),
         )
@@ -273,7 +294,7 @@ impl ClaudeCode {
         .await?;
 
         let skills = FileSource::new(
-            &format!("{}-claude-code-skills", self.name),
+            &component_name(&self.name, "skills"),
             "src/user/claude_code/skills",
             self.systems.clone(),
         )
@@ -283,7 +304,7 @@ impl ClaudeCode {
         // Declared before `statusline` because that binding moves `self.systems`;
         // every FileSource above clones it and this one must too.
         let workflows = FileSource::new(
-            &format!("{}-claude-code-workflows", self.name),
+            &component_name(&self.name, "workflows"),
             "src/user/claude_code/workflows",
             self.systems.clone(),
         )
@@ -291,7 +312,7 @@ impl ClaudeCode {
         .await?;
 
         let statusline = FileCreate::new(
-            &format!("{}-claude-code-statusline", self.name),
+            &component_name(&self.name, "statusline"),
             self.systems,
             include_str!("claude_code_statusline.sh"),
         )
@@ -300,30 +321,25 @@ impl ClaudeCode {
         .await?;
 
         let symlinks = vec![
-            (get_env_key(&agents), "${HOME}/.claude/agents".to_string()),
-            (get_env_key(&hooks), "${HOME}/.claude/hooks".to_string()),
-            (get_env_key(&scripts), "${HOME}/.claude/scripts".to_string()),
+            (get_env_key(&agents), claude_home("agents")),
+            (get_env_key(&hooks), claude_home("hooks")),
+            (get_env_key(&scripts), claude_home("scripts")),
             (
-                format!(
-                    "{}/{}-claude-code-settings",
-                    get_env_key(&settings),
-                    self.name
+                FileCreate::output_file_path(
+                    &get_env_key(&settings),
+                    &component_name(&self.name, "settings"),
                 ),
-                "${HOME}/.claude/settings.json".to_string(),
+                claude_home("settings.json"),
             ),
-            (get_env_key(&skills), "${HOME}/.claude/skills".to_string()),
+            (get_env_key(&skills), claude_home("skills")),
             (
-                format!(
-                    "{}/{}-claude-code-statusline",
-                    get_env_key(&statusline),
-                    self.name
+                FileCreate::output_file_path(
+                    &get_env_key(&statusline),
+                    &component_name(&self.name, "statusline"),
                 ),
-                "${HOME}/.claude/statusline.sh".to_string(),
+                claude_home("statusline.sh"),
             ),
-            (
-                get_env_key(&workflows),
-                "${HOME}/.claude/workflows".to_string(),
-            ),
+            (get_env_key(&workflows), claude_home("workflows")),
         ];
 
         let artifacts = vec![
@@ -331,5 +347,115 @@ impl ClaudeCode {
         ];
 
         Ok((artifacts, symlinks))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        claude_home, component_name, sandbox_filesystem_deny_read_paths,
+        sorted_permission_patterns, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
+        SENSITIVE_PATHS_DENY_READ_ONLY,
+    };
+    use crate::file::FileCreate;
+
+    #[test]
+    fn component_artifacts_are_namespaced_by_user_and_component() {
+        assert_eq!(
+            component_name("user", "settings"),
+            "user-claude-code-settings"
+        );
+        assert_eq!(
+            component_name("user", "statusline"),
+            "user-claude-code-statusline"
+        );
+    }
+
+    #[test]
+    fn install_destinations_live_under_the_home_claude_directory() {
+        assert_eq!(
+            claude_home("settings.json"),
+            "${HOME}/.claude/settings.json"
+        );
+        assert_eq!(claude_home("agents"), "${HOME}/.claude/agents");
+    }
+
+    #[test]
+    fn single_file_components_link_to_the_file_not_the_artifact_directory() {
+        let output = "/var/lib/vorpal/store/artifact/output/user/abc123";
+
+        let source = FileCreate::output_file_path(output, &component_name("user", "settings"));
+
+        assert_eq!(
+            source,
+            "/var/lib/vorpal/store/artifact/output/user/abc123/user-claude-code-settings"
+        );
+        assert_ne!(source, output);
+    }
+
+    #[test]
+    fn permission_patterns_are_wrapped_and_sorted() {
+        let patterns = sorted_permission_patterns(
+            |p| format!("Edit({p})"),
+            ["~/.ssh/**", ".env", "/Applications/**"],
+        );
+
+        assert_eq!(
+            patterns,
+            vec![
+                "Edit(.env)".to_string(),
+                "Edit(/Applications/**)".to_string(),
+                "Edit(~/.ssh/**)".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn sandbox_read_denials_cover_every_sensitive_path() {
+        let denied = sandbox_filesystem_deny_read_paths();
+
+        for path in SENSITIVE_PATHS.iter().chain(SENSITIVE_PATHS_DENY_READ_ONLY) {
+            let expected = path.strip_suffix("/**").unwrap_or(path);
+
+            assert!(
+                denied.contains(&expected.to_string()),
+                "sandbox read denials are missing {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn sandbox_read_denials_carry_no_directory_glob_suffix() {
+        for path in sandbox_filesystem_deny_read_paths() {
+            assert!(
+                !path.ends_with("/**"),
+                "{path} keeps a glob suffix the sandbox reads literally"
+            );
+        }
+    }
+
+    #[test]
+    fn sandbox_read_denials_exclude_the_edit_only_system_paths() {
+        let denied = sandbox_filesystem_deny_read_paths();
+
+        for path in SENSITIVE_PATHS_DENY_EDIT_ONLY {
+            let stripped = path.strip_suffix("/**").unwrap_or(path);
+
+            assert!(
+                !denied.contains(&stripped.to_string()),
+                "{stripped} is edit-denied only and must stay readable"
+            );
+        }
+    }
+
+    #[test]
+    fn sandbox_read_denials_are_sorted_and_unique() {
+        let denied = sandbox_filesystem_deny_read_paths();
+        let mut expected = denied.clone();
+
+        expected.sort_unstable();
+        expected.dedup();
+
+        assert_eq!(denied, expected);
     }
 }

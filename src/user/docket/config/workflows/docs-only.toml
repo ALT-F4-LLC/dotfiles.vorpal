@@ -18,7 +18,10 @@
 
 [pipeline]
 name    = "docs-only"
-version = 6   # 6: description + commit-tail note updated to the
+version = 7   # 7: verify step declares verify.gate-results so its own
+              #   ac-commands pre-gate row resolves at claim (DOT-13,
+              #   engine fix 7a2cbff)
+              # 6: description + commit-tail note updated to the
               #   conductor-integrates model (2026-08-10)
 description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop; the conductor integrates commits, the operator publishes."
 
@@ -111,7 +114,7 @@ packet = ["contracts/{executor}.md"]
 payload = "ac-report@1"
 expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
-inputs = ["issue.body", "issue.diff", "implement.change-summary"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
 threshold = { "waiting-human" = "any(status == unmet)" }
                                      # unmet parks rather than looping; the
                                      #   `unverifiable` clause collapses into the

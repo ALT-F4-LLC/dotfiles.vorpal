@@ -14,7 +14,10 @@
 
 [pipeline]
 name    = "standard-change"
-version = 9                  # 9: implement split into when-gated siblings
+version = 10                 # 10: verify step declares verify.gate-results so
+                             #   its own ac-commands pre-gate row resolves at
+                             #   claim (DOT-13, engine fix 7a2cbff).
+                             # 9: implement split into when-gated siblings
                              #   (implement / implement-test-infra), each a
                              #   concrete executor; the label-keyed [[resolve]]
                              #   table is retired (DKT-70 decision (d),
@@ -226,7 +229,7 @@ payload = "ac-report@1"              # status is a plain enum: the thresholds be
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]   # pre-gate: runs at claim, results
                                      #   land in the context bundle (02 §6)
-inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement-test-infra.change-summary"]
+inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement-test-infra.change-summary", "verify.gate-results"]
 threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and

@@ -128,4 +128,4 @@ docket guard record >/dev/null 2>&1
 
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
 
-deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, park a blocked step with \`docket step resolve\`, or end the run with \`docket run abandon\`. NOTE: \`docket run pause\` does NOT clear this — it moves the RUN to waiting-human while its steps stay pending, and this guard reads step status (verified: a paused run with a pending gate still denies)."
+deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. NOTE: \`docket run pause\` does NOT clear this — it moves the RUN to waiting-human while its steps stay pending, and this guard reads step status (verified: a paused run with a pending gate still denies)."

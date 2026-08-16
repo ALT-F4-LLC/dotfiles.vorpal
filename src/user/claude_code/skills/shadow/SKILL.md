@@ -79,10 +79,14 @@ of fighting them:
 
 - **run-guard** denies your turn-end while the machine half of the run is in
   flight. That is the conductor's guard answering from the wrong seat; each
-  deny is your cue to poll again, not a wall to route around. It stands down
-  when the run parks `waiting-human` (gates do not block, so you can go
-  quiet through a long park) and when the run ends — a stop that suddenly
-  flows is itself corroboration that the run is over.
+  deny is your cue to poll again, not a wall to route around. It reads STEP
+  status: it stands down while every blocking step is parked `waiting-human`
+  or while a dispatch is OPEN (any open dispatch stands it down — coverage is
+  not checked), denies whenever actionable steps sit pending with no dispatch
+  open (run-level `waiting-human` does NOT clear it, and an operator ruling
+  to withhold work is invisible to it), and stands down for good when the run
+  ends — a stop that suddenly flows is itself corroboration that the run is
+  over.
 - **spawn-guard** answers over the active run, so an unacknowledged
   write-class reap denies YOUR helper spawns too. Take the denial as
   evidence the reap is real and standing, and read serially instead.
@@ -292,9 +296,13 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
 - **Gate-recorded EVENTS carry no verdicts.** Pass/fail lives only in
   `gate_results` (or `run report`'s tally); "gates green" read off the event
   stream is a guess.
-- **Transcripts flush lazily.** A pending question to the operator hits disk
-  only WITH its answer — you cannot watch a gate live, so interrupt-condition
-  3 must be caught from your own cross-checks, never from seeing the question.
+- **Transcripts flush lazily — but question flushing changed.** A pending
+  question to the operator was measured hitting disk only WITH its answer;
+  current harness builds flush an open question at ask time (re-measured
+  2026-08-16), so a gate MAY be watchable live. Verify which behavior your
+  session shows before keying a watch on it, and still catch
+  interrupt-condition 3 from your own cross-checks rather than from seeing
+  the question.
 - **A wave that spawned nothing writes no journal.** The workflow task's
   `.output` file is the only record of a zero-spawn wave.
 - **A task's `.output` file exists from LAUNCH, empty.** The harness creates

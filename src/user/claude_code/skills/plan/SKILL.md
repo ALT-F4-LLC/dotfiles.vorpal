@@ -23,6 +23,13 @@ Three rules you must not fight:
 - **Acceptance criteria are copied verbatim.** Whatever the operator states as
   done-ness goes into the issue body word for word. You may add ACs you derived
   and say you derived them; you may not paraphrase theirs.
+- **A derived AC that predicts command output is run before it is recorded.**
+  Execute the command — non-mutating check commands only, which is all this
+  class of AC ever quotes — against the COMMITTED tree the run will verify on
+  and paste what it actually printed. Output quoted from any transcript is a
+  FACT to verify, not a source — transcripts capture transient states (a
+  staged-deletion snapshot put an impossible expected string into an AC; a
+  judge caught it one step before the verify gate would have hard-failed it).
 
 Every `RUN-N` and `DKT-N` cited below is a lesson from the PRE-RESET store
 epoch. The episodes are real; the ids are not — the store has since been reset,
@@ -215,6 +222,17 @@ a tree-wide grep to return nothing while its own scope forbade editing
 outside five directories plus README.md; seven archival files outside that
 boundary held matches, so the AC was unsatisfiable as worded and the
 contradiction surfaced only at verification, recorded as DOT-4.
+
+**Scope that lives in another repository is a mis-filed issue, not a scope.**
+When an issue's Change section, scope globs, or an embedded operator ruling
+names paths, worktrees, or conventions of ANOTHER repository, the issue
+belongs to THAT repository's project: file it from that checkout (cwd picks
+the project) and record at most a relates_to pointer here. A scope glob
+matching ZERO files in this repository is the cheap tell — check every glob
+against the tree before recording, and stop-and-ask on a miss. Binding such
+an issue anyway is not a plan the run can execute: the executor's isolation
+contract and sandbox confine it to this repository, so the step can only
+gap-file while the downstream pipeline runs over nothing.
 
 **Everything an executor must know goes in the BODY, before activation.** Issue
 bodies snapshot at the activation that binds them, frozen from that moment — the

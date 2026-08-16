@@ -76,9 +76,6 @@ Skills support the team:
 | **ux-spec** | `src/user/claude-code/skills/ux-spec/` | Authors a UX design spec as a Docket doc |
 | **verify-ac** | `src/user/claude-code/skills/verify-ac/` | Verifies a Docket issue's acceptance criteria against the diff |
 | **vote** | `src/user/claude-code/skills/vote/` | Multi-agent consensus voting protocol |
-| **evolve-agents** | `.claude/skills/evolve-agents/` | Reviews and improves agent definitions in `src/user/claude_code/agents/*.md` |
-| **evolve-skills** | `.claude/skills/evolve-skills/` | Reviews and improves skill definitions across the skill ecosystem |
-| **evolve-coherence** | `.claude/skills/evolve-coherence/` | Audits agent↔skill coherence across four dimensions and routes fixes to evolve-agents/evolve-skills (report-and-route; never edits files) |
 
 ## Symlinks
 

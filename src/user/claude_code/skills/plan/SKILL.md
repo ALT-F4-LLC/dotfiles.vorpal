@@ -200,6 +200,22 @@ verify-everything-and-commit issue scopeless and only a shadow noticed. A
 tree-holding issue without scope globs is a planning defect, caught here or
 nowhere.
 
+**An AC that ranges wider than the issue's own scope is the same defect in a
+different shape.** Before recording an issue, check every acceptance
+criterion — verbatim or derived — whose verification ranges wider than the
+union of its scope globs: a tree-wide grep or check against an issue whose
+scope only permits editing five directories, say. Either narrow the AC's
+range to the scope, or record an explicit disposition for the excluded
+remainder — a stop-and-flag rule PAIRED with an AC that excludes the flagged
+region, a separate issue, or a documented permanent exclusion. A stop-and-flag
+scope rule alone does not license a tree-wide AC: an AC that can only pass by
+editing tree the scope forbids is a planning defect, caught at recording or
+at verification — and verification is too late. DOT-3 shipped an AC requiring
+a tree-wide grep to return nothing while its own scope forbade editing
+outside five directories plus README.md; seven archival files outside that
+boundary held matches, so the AC was unsatisfiable as worded and the
+contradiction surfaced only at verification, recorded as DOT-4.
+
 **Everything an executor must know goes in the BODY, before activation.** Issue
 bodies snapshot at the activation that binds them, frozen from that moment — the
 body is what gets rendered into every brief. Comments added later never reach a

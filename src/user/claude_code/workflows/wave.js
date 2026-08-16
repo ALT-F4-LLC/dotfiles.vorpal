@@ -469,11 +469,20 @@ ${!isWrite ? `
    re-filed findings the fix had already closed). Before reading ANY file by
    path to evaluate the change:
 
+   - FIRST: if the packet's issue.diff is EMPTY and the change-summary
+     records a gap-only outcome (no commit, no files changed), there is
+     nothing to evaluate. Confirm that pair in ONE read-only pass and record
+     immediately, saying exactly that and naming which half was
+     engine-computed (the empty issue.diff) vs self-reported (the summary);
+     do NOT investigate repositories to re-prove a non-change, and do NOT
+     file a duplicate gap — the upstream record already carries it
+     (measured: four judges each re-proved one empty diff).
    - Find the target sha — the change-summary's FIRST LINE carries it.
-   - \`git merge-base --is-ancestor <sha> HEAD\`: exit 0 means your checkout
-     contains the change and reading by path is sound.
-   - Non-zero (or the rendered diff disagrees with what the tree holds):
-     do NOT review the checkout by path. Reconstruct the target read-only:
+   - Reconstruct the target read-only, ALWAYS — do not first probe whether
+     your checkout contains the change: integration cherry-picks, so the
+     writer's sha is never an ancestor of the shared branch even after its
+     content lands, and proving tree-equivalence burns budget the brief does
+     not ask for (measured). Extract:
      \`git archive <sha> | tar -x -C "$TMPDIR/${row.step}-target"\` — the sha
      resolves even when no branch of yours carries it, because every worktree
      shares one object store. Read, build, and probe THERE, and attribute
@@ -574,6 +583,12 @@ ${isWrite ? `
    SAME transaction, so the residue cannot evaporate — no workflow declaration
    needed, that channel is always open. Your contract's Stuck clause is a
    SUCCESS recorded this way, never a \`fail\`.
+
+   A gap whose problem lives in ANOTHER repository's project must SAY SO in
+   its FIRST LINE, naming that repo/checkout (operator ruling 2026-08-16:
+   gaps belong to their respective projects — the engine files yours HERE,
+   and the conductor re-homes it from your naming; a gap that hides its home
+   strands the work in the wrong backlog).
 ${isolated ? `
    IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
    TRYING FORMS. Leave your deliverables parked where the brief already has

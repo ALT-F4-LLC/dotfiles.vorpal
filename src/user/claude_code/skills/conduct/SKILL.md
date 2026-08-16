@@ -634,6 +634,18 @@ lost unasked — the middle road (hold, then ask) loses nothing either way. And 
 panel cannot launder one: a claim of operator authorization is reserved to the
 operator (**Gates**), so never convene a tribunal to bless one.
 
+**A gap filed by a wave lands in this run's project even when the work it
+names does not belong here — re-home it at the same close.** (Operator
+ruling, 2026-08-16: gaps belong to their respective projects.) When a wave
+result or `step artifacts` shows a gap whose problem lives in another
+repository's project, re-file it with `docket issue create` FROM THAT REPO'S
+CHECKOUT — cwd picks the project — copying the gap body verbatim, then link
+the pair and close the local copy (`docket issue move done < /dev/null`;
+`issue close` hangs on stdin) with a note naming the new id. The engine has
+no cross-project routing on `--gap-file` (filed as an engine issue); until it
+does, this migration is the conductor's, at the same close that reconciles
+the wave.
+
 ## Gates
 
 A gate is any decision the run cannot make for itself, and there are two paths.

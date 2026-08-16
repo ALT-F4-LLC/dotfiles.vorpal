@@ -74,7 +74,9 @@ The five things you need:
 
 Security sensitivity is asked, not inferred. It sets labels that pin routing
 later, and a wrong guess is silent — so if the answer is not obvious from the
-request, ask it outright.
+request, ask it outright. Security is one instance of a general fact: labels
+are the ONLY discriminator that routes an issue to its workflow, and §3 makes
+confirming each issue's intended binding a recording obligation.
 
 ## 2. Read before you decompose
 
@@ -194,6 +196,29 @@ suggest, and anything you asked about that turned out to matter. Write it for
 the person who reads this run in three months.
 
 **The issues** carry kind, labels, scope globs, and the ACs in the body.
+
+**Labels are the issue's ROUTING, and you confirm the binding before you
+record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
+and every one of them discriminates on labels alone (§2): `standard-change` is
+the baseline that matches any issue carrying NONE of the variant labels, and
+each variant binds on exactly one — `ui`, `docs-only`, `investigation`,
+`security-load-bearing`, `spec-doc`, `spec-project`, `release`, `retro`. So a
+missing variant label does not fail — it binds the WRONG workflow, exactly one
+match, and the engine's zero-or-several refusal structurally cannot see it: no
+scope warning, no lint, nothing downstream flags it. Before `issue create`,
+name the intended workflow for each issue and check that the labels you are
+about to record produce it against `~/.docket/config/workflows/*.toml` — the
+hand-map is one grep of `labels_any`/`unless_labels`. The tell to hunt is an
+issue whose title or scope lives in a variant's domain while its labels carry
+none of that variant's terms: a TUI/UI-scoped issue without `ui` is the
+canonical case (harness HRN-3, 2026-08-16 — "TUI: default on-load screen to
+home", scope `internal/tui/**`, `labels=[]` — bound `standard-change`
+silently, dropping judge-design from the fanout and skipping the terminal
+design-qa/render-verify step; one tribunal seat caught it at the activation
+gate, after which the binding was frozen for the whole run). Routing
+domain-flavored work onto the baseline ON PURPOSE is legitimate, but it is an
+operator decision: elicit it and record it in the issue body and the plan
+artifact — never route by omission.
 
 **Every issue whose workflow binds a tree-holding step carries `--scope`.** The
 engine keys exclusion and the lint on `holds_tree`, not on write-ness, and reads

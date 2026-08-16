@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# doc-validate — a changed doc carries the header this repo's docs carry.
+#
+# Wired as the `doc-validate` gate on docs-only's implement step. Adapted from
+# docket.git's scripts/qa/doc-validate.sh, with two deliberate differences:
+#
+#   - Anchored to THIS repository (git toplevel from the script's own path,
+#     the same anchor secret-scan uses), never to the caller's cwd and never
+#     to another checkout. The upstream script cd's into docket.git and would
+#     validate that repo's docs no matter where it was invoked from.
+#   - No `Status:` line requirement. That is docket.git's frontmatter
+#     convention; this repo's docs (docs/facts/*.md) open with a `# ` title
+#     and nothing else. A gate demanding a convention the repo never had
+#     trains people to route around the gate.
+#
+# Scope is CHANGED docs only — staged, unstaged, and untracked — because a
+# gate runs while a step holds the tree, and a malformed doc that predates
+# the step is not the step's doing.
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "doc-validate FAILED: $script_dir is not inside a git repository." >&2
+  exit 1
+fi
+cd "$repo_root"
+
+changed=$( { git diff --cached --name-only -- 'docs/*.md'
+             git diff --name-only -- 'docs/*.md'
+             git ls-files --others --exclude-standard -- 'docs/*.md'
+           } | sort -u )
+
+if [ -z "$changed" ]; then
+  echo "doc-validate: no docs changed"
+  exit 0
+fi
+
+# `while IFS= read -r`, never `for f in $changed`: word splitting turns a
+# name with a space into two names that are not files, and the `[ -f ]` guard
+# below then skips both — a malformed doc reported as OK. The `[ -f ]` guard
+# itself is what lets a DELETED doc pass: a deletion appears in the diff but
+# has no content left to validate.
+failed=0
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  [ -f "$f" ] || continue
+
+  if ! head -1 "$f" | grep -q '^# '; then
+    echo "doc-validate: $f does not open with a '# ' title" >&2
+    failed=1
+  fi
+done <<< "$changed"
+
+if [ "$failed" -ne 0 ]; then
+  echo "" >&2
+  echo "doc-validate FAILED. Existing docs under docs/ show the shape." >&2
+  exit 1
+fi
+
+echo "doc-validate: ok"

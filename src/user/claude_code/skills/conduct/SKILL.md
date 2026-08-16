@@ -108,6 +108,28 @@ engine record first, with your own activation report repeating it as the
 secondary copy. Anything short of approval goes to the operator
 with the full tally, per **Gates**.
 
+**Hand-check every binding for wrong-one routing, and put what you find in the
+proposal.** The dry-run refuses zero matches and several; it structurally
+cannot flag exactly-one-WRONG match — and that is the failure label-driven
+binding actually produces, because every `[match]` block discriminates on
+labels alone and the baseline matches any issue carrying no variant label, so
+a missing label binds `standard-change` silently. For each `bound_issues[]`
+row, read the issue's labels, title, and scope (`docket issue show`) and map
+them against the corpus's `labels_any`/`unless_labels`
+(`~/.docket/config/workflows/*.toml`): an issue bound to the baseline whose
+title or scope lives in a variant's domain — TUI/UI paths without `ui` is the
+canonical case — is a ROUTING FLAG, and it goes into the proposal context
+VERBATIM, beside the scope warnings, so every seat weighs it. This check is
+worth its cost precisely here: before the gate the fix is one `docket issue
+label add` plus a fresh dry-run; after it, activation has frozen both the
+binding and the body snapshot for the whole run, and re-planning is the only
+exit. Harness HRN-3 (2026-08-16) is the lesson: a TUI issue with `labels=[]`
+and scope `internal/tui/**` bound `standard-change`, dropping judge-design
+from the fanout and skipping the terminal design-qa/render-verify step — one
+seat caught it and rejected, the tally approved anyway, and the mis-binding
+froze, because the flag this check exists to raise was absent from the
+proposal the other two seats voted on.
+
 The roster of WHAT was bound comes from the engine, never from the run's
 request prose: the request names the plan's SUBJECTS, not the bound issues
 (DKT-94). RUN-6's conductor queried the request's issue ids, found them

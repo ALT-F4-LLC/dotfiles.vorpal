@@ -37,6 +37,7 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/Library/Caches/go-build",
     "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
+    "~/Library/Caches/staticcheck",
 ];
 
 pub struct ClaudeCode {

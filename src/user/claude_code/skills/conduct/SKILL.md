@@ -334,8 +334,15 @@ cat'd the 16.9KB file six times and emitted a ~4.7KB condensed rendering into
 six of eight launches and a 791-byte splice into the two panel launches —
 the splice dropped `[escalation]` and `[[resolve]]` entirely (tribunal.js
 reads `escalation.fallback`), and nothing logged the difference. wave.js and
-tribunal.js log `policy <N> chars` at startup — if that number does not match
-`wc -m ~/.docket/config/policy.toml`, the launch did not carry the file.
+tribunal.js log `policy <N> chars` at startup — the faithful number is `wc -m
+~/.docket/config/policy.toml` MINUS ONE (`$(cat …)` strips the file's trailing
+newline; matching either is fine, anything else is a condensation). The
+wave-audit hook runs this same comparison on every Workflow launch that
+carries policyText — tribunal.js launches identically, not just wave
+dispatches — and stays SILENT on a clean launch, so any policyText advisory
+it emits is a REAL condensation: TaskStop the launch, re-cat, relaunch.
+Never read it as ambient noise — on 2026-08-17 three governance panels and
+two waves ran condensed while the advisory scrolled past (RUN-15, RUN-17).
 
 **Keep human rows; hand the wave everything else.** Filter OUT only
 `kind: "human"` rows — those are the operator's — and pass every other row
@@ -386,7 +393,11 @@ the `.with_hook(...)` calls that install the docket guards live in
 fires at all. Where one does, an open dispatch makes it allow, and even where
 it denies, one deny per turn-end is expected noise — the retry passes. Do not
 busy-wait, do not poll in sleep loops, and do not treat the guard's deny as an
-instruction to keep working. The session is
+instruction to keep working. Do not reach for `ScheduleWakeup` as a heartbeat
+either — it belongs to /loop sessions and rejects these calls (two fleet
+conductors burned turns discovering that, 2026-08-17); the completion
+notification at your turn boundary is the only wait mechanism this contract
+uses. The session is
 free meanwhile — the operator can do other things, and so can you.
 
 ### 3. Close the dispatch
@@ -580,6 +591,12 @@ steps first, in step-id order:
    writer's sha lives only until its worktree branch is swept, and a
    permanent record needs an anchor that still resolves once it is.
 
+A cherry-pick whose diff touches `.claude/skills/**` fails under the sandbox
+on the unlink (`Operation not permitted` — the write-deny, not the content).
+Verify the sha as always AND that the touched `.claude/skills` paths are ones
+this run's steps produced, then retry that pick with the sandbox lifted
+instead of diagnosing the diff (RUN-19 lost a round-trip to exactly this).
+
 Because integrations commit immediately, a later write step's worktree —
 based on the shared checkout's HEAD at its spawn — already contains every
 previously integrated step, so sequential steps CHAIN. A cherry-pick that
@@ -624,6 +641,16 @@ the sha in your close report — it stays reachable in the object database until
 gc, and naming it is what keeps it recoverable. Any other `wf_*` entry belongs
 to some other session's run: leave it alone. Only ever remove worktrees this
 run's waves created; other checkouts are not yours.
+
+Foreign `wf_*` entries are still worth NAMING: list them in the close report
+as operator-cleanup candidates — abandoned runs sweep nothing, and five repos
+carried a prior fleet's debris unmentioned through a full day (2026-08-17).
+The close report also names every tribunal convocation this session ran, with
+proposal ids: panel cost lives entirely outside the run ledger (wave-usage
+attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
+has equalled the run's whole tracked spend (RUN-17: 185,673 untracked output
+tokens vs 186,606 tracked), so a close report that omits it understates the
+session by up to half.
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first
@@ -916,6 +943,16 @@ the ledger record one decision where several were made (RUN-5: two bundles
 flagged by the operator, unbundled on the spot). One gate per question inside a
 multi-question call is fine; one question carrying several gates is not.
 
+One gate per question is about distinct decisions — it does not mean
+re-litigating a settled one. When a later step parks on a gate whose verdict
+AND reason text are identical to one the operator already resolved THIS run
+(the same unmatched trust gap, the same sandbox-caused failure), present the
+new park WITH the standing precedent and ask once whether it extends:
+"apply the same resolution to identical repeats for the rest of this run" /
+"keep deciding each". Record each step's resolution note naming the precedent
+answer. RUN-18 asked four separate times for one verbatim-identical gap
+(2026-08-17); the operator's answer never changed.
+
 **Keep shell and JSON literals OUT of the question text.** A question string
 carrying nested quotes and `$(...)` has been rejected outright —
 `InputValidationError: AskUserQuestion was called with input that could not be
@@ -923,6 +960,12 @@ parsed as JSON` (RUN-7), costing a round-trip while a blocked run was being
 surfaced. When the thing being decided IS a command, put the literal in a
 fenced block in your own message and let plain prose in the question refer to
 it.
+
+Write the question itself in plain language: what broke, what each answer
+does. Cluster ids, severity vocab, and engine terms live in your accompanying
+message, not in the question line. Two operators in one fleet answered "I am
+confused - ELI5" and a plain re-ask got the decision immediately (RUN-16,
+RUN-19) — the first phrasing should not need a second.
 
 On their answer:
 

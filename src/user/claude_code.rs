@@ -179,6 +179,12 @@ impl ClaudeCode {
                 "command",
             )
             .with_hook(
+                "PreToolUse",
+                Some("Workflow"),
+                "bash ~/.claude/hooks/docket-policy-guard-hook.sh",
+                "command",
+            )
+            .with_hook(
                 "PostToolUse",
                 Some("Workflow"),
                 "bash ~/.claude/hooks/docket-wave-audit-hook.sh",

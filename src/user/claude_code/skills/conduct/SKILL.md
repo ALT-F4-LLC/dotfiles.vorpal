@@ -669,15 +669,22 @@ operator (**Gates**), so never convene a tribunal to bless one.
 
 **A gap filed by a wave lands in this run's project even when the work it
 names does not belong here — re-home it at the same close.** (Operator
-ruling, 2026-08-16: gaps belong to their respective projects.) When a wave
-result or `step artifacts` shows a gap whose problem lives in another
-repository's project, re-file it with `docket issue create` FROM THAT REPO'S
-CHECKOUT — cwd picks the project — copying the gap body verbatim, then link
-the pair and close the local copy (`docket issue move done < /dev/null`;
-`issue close` hangs on stdin) with a note naming the new id. The engine has
-no cross-project routing on `--gap-file` (filed as an engine issue); until it
-does, this migration is the conductor's, at the same close that reconciles
-the wave.
+ruling, 2026-08-16: gaps belong to their respective projects — an engine
+problem is the docket repo's, a definition problem the dotfiles repo's,
+whichever repo owns the fix owns the issue.) When a wave result or `step
+artifacts` shows a gap whose problem lives in another repository's project,
+re-home the materialized issue with `docket issue move <id> --project
+<target>` — one transaction, labels re-map and relations ride along. Where
+migrate refuses (a sub-issue, run membership), fall back to re-filing with
+`docket issue create` FROM THAT REPO'S CHECKOUT — cwd picks the project —
+copying the gap body verbatim, then link the pair and close the local copy
+(`docket issue move done < /dev/null`; `issue close` hangs on stdin) with a
+note naming the new id. The engine has no cross-project routing on
+`--gap-file` (filed as an engine issue); until it does, this migration is
+the conductor's, at the same close that reconciles the wave. The same
+routing governs everything YOU file — an engine defect, a definition gap, a
+follow-on issue: file it in its owning project from the start, never into
+this run's project because this is where you happen to sit.
 
 ## Gates
 

@@ -2799,7 +2799,12 @@ transaction. The materialized issue is created `backlog` / `none` / `task`, with
 the gap body as its description and its title taken from the gap's first
 non-blank line (leading `#` stripped, capped at 120 characters). Docket never
 interprets what the gap says. The success message names the issues it filed —
-`Completed, gaps filed as DKT-91, DKT-92: …`.
+`Completed, gaps filed as DKT-91, DKT-92: …`. The materialized issue lands in
+the RUN'S OWN project unconditionally — `--gap-file` has no cross-project
+routing — so a gap whose problem lives in another repository's project gets
+re-homed by whoever reads the completion: `docket issue move <id> --project
+<target>` (operator ruling, 2026-08-16: gaps belong to their respective
+projects).
 
 **A gap-only completion PARKS instead of passing (DKT-25).** When the declared
 emit's body is empty (whitespace-trimmed) and at least one gap was recorded,

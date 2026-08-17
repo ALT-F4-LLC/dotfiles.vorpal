@@ -14,7 +14,12 @@
 
 [pipeline]
 name    = "standard-change"
-version = 10                 # 10: verify step declares verify.gate-results so
+version = 11                 # 11: verify's unverifiable park routes through an
+                             #   interposed tribunal vote first (operator
+                             #   policy, 2026-08-16) — the panel reads the
+                             #   ac-report and escalates only what it will not
+                             #   pass; the operator hears only escalations.
+                             # 10: verify step declares verify.gate-results so
                              #   its own ac-commands pre-gate row resolves at
                              #   claim (DOT-13, engine fix 7a2cbff).
                              # 9: implement split into when-gated siblings
@@ -230,7 +235,37 @@ expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]   # pre-gate: runs at claim, results
                                      #   land in the context bundle (02 §6)
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "implement-test-infra.change-summary", "verify.gate-results"]
-threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+                                     # TRIBUNAL-FILTERED ESCALATION (operator
+                                     #   policy, 2026-08-16): an unverifiable AC
+                                     #   used to park straight to the operator;
+                                     #   it now routes to the interposed vote
+                                     #   step below, which escalates only what
+                                     #   it will not pass. `fix-loop` is
+                                     #   evaluated BEFORE any interposed step
+                                     #   routing regardless of declaration order
+                                     #   (ThresholdOrder,
+                                     #   internal/engine/threshold.go), so a
+                                     #   report carrying both unmet and
+                                     #   unverifiable rows loops first — fix the
+                                     #   fixable, judge what remains.
+
+[[step]]                     # reached ONLY by verify's threshold routing
+name = "verify-tribunal"
+after = ["verify"]                   # names the predecessor V8 requires; the step
+                                     #   stays otherwise-unreached — interposition
+                                     #   is what makes it ready (06 §11.2)
+type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
+                                     #   the panel reads the ac-report FIRST and
+                                     #   escalates only what it will not pass —
+                                     #   same rationale as investigation's
+                                     #   read-gate. The operator's attention is
+                                     #   the scarcest resource in the loop.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side (see
+                                     #   investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human
+inputs = ["verify.ac-report", "issue.body"]
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
 # commit-exec are gone from every pipeline. Automated commits are incompatible
@@ -241,5 +276,6 @@ threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status
 # operator override-pass; DKT-13/DKT-61 lineage). Since 2026-08-10 the conductor
 # integrates each write sha as a real unsigned commit; publishing stays the
 # operator's (contracts/commit-author.md and .docket/bin/git-commit were
-# removed with the tail; git history keeps both). `verify` is the terminal
-# engine step; acceptance is the operator's own commit, outside the engine.
+# removed with the tail; git history keeps both). `verify` (with its interposed
+# `verify-tribunal`, when routed) is the terminal engine step; acceptance is
+# the operator's own commit, outside the engine.

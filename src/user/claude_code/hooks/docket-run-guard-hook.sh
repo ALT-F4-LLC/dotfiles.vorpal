@@ -126,6 +126,41 @@ fi
 docket guard record >/dev/null 2>&1
 [ "$?" -eq 2 ] && allow
 
+# Carve-out 3: a freshly activated run nobody has dispatched. `guard stop`
+# counts steps in `pending`, which is exactly the state bootstrap is REQUIRED
+# to leave behind: §5 activates, §7 hands off, and the session ends. Denying
+# there makes that contract unsatisfiable — the only exits the deny offers are
+# conduct the run or abandon it, and on 2026-08-17 all six successful
+# bootstraps hit this, two of them pushed into `/conduct` by the guard itself.
+# The predicate matches the hook's own header question ("is the MACHINE still
+# working?"): with zero `dispatch-opened` events, nothing has ever been handed
+# out, so nothing is in flight to interrupt. A conductor between `next` and
+# `dispatch open` lands here too, and equally interrupts nothing.
+#
+# FAILS CLOSED, exactly like carve-out 1b: missing jq, an unreadable run list,
+# a non-numeric count, or any run that HAS been dispatched all fall through to
+# the deny. Only an affirmative "every live run in this project has zero
+# dispatch-opened events" allows.
+if command -v jq >/dev/null 2>&1; then
+    NEVER_DISPATCHED=1
+    RUNS=$(docket run status --json 2>/dev/null \
+        | jq -r '.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed") | .run' 2>/dev/null) \
+        || RUNS=""
+    [ -n "$RUNS" ] || NEVER_DISPATCHED=0
+    for R in $RUNS; do
+        # No `// []` fallback on purpose: an error payload ({"ok":false}, a
+        # missing key, anything not a real events array) must ERROR here so
+        # OPENED comes back empty and we deny, rather than reading as a
+        # legitimate zero and allowing. Every live run has at least
+        # `run-activated`, so a genuine response always carries the array.
+        OPENED=$(docket events list --run "$R" --json 2>/dev/null \
+            | jq -e -r '[.data.events[] | select(.kind == "dispatch-opened")] | length' 2>/dev/null) \
+            || OPENED=""
+        [ "$OPENED" = "0" ] || { NEVER_DISPATCHED=0; break; }
+    done
+    [ "$NEVER_DISPATCHED" = "1" ] && allow
+fi
+
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
 
-deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. NOTE: \`docket run pause\` does NOT clear this — it moves the RUN to waiting-human while its steps stay pending, and this guard reads step status (verified: a paused run with a pending gate still denies)."
+deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. If the work is blocked by something OUTSIDE the engine — a refused spawn, a denied permission, an operator ruling to withhold it — none of those verbs is the answer: say so plainly and stop, since one deny per session is expected and the second is suppressed. NOTE: \`docket run pause\` does NOT clear this — it moves the RUN to waiting-human while its steps stay pending, and this guard reads step status (verified: a paused run with a pending gate still denies)."

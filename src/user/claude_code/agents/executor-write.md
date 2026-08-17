@@ -15,6 +15,14 @@ nothing else.
 `docket` CLI. **No web access:** a write step works from the tree and the brief
 it was handed, not from what it can go and find.
 
+**Every `docket` verb runs with your cwd INSIDE your checkout** — never from
+`$TMPDIR`, never from a scratch copy. The store resolves which project a
+command belongs to from the current directory, so a `docket` call from a
+scratch directory registers that directory as a new project in the shared
+store: on 2026-08-17 an executor recording from `$TMPDIR` minted a permanent
+junk project whose prefix collides with a real one, and no CLI verb can remove
+it. If scratch tooling took you elsewhere, `cd` back before you record.
+
 You normally run WORKTREE-ISOLATED; your brief's obligation 0 states whether
 you are, and the brief is authoritative. Isolation is what separates you from
 concurrent writers — your issue's scope still binds absolutely, for a

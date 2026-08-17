@@ -56,9 +56,17 @@ the `spec-project` pipeline's job, not yours.
 **The contract is the authority.** Read `~/.docket/config/contracts/spec-author.md`
 before spawning anything: it defines the seven axes, what each one explores, and the
 rigorous-honesty rule that governs all of them. Do not restate its guidance here or
-paraphrase it into a brief — hand the file's text to each author and let it speak.
+paraphrase it into a brief — hand each author the contract and let it speak.
 The gap section is where a spec earns its keep, and an invented capability is the
 failure mode that outlives the run.
+
+**Hand it by PATH, not by paste.** Give each author the absolute path
+(`~/.docket/config/contracts/spec-author.md`, plus every fragment that file's
+frontmatter declares) and tell it to Read them first. That is not a paraphrase
+— the agent reads the same bytes — and pasting instead is the single largest
+avoidable cost in this section: on 2026-08-17 seven briefs carried ~18.9KB of
+inlined corpus each, about 29K output tokens of pure copying, and those bytes
+are also what staggered the spawns.
 
 Spawn seven `executor-write` agents in ONE message so they author concurrently, one
 axis each:
@@ -71,27 +79,54 @@ for `architecture`, `security`, `operations`, `performance`, `code-quality`,
 `review-strategy`, `testing` — the same seven hint names `spec-project.toml` fans
 out over, so a later graph run re-authors the same files under the same identities.
 
-Each agent's prompt carries the verbatim text of `contracts/spec-author.md`, its one
+Each agent's prompt carries the contract's PATH (above), its one
 axis, today's date (`date +%Y-%m-%d`), the project name
 (`basename $(git rev-parse --git-common-dir) | sed 's/\.git$//'` — worktree-safe),
 and its output path `docs/spec/<axis>.md`. Tell it plainly: write only that file,
-never a name outside the seven, and skim siblings already on disk to avoid overlap
-without ever blocking on one.
+never a name outside the seven, and **do not commit** — the file stays untracked
+and §5a removes it. Say that last part explicitly: left unsaid, all seven
+deliberate the question independently and reach the same answer anyway.
+
+Skim siblings already on disk only if any exist — and finding none is the
+normal case, not a problem to wait out. Spawns start serially even from one
+message, so the first authors reliably find an empty directory (2026-08-17: six
+of seven did). Deconfliction is carried by the contract's axis boundaries, not
+by reading siblings, and no author ever blocks on one.
+
+**Route each spawn the way the wave would.** Read
+`~/.docket/config/policy.toml`'s `[executors]` table and pass the matching
+row's model on the `Agent` call — the seven `spec-author-<axis>` hints have
+rows there already, and a row's constraints travel with it (`spec-author-security`
+carries `never = ["fable"]`, so honor the pin, not just the model). Hints with
+no row — §2's miners, the verification and probe agents — read and report
+rather than design: route those `sonnet`. Left unrouted the harness serves every
+teammate from the top model regardless of the work, which on 2026-08-17 put a
+100-second checklist agent on the most expensive tier available.
 
 These are leaf agents. They must not spawn, form a team, or call `Skill()`.
 ONE message means one response carrying all seven Agent calls — one-spawn-per-
 message staggers starts for nothing and was the 2026-08-10 deviation, twice.
+(One message does not make the starts simultaneous: its tool_use blocks
+dispatch as they stream, so seven briefs still began 77 seconds apart on
+2026-08-17. Keeping briefs small — by path, not paste — is what shrinks that.
+When auditing a past run for this rule, compare `requestId`s rather than
+timestamps: seven blocks of one message look exactly like seven turns.)
 `executor-write`/`executor-read` name the archetypes the settings builder
 installs under `~/.claude/agents/`; that install is live, so use them. Fall back
 only when `ls ~/.claude/agents` comes back missing or empty: spawn
 `general-purpose` for writers and `Explore` for readers, carry the archetype
 file's text (`src/user/claude_code/agents/` in the dotfiles repo) inline in the
 brief, and say in §5 that archetype containment ran prompt-only. And every agent brief in this skill ends the same
-way: **deliver your report by calling SendMessage to `team-lead` (ToolSearch
-`select:SendMessage` first) BEFORE ending your turn** — a background agent's
-final text is delivered to nobody, the idle ping that replaces it is
+way: **write your report to `$TMPDIR/report-<your-name>.md` AND deliver it by
+calling SendMessage to `team-lead` BEFORE ending your turn** — a background
+agent's final text is delivered to nobody, the idle ping that replaces it is
 content-free, and on 2026-08-10 two of five agents finished silently exactly
-this way, one stalling the run nine minutes.
+this way, one stalling the run nine minutes. The file is the recovery path for
+when delivery lags rather than fails: on 2026-08-17 all eleven reports were
+withheld 44 minutes, and a warning about work about to be destroyed arrived
+after the deletion. Do not tell an archetype agent to `ToolSearch` for
+SendMessage: `executor-read` and `executor-write` carry it preloaded and have
+no ToolSearch at all, and agents have flagged the instruction as unfollowable.
 
 **No engine is running yet, and that is the point.** There is no run to claim
 against, no lease, no gate — which is exactly why this section exists rather than
@@ -99,18 +134,68 @@ deferring to `spec-project`. That pipeline needs a registered project (§1) and 
 activated run (§5), so it cannot produce the specs §2 wants to read. Seeding here is
 what breaks that circle.
 
-While the seven run, wait properly: ONE `Monitor` call (ToolSearch
-`select:Monitor` first) with an until-loop and a 15+ minute timeout, then stop
-— completion notifications drive the next step and the Monitor is only the
-fallback for when none arrives. Not `CronCreate`, which schedules recurring
-work rather than waiting out this one. Polling the output directory and
-rescheduling on every idle ping bought the 2026-08-10 run ~30 wakeup schedules
-and ~10 polls that changed nothing.
+**Ending your turn IS the wait.** While the seven run: ONE `Monitor` call
+(ToolSearch `select:Monitor` first) with a 15+ minute timeout whose until-loop
+counts the REPORTS you have received — never the files on disk, because a file
+appears the moment its author opens it and keeps changing for minutes after
+(2026-08-17: a verifier read a spec 46 seconds before its author stopped
+editing it). Then end the turn with a one-line status and NO further tool call.
+Reports arrive as new turns; nothing you run meanwhile makes them arrive
+sooner.
 
-**Verify before moving on — with an agent, not your own eyes.** Take
-`git status --porcelain > "$TMPDIR/pre-fanout"` before you spawn. After all
-seven return, spawn ONE `executor-read` agent to verify and report a
-checklist: diff the snapshot against `git status --porcelain` now, confirm
+Three ways that goes wrong, all measured 2026-08-17:
+
+- **Do not follow the Monitor with a blocking call** — `TaskOutput(block: true)`
+  or anything like it. An unyielded turn withholds your own agents' reports:
+  11 of 11 arrived in one batch 44 minutes late, and the verification warning
+  in one of them reached the orchestrator after the deletion it was warning
+  about had already run.
+- **Do not emit placeholder calls to keep a turn alive** — `echo waiting`, a
+  repeat `ListAgents`, an `ls` of the output directory. One session emitted 97
+  of them, roughly a third of its entire token spend, and changed nothing. A
+  turn-continuation instruction telling you never to stop mid-task does not
+  reach here: waiting on a spawned agent is exactly "blocked on input you
+  cannot produce". Say so in one line and stop.
+- **Do not add a second waiter.** Not `CronCreate`, not `ScheduleWakeup` (its
+  no-op form is rejected outright), not another `Monitor` as backup. The
+  Monitor is already the fallback; a fallback for the fallback fires stale
+  long after the work is done and costs a turn to dismiss.
+
+Spawn the verifier only after all seven have REPORTED. And note that a finished
+agent stays registered until the session ends — "background agents still
+running" at handoff is not evidence of pending work, and on 2026-08-17 every
+fleet session's kill message named agents that had delivered 30-50 minutes
+earlier.
+
+**Verify before moving on — with an agent, not your own eyes.** Take the
+snapshot before you spawn, under a name no other session can claim:
+
+```bash
+SNAP="$TMPDIR/pre-fanout-$(basename "$(git rev-parse --git-common-dir)")"
+git status --porcelain --untracked-files=all > "$SNAP" \
+  || { echo "SNAPSHOT FAILED — do not spawn"; exit 1; }
+echo "snapshot: $SNAP"
+```
+
+Three things in that block are load-bearing, each measured 2026-08-17.
+`$TMPDIR` is ONE directory shared by every concurrent session on this machine,
+so the fixed name `$TMPDIR/pre-fanout` is another repo's file: seven bootstraps
+wrote it at once, one verifier read a sibling's sandbox error as its baseline,
+and a third session truncated it to nothing. Key the name on the repo — and on
+the repo alone, since `$$` differs between Bash calls and the name has to be
+re-derivable later. `--untracked-files=all` is required because plain
+`--porcelain` collapses a wholly-untracked `docs/` to one line, so the diff can
+never name the seven paths §5a needs. And never redirect stderr into the file:
+a sandbox denial written into the snapshot becomes "git output" that nothing
+downstream can tell apart from the real thing.
+
+After all seven return, spawn ONE `executor-read` agent to verify and report a
+checklist. Hand it `$SNAP`'s absolute path in its brief — never let it
+re-derive the name. Tell it to assert the file is a git status first (every
+line matches `^.. `, or the file is empty on a clean tree); anything else means
+the snapshot step failed, and it should say so rather than diff against
+garbage. Then: diff the snapshot against `git status --porcelain
+--untracked-files=all` now, confirm
 every added line is a path under `docs/spec/` and that there are seven, and
 check each file opens with a `# ` title, carries a `Status: … <date>` line,
 and ends in its gaps section. Keep the paths it returns: §5a deletes exactly
@@ -148,13 +233,27 @@ anybody outside this run.
 
 ## 1. Register the repo
 
-**Every verb that opens the SHARED store needs an unsandboxed shell.** That
-store is user-global at `~/.docket`, outside the sandbox write root, and every
-command touching its DB opens it read-write and migrates forward before doing
-anything else — sandboxed it fails with `unable to open database file (14)`.
-What stays safe sandboxed is anything that opens no DB at all (`--help`,
-`workflow init`) and anything aimed by `DOCKET_PATH` at a store inside the
-sandbox write root (§4a's scratch probe).
+**Verbs that WRITE the shared store need an unsandboxed shell — reads usually
+do not.** That store is user-global at `~/.docket`, and a command touching its
+DB opens it read-write and migrates forward, which sandboxed can fail with
+`unable to open database file (14)`. But `~/.docket` is in the sandbox write
+allowlist today, so read verbs — `project list`, `issue list`, `config get`,
+`run status`, `events list`, `step show`, `trust list` — generally succeed
+sandboxed: try one sandboxed FIRST and escalate only on that error. Escalating
+by default costs a permission prompt or a classifier block on every call and
+buys nothing (2026-08-17: 53 escalations in one session, one of them blocked,
+none of them required). Also safe sandboxed regardless: anything that opens no
+DB at all (`--help`, `workflow init`) and anything aimed by `DOCKET_PATH` at a
+store inside the sandbox write root (§4a's scratch probe).
+
+**Survey the trust store with `docket trust list --all`.** The plain listing is
+scoped to THIS repo, and the store is user-global: an entry another repo owns
+is invisible to the scoped view yet surfaces as `unmatched` on your first real
+run, naming the repo it is bound to. That difference decides what §5 tells the
+operator — "no such tool exists here" versus "an entry exists one repo over,
+and here is its argv to approve". On 2026-08-17 the scoped view reported no
+secret scanner in a repo whose own security spec had just found cleartext
+private keys, while a `secret-scan` entry sat in the store bound elsewhere.
 
 ```bash
 docket init          # only if no store exists yet. Bare init targets the SHARED
@@ -295,6 +394,45 @@ that is a finding to surface, never a reason to drop the gate. A gate that
 needs the network gets that fact argued explicitly in its §4 `--flaky` row
 either way.
 
+**The network is not the only environment that lies, and measuring the wrong
+one is how a repo ends up with permanently red gates.** A gate child runs
+SANDBOXED and inside a PRIVATE WORKTREE — not in your checkout — so three
+things the miner never sees can decide its verdict:
+
+- **A toolchain cache outside the sandbox write root.** The denial wears a
+  compile error's clothes: `mkdir …: operation not permitted` on a module or
+  package cache reads as a broken build. (Measured 2026-08-17 against Go's
+  `~/go/pkg/mod`, since added to the allowlist — the class outlives the
+  example, so check rather than assume.)
+- **Anything your checkout carries that a fresh worktree does not** — an
+  untracked file, or an uncommitted edit. A gate registered against an
+  uncommitted `justfile` recipe can never pass, because every executor
+  worktree checks out committed HEAD (measured the same day). Commit a
+  gate-enabling edit BEFORE registering trust against it, or verify the
+  command against `git archive HEAD` rather than the dirty tree.
+- **A daemon or socket the sandbox denies** — the docker socket is the
+  standing case, and it is a won't-fix. Never register a docker-requiring
+  command as a gate.
+
+So brief the miner to run each check TWICE — once in the checkout, once in a
+throwaway `git worktree add` copy — and to grep both transcripts for
+`operation not permitted` and `permission denied` before certifying "no
+environment-caused failures". Where the two disagree, the worktree's verdict is
+the gate's real one. This is the difference between a gate and a tripwire: on
+2026-08-17 all ten gate failures across four repos were environment denials,
+not one was a real defect, and three runs override-passed them — one reaching
+`done` with build, tests, and lint all failing.
+
+**Containment for the miner, since it runs real commands.** A command whose
+side effect leaves the working tree is NOT run: an image built on a daemon, a
+package installed, a registry write. Report what it would do and why you
+stopped instead — one miner left a container image on the operator's machine
+and the cleanup cost an approval round. Every scratch file goes under a
+directory the miner creates for itself (`mktemp -d "$TMPDIR/gate-probe.XXXXXX"`)
+and is removed when done: `$TMPDIR` is shared with every other session on this
+machine, and full-repo copies at its root are what made a scratch directory
+look enough like a project to be registered as one.
+
 ## 3. Adapt — the repo-specific layer
 
 The corpus is shared, generic, and already in place. What remains is what the
@@ -376,6 +514,24 @@ Two coupled invariants any addition must keep:
 
 ## 4. Propose trust — do not add it
 
+**Derive the gate set from the WORKFLOW, not from the repo and never from
+memory.** For every workflow the dry-run reports binding, `grep -n 'gates'` its
+toml and take EVERY name — including pre-gate rows written
+`{ name = "x", pre = true }`, which a scan for a bare string list slides past.
+`standard-change` requires `secret-scan` on its write steps and an
+`ac-commands` pre-gate on `verify`; propose an entry for each, or carry it into
+§5's table as an explicit `NO GATE` row. What you must never do is let a
+required gate reach §5 unmentioned: on 2026-08-17 seven of eight repos were
+bound to a workflow requiring `secret-scan` with no entry anywhere, and every
+one of them first learned about it when a real run refused at completion.
+
+Two shapes that look like gates and are not. A command that cannot fail —
+`true`, `:`, `echo` — is never proposed, whatever pressure there is to make a
+row green; it records `pass` forever and hides the gap permanently. And a real
+command with no coverage (a test runner in a repo with zero tests, a linter
+with an empty config) is a `NO GATE` row too, not an approved entry: say
+plainly that it will report green while checking nothing.
+
 For each command a gate will run, propose the entry and argue every flag from
 what you read:
 
@@ -413,6 +569,13 @@ authorizing that exact in-repo path deliberately. So every entry pointing at
 run time — the failure a pre-refactor run shipped. Say in §5 that these entries are
 absolute-path-bound: a moved or re-cloned worktree needs them re-added.
 
+**A repo with no gate scripts leaves you proposing `/bin/sh -c "<recipe>"`.**
+That is often the honest shape, and legitimate — but say two things plainly
+when you propose one. The entry authorizes the WHOLE quoted string, including
+whatever a `just`/`make` recipe expands to, and that recipe lives in a tracked
+file an executor can rewrite between approval and execution. And the argv is
+cwd-sensitive in a way an absolute script path is not.
+
 **Name every entry after what the script actually does — never after the gate you
 wish you had.** A trust entry's name is what the operator reads when approving
 and what every later report calls it, so a name that overstates the check buys a
@@ -446,6 +609,15 @@ unavailable gate named honestly is a known gap; an unavailable gate named
 `scope` is a lie the run will act on.
 
 ### 4a. Propose the `doc-record` trust entry
+
+**This section is unconditional** — it applies whatever smoke issue you chose,
+and unlike §4a′ it has no escape hatch. Its subject is a workflow the corpus
+registers at every activation, so `doc-record` resolves through the trust store
+the first time anyone files a `doc-`labelled issue in this repo, whether or not
+today's run touches docs. Skipping it leaves that future run stranded on an
+`unmatched` action with nobody watching (2026-08-17: skipped silently in one
+repo, which now carries the landmine). If you reach §5 with no `doc-record` row
+in your gate table, you skipped this section.
 
 `spec-doc.toml` ships with the corpus, and its `record` step is an **action**,
 not an executor: recording an accepted doc is "insert a row and link it", which
@@ -509,13 +681,37 @@ measured basis for `--re-runnable`, which beats arguing it from prose — the
 2026-08-06 authoring-era probes caught three real bugs this way, which is why
 the ritual survives the script moving into the corpus. The agent returns both
 probe transcripts; that evidence is what you attach to the proposal. Probe
-against a SCRATCH store, not the shared one, and brief the sequence itself:
-`export DOCKET_PATH=$(mktemp -d)`, confirm it came back non-empty before using
-it, `docket init`, then both probes under that same env, reporting every exit
-code and transcript verbatim. A probe against the resolved store writes real
-DOC/issue rows into shared history — the
-2026-08-10 run needed an operator-approved destructive delete to clean up, and
-the id sequence keeps the scar either way.
+against a SCRATCH store, not the shared one, and brief the sequence exactly:
+
+```bash
+SCRATCH="$TMPDIR/docket-probe-$(basename "$(git rev-parse --git-common-dir)")"
+mkdir -p "$SCRATCH" || exit 1
+export DOCKET_PATH="$SCRATCH"
+```
+
+Three details that each cost a real attempt on 2026-08-17. Bare `mktemp -d`
+targets the OS temp dir and is refused under the sandbox — template it into
+`$TMPDIR` or build the path yourself as above. `DOCKET_PATH` names the store
+DIRECTORY, never a path ending in `issues.db` (docket appends the filename;
+pointing it at the file yields a nested `issues.db/issues.db`). And guard with
+`|| exit 1`, never `[ -n "$X" ] && echo ok`, which prints and continues — an
+empty variable then made `"$SCRATCH/issues.db"` resolve to `/issues.db`.
+
+**Shell state does NOT persist between Bash calls**, so an `export` in one call
+is gone in the next and "both probes under that same env" cannot be taken
+literally. Brief the agent in those terms: write the store path to a file in
+its own scratch dir, re-export `DOCKET_PATH` from that file at the top of EVERY
+call, and assert before any verb that it is non-empty and not `$HOME/.docket`.
+Then `docket init` and both probes, reporting every exit code and transcript
+verbatim. A probe that loses the export writes real DOC/issue rows into shared
+history — the 2026-08-10 run needed an operator-approved destructive delete to
+clean up, and the id sequence keeps the scar either way.
+
+Registering `spec-doc.toml` into that throwaway store is the ONE exception to
+rule 1's prohibition on `workflow register`: a store outside the shared one
+freezes no `name@version` anybody else will ever resolve, and minting a real
+context bundle is the whole point of the probe. The prohibition is about the
+RESOLVED store, never about a scratch one.
 
 ### 4a′. Propose the `commit-exec` trust entry
 
@@ -605,6 +801,13 @@ class's `max_step_duration`, measured from the claim**, so a runaway holder
 cannot renew forever. And `docket step reap STEP-N --reason R` is a token-free
 channel for a spawn already known dead, which belongs to whoever spawned it, not
 to a clock. Size the TTL for the working case; the other two cover the failures.
+
+**Propose these; do not run them yet.** Unlike §1's three vote-rule thresholds,
+nothing refuses for want of a sized TTL — the 15m default applies — so there is
+no reason to write before approval, and §1's narrow "safe to set now" carve-out
+does not reach this section. Run these after §5's yes, in the same breath as
+`trust add`. (Measured 2026-08-17: set here unapproved, then presented in §5 as
+"already set", which is not a proposal.)
 
 ```bash
 docket config get lease.ttl.default          # ships as 15m
@@ -736,16 +939,30 @@ no trust entry looks identical here to a satisfied one. Compose the gate table
 yourself and put it beside the dry-run output:
 
 ```
-gate       trust entry  argv                             status
-build      build        /abs/repo/scripts/qa/build.sh    proposed (absolute — ok)
-tests      tests        /abs/repo/scripts/qa/tests.sh    proposed (absolute — ok)
-<absent>   —            —                                NO GATE — say why
+gate       trust entry  argv                             verified        status
+build      build        /abs/repo/scripts/qa/build.sh    clean worktree  proposed (absolute — ok)
+tests      tests        /abs/repo/scripts/qa/tests.sh    checkout only   proposed (absolute — ok)
+<absent>   —            —                                not run         NO GATE — say why
 ```
 
-Every gate named by a bound workflow gets a row; a check you could not
+Derive the rows mechanically, never from memory: for every workflow the dry-run
+bound, grep its toml for every gate name, pre-gate rows included (§4). Every
+gate named by a bound workflow gets a row; a check you could not
 implement gets a row with no argv and the reason. A row with no trust entry
 will report `unmatched` on its first real run — say it in the row, not a
-footnote.
+footnote — and an entry bound to another repo (§1's `trust list --all`) says
+"bound elsewhere, will report unmatched here" rather than passing as absent.
+
+The `verified` column is where §2's two-environment mining lands: `clean
+worktree` means the command was measured where gates actually run, `checkout
+only` means it was not, and `not run` means nobody has seen it exit anything.
+A gate proposed on checkout-only evidence says so in its own row rather than in
+your prose.
+
+Compose the table BEFORE you ask anything, and send it as its own message
+beside the dry-run's verbatim output. A table folded into a question's prose is
+a summary, and summaries are exactly what the audit behind the trust-alone rule
+found gets skimmed.
 
 **Trust is approved alone.** What you wrote, the registration report, this gate
 table, and the thresholds may go to the operator batched into one question.
@@ -754,7 +971,11 @@ its three flag arguments and nothing else — never a second trust entry, never 
 config item riding along. The reason is measured: an audit of a day of this
 skill's approvals found a trust write approved inside a four-item bundle in a
 single click, which is what a bundle does to the one item in it that authorizes
-execution. If that means four questions in a row, ask four questions in a row.
+execution. If that means four questions in a row, ask four questions in a row —
+and that means four separate CALLS. Several questions inside ONE question-tool
+call render as a single dialog the operator advances through in one motion,
+which is the bundle the audit measured, not the remedy for it (2026-08-17: one
+call carrying four questions, letter-compliant and functionally a bundle).
 
 On the yeses, run `trust add --yes` for each entry that got its own yes, re-run
 the dry-run to confirm it still registers clean (a fenced setup must now read
@@ -774,10 +995,13 @@ Two facts about the store that surface exactly here, at the moment of adding:
 - **The trust store is user-global** — `~/.config/docket/trust.toml`, mode 0600,
   outside every repo — so a sandboxed session's first `trust add` fails on its
   lock file with `operation not permitted`. That is the sandbox, not docket, and
-  it is the same wall §1 hit: like every other verb here, the adds need an
-  unsandboxed shell. This is a legitimate moment for one, because the operator
-  just approved these exact entries. Each entry binds to this repository unless
-  it was added `--global`.
+  unlike §1's read verbs a trust WRITE genuinely needs an unsandboxed shell.
+  Since the first sandboxed attempt always fails, go unsandboxed on the first
+  one and tell the operator the permission prompt is coming — discovering the
+  denial costs a round-trip every time, and on 2026-08-17 the surprise prompt
+  was declined once before being approved on a retry. This is a legitimate
+  moment for one, because the operator just approved these exact entries. Each
+  entry binds to this repository unless it was added `--global`.
 - **The store survives un-bootstraps and earlier sessions**, so proposed names
   may already exist. `trust add` is a silent no-op on a byte-identical entry
   and *refuses* when anything differs — and its conflict error prints the argv
@@ -808,12 +1032,24 @@ run, so no executor holds the tree and nothing claimed is reading what you
 remove.
 
 **Delete exactly what §0 wrote.** The verification agent returned the
-`docs/spec/` paths added against `$TMPDIR/pre-fanout`, and that list is this
-step's whole authority. Name each path in the `rm` — never a glob, never
+`docs/spec/` paths added against §0's snapshot — the literal `$SNAP` path §0
+recorded, not a name re-derived here — and that list is this step's whole
+authority. If that file is missing or is not a git status, STOP and say so:
+without it there is no authority to delete anything, and a re-derived name is
+another session's file. Name each path in the `rm` — never a glob, never
 `rm -rf docs/spec` — then `rmdir docs/spec`, whose refusal on a non-empty
 directory is precisely the behaviour you want: a sibling file somebody else
 keeps there survives by construction, and the refusal is how you find out it
 is there.
+
+Two mechanics worth knowing before you run it. The auto-mode classifier reads
+this deletion as destructive, so put the named paths and the reason in front of
+the operator BEFORE the `rm` rather than discovering the block. And issue the
+`rm` as its own uncompounded call — no `cd`, no chained `rmdir`, no trailing
+`git status`: on 2026-08-17 compounds containing a deletion drew a block three
+times while the same commands issued singly passed. Process substitution
+(`diff <(…)`) is also refused under the sandbox, so compare with two temp
+files if you want a before/after confirmation.
 
 **A skipped §0 deletes nothing.** Seven specs already on disk when you arrived
 are not yours — a `spec-project` run authored them, or the repo keeps them
@@ -863,13 +1099,35 @@ exist, there is no corpus to read — say so, and fall back to `workflow init
 
 ## 7. Hand off
 
+**Before you report, stop every agent you spawned.** §0's authors and §2's
+miners have no work after §3, and a finished agent stays registered until
+somebody kills it — on 2026-08-17 each fleet session left eleven idle agents
+standing for the better part of an hour.
+
 Report the config files you wrote, the trust entries they approved, and the run
 you activated — and name §0's seven specs as working input you have since
 removed (§5a), so nobody goes looking for a `docs/spec/` that was never meant
-to survive. Name the next move plainly: real work beyond the smoke issue
+to survive.
+
+**A required gate with no trust entry is a BLOCKER line, not a note.** Name the
+gate, the steps that declare it, and the consequence in plain words: the first
+dispatch will do the work and then be refused at completion. A conductor that
+learns this from a panel fifteen minutes into the run has already paid for it
+(measured 2026-08-17, twice).
+
+Name the next move plainly: real work beyond the smoke issue
 goes through `/plan` (issues, phases, gates placed deliberately), then
 `/conduct` drives what plan recorded — do not slide from bootstrapping into
-driving on your own momentum, or on a stop-guard's push. Say plainly that this
+driving on your own momentum, or on a stop-guard's push.
+
+**Expect the run-guard to block this session's stop**, naming the first pending
+step. That is the guard reading an activated run as unfinished work, and it is
+not an instruction: bootstrap's correct terminal state IS an activated,
+undispatched run. Say so, put the choice to the operator through the question
+tool — `/conduct` now, leave it parked for later, or `docket run abandon` and
+re-plan — and wait for their answer. Never dispatch to satisfy a hook, and
+never abandon a run just to clear one. (All six successful bootstraps hit this
+on 2026-08-17; two operators were pushed into `/conduct` by it.) Say plainly that this
 repo materializes no corpus of its own: the engine reads `~/.docket/config`
 directly, a fresh clone needs no setup step, and shared bytes change only
 through `src/user/docket/` and a version bump — the blast radius being every

@@ -63,7 +63,16 @@ trap 'rm -rf "$work"' EXIT INT TERM
 ctx="$work/context.json"
 cat >"$ctx" || die "reading the context bundle from stdin failed"
 jq -e . >/dev/null 2>"$work/jqerr" <"$ctx" ||
-	die "stdin is not one JSON document: $(cat "$work/jqerr")"
+	die "stdin is not valid JSON: $(cat "$work/jqerr")"
+# ...and it must be exactly ONE document, which the parse above does not check:
+# `jq -e .` happily accepts a STREAM, so two concatenated bundles get through and
+# then poison every field() below — `.issue.id` returns one line per document, so
+# the id becomes multi-line and `doc link add` rejects it. That failure lands
+# AFTER `doc create` has already written a row, orphaning it. Counting the stream
+# here refuses that input before anything is created.
+docs="$(jq -s 'length' <"$ctx" 2>/dev/null)" || docs=""
+[ "$docs" = "1" ] ||
+	die "stdin must be exactly one JSON document, got ${docs:-0}"
 
 field() { jq -r "$1 // \"\"" <"$ctx"; }
 
@@ -92,13 +101,18 @@ jq -r '.body' <"$work/input.json" >"$work/body.md"
 input_kind="$(jq -r '.kind // ""' <"$work/input.json")"
 producer="$(jq -r '.producer_step // ""' <"$work/input.json")"
 
-# Doc type: the issue's `doc-<type>` label is the authority (05 §1 keys the
-# author resolution table on exactly that label). The artifact's own kind is the
+# Doc type: the issue's `doc:<type>` label is the authority (05 §1 keys the
+# author resolution table on exactly that label, and every `when` clause in
+# workflows/spec-doc.toml reads the COLON form — `labels contains doc:tdd`). The
+# hyphen form `doc-<type>` is accepted too, for any caller still labelling the
+# old way; colon wins when an issue carries both. The artifact's own kind is the
 # fallback, and "doc" the last resort — `docs.type` is free-form at the model
 # layer (internal/model/doc.go:44-51), so nothing here is validated against an
 # enum that does not exist.
 doc_type="$(jq -r '
-  [ .issue.labels[]? | select(startswith("doc-")) | ltrimstr("doc-") ] | first // ""
+  ( [ .issue.labels[]? | select(startswith("doc:")) | ltrimstr("doc:") ] | first )
+  // ( [ .issue.labels[]? | select(startswith("doc-")) | ltrimstr("doc-") ] | first )
+  // ""
 ' <"$ctx")"
 if [ -z "$doc_type" ]; then
 	case "$input_kind" in
@@ -144,6 +158,18 @@ doc_id="$(printf '%s' "$create_out" | jq -r '.data.id')"
 created_at="$(printf '%s' "$create_out" | jq -r '.data.created_at')"
 [ -n "$doc_id" ] && [ "$doc_id" != "null" ] || die "docket doc create returned no id: $create_out"
 
+# From here on the STORED row is what this reply describes, so title and type
+# come from the create's own output rather than from the bundle that produced
+# it. On an idempotent replay the create returns the ORIGINAL row unchanged
+# (internal/db/docs.go:81-88) — a revised author body can carry a different H1
+# or a re-labelled type, and reporting those would describe a document that is
+# not in the store. The input-derived values stay as the fallback for a CLI that
+# omits a field.
+stored_title="$(printf '%s' "$create_out" | jq -r '.data.title // ""')"
+stored_type="$(printf '%s' "$create_out" | jq -r '.data.type // ""')"
+[ -n "$stored_title" ] && title="$stored_title"
+[ -n "$stored_type" ] && doc_type="$stored_type"
+
 # Replay detection, first half. `doc create` gives a replayed create output
 # IDENTICAL to a fresh one, so one available signal is the row's own created_at
 # against a timestamp taken before the call. RFC3339 here is second-granular, so
@@ -171,6 +197,12 @@ elif [ "$link_code" = "CONFLICT" ]; then
 	log "$doc_id was already linked to $issue; treating as a no-op"
 else
 	log "docket doc link add failed (exit $link_rc): $link_out"
+	# The create succeeded and the link did not, so $doc_id is in the store with
+	# no issue behind it. Name it loudly: the row is otherwise invisible in a
+	# failure whose stdout is empty by contract. Re-running this step replays the
+	# same DOC through the idempotency key and retries the link, so the orphan is
+	# only durable if the step is abandoned outright.
+	log "ORPHANED: $doc_id was created but is NOT linked to $issue — re-run this step (idempotency key $key) to replay $doc_id and retry the link, or link it by hand with: docket doc link add $doc_id --issue $issue"
 	exit 1
 fi
 

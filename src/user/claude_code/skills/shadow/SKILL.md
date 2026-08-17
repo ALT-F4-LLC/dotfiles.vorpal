@@ -344,6 +344,18 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   landed" from such a session indicts the session, not the delegate
   (measured 2026-08-11: 94s queued, delivered the same second the turn
   ended).
+- **An artifact listing's `sha256`/`bytes` describe a short summary BODY, not
+  the payload**: a supersession chain (one re-emit per held-cluster approval)
+  shares one hash while `payload_bytes` differ — it reads as duplicates and
+  is not — and the body text goes stale after supersession. Diff payloads,
+  not hashes (DKT-112).
+- **`events list` defaults to `--limit 100`** and silently truncates big runs
+  — pass an explicit `--limit` post-mortem (a 194-event run lost its head,
+  2026-08-17).
+- **Naive per-line summation over `agent-*.jsonl` OVER-counts input/cache
+  units** vs wave-usage's message-id dedup — never call a backfill lossy from
+  a naive sum; recompute with the script's own method first (measured
+  2026-08-17: 73,195 naive vs 38,576 deduped cache-creation on one wave).
 
 Cross-check the engine whenever the store is reachable, from the observed
 repo's root: resolution runs `$DOCKET_PATH` → a repo-local `.docket/issues.db`

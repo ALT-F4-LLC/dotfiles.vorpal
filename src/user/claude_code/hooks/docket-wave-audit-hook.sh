@@ -46,9 +46,24 @@ if [ -n "$HOOK_INPUT" ] && [ -f "$HOME/.docket/config/policy.toml" ] \
     | if type == "string" then (try fromjson catch {}) else (. // {}) end
     | .policyText // "" | length' 2>/dev/null)
   if [ -n "$GOT" ] && [ "$GOT" -gt 0 ] 2>/dev/null; then
-    WANT=$(wc -m < "$HOME/.docket/config/policy.toml" 2>/dev/null | tr -d '[:space:]')
-    if [ -n "$WANT" ] && [ "$GOT" -ne "$WANT" ]; then
-      echo "wave-audit (advisory): this launch carried policyText of $GOT chars but ~/.docket/config/policy.toml is $WANT chars — the launch did NOT carry the file byte-for-byte. Re-cat the file and re-launch with the full output; a condensed policy is the RUN-4 defect." >&2
+    # Measure the file with jq too, so BOTH sides count Unicode codepoints:
+    # `wc -m` counts bytes under a non-UTF-8 locale, and policy.toml carries
+    # multi-byte chars (20932 bytes vs 20834 chars today), which would make
+    # the loud message below fire on every clean launch in a C-locale hook
+    # environment — recreating the exact alarm fatigue this block kills
+    # (DKT-V31, tribunal-security's locale finding).
+    WANT=$(jq -Rs 'length' < "$HOME/.docket/config/policy.toml" 2>/dev/null)
+    # $(cat file) strips the trailing newline, so a byte-for-byte launch
+    # legitimately arrives one char short. Warning on that fired on every
+    # CLEAN launch (19+ false positives across the 2026-08-17 fleet), and
+    # the noise trained conductors to ignore the REAL condensation warnings
+    # in the same pile (RUN-15's DKT-V24 panel; RUN-17's DKT-V22/V23 panels
+    # plus two waves). Exact and exact-minus-one are silent; anything else
+    # says so loudly, with numbers.
+    if [ -n "$WANT" ] && [ "$GOT" -ne "$WANT" ] 2>/dev/null && [ "$GOT" -ne "$((WANT - 1))" ]; then
+      DELTA=$((WANT - GOT)); [ "$DELTA" -lt 0 ] && DELTA=$((0 - DELTA))
+      PCT=$((DELTA * 100 / WANT))
+      echo "wave-audit: POLICY CONDENSED — this launch carried policyText of $GOT chars but ~/.docket/config/policy.toml is $WANT chars (off by $DELTA, ~$PCT%). The wave or panel just launched is routing/judging on an INCOMPLETE policy: TaskStop it, re-cat the file, and relaunch byte-for-byte. This is the RUN-4 defect; on 2026-08-17 it reached three live governance votes." >&2
     fi
   fi
 fi

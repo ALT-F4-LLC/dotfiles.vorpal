@@ -39,11 +39,18 @@ Three rules you must not fight:
   the dotfiles repo edits the definitions themselves. The findings log is the
   buffer that makes waiting cheap. After the end: propose the batch to the
   tribunal, and write what it approves (§6.3).
-- **Engine defects are filed, never fixed.** Docket is a separate codebase.
+- **Engine defects are filed, never fixed — and every finding you file goes
+  to its OWNING project** (operator ruling, 2026-08-16: gaps belong to their
+  respective projects). Docket is a separate codebase.
   Write the defect up — verb, refusal text verbatim, minimal repro — and file
   it from the docket repo's own checkout (`docket issue create`), which is
   also what routes it: the store is machine-global and a project is a
-  checkout's git identity. Ids are a store-wide sequence and the two live
+  checkout's git identity. The same routing covers every other cross-repo
+  finding: the observed repo's own bug files in ITS project, a dotfiles gap
+  you cannot fix as a definition edit files in the dotfiles project — never
+  into whichever project the observed session sat in, and `docket issue move
+  <id> --project <target>` re-homes one that already landed wrong. Ids are a
+  store-wide sequence and the two live
   projects share the prefix `DKT`, so name the project beside any id that
   could be read either way. If you cannot file from this seat, the writeup
   goes in the review addressed to the operator. A definition-side mitigation
@@ -473,8 +480,9 @@ Then:
    installed copy is now behind source. A call site that must work before
    then names the source path explicitly. Never recreate a hand-made symlink
    into the source tree; log any you find as debris.
-4. **File the engine defects** (rule 3), one issue per defect, refusal text
-   and repro verbatim.
+4. **File the engine defects and every other cross-repo finding** (rule 3),
+   one issue per defect, refusal text and repro verbatim, each in its owning
+   project.
 5. **Close** by naming the log path, the fixes applied, the issues filed,
    and the one thing the next shadow should watch first.
 

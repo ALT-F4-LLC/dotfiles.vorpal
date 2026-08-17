@@ -258,4 +258,9 @@ operator on an escalation — which were declined, and what the next retro shoul
 watch. A declined proposal with accumulating evidence is the first thing to
 re-raise, and a panel that split is worth naming as such: the disagreement is
 evidence about the proposal. A finding that belongs upstream (an engine limitation, a
-design deviation) gets filed as an issue, not bent into config.
+design deviation) gets filed as an issue, not bent into config — and filed in
+its OWNING project (operator ruling, 2026-08-16: gaps belong to their
+respective projects): engine findings from the docket repo's checkout,
+definition findings from the dotfiles checkout — cwd picks the project —
+never into whichever project this retro read its runs from. `docket issue
+move <id> --project <target>` re-homes one that already landed wrong.

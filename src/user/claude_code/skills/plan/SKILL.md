@@ -257,7 +257,12 @@ matching ZERO files in this repository is the cheap tell — check every glob
 against the tree before recording, and stop-and-ask on a miss. Binding such
 an issue anyway is not a plan the run can execute: the executor's isolation
 contract and sandbox confine it to this repository, so the step can only
-gap-file while the downstream pipeline runs over nothing.
+gap-file while the downstream pipeline runs over nothing. The same routing
+governs side-findings (operator ruling, 2026-08-16: gaps belong to their
+respective projects): an engine defect or another repository's bug surfaced
+by the scope read or premise verification files in the OWNING repo's project
+— `docket issue create` from that checkout — with at most a relates_to
+pointer here, never as an issue in this run's project.
 
 **Everything an executor must know goes in the BODY, before activation.** Issue
 bodies snapshot at the activation that binds them, frozen from that moment — the

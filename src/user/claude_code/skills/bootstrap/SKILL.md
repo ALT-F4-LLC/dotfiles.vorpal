@@ -13,7 +13,7 @@ this skill writes into the tree is §0's seven specs under `docs/spec/`, and §5
 takes those back out again — they are scaffolding for the work below, not
 output.
 
-Two rules you must not fight:
+Three rules you must not fight:
 
 - **Never run `workflow register` or `schema register`.** Activation
   auto-registers both config roots — `~/.docket/config` first, then this repo's
@@ -23,6 +23,12 @@ Two rules you must not fight:
   say yes; then you run `trust add --yes`. The human, specifically: no panel of
   agents can approve a trust entry, and no trust entry is ever one item among
   several in a single question (§5).
+- **A defect you surface files in its OWNING project** (operator ruling,
+  2026-08-16: gaps belong to their respective projects). An engine gap —
+  anything "owed upstream" below — is the docket repo's: `docket issue
+  create` from THAT checkout, cwd picks the project, never an issue in the
+  repo you are binding. A corpus or definition gap is the dotfiles repo's,
+  same mechanics.
 
 ## 0. Seed the specs
 

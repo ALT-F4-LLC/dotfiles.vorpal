@@ -1057,7 +1057,9 @@ async function runGate(row, phaseLabel) {
         log(`${row.step}: gate already decided — continuing`)
         return { step: row.step, status: 'gate-passed', text: show }
     }
-    const m = show.match(/"proposal"\s*:\s*"(PROP-\d+)"/)
+    // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
+    // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
+    const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
     if (!m) {
         log(`${row.step}: gate has no proposal — its predecessors did not all ` +
             `record, so the panel cannot seat; skipping this issue's later stages`)

@@ -4,6 +4,16 @@ export const meta = {
     whenToUse: 'Invoked by the conduct skill on an open dispatch, always as Workflow({scriptPath}) — never by name. args is {rows, policyText}: `next` rows verbatim (executor, vote, and action rows; human rows stay with the conductor) plus the literal TEXT of policy.toml. There is no policyPath and no file access.',
 }
 
+// ---------------------------------------------------------------------------
+// TOML subset parser — byte-identical to tribunal.js's, deliberately
+// duplicated. A workflow script has no file access and no module resolution:
+// it cannot import a sibling, so the only alternatives are this copy or a
+// second parser that drifts. tests/workflow-sync.test.sh diffs every
+// SYNC-marked region between the two files (self-names normalized) and fails
+// on drift.
+// ---------------------------------------------------------------------------
+
+// SYNC-BEGIN policy-parser
 const SUBSET = 'tables, array-of-tables, inline tables, quoted strings, integers, arrays of strings, # comments outside quotes'
 
 function bail(line, n, why) {
@@ -142,6 +152,7 @@ function parseToml(text) {
     if (pendingKey !== null) bail('', pendingLine, 'unterminated array')
     return root
 }
+// SYNC-END policy-parser
 
 const INVESTIGATOR_CLASS = ['investigate', 'research', 'retro-analyst']
 
@@ -832,6 +843,7 @@ function spawn(row, phaseLabel) {
 // still bind.
 // ---------------------------------------------------------------------------
 
+// SYNC-BEGIN seat-contract
 function resolveSeat(seat, policy) {
     const row = (policy.executors || {})[seat]
     if (!row) {
@@ -890,8 +902,10 @@ function resolveSeat(seat, policy) {
     return { seat, variant, model: spec.model, effort: spec.effort }
 }
 
-// A seat's lens is its trailing name segment — tribunal.js's table, kept in
-// sync (edit both or neither, same rule as the TOML parser).
+// A seat's lens is its trailing name segment: `tribunal-security` -> security.
+// An unrecognised seat gets the whole-system lens rather than a throw — a gate
+// decided by a generically-briefed judge is still decided; a thrown panel
+// leaves the gate undecidable.
 const LENSES = {
     architecture:
         'DESIGN, COUPLING, AND PRECEDENT. Does this fit the shape of the system it ' +
@@ -919,6 +933,7 @@ function lensOf(seat) {
     const key = parts[parts.length - 1]
     return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
 }
+// SYNC-END seat-contract
 
 function seatBrief(r, voteId, row, isRespawn) {
     const { role, text } = lensOf(r.seat)

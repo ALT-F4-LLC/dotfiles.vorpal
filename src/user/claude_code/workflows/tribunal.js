@@ -9,9 +9,11 @@ export const meta = {
 // TOML subset parser — byte-identical to wave.js's, deliberately duplicated.
 // A workflow script has no file access and no module resolution: it cannot
 // import a sibling, so the only alternatives are this copy or a second parser
-// that drifts. Keep the two in sync; edit both or neither.
+// that drifts. tests/workflow-sync.test.sh diffs every SYNC-marked region
+// between the two files (self-names normalized) and fails on drift.
 // ---------------------------------------------------------------------------
 
+// SYNC-BEGIN policy-parser
 const SUBSET = 'tables, array-of-tables, inline tables, quoted strings, integers, arrays of strings, # comments outside quotes'
 
 function bail(line, n, why) {
@@ -150,6 +152,7 @@ function parseToml(text) {
     if (pendingKey !== null) bail('', pendingLine, 'unterminated array')
     return root
 }
+// SYNC-END policy-parser
 
 // ---------------------------------------------------------------------------
 // Seat routing. A seat is not a step: there is no attempt chain, no
@@ -162,6 +165,7 @@ function parseToml(text) {
 // beyond it, and a pinned seat standing there is clamped back to the ceiling.
 // ---------------------------------------------------------------------------
 
+// SYNC-BEGIN seat-contract
 function resolveSeat(seat, policy) {
     const row = (policy.executors || {})[seat]
     if (!row) {
@@ -251,6 +255,7 @@ function lensOf(seat) {
     const key = parts[parts.length - 1]
     return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
 }
+// SYNC-END seat-contract
 
 // ---------------------------------------------------------------------------
 // Briefs

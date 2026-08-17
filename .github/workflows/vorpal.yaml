@@ -14,6 +14,8 @@ jobs:
 
       - run: bash tests/docket-commit-guard-hook.test.sh
 
+      - run: bash tests/workflow-sync.test.sh
+
   build-dev:
     runs-on: macos-latest
     steps:

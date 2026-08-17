@@ -35,6 +35,7 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cargo/git",
     "~/.cargo/registry",
     "~/Library/Caches/go-build",
+    "~/go/pkg/mod",
     "~/Library/Caches/golangci-lint",
     "~/Library/Caches/pip",
     "~/Library/Caches/staticcheck",

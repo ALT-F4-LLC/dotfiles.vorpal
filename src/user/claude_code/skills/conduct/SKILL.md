@@ -15,10 +15,25 @@ between them and run the commands.
 never artifact bodies. Every loop iteration asks the engine again. If you ever
 find yourself thinking "I remember that step 4 failed" — you do not; ask.
 
+*(A note on the `RUN-N` citations throughout this file: they are lore from
+runs of the RETIRED store epoch, kept because each names a failure worth not
+repeating. Run ids restarted at the 2026-08 store reset, so a citation here can
+collide with a live run of the same number in your own project — on 2026-08-17
+a conductor driving a live RUN-6 read this file's RUN-6 lore as its own
+history. Never treat one as a fact about the run you are driving; ask the
+engine.)*
+
 **You make no routing decisions.** You never choose a model, a tier, an effort,
 or an executor. You never compare tiers. If you are weighing which model should
 serve a step, you have left this skill's contract: that resolution is
 `wave.js`'s, in code, and it is deliberately not yours.
+
+"Not yours" governs EDITING `wave.js` and choosing routes — never READING it.
+When a failure quotes brief content back at you, `grep` the installed
+`wave.js` for the quoted strings and name the file and line in your
+escalation. A read costs one call and turns "unknown cause" into a filed
+defect; on 2026-08-17 a conductor declined that grep as out of scope and
+escalated a total blocker with no cause attached.
 
 **You size no panels and reconcile nothing.** Fan-out widths, thresholds,
 finding clustering, retries — all engine and pipeline mechanics. You do not
@@ -67,9 +82,22 @@ switch the session mode) and do not dispatch into it and hope. Symptom to
 recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
 
+**A safety-classifier block is not a flake, and a retry is not the answer.**
+The classifier screens a rendered brief before any agent exists, so a block is
+a verdict on brief CONTENT and a retry re-renders that content (measured
+2026-08-17: three dispatch cycles, three identical refusals, RUN-5). Reconcile
+and close the dispatch as usual, then escalate ONCE, quoting the refusal
+verbatim and the `wave.js` line it names. Never offer a retry as an option,
+and never reword a brief to get it accepted — the fix is a definition edit the
+operator installs, outside this run, and the sanctioned unblock in-session is
+the operator's own explicit confirmation.
+
 **A run still in `planning` is not yours to activate alone.** Activation is a
-gate — a PANEL one since 2026-08-11, per **Gates** below — and it PINS config
-bytes for the whole run — from the shared root
+gate — a PANEL one since 2026-08-11, per **Gates** below, EXCEPT on a run
+`bootstrap` created and has not yet activated: that first activation is the
+operator's alone and no panel stands in for it (bootstrap §5), so if the
+operator has already declined it once, ask them rather than convening — and it
+PINS config bytes for the whole run — from the shared root
 `~/.docket/config` first, then this repo's `.docket/config/` if it has one. Two
 checks first.
 **Stale install:** diff the dotfiles checkout's corpus source against the
@@ -375,6 +403,28 @@ fails (RUN-3's last iteration ran the chain and got lucky). RUN-4 chained four
 of six closes and demonstrated the failure live: a chained `verify` refused
 and the queued `close` ran anyway, unread. The chain's real cost is that each
 verb's answer scrolls past undecided — three calls, three read answers.
+
+Two ways the back-fill gets skipped, both measured 2026-08-17, both losing the
+run's only record of its spend:
+
+- **"Nothing was claimed" is not a reason to skip it.** A wave whose spawns all
+  failed still burned real tokens — a probe, a partial agent, a blocked spawn's
+  own context. Run `wave-usage` and read ITS answer; skip only when the script
+  itself reports nothing to submit. RUN-5 reasoned its way out of three
+  back-fills this way and its ledger reads `Spend: 0` against 15,689 measured
+  tokens.
+- **Back-fill BEFORE you read or diagnose the wave's result.** It is one cheap
+  call, and a usage-limit checkpoint or an interrupt landing mid-diagnosis
+  takes the window with it — RUN-10 carries zero ledger rows for exactly that
+  reason, with ~2M executor tokens unrecorded.
+
+**A `verify` refusal on a step that recorded and then parked is expected, not
+a finding.** `dispatch verify` compares stored manifest rows against a fresh
+rendering, and a step that moved `ready` → `waiting-human` is no longer in the
+ready set, so verify exits 4 naming "no row at this position" for work that
+went exactly right (filed as an engine defect). Confirm with `docket step show
+STEP-N` that the step recorded, then close. A verify mismatch is a finding only
+when the step it names did NOT record.
 
 The same order governs the crashed-relay exit: back-fill BEFORE `dispatch
 abandon` too — abandon has no later back-fill window, and RUN-6 stranded
@@ -806,6 +856,16 @@ its own permissions is grading its own paper. **A trust proposal is NEVER
 bundled into a batch with other approvals** — it goes alone, as its own
 question.
 
+**A required gate with no trust entry is a PARK, never a stub.** Never propose,
+and never accept without saying so plainly, an argv that cannot fail — `true`,
+`:`, `echo` — to satisfy a gate. It records `pass` in `gate_results` forever,
+in milliseconds, and the gap becomes invisible to everyone downstream: on
+2026-08-17 a repo whose own security spec had found cleartext private keys
+took a `/usr/bin/true` secret-scan and now reports green. Present the gap as
+what it is and let the operator decide. If they direct a stub anyway, file the
+removal issue in the SAME turn and name the stubbed gate in every subsequent
+status report until it is gone.
+
 Activation sits beside this list with two named carve-outs: bootstrap's
 first-activation ceremony is the operator's alone (a trust matter, and
 bootstrap says so), and a direct operator instruction to activate outranks the
@@ -834,7 +894,18 @@ your next status report, not into a question — the operator hears about it
 without being asked to decide what the engine already routed. Present the actual thing
 being decided alongside it — the diff for a commit gate, the finding summary
 for a held cluster, the numbers for a budget breach. "Step 12 needs approval"
-is not a gate, it is a rubber stamp. Question tool, recommended option first
+is not a gate, it is a rubber stamp.
+
+**When the park followed a step's gates, read the verdicts before you present
+anything.** `docket step gates STEP-N --json` is the verb that carries them —
+each gate's verdict, exit code, argv, duration, and output. `step show` and
+`step artifacts` do not, and the event stream renders a pass and a failure
+identically, so a conductor reading either surface reports failures as passes
+(measured 2026-08-17: three gates at exit 1 reported green to the operator).
+Read the exits too, not just the verdicts: a gate that "fails" in
+milliseconds naming `operation not permitted` or a denied socket measured the
+sandbox, not the code, and presenting it as a code failure invites an
+override-pass on a finding that was never real. Question tool, recommended option first
 and labelled "(Recommended)", each answer's real routing stated in its
 description — resolved from the FROZEN definitions, not the files on disk.
 

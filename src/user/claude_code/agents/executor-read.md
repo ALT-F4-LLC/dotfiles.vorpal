@@ -12,6 +12,15 @@ contract — this file grants a tool surface and nothing else.
 **Your surface.** Read/Grep/Glob and LSP over the tree; Bash for read-only
 inspection, the `docket` CLI, and writes confined to `$TMPDIR`.
 
+**Every `docket` verb runs with your cwd INSIDE the checkout** — never from
+`$TMPDIR`, never from a copy you made there. The store resolves which project a
+command belongs to from the current directory, so a `docket` call from a
+scratch directory registers that directory as a new project in the shared
+store: on 2026-08-17 a judge that recorded its step from `$TMPDIR` minted a
+permanent junk project whose prefix collides with a real one, and no CLI verb
+can remove it. If a probe took you into a scratch copy, `cd` back before you
+record.
+
 **You cannot write the tree, and that is the point.** Engine recording and
 scratch are not tree mutation. A step that assesses work must not be able to
 fix what it was asked to assess. If your brief appears to require a tree

@@ -23,7 +23,10 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 7   # 7: medium auto fix-loop retired (2026-08-10)
+version = 8   # 8: verify's unverifiable park routes through an interposed
+              #   tribunal vote first (operator policy, 2026-08-16) — the
+              #   panel escalates only what it will not pass
+              # 7: medium auto fix-loop retired (2026-08-10)
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 
 [match]                      # exactly-one-match (06 §11.1): security is the highest-
@@ -198,7 +201,34 @@ payload = "ac-report@1"
 expected_cost = 0.50
 gates = [{ name = "ac-commands", pre = true }]
 inputs = ["issue.body", "issue.diff", "implement.change-summary"]
-threshold = { "fix-loop" = "any(status == unmet)", "waiting-human" = "any(status == unverifiable)" }
+threshold = { "fix-loop" = "any(status == unmet)", "verify-tribunal" = "any(status == unverifiable)" }
+                                     # TRIBUNAL-FILTERED ESCALATION (operator
+                                     #   policy, 2026-08-16): an unverifiable AC
+                                     #   used to park straight to the operator;
+                                     #   it now routes to the interposed vote
+                                     #   step below. `fix-loop` is evaluated
+                                     #   BEFORE any interposed step routing
+                                     #   (ThresholdOrder), so a report carrying
+                                     #   both unmet and unverifiable rows loops
+                                     #   first — fix the fixable, judge what
+                                     #   remains. Distinct from `security-vote`,
+                                     #   which is 05 §4's own waiver panel over
+                                     #   FINDINGS; this seat judges the
+                                     #   AC-REPORT in the operator's stead.
+
+[[step]]                     # reached ONLY by verify's threshold routing
+name = "verify-tribunal"
+after = ["verify"]                   # names the predecessor V8 requires; the step
+                                     #   stays otherwise-unreached — interposition
+                                     #   is what makes it ready (06 §11.2)
+type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
+                                     #   the panel reads the ac-report FIRST and
+                                     #   escalates only what it will not pass.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side (see
+                                     #   investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human
+inputs = ["verify.ac-report", "issue.body"]
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
 # commit-exec are gone from every pipeline — automated commits are incompatible

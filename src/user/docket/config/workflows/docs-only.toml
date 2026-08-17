@@ -5,8 +5,9 @@
 # Consequences of "no fix-loop", read against the engine:
 #   - there is no `fix` step and no `after_loop` anywhere in this file;
 #   - no threshold may route "fix-loop" (there would be no loop body to enter),
-#     so the review outcome routes `waiting-human` instead — the operator reads
-#     the findings. `max_fix_loops` is therefore absent too.
+#     so the review outcome routes to an interposed tribunal instead (06 §11.2)
+#     — the panel reads the findings and escalates only what it will not pass
+#     (operator policy, 2026-08-16). `max_fix_loops` is therefore absent too.
 #   - the single-judge review is an ordinary executor step, not a `fanout`: a
 #     one-hint fanout would register (V15 only refuses an EMPTY fanout) but would
 #     model a join over one sibling that 05 §2 does not ask for.
@@ -18,12 +19,15 @@
 
 [pipeline]
 name    = "docs-only"
-version = 7   # 7: verify step declares verify.gate-results so its own
+version = 8   # 8: the two operator parks (review high+, verify unmet) route
+              #   through interposed tribunal votes first (operator policy,
+              #   2026-08-16) — the panel escalates only what it will not pass
+              # 7: verify step declares verify.gate-results so its own
               #   ac-commands pre-gate row resolves at claim (DOT-13,
               #   engine fix 7a2cbff)
               # 6: description + commit-tail note updated to the
               #   conductor-integrates model (2026-08-10)
-description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop; the conductor integrates commits, the operator publishes."
+description = "Documentation change: one correctness judge, doc-validate and citation gates, no fix-loop, tribunal-filtered escalation; the conductor integrates commits, the operator publishes."
 
 [match]                      # no `docs` kind exists (closed set, see spec-doc's
                              #   note); `docs-only` is the label 05 §2 names anyway
@@ -98,9 +102,31 @@ packet = ["contracts/{executor}.md"]
 payload = "findings@1"
 expected_cost = 0.60
 inputs = ["implement.change-summary", "issue.diff"]
-threshold = { "waiting-human" = "any(severity >= high)" }
+threshold = { "review-tribunal" = "any(severity >= high)" }
                                      # no fix-loop exists to route to; a high+
-                                     #   finding parks for the operator instead
+                                     #   finding routes to the interposed
+                                     #   tribunal below (06 §11.2), which
+                                     #   escalates only what it will not pass
+                                     #   (operator policy, 2026-08-16). NOTE the
+                                     #   run no longer parks at review: the
+                                     #   routing step itself is done, so
+                                     #   `verify` proceeds while the panel reads.
+
+[[step]]                     # reached ONLY by review's threshold routing
+name = "review-tribunal"
+after = ["review"]                   # names the predecessor V8 requires; the step
+                                     #   stays otherwise-unreached — interposition
+                                     #   is what makes it ready (06 §11.2)
+type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
+                                     #   the panel reads high+ findings FIRST and
+                                     #   escalates only what it will not pass —
+                                     #   same rationale as investigation's
+                                     #   read-gate.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side (see
+                                     #   investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human
+inputs = ["review.findings", "issue.diff"]
 
 [[step]]
 name = "verify"
@@ -115,10 +141,25 @@ payload = "ac-report@1"
 expected_cost = 0.40
 gates = [{ name = "ac-commands", pre = true }]
 inputs = ["issue.body", "issue.diff", "implement.change-summary", "verify.gate-results"]
-threshold = { "waiting-human" = "any(status == unmet)" }
-                                     # unmet parks rather than looping; the
+threshold = { "verify-tribunal" = "any(status == unmet)" }
+                                     # unmet routes to the tribunal rather than
+                                     #   looping (nothing loops here); the
                                      #   `unverifiable` clause collapses into the
                                      #   same routing, so it is not restated
+
+[[step]]                     # reached ONLY by verify's threshold routing
+name = "verify-tribunal"
+after = ["verify"]                   # names the predecessor V8 requires; the step
+                                     #   stays otherwise-unreached — interposition
+                                     #   is what makes it ready (06 §11.2)
+type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
+                                     #   the panel reads the ac-report FIRST and
+                                     #   escalates only what it will not pass.
+voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
+vote_rule = "tribunal"               # registered engine-side (see
+                                     #   investigation.toml's note on V26)
+on_fail = "waiting-human"            # any non-approval escalates to the human
+inputs = ["verify.ac-report", "issue.body"]
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and
 # commit-exec are gone from every pipeline — automated commits are incompatible
@@ -127,5 +168,6 @@ threshold = { "waiting-human" = "any(status == unmet)" }
 # `commit-msg` 0 pass / 1 fail across RUN-1/2/5, all override-passed; DKT-13/
 # DKT-61). Full rationale in standard-change.toml's matching note. Since 2026-08-10 the
 # conductor integrates each write sha as a real unsigned commit; only
-# publishing stays the operator's. `verify` is the terminal engine step, and
-# its `waiting-human` threshold on unmet ACs remains the pipeline's park point.
+# publishing stays the operator's. `verify` (with its interposed tribunal, when
+# routed) is the terminal engine step; the tribunal filters unmet-AC
+# escalations, and only its non-approvals park for the operator.

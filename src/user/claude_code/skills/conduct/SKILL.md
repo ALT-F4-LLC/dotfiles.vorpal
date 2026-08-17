@@ -484,18 +484,21 @@ exact path. Never redispatch a step whose complete parked payload you hold —
 that burns a duplicate executor run to relearn what is already on disk
 (RUN-3 paid one full judge round). On a WRITE-class step, carry
 `--worktree <its checkout>` through as well: the flag DEFAULTS to the invoking
-checkout, so a record run from your seat without it diffs your tree and not
-the one the work happened in — the same failure the next paragraph exists to
-prevent. Parked state whose provenance you cannot tie to the step is a
-stop-and-ask, not a judgment call.
+checkout, so a record run from your seat without it diffs your tree — and
+runs the step's completion gates in it (DKT-9) — not the one the work
+happened in; the same failure the next paragraph exists to prevent. Parked
+state whose provenance you cannot tie to the step is a stop-and-ask, not a
+judgment call.
 
 **Worktree writers: they record, then you integrate.** Every executor — write
 archetypes included — runs in a private worktree; a write executor's
 deliverable is a COMMIT there, its sha on the first line of the change-summary
 and in the report. It records with `--worktree <its checkout>` so the engine
-computes the recorded diff where the work happened (DKT-106, answered) — the
-record does NOT wait on integration, and the old cherry-pick-first ordering is
-gone. **The empty-`issue.diff` packet defect is FIXED** (diff base pinned to
+computes the recorded diff where the work happened (DKT-106, answered) and —
+since DKT-9 (2026-08-16) — spawns the step's completion gates and verify's
+ac-commands pre-gate with that checkout as cwd, so gate evidence measures the
+work rather than the shared checkout's HEAD. The record does NOT wait on
+integration, and the old cherry-pick-first ordering is gone. **The empty-`issue.diff` packet defect is FIXED** (diff base pinned to
 the run's own exec root) and verified in production — worktree-recorded steps
 now render real diffs into every downstream packet. Keep the sha in front of
 you anyway: it is the handle integration needs, and the cheapest cross-check

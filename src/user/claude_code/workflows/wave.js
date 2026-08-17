@@ -557,10 +557,13 @@ ${!isWrite ? `
    \`vuln.go.dev\` entry there for precedent) through the operator's own
    \`just activate\` — never a live bypass, and never on your say-so.
 ${isWrite ? `
-   \`--worktree\` names the checkout the work happened in, and the engine
-   computes the recorded diff THERE. Get its literal path once with \`git
-   rev-parse --show-toplevel\` and paste that in; without it the engine diffs
-   the wrong tree, because your edits live in your own worktree.
+   \`--worktree\` names the checkout the work happened in. The engine
+   computes the recorded diff THERE, and — since DKT-9 (docket.git,
+   2026-08-16) — spawns your step's completion gates and the downstream
+   verify pre-gate with that checkout as cwd too. Get its literal path once
+   with \`git rev-parse --show-toplevel\` and paste that in; without it the
+   engine diffs the wrong tree and its gates measure the shared checkout
+   instead of your work, because your edits live in your own worktree.
 ` : ''}
    \`model_resolved\` is the exact model id your environment reports (e.g.
    \`claude-sonnet-5\`), never a branding form — a "[1m]" suffix in the ledger

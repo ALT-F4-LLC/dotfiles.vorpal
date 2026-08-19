@@ -11,7 +11,12 @@
 
 [pipeline]
 name    = "ui-change"
-version = 7   # 7: verify's unverifiable park routes through an interposed
+version = 8   # 8: reconcile aggregates severity by `max` instead of
+              #   `median` — an even-count median resolves an exact tie to
+              #   the LOWER band, demoting the mixed clusters that most need
+              #   attention (retro 2026-08-19, panel DKT-V62 architecture
+              #   seat; same move as standard-change@12).
+              # 7: verify's unverifiable park routes through an interposed
               #   tribunal vote first (operator policy, 2026-08-16) — the
               #   panel escalates only what it will not pass
               # 6: fix-loop thresholds high -> blocker (2026-08-10)
@@ -112,7 +117,7 @@ inputs = ["review.*"]
 name = "reconcile"
 after = ["synthesize"]
 action = "aggregate"
-params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
 inputs = ["synthesize.findings"]
 payload = "findings@1"
 threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):

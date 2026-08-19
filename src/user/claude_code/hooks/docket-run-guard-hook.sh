@@ -13,8 +13,8 @@
 # [OBSERVED] `docket run pause RUN-N` moves the RUN to `waiting-human`, but its
 # steps revert to `pending`, so `run status` reads `RUN-2 waiting-human` while
 # `guard stop` still reads `work is still pending: [approve@0 (pending)]`.
-# Carve-out 4 below is the fix: when EVERY live run in the project is
-# `waiting-human`, that IS the sanctioned "work waiting on a person" state the
+# Carve-out 4 below is the fix: when NO live run in the project is waiting on
+# the machine, that IS the sanctioned "work waiting on a person" state the
 # header above grants a single step, so the hook allows the stop directly from
 # RUN status without waiting for the steps to clear.
 #
@@ -35,8 +35,14 @@
 # `guard stop --help`] — it answers over every active run. TDD §4.5's table
 # writes `docket guard stop --run $RUN`; that flag does not exist. Recorded as
 # a deviation. It is the better shape here for the same reason `guard record`'s
-# optional --run is: one wiring keeps working as runs come and go, and no
-# `run status` subprocess runs on every Stop.
+# optional --run is: one wiring keeps working as runs come and go.
+#
+# COST, honestly stated: a denied `guard stop` is no longer the end of the
+# story, so the carve-outs below do read the engine on a Stop that reaches
+# them — ONE `run status --json` (captured once into LIVE_RUNS and reused by
+# every carve-out that needs it) plus, in carve-out 3 only, one `events list`
+# per live run. A Stop that `guard stop` allows outright still costs nothing
+# beyond that one call.
 #
 # stop_hook_active IS CHECKED, and this is load-bearing, not defensive. [SPEC
 # hooks.md] Claude Code "overrides the hook and ends the turn after 8
@@ -51,7 +57,11 @@
 # session that cannot stop. Engine-state uncertainty inside a reachable engine
 # resolves the other way — that is the engine's own exit 2.
 #
-# TWO CARVE-OUTS, both observed on RUN-1 (2026-08-06):
+# THE CARVE-OUTS SHARE ONE INVARIANT: each block below allows ONLY on an
+# affirmative answer to its own question, and everything else — missing
+# tooling, an unreadable engine answer, an unexpected status — falls through to
+# the deny at the bottom of the file. Count them by reading, not by trusting a
+# number in this header. The first two were observed on RUN-1 (2026-08-06):
 #
 # NO DATABASE = NOTHING IN FLIGHT. Every guard verb exits 2 with "✘ Error: no
 # docket database found" when no .docket exists up-tree — the same exit code as
@@ -114,11 +124,19 @@ esac
 # jq or a parse failure falls through to the deny, keeping conductor-seat
 # behavior byte-identical. (Engine asymmetry — guards store-wide, sibling
 # reads project-scoped — is filed; this is the hook-side mitigation.)
+#
+# THE LIVE-RUN LIST IS READ ONCE, HERE, and reused by carve-outs 3 and 4. One
+# read keeps the terminal-status vocabulary in a single place: three copies of
+# this filter would let a partial future edit fail toward a silent ALLOW.
+# LIVE_RUNS is a JSON array on success and EMPTY on any failure (no jq, no
+# engine answer, unparsable payload) — every reader below must treat empty as
+# "unknown", never as "none".
+LIVE_RUNS=""
 if command -v jq >/dev/null 2>&1; then
-    LIVE=$(docket run status --json 2>/dev/null \
-        | jq -r '[.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed")] | length' 2>/dev/null) \
-        || LIVE=""
-    [ "$LIVE" = "0" ] && allow
+    LIVE_RUNS=$(docket run status --json 2>/dev/null \
+        | jq -c '[.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed")]' 2>/dev/null) \
+        || LIVE_RUNS=""
+    [ "$LIVE_RUNS" = "[]" ] && allow
 fi
 
 # Carve-out 2: a dispatch is open (or a discrepancy stands) — the wave is in
@@ -144,8 +162,7 @@ docket guard record >/dev/null 2>&1
 # dispatch-opened events" allows.
 if command -v jq >/dev/null 2>&1; then
     NEVER_DISPATCHED=1
-    RUNS=$(docket run status --json 2>/dev/null \
-        | jq -r '.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed") | .run' 2>/dev/null) \
+    RUNS=$(printf '%s' "$LIVE_RUNS" | jq -r '.[].run' 2>/dev/null) \
         || RUNS=""
     [ -n "$RUNS" ] || NEVER_DISPATCHED=0
     for R in $RUNS; do
@@ -162,28 +179,38 @@ if command -v jq >/dev/null 2>&1; then
     [ "$NEVER_DISPATCHED" = "1" ] && allow
 fi
 
-# Carve-out 4: every live run in this project is paused (waiting-human) — a
+# Carve-out 4: NO live run in this project is waiting on the machine — a
 # sanctioned stop. `run pause` reverts its STEPS to pending (see header),
 # which is exactly what defeats `guard stop`/`guard record` and carve-out 3's
 # dispatch check, so a paused run denies without this carve-out. The RUN's own
-# status is the correct signal instead: waiting-human is the same "work
-# waiting on a person" state the header already grants a single step.
+# status is the correct signal instead.
 #
-# FAILS CLOSED, same shape as 1b/3: missing jq, an unreadable run list, or any
-# live run NOT in waiting-human all fall through to the deny below. Carve-out
-# 1b already guarantees at least one live run reaches this point.
+# TWO statuses qualify, and neither is an accident:
+#   waiting-human — the same "work waiting on a person" state the header
+#     already grants a single step. This DELIBERATELY includes a run the
+#     engine parked on a budget breach: the engine sets the same status there,
+#     only the run-paused event's `data.reason` tells the two apart, and in
+#     both cases the machine has stopped and a person must act. A stop
+#     interferes with neither, so the hook does not spend an `events list` per
+#     run to distinguish them.
+#   planning — a run nobody has activated. It holds no dispatchable work at
+#     all, so it can never be the thing a stop interrupts; counting it as live
+#     work made "one paused run plus one unactivated run" deny.
+# Any OTHER live status (active, gated, or a status this hook has never heard
+# of) means the machine may still be working: fall through to the deny.
+#
+# FAILS CLOSED, same shape as 1b/3: missing jq, an unreadable run list, an
+# empty live set, or any live run outside those two statuses all reach the
+# deny below. `jq -e` carries that for us — it exits non-zero on `false` and
+# on unparsable input alike — and `length > 0` rejects the empty set without a
+# separate sentinel.
 if command -v jq >/dev/null 2>&1; then
-    ALL_PAUSED=1
-    STATUSES=$(docket run status --json 2>/dev/null \
-        | jq -r '.data.runs // [] | .[] | select(.status != "abandoned" and .status != "done" and .status != "complete" and .status != "completed") | .status' 2>/dev/null) \
-        || STATUSES=""
-    [ -n "$STATUSES" ] || ALL_PAUSED=0
-    for S in $STATUSES; do
-        [ "$S" = "waiting-human" ] || { ALL_PAUSED=0; break; }
-    done
-    [ "$ALL_PAUSED" = "1" ] && allow
+    printf '%s' "$LIVE_RUNS" \
+        | jq -e 'length > 0 and all(.[]; .status == "waiting-human" or .status == "planning")' \
+            >/dev/null 2>&1 \
+        && allow
 fi
 
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
 
-deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. If the work is blocked by something OUTSIDE the engine — a refused spawn, a denied permission, an operator ruling to withhold it — none of those verbs is the answer: say so plainly and stop, since one deny per session is expected and the second is suppressed. NOTE: \`docket run pause\` alone now clears this guard — once every live run is waiting-human the stop is allowed even though the run's steps stay pending (carve-out 4); this deny means some live run is still active/gated, or a dispatch is genuinely open."
+deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. If the work is blocked by something OUTSIDE the engine — a refused spawn, a denied permission, an operator ruling to withhold it — none of those verbs is the answer: say so plainly and stop, since one deny per session is expected and the second is suppressed. NOTE: \`docket run pause\` alone now clears this guard — once every live run is parked (waiting-human, whether an operator paused it or a budget breach did) or still in planning, the stop is allowed even though the run's steps stay pending (carve-out 4); this deny means some live run is still active/gated, or a dispatch is genuinely open."

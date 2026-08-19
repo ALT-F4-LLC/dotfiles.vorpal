@@ -38,6 +38,17 @@ resolve one against the current store.
 
 ## 1. Converse until it decomposes
 
+**A supplied brief block seeds this section — do not re-ask what it already
+answered.** If the operator's message carries a `brief` skill block (labeled
+`Goal:` / `Motivation:` / `Scope:` / `Out-of-scope:` / `Acceptance criteria:`
+/ `Size hint:` / `Security-sensitive:` / `Constraints:`), read it as
+already-settled input to the table below: Goal -> Goal, Constraints <-
+Constraints plus Out-of-scope, Acceptance criteria <- Acceptance criteria
+(still copied verbatim, per the rule below), Security sensitivity <-
+Security-sensitive, Size <- Size hint. Ask only about a field the block
+leaves as "not stated"/"not specified", or a contradiction the §2 read
+surfaces — never re-run the whole round for fields it already settled.
+
 Ask about what you genuinely cannot decompose without. Batch your questions —
 one round of three beats three rounds of one. Stop asking when you could write
 the issues; ambiguity that does not change the decomposition is not your

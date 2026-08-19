@@ -315,6 +315,16 @@ plus reading any file the payload names. Read what the claims rest on. Do not
 write, edit, commit, or run anything that mutates state — the ONE state change
 you are authorized to make is your own cast, below.
 
+SCOPE YOUR INVESTIGATION TO WHAT THIS GATE DECIDES. An activation gate decides
+whether the run may START: verify the binding against the routing rules, the
+budget against the expected cost, the scope warnings, and the corpus/trust
+state — the merits of the work itself get their own gates once artifacts
+exist, and pre-reviewing the codebase here duplicates them (one activation
+seat spent 6.5 minutes re-deriving the very investigation the run was being
+activated to perform). A budget gate decides a number against evidence of
+spend; an ack-reap gate decides whether a holder is gone. Depth belongs to
+gates whose SUBJECT is the work.
+
 EVIDENCE-QUALITY RULE: A finding backed by reproduced evidence — a mutation
 test, a demonstrated failure, a verified repro — outranks any aggregate that
 demotes it. Never discount reproduced evidence because other reviewers scored

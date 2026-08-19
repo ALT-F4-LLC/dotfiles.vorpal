@@ -1,0 +1,39 @@
+#!/bin/sh
+# integration-check — read-only. For every wave worktree (branch
+# worktree-wf_*), report whether its tip is integrated into the current
+# branch's HEAD. Integration cherry-picks, so patch-equivalence (git cherry)
+# is the test when ancestry fails; a cherry that itself errors is reported
+# UNINTEGRATED, never assumed equivalent. Run from the shared checkout before
+# `dispatch close`. Always prints "examined N wave worktree(s)" so a vacuous
+# zero-worktree pass is visible; exit 1 when anything is unintegrated.
+set -eu
+tmp="${TMPDIR:-/tmp}/integration-check.$$"
+git worktree list --porcelain |
+    awk '/^worktree /{w=$2} /^branch refs\/heads\/worktree-wf_/{print w}' > "$tmp"
+bad=0
+n=0
+while IFS= read -r path; do
+    n=$((n + 1))
+    sha=$(git -C "$path" rev-parse HEAD)
+    if git merge-base --is-ancestor "$sha" HEAD 2>/dev/null; then
+        echo "integrated (ancestor):         $sha  $path"
+        continue
+    fi
+    rc=0
+    cherry=$(git cherry HEAD "$sha" 2>/dev/null) || rc=$?
+    if [ "$rc" -ne 0 ]; then
+        echo "UNINTEGRATED (cherry exit $rc): $sha  $path"
+        bad=1
+    elif [ -z "$(printf '%s\n' "$cherry" | grep '^+' || true)" ]; then
+        echo "integrated (patch-equivalent): $sha  $path"
+    else
+        echo "UNINTEGRATED: $sha  $path"
+        bad=1
+    fi
+done < "$tmp"
+rm -f "$tmp"
+echo "examined $n wave worktree(s)"
+[ "$bad" -eq 0 ]
+# (while-read from a file, not a pipe, so `bad` survives the loop in POSIX
+# sh. Worktree paths with whitespace are out of scope — none exist on this
+# machine's layouts.)

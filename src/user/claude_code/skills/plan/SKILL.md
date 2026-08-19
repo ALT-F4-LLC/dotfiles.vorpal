@@ -95,7 +95,11 @@ background spawns run as in-process teammates whose final text is delivered to
 no one; a redundant send costs one duplicated message, a missing one costs the
 report (RUN-5's reader composed its report as final text no one received;
 RUN-7's reader repeated it when its brief said "no separate send needed" —
-never write that into a brief). The agent's brief:
+never write that into a brief). Any engine fact the brief carries — run
+status, issue ids, branch state — comes from a fresh `docket run
+status`/`issue list` read in THIS session, never from memory of prior
+sessions: the reader verifies the tree, not the engine, and a mis-premised
+brief spends its report correcting you (measured). The agent's brief:
 
 The layout tells you scopes — which directories a change of this shape actually
 touches, narrow globs per area. `ls ~/.docket/config/workflows/` tells you which
@@ -139,7 +143,13 @@ recording before the reply lands, mark the bodies PROVISIONAL in so many
 words and reconcile the moment it arrives — a body stays editable until the
 activate that BINDS it, which is the whole `planning` window and, for an
 issue added to an already-active run, up to the next activate. That window is
-the net, and it only nets what you marked.
+the net, and it only nets what you marked. And when the reader's
+report has been folded in and no follow-up question remains, STOP the
+delegate (TaskStop) in the same turn: an idle reader wakes you into no-op
+turns with idle notifications and otherwise waits for the operator to kill
+it by hand (measured in seven of nine multi-agent sessions in one fleet, up
+to fifteen hours of idle seat). Cancel any fallback wakeup still armed, or
+treat its late fire as a self-discarding no-op.
 
 ## 3. Record the run
 
@@ -207,15 +217,23 @@ missing variant label does not fail — it binds the WRONG workflow, exactly one
 match, and the engine's zero-or-several refusal structurally cannot see it: no
 scope warning, no lint, nothing downstream flags it. Before `issue create`,
 name the intended workflow for each issue and check that the labels you are
-about to record produce it against `~/.docket/config/workflows/*.toml` — the
-hand-map is one grep of `labels_any`/`unless_labels`. The tell to hunt is an
+about to record produce it with the engine's own verbs: `docket workflow
+list`, then `docket workflow show <intended>` — the match block prints
+`labels_any`/`unless_labels` verbatim from the REGISTERED corpus, which is
+what actually binds (the tomls under `~/.docket/config` are its source files
+and can diverge; a raw grep over them has also blown the output cap where
+one read verb answered). The tell to hunt is an
 issue whose title or scope lives in a variant's domain while its labels carry
 none of that variant's terms: a TUI/UI-scoped issue without `ui` is the
 canonical case (harness HRN-3, 2026-08-16 — "TUI: default on-load screen to
 home", scope `internal/tui/**`, `labels=[]` — bound `standard-change`
 silently, dropping judge-design from the fanout and skipping the terminal
 design-qa/render-verify step; one tribunal seat caught it at the activation
-gate, after which the binding was frozen for the whole run). Routing
+gate, after which the binding was frozen for the whole run). When a related issue on the same exposure surface carries a security label or
+rejected security votes — the scope read surfaces both — recommend the
+matching security workflow and make the lighter binding the option that needs
+justifying, never the default (an activation panel rejected a
+`standard-change` recommendation for exactly this, costing a re-plan). Routing
 domain-flavored work onto the baseline ON PURPOSE is legitimate, but it is an
 operator decision: elicit it and record it in the issue body and the plan
 artifact — never route by omission.
@@ -328,7 +346,10 @@ decided and by whom.
 
 The run activates on phase one. When phase one finishes, the operator answers
 the gate, and a *fresh* planner invocation reads the run record — steps,
-findings, gate notes — and appends phase two. Activation lints the extension
+findings, gate notes — and appends phase two. (Reading those artifacts is a
+pair of verbs: `docket step artifacts STEP-N` lists ids, then `docket step
+artifact ARTIFACT-N [--payload]` prints one — there is no `docket artifact`
+command.) Activation lints the extension
 like any other graph.
 
 This is a designed shape, not a fallback. Use it whenever the honest answer to

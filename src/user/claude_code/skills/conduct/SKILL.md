@@ -59,6 +59,15 @@ session died exactly there, orphaning a dispatch and a live wave. Before the
 first dispatch, confirm the session runs a mode that pre-authorizes those
 calls; if not, say so and let the operator switch before you open anything.
 
+**Seat location check.** If `git rev-parse --show-toplevel` is not your cwd,
+this session is seated in a SUBDIRECTORY: the sandbox write-allow covers only
+that subtree, so every repo-level git write — yours and every wave
+executor's, the git index included on a bare-repo layout — will be denied
+(measured: all three write executors in one run responded by disabling the
+sandbox themselves, twenty calls, against their brief's absolute). Move the
+seat to the repository root, or have the operator widen the sandbox, before
+the first dispatch.
+
 **Docket verbs need WRITE access to the store — test it in the seat you will
 actually use, yours and the wave's, before the first dispatch.** Every command
 opens `~/.docket/issues.db` read-write and migrates forward first; there is no
@@ -81,6 +90,20 @@ component of the bootstrap is denied, surface the choice (narrow the deny, or
 switch the session mode) and do not dispatch into it and hope. Symptom to
 recognize instantly: every agent in a fanout returns `BOOTSTRAP DENIED` or a
 quoted permission refusal, at near-zero tokens, having claimed nothing.
+
+**Probe the completion gates against a clean scratch worktree before the
+first dispatch.** Run the bound workflow's pinned gate commands once in a
+throwaway worktree of clean HEAD (`git worktree add <tmp> HEAD`, run them,
+`git worktree remove <tmp>`). A gate that fails on clean HEAD is not caused
+by this run's changes — commonly ENVIRONMENTAL, an untracked toolchain that
+never materializes in a fresh worktree (a direnv-provisioned
+`.env/bin/protoc` cost one run five parks and eleven override rituals before
+the cause was named at hour 23), a sandbox denial, a network block — but
+possibly a genuine PRE-EXISTING DEFECT. Surface it to the operator ONCE,
+before any step pays for it, and record the agreed disposition: fix the
+environment, a named override policy, or FIX-FIRST where the failure is
+itself a defect — a standing override is never assumed for one of those,
+security gates especially. Never rediscover it per step.
 
 **A safety-classifier block is not a flake, and a retry is not the answer.**
 The classifier screens a rendered brief before any agent exists, so a block is
@@ -192,7 +215,12 @@ report — it is not a finished run.
 
 ## The loop
 
-Run it from the top each time. Do not cache anything between iterations.
+Run it from the top each time. Do not cache anything between iterations. And
+when a session-continuation summary appears — the context was compacted —
+RE-READ THIS SKILL.MD before your next engine verb: the summary preserves
+state, never contract, and a compacted conductor has been measured hunting
+scripts in the wrong directory and degrading ledger provenance for the rest
+of a session.
 
 **The loop is continuous. Keep going until the run is genuinely finished.** A
 workflow is many phases deep, and the engine hands you ONE phase at a time:
@@ -209,7 +237,16 @@ three things:**
    whose tally fell short — present it to the operator and wait. A vote step
    merely READY is not this: it is work for you, in the middle of the loop.
 2. An engine **refusal** you cannot resolve — report it verbatim and stop.
-3. `next` returns **no rows and nothing is running** — the run is done.
+3. `next` returns **no rows and nothing is running** — AND the roster is
+   covered. Before saying "done", compare `run status`'s bound-issue roster
+   against issues whose chains reached a terminal step: when the
+   done/skipped/superseded counts cannot cover the roster, issues sit
+   unexpanded — original or added alike, as in a tranche-activated re-plan
+   run — and the state is PHASE QUIESCED, not finished (measured: a run
+   declared "complete" with 12 of 16 issues never expanded idled 6.5 hours).
+   Report it as phase quiesced, name the waiting issues, and surface the
+   re-activation gate (dry-run to the panel; a direct operator instruction
+   outranks it). Only a covered roster is a done run.
 
 Anything else is the middle of the loop, and the middle of the loop is where you
 keep working. Middle-of-the-loop is not the same as unattended, though: several
@@ -232,8 +269,10 @@ docket next --run $RUN --json
 ```
 
 - **Rows returned** → step 2.
-- **Empty, nothing running** → report the run's state from
-  `docket run status $RUN` and stop.
+- **Empty, nothing running** → run the roster-coverage check (termination
+  condition 3 above): covered → report done; uncovered → report PHASE
+  QUIESCED and surface the re-activation gate. Either way the report reads
+  from `docket run status $RUN`, then stop.
 - **A dispatch is already open** → `next --run` REFUSES rather than returning
   empty, so that refusal IS the signal. Reconcile before anything else — in
   step 3's binding order, not a shortened one: BACK-FILL usage first (step 3),
@@ -407,10 +446,13 @@ On the wave's completion notification:
 **Back-fill usage FIRST, then close. The order is binding.** Closing a dispatch
 is what triggers the engine's discrepancy probe; usage that arrives after the
 close is usage the probe never saw, and each subsequent close then re-reports the
-same stranded set. Back-fill, verify, close — in that order, every iteration,
-as three SEPARATE calls: chaining close unconditionally behind the back-fill
+same stranded set. Back-fill, integration check, verify, close — in that
+order, every iteration, as SEPARATE calls: chaining close unconditionally behind the back-fill
 in one compound command closes on stranded usage the moment the back-fill
-fails (RUN-3's last iteration ran the chain and got lucky). RUN-4 chained four
+fails (RUN-3's last iteration ran the chain and got lucky). (Shell
+paper-cut, four hits in one fleet: never separate compound output with an
+unquoted `echo ====` — zsh EQUALS-expands a `=`-leading word and aborts the
+whole compound; quote it, `echo '---'`.) RUN-4 chained four
 of six closes and demonstrated the failure live: a chained `verify` refused
 and the queued `close` ran anyway, unread. The chain's real cost is that each
 verb's answer scrolls past undecided — three calls, three read answers.
@@ -455,6 +497,13 @@ docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-
   {"step": "STEP-12", "unit": "cache_read_tokens",     "quantity": 4614079}
 ]
 JSON
+# 2b. integration check — when this dispatch carried write steps, every
+#     recorded sha must be ON the shared branch before the close:
+#     ~/.claude/scripts/integration-check   (else $CC_SRC/scripts/integration-check)
+#     walks the wave worktrees and exits 1 on any unintegrated tip; on a
+#     failure, integrate NOW (Worktree writers below), then re-run it. A close
+#     that verified steps RECORDED but never steps INTEGRATED once shipped a
+#     run whose shared branch never advanced — found 19 hours later.
 # 3. reconcile before closing — verify writes NOTHING, it only compares:
 docket dispatch verify --run $RUN
 # 4. only now:
@@ -464,6 +513,17 @@ docket dispatch close --run $RUN
 Rows land against the step's recorded attempt, `--source` defaults to
 `backfilled`, and the window between the steps recording and the close is the
 whole design — the flow never needs another.
+
+**Drop rows the engine already holds before piping.** Two classes are always
+in `wave-usage` output and always refused: (a) vote-kind steps — seats record
+their own usage at `docket vote cast`; (b) steps outside THIS dispatch's
+manifest — a gate probed in one wave and seated in the next emits usage in
+both journals, and probe agents inherit whatever step id their brief names.
+Filter both out (`wave-usage --exclude STEP-N`, repeatable). If the engine
+still refuses a row as already-recorded, that refusal is AUTHORITATIVE —
+delete that step's rows and resubmit the rest; it is not a discrepancy to
+report (measured: seven whole-batch aborts across three runs, each
+hand-filtered with ad-hoc python).
 
 Read `verify`'s answer by shape, not by exit alone — and since the engine
 learned to reconcile staging and row position, a cleanly recorded dispatch
@@ -628,7 +688,15 @@ expansion force-deletes an unrelated branch. A `could not lock config file …
 update of config-file failed` warning from `git worktree remove` on this
 bare-repo layout is benign chatter (2-for-2 on RUN-2's integrations):
 confirm with `git worktree list` and move on — never retry the remove over
-it. The integration commit carries
+it. A hard `Operation not permitted` from the remove is the OTHER case: on a
+bare-repo layout it writes to the git common dir (`<bare>/worktrees/…`),
+outside the checkout's sandbox write allowlist — that denial is
+sandbox-caused, so retry that ONE call, the `git worktree remove` with its
+paired common-dir write and nothing else, with the sandbox lifted instead of
+diagnosing repository state (measured in two repos; the lifted retry
+succeeded first try in both). The lift never extends to the `git branch -D`
+— reading the path/branch PAIR off `git worktree list` above remains that
+verb's guard. The integration commit carries
 the content, so nothing is lost. At run close, sweep the stragglers — and the
 sweep set is derived from `git worktree list`: every entry whose branch is
 `worktree-wf_<id>-*` for a wave THIS session launched. (Do not glob a path
@@ -650,7 +718,10 @@ proposal ids: panel cost lives entirely outside the run ledger (wave-usage
 attributes by step id; panels carry vote ids), and on re-plan-heavy runs it
 has equalled the run's whole tracked spend (RUN-17: 185,673 untracked output
 tokens vs 186,606 tracked), so a close report that omits it understates the
-session by up to half.
+session by up to half. Name
+any stash your own integration or diagnosis created too — a close report
+that said "working tree clean" over a stashed operator draft hid exactly the
+state the next session tripped on (measured).
 
 **A dead spawn is reaped, not waited out.** When the wave reports
 `spawn-failed`, or an agent dies still holding a claim, reconcile first
@@ -688,6 +759,14 @@ Anything short of approval goes to the operator with the tally. Silence is not
 a yes, from panel or operator. An operator saying "keep going" about something
 else is not a yes. Only an answer to this question is a yes.
 
+Known wall (DOT-166, open): the spawn-guard currently blocks the very
+tribunal launch that would decide an ack-reap, so the panel path can be
+structurally unreachable. That changes NOTHING above — while DOT-166 stands,
+each ack-reap goes to the OPERATOR individually, and a yes covers exactly the
+reap it answered: a prior yes, however identical the situation looks, never
+extends to the next reap (measured: one scoped yes became cover for two
+self-passed acks in a single run).
+
 The old read-class carve-out — acking a reap you performed and witnessed
 yourself, without a gate — is RETIRED. Read-class acks are cheap to convene,
 not cheap to skip, and they go to the panel like the rest. What survives of it
@@ -707,7 +786,13 @@ raise granted before the breach costs nothing, while a breach mid-wave pauses
 the run and strands every queued claim (RUN-5 paid once, then flagged the
 second shortfall early and never paused again). Numbers, not vibes, in the
 proposal: done-count, spend, per-step rate, pending count, unexpanded issues
-named.
+named. The engine also WITHHOLDS budget-gated steps silently: `next` and
+`dispatch open` simply omit what headroom cannot cover, and nothing says so
+(measured: a 1-row manifest against 9 pending steps, inferred only after an
+empty `next`; filed engine-side). A manifest smaller than the pending set is
+the wall announcing itself — check headroom against pending costs BEFORE
+dispatching the fragment, and raise first when it falls short; a fragment
+dispatched blind serializes the fanout around the panel.
 
 **The panel's authority here is bounded and enforcing the bounds is yours: at
 most ONE raise per run, capped at 2x the current cap.** Inside them an approved
@@ -748,7 +833,10 @@ operator (**Gates**), so never convene a tribunal to bless one.
 names does not belong here — re-home it at the same close.** (Operator
 ruling, 2026-08-16: gaps belong to their respective projects — an engine
 problem is the docket repo's, a definition problem the dotfiles repo's,
-whichever repo owns the fix owns the issue.) When a wave result or `step
+whichever repo owns the fix owns the issue.) Gap files carry their home on
+the SECOND line — `Home: <repo>` or `Home: THIS repository` — with the first
+line being the issue's title: scan the `Home:` line, never the title, when
+deciding what moves. When a wave result or `step
 artifacts` shows a gap whose problem lives in another repository's project,
 re-home the materialized issue with `docket issue move <id> --project
 <target>` — one transaction, labels re-map and relations ride along. Where
@@ -801,7 +889,12 @@ one-gate-one-dispatch cost the closure removed. Your part is what it always
 was after any wave: back-fill, close, and ask the engine again — the vote's
 outcome shows up in `next`'s answer (routed through, into rework, or parked),
 never in the wave's own return, which is a probe of the record and no
-decision. If a vote row somehow reaches you OUTSIDE a manifest (a resumed run
+decision. A wave that carried `kind: "vote"` rows is NOT reconciled until you
+have run `docket vote show <proposal>` for each and read the TALLY yourself:
+a step the engine marked `done` after a REJECTED tally has rendered as
+"gate-passed" in wave output (three runs measured; one conductor trusted the
+label for ten hours over a 3/3 rejection). One read verb per vote row, every
+wave, before you trust any label. If a vote row somehow reaches you OUTSIDE a manifest (a resumed run
 with a gate already sitting ready), just dispatch it — it is a row like any
 other now.
 
@@ -855,6 +948,15 @@ names which seats have no cast) — the engine enforces one cast per
 voter name, so a re-invocation can never double-count. A panel still short
 after that is a non-approval like any other and reaches the operator with the
 partial tally. Two re-invocations is a loop, not a panel.
+
+Read a decided proposal with plain `docket vote show <id>` — it renders
+status, threshold, and every seat's verdict, confidence, and full summary.
+Reach for `--json` only for extraction the plain form lacks, and never pipe
+it through `python3 -c` reflexively: the pipeline is classifier bait (blocked
+twice in one run) and the schema-guessing costs more calls than the plain
+read (three guesses before first success, measured). Adjacent crib, same
+lesson: comments are `docket issue comment add <id> -m "<text>"` — there is
+no `--body` flag.
 
 **A tally is an ENGINE-COMPUTED outcome, never operator authority.** Cite it by
 proposal id and say what it is — "the panel approved, 3/3" is a fact about the
@@ -923,6 +1025,15 @@ being decided alongside it — the diff for a commit gate, the finding summary
 for a held cluster, the numbers for a budget breach. "Step 12 needs approval"
 is not a gate, it is a rubber stamp.
 
+A gate that PASSES over a reject or a concerns cast is not finished when you
+relay it: link the proposal to the downstream issue(s) the finding bears on —
+`docket vote link <proposal-id> --issue <successor>` — so the next planner
+reads the dissent from the record rather than from this session's scrollback.
+A reproduced security dissent once survived only in chat while the record
+showed nothing; HRN-3 froze because an out-voted seat's truth had nowhere
+durable to live. The conversational relay, which you also do, is not the
+durable copy.
+
 **When the park followed a step's gates, read the verdicts before you present
 anything.** `docket step gates STEP-N --json` is the verb that carries them —
 each gate's verdict, exit code, argv, duration, and output. `step show` and
@@ -987,7 +1098,30 @@ artifact ids, `docket step artifact ARTIFACT-N [--payload]` prints one, and
 `--payload` works only where the listing shows a structured payload — a
 body-only artifact refuses the flag, so omit it to read the body. There is no
 `docket artifact` command, and the events log carries no artifact bodies
-(RUN-2 burned six calls rediscovering this hop).
+(RUN-2 burned six calls rediscovering this hop). An engine-minted
+held-cluster row (`reconcile-held@0#N`) is the exception that carries nothing
+itself: `step artifacts` on it returns none and `step show` names no cluster.
+Its payload lives on the synthesize/aggregate step's artifact — `step
+artifacts` on THAT step, then `step artifact ARTIFACT-N --payload`, which
+prints a bare JSON LIST of clusters, not `{"clusters": []}`. `#N` is the
+1-based index into that list, NOT a cluster id — confirm it against the
+`held=[N]` field on the aggregate's step-recorded event before presenting
+(RUN-28 burned eight calls and three tracebacks rediscovering this hop; the
+missing linkage is filed engine-side).
+
+**Before `--as retry` on an executor step: is the rendered brief still the
+spec?** A retry re-renders the issue body and its inputs, nothing else —
+operator decisions that changed scope mid-run live only in comments, chat, or
+your transcript, and a fresh executor treats work they produced as unreviewed
+drift and REMOVES it (measured: a retry deleted operator-validated work and
+the follow-on judge wave reviewed the revert sha). Before offering retry as an
+option, `docket step render STEP-N` and read what the executor would actually
+receive: if mid-run rulings are missing from it, either update the issue body
+and CONFIRM the change reaches the rendering (bodies snapshot at activation —
+where the snapshot cannot be changed, retry is structurally wrong), or resolve
+`override-pass` with evidence when the work is already on the tree, or route
+the ruling per the operator-ruling paragraph below. The option set you present
+names this precondition.
 
 **Reject is an escape hatch, not an annotation.** On a held-cluster gate,
 `approve` accepts the computed value and falls through to the threshold;
@@ -1014,7 +1148,13 @@ blind.** When a gate's output shows it never actually ran (RUN-2: govulncheck
 DNS-failing in the sandbox, then reporting "a reachable vulnerability"),
 reproduce the check out-of-band — sandbox off where the operator has authorized
 that — and resolve `override-pass` with the real result in the note. The note
-then carries a clean scan, not an absence of one.
+then carries a clean scan, not an absence of one. The SECOND time one run
+parks on the same-cause sandbox or environment failure, the note alone is no
+longer enough: file the durable fix as an issue in the observed repo (the
+gap-routing rule) — the missing allowlist entry, the untracked tool, the
+settings gap — and name that issue in the override note. An override-pass
+loop is evidence collection, not remediation (measured: six identical lint
+overrides in one run; eleven of twelve gate-parks overridden).
 
 **Order gate RESOLUTIONS around in-flight work — the ask itself never waits.**
 Resolving a hold, a verify, or any step whose routing can park the run will
@@ -1041,12 +1181,35 @@ RUN-1). A retry renders the SAME brief as the failed attempt. Guidance for
 future work travels only as a body — a new issue in the next planning pass, or
 a findings artifact a later step declares as input.
 
+**An operator ruling that must land BEFORE an already-scheduled rework step**
+has one workable channel, and it is you acting as the operator's hands: apply
+the ruling as its OWN commit on the shared branch — the ruling verbatim in
+the commit body and in the step's resolve/approve note, the commit carrying
+the ruling's literal content and nothing beyond it — landed before
+dispatching the rework step so its fresh worktree chains on it, and never
+bundled into an integration cherry-pick. The out-of-band rule below applies
+all the same: conductor-landed work returns through a review fanout before
+the affected issue is called done. Name every ruling-driven conductor
+commit in the close report (measured twice in one run; both worked and both
+deserved sanction rather than improvisation). The question that elicits such
+a ruling names WHO will make the edit.
+
 **A re-review round rebinds to the fix.** Loop inputs re-render from the loop's
 latest emit (verified in production, RUN-3). The cheap discipline that remains:
 glance at each judge report's reviewed sha against the step actually under
 review. A mismatch means a packet regressed — surface it to the operator as a
 round to re-run and as an engine defect to file, and never fold its verdicts
 into the ledger as if they had seen the work.
+
+**When an issue's automated loop ENDS non-clean** — verify-ac or design-qa
+verdicts stand unmet and the workflow schedules no further fix round — the
+fallback ordering is fixed: extend the plan first (a fresh planner pass or
+follow-up issues; the engine has no re-entry verb — filed), and
+conductor-orchestrated out-of-band writes happen only under explicit operator
+direction. Work produced out-of-band comes back through a review fanout
+before the issue is called done — an unreviewed 1128-line commit carrying a
+security fix is what this rule exists to prevent (measured) — and its usage
+is named in the close report even though no ledger slot exists for it.
 
 **Present only what the decision actually reaches.** Never offer a gate option
 as "the fixer can/will X" unless the engine genuinely routes X on that answer:

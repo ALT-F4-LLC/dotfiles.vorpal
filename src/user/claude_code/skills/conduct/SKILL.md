@@ -1143,6 +1143,30 @@ instruction the engine genuinely cannot execute is still surfaced first, then
 materialized as a backlog issue so it cannot evaporate (the DKT-23 pattern) —
 but check for a flag before reaching for that.
 
+**You never apply a hold ruling's content edit yourself; it routes to a fix
+step.** All three answers a hold takes decide the cluster's VALUE — none of
+them touches the tree, so an option reading "fix now: <edit>" is describing
+work, not a verdict, and the work needs a step that authors it. Present it as
+the pair it is: the value answer that routes the loop (approve, or correct the
+severity so the threshold reaches `fix-loop`), plus the fix round that carries
+the edit — or, where the loop is spent or the edit is out of the issue's scope,
+its own issue. A conductor who makes the edit directly produces a commit no
+step authored and no judge read: RUN-29's "fix now: template the cluster name"
+landed as b9182fa, off the ledger, and broke the template/mirror byte-parity
+acceptance criterion the same run had just certified — that run's own verify
+step flagged the commit as unaccounted. The operator-ruling channel below is
+for a ruling the engine has NO route for; a hold ruling always has one.
+
+**A disposition that promises later work files the issue before you run the
+verb.** "Goes into the next fix round" is a promise only a scheduled fix round
+keeps, and blocker-only convergence routinely schedules none: two RUN-19 hold
+remedies were approved on exactly that promise, no further round ran, and no
+follow-up issue for either exists anywhere in the store. So the issue is
+created FIRST — in the project that owns the work, per the gap-routing rule —
+and its id goes in the approval note and in the option text, which then names
+an issue rather than a round that may never come. An option whose only
+guarantee is your intention is not one you may offer.
+
 **A gate that failed on a broken check is settled on evidence, not overridden
 blind.** When a gate's output shows it never actually ran (RUN-2: govulncheck
 DNS-failing in the sandbox, then reporting "a reachable vulnerability"),
@@ -1182,10 +1206,11 @@ future work travels only as a body — a new issue in the next planning pass, or
 a findings artifact a later step declares as input.
 
 **An operator ruling that must land BEFORE an already-scheduled rework step**
-has one workable channel, and it is you acting as the operator's hands: apply
-the ruling as its OWN commit on the shared branch — the ruling verbatim in
-the commit body and in the step's resolve/approve note, the commit carrying
-the ruling's literal content and nothing beyond it — landed before
+— a ruling with no engine route of its own, which a hold ruling never is (see
+above) — has one workable channel, and it is you acting as the operator's
+hands: apply the ruling as its OWN commit on the shared branch — the ruling
+verbatim in the commit body and in the step's resolve/approve note, the commit
+carrying the ruling's literal content and nothing beyond it — landed before
 dispatching the rework step so its fresh worktree chains on it, and never
 bundled into an integration cherry-pick. The out-of-band rule below applies
 all the same: conductor-landed work returns through a review fanout before

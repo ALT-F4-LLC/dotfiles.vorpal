@@ -4,17 +4,31 @@
 # attempts, artifact recording, context assembly, event logging (02 §5, §8).
 # A pipeline author writes topology and thresholds only (05 §1).
 # `issue.diff` is the engine-provided virtual artifact — referenced, never emitted.
-# Requires `findings@2` AND `findings@1` registered first: the review fanout
+# Requires `findings@2` AND `findings@3` registered first: the review fanout
 # declares findings@2 (judge-boundary anchor keys required — retro after RUN-5;
 # 7 judge-architecture findings keyed location/rule were silently dropped
-# downstream, see DKT-79), while `reconcile` stays on findings@1, whose declared
-# severity order the ordered severity threshold compiles from (06 §11.2,
-# V21c/V29). The split is deliberate: `aggregate` carries through only input
-# keys, so a schema requiring `id` on the reconcile document trips V30.
+# downstream, see DKT-79), while `reconcile` takes findings@3 — findings@1's
+# successor, carrying the same declared severity order the ordered severity
+# threshold compiles from (06 §11.2, V21c/V29) plus the optional
+# `prior_disposition` that makes a previously-ruled cluster recognisable as
+# one. The split is deliberate: `aggregate` carries through only input keys, so
+# a schema requiring `id` on the reconcile document trips V30 — which is why
+# findings@3 inherits findings@1's optional `id` rather than findings@2's
+# required one.
 
 [pipeline]
 name    = "standard-change"
-version = 11                 # 11: verify's unverifiable park routes through an
+version = 12                 # 12: reconcile aggregates severity by `max`
+                             #   instead of `median` — a lower median demotes
+                             #   the mixed clusters that most need attention
+                             #   (retro 2026-08-19); and reconcile's payload
+                             #   moves to findings@3, whose
+                             #   `prior_disposition` carries an earlier
+                             #   round's ruling forward so a settled cluster
+                             #   is not decided twice; and a when-gated
+                             #   `review-security` sibling seats the security
+                             #   judge on `security`-labelled issues.
+                             # 11: verify's unverifiable park routes through an
                              #   interposed tribunal vote first (operator
                              #   policy, 2026-08-16) — the panel reads the
                              #   ac-report and escalates only what it will not
@@ -83,6 +97,7 @@ unless_labels = [
                              #   pipelines actually declare.
 "judge-architecture"  = { max = 4, max_step_duration = "1h" }
 "judge-correctness"   = { max = 4, max_step_duration = "1h" }
+"judge-security"      = { max = 4, max_step_duration = "1h" }
 "judge-simplicity"    = { max = 4, max_step_duration = "1h" }
 "judge-testing"       = { max = 4, max_step_duration = "1h" }
 "synthesize-findings" = { max = 4, max_step_duration = "1h" }
@@ -170,28 +185,103 @@ inputs = ["implement.change-summary", "implement-test-infra.change-summary", "is
                                      #   DKT-63 tracks the grammar half).
 
 [[step]]
+name = "review-security"     # the security seat this pipeline has never had
+                             #   (retro 2026-08-19). Same when-gated shape as
+                             #   the implement/implement-test-infra twins: a
+                             #   concrete executor plus a label predicate, so
+                             #   the engine renders judge-security's own
+                             #   contract and the step is terminal-skipped on
+                             #   every other issue. ADDITIVE, not a twin of
+                             #   `review`: the general fanout runs either way,
+                             #   and this only adds the fifth lens where the
+                             #   label asks for it.
+                             # WHY: RUN-20's credential-exposure cluster —
+                             #   plaintext credentials in an un-gitignored
+                             #   go:embed corpus, [high, high] — was found by
+                             #   judges who each deferred the call "to
+                             #   judge-security", a seat this pipeline's
+                             #   fanout does not contain, and blocker-only
+                             #   convergence then shipped the run with no fix
+                             #   round touching it.
+                             # KNOWN LIMIT: `fix` re-enters the loop at
+                             #   `review` only (after_loop takes one step
+                             #   name), so this seat sees round 0 and not the
+                             #   re-review rounds. It is a first look, not a
+                             #   standing one.
+holds_tree = false            # reads the tree, never writes it: exempt from scope
+                             #   exclusion so this step coexists with other issues'
+                             #   steps instead of serialising against them
+after = ["implement", "implement-test-infra"]
+                             # same join as `review` over whichever implement
+                             #   variant ran
+executor = "judge-security"
+when = "labels contains security"
+                             # mirrors [security].labels, minus
+                             #   `security-load-bearing` — this pipeline's
+                             #   [match] already excludes that label, and an
+                             #   issue carrying it binds the security-load-
+                             #   bearing workflow, which seats this judge in
+                             #   its standing fanout instead
+emits = "findings"
+packet = ["contracts/{executor}.md"]
+payload = "findings@2"               # judge boundary, same as `review`
+expected_cost = 0.60
+inputs = ["implement.change-summary", "implement-test-infra.change-summary", "issue.diff"]
+
+[[step]]
 name = "synthesize"
 holds_tree = false            # reads the tree, never writes it: exempt from scope
                              #   exclusion so this step coexists with other issues'
                              #   steps instead of serialising against them
-after = ["review"]
+after = ["review", "review-security"]
+                             # a `when`-skipped sibling is terminal, and a join
+                             #   waits for terminal siblings (06 §2) — so the
+                             #   unlabelled path is unaffected
 executor = "synthesize-findings"
 emits = "findings"
 packet = ["contracts/{executor}.md"]
 expected_cost = 0.40
-inputs = ["review.*"]
+inputs = ["review.*", "review-security.findings"]
+                             # `review.*` globs the fanout's siblings within
+                             #   step `review`; the security seat is its own
+                             #   step and is named explicitly
 
 [[step]]                     # deterministic: an action, no node
 name = "reconcile"
 after = ["synthesize"]
 action = "aggregate"                 # builtin (06 §2); held clusters materialize
-params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
                                      #   a `reconcile-held` human step — the
                                      #   fleet's reconciliation is parameters,
                                      #   not code
+                                     # MAX, NOT MEDIAN (retro 2026-08-19): on
+                                     #   severity the TOP of the declared order
+                                     #   is the bad end, so a lower median
+                                     #   demotes exactly the cluster that most
+                                     #   needs attention, and it does so
+                                     #   silently. Both mixed clusters observed
+                                     #   this epoch were demoted: RUN-2's
+                                     #   [low, medium] computed low with nobody
+                                     #   told, and RUN-3's [high, info]
+                                     #   computed info and cost a 10.9-minute
+                                     #   hold before the operator hand-
+                                     #   corrected it to high. RUN-20's two
+                                     #   exact low/high ties both computed low
+                                     #   and were both corrected to high.
+                                     #   `max` never demotes (the builtin's own
+                                     #   note in aggregate.go). `hold_spread`
+                                     #   is deliberately unchanged: genuine
+                                     #   disagreement still reaches a human,
+                                     #   and this only fixes where the
+                                     #   undisputed cases land.
 inputs = ["synthesize.findings"]     # the clusters the builtin reduces (DKT-28,
                                      #   V31: required non-empty)
-payload = "findings@1"               # severity's declared order (V29)
+payload = "findings@3"               # severity's declared order (V29), plus
+                                     #   `prior_disposition` — findings@1's
+                                     #   successor, additive and optional, so
+                                     #   a payload that sets it never
+                                     #   validates differently (retro
+                                     #   2026-08-19)
 threshold = { "fix-loop" = "any(severity >= blocker)" }   # no match -> pass (06 §11.2)
                                      # BLOCKER-ONLY LOOPING (operator policy,
                                      #   2026-08-10): `high` findings are

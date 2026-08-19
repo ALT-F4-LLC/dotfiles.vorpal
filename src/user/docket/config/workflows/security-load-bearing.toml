@@ -23,7 +23,13 @@
 
 [pipeline]
 name    = "security-load-bearing"
-version = 8   # 8: verify's unverifiable park routes through an interposed
+version = 9   # 9: reconcile aggregates severity by `max` instead of
+              #   `median` — a lower median demotes the mixed clusters that
+              #   most need attention (retro 2026-08-19); and reconcile's
+              #   payload moves to findings@3, whose `prior_disposition`
+              #   carries an earlier round's ruling forward so a settled
+              #   cluster is not decided twice
+              # 8: verify's unverifiable park routes through an interposed
               #   tribunal vote first (operator policy, 2026-08-16) — the
               #   panel escalates only what it will not pass
               # 7: medium auto fix-loop retired (2026-08-10)
@@ -138,9 +144,31 @@ inputs = ["review.*"]
 name = "reconcile"
 after = ["synthesize"]
 action = "aggregate"
-params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
+                                     # MAX, NOT MEDIAN (retro 2026-08-19): the
+                                     #   top of the declared order is the bad
+                                     #   end, so a lower median demotes the
+                                     #   cluster that most needs attention, and
+                                     #   silently. Measured on the general
+                                     #   track, which shares this aggregate:
+                                     #   RUN-2's [low, medium] -> low, RUN-3's
+                                     #   [high, info] -> info (10.9-minute hold,
+                                     #   operator-corrected to high), and both
+                                     #   of RUN-20's exact low/high ties -> low,
+                                     #   both corrected to high. `max` never
+                                     #   demotes. Sharper here than anywhere:
+                                     #   this file's routing turns on `>= high`,
+                                     #   so a demotion is the difference between
+                                     #   the security vote firing and not.
+                                     #   `hold_spread` is unchanged.
 inputs = ["synthesize.findings"]
-payload = "findings@1"
+payload = "findings@3"               # findings@1's successor: same declared
+                                     #   severity order, plus the optional
+                                     #   `prior_disposition` (retro
+                                     #   2026-08-19). The `review` step above
+                                     #   stays on findings@1 — judges emit no
+                                     #   disposition, so nothing there needs
+                                     #   the successor.
 threshold = { "security-vote" = "any(severity >= high)" }   # AUTO FIX-LOOP RETIRED for the
                                      #   security track (2026-08-10): Medium
                                      #   findings are recorded, never looped;

@@ -188,12 +188,27 @@ literal string (`-` reads stdin); the `@<path>` form belongs to `doc create`
 alone — followed blindly, every issue body becomes the literal text
 "@/path/file", frozen at activation into every brief. Help-check each verb's
 flags on first use in a session; the CLI is the authority, not this block.
-`--budget` records the cap you elicited in §1 — and elicit it against the
-work's projected cost: when the likely workflow binding is known, its steps'
-expected-cost sum is the floor to recommend (RUN-4's cap of 3 against a
-4.8-cost workflow forced a mid-run raise panel and serialized its review
-fanout). (`docket run budget --set <n> --reason '<why>'` adjusts it later,
-with `--if-version` when a concurrent change would matter). Ids render with each
+`--budget` records the cap you elicited in §1 — and you size that cap here
+rather than guess it. The FLOOR is the bound workflow's expected-cost sum with
+its when-gated steps INCLUDED: a `when` you cannot evaluate at plan time is a
+step that may well run, and a floor that omits it is a floor for a run that
+did not happen. On top of the floor goes REWORK HEADROOM — at least one full
+fix-loop round per two issues. Standard-change's round is fix 1.0 plus four
+judges at 0.6 plus synthesize 0.4, so 3.8, and half the issues this epoch took
+one. For security-load-bearing budget TWO rounds: rejection-driven loops are
+that track's normal case — both security votes in its only complete run were
+rejected. A cap that is short by arithmetic is not discipline, it is a
+tribunal you scheduled for yourself: RUN-3 walled before it dispatched
+anything and spent ~20 minutes raising, 22% of its wall clock; RUN-17 left 0.4
+of headroom over a two-issue base and raised 10 -> 18 through two serial
+votes; RUN-18 raised 12 -> 20 with 23 minutes of idle; RUN-29 raised three
+times, 5 -> 9 -> 12 -> 20, and spent 15, three times its plan. The raise
+machinery is for work that turned out harder than it read — not for a sum you
+could have taken here (RUN-4's cap of 3 against a 4.8-cost workflow forced a
+mid-run raise panel and serialized its review fanout). Round UP and say what
+the headroom is for; an unspent cap costs nothing. (`docket run budget --set
+<n> --reason '<why>'` adjusts it later, with `--if-version` when a concurrent
+change would matter). Ids render with each
 project's prefix — the store is machine-global and the number is the identity,
 so `DKT-<n>` and a bare number parse in any project.
 
@@ -265,6 +280,16 @@ a tree-wide grep to return nothing while its own scope forbade editing
 outside five directories plus README.md; seven archival files outside that
 boundary held matches, so the AC was unsatisfiable as worded and the
 contradiction surfaced only at verification, recorded as DOT-4.
+
+**An AC that needs a live cluster is post-merge by construction, not an AC.**
+On GitOps repos, author acceptance criteria as statically verifiable render
+assertions — a `kustomize build` / manifest-render check the verify step can
+actually run — and record cluster-runtime commands (`kubectl`, `flux` against
+the live cluster) in the issue body as post-merge checks instead. The sandbox
+cannot reach a cluster, so a runtime AC is unverifiable on every run by
+construction: across three manifest-flux runs, all 7 cluster-command ACs
+came back "unverifiable" and the AC gate delivered zero assurance (operator
+ruling 2026-08-19, FLX-137/FLX-138).
 
 **Scope that lives in another repository is a mis-filed issue, not a scope.**
 When an issue's Change section, scope globs, or an embedded operator ruling

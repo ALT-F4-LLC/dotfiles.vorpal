@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "findings@3",
+  "description": "Successor to findings@1, the CLUSTER document — the one declared on the `aggregate` step whose declared severity order the ordered thresholds compile from. Identical to findings@1 in every constraint (`id` stays optional for the V30 reason findings@1 records; `severity` stays scalar-or-array as the aggregate's input contract), plus the optional `prior_disposition` from the retro of 2026-08-19. That retro measured what an undeclared disposition costs: RUN-29's round 1 restated 9 of 19 clusters near-verbatim from round 0's deferred items (3 titles byte-identical), and one locus the operator had already accepted at round 0 with a tracked follow-up came back as a fresh high at round 1 and was HELD again at round 2, spending a second operator ruling on settled ground. A cluster carrying `prior_disposition` is recognisable as a re-occurrence rather than a discovery. The field is OPTIONAL and additive: a payload that never sets it validates exactly as it did against findings@1, and `additionalProperties` stays true so the conjunction with `aggregate@1` remains satisfiable (V30).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` makes the §7.6 E5 conjunction unsatisfiable and V30 refuses the workflow at register time.",
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "description": "One-line statement of the defect.",
+        "type": "string",
+        "minLength": 1
+      },
+      "severity": {
+        "description": "The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` reduces over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.",
+        "type": "string",
+        "enum": ["info", "low", "medium", "high", "blocker"],
+        "ordered_enum": true
+      },
+      "file": {
+        "description": "Repo-relative path the finding is anchored to.",
+        "type": "string"
+      },
+      "line": {
+        "description": "1-indexed line within `file`. Optional per 02 §6.",
+        "type": "integer",
+        "minimum": 1
+      },
+      "evidence": {
+        "description": "What a skeptic can re-run or re-read to confirm the finding.",
+        "type": "string"
+      },
+      "alternative": {
+        "description": "A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional (DKT-51).",
+        "type": "string"
+      },
+      "members": {
+        "description": "The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: the builtin's `clusterMembers` reads member severities from the `severity` field of each input element, so 06 §2's scalar-or-array shape is the aggregate's INPUT contract — a multi-member cluster arrives with `severity` itself holding the array. That is also why synthesize's step declares no `payload`: this document's property-level `enum` on `severity` would refuse every multi-member cluster at `complete`. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable (V30).",
+        "type": "array",
+        "minItems": 1
+      },
+      "held": {
+        "description": "Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step.",
+        "type": "boolean"
+      },
+      "demoted_from": {
+        "description": "Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted. Under `method = \"max\"` this is structurally absent; it stays declared because other workflows still aggregate by median.",
+        "type": "string",
+        "enum": ["info", "low", "medium", "high", "blocker"]
+      },
+      "operator_resolved": {
+        "description": "Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6). It records that THIS round's hold was decided, and does not survive into a later round — `prior_disposition` is what carries a decision forward.",
+        "type": "boolean"
+      },
+      "prior_disposition": {
+        "description": "How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field.",
+        "type": "object",
+        "properties": {
+          "round": {
+            "description": "The fix-loop round the ruling was made in, 0-based — round 0 is the first review, before any fix step ran.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "ruling": {
+            "description": "What was decided, in the decider's terms. Conventional forms: `accepted` (the computed value stood), `corrected-to-<severity>` (approved with `--value`), `rejected`, or `deferred` (accepted on the promise of later work, which `follow_up_issue` must then name).",
+            "type": "string",
+            "minLength": 1
+          },
+          "ruled_by": {
+            "description": "Who decided: `operator`, or `panel <proposal-id>` where a tribunal did. A ruling with no name is not a ruling anyone can re-read.",
+            "type": "string",
+            "minLength": 1
+          },
+          "follow_up_issue": {
+            "description": "The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible (RUN-19: two approved hold remedies, no next round, no issue anywhere in the store). Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "required": ["severity"],
+    "additionalProperties": true
+  }
+}

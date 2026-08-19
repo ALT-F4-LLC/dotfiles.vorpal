@@ -141,10 +141,19 @@ judge-simplicity  = { variant = "opus-medium" }
                           #   below judge-architecture). Fix loops are
                           #   blocker-only, so its output is almost entirely
                           #   advisory. Same model, less effort — the lens
-                          #   stays, the spend matches the yield. WATCH ITEM
-                          #   for the next retro: if its blocker yield was
-                          #   effort-bound rather than dimension-bound, this
-                          #   reverts.
+                          #   stays, the spend matches the yield. The watch
+                          #   item that rode here — was the low yield
+                          #   effort-bound rather than dimension-bound? — is
+                          #   ANSWERED, and the downsize stands (retro
+                          #   2026-08-19): 12 post-downsize spawns across
+                          #   three independent analyst windows returned 0
+                          #   blockers and a unique yield of 1 low plus 1
+                          #   adopted high, with no capability degradation
+                          #   visible in the bodies, at 3-5x cheaper than any
+                          #   other seat in the fanout. opus-medium stays.
+                          #   Cutting the SEAT is a different question and 12
+                          #   spawns do not answer it: re-read at n >= 20
+                          #   before it is asked (D2).
 design-qa         = { variant = "opus-high" }   # zero spawns; terminal verification of BUILT output, once per UI issue
 verify-ac         = { variant = "opus-high" }
                           # kept at the floor despite a near-mechanical
@@ -207,7 +216,19 @@ spec-author-testing        = { variant = "opus-xhigh" }
 # smallest declared input of any node (issue body only) means everything else
 # must be found, and a confident wrong guess costs a full cycle.
 investigate       = { variant = "fable-max" }
-research          = { variant = "fable-max" }   # never executed this epoch (both spawns skipped); sized with its class
+research          = { variant = "fable-max" }   # sized with its class, never
+                                                #   exercised: 4 lifetime
+                                                #   spawns planned, 4 skipped,
+                                                #   0 executed. If the next
+                                                #   retro still reads 0, the
+                                                #   honest move is to drop the
+                                                #   research fanout from
+                                                #   investigation.toml at a
+                                                #   version bump and retire
+                                                #   this row with it — an
+                                                #   unreachable row is a
+                                                #   routing claim nothing
+                                                #   tests.
 retro-analyst     = { variant = "fable-max" }   # mines the entire run ledger -> proposals (04, 05 §6)
 
 # Tribunal seats — the standing panel where workflows used to declare
@@ -222,9 +243,13 @@ retro-analyst     = { variant = "fable-max" }   # mines the entire run ledger ->
 # (`read-gate`), spec-doc.toml (`accept-human`), spec-project.toml (`accept`),
 # and retro.toml (`accept`). Retiring any of those four retires the row.
 #
-# UNMEASURED: vote steps carry no usage rows and record no model, so seat
-# cost and resolved-model faithfulness are invisible to the ledger — a filed
-# engine gap, and the reason these rows cite vote outcomes, not spend.
+# SELF-REPORTED IDENTITY, UNMEASURED COST. Each ballot now carries its seat's
+# identity, model, effort, and variant (`vote_metadata`) — but the engine
+# stores that bag uninterpreted and verifies none of it, so it is an
+# attribution trail, not a faithfulness check: a silently rerouted model
+# would still write the requested name here. Resolved-model faithfulness AND
+# seat spend both remain unmeasured (`vote_usage` held 0 rows all epoch — a
+# filed engine gap), which is why these rows cite vote outcomes, not cost.
 tribunal-architecture = { variant = "fable-max" }
 tribunal-correctness  = { variant = "fable-max" }
 tribunal-security     = { variant = "opus-max", never = ["fable"], reason = "security-classifier-reroute" }

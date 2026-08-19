@@ -2,10 +2,10 @@
 
 # Behavior suite for src/user/claude_code/hooks/docket-run-guard-hook.sh.
 #
-# NOT WIRED INTO CI. `.github/workflows/vorpal.yaml` enumerates test files by
-# name and this one is not in that list — running it is a manual/local check
-# only, until a follow-up adds the enumeration. Recorded here rather than
-# silently, per the activation panel's routing note on this issue.
+# Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
+# and this one is in that list, beside the commit-guard suite. The seam below
+# is a fake `docket` on PATH, so the runner needs no engine binary, no
+# database, and no network.
 #
 # FOCUS: carve-out 4 — a project whose every live run is waiting on a person
 # (waiting-human) or not yet activated (planning) is a sanctioned stop,

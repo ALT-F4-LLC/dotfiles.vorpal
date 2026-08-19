@@ -759,13 +759,16 @@ Anything short of approval goes to the operator with the tally. Silence is not
 a yes, from panel or operator. An operator saying "keep going" about something
 else is not a yes. Only an answer to this question is a yes.
 
-Known wall (DOT-166, open): the spawn-guard currently blocks the very
-tribunal launch that would decide an ack-reap, so the panel path can be
-structurally unreachable. That changes NOTHING above — while DOT-166 stands,
-each ack-reap goes to the OPERATOR individually, and a yes covers exactly the
-reap it answered: a prior yes, however identical the situation looks, never
-extends to the next reap (measured: one scoped yes became cover for two
-self-passed acks in a single run).
+The panel path is reachable (DOT-166, closed). The spawn-guard used to deny
+the very tribunal launch that would decide an ack-reap — the hold blocking its
+own resolution — and it now carves out `tribunal.js` by basename, ahead of the
+engine call. Convene the panel normally. Two things did not change with it: the
+carve-out is only as live as the last `just activate`, so a guard message on a
+tribunal launch means the installed hook predates the fix and that ack-reap
+goes to the operator directly; and a yes covers exactly the reap it answered.
+A prior yes, however identical the situation looks, never extends to the next
+reap (measured: one scoped yes became cover for two self-passed acks in a
+single run).
 
 The old read-class carve-out — acking a reap you performed and witnessed
 yourself, without a gate — is RETIRED. Read-class acks are cheap to convene,

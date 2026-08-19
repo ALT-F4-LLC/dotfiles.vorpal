@@ -5,7 +5,9 @@
 # One-line shim over `docket guard spawn`. The predicate is the engine's: the
 # proposed rows must byte-match the open dispatch and no write-class reap may be
 # unacknowledged. This file contains no policy, no branching on run content, and
-# no state (AC-4.1).
+# no state (AC-4.1) — with ONE exception, the tribunal.js carve-out below, which
+# branches on the harness's tool_input and not on anything the engine knows.
+# Behavior is pinned by tests/docket-spawn-guard-hook.test.sh.
 #
 # Exit 0 allow / exit 2 deny with the engine's reason on stderr (engine-spec §2).
 # PreToolUse honors exit 2 as a pre-permission hard stop, which is why the guard
@@ -27,6 +29,34 @@
 # tooling gap would take the session down rather than protect it.
 
 set -uo pipefail
+
+# CARVE-OUT: a tribunal.js launch is never held (DOT-166). The reap half denies
+# every Workflow spawn while a write-class reap is unacknowledged -- and the
+# conduct skill's documented remedy for exactly that hold is to open a vote
+# proposal and seat a panel by launching tribunal.js through this same Workflow
+# tool. Without this carve-out the hold blocks its own resolution: reproduced on
+# RUN-14, where the tribunal launch for DKT-V46 was refused with the identical
+# guard message before tribunal.js's own code ran, leaving an operator's direct
+# authorization as the only exit.
+#
+# It is safe because it removes nothing: with no --rows the row half is vacuous
+# here (see below), so the reap half is the ONLY thing this hook can deny on,
+# and a panel is not a dispatch. tribunal.js claims no step, writes no tree, and
+# spawns judges that only read and cast a vote -- the headroom a reap-hold
+# protects is spent by executors, which still arrive through wave.js and are
+# still held.
+#
+# Matched on BASENAME, not the installed path: the skills resolve tribunal.js to
+# `~/.claude/workflows/tribunal.js` where one exists and fall back to the source
+# copy in the dotfiles checkout, so pinning one absolute path would leave the
+# documented fallback deadlocked. `Agent` calls and every other workflow carry no
+# scriptPath and fall straight through to the guard.
+HOOK_INPUT=$(cat 2>/dev/null || true)
+if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
+    SCRIPT=$(printf '%s' "$HOOK_INPUT" \
+        | jq -r '.tool_input.scriptPath // "" | split("/") | last' 2>/dev/null)
+    [ "$SCRIPT" = "tribunal.js" ] && exit 0
+fi
 
 command -v docket >/dev/null 2>&1 || exit 0
 

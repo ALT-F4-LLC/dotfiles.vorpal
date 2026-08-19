@@ -43,7 +43,12 @@
 
 [pipeline]
 name    = "spec-doc"
-version = 6   # 6: author/revise split into six when-gated concrete-executor
+version = 7   # 7: reconcile aggregates severity by `max` instead of
+              #   `median` — an even-count median resolves an exact tie to
+              #   the LOWER band, demoting the mixed clusters that most need
+              #   attention (retro 2026-08-19, panel DKT-V62 architecture
+              #   seat; same move as standard-change@12).
+              #   (6: author/revise split into six when-gated concrete-executor
               #   siblings; the label-keyed [[resolve]] table and the
               #   spec-doc-author router contract are retired (DKT-70/DKT-85
               #   decision (d), 2026-08-13). (5: `accept-human` human ->
@@ -247,7 +252,7 @@ inputs = ["review.*"]
 name = "reconcile"
 after = ["synthesize"]
 action = "aggregate"
-params = { field = "severity", method = "median", hold_spread = 2, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 2, output = "findings" }
 inputs = ["synthesize.findings"]
 payload = "findings@1"
 threshold = { "fix-loop" = "any(severity >= blocker)" }   # BLOCKER-ONLY LOOPING (operator policy 2026-08-10):

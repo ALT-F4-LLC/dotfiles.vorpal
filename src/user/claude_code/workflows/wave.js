@@ -766,20 +766,56 @@ if (policy.resolve) {
     )
 }
 
-// Two park signals, both in-band: the claim-CONFLICT text of an agent that
+// An agent's reply is PROSE. Read only the two shapes the brief actually
+// mandates — never a substring of the body (DOT-226).
+//
+// Both park signals used to be `includes` over the whole reply, and RUN-28
+// wave 1 shows the cost: judge STEP-687 reviewed the pause skill, quoted the
+// engine constant it was reviewing — `CondRunActive = "run is not active"` —
+// and recorded `done`. Its last line said so verbatim, `STEP-687 recorded
+// (done)`. The wave read the quote, declared the run parked, and never
+// launched stage 2; the engine re-offered synthesize one full dispatch
+// round-trip later. A reviewer of park handling cannot describe a park
+// without tripping a body scan, and this corpus reviews its own park
+// handling constantly.
+// TEST-BEGIN park-signals — extracted and exercised by
+// tests/wave-park-signals.test.sh against the verbatim RUN-28 replies. Keep
+// everything between the markers free of workflow globals (agent, log, args)
+// so it stays evaluable on its own.
+const CONFLICT_REPORT_MAX_LINES = 4
+
+function lastLine(text) {
+    const lines = String(text).trim().split('\n').filter((l) => l.trim())
+    return lines.length ? lines[lines.length - 1].trim() : ''
+}
+
+// Obligation 1's CONFLICT clause mandates AT MOST three lines: the step id,
+// the word CONFLICT, and the engine's error verbatim (one line of slack for a
+// wrapper). Longer than that and the word is a FINDING about conflicts, not a
+// conflict — the same confusion, one field over.
+function isConflictReport(text) {
+    if (typeof text !== 'string' || !text.includes('CONFLICT')) return false
+    return text.trim().split('\n').filter((l) => l.trim()).length
+        <= CONFLICT_REPORT_MAX_LINES
+}
+
+// Two park signals, both in-band: the claim-CONFLICT report of an agent that
 // launched INTO a park ('run is not active'), and the record-status tail of
 // the agent whose own record CAUSED the park ('STEP-N recorded
 // (waiting-human)') — the second stops the next stage before it spawns
 // corpses (measured twice on RUN-8: 5 judges launched into a park the prior
 // stage's result already announced). The tail format is mandated by the
-// brief's closing instruction below. Fail-open: no match keeps launching.
+// brief's closing instruction below, which says to END the reply with it, so
+// it is read at the END and nowhere else; trailing emphasis or punctuation is
+// tolerated, a paragraph after it is not. Fail-open: no match keeps launching,
+// and the engine refuses a claim into a parked run anyway.
 function runParked(res) {
-    return res != null && res.status === 'returned' &&
-        typeof res.text === 'string' && (
-            res.text.includes('run is not active') ||
-            /recorded \((waiting-human|paused)\)/.test(res.text)
-        )
+    if (res == null || res.status !== 'returned' ||
+        typeof res.text !== 'string') return false
+    if (/recorded \((?:waiting-human|paused)\)[\s*_`.]*$/.test(lastLine(res.text))) return true
+    return isConflictReport(res.text) && res.text.includes('run is not active')
 }
+// TEST-END park-signals
 
 function spawn(row, phaseLabel) {
     const r = resolve(row, policy)
@@ -1201,6 +1237,48 @@ function needsClaimProbe(row) {
     return g !== undefined && g < s
 }
 
+// ASK THE ENGINE WHAT IS READY, rather than inferring it from the manifest
+// (DOT-226). The per-row probe above answers "did this step already settle?",
+// which is the wrong question for the case that actually cost tokens: a step
+// still `pending` whose `after` predecessor is not done reads as perfectly
+// claimable and spawns anyway, then dies on the engine's own words — RUN-28
+// wf_93e53958-2d5, STEP-693: `step verify@0 is not ready to claim: an
+// `after` predecessor is not done`. Six such spawns across that run's waves,
+// 3,262 output and 53,691 cache-creation tokens on claims that could only
+// CONFLICT.
+//
+// One `next --run` read per stage replaces N per-row reads and answers the
+// right question. It is only asked from the SECOND stage on: the first
+// stage's rows are what the dispatch just routed, so re-asking about them
+// buys nothing.
+//
+// `--limit` matters. It defaults to 10, and a silent truncation here would
+// read as "not ready" and skip real work, so it is passed explicitly above
+// the row count.
+//
+// FAIL-OPEN, in the same direction as every other probe: anything short of a
+// parsed `"ok":true` envelope (probe spawn error, an engine error, prose, a
+// shape change) returns null and the stage spawns exactly as it did before.
+// An `ok:true` answer with an EMPTY step list is a real answer — nothing in
+// this stage is ready — and is honored, which is the whole point.
+const READY_PROBE_LIMIT_SLACK = 50
+
+async function readyStepIds(run, rowCount, phaseLabel) {
+    if (!run) return null
+    const limit = rowCount + READY_PROBE_LIMIT_SLACK
+    const out = await probe(`docket next --run ${run} --limit ${limit} --json`,
+        `${run} · ready`, phaseLabel)
+    if (!/"ok"\s*:\s*true/.test(out)) {
+        if (out.trim()) log(`${run}: readiness probe unusable — spawning the stage unfiltered`)
+        return null
+    }
+    const ids = new Set()
+    for (const m of out.matchAll(/"step"\s*:\s*"(STEP-\d+)"/g)) ids.add(m[1])
+    return ids
+}
+
+const waveRun = (rows.find((r) => typeof r.run === 'string' && r.run) || {}).run || ''
+
 const byStep = new Map()
 // A park observed anywhere stops every LATER stage (in-flight groups finish;
 // the engine re-offers unlaunched steps after the park lifts). A CONFLICT or
@@ -1209,13 +1287,17 @@ const byStep = new Map()
 let parked = false
 const deadIssues = new Set()
 
+// TEST-BEGIN chain-dead — see the park-signals note above.
 function chainDead(res) {
     if (res == null) return false
     if (res.status === 'gate-parked' || res.status === 'gate-blocked' ||
-        res.status === 'gate-rejected' || res.status === 'skipped-not-claimable') return true
-    return res.status === 'returned' && typeof res.text === 'string' &&
-        res.text.includes('CONFLICT')
+        res.status === 'gate-rejected' || res.status === 'skipped-not-claimable' ||
+        res.status === 'skipped-not-ready') return true
+    // Same body-scan trap as runParked: `includes('CONFLICT')` would kill an
+    // issue's whole remaining chain on a judge that merely REPORTED one.
+    return res.status === 'returned' && isConflictReport(res.text)
 }
+// TEST-END chain-dead
 
 for (const k of stageKeys) {
     if (parked) break
@@ -1229,6 +1311,9 @@ for (const k of stageKeys) {
     })
     if (group.length === 0) continue
     const label = `stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
+    const ready = k === stageKeys[0] || !group.some((r) => r.kind === 'executor')
+        ? null
+        : await readyStepIds(waveRun, group.length, label)
     const settled = await parallel(group.map((row) => () => {
         if (row.kind === 'action') {
             // Engine-run, and normally already DONE: the record of its last
@@ -1239,7 +1324,15 @@ for (const k of stageKeys) {
             return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
         }
         if (row.kind === 'vote') return runGate(row, label)
-        if (needsClaimProbe(row)) {
+        if (ready && !ready.has(row.step)) {
+            // The engine's own answer, so no per-row probe is needed and no
+            // guess is made. The step stays pending and the next dispatch
+            // offers it — the same recovery as before, minus the corpse.
+            log(`${row.step}: the engine does not list it as ready this stage — ` +
+                `skipping the spawn; the next dispatch re-offers it`)
+            return { step: row.step, status: 'skipped-not-ready', text: null }
+        }
+        if (!ready && needsClaimProbe(row)) {
             return probe(`docket step show ${row.step} --json`,
                 `${row.step} · pre-claim`, label, row.step).then((show) => {
                 // Skip only on a positively recognized TERMINAL status; empty

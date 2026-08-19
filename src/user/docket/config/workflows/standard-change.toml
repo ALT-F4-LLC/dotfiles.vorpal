@@ -18,7 +18,12 @@
 
 [pipeline]
 name    = "standard-change"
-version = 12                 # 12: reconcile aggregates severity by `max`
+version = 13                 # 13: a rejected `verify-tribunal` routes
+                             #   `fix-loop` instead of parking at
+                             #   `waiting-human` (operator ruling 2026-08-19,
+                             #   DOT-277) — see that step's comment for the
+                             #   bound that keeps the park as the floor.
+                             # 12: reconcile aggregates severity by `max`
                              #   instead of `median` — a lower median demotes
                              #   the mixed clusters that most need attention
                              #   (retro 2026-08-19); and reconcile's payload
@@ -354,7 +359,35 @@ type = "vote"                        # TRIBUNAL (operator policy, 2026-08-16):
 voters = ["tribunal-architecture", "tribunal-security", "tribunal-correctness"]
 vote_rule = "tribunal"               # registered engine-side (see
                                      #   investigation.toml's note on V26)
-on_fail = "waiting-human"            # any non-approval escalates to the human
+on_fail = "fix-loop"                 # REJECTED VERIFY-TRIBUNAL IS REWORK, not a
+                                     #   park (operator ruling, 2026-08-19,
+                                     #   DOT-277). It parked before, and the
+                                     #   park was terminal: RUN-26 sat at
+                                     #   `waiting-human: rejected` for 30+
+                                     #   hours with neither a loop nor an
+                                     #   abandon recorded as a choice. A panel
+                                     #   that will not pass the ac-report is
+                                     #   saying the work is not demonstrably
+                                     #   done — the same reading `security-vote`
+                                     #   already applies to a refused waiver.
+                                     #   The park is the FLOOR, not the first
+                                     #   move: `max_fix_loops = 2` bounds the
+                                     #   loop and the engine degrades the
+                                     #   routing to `waiting-human` on
+                                     #   exhaustion (06 §11.3), so an AC that
+                                     #   genuinely cannot be verified still
+                                     #   reaches the operator, two rework
+                                     #   attempts later.
+                                     #   KNOWN LIMIT, not fixed here: `fix`
+                                     #   does not take `verify.ac-report` as an
+                                     #   input, so the loop carries the
+                                     #   reconciled findings and not the list of
+                                     #   unverifiable ACs. Adding that binding
+                                     #   would be unresolvable on the first
+                                     #   ordinal, where `fix` can be entered
+                                     #   before any `verify` has run, and an
+                                     #   unresolvable binding refuses
+                                     #   activation.
 inputs = ["verify.ac-report", "issue.body"]
 
 # COMMIT TAIL REMOVED (operator decision, 2026-08-09): commit-gate, commit, and

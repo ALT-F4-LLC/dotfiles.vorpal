@@ -515,15 +515,22 @@ Rows land against the step's recorded attempt, `--source` defaults to
 whole design — the flow never needs another.
 
 **Drop rows the engine already holds before piping.** Two classes are always
-in `wave-usage` output and always refused: (a) vote-kind steps — seats record
-their own usage at `docket vote cast`; (b) steps outside THIS dispatch's
-manifest — a gate probed in one wave and seated in the next emits usage in
-both journals, and probe agents inherit whatever step id their brief names.
-Filter both out (`wave-usage --exclude STEP-N`, repeatable). If the engine
-still refuses a row as already-recorded, that refusal is AUTHORITATIVE —
-delete that step's rows and resubmit the rest; it is not a discrepancy to
-report (measured: seven whole-batch aborts across three runs, each
-hand-filtered with ad-hoc python).
+in `wave-usage` output and always refused: (a) vote-kind steps — a vote step
+is never CLAIMED, so its attempt stays 0 and the step ledger has no key to
+hang per-seat rows on; (b) steps outside THIS dispatch's manifest — a gate
+probed in one wave and seated in the next emits usage in both journals, and
+probe agents inherit whatever step id their brief names. Filter both out
+(`wave-usage --exclude STEP-N`, repeatable). If the engine still refuses a row
+as already-recorded, that refusal is AUTHORITATIVE — delete that step's rows
+and resubmit the rest; it is not a discrepancy to report (measured: seven
+whole-batch aborts across three runs, each hand-filtered with ad-hoc python).
+
+Excluding them is not the same as their spend being counted. This rule used
+to say seats "record their own usage at `docket vote cast`" — they do not.
+`--usage` is optional there and nothing in this corpus passes it, which is why
+the ledger held **zero** vote-usage rows against 174 casts for a whole epoch.
+Seat spend reaches the ledger the way every other agent's does, through the
+transcripts — see the panel back-fill below.
 
 Read `verify`'s answer by shape, not by exit alone — and since the engine
 learned to reconcile staging and row position, a cleanly recorded dispatch
@@ -561,6 +568,31 @@ A background helper you spawned is invisible to `TaskList` and `ListAgents`
 while it runs — its completion notification is the only status surface, and
 `SendMessage` to its name is the only nudge lever. Prefer `run_in_background:
 false` for the join; it is short and you need the result to proceed.
+
+**A panel you convened yourself gets the same treatment, keyed by seat.** Every
+tribunal.js launch has its own transcript directory, and its seats' spend has
+no other way in: a seat carries a proposal id and never a step id, so
+`dispatch backfill-usage` cannot receive it. Run the same script in `--seats`
+mode and pipe it to the vote-scoped verb, once per panel, right after you read
+the tally:
+
+```bash
+wave-usage --seats <tribunal-transcript-dir> > "$TMPDIR/panel.json"   # check $?
+docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
+  --from-json - < "$TMPDIR/panel.json"
+```
+
+It keys rows by the seat name in each judge's own cast command, so the join
+cannot disagree with the cast. An agent that never cast — the silent-seat
+checker is one — is named on stderr and dropped; the engine refuses usage for a
+voter with no cast, and misfiling it onto a seat that did cast is worse than
+losing it. A re-spawned silent seat sums into that seat, which is correct:
+both attempts were spent deciding this proposal.
+
+Skip this and the panel is not free, only invisible — roughly 40k output tokens
+each, against a run budget that never sees them. `run report` now prints
+`Coverage: N of M seat(s) reported spend`, so the gap is legible after the fact
+instead of reading as "no panels ran".
 
 Surface any `waiting-human` steps (below), then go back to step 1.
 
@@ -917,6 +949,17 @@ docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" \
   -n 3 -c <criticality> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>   # where a relevant issue exists
 ```
+
+**On an ack-reap, add `--idempotency-key reap-ack:<run>:<seq>`** — the run's
+NUMBER and the seq of the `lease-reaped` event you are deciding, e.g.
+`--idempotency-key reap-ack:14:1830` for RUN-14. That is the engine's own key
+convention, and the acknowledgment that satisfies the ballot uses it to find
+and close the row. Skip it and nothing breaks in the moment; the ballot simply
+stands open forever, which is not inert — `vote list` shows it to an operator
+as outstanding work, and since the spawn-guard carve-out an open proposal is
+also what admits a panel past a reap hold, so a stale row makes two surfaces
+lie, one of them a guard. Four ballots of one epoch stood open exactly this
+way. No other gate class has a key convention; use it only here.
 
 Read the proposal id from the create's OWN output (`--json` emits it
 machine-readably; the ✔ line names it in human mode) and link in a SEPARATE

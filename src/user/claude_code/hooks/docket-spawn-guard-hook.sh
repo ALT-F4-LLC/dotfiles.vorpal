@@ -5,9 +5,9 @@
 # One-line shim over `docket guard spawn`. The predicate is the engine's: the
 # proposed rows must byte-match the open dispatch and no write-class reap may be
 # unacknowledged. This file contains no policy, no branching on run content, and
-# no state (AC-4.1) — with ONE exception, the tribunal.js carve-out below, which
-# branches on the harness's tool_input and not on anything the engine knows.
-# Behavior is pinned by tests/docket-spawn-guard-hook.test.sh.
+# no state (AC-4.1). The tribunal path below decides nothing either — it reads
+# one id out of the harness's tool_input and hands it to the engine, which owns
+# the verdict. Behavior is pinned by tests/docket-spawn-guard-hook.test.sh.
 #
 # Exit 0 allow / exit 2 deny with the engine's reason on stderr (engine-spec §2).
 # PreToolUse honors exit 2 as a pre-permission hard stop, which is why the guard
@@ -30,32 +30,55 @@
 
 set -uo pipefail
 
-# CARVE-OUT: a tribunal.js launch is never held (DOT-166). The reap half denies
-# every Workflow spawn while a write-class reap is unacknowledged -- and the
-# conduct skill's documented remedy for exactly that hold is to open a vote
-# proposal and seat a panel by launching tribunal.js through this same Workflow
-# tool. Without this carve-out the hold blocks its own resolution: reproduced on
-# RUN-14, where the tribunal launch for DKT-V46 was refused with the identical
-# guard message before tribunal.js's own code ran, leaving an operator's direct
-# authorization as the only exit.
+# THE PANEL DEADLOCK (DOT-166) IS THE ENGINE'S TO BREAK, NOT THIS HOOK'S.
 #
-# It is safe because it removes nothing: with no --rows the row half is vacuous
-# here (see below), so the reap half is the ONLY thing this hook can deny on,
-# and a panel is not a dispatch. tribunal.js claims no step, writes no tree, and
-# spawns judges that only read and cast a vote -- the headroom a reap-hold
-# protects is spent by executors, which still arrive through wave.js and are
-# still held.
+# The reap half denies every Workflow spawn while a write-class reap is
+# unacknowledged -- and the conduct skill's documented remedy for exactly that
+# hold is to open a vote proposal and seat a panel by launching tribunal.js
+# through this same Workflow tool. So the hold blocked its own resolution:
+# reproduced on RUN-14, where the tribunal launch for DKT-V46 was refused with
+# the identical guard message before tribunal.js's own code ran.
+#
+# `guard spawn --deciding-vote PROPOSAL-N` is the sanctioned exit (DKT-236,
+# filed FROM DOT-166 and shipped engine-side). All this hook does is notice a
+# tribunal.js launch, lift the proposal id out of its args, and pass it along.
+# Every judgement stays with the engine: the proposal must EXIST and be OPEN,
+# only the REAP half is relaxed, nothing is acknowledged, and the admission is
+# logged as `spawn-admitted` naming the proposal and the hold -- because a
+# spawn let past a hold must not read like a spawn nothing was holding.
+#
+# An earlier version of this hook exited 0 here instead. That was worse in
+# three ways at once and is deliberately not what this does: it admitted a
+# tribunal launch carrying no proposal at all, it admitted one carrying a
+# closed proposal (one settled vote authorizing every future spawn), and it
+# produced no audit event, so the very thing the engine takes care to record
+# went unrecorded.
 #
 # Matched on BASENAME, not the installed path: the skills resolve tribunal.js to
 # `~/.claude/workflows/tribunal.js` where one exists and fall back to the source
 # copy in the dotfiles checkout, so pinning one absolute path would leave the
 # documented fallback deadlocked. `Agent` calls and every other workflow carry no
-# scriptPath and fall straight through to the guard.
+# scriptPath and fall straight through unchanged.
+#
+# The id is read through the same shape the policy-guard uses, because the
+# harness stringifies `args`: a JSON string that must be re-parsed, or an
+# object already. It is then matched against docket's proposal-id grammar with
+# a bash builtin -- never a `grep`, which would add a PATH dependency to a hook
+# whose whole job is to run before anything else does. Anything that is not a
+# well-formed id is dropped and the guard is asked the ordinary question, so a
+# malformed launch is denied by the engine rather than waved through here.
+DECIDING_VOTE=""
 HOOK_INPUT=$(cat 2>/dev/null || true)
 if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
     SCRIPT=$(printf '%s' "$HOOK_INPUT" \
         | jq -r '.tool_input.scriptPath // "" | split("/") | last' 2>/dev/null)
-    [ "$SCRIPT" = "tribunal.js" ] && exit 0
+    if [ "$SCRIPT" = "tribunal.js" ]; then
+        VOTE_ID=$(printf '%s' "$HOOK_INPUT" | jq -r '
+            .tool_input.args
+            | if type == "string" then (try fromjson catch {}) else (. // {}) end
+            | .voteId // ""' 2>/dev/null)
+        [[ "$VOTE_ID" =~ ^[A-Z]{1,8}-V[0-9]+$ ]] && DECIDING_VOTE="$VOTE_ID"
+    fi
 fi
 
 command -v docket >/dev/null 2>&1 || exit 0
@@ -92,4 +115,8 @@ RUN=$(docket run status --active --json 2>/dev/null \
 # forwarding it would hand a parse failure to the debug log on every spawn while
 # adding nothing the exit code doesn't already say. The deny path's reason goes
 # to stderr, which exit 2 surfaces, so it must stay.
+if [ -n "$DECIDING_VOTE" ]; then
+    exec docket guard spawn --run "$RUN" --deciding-vote "$DECIDING_VOTE" >/dev/null
+fi
+
 exec docket guard spawn --run "$RUN" >/dev/null

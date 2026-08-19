@@ -6,29 +6,35 @@
 # and this one is in that list. The seam below is a fake `docket` on PATH, so
 # the runner needs no engine binary, no database, and no network.
 #
-# FOCUS: the tribunal.js carve-out (DOT-166). The guard denies every Workflow
-# spawn while a write-class reap is unacknowledged, and the conduct skill's
+# FOCUS: the tribunal path (DOT-166). The guard denies every Workflow spawn
+# while a write-class reap is unacknowledged, and the conduct skill's
 # documented remedy for that hold is to seat a panel by launching tribunal.js
-# through the same Workflow tool — so without the carve-out the hold blocks its
-# own resolution. The carve-out is pinned from BOTH directions: tribunal.js
-# allows while the engine is denying, AND a spawn that only resembles it
-# (wave.js, `not-tribunal.js`, a directory named tribunal.js) still denies.
-# A carve-out that swallowed every deny would pass the allow cases alone.
+# through the same Workflow tool — so the hold blocked its own resolution. The
+# engine's answer is `guard spawn --deciding-vote PROPOSAL-N` (DKT-236); this
+# hook's whole job is to notice a tribunal.js launch, lift the proposal id out
+# of its args, and pass it along.
 #
-# ALSO PINNED, because the carve-out sits upstream of them and an edit could
-# strand either: the fail-OPEN paths (no `docket`, no active run) and the
-# reach-the-engine path (denial text comes from the engine, not the hook).
+# So what is pinned here is FORWARDING, not allowing. The hook must reach the
+# engine and hand it the id — it must NOT decide the spawn itself. That
+# distinction is the point: an earlier version exited 0 on any tribunal.js
+# launch, which admitted proposal-less and closed-proposal launches alike and
+# logged no `spawn-admitted` audit event. Cases below assert the exact argv,
+# and assert that the verdict still comes back from the engine both ways.
 #
-# WHAT THIS SUITE CANNOT SEE: it drives the hook's stdin and PATH only. It
-# cannot show that the real `docket guard spawn` denies for the reason the
-# carve-out assumes (an unacknowledged reap) — the stub is told to deny. The
-# claim that the row half is vacuous without --rows is the engine's, restated
-# in the hook's header, and is not re-derived here.
+# ALSO PINNED, because the tribunal branch sits upstream of them: the fail-OPEN
+# paths (no `docket`, no active run, no jq) and the ordinary path (a non-
+# tribunal launch reaches the engine with no extra flags, and its denial text
+# is the engine's).
+#
+# WHAT THIS SUITE CANNOT SEE: it drives the hook's stdin and PATH only. The
+# stub answers however a case tells it to, so nothing here shows what the REAL
+# engine does with `--deciding-vote` — that the proposal must exist and be
+# open, that only the reap half is relaxed, and that the admission is logged
+# are the engine's contract, restated in the hook's header and tested there.
 #
 # SEAM: PATH holds a fake `docket` that denies or allows per env var and
-# touches a marker file whenever it runs, so a carve-out can be shown to
-# short-circuit BEFORE the engine is consulted rather than merely agreeing
-# with it.
+# appends its own argv to a log file, so a case can assert what the hook asked
+# the engine rather than only what came back.
 
 set -uo pipefail
 
@@ -80,11 +86,13 @@ done
 # Fake engine. ACTIVE_RUN names the run `run status --active` reports (empty =
 # no active run, the hook's other fail-OPEN). GUARD_SPAWN_REASON, when set,
 # makes `guard spawn` deny with that text on stderr — standing in for the
-# unacknowledged-reap hold. SPAWN_MARKER is appended to on every invocation so
-# a case can assert the engine was never reached.
+# unacknowledged-reap hold. SPAWN_MARKER records every `guard spawn` argv, so a
+# case can assert what was ASKED and not only what was answered.
 cat >"${STUB_DIR}/docket" <<'STUB'
 #!/bin/bash
-[ -n "${SPAWN_MARKER:-}" ] && printf 'x' >>"$SPAWN_MARKER"
+if [ -n "${SPAWN_MARKER:-}" ] && [ "${1:-}" = "guard" ]; then
+    printf '%s\n' "$*" >>"$SPAWN_MARKER"
+fi
 case "${1:-}" in
     run)
         case "${2:-}" in
@@ -169,49 +177,112 @@ reset_env() {
 # ALLOW can only come from the carve-out and never from an agreeable engine.
 HOLD='spawn denied: unacknowledged reaps in bounded classes hold headroom'
 
+# args is emitted as a real OBJECT here and as a JSON STRING in the sibling
+# below, because the harness stringifies `args` on the way to the tool and the
+# hook has to read the id out of either shape.
 workflow_payload() {
-    jq -nc --arg p "$1" '{tool_name:"Workflow", tool_input:{scriptPath:$p, args:{}}}'
+    jq -nc --arg p "$1" --arg v "${2:-}" \
+        '{tool_name:"Workflow", tool_input:{scriptPath:$p,
+          args:(if $v == "" then {} else {voteId:$v} end)}}'
 }
 
-# ---- CARVE-OUT: tribunal.js allows through an active hold ----
-case_tribunal_installed_path_allows() {
-    reset_env
-    export ACTIVE_RUN="RUN-14"
-    export GUARD_SPAWN_REASON="$HOLD"
-    run_case "tribunal.js at the installed path, reap held" ALLOW \
-        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js")"
+workflow_payload_stringified_args() {
+    jq -nc --arg p "$1" --arg v "$2" \
+        '{tool_name:"Workflow", tool_input:{scriptPath:$p,
+          args:({voteId:$v} | tojson)}}'
 }
 
-case_tribunal_source_path_allows() {
-    reset_env
-    export ACTIVE_RUN="RUN-14"
-    export GUARD_SPAWN_REASON="$HOLD"
-    # The skills' documented fallback when nothing is installed. Pinning it is
-    # the whole reason the match is on basename rather than one absolute path.
-    run_case "tribunal.js at the dotfiles source path, reap held" ALLOW \
-        "$(workflow_payload "${REPO_ROOT}/src/user/claude_code/workflows/tribunal.js")"
+asked() { # the argv of the last `guard spawn` the hook ran, or empty
+    [ -f "$MARKER" ] && tail -n 1 "$MARKER" || printf ''
 }
 
-case_tribunal_short_circuits_before_engine() {
-    reset_env
-    export ACTIVE_RUN="RUN-14"
-    export GUARD_SPAWN_REASON="$HOLD"
-    verdict_of "$PATH_WITH_DOCKET" \
-        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js")" >/dev/null
-    if [ -s "$MARKER" ]; then
-        fail "tribunal.js carve-out ran before the engine was consulted (docket was invoked)"
+expect_argv() {
+    local label="$1" want="$2" got
+    got=$(asked)
+    if [ "$got" = "$want" ]; then
+        pass "${label}"
     else
-        pass "tribunal.js carve-out ran before the engine was consulted (docket never invoked)"
+        fail "${label} (asked: ${got:-<the engine was never reached>})"
     fi
 }
 
-# ---- The carve-out is not a blanket allow ----
+# ---- FORWARDING: a tribunal.js launch carries its proposal to the engine ----
+case_tribunal_installed_path_forwards() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    unset GUARD_SPAWN_REASON
+    verdict_of "$PATH_WITH_DOCKET" \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js" DKT-V46)" >/dev/null
+    expect_argv "tribunal.js at the installed path forwards its proposal" \
+        "guard spawn --run RUN-14 --deciding-vote DKT-V46"
+}
+
+case_tribunal_source_path_forwards() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    unset GUARD_SPAWN_REASON
+    # The skills' documented fallback when nothing is installed. Pinning it is
+    # the whole reason the match is on basename rather than one absolute path.
+    verdict_of "$PATH_WITH_DOCKET" \
+        "$(workflow_payload "${REPO_ROOT}/src/user/claude_code/workflows/tribunal.js" DOT-V3)" >/dev/null
+    expect_argv "tribunal.js at the dotfiles source path forwards too" \
+        "guard spawn --run RUN-14 --deciding-vote DOT-V3"
+}
+
+case_tribunal_stringified_args_forwards() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    unset GUARD_SPAWN_REASON
+    # The harness stringifies `args`, so this is the shape the hook actually
+    # meets in production; the object form above is the documented one.
+    verdict_of "$PATH_WITH_DOCKET" \
+        "$(workflow_payload_stringified_args "$HOME/.claude/workflows/tribunal.js" DKT-V46)" >/dev/null
+    expect_argv "args arriving as a JSON STRING still yields the proposal" \
+        "guard spawn --run RUN-14 --deciding-vote DKT-V46"
+}
+
+case_tribunal_verdict_still_the_engines() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    export GUARD_SPAWN_REASON="$HOLD"
+    # The hook forwards; it does not decide. A stub that refuses even with the
+    # flag must still produce a DENY — otherwise the hook is allowing on its
+    # own authority, which is the defect this replaced.
+    run_case "a refused --deciding-vote is still a DENY" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js" DKT-V46)"
+}
+
+# ---- The tribunal branch is not a blanket allow ----
+case_tribunal_without_proposal_asks_plainly() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    export GUARD_SPAWN_REASON="$HOLD"
+    # No voteId: the old hook admitted this outright. It must now reach the
+    # engine with no flag, and be denied like anything else.
+    run_case "tribunal.js carrying NO proposal is denied, not admitted" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js")"
+    expect_argv "  ...and asked the plain question, with no --deciding-vote" \
+        "guard spawn --run RUN-14"
+}
+
+case_tribunal_malformed_proposal_asks_plainly() {
+    reset_env
+    export ACTIVE_RUN="RUN-14"
+    export GUARD_SPAWN_REASON="$HOLD"
+    run_case "a malformed proposal id is dropped, not forwarded" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js" "not-an-id; rm -rf /")"
+    expect_argv "  ...and asked the plain question" \
+        "guard spawn --run RUN-14"
+}
+
 case_wave_still_denies() {
     reset_env
     export ACTIVE_RUN="RUN-14"
     export GUARD_SPAWN_REASON="$HOLD"
     run_case "wave.js under the same hold" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/wave.js" DKT-V46)"
+    expect_argv "  ...and a voteId on a NON-tribunal launch is ignored" \
+        "guard spawn --run RUN-14"
 }
 
 case_agent_call_still_denies() {
@@ -229,7 +300,8 @@ case_lookalike_basename_still_denies() {
     export ACTIVE_RUN="RUN-14"
     export GUARD_SPAWN_REASON="$HOLD"
     run_case "a script merely ending in tribunal.js (not-tribunal.js)" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/not-tribunal.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/not-tribunal.js" DKT-V46)"
+    expect_argv "  ...and it forwards nothing" "guard spawn --run RUN-14"
 }
 
 case_tribunal_as_directory_still_denies() {
@@ -237,7 +309,7 @@ case_tribunal_as_directory_still_denies() {
     export ACTIVE_RUN="RUN-14"
     export GUARD_SPAWN_REASON="$HOLD"
     run_case "tribunal.js as a DIRECTORY component, wave.js as the script" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/wave.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/wave.js" DKT-V46)"
 }
 
 case_denial_text_is_the_engines() {
@@ -282,14 +354,17 @@ case_empty_stdin_still_guards() {
     reset_env
     export ACTIVE_RUN="RUN-14"
     export GUARD_SPAWN_REASON="$HOLD"
-    # No hook input at all (a harness that sends nothing): the carve-out has
-    # nothing to read and must not fire, so the guard still decides.
-    run_case "empty stdin — carve-out cannot fire, guard still decides" DENY ''
+    # No hook input at all (a harness that sends nothing): there is no
+    # scriptPath and no proposal to read, so the plain question is asked.
+    run_case "empty stdin — nothing to forward, guard still decides" DENY ''
 }
 
-case_tribunal_installed_path_allows
-case_tribunal_source_path_allows
-case_tribunal_short_circuits_before_engine
+case_tribunal_installed_path_forwards
+case_tribunal_source_path_forwards
+case_tribunal_stringified_args_forwards
+case_tribunal_verdict_still_the_engines
+case_tribunal_without_proposal_asks_plainly
+case_tribunal_malformed_proposal_asks_plainly
 case_wave_still_denies
 case_agent_call_still_denies
 case_lookalike_basename_still_denies

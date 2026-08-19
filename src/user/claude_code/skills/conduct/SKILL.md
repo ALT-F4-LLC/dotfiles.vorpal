@@ -761,14 +761,19 @@ else is not a yes. Only an answer to this question is a yes.
 
 The panel path is reachable (DOT-166, closed). The spawn-guard used to deny
 the very tribunal launch that would decide an ack-reap — the hold blocking its
-own resolution — and it now carves out `tribunal.js` by basename, ahead of the
-engine call. Convene the panel normally. Two things did not change with it: the
-carve-out is only as live as the last `just activate`, so a guard message on a
-tribunal launch means the installed hook predates the fix and that ack-reap
-goes to the operator directly; and a yes covers exactly the reap it answered.
-A prior yes, however identical the situation looks, never extends to the next
-reap (measured: one scoped yes became cover for two self-passed acks in a
-single run).
+own resolution. The engine's exit is `guard spawn --deciding-vote PROPOSAL-N`,
+and the spawn-guard hook now lifts `voteId` out of a `tribunal.js` launch and
+passes it through, so **open the proposal FIRST and pass its id as `voteId`** —
+that is what admits the panel. A launch carrying no proposal, or one whose
+proposal is already decided, is still denied, and every admission is logged as
+`spawn-admitted` naming the proposal and the hold it was admitted over.
+
+Convene the panel normally. Two things did not change: this is only as live as
+the last `just activate`, so a guard message on a tribunal launch means the
+installed hook predates the fix and that ack-reap goes to the operator
+directly; and a yes covers exactly the reap it answered. A prior yes, however
+identical the situation looks, never extends to the next reap (measured: one
+scoped yes became cover for two self-passed acks in a single run).
 
 The old read-class carve-out — acking a reap you performed and witnessed
 yourself, without a gate — is RETIRED. Read-class acks are cheap to convene,

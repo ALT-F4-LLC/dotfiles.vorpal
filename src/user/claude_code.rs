@@ -299,12 +299,28 @@ impl ClaudeCode {
                     .collect(),
             )
             .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
+            // Kept alphabetical, and every entry carries the gate it unblocks:
+            // a domain whose reason is not written down is one nobody can
+            // safely remove later. Both Go entries were added after a sandboxed
+            // gate DNS-failed and was misread as a code finding — the failure
+            // mode this list exists to prevent.
             .with_sandbox_network_allowed_domains(vec![
                 "api.github.com".to_string(),
                 "crates.io".to_string(),
                 "github.com".to_string(),
+                // The Go module proxy. `go tool <x>` resolves from GOMODCACHE
+                // with no network only once that module is already there; an
+                // executor whose cache is cold downloads instead, and the
+                // self-hygiene gate then fails on `lookup proxy.golang.org: no
+                // such host` rather than on the code. Measured 4x in one run
+                // before this entry, each costing a manual override-pass
+                // (DOT-173). The cache itself is shared, not per-agent —
+                // ~/go/pkg/mod is in SANDBOX_TOOLCHAIN_CACHE_PATHS above.
                 "proxy.golang.org".to_string(),
                 "static.crates.io".to_string(),
+                // govulncheck's vulnerability DB — without it, sandboxed
+                // vuln-scan gates DNS-fail and misread as findings (RUN-2: 25
+                // starved spawns).
                 "vuln.go.dev".to_string(),
             ])
             .with_sandbox_network_allow_unix_sockets(vec![

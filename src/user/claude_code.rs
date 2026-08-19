@@ -37,6 +37,12 @@ const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
 // invocation fails with "unable to open database file (14)". The corpus
 // symlink targets stay in the read-only Vorpal store and are not covered.
 const SANDBOX_DOCKET_STORE_PATH: &str = "~/.docket";
+// The docket trust store: `docket trust` verbs take a lock at
+// ~/.config/docket/trust.toml.lock and fail sandboxed without this, forcing
+// a lift per invocation. The verbs themselves stay permission-gated (the
+// `Bash(docket trust add/rm:*)` ask rules below), so this only removes the
+// sandbox noise, not the human gate.
+const SANDBOX_DOCKET_TRUST_PATH: &str = "~/.config/docket";
 const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
     "~/.cache/uv",
     "~/.cargo/git",
@@ -210,6 +216,12 @@ impl ClaudeCode {
                 "command",
             )
             .with_hook(
+                "PreToolUse",
+                Some("Bash"),
+                "bash ~/.claude/hooks/sandbox-bypass-ask-hook.sh",
+                "command",
+            )
+            .with_hook(
                 "SessionStart",
                 None,
                 "bash ~/.claude/hooks/docket-session-start-hook.sh",
@@ -282,6 +294,7 @@ impl ClaudeCode {
                     .chain(std::iter::once(&SANDBOX_BARE_REPO_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
+                    .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_PATH))
                     .map(|p| p.to_string())
                     .collect(),
             )

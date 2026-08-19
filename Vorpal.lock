@@ -442,10 +442,10 @@ platform = "aarch64-darwin"
 
 [[sources]]
 name = "herdr"
-path = "https://github.com/ogulcancelik/herdr/releases/download/v0.8.0/herdr-macos-aarch64"
+path = "https://github.com/ogulcancelik/herdr/releases/download/v0.8.2/herdr-macos-aarch64"
 includes = []
 excludes = []
-digest = "74a0e53b8e0246df50013e464df2f465b8a54d4b37058c8715105502f5451f28"
+digest = "8820e2338c57f8870e3e48ffd86f3ffd9845ef46b275f5091de8d0d31ce3e934"
 platform = "aarch64-darwin"
 
 [[sources]]

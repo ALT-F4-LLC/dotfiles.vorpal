@@ -30,6 +30,17 @@ backfill already carries — a gate probed in one wave and seated in the next
 emits usage in both journals, and the engine's append-only refusal is
 per-batch, not per-row.
 
+`--seats` keys the rows by SEAT instead of by step, for a panel the conductor
+convened itself, and emits `{"voter", "unit", "quantity"}` for `docket vote
+backfill-usage --from-json -`. A tribunal seat carries a proposal id and never
+a step id, so `dispatch backfill-usage` has nothing to attach to and this spend
+had no ledger path at all: in-wave panels ARE counted, because their seats run
+as steps, while conductor-side panels of identical shape recorded nothing. The
+difference was only WHERE the ballot executed, not how much work it did. An
+agent that never cast — the silent-seat checker is one — is named on stderr and
+dropped, because the engine refuses usage for a voter with no cast and misfiling
+it onto a seat that did cast would be worse than losing it.
+
 Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
 attributed or a dispatched agent carries no usage — silence must not look like
 success.
@@ -43,22 +54,43 @@ UNITS = {
     "cache_read_input_tokens": "cache_read_tokens",
 }
 
+USAGE = ("usage: wave-usage [--seats] [--exclude STEP-N|SEAT]... "
+         "<transcript-dir>")
+
 def main() -> int:
     argv = sys.argv[1:]
     exclude: set[str] = set()
+    seats = False
+    if "--seats" in argv:
+        seats = True
+        argv.remove("--seats")
     while "--exclude" in argv:
         i = argv.index("--exclude")
         if i + 1 >= len(argv):
-            print("usage: wave-usage [--exclude STEP-N]... <wave-transcript-dir>", file=sys.stderr)
+            print(USAGE, file=sys.stderr)
             return 2
         exclude.add(argv[i + 1])
         del argv[i:i + 2]
     if len(argv) != 1 or not os.path.isdir(argv[0]):
-        print("usage: wave-usage [--exclude STEP-N]... <wave-transcript-dir>", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
         return 2
     d = argv[0]
+    # --seats keys rows by SEAT instead of by step, for a panel the conductor
+    # convened itself. A tribunal seat carries a proposal id and never a step
+    # id, so `dispatch backfill-usage` has nothing to attach to and this spend
+    # had no ledger path at all: in-wave panels are counted because their seats
+    # run as steps, while conductor-side panels of identical shape recorded
+    # nothing (measured ~40k output tokens per panel that no run budget saw).
+    # `docket vote backfill-usage --from-json -` takes these rows.
+    #
+    # The seat name is read from the cast command the brief hands the judge —
+    # `docket vote cast <id> --voter <seat>` — which is the same string the
+    # seat is required to pass, so the join cannot disagree with the cast.
+    key_re = re.compile(r"--voter\s+(\S+)") if seats else re.compile(r"STEP-\d+")
+    key_name = "voter" if seats else "step"
     totals: dict[str, dict[str, int]] = {}
     errors: list[str] = []
+    unattributed: list[str] = []
     for name in sorted(os.listdir(d)):
         if not (name.startswith("agent-") and name.endswith(".jsonl")):
             continue
@@ -74,9 +106,9 @@ def main() -> int:
                 if step is None and obj.get("type") == "user":
                     content = obj.get("message", {}).get("content")
                     text = content if isinstance(content, str) else json.dumps(content)
-                    m = re.search(r"STEP-\d+", text or "")
+                    m = key_re.search(text or "")
                     if m:
-                        step = m.group(0)
+                        step = m.group(1) if seats else m.group(0)
                 if obj.get("type") == "assistant":
                     msg = obj.get("message", {})
                     usage = msg.get("usage")
@@ -89,6 +121,14 @@ def main() -> int:
             for src, dst in UNITS.items():
                 agent_sums[dst] += int(usage.get(src) or 0)
         if step is None:
+            if seats:
+                # A panel spawns agents that never cast — tribunal.js's silent-
+                # seat checker is one. Their spend is real but attaches to no
+                # seat, and the engine refuses usage for a voter that never
+                # cast, so it is reported and dropped rather than misfiled onto
+                # a seat that did cast.
+                unattributed.append(name)
+                continue
             errors.append(f"{name}: no STEP-N found in first user message")
             continue
         if step in exclude:
@@ -99,14 +139,18 @@ def main() -> int:
         t = totals.setdefault(step, {u: 0 for u in UNITS.values()})
         for u, q in agent_sums.items():
             t[u] += q
+    for name in unattributed:
+        print(f"wave-usage: {name}: no seat (never cast) — usage dropped",
+              file=sys.stderr)
     if errors:
         for e in errors:
             print(f"wave-usage: {e}", file=sys.stderr)
         return 1
+    order = (lambda k: k) if seats else (lambda k: int(k.split("-")[1]))
     rows = [
-        {"step": step, "unit": unit, "quantity": qty}
-        for step in sorted(totals, key=lambda s: int(s.split("-")[1]))
-        for unit, qty in totals[step].items()
+        {key_name: key, "unit": unit, "quantity": qty}
+        for key in sorted(totals, key=order)
+        for unit, qty in totals[key].items()
     ]
     json.dump(rows, sys.stdout, indent=2)
     print()

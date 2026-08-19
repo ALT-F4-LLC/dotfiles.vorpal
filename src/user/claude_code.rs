@@ -270,30 +270,16 @@ impl ClaudeCode {
             )
             .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
             .with_sandbox_network_allowed_domains(vec![
-                "crates.io".to_string(),
-                "static.crates.io".to_string(),
-                "github.com".to_string(),
                 "api.github.com".to_string(),
-                // govulncheck's vulnerability DB — without it, sandboxed vuln-scan
-                // gates DNS-fail and misread as findings (RUN-2: 25 starved spawns).
+                "crates.io".to_string(),
+                "github.com".to_string(),
+                "proxy.golang.org".to_string(),
+                "static.crates.io".to_string(),
                 "vuln.go.dev".to_string(),
             ])
             .with_sandbox_network_allow_unix_sockets(vec![
                 "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock".to_string(),
             ])
-            // Local binding ON so sandboxed test suites can listen on loopback
-            // TCP (Go httptest et al.). TCP is ALL this covers: unix-socket
-            // bind() is still denied under it (probe-verified 2026-08-16 —
-            // loopback bind OK, AF_UNIX bind "operation not permitted"), so
-            // daemon-backed suites that listen on a socket under the scratch
-            // root still fail sandboxed for environmental reasons no change
-            // causes or cures. There is no path-scoped unix-bind setting
-            // upstream; the only lever is allowAllUnixSockets, a blanket
-            // AF_UNIX grant (bind + connect) that would moot the deliberately
-            // narrow socket allowlist above — considered and declined. Such
-            // suites run with the sandbox lifted per-command instead, behind
-            // the ordinary permission prompt. Loopback listeners accept no
-            // traffic from off-host; the outbound allowlist is unaffected.
             .with_sandbox_network_allow_local_binding(true)
             .build(context)
             .await?;

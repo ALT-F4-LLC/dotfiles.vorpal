@@ -24,6 +24,13 @@ const SENSITIVE_PATHS_DENY_EDIT_ONLY: &[&str] = &["/Applications/**", "/Library/
 const SENSITIVE_PATHS_DENY_READ_ONLY: &[&str] = &[".env", ".env.*", "~/.aws/**"];
 
 const SANDBOX_AGENT_MEMORY_PATH: &str = "~/.claude/agent-memory";
+// Bare-repo layouts keep the git common dir (objects/, refs/, worktrees/)
+// BESIDE each checkout, outside its sandbox write allowlist — so index
+// writes, `git worktree remove`, and branch cleanup were all denied from
+// checkout and subdirectory seats, and executors responded by disabling the
+// sandbox themselves (2026-08-18/19 fleet review). Allowing the org root
+// closes that gap; permission rules and hooks still gate every write.
+const SANDBOX_BARE_REPO_ROOT: &str = "~/Development/repository/github.com/ALT-F4-LLC";
 const SANDBOX_DOCS_CACHE_PATH: &str = "~/.claude/cache/docs";
 // The docket global store: every docket verb opens ~/.docket/issues.db
 // read-write (WAL + auto-migrate), so without this every sandboxed docket
@@ -220,7 +227,16 @@ impl ClaudeCode {
             .with_permission_allow("WebFetch(domain:github.com)")
             .with_permission_allow("WebFetch(domain:mimir.bulbasaur.altf4.domains)")
             .with_permission_allow("WebFetch(domain:raw.githubusercontent.com)")
-            .with_permission_allow("WebSearch");
+            .with_permission_allow("WebSearch")
+            // The conduct loop's own mandated launches (wave.js, tribunal.js):
+            // the auto-mode classifier denied these after ~15 identical
+            // approvals and stalled a run 3.7 hours (2026-08-19 fleet review).
+            // There is no documented per-script specifier for this tool, so
+            // the rule is tool-wide; launch CONTENT is still screened by the
+            // always-on harness spawn classifier and the docket spawn-guard /
+            // policy-guard / wave-audit hooks, and every subagent's own tool
+            // calls remain individually permission-gated.
+            .with_permission_allow("Workflow");
 
         let settings_builder = settings_builder
             .with_permission_ask("Bash(docket trust add:*)")
@@ -263,6 +279,7 @@ impl ClaudeCode {
                 SANDBOX_TOOLCHAIN_CACHE_PATHS
                     .iter()
                     .chain(std::iter::once(&SANDBOX_AGENT_MEMORY_PATH))
+                    .chain(std::iter::once(&SANDBOX_BARE_REPO_ROOT))
                     .chain(std::iter::once(&SANDBOX_DOCS_CACHE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
                     .map(|p| p.to_string())

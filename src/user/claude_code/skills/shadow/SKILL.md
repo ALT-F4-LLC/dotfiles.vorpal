@@ -1,6 +1,6 @@
 ---
 name: shadow
-description: Observe another Claude Code session — live, or post-mortem — and find friction across every layer it crosses: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Log findings with evidence as they land, then deliver a severity-ranked review and propose definition fixes for approval once the run ends. Fixes target src/user/claude_code — including repetitive bash worth extracting into small deterministic scripts under src/user/claude_code/scripts; engine defects are filed as issues, never patched. Use on a conduct run, on any other skill's run, or on a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Log findings with evidence as they land, then deliver a severity-ranked review and propose definition fixes for approval once the run ends. Fixes target src/user/claude_code — including repetitive bash worth extracting into small deterministic scripts under src/user/claude_code/scripts; engine defects are filed as issues, never patched. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
@@ -59,14 +59,52 @@ Three rules you must not fight:
 
 ## 1. Attach
 
-The session id is the argument: invoked as `/shadow <session-id>`,
-`$ARGUMENTS` names the session — attach without asking. Invoked bare, list the
-candidates (the freshest `*.jsonl` under `~/.claude/projects`) and confirm one
-with the operator; never guess, and never attach to two. Either way, take the
-target skill and the repo under observation from the operator when they know
-them, and derive that repo from the transcript's own `.cwd` field — the
-project-directory name flattens `/`, `.`, and `_` identically and cannot be
-decoded back into a path.
+Two modes, picked by the argument:
+
+- **`/shadow <session-id>`** — single-session: `$ARGUMENTS` names the
+  session; attach without asking. Take the target skill and the repo under
+  observation from the operator when they know them, and derive that repo
+  from the transcript's own `.cwd` field — the project-directory name
+  flattens `/`, `.`, and `_` identically and cannot be decoded back into a
+  path.
+- **Bare** — the fleet sweep, and the default: mine EVERY project under
+  `~/.claude/projects` for the past 7 days of sessions, post-mortem. No
+  candidate list, no which-one question — enumerate and go (§1a).
+
+### 1a. The fleet sweep (bare invocation)
+
+Scope is time-boxed, not project-boxed: every main transcript in every
+project directory, modified within the last 7 days —
+
+```bash
+find ~/.claude/projects -maxdepth 2 -name '*.jsonl' -mtime -7
+```
+
+`-maxdepth 2` keeps the enumeration to main transcripts; subagent and
+workflow files live deeper and are pulled in per session through §4, never
+enumerated directly. Drop your own session's transcript, group the rest by
+project directory, and read each session's real repo from its `.cwd` field.
+A transcript still growing is a live session: include it as-is, mark it
+in-flight in the review, and apply §5's interrupt rules to it alone —
+everything else is post-mortem.
+
+The sweep is agent work. Fan out read-only analysts — one per session, or
+one per project where a project's sessions are small — each briefed with
+rule 1's discipline VERBATIM, the §2 checklist for whatever skill that
+session ran, §3's layer table, and the instruction to report via SendMessage
+(a background agent's final text is delivered to nobody — §4). Analysts run
+their docket cross-checks from their observed repo's own root, exactly as a
+single-session shadow would (§4's store-resolution and project-scoping rules
+are per-repo). You aggregate: the log is
+`/tmp/claude/shadow/fleet-<YYYY-MM-DD>/findings.md`, one entry per DISTINCT
+finding — the same defect surfacing in four sessions is ONE finding carrying
+four evidence lines, and the recurrence count is its severity argument. Then
+§6 runs once, over the aggregate: one review, one tribunal batch, every
+cross-repo finding filed to its owning project as ever.
+
+Everything from "Sit in the observed repo's root" below is written for a
+single attach; in the sweep it applies per observed session, carried out by
+that session's analyst.
 
 Live and post-mortem are the same job: live you tail transcripts as they grow
 and can flag in real time, post-mortem they are complete and §5's interrupts
@@ -173,7 +211,8 @@ Before reading one transcript line:
    own fixes: sessions resolve the INSTALLED copy, and fixes land in source
    only — so note, for every fix, which installed copy will lag it until the
    operator's next `just activate` (§6.3).
-4. `mkdir -p /tmp/claude/shadow/<session-id>` and start the log (§5).
+4. `mkdir -p /tmp/claude/shadow/<session-id>` (fleet sweep:
+   `/tmp/claude/shadow/fleet-<YYYY-MM-DD>`) and start the log (§5).
 
 ## 3. Watch
 
@@ -374,8 +413,10 @@ concluding the engine is silent.
 
 ## 5. Findings — log now, speak rarely
 
-The log is `/tmp/claude/shadow/<session-id>/findings.md`; if the write is
-denied, keep it in your scratchpad and say so at attach time. One entry per
+The log is `/tmp/claude/shadow/<session-id>/findings.md` — in the fleet
+sweep, the one aggregated `/tmp/claude/shadow/fleet-<YYYY-MM-DD>/findings.md`
+(§1a); if the write is denied, keep it in your scratchpad and say so at
+attach time. One entry per
 finding, appended the moment it lands:
 
 ```

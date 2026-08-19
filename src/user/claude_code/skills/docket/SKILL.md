@@ -554,6 +554,12 @@ docket next --json
 docket next --json -s todo -p high -p critical -l must-have --limit 5
 ```
 
+On docket.git itself (the engine repo), backlog defect sweeps run directly
+in-session — plain edits, tests, commits — unless the operator asks for a
+run: the plan/conduct pipeline is for corpus-governed work, and routing an
+engine-repo sweep into `run start` has cost an operator interrupt and an
+abandoned run (2026-08-17).
+
 ---
 
 ## Workflow: Workflow definitions (`docket workflow`)
@@ -1112,6 +1118,14 @@ and the routing step **stops**. Concretely:
   human gate awaiting approval. Stopping means resolving or abandoning first.
 - The step-name suffix `-held` is **reserved**: you cannot declare a step whose
   name ends in it.
+- **`#N` is the cluster's POSITION in the payload, not a cluster id.** A held
+  step names its own provenance so the two cannot be confused: `step show`
+  carries `held_cluster` — `cluster_index`, `cluster_count`, the `artifact`
+  the payload lives on, and the `producer_step` that recorded it — and `step
+  artifacts` on the row, which is legitimately empty because a hold produces
+  nothing, names that artifact instead of stopping at "produced no artifacts"
+  (DKT-239). Two clusters of one payload point at the SAME artifact, which is
+  exactly what the index disambiguates.
 
 **One step per cluster, so you can answer them differently.** A hold carrying
 four clusters gives you four approve/reject decisions, not one. The suffix is
@@ -2475,6 +2489,17 @@ Equal is exit 0 with `{verified: true}`. Unequal is `CONFLICT` naming the
 rendered — so an operator can see whether a lease lapsed, a priority changed, or
 a step completed, rather than being told the two differ.
 
+**Every stored row gets a verdict, in one pass** (`rows` in the payload,
+summarized above the refusal for a human): `matched`, `recorded` (the step
+moved off the scheduler — the dispatch working, and not a failure),
+`rendering-shifted` (still offerable, renders differently than at open), or
+`genuinely-missing` (still non-terminal and yet no longer offerable — the
+narrow, alarming case). The comparison used to stop at the first shifted row,
+so a dispatch where several steps had moved mid-flight reported one and hid the
+rest, costing a manual per-step confirm round before a `close` that reconciles
+the same state without complaint (DKT-243). The exit code is unchanged: any row
+that is not `matched` or `recorded` still fails the verb.
+
 `stage` and `conditional` are **normalized before the comparison**: both are
 set-relative, and both legitimately move as an in-offer predecessor records or
 routes, so a row whose stage collapsed or whose conditional mark cleared is
@@ -2522,6 +2547,7 @@ discrepancy go away, record the usage: `docket dispatch backfill-usage`.
 | `--unit` | string (repeatable) | — | unit for the matching `--step`; core has no default unit |
 | `--quantity` | float (repeatable) | — | quantity for the matching `--step` and `--unit` |
 | `--from-json` | string | `""` | JSON array of `{"step","unit","quantity"}`; `-` reads stdin |
+| `--on-duplicate` | string | `"refuse"` | `refuse` \| `skip` — what to do with a row whose `(step, attempt, unit)` is already recorded |
 | `--source` | string | `"backfilled"` | who measured it; recorded on every row |
 
 engine-core §7's back-fill: a relay that measured its own spawns carries those
@@ -2541,6 +2567,20 @@ to name a different one — back-filling an arbitrary historical attempt is
 rewriting history. The ledger's `(step, attempt, unit)` key means a retried
 step's second attempt records *beside* its first, and a repeat of the same
 triple is refused `CONFLICT` rather than merged.
+
+**`--on-duplicate` decides how a repeat is handled.** `refuse` (the default)
+aborts the whole batch, which is right when a duplicate means real spend is
+about to be double-counted. `skip` passes that row over, records the rest, and
+**names every row it skipped** — never a silent drop. Cross-wave duplicates are
+structural (a gate probed in wave N and seated in wave N+1 emits usage in both
+journals), and aborting the batch for them meant hand-filtering rows before
+every re-run (DKT-241). A skipped row writes nothing, so the batch stays
+all-or-nothing over the rows it actually records.
+
+**To see what is already recorded, read `docket run report`'s `step_usage`** —
+the ledger row by row, with each row's step, instance, attempt, unit, quantity,
+and source. The budget section sums the same rows per unit; `step_usage` is the
+detail behind that headline, and it is what the duplicate refusal points at.
 
 `--source` is free text and is always written explicitly, so a relay's
 reconstruction stays distinguishable from a claimant's own `reported` rows.

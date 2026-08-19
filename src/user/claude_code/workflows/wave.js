@@ -477,7 +477,14 @@ read STEP-N or \${row.step}, and this one does not.${isolationNote}
    the holder, the scopes, or the remedy — the conductor and the engine already
    know.
 
-2. Execute the brief you were handed. It is your entire contract.
+2. Execute the brief you were handed. It is your entire contract.${isWrite ? `
+   Ship the issue's declared change list and NOTHING beyond it: unrequested
+   hardening, extra controls, and adjacent cleanups go into gap files
+   (obligation 3), never into the diff. Reviewers reject what nobody asked
+   for — one measured run spent a third of its budget removing an executor's
+   unrequested additions. The one exception to the quiet-gap rule: a defect
+   you find that is actively exploitable is REPORTED in your return
+   immediately, not merely gap-filed.` : ''}
 ${!isWrite ? `
 2r. THE CHECKOUT YOU STAND IN MAY PREDATE THE CHANGE YOUR BRIEF DESCRIBES.
    Write-class siblings work in PRIVATE worktrees and hand their work back as
@@ -602,11 +609,15 @@ ${isWrite ? `
    needed, that channel is always open. Your contract's Stuck clause is a
    SUCCESS recorded this way, never a \`fail\`.
 
-   A gap whose problem lives in ANOTHER repository's project must SAY SO in
-   its FIRST LINE, naming that repo/checkout (operator ruling 2026-08-16:
-   gaps belong to their respective projects — the engine files yours HERE,
-   and the conductor re-homes it from your naming; a gap that hides its home
-   strands the work in the wrong backlog).
+   A gap file's FIRST LINE becomes the filed issue's TITLE: one line naming
+   the defect itself, readable on a board. Its SECOND LINE is the home
+   declaration, ALWAYS: \`Home: <repo/checkout>\` — the other repository when
+   the problem lives elsewhere, or \`Home: THIS repository\` when it is local
+   (operator ruling 2026-08-16: gaps belong to their respective projects —
+   the engine files yours HERE and the conductor re-homes it from your
+   Home: line; a gap that leads with routing preamble buries the defect in
+   every listing, and one that hides its home strands the work in the wrong
+   backlog).
 ${isolated ? `
    IF THE RECORD IS REFUSED (guard or permission), attempt it ONCE and STOP
    TRYING FORMS. Leave your deliverables parked where the brief already has
@@ -1017,7 +1028,7 @@ still fails, end your reply with the verbatim error text and nothing else —
 that is the only case where your final text matters.`
 }
 
-function probeBrief(command) {
+function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
   ${command}
@@ -1027,11 +1038,12 @@ no summary, no commentary, no code fence, nothing added. If the command errors,
 return the error text verbatim instead.
 
 Do not cast a vote, do not investigate, do not run anything else. You are a
-read-only probe reporting what the record currently says.`
+read-only probe reporting what the record currently says.${servingStep ? `
+You are serving ${servingStep}; usage attribution joins on that id.` : ''}`
 }
 
-function probe(command, label, phaseLabel) {
-    return agent(probeBrief(command), {
+function probe(command, label, phaseLabel, servingStep) {
+    return agent(probeBrief(command, servingStep), {
         label,
         phase: phaseLabel,
         agentType: 'executor-read',
@@ -1053,13 +1065,32 @@ async function runGate(row, phaseLabel) {
     // round routes whatever on_fail produced.
     let show = await probe(`docket step show ${row.step} --json`,
         `${row.step} · gate:show`, phaseLabel)
-    if (/"status"\s*:\s*"(done|skipped|superseded)"/.test(show)) {
-        log(`${row.step}: gate already decided — continuing`)
-        return { step: row.step, status: 'gate-passed', text: show }
-    }
     // Proposal ids are project-prefixed: 1-8 upcased letters, "-V", digits
     // (docket's FormatProposalID / project set-prefix grammar), e.g. DKT-V29.
     const m = show.match(/"proposal"\s*:\s*"([A-Z]{1,8}-V\d+)"/)
+    // A vote step's STATUS cannot carry the verdict: the engine records a
+    // REJECTED vote as `done` when its on_fail routes machine-side (measured
+    // three runs: 0-3-0 tallies rendered "gate-passed" and the conductor
+    // believed it). The TALLY is the outcome; read it from the proposal.
+    const tallyOutcome = async (voteId) => {
+        const t = await probe(`docket vote show ${voteId} --json`,
+            `${row.step} · gate:tally`, phaseLabel, row.step)
+        if (/"(status|final_outcome)"\s*:\s*"rejected"/i.test(t)) return { outcome: 'rejected', tally: t }
+        if (/"(status|final_outcome)"\s*:\s*"approved"/i.test(t)) return { outcome: 'approved', tally: t }
+        return { outcome: 'unknown', tally: t }
+    }
+    if (/"status"\s*:\s*"(done|skipped|superseded)"/.test(show)) {
+        if (m) {
+            const { outcome, tally } = await tallyOutcome(m[1])
+            if (outcome === 'rejected') {
+                log(`${row.step}: gate already decided REJECTED (${m[1]}) — ` +
+                    `engine routes on_fail; skipping this issue's later stages`)
+                return { step: row.step, status: 'gate-rejected', text: tally }
+            }
+        }
+        log(`${row.step}: gate already decided — continuing`)
+        return { step: row.step, status: 'gate-passed', text: show }
+    }
     if (!m) {
         log(`${row.step}: gate has no proposal — its predecessors did not all ` +
             `record, so the panel cannot seat; skipping this issue's later stages`)
@@ -1089,7 +1120,7 @@ async function runGate(row, phaseLabel) {
 
     // One re-spawn for seats whose cast never landed — tribunal.js's rule.
     let record = await probe(`docket vote show ${voteId}`,
-        `${row.step} · gate:record`, phaseLabel)
+        `${row.step} · gate:record`, phaseLabel, row.step)
     const missing = seats.filter((s) => !record.includes(s.seat))
     if (missing.length > 0) {
         log(`${row.step}: ${missing.length} seat(s) returned without a recorded ` +
@@ -1107,13 +1138,18 @@ async function runGate(row, phaseLabel) {
             })))
     }
 
-    // The outcome is the STEP's, not the tally's: the quorum-reaching cast
-    // routes the gate engine-side, so `done` here means passed and anything
-    // else means the gate did not clear this wave (rejected, short a vote, or
-    // parked) — the conductor escalates after close, per its contract.
+    // `done` says only that the step COMPLETED — a rejection whose on_fail
+    // routes into rework also reads done/superseded. The tally is the verdict.
     show = await probe(`docket step show ${row.step} --json`,
         `${row.step} · gate:outcome`, phaseLabel)
     if (/"status"\s*:\s*"done"/.test(show)) {
+        const { outcome, tally } = await tallyOutcome(voteId)
+        if (outcome === 'rejected') {
+            log(`${row.step}: gate decided REJECTED (${voteId}) — engine ` +
+                `routes on_fail; the conductor verifies the routing; ` +
+                `skipping this issue's later stages`)
+            return { step: row.step, status: 'gate-rejected', text: tally }
+        }
         log(`${row.step}: gate passed — continuing`)
         return { step: row.step, status: 'gate-passed', text: show }
     }
@@ -1144,6 +1180,27 @@ const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')} — policy ${(input.policyText || '').length} chars`)
 log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
 
+// Executor rows staged BEHIND a same-issue action or vote row can be
+// superseded/unclaimable by the time their stage arrives (the predecessor
+// held or was rejected) — a blind spawn there dies on claim CONFLICT, an
+// opus corpse per occurrence (measured: 17 across 4 runs). Probe those
+// rows with the same cheap read the gate path uses; skip the spawn when
+// the step is no longer claimable. Fail-open: an empty probe spawns.
+const gateStageByIssue = new Map()
+for (const row of rows) {
+    if ((row.kind === 'action' || row.kind === 'vote') && row.issue) {
+        const s = Number.isInteger(row.stage) ? row.stage : 0
+        const cur = gateStageByIssue.get(row.issue)
+        if (cur === undefined || s < cur) gateStageByIssue.set(row.issue, s)
+    }
+}
+function needsClaimProbe(row) {
+    if (row.kind !== 'executor' || !row.issue) return false
+    const s = Number.isInteger(row.stage) ? row.stage : 0
+    const g = gateStageByIssue.get(row.issue)
+    return g !== undefined && g < s
+}
+
 const byStep = new Map()
 // A park observed anywhere stops every LATER stage (in-flight groups finish;
 // the engine re-offers unlaunched steps after the park lifts). A CONFLICT or
@@ -1154,7 +1211,8 @@ const deadIssues = new Set()
 
 function chainDead(res) {
     if (res == null) return false
-    if (res.status === 'gate-parked' || res.status === 'gate-blocked') return true
+    if (res.status === 'gate-parked' || res.status === 'gate-blocked' ||
+        res.status === 'gate-rejected' || res.status === 'skipped-not-claimable') return true
     return res.status === 'returned' && typeof res.text === 'string' &&
         res.text.includes('CONFLICT')
 }
@@ -1181,6 +1239,18 @@ for (const k of stageKeys) {
             return Promise.resolve({ step: row.step, status: 'engine-run', text: null })
         }
         if (row.kind === 'vote') return runGate(row, label)
+        if (needsClaimProbe(row)) {
+            return probe(`docket step show ${row.step} --json`,
+                `${row.step} · pre-claim`, label, row.step).then((show) => {
+                // Skip only on a positively recognized TERMINAL status; empty
+                // output, prose, and anything unrecognized all spawn (fail-open).
+                const term = show.match(/"status"\s*:\s*"(done|superseded|skipped|failed)"/)
+                if (!term) return spawn(row, label)
+                log(`${row.step}: not claimable (${term[1]}) — a same-issue ` +
+                    `gate or action upstream settled it; skipping the spawn`)
+                return { step: row.step, status: 'skipped-not-claimable', text: show }
+            })
+        }
         return spawn(row, label)
     }))
     settled.forEach((res, i) => {

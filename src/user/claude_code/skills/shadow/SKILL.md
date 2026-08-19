@@ -82,7 +82,12 @@ find ~/.claude/projects -maxdepth 2 -name '*.jsonl' -mtime -7
 
 `-maxdepth 2` keeps the enumeration to main transcripts; subagent and
 workflow files live deeper and are pulled in per session through §4, never
-enumerated directly. Drop your own session's transcript, group the rest by
+enumerated directly. Mtime is unreliable — transcripts get touched by
+tooling — so verify each candidate by its own content dates before assigning
+it a seat: the first and last lines' `.timestamp` (`head -1`/`tail -1` piped
+to `jq -r .timestamp`) must fall inside the window; drop files whose content
+lies outside it (one sweep spent a full analyst seat on a two-week-stale
+file whose mtime lied). Drop your own session's transcript, group the rest by
 project directory, and read each session's real repo from its `.cwd` field.
 A transcript still growing is a live session: include it as-is, mark it
 in-flight in the review, and apply §5's interrupt rules to it alone —
@@ -536,8 +541,11 @@ Then:
 4. **File the engine defects and every other cross-repo finding** (rule 3),
    one issue per defect, refusal text and repro verbatim, each in its owning
    project.
-5. **Close** by naming the log path, the fixes applied, the issues filed,
-   and the one thing the next shadow should watch first.
+5. **Close** by first stopping every helper you spawned (TaskStop) — idle
+   analysts left registered become the operator's cleanup at session end
+   (measured: seven killed by hand after one fleet's close report) — then
+   naming the log path, the fixes applied, the issues filed, and the one
+   thing the next shadow should watch first.
 
 ## Appendix: the conduct checklist
 

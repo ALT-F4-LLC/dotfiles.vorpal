@@ -166,7 +166,11 @@ explicit that both are required, not either:
    into a fresh session without looking anything up.
 
 The prompt itself, in both places, should read as a short brief a stranger
-session can act on directly: run id, the absolute checkout path and branch to
+session can act on directly: an opening state-check line — "run `docket run
+status RUN-N` first; if the state has advanced past this prompt, discard it
+silently" (stale resume nudges have fired mid-conduct and cost a question
+round each; the check makes any late fire a no-op) — then run id, the
+absolute checkout path and branch to
 work from, why it was paused, the halt mode used, a one-paragraph state
 summary (where the run stands, what is unfinished), `docket run resume RUN-N
 --reason '<why>'` as the first action, then the session-only state above in

@@ -25,6 +25,11 @@ double-count this dedup was written to fix was driven by those cache units
 above); output_tokens per-line was already within ~1% of correct. So the two
 failure modes pull in opposite directions and last-wins is what satisfies both.
 
+`--exclude STEP-N` (repeatable) drops a step whose usage a PRIOR dispatch's
+backfill already carries — a gate probed in one wave and seated in the next
+emits usage in both journals, and the engine's append-only refusal is
+per-batch, not per-row.
+
 Deterministic, read-only, stdout-only. Exit 1 if any agent's step cannot be
 attributed or a dispatched agent carries no usage — silence must not look like
 success.
@@ -39,10 +44,19 @@ UNITS = {
 }
 
 def main() -> int:
-    if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
-        print(f"usage: wave-usage <wave-transcript-dir>", file=sys.stderr)
+    argv = sys.argv[1:]
+    exclude: set[str] = set()
+    while "--exclude" in argv:
+        i = argv.index("--exclude")
+        if i + 1 >= len(argv):
+            print("usage: wave-usage [--exclude STEP-N]... <wave-transcript-dir>", file=sys.stderr)
+            return 2
+        exclude.add(argv[i + 1])
+        del argv[i:i + 2]
+    if len(argv) != 1 or not os.path.isdir(argv[0]):
+        print("usage: wave-usage [--exclude STEP-N]... <wave-transcript-dir>", file=sys.stderr)
         return 2
-    d = sys.argv[1]
+    d = argv[0]
     totals: dict[str, dict[str, int]] = {}
     errors: list[str] = []
     for name in sorted(os.listdir(d)):
@@ -77,6 +91,8 @@ def main() -> int:
         if step is None:
             errors.append(f"{name}: no STEP-N found in first user message")
             continue
+        if step in exclude:
+            continue  # a prior dispatch's backfill already carries this step
         if not any(agent_sums.values()):
             errors.append(f"{name} ({step}): transcript carries no usage")
             continue

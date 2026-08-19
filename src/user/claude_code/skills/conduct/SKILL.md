@@ -1074,5 +1074,12 @@ above is yours alone to keep. Where the guard does fire, its deny is a guard
 answering, not the operator instructing. Do not start driving on its push:
 surface the choice (drive on, park at a gate, abandon) and let the operator
 make it, exactly as RUN-1's bootstrap did when the guard demanded a
-just-activated run be driven. There is no handoff document to write and no
-continuity narrative to leave. The run record is the handoff.
+just-activated run be driven. The run record remains the primary handoff — no
+continuity narrative duplicates it. The one sanctioned exception is a
+deliberate mid-progress halt: reach for `~/.claude/skills/pause/SKILL.md`
+rather than a bare `docket run pause`, which parks the run but captures none
+of this session's own state. Its doc is deliberately narrow — ONLY the
+session-only state the engine cannot reconstruct (in-flight wave ids, un-
+integrated shas, Workflow args for a resume, budget-raise usage, and the
+like) — never a restatement of anything `run status` or this section already
+answers.

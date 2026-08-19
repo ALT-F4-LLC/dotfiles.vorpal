@@ -261,9 +261,10 @@ docket init          # only if no store exists yet. Bare init targets the SHARED
 
 # The corpus does not activate without these three. Set them now; §4b argues the
 # numbers and is where the operator approves or changes them.
-docket config set vote.rule.security-acceptance.threshold 0.67
-docket config set vote.rule.doc-acceptance.threshold 0.60
-docket config set vote.rule.tribunal.threshold 0.67
+# --global: the rules belong to the CORPUS, which every project shares. See §4b.
+docket config set --global vote.rule.security-acceptance.threshold 0.67
+docket config set --global vote.rule.doc-acceptance.threshold 0.60
+docket config set --global vote.rule.tribunal.threshold 0.67
 ```
 
 **Nothing about the corpus lands in this repo, and that is the design.** The
@@ -770,13 +771,25 @@ to register at all**:
 Five of the nine pipelines name one, across three distinct rules:
 
 ```bash
-docket config set vote.rule.security-acceptance.threshold 0.67   # project scope:
-docket config set vote.rule.doc-acceptance.threshold 0.60        # no --global
-docket config set vote.rule.tribunal.threshold 0.67              # on any of them
+docket config set --global vote.rule.security-acceptance.threshold 0.67
+docket config set --global vote.rule.doc-acceptance.threshold 0.60
+docket config set --global vote.rule.tribunal.threshold 0.67
 ```
 
 A rule exists exactly when its threshold is set, so these three writes are what
-bring the rules into being — unqualified, for this project only. `0.67` is
+bring the rules into being.
+
+**`--global`, and that changed.** This used to say project scope, explicitly no
+`--global` on any of them, and the cost was measured: 39 rows of
+`config.pN.vote.rule.*` across 13 projects — thirteen copies of the same three
+numbers — against 2 rows store-wide. The rules are properties of the CORPUS,
+whose workflows every project shares, so a per-project write makes each new
+project refuse a definition that already works everywhere else, and the
+per-project remedy leaves the NEXT project in the same place. Resolution reads
+the project override first and the store-wide key second, so a project that
+genuinely needs a different number still sets one unqualified and wins; what
+`--global` buys is that no project has to. V26's refusal now names the
+store-wide set, and quotes a threshold a sibling project actually uses. `0.67` is
 two-thirds: a security acceptance needs a clear majority, and with a
 three-judge panel it means two must agree. `0.60` is a simple majority with a
 margin — a doc is accepted when most reviewers say yes, and the lower bar
@@ -811,13 +824,22 @@ does not reach this section. Run these after §5's yes, in the same breath as
 
 ```bash
 docket config get lease.ttl.default          # ships as 15m
-docket config set lease.ttl.write 45m        # project scope, no --global.
-docket config set lease.ttl.read  30m        # Propose BOTH classes: the
-                                             #   2026-08-06 run sized only
-                                             #   write, and its slowest silver
-                                             #   judge then ran 13m of the 15m
-                                             #   read default on 3 files
+docket config set lease.ttl.default 30m      # project scope, no --global.
+docket config set lease.ttl.write   45m      #   `write` is the ONLY class this
+                                             #   corpus declares — see below
 ```
+
+**A class is a step's `class` field, and it DEFAULTS TO THE EXECUTOR NAME.**
+This used to propose `lease.ttl.read 30m` alongside `write`, and that key binds
+nothing: the corpus declares `class = "write"` on its writer steps and nothing
+at all on the rest, so every read-class step carries a class of `verify-ac`,
+`judge-security`, `synthesize-findings` — its executor name — and never `read`.
+The reads were running on `lease.ttl.default` the whole time, which is why
+sizing `read` never moved them. Raise the default instead; that is the key that
+actually covers them. `docket config set lease.ttl.<class>` now warns when no
+registered workflow declares the class, naming the ones that do, so a key that
+binds nothing says so at write time rather than when a healthy step is reaped
+mid-run.
 
 **Size it against worst-case step duration, not the typical one.** A TTL shorter
 than the longest write step means the lease expires *while the executor is still

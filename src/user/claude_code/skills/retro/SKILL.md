@@ -128,7 +128,14 @@ no longer TTL-only: `step heartbeat` extends a live claim, `step reap STEP-N
 die, and `[limits]` classes take `{max, lease_ttl, max_step_duration}`. Read
 the reaps apart. An expiry — or a step completing against a lease it no longer
 holds — means `lease.ttl.<class>` is sized below real step duration; propose
-the observed worst case plus headroom. A `data.forced` reap is a dead spawn, a
+the observed worst case plus headroom. **Name the class the way the step
+does**: a class is the step's `class` field and it defaults to the EXECUTOR
+name, which is why these workflows' `[limits]` tables read
+`"judge-architecture"`, `"verify-ac"`, `"synthesize-findings"` — and `"write"`
+only because the writer steps declare it. A proposal for `lease.ttl.read` binds
+nothing here; the key that covers those steps is `lease.ttl.default`, or the
+executor's own name. `config set` warns when a class no registered workflow
+declares, so check the warning rather than assuming the write took. A `data.forced` reap is a dead spawn, a
 relay finding rather than a config one. And **heartbeating cannot carry a step
 past its class's `max_step_duration`, measured from the claim**: a healthy
 holder reaped there wants a smaller charter or a bigger ceiling, not a TTL.

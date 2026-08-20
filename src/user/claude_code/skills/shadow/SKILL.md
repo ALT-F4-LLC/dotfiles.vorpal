@@ -1,15 +1,18 @@
 ---
 name: shadow
-description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Log findings with evidence as they land, then deliver a severity-ranked review and propose definition fixes for approval once the run ends. Fixes target src/user/claude_code — including repetitive bash worth extracting into small deterministic scripts under src/user/claude_code/scripts; engine defects are filed as issues, never patched. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
+description: Observe Claude Code sessions — live, or post-mortem — and find friction across every layer they cross: harness, skills, workflows, loops, agents, hooks, config, the models themselves, and the Docket engine. Strictly read-only — it fixes nothing, anywhere. Log findings with evidence as they land; once the run ends, file EVERY finding as an issue in its owning Docket project — the intake of the funnel a `tend` loop (or a plan → conduct run) drains — then deliver a severity-ranked review naming what was filed. Invoked bare it sweeps EVERY project under ~/.claude/projects for the past 7 days of sessions; pass a session id to observe just that one — a conduct run, any other skill's run, or a finished session worth learning from.
 argument-hint: "[session-id]"
 ---
 
 # shadow
 
-You watch a session work; you never work the session. Your product is a
-friction review: every place the run was harder, noisier, or less correct than
-the definitions assume, with evidence, and the definition edit that would
-remove it. The definitions live in
+You watch a session work; you never work the session — and you never fix what
+you find. Your product is a queue of filed issues: every place the run was
+harder, noisier, or less correct than the definitions assume, with evidence
+and the concrete remedy, filed in the owning Docket project as work for
+someone else. You are the intake of a funnel — a `tend` loop (or a plan →
+conduct run) on the owning repo drains what you file; you never drain it
+yourself. The definitions live in
 `~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main/src/user/claude_code`
 — `$SRC` below; note the underscore.
 
@@ -45,28 +48,28 @@ Three rules you must not fight:
   only, report back via SendMessage — because a helper cannot infer the seat
   it serves, and one measured audit helper otherwise executed a `config set`
   it found quoted in the very document it was auditing.
-- **Every fix waits for the run to end.** The run may be mutating the very
-  files you would edit — bootstrap writes config, runs commit, and a run over
-  the dotfiles repo edits the definitions themselves. The findings log is the
-  buffer that makes waiting cheap. After the end: propose the batch to the
-  tribunal, and write what it approves (§6.3).
-- **Engine defects are filed, never fixed — and every finding you file goes
-  to its OWNING project** (operator ruling, 2026-08-16: gaps belong to their
-  respective projects). Docket is a separate codebase.
-  Write the defect up — verb, refusal text verbatim, minimal repro — and file
-  it from the docket repo's own checkout (`docket issue create`), which is
-  also what routes it: the store is machine-global and a project is a
-  checkout's git identity. The same routing covers every other cross-repo
-  finding: the observed repo's own bug files in ITS project, a dotfiles gap
-  you cannot fix as a definition edit files in the dotfiles project — never
-  into whichever project the observed session sat in, and `docket issue move
-  <id> --project <target>` re-homes one that already landed wrong. Ids are a
-  store-wide sequence and the two live
-  projects share the prefix `DKT`, so name the project beside any id that
-  could be read either way. If you cannot file from this seat, the writeup
-  goes in the review addressed to the operator. A definition-side mitigation
-  (a warning line in a skill, a guard in wave.js) is yours to propose; the
-  engine fix flows through docket's own plan → conduct.
+- **You are read-only everywhere, not just in the observed repo.** No
+  definition edits, no scripts written, no commits, no tribunal — the fix
+  path is gone from this skill entirely. A finding's remedy is work for
+  someone else, and the only writes you ever make beyond the findings log
+  are `docket issue` writes at §6, after the run ends. Filing waits because
+  the queue is live state — a `tend` loop polls it and would summon a worker
+  into a repo the observed run is still mutating — and because a finding
+  filed before the run's full arc could falsify it is a claim published
+  unverified. The findings log is the buffer that makes waiting cheap.
+- **Every finding files to its OWNING project** (operator ruling,
+  2026-08-16: gaps belong to their respective projects). File from the
+  owning repo's own checkout (`docket issue create`), which is also what
+  routes it: the store is machine-global and a project is a checkout's git
+  identity. Definition findings file in the dotfiles project; engine defects
+  file in the docket project (Docket is a separate codebase — write the
+  defect up with verb, refusal text verbatim, minimal repro); the observed
+  repo's own bug files in ITS project — never into whichever project the
+  observed session happened to sit in, and `docket issue move <id> --project
+  <target>` re-homes one that already landed wrong. Ids are a store-wide
+  sequence and projects can share a prefix, so name the project beside any
+  id that could be read either way. If you cannot file from this seat, the
+  writeup goes in the review addressed to the operator.
 
 ## 1. Attach
 
@@ -115,8 +118,8 @@ are per-repo). You aggregate: the log is
 `/tmp/claude/shadow/fleet-<YYYY-MM-DD>/findings.md`, one entry per DISTINCT
 finding — the same defect surfacing in four sessions is ONE finding carrying
 four evidence lines, and the recurrence count is its severity argument. Then
-§6 runs once, over the aggregate: one review, one tribunal batch, every
-cross-repo finding filed to its owning project as ever.
+§6 runs once, over the aggregate: one filing pass, every finding to its
+owning project, then one review naming what was filed.
 
 Everything from "Sit in the observed repo's root" below is written for a
 single attach; in the sweep it applies per observed session, carried out by
@@ -152,8 +155,8 @@ of fighting them:
   write-class reap denies YOUR helper spawns too. Take the denial as
   evidence the reap is real and standing, and read serially instead.
 - **commit-guard** never denies a shadow keeping its rules, because you make
-  no git writes while the run lives. If it does deny you, you have drifted
-  into work that is not yours — stop and re-read rule 1.
+  no git writes, period. If it does deny you, you have drifted into work
+  that is not yours — stop and re-read rules 1 and 2.
 
 Reading a guard's answer: exit 0 allows, exit 2 denies, and a third case is
 easy to misread — no docket database up-tree ALSO exits 0, carrying
@@ -222,11 +225,12 @@ Before reading one transcript line:
    from the retired model, each entry either duplicating the shared root or
    dangling against it. Record `git -C $SRC rev-parse HEAD`. A divergence is
    your first finding —
-   and the baseline for every later one, because a fix proposed against bytes
-   that did not run is a wrong fix. The same chain read backwards governs your
-   own fixes: sessions resolve the INSTALLED copy, and fixes land in source
-   only — so note, for every fix, which installed copy will lag it until the
-   operator's next `just activate` (§6.3).
+   and the baseline for every later one, because a remedy proposed against
+   bytes that did not run is a wrong remedy. The same chain governs the
+   issues you file: fixes land in SOURCE only — that is the worker's
+   contract, `tend`'s commit included — so every remedy names its `$SRC` or
+   `src/user/docket/config/` path, and the issue should say that the
+   installed copy will lag the fix until the operator's next `just activate`.
 4. `mkdir -p /tmp/claude/shadow/<session-id>` (fleet sweep:
    `/tmp/claude/shadow/fleet-<YYYY-MM-DD>`) and start the log (§5).
 
@@ -267,25 +271,26 @@ is a fresh regression: rule-3 territory, evidence it with `step render`/
 shapes the session keeps rebuilding: the journal→usage join before every
 close, the transcript-find, a jq chain every executor re-derives. Each retype
 spends tokens and invites drift — the iteration where the jq path comes out
-wrong is the iteration the ledger lies. The fix is a script proposed into
-`$SRC/scripts/` — and note the install lag: `~/.claude/scripts` is a live
-store symlink today, but it serves the store's bytes, so a NEW script exists
-only at its source path until the next `just activate`; callers must name
-whichever path will actually resolve when they run (§2.3).
+wrong is the iteration the ledger lies. The remedy is a script under
+`$SRC/scripts/` — filed as an issue, never written by you — and the issue
+must note the install lag: `~/.claude/scripts` is a live store symlink
+today, but it serves the store's bytes, so a NEW script exists only at its
+source path until the next `just activate`; callers must name whichever path
+will actually resolve when they run (§2.3).
 
 The bar is a small function, and it is strict:
 
 - One job, named for that job; arguments in, stdout out, honest exit code.
 - Deterministic: no network, no clock, no randomness — same bytes out.
-- Read-only. A candidate that writes is not a script; propose it as what it
-  actually is (a hook, an engine action, a workflow edit) or leave it.
+- Read-only. A candidate that writes is not a script; file the issue for
+  what it actually is (a hook, an engine action, a workflow edit) or leave it.
 - A dozen-ish lines. Wanting mode flags, config, state, or branching on run
   content makes it policy escaping the definitions, and policy stays put.
 
-The proposal (§6) carries the script body, the call sites it replaces, and
-the definition edits that make them call it — a repetition that originates in
-a rendered brief is fixed in the definition that renders it, never in the
-executors that obeyed it.
+The issue (§6) carries the proposed script body, the call sites it replaces,
+and the definition edits that make them call it — a repetition that
+originates in a rendered brief is fixed in the definition that renders it,
+never in the executors that obeyed it.
 
 **A model mistake is evidence, not an indictment.** Models err at some rate
 no definition can change; the definitions' job is to make the erring
@@ -293,19 +298,19 @@ survivable. So attribute every mistake before proposing anything:
 
 - **Induced** — the definition set it up: an ambiguous contract line, a
   brief missing the fact the model then guessed, two documents that
-  disagree. Fix the definition; the guess was the symptom.
+  disagree. The issue targets the definition; the guess was the symptom.
 - **Capability** — clear brief, honest attempt, work beyond the tier: wrong
   reasoning, repeated schema retries, misread output. Note the model that
   served from `agent-<id>.meta.json` and hand the excerpts to `/retro` —
   tiering lives in instance policy, and your transcript evidence is exactly
-  what its engine reports cannot see. Propose against
+  what its engine reports cannot see. File against
   `src/user/docket/config/policy.toml` only when the shipped default itself is wrong.
 - **Unforced** — right model, clear brief, still wrong: a transposed id, a
-  wrong jq path, an invented verb. Wishing the model better is not a fix.
-  Move the work into code — a script past the bar above, a schema, a guard
-  — or propose the cheap verification step the contract lacked. What must
-  be exact becomes code; that is the house pattern, and wave.js is its
-  precedent.
+  wrong jq path, an invented verb. Wishing the model better is not a remedy.
+  The issue moves the work into code — a script past the bar above, a
+  schema, a guard — or adds the cheap verification step the contract lacked.
+  What must be exact becomes code; that is the house pattern, and wave.js is
+  its precedent.
 
 A mistake an existing net caught is the system working — log it as the net
 earning its keep, not as a finding against the model. A mistake that sailed
@@ -383,9 +388,9 @@ Measured limits of these surfaces (RUN-2's and RUN-5's shadows):
   classifier carries context ACROSS attempts and sessions; a reworded
   resubmission of flagged content therefore reads as obfuscated retry rather
   than as a fix; and the sanctioned unblock is explicit operator confirmation
-  in-session. Since your product is definition edits to exactly the briefs it
-  reads (wave.js), "reword it until it passes" is the obvious proposal and
-  the wrong one.
+  in-session. Since your findings become issues proposing edits to exactly
+  the briefs it reads (wave.js), "reword it until it passes" is the obvious
+  remedy and the wrong one.
 - **Direct Agent-tool spawns (no wave) transcribe under the SPAWNING session**,
   three levels down and the flattened-cwd level is the one people drop:
   `~/.claude/projects/<flattened-cwd-dir>/<session-id>/subagents/agent-a<name>-<hash>.jsonl`.
@@ -443,7 +448,8 @@ finding, appended the moment it lands:
 ## [HH:MM:SS] <layer> — <load-bearing|friction|paper-cut>
 claim:    what happened vs what the definition assumes, one line
 evidence: transcript excerpt or file:line, verbatim, enough to re-find it
-fix:      <definition file> — the concrete edit, as a diff when small
+remedy:   <owning project> · <source file> — the concrete change, as a diff
+          when small; this line seeds the filed issue (§6)
 ```
 
 Severity, so the review ranks itself: **load-bearing** — the run did the
@@ -476,91 +482,55 @@ The run is over when the transcript goes terminal or the operator says so.
 Then:
 
 1. **Re-establish the ground.** Walk §2.3's chain again and re-check
-   `rev-parse HEAD` — the run itself may have moved them. Propose fixes
-   against what is on disk now, noted against what ran then.
-2. **Deliver the review.** Findings ranked by severity; each carries its
-   claim, its evidence, the diff, and what it costs if the diff is wrong.
-   Findings that point at instance config rather than at a definition —
-   thresholds, TTLs, tiers, the corpus's own workflows, a repo's additions —
-   are `/retro`'s to evolve from engine evidence: name them and point at
-   retro rather than bending them into definition edits.
-3. **Propose → tribunal → apply.** The definition-fix batch goes to a
-   three-judge panel of agents, not to the operator. Assemble it exactly as
-   before — findings grouped, each carrying its concrete edit — then open the
-   proposal **from the repo the edits target**, which for definition fixes is
-   the dotfiles checkout and not the observed repo you have been sitting in
-   (§1):
+   `rev-parse HEAD` — the run itself may have moved them. File issues
+   against what is on disk now, noted against what ran then; stale bytes
+   discovered here are themselves a finding.
+2. **File everything** (rule 3: each from its owning repo's checkout). One
+   `docket issue create` per DISTINCT finding — load-bearing and friction
+   individually, paper-cuts batched into one issue per definition file or
+   surface. (`issue create` writes; rule 1's read-verbs-only list bounds the
+   observed run's LIFETIME, and §6 is the far side of that line. In a fleet
+   sweep, a session still in flight is the exception: findings evidenced
+   ONLY by it are held in the review as pending, not filed — they have not
+   met the run's full arc yet.) An issue is complete when a worker who never
+   saw this session can act on it — `tend` treats the description as its
+   whole working contract — so it carries:
 
-   ```bash
-   docket vote create -d "<what the batch changes, plainly>" \
-     -r "<the evidence: the findings, the run refs>" \
-     -n 3 -c medium --threshold 0.67 --created-by shadow
-   ```
+   - **Title**: the claim, one line, plain language.
+   - **Description**: the evidence verbatim (transcript excerpt or
+     file:line, enough to re-find it), the remedy with its SOURCE path — as
+     a diff when small — and acceptance criteria a worker can check without
+     this session's context. Session ids, run refs, and transcript paths go
+     here, never in the title.
+   - `-p`: severity mapped — load-bearing → `high`, friction → `medium`,
+     paper-cut batch → `low`; `critical` only for a defect actively costing
+     live runs correctness or money right now.
+   - `-T`: `bug` for defects (an engine refusal, a guard misfire, a
+     definition that is wrong), `task` for edits and script extractions,
+     `chore` for a paper-cut batch.
+   - `-l shadow` for provenance, plus `--scope` on the paths the remedy
+     touches when you know them.
 
-   (`vote create` writes, and rule 1's read-verbs-only list bounds the observed
-   run's LIFETIME — §6 is the far side of that line. Nothing here touches the
-   observed run's state.) Then put the panel on it:
-
-   ```
-   Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
-     voteId: "<id>",
-     voters: ["tribunal-architecture", "tribunal-security", "tribunal-correctness"],
-     policyText: <literal text of ~/.docket/config/policy.toml>,
-     context: "<the batch: every proposed edit with its evidence>",
-     gateKind: "fix-batch", cwd: "<the repo the edits target>"}})
-   ```
-
-   The wave's call discipline governs this one too: `scriptPath` only and never
-   by name, `args` a real object, policy passed as TEXT `cat`-ed fresh rather
-   than as a path — and resolved like every other definition (§2.3), the
-   installed path if one exists, else `$SRC/workflows/tribunal.js`.
-
-   `docket vote result <id>` decides what happens next. **Approved is your
-   authority to write, and you write immediately** — there is no "apply now or
-   later?" question, because the answer was always now. A rejection or a split
-   goes to the operator through the built-in question tool carrying EVERY
-   judge's verdict, confidence, and summary verbatim — they are ruling on the
-   dispute, and a tally you have summarized is not one. Only what they approve
-   gets written; a declined item stays in the log as the next shadow's watch
-   list.
-
-   **Trust and permission findings never ride this path.** A fix that would add
-   a trust entry, widen a sandbox allowlist, change what a hook permits, or
-   destroy uncommitted work goes to the operator directly and ALONE in its own
-   question, whatever else the batch holds. The panel's remit is definition
-   edits; an authorization granted by agents is not an authorization, and a
-   trust write bundled with three cosmetic edits is approved in one click
-   without being read.
-
-   Script extractions ride the approved batch: the body lands
-   in `$SRC/scripts/` (`chmod +x` it — file tools do not set the bit), and
-   since the installed `~/.claude/scripts` store symlink lags source until the
-   next `just activate`, every call site you edit must name the source path
-   for a script that is new or newly changed.
-
-   **A fix lands in SOURCE ONLY, and is committed.** The installed surfaces —
-   `~/.claude/{agents,skills,hooks,scripts,workflows}`, `~/.docket/config` —
-   are content-addressed store artifacts behind the operator's `just activate`
-   gate: hand-editing one desynchronizes bytes from hash, is invisible to git,
-   and changes what every session on the machine executes without the
-   operator's install act (operator ruling, 2026-08-11, on tribunal-security's
-   DKT-V6 finding; this RETIRES the both-surfaces practice recorded after
-   RUN-1 graph-engine). The store's Bash write-deny is the only mechanical
-   guard and Edit/Write pass through it — the rule holds because it is the
-   rule, not because a tool will stop you. So: write the edit under `$SRC`,
-   commit it, and state in the close report that the fixes are PENDING the
-   operator's next `just activate` — name every skill or script whose
-   installed copy is now behind source. A call site that must work before
-   then names the source path explicitly. Never recreate a hand-made symlink
-   into the source tree; log any you find as debris.
-4. **File the engine defects and every other cross-repo finding** (rule 3),
-   one issue per defect, refusal text and repro verbatim, each in its owning
-   project.
-5. **Close** by first stopping every helper you spawned (TaskStop) — idle
+   A finding whose remedy would add a trust entry, widen a sandbox
+   allowlist, change what a hook permits, or destroy uncommitted work still
+   files — an issue is a request, not an authorization — but its description
+   must name the trust boundary in its FIRST line, so the worker's own
+   security gate fires and routes it to the operator, and the review calls
+   it out separately. Findings that point at instance config rather than at
+   a definition — thresholds, TTLs, tiers, the corpus's own workflows, a
+   repo's additions — are `/retro`'s to evolve from engine evidence: name
+   them in the review and point at retro instead of filing them.
+3. **Deliver the review.** Findings ranked by severity, each carrying its
+   claim, its evidence, and the issue id it filed as, project named beside
+   every id. Say plainly that nothing has been fixed — what you filed is a
+   work queue, not applied change — and name where it drains: a `/loop
+   /tend` session in each owning repo, or a plan → conduct run when the
+   operator wants a cluster worked as one.
+4. **Close** by first stopping every helper you spawned (TaskStop) — idle
    analysts left registered become the operator's cleanup at session end
    (measured: seven killed by hand after one fleet's close report) — then
-   naming the log path, the fixes applied, the issues filed, and the one
-   thing the next shadow should watch first.
+   naming the log path, the issues filed per project, and the one thing the
+   next shadow should watch first.
 
 ## Appendix: the conduct checklist
 

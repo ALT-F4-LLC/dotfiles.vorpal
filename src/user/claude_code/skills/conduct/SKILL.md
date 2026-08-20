@@ -1431,3 +1431,53 @@ session-only state the engine cannot reconstruct (in-flight wave ids, un-
 integrated shas, Workflow args for a resume, budget-raise usage, and the
 like) — never a restatement of anything `run status` or this section already
 answers.
+
+**A TERMINAL run — `done` or `abandoned` — is picked up from its RULINGS, not
+from its statuses.** "Pick up where RUN-N left off" is an instruction to read
+how RUN-N ended, and step statuses, park messages and issue statuses do not
+say that. Before you characterize how a prior run ended, and before you
+re-present to the operator any decision that run parked on, read that run's
+terminal events by KIND:
+
+```bash
+docket events list --run $RUN --json --tail 400 | python3 -c '
+import json,sys
+WANT = {"issue-abandoned","step-resolved","step-approved","step-rejected","run-done","run-abandoned"}
+d = json.load(sys.stdin)["data"]
+evs = d if isinstance(d, list) else d["items"]      # KeyError beats a silent empty read
+for e in evs:
+    if e["kind"] in WANT:
+        print(e["seq"], e["kind"], e.get("issue",""), e.get("step",""), json.dumps(e["data"]))
+'
+```
+
+**Filter on the `kind` field; never keyword-grep the detail text.** Words like
+`waiting-human`, `failed-routed` and `step-routed` appear on the moments a run
+PARKED and on none of the moments it RESOLVED — a grep for them selects the
+questions and drops every answer. That is exactly how one conductor read
+RUN-32: it reported two issues "parked on a `waiting-human` gate … never
+resolved" and called the run's `done` rollup "an engine reporting anomaly,"
+while two `issue-abandoned` events carrying the operator's verbatim rulings sat
+in the same feed immediately before `run-done`. The engine falsified it minutes
+later (`step resolve … --as override-pass` → "step reconcile@3 is
+failed-routed, not waiting-human"), but only after it had re-asked the operator
+both already-decided questions, recommending for one the exact path the
+recorded ruling had ruled out.
+
+**The step-lifecycle fact that read rests on:** a step parked `waiting-human`
+FINALIZES to `failed-routed` when its issue is abandoned. `failed-routed`
+carrying a `waiting-human: …` park message means DECIDED, not undecided — the
+park message is the frozen question, and the resolution lives in the event
+feed. Likewise an issue left at `review`/`todo` after a run-scoped
+abandonment is frozen, not pending: its tracker status is no evidence of an
+open gate. A run whose issues were all abandoned rolls up to `done`
+legitimately.
+
+**Recorded rulings cite ids; those ids are required reading.** Issues and
+artifacts named in an `issue-abandoned` note (a successor issue, a findings
+artifact, a blocking issue in another project) must be read — `docket issue
+show`, `step artifacts` / `step artifact ARTIFACT-N` — before you put any
+question on that subject to the operator. Re-asking a decided question costs
+the operator the answer they already gave plus the one that corrects your
+premise; if the ruling turns out to be genuinely superseded, say what it was
+and why it no longer holds, and let them rule on THAT.

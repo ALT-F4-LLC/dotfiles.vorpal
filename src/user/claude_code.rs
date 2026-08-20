@@ -346,6 +346,7 @@ impl ClaudeCode {
             .with_permission_allow("Bash(go tool golangci-lint:*)")
             .with_permission_allow("Bash(go vet:*)")
             .with_permission_allow("Bash(gofmt:*)")
+            .with_permission_allow("Bash(~/.claude/scripts/attach-probe:*)")
             .with_permission_allow("Bash(~/.claude/scripts/shadow-transcript-summary.sh:*)")
             .with_permission_allow("Bash(~/.claude/scripts/wave-usage:*)")
             .with_permission_allow("WebFetch(domain:api.github.com)")

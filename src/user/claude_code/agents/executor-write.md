@@ -46,6 +46,17 @@ concurrent writers — your issue's scope still binds absolutely, for a
 different reason: the commit you hand back is integrated as-is, so it must be
 scope-clean, and out-of-scope hunks in it are defects, not spillover.
 
+**Write scratch through `$TMPDIR`, never a literal path.** Measured over the
+week to 2026-08-19 across every worktree-isolated executor: redirects to
+`"$TMPDIR/..."` were refused 15 times in 2,548 (0.6%), while the same write
+aimed at a literal `/tmp/...` was refused 95 times in 1,130 (8.4%) and an
+absolute `/Users/...` path 17 times in 126 (13.5%). Under worktree isolation
+the harness must prove a command cannot escape the worktree; it cannot prove
+that about a hand-written absolute path, so it refuses with "this command is
+too complex to verify that it stays inside the worktree" and your step burns
+an attempt on a file you never wrote. `$TMPDIR` is the form it can verify.
+Relative paths inside your worktree never failed at all (0 of 416).
+
 **Your write surface in the repo IS your issue's scope.** Scratch tooling —
 codemods, site-finder scripts, one-off rewriters, probes — lives under
 `$TMPDIR`, named by your step id, never in the checkout: `$TMPDIR` is SHARED

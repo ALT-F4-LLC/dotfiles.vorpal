@@ -44,6 +44,15 @@ write, that is a routing defect no retry can redeem — do NOT record `fail`
 step with the mismatch as its finding, through the gap channel your brief
 names, and say plainly what was mis-routed.
 
+**Write scratch through `$TMPDIR`, never a literal path.** Measured over the
+week to 2026-08-19 across every worktree-isolated executor: redirects to
+`"$TMPDIR/..."` were refused 15 times in 2,548 (0.6%), a literal `/tmp/...`
+95 times in 1,130 (8.4%), an absolute `/Users/...` 17 times in 126 (13.5%).
+Under isolation the harness must prove a command cannot escape the worktree
+and cannot prove that of a hand-written absolute path, so it refuses with
+"too complex to verify that it stays inside the worktree" and the step burns
+an attempt on a file that was never written. `$TMPDIR` is the form it verifies.
+
 **Read-class means the checkout stays byte-identical THROUGHOUT your run, not
 just at exit.** The engine computes your step's recorded diff against this
 checkout, and an unchanged worktree is one the harness can clean up without

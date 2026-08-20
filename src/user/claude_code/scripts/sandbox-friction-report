@@ -1,0 +1,169 @@
+#!/bin/bash
+
+# sandbox-friction-report — turn the sandbox friction ledger into a ranked
+# summary, and optionally into DOT issues.
+#
+# The closing half of the sandbox self-improving loop (operator ruling,
+# 2026-08-20). sandbox-friction-hook.sh records every sandbox denial and every
+# unsandboxed retry, from ANY session in ANY project; this groups them by the
+# path or host that was actually denied, which is the thing an allowlist entry
+# would name.
+#
+# Read-only by default: it prints. `--file` is the only writing mode, and it
+# files into the dotfiles project (DOT) by running docket FROM that checkout,
+# because the store is machine-global and a project is a checkout's git
+# identity — `issue create` has no --project flag at all, so filing from
+# wherever this happened to run would scatter dotfiles findings across whatever
+# repo the operator was standing in.
+#
+# Usage:
+#   sandbox-friction-report                 # ranked summary
+#   sandbox-friction-report --since 7d      # only events newer than this
+#   sandbox-friction-report --file          # create one DOT issue per group
+#
+# Exit: 0 when it ran, whatever it found. 1 only on a usage error.
+
+set -uo pipefail
+
+LEDGER="$HOME/.claude/friction/sandbox.jsonl"
+SINCE=""
+FILE_ISSUES=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --since) SINCE="${2:-}"; shift 2 ;;
+        --file) FILE_ISSUES=1; shift ;;
+        -h|--help) sed -n '3,22p' "$0"; exit 0 ;;
+        *) echo "unknown argument: $1" >&2; exit 1 ;;
+    esac
+done
+
+if [ ! -f "$LEDGER" ]; then
+    echo "no friction ledger at $LEDGER — nothing recorded yet"
+    exit 0
+fi
+
+CUTOFF=""
+if [ -n "$SINCE" ]; then
+    NUM="${SINCE%[dh]}"
+    case "$SINCE" in
+        *d) CUTOFF=$(date -u -v-"${NUM}"d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) ;;
+        *h) CUTOFF=$(date -u -v-"${NUM}"H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null) ;;
+        *) echo "--since takes a value like 7d or 12h" >&2; exit 1 ;;
+    esac
+fi
+
+# Group by the denied path or host. A raw path is TRIMMED first — the trailing
+# filename dropped, then capped at seven segments — because the interesting
+# subject is the region an allowlist entry would name, not the individual lock
+# file. Untrimmed, one wrong cache path reported as 256 separate findings and
+# the report became the noise it exists to replace.
+SUMMARY=$(jq -r --arg cutoff "$CUTOFF" '
+    def trim_path:
+        split("/") | map(select(length > 0))
+        | (if (length > 0 and (.[-1] | test("[.]"))) then .[0:-1] else . end)
+        | .[0:7] | "/" + join("/");
+    select($cutoff == "" or .at >= $cutoff)
+    | . as $e
+    | (if $e.kind == "classifier-denial" then
+           # A classifier denial names no path or host. Its actionable subject
+           # is the REASON, because that is what an autoMode.allow rule would
+           # have to answer — a different fix from an allowlist entry, so it
+           # must not be pooled with one.
+           "classifier: " + ($e.evidence | if . == "" then "no reason given" else .[0:80] end)
+       else
+           (( $e.evidence | capture("(?<s>[/~][^ :]{3,})[: ]*[Oo]peration not permitted") | .s | trim_path )?
+            // ( $e.evidence | capture("(?<s>[a-z0-9.-]+[.][a-z]{2,})[^ ]*: tls") | .s )?
+            // ( if $e.bypassed then "(bypass, no denial recorded)" else "(unclassified)" end ))
+       end) as $subject
+    | {subject: $subject, kind: ($e.kind // "sandbox-denial"), bypassed: $e.bypassed, cwd: $e.cwd, command: $e.command}
+' "$LEDGER" 2>/dev/null | jq -s -r '
+    group_by(.subject)
+    | map({
+        subject: .[0].subject,
+        kind: .[0].kind,
+        count: length,
+        bypasses: (map(select(.bypassed)) | length),
+        repos: (map(.cwd) | unique | length),
+        example: .[0].command
+      })
+    | sort_by(-.count)
+    | .[]
+    | [(.count|tostring), (.bypasses|tostring), (.repos|tostring), .kind, .subject, .example] | @tsv
+' 2>/dev/null)
+
+if [ -z "$SUMMARY" ]; then
+    echo "ledger has no events${SINCE:+ newer than $SINCE}"
+    exit 0
+fi
+
+printf '%-7s %-9s %-6s %-19s %s\n' "EVENTS" "BYPASSES" "REPOS" "KIND" "SUBJECT"
+printf '%s\n' "$SUMMARY" | while IFS=$'\t' read -r count bypasses repos kind subject example; do
+    printf '%-7s %-9s %-6s %-19s %s\n' "$count" "$bypasses" "$repos" "$kind" "$subject"
+    printf '        e.g. %s\n' "$(printf '%s' "$example" | cut -c1-100)"
+done
+
+[ "$FILE_ISSUES" -eq 1 ] || exit 0
+
+command -v docket >/dev/null 2>&1 || { echo "docket not on PATH; not filing" >&2; exit 0; }
+
+# `docket issue create` has NO --project flag: routing is by cwd, because the
+# store is machine-global and a project IS a checkout's git identity. Filing
+# from wherever this happens to run would put dotfiles findings in whatever
+# repo the operator was standing in — the exact mis-routing the gap-routing
+# rule exists to prevent. So cd into the dotfiles checkout and file from there.
+# (`issue list` DOES take --project, which is why the duplicate check below can
+# stay where it is.)
+DOTFILES_CHECKOUT="${DOTFILES_CHECKOUT:-$HOME/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main}"
+if [ ! -d "$DOTFILES_CHECKOUT/.git" ] && [ ! -f "$DOTFILES_CHECKOUT/.git" ]; then
+    echo "dotfiles checkout not found at $DOTFILES_CHECKOUT; not filing." >&2
+    echo "Set DOTFILES_CHECKOUT to override." >&2
+    exit 0
+fi
+cd "$DOTFILES_CHECKOUT" || { echo "cannot enter $DOTFILES_CHECKOUT; not filing" >&2; exit 0; }
+
+printf '%s\n' "$SUMMARY" | while IFS=$'\t' read -r count bypasses repos kind subject example; do
+    # Groups whose subject could not be classified name nothing anyone could
+    # act on, so they stay in the printed summary and out of the tracker.
+    case "$subject" in "("*) continue ;; esac
+
+    if [ "$kind" = "classifier-denial" ]; then
+        REMEDY="Auto mode denied this, so the command never ran. These accumulate toward auto
+mode's pause threshold — 3 consecutive or 20 total, not configurable — and once
+it pauses, prompting resumes and an unattended executor stalls on a question
+nobody answers.
+Decide one of: add an autoMode.allow or autoMode.environment entry in
+src/user/claude_code.rs describing this action as routine for this fleet; or
+record here why the denial is correct, so the next report does not re-raise it."
+    else
+        REMEDY="Decide one of: add the path to SANDBOX_TOOLCHAIN_CACHE_PATHS or the relevant
+allowWrite const in src/user/claude_code.rs; add the host to
+with_sandbox_network_allowed_domains; add the tool to with_sandbox_excluded_commands
+if it genuinely cannot be sandboxed; or record here why it should stay denied, so
+the next report does not re-raise it."
+    fi
+
+    TITLE="Sandbox friction: $subject hit $count times across $repos checkouts"
+    # No --project: the cd above already put us in the dotfiles checkout, and
+    # the flag takes a project NAME or row id, never the DOT prefix.
+    if docket issue list --label sandbox --json 2>/dev/null | grep -qF "$subject"; then
+        echo "already filed, skipping: $subject"
+        continue
+    fi
+    docket issue create \
+        --title "$TITLE" \
+        --description "Recorded by sandbox-friction-hook.sh.
+
+Kind: $kind
+Subject: $subject
+Events: $count (of which $bypasses were unsandboxed retries)
+Distinct checkouts affected: $repos
+Example command: $example
+
+$REMEDY" \
+        --label sandbox 2>/dev/null \
+        && echo "filed: $subject" \
+        || echo "could not file: $subject" >&2
+done
+
+exit 0

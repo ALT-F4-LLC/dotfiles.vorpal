@@ -166,20 +166,53 @@ divergence (a stale pin cannot be fixed mid-run; RUN-5 executed a whole run on
 contracts eight edits behind, and paid in re-review churn an operator gate had
 already ruled on), and keep corpus installs BETWEEN runs — a mid-run `just
 activate` changes what already-pinned refs resolve to, and it changes them for
-every repo at once, since all of them read the same bytes.
+every repo at once, since all of them read the same bytes. The `attach-probe`
+script below runs this check too, and at activation time you invoke it with no
+`$RUN` argument — the run holds no pins yet, so its exit 2 ("a check was
+skipped") is the expected answer there and only there.
 Attaching to an ALREADY-ACTIVE run skips activation but not the probe, and the
-probe is never the pin check alone: run BOTH `diff -r` staleness checks above
-(`$DOCKET_SRC/config` vs `~/.docket/config`, and `$DOCKET_SRC/bin` vs
-`~/.docket/bin`), plus `diff` of installed wave.js and tribunal.js against their
-source, before your first dispatch. Announcing the probe is not running it. An
-existence check proves nothing about bytes. Divergence mid-run is
-stop-and-report all the same.
+probe is never the pin check alone. Run it as ONE shipped script instead of
+retyping it: `~/.claude/scripts/attach-probe $RUN` when `test -f` passes, else
+`$CC_SRC/scripts/attach-probe $RUN`, where `$CC_SRC` is
+`<...>/dotfiles.vorpal.git/main/src/user/claude_code` — and a script added
+since the last `just activate` resolves ONLY at that source path, same install
+lag as every other definition here. It is read-only by construction (`git rev-parse`, `diff`,
+`cmp`, `shasum`, and the two write-nothing verbs `run status` and `run
+verify-pins`), and it runs every check of this section without
+short-circuiting: seat location, store access, BOTH `diff -r` staleness trees
+above (`$DOCKET_SRC/config` and `$DOCKET_SRC/bin` against `~/.docket/`),
+sha256 byte-diffs of the installed wave.js and tribunal.js against their
+source, `run verify-pins`, and the `.docket/config` symlink debris check
+below. Read its EXIT CODE, not its last line: 0 clean, 1 drift or failure, 2
+"a check was SKIPPED" — which is what you get by omitting `$RUN`, meaning the
+pins were never checked, and 2 is not a pass on an active run. The retyping is
+what the script exists to stop: RUN-33's hand-rolled version piped a diff
+through `head -30` and then reported HEAD's exit — always 0 — as the diff's
+verdict, and ran `test -f ~/.claude/workflows/wave.js` where the byte-diff was
+mandated. Announcing the probe is not running it. An existence check proves
+nothing about bytes. Divergence mid-run is stop-and-report all the same. The
+prose below says what each verdict MEANS and what to do about it; the script
+only tells you which verdict you have.
+
+**An instance name is not a step id.** Attaching mid-run you will hold an
+instance (`implement@0`, `fix@1`) and need its STEP-N. `docket step list --run
+$RUN --json` maps every one (`{step, instance, issue, status}`), and `docket
+run report $RUN --json` carries the same mapping in its `attempts[]` table
+with the routing beside it (`{step, instance, status, attempts, routing}`).
+Do not hand the instance to `step show`: that verb takes a STEP-N id or a bare
+N and refuses anything else — `docket step show implement@0` returns `invalid
+step ID "implement@0": want STEP-N or N` (VALIDATION_ERROR). Nor is there an
+`issue list --run` or an `issue list --query`; RUN-33 burned both inventing
+them, then grepped the event stream for what these two verbs answer directly.
+
 **Pins vs disk, and this is the one that actually bites.** The two diffs above
 compare SOURCE against INSTALL. A run's PINS are a third set of bytes that can
 disagree with both: the engine froze them at ITS activation, and every
 `just activate` since has moved the install out from under them. Source and
 install agreeing tells you nothing about that. So on an already-active run, before
-the first dispatch, ask the ENGINE about the pins — do not hand-roll it:
+the first dispatch, ask the ENGINE about the pins — do not hand-roll it. This is
+check 5 of `attach-probe` above, which is the whole reason `$RUN` is not
+optional there; run it standalone whenever you want the answer on its own:
 
 ```bash
 docket run verify-pins $RUN --json

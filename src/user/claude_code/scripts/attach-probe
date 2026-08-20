@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+#
+# attach-probe — the conduct skill's pre-dispatch probe, as one read-only run.
+#
+# Why (DOT-423): every conductor attaching to an already-active run must clear
+# the same six checks before its first dispatch, and every session used to
+# retype them. Retyping drifts. RUN-33 (2026-08-20) piped a `diff` through
+# `head -30` and then reported `$?` — head's exit, which is always 0 — as the
+# "config diff exit"; the same session ran `test -f
+# ~/.claude/workflows/wave.js` where the skill mandates a byte-diff and itself
+# warns that an existence check proves nothing about bytes. Both were harmless
+# that day (the diff was genuinely empty, the bytes genuinely identical) and
+# neither is guaranteed to be harmless next time. This script IS the probe;
+# the skill keeps the prose that says what each verdict means and what to do
+# about it.
+#
+# READ-ONLY by construction. It runs `git rev-parse`, `find`, `diff`, `cmp`,
+# `shasum`, and exactly two docket verbs — `run status` and `run verify-pins`
+# — both of which write nothing, not even a lease reap and not even a re-pin,
+# so it is safe against a run in ANY status. It never mutates, never claims,
+# never activates.
+#
+# What it checks, in order. All six always run and nothing short-circuits, so
+# a vacuous pass is visible in the output rather than inferred from silence:
+#
+#   1. seat      — cwd is the git toplevel, not a subdirectory. Seated in a
+#                  subdirectory, the sandbox write-allow covers only that
+#                  subtree and every repo-level git write, this session's and
+#                  every wave executor's, is denied.
+#   2. store     — a docket read verb actually opens ~/.docket/issues.db from
+#                  THIS seat. Where the sandbox does not write-allow the store
+#                  every verb fails `unable to open database file (14)`, which
+#                  reads like a docket bug and is not one.
+#   3. corpus    — src/user/docket/{config,bin} against ~/.docket/{config,bin}.
+#                  The source mirrors the install tree for tree, so `diff -rq`
+#                  is the whole check. Neither side holds issues.db; the rows
+#                  live one level up at ~/.docket/.
+#   4. workflows — installed wave.js and tribunal.js against their source,
+#                  compared by sha256 and cmp. NEVER by existence: nothing
+#                  links into the source tree, so the two paths are different
+#                  bytes whenever the source moved since `just activate`.
+#   5. pins      — `docket run verify-pins`, the only check that answers for
+#                  EVERY ref the run froze at activation. Checks 3 and 4
+#                  compare SOURCE against INSTALL; a run's PINS are a third
+#                  set of bytes that can disagree with both, and source and
+#                  install agreeing tells you nothing about them.
+#   6. debris    — symlinks under this repo's own .docket/config, the retired
+#                  link-farm model, which duplicate or dangle against the
+#                  shared root and refuse activation when they dangle. Vacuous
+#                  (and reported so) in a repo with no .docket at all, which is
+#                  the normal case.
+#
+# Usage:  attach-probe [RUN-N]
+#
+#   Run it from the repository root of the run's repo. RUN-N is optional only
+#   because the same checks are worth running before an ACTIVATION, when the
+#   run holds no pins yet. On an already-active run it is required: omitting
+#   it skips check 5, which is the one that actually bites, and the exit code
+#   says so.
+#
+#   DOTFILES_CHECKOUT overrides where the dotfiles checkout lives (default
+#   ~/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main).
+#
+# Exit codes:
+#   0  every check clean.
+#   1  something drifted or failed. STOP-AND-REPORT to the operator — a stale
+#      install or a drifted pin is not fixable mid-run and is not a retry.
+#   2  everything that ran was clean, but a check was SKIPPED (no RUN-N given,
+#      so the pin check did not run). Not a pass on an active run.
+#
+set -uo pipefail
+
+DOTFILES_CHECKOUT="${DOTFILES_CHECKOUT:-$HOME/Development/repository/github.com/ALT-F4-LLC/dotfiles.vorpal.git/main}"
+DOCKET_SRC="$DOTFILES_CHECKOUT/src/user/docket"
+CC_SRC="$DOTFILES_CHECKOUT/src/user/claude_code"
+
+RUN="${1-}"
+if [ "$RUN" = "-h" ] || [ "$RUN" = "--help" ]; then
+    sed -n '2,/^set -uo/p' "$0" | sed 's/^# \{0,1\}//; $d'
+    exit 0
+fi
+
+bad=0      # something drifted or failed
+skipped=0  # a check did not run
+ran=0
+
+say() {
+    ran=$((ran + 1))
+    printf '%-5s %-10s %s\n' "$1" "$2" "$3"
+}
+detail() { sed 's/^/                 /'; }
+
+if [ ! -d "$DOCKET_SRC" ] || [ ! -d "$CC_SRC" ]; then
+    echo "attach-probe: dotfiles checkout not found at $DOTFILES_CHECKOUT" >&2
+    echo "attach-probe: set DOTFILES_CHECKOUT to override. Nothing checked." >&2
+    exit 1
+fi
+
+# ---- 1. seat location -------------------------------------------------------
+here=$(pwd -P)
+top=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$top" ]; then
+    say FAIL seat "cwd is not inside a git work tree: $here"
+    bad=1
+elif [ "$(cd "$top" && pwd -P)" != "$here" ]; then
+    say FAIL seat "seated in a SUBDIRECTORY — cwd $here, toplevel $top"
+    printf 'repo-level git writes will be denied for this session and every wave executor.\nMove the seat to the root, or have the operator widen the sandbox, before dispatching.\n' | detail
+    bad=1
+else
+    say OK seat "cwd is the repository root: $here"
+fi
+
+# ---- 2. store write access --------------------------------------------------
+if [ -n "$RUN" ]; then
+    set -- docket run status "$RUN" --json
+else
+    set -- docket run status --active --json
+fi
+store_out=$("$@" 2>&1)
+store_rc=$?
+# Trust the payload as well as the exit status: an `"ok":false` body is a
+# failure whatever the shell was told.
+case "$store_out" in *'"ok":false'*) store_rc=1 ;; esac
+if [ "$store_rc" -eq 0 ]; then
+    say OK store "docket read verb opened ~/.docket/issues.db from this seat"
+else
+    case "$store_out" in
+        *NOT_FOUND*)
+            say FAIL store "store opened, but $RUN is not in it — check the run id and that this cwd is the run's repo"
+            ;;
+        *)
+            say FAIL store "docket read verb failed — the seat's write access, not the engine (every verb opens the store read-write)"
+            ;;
+    esac
+    printf '%s\n' "$store_out" | detail
+    bad=1
+fi
+
+# ---- 3. corpus install (source vs install) ----------------------------------
+for tree in config bin; do
+    src="$DOCKET_SRC/$tree"
+    inst="$HOME/.docket/$tree"
+    if [ ! -d "$src" ] || [ ! -d "$inst" ]; then
+        say FAIL "corpus/$tree" "missing tree — src $src / install $inst"
+        bad=1
+        continue
+    fi
+    # -rq: one line per differing or one-sided file. Complete, and bounded, so
+    # there is never a reason to pipe this through head (see the header).
+    if diff_out=$(diff -rq "$src" "$inst" 2>&1); then
+        say OK "corpus/$tree" "identical: $src == $inst"
+    else
+        say DRIFT "corpus/$tree" "$(printf '%s\n' "$diff_out" | grep -c .) file(s) differ — a stale pin cannot be fixed mid-run"
+        printf '%s\n' "$diff_out" | detail
+        bad=1
+    fi
+done
+
+# ---- 4. installed workflow definitions (byte-diff, never existence) ---------
+for wf in wave.js tribunal.js; do
+    src="$CC_SRC/workflows/$wf"
+    inst="$HOME/.claude/workflows/$wf"
+    if [ ! -f "$src" ]; then
+        say FAIL "$wf" "source missing: $src"
+        bad=1
+        continue
+    fi
+    if [ ! -f "$inst" ]; then
+        say FAIL "$wf" "not installed: $inst"
+        bad=1
+        continue
+    fi
+    src_sha=$(shasum -a 256 "$src" | cut -c1-12)
+    inst_sha=$(shasum -a 256 "$inst" | cut -c1-12)
+    if cmp -s "$src" "$inst"; then
+        say OK "$wf" "bytes identical, sha256 $src_sha (compared, not assumed)"
+    else
+        say DRIFT "$wf" "source $src_sha != install $inst_sha"
+        printf 'source:  %s\ninstall: %s\nThe wave runs the INSTALLED bytes; a source edit since the last `just activate` is bytes no session executes.\n' "$src" "$inst" | detail
+        bad=1
+    fi
+done
+
+# ---- 5. pin integrity (the one that bites) ----------------------------------
+if [ -z "$RUN" ]; then
+    say SKIP pins "no RUN-N given — required on an already-active run; source and install agreeing says nothing about pins"
+    skipped=1
+else
+    pin_out=$(docket run verify-pins "$RUN" --json 2>&1)
+    pin_rc=$?
+    case "$pin_out" in
+        *NOT_FOUND*)
+            say FAIL pins "$RUN is not in this store — nothing was verified"
+            printf '%s\n' "$pin_out" | detail
+            bad=1
+            ;;
+        *'verify-pins'*'subcommand'* | *'unknown command'*)
+            say FAIL pins "this binary predates \`run verify-pins\` — use the by-hand fallback in the conduct skill"
+            printf '%s\n' "$pin_out" | detail
+            bad=1
+            ;;
+        *)
+            case "$pin_rc" in
+                0) say OK pins "every pin still resolves to the bytes the run froze at activation" ;;
+                4)
+                    say DRIFT pins "CONFLICT — a pinned ref changed on disk (exit 4)"
+                    printf '%s\n' "$pin_out" | detail
+                    bad=1
+                    ;;
+                2)
+                    say FAIL pins "a pinned ref no longer resolves at all (exit 2)"
+                    printf '%s\n' "$pin_out" | detail
+                    bad=1
+                    ;;
+                *)
+                    say FAIL pins "verify-pins exit $pin_rc"
+                    printf '%s\n' "$pin_out" | detail
+                    bad=1
+                    ;;
+            esac
+            ;;
+    esac
+fi
+
+# ---- 6. transition debris ---------------------------------------------------
+repo_cfg="${top:-$here}/.docket/config"
+if [ ! -d "$repo_cfg" ]; then
+    say OK debris "no .docket/config in this repo — the normal case against the shared root"
+else
+    links=$(find "$repo_cfg" -type l 2>/dev/null)
+    if [ -z "$links" ]; then
+        say OK debris "no symlinks under $repo_cfg (real files there are the repo's own additions)"
+    else
+        say DRIFT debris "retired link-farm symlinks present — a dangling one refuses activation by name"
+        printf '%s\n' "$links" | detail
+        bad=1
+    fi
+fi
+
+# ---- verdict ----------------------------------------------------------------
+echo
+if [ "$bad" -ne 0 ]; then
+    echo "attach-probe: $ran check(s) run — NOT CLEAN. Stop and report to the operator; do not dispatch."
+    exit 1
+fi
+if [ "$skipped" -ne 0 ]; then
+    echo "attach-probe: $ran check(s) run — clean, but a check was SKIPPED. Re-run with RUN-N before dispatching into an active run."
+    exit 2
+fi
+echo "attach-probe: $ran check(s) run — all clean."
+exit 0

@@ -54,16 +54,12 @@ const SANDBOX_DOCKET_TRUST_PATH: &str = "~/.config/docket";
 // Bash process substitution — `diff <(a) <(b)` — hands the tool a /dev/fd/N
 // path, and a `-` operand resolves the same way. Both are denied: probed
 // 2026-08-20, `diff <(echo a) <(echo b)` returns "diff: /dev/fd/11: Operation
-// not permitted" and `diff -` returns the same for `-`. 79 occurrences in
-// seven days, all silent failures of a very ordinary shell idiom. This entry
-// is UNVERIFIED — /dev/fd is a synthetic per-process directory, so the grant
-// may not take; if a live probe still denies it, drop this and treat the
-// idiom as unavailable rather than leaving a grant that buys nothing.
-// One probe settles it —
-//   diff <(echo a) <(echo b)   # denied today: "diff: /dev/fd/11: Operation not permitted"
-// If the grant does not take, the idiom still degrades to an unsandboxed retry
-// rather than failing outright; that fallback is why the escape hatch stays on.
-const SANDBOX_PROCESS_SUBSTITUTION_PATH: &str = "/dev/fd";
+// not permitted" and `diff -` returns the same for `-`. A grant on this path
+// was tried and re-probed live (2026-08-20, DOT-299): still denied — /dev/fd
+// is a synthetic per-process directory and an allowWrite entry does not cover
+// it (the idiom opens the fd for reading, not writing, so the grant could not
+// have helped either way). Dropped rather than left in place buying nothing;
+// the idiom degrades to an unsandboxed retry, so nothing loses a way out.
 // `~/go/pkg/mod` is NOT this toolchain's module cache and never was: `go env
 // GOMODCACHE` reports ~/Development/language/go/pkg/mod (5.6 GB, populated),
 // while ~/go/pkg/mod holds a stale 1.5 GB nothing reads. Probed from a
@@ -481,7 +477,6 @@ impl ClaudeCode {
                     .chain(std::iter::once(&SANDBOX_DOCKET_STORE_PATH))
                     .chain(std::iter::once(&SANDBOX_DOCKET_TRUST_PATH))
                     .chain(std::iter::once(&SANDBOX_FRICTION_LEDGER_PATH))
-                    .chain(std::iter::once(&SANDBOX_PROCESS_SUBSTITUTION_PATH))
                     .map(|p| p.to_string())
                     .collect(),
             )

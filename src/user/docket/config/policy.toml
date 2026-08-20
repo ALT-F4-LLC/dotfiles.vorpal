@@ -43,8 +43,11 @@ version = 3
 # Aliases, not model IDs. Exactly one other file turns an alias into a
 # concrete model ID: src/user/claude_code.rs:135-138, the
 # ANTHROPIC_DEFAULT_*_MODEL env bindings (fable:135, opus:137, sonnet:138;
-# haiku:136 is bound but no variant needs it). Duplicating model IDs here
-# would create a second source of truth that drifts.
+# haiku:136 serves wave.js's internal read probes, which hardcode
+# model "haiku" / effort "low" in probe() outside this file — no variant
+# here routes to it, so retuning the probe tier means editing wave.js
+# (DOT-386). Duplicating model IDs here would create a second source of
+# truth that drifts.
 #
 # EVIDENCE NOTE on chains: the old ladder's escalation NEVER FIRED in this
 # epoch — all 22 lease-reaped events map exactly onto the 19 attempt>1 steps,
@@ -54,7 +57,9 @@ version = 3
 # the next retro should re-read them once a real escalation has fired.
 #
 # Every variant here is referenced by an executor row or a chain hop — an
-# unreferenced variant violates the every-row-reachable invariant.
+# unreferenced variant violates the every-row-reachable invariant. wave.js's
+# probe seat is the one spawn routed outside this table entirely (DOT-386),
+# so spawn mining from these rows undercounts the fleet by the probe share.
 
 [variants]
 sonnet-high = { model = "sonnet", effort = "high",   escalate_to = "opus-high" }

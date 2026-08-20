@@ -1,5 +1,6 @@
 use crate::user::{
-    bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, k9s::K9s, neovim::Neovim,
+    bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, go::Go, k9s::K9s,
+    neovim::Neovim,
 };
 use anyhow::{bail, Result};
 use std::collections::BTreeSet;
@@ -9,6 +10,7 @@ mod bat;
 mod claude_code;
 mod docket;
 mod ghostty;
+mod go;
 mod k9s;
 mod neovim;
 mod utilities;
@@ -62,6 +64,10 @@ impl UserEnvironment {
             .build(context)
             .await?;
 
+        let go = Go::new(&self.name, self.systems.clone())
+            .build(context)
+            .await?;
+
         let k9s = K9s::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
@@ -76,6 +82,7 @@ impl UserEnvironment {
             .chain(claude_code.0)
             .chain(docket.0)
             .chain(ghostty.0)
+            .chain(go.0)
             .chain(k9s.0)
             .chain(neovim.0)
             .collect();
@@ -86,6 +93,7 @@ impl UserEnvironment {
             .chain(claude_code.1)
             .chain(docket.1)
             .chain(ghostty.1)
+            .chain(go.1)
             .chain(k9s.1)
             .chain(neovim.1)
             .collect();

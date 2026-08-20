@@ -58,6 +58,42 @@ is a **per-project display setting** (`docket project set-prefix`): another
 project's issues may render `VOR-42`, but the number is the store-wide
 identity and `DKT-` always parses whatever the prefix.
 
+## The verbs you will actually use
+
+Ranked by real usage — 14,648 `docket` invocations across the week to
+2026-08-19. These twenty are 62% of every call made. Each line is the verb's
+own `--help` summary, verified against the installed binary on 2026-08-19, so
+this table cannot drift into verbs that do not exist. For anything not here,
+`docket <verb> --help`; for exhaustive per-flag semantics, `reference.md`.
+
+| calls | verb | what it does |
+|---|---|---|
+| 1119 | `issue show` | Show one or more issues at full detail |
+| 735 | `run status` | Show one run's status and step rollup, or list runs |
+| 612 | `step show` | Show one or more steps |
+| 603 | `vote show` | Show proposal details |
+| 600 | `step claim` | Claim a step, taking a lease and minting a capability |
+| 518 | `step record` | Complete a step: record its artifact and run the saga |
+| 489 | `step artifact` | Read one artifact: body, structured payload, metadata |
+| 455 | `step list` | List steps with id, run, instance, issue, kind, status |
+| 428 | `schema show` | Show a registered payload schema |
+| 422 | `run activate` | Activate a run: one transaction, all or nothing |
+| 412 | `issue list` | List issues |
+| 375 | `events list` | List events with seq > `--since`, oldest first |
+| 369 | `step artifacts` | List the artifacts one step produced |
+| 340 | `next` | What is ready to work on right now |
+| 296 | `issue create` | Create a new issue |
+| 293 | `vote cast` | Cast a vote on a proposal |
+| 259 | `config get` | Read an engine config value, or list every value |
+| 248 | `trust list` | List approved commands for this repository |
+| 243 | `run report` | Roll up a run's budget, steps, gates, actions, artifacts |
+| 237 | `run budget` | Read a run's effective cap, or change it with `--set` |
+
+**There is no `run show`.** It is `run status`, and reaching for `run show`
+was the single most repeated CLI mistake of the week. `dispatch close` closes
+an open dispatch; `--json` is available on essentially everything and is what
+you want when parsing.
+
 ## Global Flags & Output Contract
 
 Defined once on `rootCmd` in `internal/cli/root.go` and inherited by every

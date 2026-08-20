@@ -1,16 +1,18 @@
 ---
 name: tend
-description: Watch the current Docket project's issue queue — the existing backlog and whatever gets added after — and work issues one at a time, directly in this conversation — no `/plan`, no `/conduct`, no docket run. Implements each issue's fix, commits it, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
+description: Watch the current Docket project's issue queue — the existing backlog and whatever gets added after — and work issues one at a time by delegating each to a right-sized subagent while this conversation orchestrates — no `/plan`, no `/conduct`, no docket run. Spawns a worker seated for the job (stronger models and efforts than the loop itself), lands the result via the `commit` skill, and closes the issue with a summary comment, then goes quiet once the queue is empty until the next issue appears. Meant to run under `/loop` (self-pacing, e.g. `/loop /tend`) so it can wake on its own cadence without the operator re-invoking it. Use on "watch for new issues and work them", "tend the queue", "sweep the backlog", "/tend", or any request to keep grinding through a project's issues without docket's planning/execution machinery.
 ---
 
 # tend
 
-You keep one Docket project's issue queue empty, working alone: no `/plan`,
-no `/conduct`, no docket run — ever, for this loop. You read an issue and
-implement it the same way ordinary conversational work does, then commit,
-close, and move on. Silence is the resting state: report when you tend an
-issue, when one blocks you, or when you must ask; say nothing on a tick that
-found nothing.
+You keep one Docket project's issue queue empty as an orchestrator: no
+`/plan`, no `/conduct`, no docket run — ever, for this loop. You read an
+issue, hand the implementation to a subagent seated for the job, then
+commit, close, and move on. The only custom skills in play are `docket`
+(issue verbs) and `commit` (landing changes) — everything else here is
+built-in Claude Code machinery. Silence is the resting state: report when
+you tend an issue, when one blocks you, or when you must ask; say nothing
+on a tick that found nothing.
 
 **Never invoke the `plan` or `conduct` skills, and never create or activate a
 docket run.** That machinery is exactly what this skill exists to skip.
@@ -36,12 +38,12 @@ put them there yourself in a prior tick (see §2's blocked case).
 
 - **Empty:** nothing to do. `ScheduleWakeup({delaySeconds: 150-180,
   noop: true, ...})` and stop. No "no new issues" message — a quiet tick is
-  not an event (mirrors `shadow`'s rule against narrating idle ticks).
+  not an event.
 - **Non-empty:** sort by id ascending (lowest = oldest = created first), take
   the first one, tend it (§2), then **loop back to re-poll immediately** —
   don't schedule a wakeup between queued issues. Only go quiet once a poll
-  comes back empty. This is what "work them one by one" means: drain the
-  whole queue in this turn, sequentially, one commit-and-close per issue.
+  comes back empty. Strictly one issue in flight at a time: workers share
+  this working tree, so never have two issues' workers alive at once.
 
 ## 2. Tend one issue
 
@@ -54,27 +56,72 @@ put them there yourself in a prior tick (see §2's blocked case).
    before touching anything. This is the one case this skill defers on:
    "work every issue" doesn't override the standing rule that a
    trust-boundary change gets a human look first. Everything else, any kind,
-   any size, gets worked directly — there is no plan/conduct step left to
-   size or gate it, so don't invent one by hesitating on size alone.
-3. Otherwise: `docket issue move <id> in-progress`. Implement the issue's
-   acceptance criteria directly in this conversation — Read/Edit/Write/Bash as
-   the work requires. No plan document, no sub-agent team, no docket run:
-   treat the issue's description and acceptance criteria as the working
-   contract, the same way a `brief` direct-route confirmed block is a working
-   contract.
-4. **Blocked** (the ask is unclear, a prerequisite is missing, something
-   fails and doesn't resolve on a reasonable retry): don't spin on it.
-   `docket issue move <id> review` with a comment naming the blocker
-   (`docket issue comment add <id> -m "..."`), tell the operator in your next
-   visible turn, and move on to the next queued issue — the same blocked
-   issue does not get retried every tick.
-5. **Done:** invoke the `commit` skill to land the change
-   (`Skill({skill: "commit"})`) — one commit-cycle per issue, never batched
-   across issues. Then `docket issue comment add <id> --json -m "<what
-   changed, plainly, citing the commit hash(es)>"`, then
+   any size, gets tended — seat a worker (§3) and go; there is no
+   plan/conduct step left to gate it, so don't invent one by hesitating on
+   size alone.
+3. Otherwise: `docket issue move <id> in-progress`, then delegate the
+   implementation (§3). You orchestrate; you do not implement. Read or grep
+   in this conversation only as far as seating the worker requires — the
+   moment you are editing files or chasing the fix yourself, you have taken
+   the worker's job.
+4. **Blocked** (the ask is too unclear to brief a worker, a prerequisite is
+   missing, or the worker fails and doesn't resolve on one follow-up
+   round): don't spin on it. `docket issue move <id> review` with a comment
+   naming the blocker (`docket issue comment add <id> -m "..."`), tell the
+   operator in your next visible turn, and move on to the next queued
+   issue — the same blocked issue does not get retried every tick.
+5. **Done:** when the worker's report is in and checks out, invoke the
+   `commit` skill to land the change (`Skill({skill: "commit"})`) — one
+   commit-cycle per issue, never batched across issues; skip it only when
+   the issue changed no files. Then `docket issue comment add <id> --json
+   -m "<what changed, plainly, citing the commit hash(es)>"`, then
    `docket issue close <id> --json`.
 6. Report the tend in one line — issue id, title, commit hash(es). A tended
    issue is a state change; it always gets said, never absorbed silently.
+
+## 3. Seat and spawn a worker
+
+One worker at a time, ever — no parallel workers within an issue, no
+parallel work across issues (operator ruling, 2026-08-20: keep it simple).
+The worker spawns into this working tree (no worktree isolation); strict
+sequence is what makes that safe. Built-in agent types only:
+`general-purpose` to implement, `Explore` when the issue is a pure
+read-only investigation. Never a custom agent definition.
+
+**Size the seat to the issue, and when in doubt, seat up** — the point of
+delegating is that a worker can afford a stronger model and effort than the
+loop itself:
+
+- Mechanical single-file edits (typo, config value, doc line): `haiku` or
+  `sonnet`.
+- Ordinary implementation work — most issues: `opus`.
+- Gnarly work (subtle correctness, cross-cutting changes, debugging an
+  unknown cause): `fable` at `max` effort.
+
+Mechanism: the built-in `Agent` tool takes `model`; reasoning effort rides
+the session default. When the seat needs an explicit effort tier (`xhigh`,
+`max`), delegate through the built-in `Workflow` tool instead — its
+`agent()` takes both — with the worker brief embedded in the script:
+
+```js
+export const meta = {name: 'tend-issue', description: '<issue title>',
+  phases: [{title: 'Implement'}]}
+phase('Implement')
+return await agent(`<worker brief>`, {model: 'fable', effort: 'max'})
+```
+
+**The worker brief** carries the whole contract: the repo's absolute path,
+the issue id, title, description, and acceptance criteria verbatim, plus
+these standing rules — implement the acceptance criteria and run whatever
+check could falsify the change; leave every change uncommitted and
+unstaged; never run docket verbs, git commits, or skills; the final
+message is the report — files changed, what was verified and how, anything
+left undone.
+
+A report that names its verification and shows the evidence goes to §2.5.
+A report with no verification evidence gets one follow-up round
+(`SendMessage` to the same worker), not a commit; if the second report
+still can't show its check, treat the issue as blocked (§2.4).
 
 ## Stop
 

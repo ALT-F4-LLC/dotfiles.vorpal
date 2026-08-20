@@ -34,7 +34,7 @@ game, not just issues that show up after you started watching (operator
 ruling, 2026-08-20). Ignore issues already `in-progress` or `review` — you
 put them there yourself in a prior tick (see §2's blocked case).
 
-- **Empty:** nothing to do. `ScheduleWakeup({delaySeconds: 1500-1800,
+- **Empty:** nothing to do. `ScheduleWakeup({delaySeconds: 150-180,
   noop: true, ...})` and stop. No "no new issues" message — a quiet tick is
   not an event (mirrors `shadow`'s rule against narrating idle ticks).
 - **Non-empty:** sort by id ascending (lowest = oldest = created first), take

@@ -110,6 +110,10 @@ phase('Implement')
 return await agent(`<worker brief>`, {model: 'fable', effort: 'max'})
 ```
 
+`model` only takes effect inside `agent()`'s opts, as above. Setting
+`model` on a `meta.phases` entry instead is display-only for the progress
+UI — it silently seats the session default, with no error.
+
 **The worker brief** carries the whole contract: the repo's absolute path,
 the issue id, title, description, and acceptance criteria verbatim, plus
 these standing rules — implement the acceptance criteria and run whatever

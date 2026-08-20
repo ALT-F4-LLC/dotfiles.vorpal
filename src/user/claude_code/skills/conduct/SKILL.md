@@ -204,10 +204,49 @@ its cause. RUN-14 is the case (2026-08-19/20): a mid-run `just activate` replace
 `contracts/synthesize-findings.md`, and every `synthesize` step across all four
 issues went structurally unclaimable — after a 2.7-hour, 3.5M-token wave had
 already run. `policy.toml` was mismatched in the same run and nothing noticed,
-because the whole dispatch path — this skill's own `cat`, and the policy-guard
-hook — validates against the DISK copy, never against what the run pinned.
+because back then the whole dispatch path — this skill's own `cat`, and the
+policy-guard hook — validated against the DISK copy, never against what the run
+pinned. That was the RUN-14-era behavior and it is no longer current.
 Do NOT substitute `docket step render` for this check: it returned exit 0 with
 full packets on that run while the mismatch was already present.
+
+**The hook now DENIES the launch, so pin drift is not survivable.** Since
+DOT-298 (2026-08-20) the policy-guard hook resolves the launching cwd's ACTIVE
+runs on every `Workflow` PreToolUse, asks `docket run verify-pins` about each,
+and exits 2 — before any seat or executor spawns — if `policy.toml` drifted.
+Live on RUN-33 (2026-08-20):
+
+```
+PreToolUse:Workflow hook error: [bash ~/.claude/hooks/docket-policy-guard-hook.sh]:
+policy-guard: LAUNCH DENIED — RUN-33 pinned policy.toml at activation and disk no
+longer matches it (…). A mid-run `just activate` is the usual cause. Launching now
+would route and judge on a policy the run never pinned. Stop this dispatch and
+surface the drift to the operator (`docket run verify-pins RUN-33` lists every
+drifted pin); do not relaunch on the disk policy.
+```
+
+Only the `policy.toml` pin is enforced there — it is the one artifact that
+reaches a wave without passing through an engine verb; every OTHER drifted ref
+is refused by the engine verb that reads it. Either way there is no route past
+drift, so `verify-pins` is not advisory.
+
+**Dispositions at a pin-drift stop-and-report — all three are executable:**
+
+- **Show the diffs.** Give the operator the drifted refs (`docket run
+  verify-pins $RUN` names each with both hashes) and, where useful, the actual
+  byte diff — the PINNED bytes usually survive in the previous install
+  generation in the vorpal store, which is content-addressed (RUN-33's did).
+- **Pause the run** (`/pause`) and hand the decision back with a resume prompt.
+- **Abandon and re-plan**, which re-pins from scratch on the current disk.
+
+**"Proceed anyway / accept the risk" is NOT one of them — never offer it.** The
+hook refuses the relaunch outright, so the operator spends a round-trip choosing
+an option that cannot execute (that is exactly what RUN-33 cost). Nor is there a
+repin: `docket run activate --help` — "Re-activating an active run expands
+newly-unblocked phases only and INHERITS the original pin set — a workflow
+re-registered or a pinned file edited since activation does not reach a run
+already under way." The missing recovery path is tracked as DKT-408 in the
+docket project; do not improvise one here.
 
 **Fallback only — for a seat whose binary predates `run verify-pins`** (the verb
 is absent from `docket run --help`). Walk the pins by hand:

@@ -599,9 +599,13 @@ Pre-derived because conduct is the richest target. The conductor:
   exception to watch: a worktree holding a recorded-but-never-integrated sha
   is still removed, but that sha must be NAMED in the close report — naming
   is what keeps it recoverable before gc.
-- **Row hygiene.** `kind: "action"` rows filtered before handoff (the wave's
-  refusal is the backstop, not the plan); rows otherwise untouched — no
-  reordering, no dropping, no sequencing to dodge claim conflicts.
+- **Row hygiene.** Filter OUT only `kind: "human"` rows; executor, vote, and
+  action rows all ride the wave — action rows keep stage numbering
+  transparent (the wave spawns nothing for them), vote rows ride because the
+  wave seats their panel itself since the staged closure (2026-08-15). A
+  passed-through `kind: "human"` row is the one mistake the wave still
+  refuses (backstop, not the plan). Rows otherwise untouched — no reordering,
+  no dropping, no sequencing to dodge claim conflicts.
 - **Close ordering.** backfill-usage → verify → close, every iteration.
   Usage back-filled after a close is usage the discrepancy probe never saw.
   Backfill is not a workaround but the token path: transcripts are the only

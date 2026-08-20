@@ -144,6 +144,31 @@ docket config, ...` (generated from the allowlist by
 `watchRejectionMessage()`). The message's own enumeration is authoritative
 if this copy ever drifts.
 
+### Free-text flags: quote so the shell cannot run your text
+
+Every free-text flag — `issue create`/`issue edit` `-d`, `issue comment add
+-m`, `doc create -d`, `vote cast --summary`, `step fail`/`step
+approve`/`step reject` `--note` — carries prose that often includes pasted
+content: an upstream bug report, another agent's output, a transcript
+excerpt, command names in backticks. Inside a DOUBLE-quoted argument the
+shell RUNS backtick and `$(...)` spans — with your cwd, permissions, and
+network — before docket ever sees the argv. The verb still exits 0; the only
+tells are stray output printed ahead of the response and text truncated
+where the substitution swallowed it. A hostile `$(curl … | sh)` arriving in
+pasted text executes the same silent way, so treat this as an injection
+boundary, not cosmetics.
+
+Safe forms, either one:
+
+- a single-quoted argument (when the text contains no single quotes);
+- stdin via a QUOTED heredoc delimiter: `docket … -d - <<'EOF'` … `EOF`.
+
+Not safe, despite looking it: any double-quoted inline argument, a
+double-quoted `echo "…" | docket … -d -` (the pipe changes nothing — the
+expansion already happened), and an unquoted heredoc (`<<EOF` still
+expands). Rule of thumb: text you did not author character-by-character
+never rides in double quotes.
+
 ### JSON envelope shape
 
 All JSON output (`internal/output/json.go`) is a single-line JSON object
@@ -486,10 +511,16 @@ docket issue create --json \
   -a "@alice"
 ```
 
-Description can be piped from stdin with `-d -`:
+Description can be piped from stdin with `-d -` — through a QUOTED heredoc
+delimiter, so the shell cannot run anything embedded in the text (see
+"Free-text flags" under Global Flags; a double-quoted `echo "…" |` pipe does
+NOT protect it):
 
 ```bash
-echo "Long description..." | docket issue create --json -t "Title" -d -
+docket issue create --json -t "Title" -d - <<'EOF'
+Long description — `just build` and $(go test ./...) arrive intact because
+the quoted EOF delimiter stops the shell expanding them.
+EOF
 ```
 
 Edit only the fields you pass — `issue edit` uses `cmd.Flags().Changed(...)`

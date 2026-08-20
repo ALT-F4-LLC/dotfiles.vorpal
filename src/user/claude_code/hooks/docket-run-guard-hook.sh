@@ -211,6 +211,48 @@ if command -v jq >/dev/null 2>&1; then
         && allow
 fi
 
+# Carve-out 5: every live run is pin-blocked — the two-guard wedge. [OBSERVED
+# 2026-08-20, RUN-33 conduct session 07d6e1de] The policy-guard hook had
+# hard-denied the wave launch over pin drift (correctly), the conductor
+# reconciled, closed the open dispatch, and tried to end its turn — and THIS
+# hook denied the stop over the very judge rows that deny had made
+# undispatchable. Pending steps whose dispatch the engine and policy-guard
+# refuse are not abandonable work; they are a blocked run, and holding the
+# session open cannot advance them (there is no repin verb — drift is the
+# operator's to resolve; filed engine-side as DKT-408).
+#
+# The probe is the engine's own whole-run pin comparator, `docket run
+# verify-pins` — read-only, writes nothing, not even a re-pin. Its contract
+# [OBSERVED --help]: exit 4 = some pin CHANGED ("every verb that reads this
+# ref refuses (exit 4), so the run is already blocked on it"), exit 2 = a pin
+# is missing (none changed), exit 0 = all sound. ONLY EXIT 4 ALLOWS, not "any
+# non-zero": exit 2 doubles as the CLI's generic error code ("✘ Error: run not
+# found" exits 2 [OBSERVED]), so a bare non-zero check would read an engine
+# hiccup as drift and fail toward a silent ALLOW. Exit 4 is also exactly the
+# class the policy-guard hard-blocks dispatch on ("policy.toml changed:"),
+# keeping the two hooks' judgments consistent.
+#
+# FAILS CLOSED, same shape as 1b/3/4: missing jq, an unreadable run list, and
+# any live run whose verify-pins answers 0, 2, or anything but 4 all fall
+# through to the deny. Only an affirmative "every live run's pins have
+# drifted" allows — a mixed set (one drifted run beside a clean one) still
+# denies, because the clean run's pending work remains advanceable.
+if command -v jq >/dev/null 2>&1; then
+    ALL_DRIFTED=1
+    RUNS=$(printf '%s' "$LIVE_RUNS" | jq -r '.[].run' 2>/dev/null) \
+        || RUNS=""
+    [ -n "$RUNS" ] || ALL_DRIFTED=0
+    for R in $RUNS; do
+        docket run verify-pins "$R" >/dev/null 2>&1
+        [ "$?" -eq 4 ] || { ALL_DRIFTED=0; break; }
+    done
+    if [ "$ALL_DRIFTED" = "1" ]; then
+        printf 'run-guard: stop allowed — every live run here (%s) has drifted pins (`docket run verify-pins` exit 4), so the engine refuses the very dispatches its pending steps wait on; holding the session open cannot advance them. `docket run verify-pins <run>` lists each drifted ref for the operator.\n' \
+            "${RUNS//$'\n'/ }" >&2
+        allow
+    fi
+fi
+
 [ -n "$REASON" ] || REASON="an active run still has work in flight"
 
 deny "Session stop blocked by run-guard: ${REASON}. Finish or dispatch the named work; approve a human gate with \`docket step approve\`, resolve a step PARKED in waiting-human with \`docket step resolve\` (it refuses pending steps — dispatch those or end the run), or end the run with \`docket run abandon\`. If the work is blocked by something OUTSIDE the engine — a refused spawn, a denied permission, an operator ruling to withhold it — none of those verbs is the answer: say so plainly and stop, since one deny per session is expected and the second is suppressed. NOTE: \`docket run pause\` alone now clears this guard — once every live run is parked (waiting-human, whether an operator paused it or a budget breach did) or still in planning, the stop is allowed even though the run's steps stay pending (carve-out 4); this deny means some live run is still active/gated, or a dispatch is genuinely open."

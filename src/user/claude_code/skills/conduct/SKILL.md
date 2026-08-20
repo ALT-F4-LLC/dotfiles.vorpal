@@ -1265,9 +1265,10 @@ identically, so a conductor reading either surface reports failures as passes
 Read the exits too, not just the verdicts: a gate that "fails" in
 milliseconds naming `operation not permitted` or a denied socket measured the
 sandbox, not the code, and presenting it as a code failure invites an
-override-pass on a finding that was never real. Question tool, recommended option first
-and labelled "(Recommended)", each answer's real routing stated in its
-description — resolved from the FROZEN definitions, not the files on disk.
+override-pass on a finding that was never real. Every gate is presented
+through the question tool, recommended option first and labelled
+"(Recommended)", each answer's real routing stated in its description —
+resolved from the FROZEN definitions, not the files on disk.
 
 **One gate, one PROPOSAL, one question.** Never bundle distinct gates into a
 shared proposal or a shared question, even same-issue siblings ready together:

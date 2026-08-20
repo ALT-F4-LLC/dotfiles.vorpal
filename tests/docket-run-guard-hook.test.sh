@@ -23,9 +23,9 @@
 # it, so those cases pin the chain as a whole, not any one block.
 #
 # SEAM: PATH holds a fake `docket` whose answers to `guard stop`, `run
-# status --json`, `guard record`, and `events list --run <id> --json` are all
-# driven by env vars set per case — a small test, single process, no network,
-# no real .docket database or run.
+# status --json`, `guard record`, `run verify-pins <id>` (carve-out 5), and
+# `events list --run <id> --json` are all driven by env vars set per case — a
+# small test, single process, no network, no real .docket database or run.
 
 set -uo pipefail
 
@@ -123,6 +123,22 @@ case "${1:-}" in
                 RUNS=$(build_runs_json)
                 printf '{"ok":true,"data":{"runs":%s}}' "$RUNS"
                 ;;
+            verify-pins)
+                # VERIFY_PINS_EXITS is parallel to RUN_NAMES, like
+                # RUN_STATUSES; a single value answers for every run. Unset
+                # means 0 (all pins sound), so cases predating carve-out 5
+                # keep their meaning.
+                names=(${RUN_NAMES:-})
+                exits=(${VERIFY_PINS_EXITS:-0})
+                i=0
+                for n in "${names[@]}"; do
+                    if [ "$n" = "${3:-}" ]; then
+                        exit "${exits[$i]:-${exits[0]}}"
+                    fi
+                    i=$((i + 1))
+                done
+                exit "${exits[0]}"
+                ;;
             *)
                 printf 'fake docket: unexpected run subcommand: %s\n' "$*" >&2
                 exit 64
@@ -183,7 +199,7 @@ run_case() {
 }
 
 reset_env() {
-    unset GUARD_STOP_REASON GUARD_RECORD_EXIT RUN_NAMES RUN_STATUSES DISPATCH_OPENED_DEFAULT RUN_STATUS_UNREADABLE
+    unset GUARD_STOP_REASON GUARD_RECORD_EXIT RUN_NAMES RUN_STATUSES DISPATCH_OPENED_DEFAULT RUN_STATUS_UNREADABLE VERIFY_PINS_EXITS
 }
 
 # ---- CARVE-OUT 4: every live run paused (waiting-human) allows the stop ----
@@ -300,6 +316,62 @@ case_regression_never_dispatched_allows() {
     run_case "never dispatched, run still active -> allow (carve-out 3)" ALLOW
 }
 
+# ---- CARVE-OUT 5: every live run pin-blocked (verify-pins exit 4) ----------
+# The two-guard wedge: policy-guard denies the dispatch over pin drift while
+# this hook denies the stop over the same pending rows. Only the engine's
+# affirmative CHANGED verdict (exit 4) allows; exit 2 — which doubles as the
+# CLI's generic error code — and every other non-4 answer stay a deny.
+
+case_carveout5_drifted_pins_allow() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending: [review@0#0 (pending) review@0#1 (pending)]"
+    export GUARD_RECORD_EXIT=1
+    export RUN_NAMES="RUN-1"
+    export RUN_STATUSES="active"
+    export DISPATCH_OPENED_DEFAULT=1
+    export VERIFY_PINS_EXITS="4"
+    run_case "active run, pending steps, pins drifted (verify-pins exit 4)" ALLOW
+
+    if grep -q 'drifted pins' "$STDERR_FILE"; then
+        pass "drift allow narrates the reason to stderr"
+    else
+        fail "drift allow printed no explanatory note to stderr"
+    fi
+}
+
+case_carveout5_clean_pins_deny_unchanged() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending: [review@0#0 (pending)]"
+    export GUARD_RECORD_EXIT=1
+    export RUN_NAMES="RUN-1"
+    export RUN_STATUSES="active"
+    export DISPATCH_OPENED_DEFAULT=1
+    export VERIFY_PINS_EXITS="0"
+    run_case "same shape with sound pins (verify-pins exit 0) -> deny unchanged" DENY
+}
+
+case_carveout5_exit2_is_not_drift_denies() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending"
+    export GUARD_RECORD_EXIT=1
+    export RUN_NAMES="RUN-1"
+    export RUN_STATUSES="active"
+    export DISPATCH_OPENED_DEFAULT=1
+    export VERIFY_PINS_EXITS="2"
+    run_case "verify-pins exit 2 (missing pin / generic error) -> deny, not drift" DENY
+}
+
+case_carveout5_mixed_drift_denies() {
+    reset_env
+    export GUARD_STOP_REASON="work is still pending"
+    export GUARD_RECORD_EXIT=1
+    export RUN_NAMES="RUN-1 RUN-2"
+    export RUN_STATUSES="active active"
+    export DISPATCH_OPENED_DEFAULT=1
+    export VERIFY_PINS_EXITS="4 0"
+    run_case "one drifted run beside a clean one -> deny (clean work is advanceable)" DENY
+}
+
 case_full_denial_baseline() {
     reset_env
     export GUARD_STOP_REASON="work is still pending: [approve@0 (pending)]"
@@ -334,6 +406,10 @@ case_regression_guard_stop_success_allows
 case_regression_no_live_runs_allows
 case_regression_open_dispatch_allows
 case_regression_never_dispatched_allows
+case_carveout5_drifted_pins_allow
+case_carveout5_clean_pins_deny_unchanged
+case_carveout5_exit2_is_not_drift_denies
+case_carveout5_mixed_drift_denies
 case_full_denial_baseline
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
